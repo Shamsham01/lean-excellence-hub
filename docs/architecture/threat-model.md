@@ -2,7 +2,10 @@
 
 ## Status and method
 
-This architecture-stage threat model identifies trust assumptions and required future controls. No application, database, or security controls are implemented in Milestone 1. Reassess it whenever a milestone changes data flows or privileged paths.
+This architecture-stage threat model identifies trust assumptions and required
+controls, including the approved Milestone 3 secure-tenant boundary. It does not
+claim those controls are implemented. Reassess it whenever a milestone changes
+data flows or privileged paths.
 
 ## Assets and actors
 
@@ -18,11 +21,40 @@ Attackers manipulate identifiers, route organisation, joins, references, Storage
 
 ### Role or scope escalation — critical
 
-Attackers edit user metadata, reuse stale JWT claims, self-grant roles, exploit hierarchy ambiguity, or call privileged operations. Required treatment: no authorisation from user-editable metadata or active-organisation claims; stable permissions and scoped grants in PostgreSQL; controlled role administration; lifecycle checks; re-authorisation and audit around all service-role paths.
+Attackers edit user metadata, forge organisation selection, reuse a revoked
+session's unexpired JWT, self-grant roles, expand mutable roles, exploit
+hierarchy ambiguity, or call privileged operations. Required treatment:
+session-bound PostgreSQL context, live Auth session and lifecycle checks, no
+authorisation from user-editable metadata or organisation claims, immutable
+role-version grants, contained delegation, transactional hierarchy operations,
+re-authorisation, and narrow security evidence around privileged paths.
 
 ### Workforce account enumeration and credential attack — high
 
-Organisation codes, workforce identifiers, internal Auth identifiers, error timing, reset flows, or login attempts reveal accounts or enable stuffing. Required treatment: trusted server-side normalised resolution, non-public Auth identifiers, generic responses, uniform handling, layered throttling, audit and alerting, administrator reset, forced initial change, disabling, session revocation, and future MFA. Supabase Auth alone verifies passwords.
+Organisation codes, workforce aliases, internal Auth identifiers, error timing,
+reset flows, or login attempts reveal accounts or enable stuffing. Required
+treatment: trusted server-side normalised resolution, pre-authentication
+identifier non-disclosure, equivalent failures, layered hashed throttling,
+stewardship-aware recovery, disabling, session revocation, and future MFA.
+Owner-only post-authentication identifier disclosure and consequent direct
+Supabase sign-in are accepted residual risks; Supabase Auth throttling remains
+mandatory and Supabase Auth alone verifies passwords.
+
+### Delegation and invitation authority drift — critical
+
+Mutable roles, stale delegator access, or partially accepted invitations can
+expand authority after issue. Required treatment: exact immutable role-version
+and scope binding, complete issue-time and acceptance-time containment,
+lifecycle revalidation, transactional rejection, protected-role and last-owner
+invariants, and explicit audited migration between versions.
+
+### Session context and lifecycle confusion — critical
+
+Concurrent sessions, stale selection, pending invitations, disabled identities,
+or suspended organisations can be mistaken for active access. Required
+treatment: one context per matching Auth session and user, invitations separate
+from memberships, fail-closed active-state checks, session revocation, and no
+tenant access when the matching Auth session row is absent.
 
 ### Sensitive financial or personal data leakage — high
 
@@ -44,6 +76,12 @@ Users edit published templates, Benefit forecasts after validation, realisations
 
 Duplicate requests create duplicate actions or value; concurrent edits overwrite; events are lost or replayed. Required treatment: client idempotency keys, optimistic versions, transactional use-cases, idempotent outbox consumers, and observable retry/dead-letter handling when consumers exist.
 
+For Milestone 3 specifically, concurrent hierarchy moves or lifecycle changes
+can corrupt closure paths or retain access. Organisation-scoped locking,
+affected-row locks, bounded depth, atomic adjacency/closure replacement,
+optimistic versions where appropriate, and complete rollback are required.
+Generic outbox delivery remains later scope.
+
 ### Privileged worker or secret compromise — critical
 
 Service-role credentials bypass RLS or leak through code, logs, CI, or browser bundles. Required treatment: no secrets in version control or client code, least-privilege environment separation, isolated server-only workers, explicit target re-authorisation, credential rotation, operation audit, and privileged-path tests.
@@ -62,8 +100,21 @@ Auth deletion, universal soft-delete, or an administrator action removes require
 
 ## Residual risks and assumptions
 
-Supabase and Microsoft controls remain external dependencies. RLS correctness depends on complete coverage and query-aware indexes. Future malware scanning, MFA, enterprise integrations, retention operations, and offline queues are seams rather than present controls. Configurability increases authorisation and reporting complexity and must pass the [16-question rule](platform-architecture.md#16-question-architectural-decision-rule).
+Supabase and Microsoft controls remain external dependencies. A live Microsoft
+round trip is not Milestone 3 acceptance evidence; the provider-neutral PKCE,
+redirect, allowlist, verified-identity, and collision boundaries are. RLS
+correctness depends on complete coverage and query-aware indexes. Future Storage
+and malware scanning, MFA, enterprise integrations, exports, generic
+audit/outbox, retention operations, and offline queues remain later seams.
+Configurability increases authorisation and reporting complexity and must pass
+the [16-question rule](platform-architecture.md#16-question-architectural-decision-rule).
 
 ## Review gates
 
-Milestone 3 cannot be accepted without hostile two-tenant tests and workforce anti-enumeration evidence. Shared-capability milestones additionally require cross-tenant reference and Storage denial, immutable publication, append-only evidence, concurrency, and idempotency tests. Every later external or AI path requires a threat-model update before implementation.
+Milestone 3 cannot be accepted without hostile two-tenant tests, session and
+lifecycle denial, delegation containment, hierarchy rollback/concurrency,
+workforce anti-enumeration and disclosure, recovery, and narrow append-only
+security-ledger evidence. Storage, exports, Benefits/financial permissions,
+template publication, generic audit/outbox, and event-idempotency tests move to
+their owning milestones. Every later external or AI path requires a
+threat-model update before implementation.

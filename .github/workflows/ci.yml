@@ -10,8 +10,11 @@ permissions:
   contents: read
 
 env:
+  APP_ORIGIN: http://127.0.0.1:3000
+  AUTH_RATE_LIMIT_PEPPER: ci-only-pepper-that-is-at-least-32-characters
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
   NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  SUPABASE_SECRET_KEY: sb_secret_ci_placeholder
 
 jobs:
   quality:
@@ -57,7 +60,7 @@ jobs:
       - run: npm run db:lint
       - run: npm run test:db
       - run: npm run db:types
-      - name: Confirm database types were generated
-        run: test -s src/platform/supabase/database.types.ts
+      - name: Confirm committed database types are current
+        run: git diff --exit-code -- src/platform/supabase/database.types.ts
       - if: always()
         run: npm run db:stop

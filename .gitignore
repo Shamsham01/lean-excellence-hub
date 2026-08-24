@@ -12,9 +12,6 @@ test-results/
 .env.*
 !.env.example
 
-# Generated local database types
-src/platform/supabase/database.types.ts
-
 # Local tooling and editor state
 *.log
 .DS_Store

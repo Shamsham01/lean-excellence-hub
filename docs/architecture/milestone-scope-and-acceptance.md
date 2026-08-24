@@ -59,11 +59,71 @@ Milestone 2 acceptance requires reproducible setup commands, no exposed secrets,
 
 Docker was unavailable for the local completion run. Local Supabase start reached the Docker boundary successfully; CI retains the complete Docker-backed lint, pgTAP, and generated-types checks.
 
-## Milestone 3 — explicit approval required
+## Milestone 3 — secure tenant foundation
 
-Secure tenant foundation: profiles, organisations, multi-organisation memberships, invitations, organisation hierarchy and closure, scoped RBAC, private authorisation helpers, default-deny RLS, session middleware, organisation selection, Microsoft/email authentication UX, and trusted workforce login.
+Milestone 3 is approved. Documentation and architecture decisions are its first
+gate; this documentation change does not claim that the controls are
+implemented.
 
-Acceptance includes local migration reset and generated types; hostile tests across two organisations, multiple/disabled/no memberships, hierarchy scopes, financial permissions, suspended tenants, and privileged paths; cross-tenant read/write/reference/Storage/export/role-escalation denial; and workforce anti-enumeration, reset, forced initial change, disabling, throttling, revocation, audit, and MFA seams.
+### In scope
+
+- One global Supabase Auth identity and minimal profile, explicit identity
+  lifecycle, and at most one global workforce account per Auth user.
+- Organisations, invitations separate from memberships, multi-organisation
+  memberships, and explicit lifecycle transitions.
+- A variable-depth organisation-unit forest with transactionally maintained
+  closure paths and controlled create, move, retire, and restore operations.
+- Migration-owned secure-foundation permissions, stable roles, immutable role
+  versions, exact-version grants and invitation offers, delegation containment,
+  protected ownership, and self, unit-subtree, or organisation scope.
+- PostgreSQL organisation selection bound to the current Supabase session,
+  current-session/lifecycle/scoped authorisation helpers, explicit privileges,
+  and operation-specific default-deny RLS.
+- Email/password and trusted workforce authentication, invitation/enrolment and
+  recovery, forced initial password change, organisation choice and switching,
+  and session revocation.
+- A provider-neutral OAuth boundary and documented future Microsoft adapter.
+  Live Azure credentials, tenant configuration, and a real Microsoft round trip
+  are deployment evidence, not acceptance blockers.
+- Layered authentication throttling and a narrow append-only security ledger
+  for identity, tenant, session, invitation, hierarchy, and RBAC operations.
+
+### Explicitly excluded
+
+No placeholder table, permission, route, or test is introduced for Storage or
+attachments, exports/imports, Benefits or financial access, resource records,
+universal templates/actions, generic workflow history, generic audit, the
+transactional outbox, notifications/activity, Lean domains, entitlements,
+public APIs, enterprise SAML, billing, AI, or remote database application.
+Those capabilities and their evidence remain with their owning milestones.
+
+### Acceptance checklist
+
+- [ ] Documentation and successor/supplemental ADRs preserve prior decision
+  history and define the corrected boundary.
+- [ ] Local migrations reset from empty state, schema lint passes, generated
+  types are committed, and CI detects type drift.
+- [ ] Composite tenant integrity, explicit privileges, forced RLS, safe private
+  helpers, and operation-specific policies are proven.
+- [ ] Two-organisation hostile tests deny cross-tenant reads, writes,
+  references, role escalation, session forgery, and service-path abuse while
+  authorised controls succeed.
+- [ ] Pending, active, inactive, disabled, suspended, closed, revoked, expired,
+  and removed-session cases fail closed as designed.
+- [ ] Self, subtree, and organisation scope; immutable role versions;
+  delegation containment; invitation revalidation; protected roles; and
+  last-owner rules are proven.
+- [ ] Hierarchy cycle, cross-tenant, depth, retirement, restoration,
+  concurrency, and rollback behaviour is proven.
+- [ ] Email/password and workforce journeys prove enrolment, recovery,
+  forced-change, selection, switching, throttling, anti-enumeration, owner-only
+  identifier disclosure, and multi-organisation stewardship.
+- [ ] Provider-neutral OAuth redirect, allowlist, verified-identity, collision,
+  and callback rules pass without requiring live Microsoft credentials.
+- [ ] Session revocation rejects an otherwise-unexpired token, and narrow
+  security evidence is atomic, append-only, attributable, and redacted.
+- [ ] Independent database, security, and scope verification has no unresolved
+  high or critical finding.
 
 ## Later milestones
 
@@ -80,4 +140,6 @@ Visual workflow designer, enterprise BI, AI summaries/agents, full Hoshin Kanri,
 
 ## Hard stop
 
-This requested delivery ends at Milestone 2. Milestone 3+ is not implemented without explicit approval.
+Milestone 3 ends at the secure tenant foundation above. Remote Supabase changes
+and every explicitly excluded capability require separate approval. Completion
+cannot be claimed until every Milestone 3 acceptance item is evidenced.

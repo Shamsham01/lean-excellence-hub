@@ -16,9 +16,13 @@ export default defineConfig({
   webServer: {
     command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     env: {
+      APP_ORIGIN: baseURL,
+      AUTH_RATE_LIMIT_PEPPER:
+        "playwright-only-pepper-that-is-at-least-32-characters",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
         "sb_publishable_playwright_placeholder",
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+      SUPABASE_SECRET_KEY: "sb_secret_playwright_placeholder",
     },
     reuseExistingServer: !process.env.CI,
     url: baseURL,

@@ -2,21 +2,57 @@
 
 ## Status
 
-This is a conceptual data model reserved during Milestone 1. It contains no implemented schema. Migrations, generated types, constraints, indexes, policies, and tenant tables are deferred to Milestone 3 or later as stated below.
+This document records the approved conceptual model. It does not claim that a
+schema exists. Milestone 3 owns only the secure tenant foundation described
+below; later domain and shared-capability models remain deferred.
 
 ## Identity, tenancy, hierarchy, and access
 
-Planned Milestone 3 foundations:
+Approved Milestone 3 foundations:
 
-- `profiles`: minimal global identity data keyed to `auth.users`; no tenant roles.
-- `organisations`: tenant root, reporting currency, locale/time zone, lifecycle state.
-- `organisation_memberships`: user-to-organisation membership, invitation/status, tenant-specific person attributes, and timestamps. A person may have multiple memberships.
-- `organisation_units`: adjacency-list hierarchy supporting company, site, department, area, team, and customer-defined presentation without fixed depth.
-- `organisation_unit_closure`: transactional ancestor/descendant/depth rows for subtree access and reporting.
-- `permission_definitions`: stable platform keys such as `benefits.validate` and `benefits.view_financial`.
-- `roles`, `role_permissions`, and `access_grants`: organisation-owned roles granted to memberships at `self`, `unit_subtree`, or `organisation` scope.
+- `profiles`: one minimal global display profile keyed to `auth.users`; no
+  tenant roles or selected organisation.
+- private identity controls: global account lifecycle, enrolment state,
+  stewardship where applicable, and security timestamps. Auth deletion or
+  anonymisation must not cascade away historical evidence.
+- `organisations`: tenant root, reporting currency, locale/time zone, optimistic
+  version, and `provisioning | active | suspended | closed` lifecycle.
+- `organisation_memberships`: a unique user-to-organisation binding with
+  tenant-specific person attributes and `pending | active | inactive`
+  lifecycle. `pending` is allowed only after an Auth user is bound but before
+  acceptance or enrolment completes.
+- `organisation_invitations`: a separate, non-authorising recipient offer with
+  token digest, expiry, lifecycle, inviter, and accepted membership reference.
+  Invitation grants bind exact immutable role versions and scopes.
+- `organisation_units`: an active/retired adjacency-list forest supporting
+  customer-defined presentation without fixed depth or fixed site/department
+  columns.
+- `organisation_unit_closure`: transactionally maintained
+  ancestor/descendant/depth rows, including depth-zero self rows.
+- `permission_definitions`: migration-owned immutable keys for the secure
+  foundation only. Benefits, exports, Storage, templates, and other future
+  domains introduce their own permissions in their owning milestones.
+- `roles`: stable organisation-owned role identities.
+- `role_versions` and `role_permissions`: immutable published permission
+  snapshots with explicit draft, published, and retired lifecycle.
+- `access_grants`: revocable membership grants bound to an exact role version
+  and `self`, `unit_subtree`, or `organisation` scope.
+- private session organisation contexts: one selected organisation and
+  membership per matching Supabase Auth session and user.
+- private workforce accounts and aliases: at most one global account and
+  high-entropy internal Auth identifier per Auth user, with
+  organisation-scoped aliases mapped through memberships.
+- `security_audit_events`: a narrow append-only Milestone 3 security ledger,
+  not the later generic audit capability.
+- server-only authentication rate-limit windows keyed by hashes rather than
+  plaintext workforce or network identifiers.
 
 Every exposed tenant-owned row carries `organisation_id` and a composite uniqueness target such as `(organisation_id, id)`. Composite foreign keys prevent cross-tenant references. Tenant-leading indexes support RLS predicates and common lifecycle, status, and unit queries.
+
+See [ADR-0006](../adr/ADR-0006-session-bound-organisation-context.md),
+[ADR-0007](../adr/ADR-0007-workforce-identity-disclosure-and-stewardship.md),
+[ADR-0008](../adr/ADR-0008-version-bound-rbac-and-delegation.md), and
+[ADR-0009](../adr/ADR-0009-tenant-lifecycle-and-hierarchy-mutation.md).
 
 ## Shared resource identity
 
@@ -50,6 +86,12 @@ Domains define stable states and transition rules in application services. Share
 
 Historical labels or context are snapshotted only where reports must preserve wording. Immutable published versions, Benefit revisions, validations, realisations, transition history, and audit provide historical truth without universal temporal tables.
 
+Milestone 3 introduces only the bounded security ledger needed for identity,
+session, tenant, hierarchy, invitation, and RBAC operations. The generic audit
+model, transactional outbox, user-facing activity, and domain workflow history
+remain in the later shared foundation. See
+[ADR-0011](../adr/ADR-0011-milestone-3-security-ledger.md).
+
 ## Benefits
 
 Reserved for later implementation:
@@ -66,8 +108,20 @@ Reporting calculates forecast, validated, and realised totals from their respect
 
 ## Lifecycle and retention
 
-No universal soft-delete convention is approved. Each aggregate must choose and document inactive, disabled, archived, closed, anonymised, or hard-delete behaviour based on history, legal obligations, and restoration needs. Disabling a tenant membership removes that tenant's access without necessarily deleting global Auth identity or historical actor references.
+No universal soft-delete convention is approved. Each aggregate chooses an
+explicit lifecycle based on history, legal obligations, and restoration needs.
+Only active global identity, organisation, and membership state authorises
+normal tenant access. Disabling one membership removes that organisation path
+without disabling the global Auth identity or another membership. Relevant
+security transitions preserve historical actor references, record actor/reason
+and time, and revoke affected sessions.
 
 ## Deferred validation
 
-Milestone 3+ must prove migration reset, generated types, composite integrity, tenant-leading index use, published-version immutability, append-only history, event idempotency, optimistic concurrency, financial separation, and cross-tenant denial. No empty speculative tables are created before those milestones.
+Milestone 3 must prove its migration reset and generated types, composite
+integrity, tenant-leading index use, immutable role versions, append-only
+security evidence, hierarchy concurrency and rollback, lifecycle enforcement,
+session-bound selection, scoped delegation, and cross-tenant denial. Published
+template immutability, generic audit/outbox behaviour, event idempotency,
+Storage, exports, and financial separation belong to later milestones. No empty
+speculative tables are created before their owning milestone.

@@ -7,4 +7,5 @@ package-lock.json
 playwright-report
 src/platform/supabase/database.types.ts
 test-results
+supabase/.temp
 CONTRIBUTING.md

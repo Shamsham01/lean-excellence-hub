@@ -26,3 +26,19 @@ The chosen organisation in the route or UI is context only. Do not authorise fro
 - Updates must satisfy both row visibility and new-row checks.
 - Service-role paths bypass RLS and therefore require isolation, re-authorisation, audit, and adversarial tests.
 - Milestone 3 acceptance requires hostile two-tenant, hierarchy, inactive-membership, suspended-organisation, cross-reference, export, Storage, and role-escalation tests.
+
+## Related refinements
+
+- [ADR-0006](ADR-0006-session-bound-organisation-context.md) narrowly
+  supersedes route-only selection detail with PostgreSQL context bound to the
+  current Supabase session and records revocation semantics.
+- [ADR-0008](ADR-0008-version-bound-rbac-and-delegation.md) supplements role and
+  grant semantics with immutable role versions and contained delegation.
+- [ADR-0009](ADR-0009-tenant-lifecycle-and-hierarchy-mutation.md) supplements
+  lifecycle and hierarchy mutation semantics.
+
+The original decision and consequences above are retained as accepted history.
+The references to Storage, exports, and financial permissions in the original
+acceptance statement are corrected by the current
+[milestone boundary](../architecture/milestone-scope-and-acceptance.md);
+their controls and tests belong to later owning milestones.

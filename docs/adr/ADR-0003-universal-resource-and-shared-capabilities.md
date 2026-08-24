@@ -29,3 +29,9 @@ Build focused shared capabilities around that identity:
 - Resource registry lifecycle must remain synchronised with typed records.
 - This does not approve a generic workflow designer, arbitrary custom-entity engine, universal temporal data, or speculative tables.
 - Universal forms are governed separately by [ADR-0005](ADR-0005-universal-versioned-template-engine.md).
+
+## Related refinements
+
+[ADR-0011](ADR-0011-milestone-3-security-ledger.md) permits a deliberately
+narrow append-only ledger for secure-foundation operations. It does not
+implement or alter this later generic audit/outbox decision.

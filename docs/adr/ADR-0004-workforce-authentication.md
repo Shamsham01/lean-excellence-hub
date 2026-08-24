@@ -42,3 +42,17 @@ All post-authentication authorisation uses current database membership and RLS, 
 - Administrator lifecycle UX and Supabase administration calls require tightly controlled privileged server code.
 - Milestone 3 must test account and organisation enumeration, normalisation collisions, disabled membership, forced initial change, reset abuse, throttling, session revocation, multiple memberships, generic errors, audit, and MFA seams.
 - No workforce login UI, resolver, credential mapping, or schema is implemented in Milestones 1–2.
+
+## Related refinements
+
+[ADR-0007](ADR-0007-workforce-identity-disclosure-and-stewardship.md)
+supplements this decision and narrowly supersedes the absolute statement that
+the browser never receives the internal identifier. The identifier remains
+hidden before authentication but may be visible to its authenticated owner, who
+can then use Supabase Auth directly. ADR-0007 also defines one global workforce
+account per Auth user, multi-organisation alias reuse, and recovery stewardship.
+
+[ADR-0010](ADR-0010-provider-neutral-authentication-boundary.md) defines the
+provider-neutral OAuth seam and the future Microsoft adapter's corrected
+Milestone 3 acceptance boundary. The remaining ADR-0004 decisions continue to
+apply.

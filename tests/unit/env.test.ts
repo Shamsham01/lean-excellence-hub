@@ -23,9 +23,16 @@ describe("environment validation", () => {
   it("returns only explicitly validated server values", () => {
     expect(
       parseServerEnvironment({
+        APP_ORIGIN: "http://127.0.0.1:3000",
+        AUTH_RATE_LIMIT_PEPPER: "test-pepper-that-is-at-least-32-characters",
         NODE_ENV: "test",
         SUPABASE_SECRET_KEY: "must-not-cross-the-boundary",
       }),
-    ).toEqual({ NODE_ENV: "test" });
+    ).toEqual({
+      APP_ORIGIN: "http://127.0.0.1:3000",
+      AUTH_RATE_LIMIT_PEPPER: "test-pepper-that-is-at-least-32-characters",
+      NODE_ENV: "test",
+      SUPABASE_SECRET_KEY: "must-not-cross-the-boundary",
+    });
   });
 });

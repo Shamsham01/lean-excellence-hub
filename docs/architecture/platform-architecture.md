@@ -2,7 +2,9 @@
 
 ## Status and horizon
 
-This document defines the Milestone 1 architecture baseline. The architecture is approved now; application code, infrastructure, schemas, and capabilities are implemented only in their separately approved milestones.
+This document retains the Milestone 1 platform baseline and incorporates the
+approved Milestone 3 secure-tenant decisions. Architecture statements do not
+claim that application code, schemas, or controls are implemented.
 
 ## Target shape
 
@@ -29,11 +31,20 @@ See [ADR-0001](../adr/ADR-0001-nextjs-supabase-modular-architecture.md).
 
 ## Trust and tenancy
 
-The browser carries a Supabase session and selects an organisation route context. Neither the selected route nor a JWT organisation/role hint grants access. Current database membership, scoped permissions, organisation lifecycle, and the row's `organisation_id` must independently authorise every operation. Multi-organisation membership is native.
+The browser carries a Supabase session. Organisation selection is persisted in
+PostgreSQL for that exact session and user; a selected route, browser value, or
+JWT organisation/role hint grants nothing. The matching Auth session, active
+global identity, active membership, active organisation, scoped permission, and
+row `organisation_id` independently authorise every operation. Security events
+revoke affected sessions, and tenant access checks require the session row to
+remain current. Multi-organisation membership and different selections in
+concurrent sessions are native.
 
 Future external APIs and import paths adapt the same use-cases. Database table and PostgREST shapes are not the durable public API.
 
-See [ADR-0002](../adr/ADR-0002-multi-tenant-membership-and-rls.md) and the [security model](security-model.md).
+See [ADR-0002](../adr/ADR-0002-multi-tenant-membership-and-rls.md),
+[ADR-0006](../adr/ADR-0006-session-bound-organisation-context.md), and the
+[security model](security-model.md).
 
 ## Shared capability boundaries
 
@@ -41,16 +52,26 @@ A narrow resource identity registry supports tenant-safe links from shared actio
 
 The versioned form engine serves configurable audit/form experiences. Curriculum and structured problem-solving remain typed extensions because their semantics differ. Benefits keeps forecast revisions, validation, financial access, and realisation separate.
 
+These shared capabilities remain later work. Milestone 3 introduces no resource
+registry, generic audit, outbox, attachments, templates, actions, Benefits, or
+domain workflow. Its narrow append-only security ledger is a bounded tenant
+foundation control, not early implementation of the generic audit model.
+
 See [ADR-0003](../adr/ADR-0003-universal-resource-and-shared-capabilities.md) and [ADR-0005](../adr/ADR-0005-universal-versioned-template-engine.md).
+
+See [ADR-0011](../adr/ADR-0011-milestone-3-security-ledger.md) for that bounded
+exception.
 
 ## Reliability and evolution seams
 
 - Mutating APIs accept stable client-generated idempotency keys where retries are plausible.
 - Mutable aggregates use optimistic version columns.
-- Important changes append a transactional outbox event in the same transaction.
+- Important later-domain changes append a transactional outbox event in the
+  same transaction once the shared foundation is approved.
 - Published template versions, Benefits revisions, transition history, and audit entries are immutable.
 - Responsive, touch-first, draft-safe interfaces prepare for later PWA/offline queues; offline synchronisation is deferred.
-- Notifications, webhooks, analytics, and cache refresh consume outbox events later; the outbox is not a message broker.
+- Notifications, webhooks, analytics, and cache refresh consume later outbox
+  events; neither the outbox nor consumers are Milestone 3 scope.
 - Reporting snapshots are deliberate and limited to wording/context that must remain historically true.
 
 ## 16-question architectural decision rule

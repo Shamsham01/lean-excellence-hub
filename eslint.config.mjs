@@ -11,6 +11,7 @@ export default defineConfig([
     "node_modules/**",
     "playwright-report/**",
     "test-results/**",
+    "supabase/.temp/**",
     "src/platform/supabase/database.types.ts",
   ]),
 ]);
