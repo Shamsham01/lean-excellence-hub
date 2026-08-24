@@ -2,9 +2,8 @@
 
 ## Status
 
-This document records the approved conceptual model. It does not claim that a
-schema exists. Milestone 3 owns only the secure tenant foundation described
-below; later domain and shared-capability models remain deferred.
+Milestone 3 delivered the secure tenant foundation. Milestone 4 implements the
+shared platform foundation described below.
 
 ## Identity, tenancy, hierarchy, and access
 
@@ -54,20 +53,25 @@ See [ADR-0006](../adr/ADR-0006-session-bound-organisation-context.md),
 [ADR-0008](../adr/ADR-0008-version-bound-rbac-and-delegation.md), and
 [ADR-0009](../adr/ADR-0009-tenant-lifecycle-and-hierarchy-mutation.md).
 
-## Shared resource identity
+## Shared resource identity (Milestone 4)
 
-A later `resource_records` registry contains only stable identity, `organisation_id`, resource type, and creation metadata. Typed domain records reference that identity while retaining relational columns and domain constraints. Tenant-safe composite references let shared capabilities point to resources without free-form `entity_type/entity_id` pairs.
+- `resource_records`: narrow identity registry; not client-browseable.
+- `private.can_access_resource(...)`: typed target-resource authorisation.
+- Domain tables share primary keys with registry rows.
 
-Planned shared capabilities include:
+Shared capabilities implemented in Milestone 4:
 
-- `actions` plus tenant-safe contextual links;
-- private attachment metadata and resource links;
-- workflow transition history;
-- append-only audit entries;
-- an idempotent transactional event outbox;
-- comments, activity, schedules, and Benefits links where approved.
+- `actions`, `action_assignees`, `action_status_transitions`;
+- `templates`, `template_versions`, `template_sections`, `template_questions`,
+  `template_submissions`, `template_answers`, `template_answer_people`;
+- `attachments` with two-phase `pending_upload -> active` lifecycle;
+- `comments` with target-resource authorisation;
+- `business_audit_events` (append-only, default-deny read);
+- `private.domain_event_outbox` (unexposed transactional event seam).
 
-The registry is not an entity-attribute-value model and does not hold arbitrary domain fields.
+See [ADR-0012](../adr/ADR-0012-milestone-4-shared-foundation-boundary.md).
+
+## Shared resource identity (conceptual remainder)
 
 ## Universal versioned forms
 

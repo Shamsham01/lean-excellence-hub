@@ -16,5 +16,5 @@ export async function selectOrganisation(formData: FormData) {
   } catch {
     redirect("/select-organisation?error=invalid");
   }
-  redirect("/");
+  redirect("/platform");
 }

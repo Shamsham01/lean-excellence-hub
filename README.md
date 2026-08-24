@@ -53,6 +53,8 @@ malformed. Never put a secret or service-role key in a `NEXT_PUBLIC_` variable.
 - `npm run test:db` — run pgTAP database baseline tests.
 - `npm run db:types` — generate local database types into
   `src/platform/supabase/database.types.ts`.
+- `npm run db:seed-demo` — seed the local-only Apex Manufacturing demo tenant
+  (see [demo seed guide](docs/development/demo-seed.md)).
 - `npm run validate` — run formatting, lint, types, units, and production build.
 
 Run `npm run test:e2e:install` once if Chromium is not already installed.

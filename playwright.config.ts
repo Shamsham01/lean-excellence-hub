@@ -18,13 +18,18 @@ export default defineConfig({
     env: {
       APP_ORIGIN: baseURL,
       AUTH_RATE_LIMIT_PEPPER:
+        process.env.AUTH_RATE_LIMIT_PEPPER ??
         "playwright-only-pepper-that-is-at-least-32-characters",
+      E2E_WITH_SUPABASE: process.env.E2E_WITH_SUPABASE ?? "",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
         "sb_publishable_playwright_placeholder",
-      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
-      SUPABASE_SECRET_KEY: "sb_secret_playwright_placeholder",
+      NEXT_PUBLIC_SUPABASE_URL:
+        process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321",
+      SUPABASE_SECRET_KEY:
+        process.env.SUPABASE_SECRET_KEY ?? "sb_secret_playwright_placeholder",
     },
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && !process.env.E2E_WITH_SUPABASE,
     url: baseURL,
   },
   projects: [

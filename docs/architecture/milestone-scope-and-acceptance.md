@@ -125,12 +125,61 @@ Those capabilities and their evidence remain with their owning milestones.
 - [ ] Independent database, security, and scope verification has no unresolved
   high or critical finding.
 
+## Milestone 4 — shared platform foundation
+
+Milestone 4 is approved. It builds on the Milestone 3 tenant foundation without
+redesigning authorisation architecture.
+
+### In scope
+
+- Narrow `resource_records` identity registry (not client-browseable).
+- Target-resource authorisation for shared capabilities.
+- Migration-safe existing-owner role-version permission upgrade.
+- Append-only `business_audit_events` (default-deny read) and
+  `private.domain_event_outbox` (unexposed).
+- Universal actions with scoped visibility, source validation, and transition
+  history.
+- Versioned template engine with draft/completed submissions, `allows_not_applicable`,
+  and relational person answers.
+- Two-phase private attachments (`pending_upload -> active`) with Storage policies.
+- Shared comments with target-resource authorisation.
+- Authenticated application shell and minimal design-system expansion.
+
+### Explicitly excluded
+
+Lean domain modules, notifications/activity, webhooks, workflow designer,
+malware scanning, business audit read UI, Azure OAuth enablement, remote
+Supabase migration push, and Milestone 5 scope.
+
+### Acceptance checklist
+
+- [x] ADR-0012 and updated data-model documentation are present.
+- [x] Local migrations reset, lint passes, generated types committed, CI detects drift.
+- [x] Existing organisations upgraded via successor owner role version without
+  mutating historical role versions.
+- [x] `resource_records` not directly readable; target-resource authorisation enforced.
+- [x] Actions, templates, attachments, comments, audit, and outbox proven with
+  adversarial pgTAP tests; Milestone 3 tests still pass.
+- [x] Template submissions support `draft -> completed` immutability; person answers relational.
+- [x] Attachments use two-phase lifecycle with re-authorisation and `scan_state = not_required`.
+- [x] Authenticated shell renders with org context, permission-aware nav, and smoke-tested flows.
+- [x] At most one read-only verifier reports no unresolved Critical/High findings.
+
+### Acceptance evidence (2026-08-24)
+
+| Gate | Evidence |
+| --- | --- |
+| Migrations | 8 Milestone 4 SQL migrations through `20260824222024_milestone4_storage_policies.sql` |
+| pgTAP | 122 tests across 12 files (`npm run test:db`) |
+| Application | `(platform)` shell, Actions/Templates routes, `filterPlatformNavigation` unit tests |
+| E2E | Unauthenticated redirect smoke + authenticated platform shell smoke (`tests/e2e/platform-shell.spec.ts`, database CI job) |
+| CI | `db:lint`, `test:db`, `db:types` drift check, `validate`, Playwright jobs |
+
 ## Later milestones
 
-1. Shared platform foundation: resource records, audit/outbox, private attachments, universal templates, universal actions, workflow history, and responsive design system.
-2. Core Lean domains: maturity, training/skills, projects, suggestions, scheduling, problem-solving, and form experiences as thin vertical slices.
-3. Benefits and engagement: reserved Benefits lifecycle, notification/activity capabilities, and trustworthy forecast/validated/realised reporting.
-4. Enterprise extensions: staged import/export, search, API/webhooks, entitlements, integrations, AI, advanced workflow, and constrained offline capability only where requirements justify them.
+1. Core Lean domains: maturity, training/skills, projects, suggestions, scheduling, problem-solving, and form experiences as thin vertical slices.
+2. Benefits and engagement: reserved Benefits lifecycle, notification/activity capabilities, and trustworthy forecast/validated/realised reporting.
+3. Enterprise extensions: staged import/export, search, API/webhooks, entitlements, integrations, AI, advanced workflow, and constrained offline capability only where requirements justify them.
 
 Later verification includes published-version immutability, append-only audit, event idempotency, optimistic concurrency, strict Benefit value separation, and permission-aware machine paths.
 

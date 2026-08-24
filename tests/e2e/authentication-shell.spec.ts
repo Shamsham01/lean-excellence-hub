@@ -24,6 +24,11 @@ test("signout cannot be triggered with GET", async ({ request }) => {
   expect(response.status()).toBe(405);
 });
 
+test("platform routes require authentication", async ({ page }) => {
+  await page.goto("/platform");
+  await expect(page).toHaveURL(/\/login/);
+});
+
 test("Microsoft OAuth is explicitly unavailable", async ({ request }) => {
   const response = await request.get("/auth/oauth/azure", { maxRedirects: 0 });
   expect(response.status()).toBe(404);

@@ -10,7 +10,9 @@
   --muted: oklch(0.955 0.007 95);
   --muted-foreground: oklch(0.46 0.02 255);
   --border: oklch(0.88 0.012 95);
-  --ring: oklch(0.57 0.17 250);
+  --primary: oklch(0.35 0.08 250);
+  --primary-foreground: oklch(0.98 0.004 95);
+  --sidebar: oklch(0.97 0.006 95);
   --radius: 0.625rem;
   color-scheme: light;
 }

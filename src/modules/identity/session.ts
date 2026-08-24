@@ -42,7 +42,7 @@ export async function routeAfterAuthentication() {
   }
   if (organisations.length === 1) {
     await switchOrganisation(organisations[0]!.organisation_id);
-    redirect("/");
+    redirect("/platform");
   }
 
   redirect("/select-organisation");
