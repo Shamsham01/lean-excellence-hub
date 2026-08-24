@@ -33,7 +33,7 @@ Dependencies, generated build output, Next.js or TypeScript scaffolding, Supabas
 
 The final checkbox was marked only after the non-mutating validation completed without errors.
 
-## Milestone 2 — next
+## Milestone 2 — application and tooling baseline
 
 After explicit approval, create only:
 
@@ -47,6 +47,17 @@ After explicit approval, create only:
 Do not preinstall workflow, state-management, form-builder, email, analytics, AI, or component-library packages without a demonstrated Milestone 2 need.
 
 Milestone 2 acceptance requires reproducible setup commands, no exposed secrets, configured quality checks, CI, and a successful production build.
+
+### Acceptance checklist
+
+- [x] Reproducible npm installation and development commands are documented.
+- [x] The strict Next.js application shell and environment guards are configured.
+- [x] Local Supabase configuration, migration structure, pgTAP tests, and generated-types workflow are present without domain schema.
+- [x] Formatting, lint, strict type-check, unit test, E2E smoke test, and production build checks pass.
+- [x] CI runs non-secret application and Docker-backed database validation.
+- [x] No secret credentials or Milestone 3 functionality are present.
+
+Docker was unavailable for the local completion run. Local Supabase start reached the Docker boundary successfully; CI retains the complete Docker-backed lint, pgTAP, and generated-types checks.
 
 ## Milestone 3 — explicit approval required
 
@@ -69,4 +80,4 @@ Visual workflow designer, enterprise BI, AI summaries/agents, full Hoshin Kanri,
 
 ## Hard stop
 
-This requested delivery ends at Milestone 1. Milestone 2 is next but not started. Milestone 3+ is not implemented without explicit approval.
+This requested delivery ends at Milestone 2. Milestone 3+ is not implemented without explicit approval.

@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: oklch(0.985 0.004 95);
+  --foreground: oklch(0.22 0.015 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.015 255);
+  --muted: oklch(0.955 0.007 95);
+  --muted-foreground: oklch(0.46 0.02 255);
+  --border: oklch(0.88 0.012 95);
+  --ring: oklch(0.57 0.17 250);
+  --radius: 0.625rem;
+  color-scheme: light;
+}
+
+.dark {
+  --background: oklch(0.18 0.014 255);
+  --foreground: oklch(0.94 0.006 95);
+  --card: oklch(0.23 0.016 255);
+  --card-foreground: oklch(0.94 0.006 95);
+  --muted: oklch(0.28 0.017 255);
+  --muted-foreground: oklch(0.72 0.018 255);
+  --border: oklch(0.34 0.018 255);
+  --ring: oklch(0.72 0.14 245);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: oklch(0.18 0.014 255);
+    --foreground: oklch(0.94 0.006 95);
+    --card: oklch(0.23 0.016 255);
+    --card-foreground: oklch(0.94 0.006 95);
+    --muted: oklch(0.28 0.017 255);
+    --muted-foreground: oklch(0.72 0.018 255);
+    --border: oklch(0.34 0.018 255);
+    --ring: oklch(0.72 0.14 245);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+*:focus-visible {
+  outline: 0.1875rem solid var(--ring);
+  outline-offset: 0.1875rem;
+}

@@ -1,0 +1,26 @@
+# Dependencies and package-manager state
+node_modules/
+
+# Next.js and test output
+.next/
+coverage/
+playwright-report/
+test-results/
+
+# Environment files (the documented example is safe to commit)
+.env
+.env.*
+!.env.example
+
+# Generated local database types
+src/platform/supabase/database.types.ts
+
+# Local tooling and editor state
+*.log
+.DS_Store
+Thumbs.db
+.vercel/
+.netlify/
+
+# TypeScript incremental state
+*.tsbuildinfo

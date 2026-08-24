@@ -1,0 +1,10 @@
+.next
+.cursor
+coverage
+docs
+node_modules
+package-lock.json
+playwright-report
+src/platform/supabase/database.types.ts
+test-results
+CONTRIBUTING.md
