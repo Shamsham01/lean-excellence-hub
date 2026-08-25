@@ -5,6 +5,9 @@ import {
   DEMO_MATURITY_PILLARS,
   DEMO_ORGANISATION,
   DEMO_PLATFORM_SAMPLES,
+  DEMO_FIVE_S_CATEGORIES,
+  DEMO_FIVE_S_STANDARD,
+  DEMO_GEMBA_DEFINITION,
   DEMO_ROLES,
   DEMO_UNITS,
   DEMO_USERS,
@@ -45,9 +48,12 @@ async function ensureAuthUser(admin: SupabaseClient, userKey: DemoUserKey) {
     }
   }
 
-  const { error: enrolmentError } = await admin.rpc("finalise_identity_enrolment", {
-    target_user_id: user.id,
-  });
+  const { error: enrolmentError } = await admin.rpc(
+    "finalise_identity_enrolment",
+    {
+      target_user_id: user.id,
+    },
+  );
 
   if (enrolmentError) {
     throw enrolmentError;
@@ -348,10 +354,7 @@ async function ensureInvitationAccepted(
   }
 }
 
-async function ensureMaturityDemo(
-  client: SupabaseClient,
-  unitIds: UnitMap,
-) {
+async function ensureMaturityDemo(client: SupabaseClient, unitIds: UnitMap) {
   const { data: existing } = await client
     .from("maturity_models")
     .select("id")
@@ -537,6 +540,194 @@ async function ensureMaturityDemo(
   console.log(`Self assessment ready: ${selfAssessmentId}`);
 }
 
+async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
+  const operationsUnitId = unitIds[DEMO_FIVE_S_STANDARD.unitKey];
+  if (!operationsUnitId) return;
+
+  const { data: existing } = await client
+    .from("five_s_standards")
+    .select("id")
+    .eq("display_name", DEMO_FIVE_S_STANDARD.name)
+    .maybeSingle();
+
+  if (existing) return;
+
+  const { data: adminMembership } = await client
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.admin.id)
+    .maybeSingle();
+
+  if (!adminMembership?.id) return;
+
+  const { data: fiveSStandardId, error: fiveSError } = await client.rpc(
+    "create_five_s_standard_draft",
+    {
+      target_display_name: DEMO_FIVE_S_STANDARD.name,
+      target_description: DEMO_FIVE_S_STANDARD.description,
+      target_threshold_percent: 90,
+    },
+  );
+  if (fiveSError) throw fiveSError;
+
+  const { data: fiveSVersion } = await client
+    .from("five_s_standard_versions")
+    .select("id")
+    .eq("standard_id", fiveSStandardId)
+    .eq("version_number", 1)
+    .maybeSingle();
+
+  if (!fiveSVersion?.id) throw new Error("Demo 5S version missing");
+
+  let position = 1;
+  for (const category of DEMO_FIVE_S_CATEGORIES) {
+    const { data: sectionId, error: sectionError } = await client.rpc(
+      "add_five_s_section",
+      {
+        target_standard_version_id: fiveSVersion.id,
+        target_title: category,
+        target_position: position,
+      },
+    );
+    if (sectionError) throw sectionError;
+
+    await client.rpc("add_five_s_question", {
+      target_standard_version_id: fiveSVersion.id,
+      target_section_id: sectionId,
+      target_question_type: "yes_no",
+      target_prompt: `${category}: area meets standard?`,
+      target_position: 1,
+      target_contributes_to_score: true,
+      target_scoring_metadata: { type: "yes_no", yes_value: 100, no_value: 0 },
+    });
+    position += 1;
+  }
+
+  await client.rpc("publish_five_s_standard_version", {
+    target_standard_version_id: fiveSVersion.id,
+  });
+
+  const { data: gembaDefinitionId, error: gembaError } = await client.rpc(
+    "create_gemba_definition_draft",
+    {
+      target_display_name: DEMO_GEMBA_DEFINITION.name,
+      target_description: DEMO_GEMBA_DEFINITION.description,
+      target_expected_duration_minutes: 45,
+    },
+  );
+  if (gembaError) throw gembaError;
+
+  const { data: gembaVersion } = await client
+    .from("gemba_definition_versions")
+    .select("id")
+    .eq("definition_id", gembaDefinitionId)
+    .maybeSingle();
+
+  if (gembaVersion?.id) {
+    const { data: sectionId, error: gembaSectionError } = await client.rpc(
+      "add_gemba_section",
+      {
+        target_definition_version_id: gembaVersion.id,
+        target_title: "Operations floor",
+        target_position: 1,
+      },
+    );
+    if (gembaSectionError) throw gembaSectionError;
+
+    const { error: gembaQuestionError } = await client.rpc("add_gemba_question", {
+      target_definition_version_id: gembaVersion.id,
+      target_section_id: sectionId,
+      target_question_type: "long_text",
+      target_prompt: "What did you observe on the operations floor?",
+      target_position: 1,
+    });
+    if (gembaQuestionError) throw gembaQuestionError;
+    await client.rpc("publish_gemba_definition_version", {
+      target_definition_version_id: gembaVersion.id,
+    });
+  }
+
+  await client.rpc("create_schedule_definition", {
+    target_activity_resource_id: fiveSStandardId,
+    target_title: "Weekly Production 5S",
+    target_unit_id: operationsUnitId,
+    target_owner_membership_id: adminMembership.id,
+    target_recurrence: {
+      frequency: "weekly",
+      interval: 1,
+      weekdays: ["monday"],
+    },
+    target_start_date: new Date().toISOString().slice(0, 10),
+    target_is_all_day: true,
+  });
+
+  if (gembaDefinitionId) {
+    await client.rpc("create_schedule_definition", {
+      target_activity_resource_id: gembaDefinitionId,
+      target_title: "Weekly Operations Gemba",
+      target_unit_id: operationsUnitId,
+      target_owner_membership_id: adminMembership.id,
+      target_recurrence: {
+        frequency: "weekly",
+        interval: 1,
+        weekdays: ["wednesday"],
+      },
+      target_start_date: new Date().toISOString().slice(0, 10),
+      target_is_all_day: false,
+      target_local_time: "09:00:00",
+    });
+  }
+
+  const { data: completedAuditId } = await client.rpc("start_five_s_audit", {
+    target_standard_id: fiveSStandardId,
+    target_unit_id: operationsUnitId,
+  });
+
+  if (completedAuditId) {
+    const { data: version } = await client
+      .from("five_s_standard_versions")
+      .select("template_version_id")
+      .eq("id", fiveSVersion.id)
+      .maybeSingle();
+
+    const { data: questions } = await client
+      .from("template_questions")
+      .select("id")
+      .eq("template_version_id", version?.template_version_id ?? "");
+
+    for (const q of questions ?? []) {
+      await client.rpc("upsert_five_s_audit_answer", {
+        target_audit_id: completedAuditId,
+        target_question_id: q.id,
+        target_text_value: "yes",
+      });
+    }
+
+    await client.rpc("complete_five_s_audit", {
+      target_audit_id: completedAuditId,
+    });
+  }
+
+  if (gembaDefinitionId) {
+    const { data: walkId } = await client.rpc("start_gemba_walk", {
+      target_definition_id: gembaDefinitionId,
+      target_unit_id: operationsUnitId,
+    });
+    if (walkId) {
+      await client.rpc("create_gemba_observation", {
+        target_walk_id: walkId,
+        target_observation_text:
+          "Operator updated visual standard after improvement.",
+        target_observation_type: "positive_practice",
+      });
+      await client.rpc("complete_gemba_walk", {
+        target_walk_id: walkId,
+        target_summary_notes: "Completed demo operations Gemba.",
+      });
+    }
+  }
+}
+
 async function ensurePlatformSamples(client: SupabaseClient) {
   const { count: actionCount, error: actionCountError } = await client
     .from("actions")
@@ -659,6 +850,7 @@ async function main() {
 
   await ensurePlatformSamples(adminClient);
   await ensureMaturityDemo(adminClient, unitIds);
+  await ensureM6Demo(adminClient, unitIds);
 
   console.log("Demo seed complete.");
   console.log(
@@ -666,7 +858,7 @@ async function main() {
   );
   console.log("Admin login: admin@apex.local");
   console.log(
-    "Routes: /platform, /platform/maturity, /platform/actions, /platform/templates",
+    "Routes: /platform, /platform/maturity, /platform/5s, /platform/gemba, /platform/schedule",
   );
   console.log("Reset: npm run db:reset && npm run db:seed-demo");
 }

@@ -456,6 +456,1162 @@ export type Database = {
           },
         ]
       }
+      five_s_action_context: {
+        Row: {
+          action_id: string
+          audit_id: string
+          created_at: string
+          created_by_membership_id: string
+          finding_id: string | null
+          id: string
+          organisation_id: string
+          question_id: string | null
+          section_id: string | null
+        }
+        Insert: {
+          action_id: string
+          audit_id: string
+          created_at?: string
+          created_by_membership_id: string
+          finding_id?: string | null
+          id?: string
+          organisation_id: string
+          question_id?: string | null
+          section_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          audit_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          finding_id?: string | null
+          id?: string
+          organisation_id?: string
+          question_id?: string | null
+          section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_action_context_audit_fkey"
+            columns: ["organisation_id", "audit_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_action_context_finding_fkey"
+            columns: ["organisation_id", "finding_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audit_findings"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_action_context_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_action_context_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_audit_findings: {
+        Row: {
+          action_required: boolean
+          audit_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          observation: string
+          organisation_id: string
+          priority: string | null
+          question_id: string | null
+          section_id: string | null
+          severity: string | null
+        }
+        Insert: {
+          action_required?: boolean
+          audit_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          observation: string
+          organisation_id: string
+          priority?: string | null
+          question_id?: string | null
+          section_id?: string | null
+          severity?: string | null
+        }
+        Update: {
+          action_required?: boolean
+          audit_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          observation?: string
+          organisation_id?: string
+          priority?: string | null
+          question_id?: string | null
+          section_id?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_audit_findings_audit_fkey"
+            columns: ["organisation_id", "audit_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_findings_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_findings_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_findings_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_audit_participants: {
+        Row: {
+          audit_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+        }
+        Insert: {
+          audit_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+        }
+        Update: {
+          audit_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_audit_participants_audit_fkey"
+            columns: ["organisation_id", "audit_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_participants_member_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_audit_score_snapshots: {
+        Row: {
+          audit_id: string
+          created_at: string
+          id: string
+          organisation_id: string
+          score_percent: number
+          section_id: string
+          section_name_snapshot: string
+          weight: number
+        }
+        Insert: {
+          audit_id: string
+          created_at?: string
+          id?: string
+          organisation_id: string
+          score_percent: number
+          section_id: string
+          section_name_snapshot: string
+          weight: number
+        }
+        Update: {
+          audit_id?: string
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          score_percent?: number
+          section_id?: string
+          section_name_snapshot?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_audit_score_snapshots_audit_fkey"
+            columns: ["organisation_id", "audit_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_score_snapshots_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_audits: {
+        Row: {
+          auditor_membership_id: string
+          completed_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          overall_score_percent: number | null
+          result_status: string | null
+          schedule_occurrence_id: string | null
+          standard_name_snapshot: string | null
+          standard_version_id: string
+          started_at: string | null
+          status: string
+          submission_id: string
+          target_percent: number | null
+          template_version_number_snapshot: number | null
+          unit_code_snapshot: string | null
+          unit_id: string
+          unit_name_snapshot: string | null
+          updated_at: string
+        }
+        Insert: {
+          auditor_membership_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          overall_score_percent?: number | null
+          result_status?: string | null
+          schedule_occurrence_id?: string | null
+          standard_name_snapshot?: string | null
+          standard_version_id: string
+          started_at?: string | null
+          status?: string
+          submission_id: string
+          target_percent?: number | null
+          template_version_number_snapshot?: number | null
+          unit_code_snapshot?: string | null
+          unit_id: string
+          unit_name_snapshot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auditor_membership_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          overall_score_percent?: number | null
+          result_status?: string | null
+          schedule_occurrence_id?: string | null
+          standard_name_snapshot?: string | null
+          standard_version_id?: string
+          started_at?: string | null
+          status?: string
+          submission_id?: string
+          target_percent?: number | null
+          template_version_number_snapshot?: number | null
+          unit_code_snapshot?: string | null
+          unit_id?: string
+          unit_name_snapshot?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_audits_auditor_fkey"
+            columns: ["organisation_id", "auditor_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audits_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audits_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audits_schedule_occurrence_fkey"
+            columns: ["organisation_id", "schedule_occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_occurrences"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audits_standard_version_fkey"
+            columns: ["organisation_id", "standard_version_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_standard_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audits_submission_fkey"
+            columns: ["organisation_id", "submission_id"]
+            isOneToOne: false
+            referencedRelation: "template_submissions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audits_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_evidence_links: {
+        Row: {
+          attachment_id: string
+          audit_id: string
+          created_at: string
+          created_by_membership_id: string
+          finding_id: string | null
+          id: string
+          organisation_id: string
+          question_id: string | null
+          section_id: string | null
+        }
+        Insert: {
+          attachment_id: string
+          audit_id: string
+          created_at?: string
+          created_by_membership_id: string
+          finding_id?: string | null
+          id?: string
+          organisation_id: string
+          question_id?: string | null
+          section_id?: string | null
+        }
+        Update: {
+          attachment_id?: string
+          audit_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          finding_id?: string | null
+          id?: string
+          organisation_id?: string
+          question_id?: string | null
+          section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_evidence_links_audit_fkey"
+            columns: ["organisation_id", "audit_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_evidence_links_finding_fkey"
+            columns: ["organisation_id", "finding_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_audit_findings"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_evidence_links_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_evidence_links_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_question_scoring: {
+        Row: {
+          contributes_to_score: boolean
+          created_at: string
+          id: string
+          organisation_id: string
+          question_id: string
+          scoring_metadata: Json | null
+          standard_version_id: string
+          weight: number
+        }
+        Insert: {
+          contributes_to_score?: boolean
+          created_at?: string
+          id?: string
+          organisation_id: string
+          question_id: string
+          scoring_metadata?: Json | null
+          standard_version_id: string
+          weight?: number
+        }
+        Update: {
+          contributes_to_score?: boolean
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          question_id?: string
+          scoring_metadata?: Json | null
+          standard_version_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_question_scoring_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_question_scoring_version_fkey"
+            columns: ["organisation_id", "standard_version_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_standard_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_section_weights: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          section_id: string
+          standard_version_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          section_id: string
+          standard_version_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          section_id?: string
+          standard_version_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_section_weights_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_section_weights_version_fkey"
+            columns: ["organisation_id", "standard_version_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_standard_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_standard_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          result_status_mappings: Json
+          standard_id: string
+          status: string
+          target_threshold_percent: number
+          template_version_id: string
+          version_number: number
+          weighting_enabled: boolean
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          result_status_mappings?: Json
+          standard_id: string
+          status?: string
+          target_threshold_percent?: number
+          template_version_id: string
+          version_number: number
+          weighting_enabled?: boolean
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          result_status_mappings?: Json
+          standard_id?: string
+          status?: string
+          target_threshold_percent?: number
+          template_version_id?: string
+          version_number?: number
+          weighting_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_standard_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_standard_versions_standard_fkey"
+            columns: ["organisation_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_standards"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_standard_versions_template_version_fkey"
+            columns: ["organisation_id", "template_version_id"]
+            isOneToOne: true
+            referencedRelation: "template_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      five_s_standards: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          display_name: string
+          id: string
+          organisation_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          display_name: string
+          id: string
+          organisation_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          organisation_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_standards_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_standards_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_standards_template_fkey"
+            columns: ["organisation_id", "template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_action_context: {
+        Row: {
+          action_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          observation_id: string | null
+          organisation_id: string
+          question_id: string | null
+          section_id: string | null
+          walk_id: string
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          observation_id?: string | null
+          organisation_id: string
+          question_id?: string | null
+          section_id?: string | null
+          walk_id: string
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          observation_id?: string | null
+          organisation_id?: string
+          question_id?: string | null
+          section_id?: string | null
+          walk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_action_context_observation_fkey"
+            columns: ["organisation_id", "observation_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_walk_observations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_action_context_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_action_context_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_action_context_walk_fkey"
+            columns: ["organisation_id", "walk_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_walks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_definition_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          definition_id: string
+          expected_duration_minutes: number | null
+          id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          template_version_id: string
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          definition_id: string
+          expected_duration_minutes?: number | null
+          id?: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          template_version_id: string
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          definition_id?: string
+          expected_duration_minutes?: number | null
+          id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          template_version_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_definition_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_definition_versions_definition_fkey"
+            columns: ["organisation_id", "definition_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_definitions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_definition_versions_template_version_fkey"
+            columns: ["organisation_id", "template_version_id"]
+            isOneToOne: true
+            referencedRelation: "template_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_definitions: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          display_name: string
+          id: string
+          organisation_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          display_name: string
+          id: string
+          organisation_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          organisation_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_definitions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_definitions_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_definitions_template_fkey"
+            columns: ["organisation_id", "template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_evidence_links: {
+        Row: {
+          attachment_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          observation_id: string | null
+          organisation_id: string
+          question_id: string | null
+          section_id: string | null
+          walk_id: string
+        }
+        Insert: {
+          attachment_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          observation_id?: string | null
+          organisation_id: string
+          question_id?: string | null
+          section_id?: string | null
+          walk_id: string
+        }
+        Update: {
+          attachment_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          observation_id?: string | null
+          organisation_id?: string
+          question_id?: string | null
+          section_id?: string | null
+          walk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_evidence_links_observation_fkey"
+            columns: ["organisation_id", "observation_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_walk_observations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_evidence_links_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_evidence_links_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_evidence_links_walk_fkey"
+            columns: ["organisation_id", "walk_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_walks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_walk_observations: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          observation_text: string
+          observation_type: string
+          organisation_id: string
+          priority: string | null
+          question_id: string | null
+          section_id: string | null
+          severity: string | null
+          walk_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          observation_text: string
+          observation_type: string
+          organisation_id: string
+          priority?: string | null
+          question_id?: string | null
+          section_id?: string | null
+          severity?: string | null
+          walk_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          observation_text?: string
+          observation_type?: string
+          organisation_id?: string
+          priority?: string | null
+          question_id?: string | null
+          section_id?: string | null
+          severity?: string | null
+          walk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_walk_observations_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walk_observations_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walk_observations_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walk_observations_walk_fkey"
+            columns: ["organisation_id", "walk_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_walks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_walk_participants: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          walk_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          walk_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          walk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_walk_participants_member_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walk_participants_walk_fkey"
+            columns: ["organisation_id", "walk_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_walks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      gemba_walks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          definition_name_snapshot: string | null
+          definition_version_id: string
+          id: string
+          leader_membership_id: string
+          organisation_id: string
+          schedule_occurrence_id: string | null
+          started_at: string | null
+          status: string
+          submission_id: string
+          summary_notes: string | null
+          template_version_number_snapshot: number | null
+          unit_code_snapshot: string | null
+          unit_id: string
+          unit_name_snapshot: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          definition_name_snapshot?: string | null
+          definition_version_id: string
+          id: string
+          leader_membership_id: string
+          organisation_id: string
+          schedule_occurrence_id?: string | null
+          started_at?: string | null
+          status?: string
+          submission_id: string
+          summary_notes?: string | null
+          template_version_number_snapshot?: number | null
+          unit_code_snapshot?: string | null
+          unit_id: string
+          unit_name_snapshot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          definition_name_snapshot?: string | null
+          definition_version_id?: string
+          id?: string
+          leader_membership_id?: string
+          organisation_id?: string
+          schedule_occurrence_id?: string | null
+          started_at?: string | null
+          status?: string
+          submission_id?: string
+          summary_notes?: string | null
+          template_version_number_snapshot?: number | null
+          unit_code_snapshot?: string | null
+          unit_id?: string
+          unit_name_snapshot?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_walks_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walks_definition_version_fkey"
+            columns: ["organisation_id", "definition_version_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_definition_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walks_leader_fkey"
+            columns: ["organisation_id", "leader_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walks_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walks_schedule_occurrence_fkey"
+            columns: ["organisation_id", "schedule_occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_occurrences"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walks_submission_fkey"
+            columns: ["organisation_id", "submission_id"]
+            isOneToOne: false
+            referencedRelation: "template_submissions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walks_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       maturity_action_context: {
         Row: {
           action_id: string
@@ -1943,6 +3099,221 @@ export type Database = {
           },
         ]
       }
+      schedule_definitions: {
+        Row: {
+          activity_resource_id: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          end_date: string | null
+          id: string
+          is_all_day: boolean
+          local_time: string | null
+          organisation_id: string
+          owner_membership_id: string
+          recurrence: Json
+          start_date: string
+          status: string
+          timezone: string
+          title: string
+          unit_id: string
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          activity_resource_id: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          end_date?: string | null
+          id: string
+          is_all_day?: boolean
+          local_time?: string | null
+          organisation_id: string
+          owner_membership_id: string
+          recurrence: Json
+          start_date: string
+          status?: string
+          timezone: string
+          title: string
+          unit_id: string
+          updated_at?: string
+          version_number?: number
+        }
+        Update: {
+          activity_resource_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_all_day?: boolean
+          local_time?: string | null
+          organisation_id?: string
+          owner_membership_id?: string
+          recurrence?: Json
+          start_date?: string
+          status?: string
+          timezone?: string
+          title?: string
+          unit_id?: string
+          updated_at?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_definitions_activity_resource_fkey"
+            columns: ["organisation_id", "activity_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_definitions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_definitions_owner_fkey"
+            columns: ["organisation_id", "owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_definitions_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_definitions_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      schedule_occurrences: {
+        Row: {
+          completed_at: string | null
+          completion_resource_id: string | null
+          created_at: string
+          id: string
+          is_all_day: boolean
+          lifecycle_status: string
+          local_time: string | null
+          organisation_id: string
+          owner_membership_id: string
+          planned_at: string
+          planned_local_date: string
+          schedule_definition_id: string
+          unit_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_resource_id?: string | null
+          created_at?: string
+          id?: string
+          is_all_day: boolean
+          lifecycle_status?: string
+          local_time?: string | null
+          organisation_id: string
+          owner_membership_id: string
+          planned_at: string
+          planned_local_date: string
+          schedule_definition_id: string
+          unit_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completion_resource_id?: string | null
+          created_at?: string
+          id?: string
+          is_all_day?: boolean
+          lifecycle_status?: string
+          local_time?: string | null
+          organisation_id?: string
+          owner_membership_id?: string
+          planned_at?: string
+          planned_local_date?: string
+          schedule_definition_id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_occurrences_completion_resource_fkey"
+            columns: ["organisation_id", "completion_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_occurrences_owner_fkey"
+            columns: ["organisation_id", "owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_occurrences_schedule_fkey"
+            columns: ["organisation_id", "schedule_definition_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_definitions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_occurrences_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      schedule_participants: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          schedule_definition_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          schedule_definition_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          schedule_definition_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_participants_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_participants_schedule_fkey"
+            columns: ["organisation_id", "schedule_definition_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_definitions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       security_audit_events: {
         Row: {
           action: string
@@ -2370,6 +3741,53 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: string
       }
+      add_five_s_question: {
+        Args: {
+          target_allows_not_applicable?: boolean
+          target_contributes_to_score?: boolean
+          target_help_text?: string
+          target_is_required?: boolean
+          target_options?: Json
+          target_position: number
+          target_prompt: string
+          target_question_type: string
+          target_scoring_metadata?: Json
+          target_section_id: string
+          target_standard_version_id: string
+          target_weight?: number
+        }
+        Returns: string
+      }
+      add_five_s_section: {
+        Args: {
+          target_position: number
+          target_standard_version_id: string
+          target_title: string
+        }
+        Returns: string
+      }
+      add_gemba_question: {
+        Args: {
+          target_allows_not_applicable?: boolean
+          target_definition_version_id: string
+          target_help_text?: string
+          target_is_required?: boolean
+          target_options?: Json
+          target_position: number
+          target_prompt: string
+          target_question_type: string
+          target_section_id: string
+        }
+        Returns: string
+      }
+      add_gemba_section: {
+        Args: {
+          target_definition_version_id: string
+          target_position: number
+          target_title: string
+        }
+        Returns: string
+      }
       add_maturity_criterion: {
         Args: {
           target_description?: string
@@ -2479,6 +3897,14 @@ export type Database = {
         Args: { target_assessment_id: string; target_reason?: string }
         Returns: boolean
       }
+      complete_five_s_audit: {
+        Args: { target_audit_id: string }
+        Returns: boolean
+      }
+      complete_gemba_walk: {
+        Args: { target_summary_notes?: string; target_walk_id: string }
+        Returns: boolean
+      }
       complete_self_assessment: {
         Args: { target_assessment_id: string }
         Returns: boolean
@@ -2516,6 +3942,80 @@ export type Database = {
       }
       create_comment: {
         Args: { target_body: string; target_resource_id: string }
+        Returns: string
+      }
+      create_five_s_action: {
+        Args: {
+          target_audit_id: string
+          target_description?: string
+          target_due_at?: string
+          target_finding_id?: string
+          target_priority?: string
+          target_question_id?: string
+          target_section_id?: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_five_s_finding: {
+        Args: {
+          target_action_required?: boolean
+          target_audit_id: string
+          target_observation: string
+          target_priority?: string
+          target_question_id?: string
+          target_section_id?: string
+          target_severity?: string
+        }
+        Returns: string
+      }
+      create_five_s_standard_draft: {
+        Args: {
+          target_description?: string
+          target_display_name: string
+          target_threshold_percent?: number
+        }
+        Returns: string
+      }
+      create_five_s_standard_successor_version: {
+        Args: { target_standard_id: string }
+        Returns: string
+      }
+      create_gemba_action: {
+        Args: {
+          target_description?: string
+          target_due_at?: string
+          target_observation_id?: string
+          target_priority?: string
+          target_question_id?: string
+          target_section_id?: string
+          target_title: string
+          target_walk_id: string
+        }
+        Returns: string
+      }
+      create_gemba_definition_draft: {
+        Args: {
+          target_description?: string
+          target_display_name: string
+          target_expected_duration_minutes?: number
+        }
+        Returns: string
+      }
+      create_gemba_definition_successor_version: {
+        Args: { target_definition_id: string }
+        Returns: string
+      }
+      create_gemba_observation: {
+        Args: {
+          target_observation_text: string
+          target_observation_type: string
+          target_priority?: string
+          target_question_id?: string
+          target_section_id?: string
+          target_severity?: string
+          target_walk_id: string
+        }
         Returns: string
       }
       create_maturity_action: {
@@ -2567,6 +4067,22 @@ export type Database = {
         }
         Returns: string
       }
+      create_schedule_definition: {
+        Args: {
+          target_activity_resource_id: string
+          target_description?: string
+          target_end_date?: string
+          target_is_all_day?: boolean
+          target_local_time?: string
+          target_owner_membership_id: string
+          target_participant_membership_ids?: string[]
+          target_recurrence: Json
+          target_start_date: string
+          target_title: string
+          target_unit_id: string
+        }
+        Returns: string
+      }
       create_template_draft: {
         Args: { target_description?: string; target_display_name: string }
         Returns: string
@@ -2589,6 +4105,19 @@ export type Database = {
       }
       current_organisation_id: { Args: never; Returns: string }
       current_workforce_login_identifier: { Args: never; Returns: string }
+      deactivate_schedule_definition: {
+        Args: { target_schedule_definition_id: string }
+        Returns: boolean
+      }
+      derive_schedule_occurrence_status: {
+        Args: {
+          target_lifecycle_status: string
+          target_now?: string
+          target_planned_local_date: string
+          target_timezone: string
+        }
+        Returns: string
+      }
       disable_workforce_identity: {
         Args: { change_reason: string; target_user_id: string }
         Returns: number
@@ -2596,6 +4125,13 @@ export type Database = {
       edit_comment: {
         Args: { target_body: string; target_comment_id: string }
         Returns: boolean
+      }
+      ensure_schedule_occurrences: {
+        Args: {
+          target_horizon_days?: number
+          target_schedule_definition_id: string
+        }
+        Returns: number
       }
       expire_organisation_security_state: {
         Args: { target_organisation_id: string }
@@ -2661,6 +4197,26 @@ export type Database = {
         }
         Returns: string
       }
+      link_five_s_evidence: {
+        Args: {
+          target_attachment_id: string
+          target_audit_id: string
+          target_finding_id?: string
+          target_question_id?: string
+          target_section_id?: string
+        }
+        Returns: string
+      }
+      link_gemba_evidence: {
+        Args: {
+          target_attachment_id: string
+          target_observation_id?: string
+          target_question_id?: string
+          target_section_id?: string
+          target_walk_id: string
+        }
+        Returns: string
+      }
       link_maturity_evidence: {
         Args: {
           target_assessment_id: string
@@ -2713,6 +4269,14 @@ export type Database = {
           reused_existing_account: boolean
           workforce_account_id: string
         }[]
+      }
+      publish_five_s_standard_version: {
+        Args: { target_standard_version_id: string }
+        Returns: boolean
+      }
+      publish_gemba_definition_version: {
+        Args: { target_definition_version_id: string }
+        Returns: boolean
       }
       publish_maturity_model_version: {
         Args: { target_model_version_id: string }
@@ -2812,6 +4376,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      start_five_s_audit: {
+        Args: {
+          target_schedule_occurrence_id?: string
+          target_standard_id: string
+          target_unit_id: string
+        }
+        Returns: string
+      }
+      start_gemba_walk: {
+        Args: {
+          target_definition_id: string
+          target_schedule_occurrence_id?: string
+          target_unit_id: string
+        }
+        Returns: string
+      }
       start_maturity_assessment: {
         Args: {
           target_assessment_type: string
@@ -2836,6 +4416,46 @@ export type Database = {
       switch_organisation: {
         Args: { target_organisation_id: string }
         Returns: boolean
+      }
+      update_schedule_definition: {
+        Args: {
+          target_description?: string
+          target_end_date?: string
+          target_is_all_day?: boolean
+          target_local_time?: string
+          target_owner_membership_id: string
+          target_participant_membership_ids?: string[]
+          target_recurrence: Json
+          target_schedule_definition_id: string
+          target_start_date: string
+          target_title: string
+          target_unit_id: string
+        }
+        Returns: boolean
+      }
+      upsert_five_s_audit_answer: {
+        Args: {
+          target_audit_id: string
+          target_date_value?: string
+          target_is_not_applicable?: boolean
+          target_json_value?: Json
+          target_number_value?: number
+          target_question_id: string
+          target_text_value?: string
+        }
+        Returns: string
+      }
+      upsert_gemba_walk_answer: {
+        Args: {
+          target_date_value?: string
+          target_is_not_applicable?: boolean
+          target_json_value?: Json
+          target_number_value?: number
+          target_question_id: string
+          target_text_value?: string
+          target_walk_id: string
+        }
+        Returns: string
       }
       upsert_maturity_assessment_answer: {
         Args: {

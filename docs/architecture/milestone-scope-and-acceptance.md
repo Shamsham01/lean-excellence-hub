@@ -175,9 +175,107 @@ Supabase migration push, and Milestone 5 scope.
 | E2E | Unauthenticated redirect smoke + authenticated platform shell smoke (`tests/e2e/platform-shell.spec.ts`, database CI job) |
 | CI | `db:lint`, `test:db`, `db:types` drift check, `validate`, Playwright jobs |
 
+## Milestone 6 — operational Lean domains (5S, Gemba, scheduling)
+
+Milestone 6 is complete. It delivers thin vertical slices for 5S audits, Gemba
+walks, and recurring activity scheduling on the Milestone 4–5 shared platform
+foundation without redesigning authorisation, attachments, or the versioned
+template engine.
+
+### In scope
+
+- **Scheduling:** `schedule_definitions` and `schedule_occurrences` for 5S
+  Standard and Gemba Definition activities; recurrence model (`once`, `daily`,
+  `weekly` with interval, selected weekdays, `monthly` with day-of-month);
+  organisational unit, owner, optional participants; local scheduled time and
+  all-day semantics; organisation timezone display; start/end dates; active
+  inactive lifecycle; completion links to started audits and walks.
+- **5S:** standards with versioned template-backed sections/questions, weighted
+  scoring, threshold and result status; audit workspace with section navigation;
+  findings; audit history pinned to `standard_version_id` and name snapshots;
+  action and evidence context links.
+- **Gemba:** definitions with versioned template-backed sections/questions;
+  walk workspace with observations (`positive_practice`, `improvement_opportunity`,
+  `issue`); walk history pinned to `definition_version_id` and name snapshots;
+  action and evidence context links.
+- **Evidence UX:** reuse Milestone 4 two-phase attachments (`initiate` → Storage
+  upload → `confirm` → domain link) for 5S audits (audit, section/question,
+  finding) and Gemba walks (walk, section/question, observation) via shared
+  `EvidenceUploader` with drag-drop, mobile capture, progress, and preview.
+- **Version succession:** authorised managers create a successor **draft** from
+  the current published 5S Standard or Gemba Definition; publish atomically with
+  its template version; published versions remain immutable; historical audits
+  and walks stay pinned to their original exact version.
+- **Schedule management UX:** admin create/edit/deactivate through friendly
+  controls (no raw JSON, cron, or RRULE); “Create schedule” from standard and
+  definition detail views; schedule list, detail, and edit routes in the
+  platform shell.
+- **Regression evidence:** pgTAP security and scoring tests; Vitest unit tests;
+  Supabase-backed Playwright journeys including closure spec (schedule UI,
+  evidence upload, 5S successor, tablet audit workspace).
+
+### Explicitly excluded
+
+Workforce planning, notifications, activity feeds, webhooks, remote Supabase
+migration push, Milestone 7 domains (projects, suggestions, training, and other
+listed later-milestone scope), and any expansion of scheduling into assignment
+optimisation or reminder delivery.
+
+### Acceptance checklist
+
+- [x] Schedule permissions, registry entries, domain schema, recurrence
+  operations, timezone handling, and completion links are migration-owned and
+  pgTAP-tested.
+- [x] 5S and Gemba permissions, domain schema, template guards, scoring, and
+  security operations are migration-owned and pgTAP-tested.
+- [x] Attachment upload scope and action/evidence link RPCs cover 5S and Gemba
+  contexts without a new file subsystem.
+- [x] Successor-version RPCs and schedule update RPC exist; maturity successor
+  clone regression fixed (`03016`).
+- [x] Admin can create and edit recurring 5S/Gemba schedules through the UI
+  without demo seed or manual RPC invocation.
+- [x] 5S audit and Gemba walk workspaces capture and display contextual
+  evidence through the shared attachment lifecycle.
+- [x] Published standards/definitions support successor draft → edit → publish;
+  historical audits/walks remain pinned to the original version.
+- [x] Platform navigation includes Schedule, 5S, and Gemba; overview and history
+  routes are reachable and smoke-tested.
+- [x] Demo seed provides published 5S standard (completed audit), Gemba definition
+  (completed walk with prompt), and weekly schedules for both activities.
+- [x] Local `db:reset`, `db:lint`, full pgTAP, `db:types`, Vitest, lint,
+  typecheck, format check, production build, and Supabase-backed Playwright pass.
+- [x] At most one read-only verifier reports no unresolved Critical/High findings.
+
+### Acceptance evidence (2026-08-25)
+
+| Gate | Evidence |
+| --- | --- |
+| Migrations | 16 Milestone 6 SQL migrations through `20260825003016_milestone6_maturity_successor_clone_fix.sql` |
+| pgTAP | 180 tests across 20 files (`npm run test:db`), including `five_s_scoring`, `five_s_security`, `gemba_security`, `schedule_security`, `schedule_timezone` |
+| Application | `(platform)/5s`, `(platform)/gemba`, `(platform)/schedule` routes; `ScheduleForm`, audit/walk workspaces, evidence blocks, successor UI |
+| Unit tests | `schedule-recurrence`, `five-s-scoring`, `platform-navigation` (`npm test`, 21 tests) |
+| E2E | `five-s-journeys`, `gemba-journeys`, `scheduling-journeys`, `milestone6-closure` (schedule create, 5S/Gemba evidence, 5S successor + history pin, tablet 5S workspace) |
+| CI | Database job: `db:lint`, `test:db`, `db:types` drift check, `db:seed-demo`, Supabase Playwright with `E2E_WITH_SUPABASE=1`; quality job: format, lint, typecheck, Vitest, build |
+
+### Deferred follow-ups (Medium/Low — not blocking M6)
+
+These items are documented for post-M6 hardening; they do not block the milestone
+acceptance above.
+
+| Priority | Item |
+| --- | --- |
+| Medium | Gemba definition successor journey is implemented (UI + RPC) but not covered by Playwright closure E2E (5S successor is). |
+| Medium | Schedule **edit** flow and `update_schedule_definition` RPC are implemented but not Playwright-tested. |
+| Medium | Schedule create E2E covers 5S standard entry only; Gemba definition “Create schedule” link is untested in E2E. |
+| Low | Tablet/responsive Playwright coverage is 5S audit workspace only; schedule form and Gemba walk tablet journeys are manual/visual. |
+| Low | No dedicated pgTAP tests for `create_five_s_standard_successor_version` / `create_gemba_definition_successor_version` (covered at application layer + 5S E2E). |
+| Low | Smoke `end-to-end` CI job runs Playwright without Supabase (`E2E_WITH_SUPABASE` unset); Milestone 6 journeys skip there. The `database` job is the authoritative M6 E2E gate. |
+
 ## Later milestones
 
-1. Core Lean domains: maturity, training/skills, projects, suggestions, scheduling, problem-solving, and form experiences as thin vertical slices.
+1. Core Lean domains: training/skills, projects, suggestions, problem-solving,
+   and additional form experiences as thin vertical slices. Maturity (Milestone 5),
+   5S, Gemba, and activity scheduling (Milestone 6) are delivered.
 2. Benefits and engagement: reserved Benefits lifecycle, notification/activity capabilities, and trustworthy forecast/validated/realised reporting.
 3. Enterprise extensions: staged import/export, search, API/webhooks, entitlements, integrations, AI, advanced workflow, and constrained offline capability only where requirements justify them.
 

@@ -28,13 +28,22 @@ export async function PlatformShell({
     visibleNav.length === 0 ||
     !visibleNav.some((i) => i.href === "/platform")
   ) {
-    if (await currentMemberHasPermission("actions.read")) {
-      visibleNav.unshift({
-        href: "/platform",
-        label: "Home",
-        permission: "actions.read",
-        section: "main" as const,
-      });
+    const homePermissions = [
+      "actions.read",
+      "five_s.read",
+      "gemba.read",
+      "schedules.read",
+    ];
+    for (const permission of homePermissions) {
+      if (await currentMemberHasPermission(permission)) {
+        visibleNav.unshift({
+          href: "/platform",
+          label: "Home",
+          permission,
+          section: "main" as const,
+        });
+        break;
+      }
     }
   }
 

@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ClipboardList,
-  FileText,
-  Home,
-  Layers,
-  LogOut,
-} from "lucide-react";
+import { CalendarDays, ClipboardList, FileText, Footprints, Home, Layers, LogOut, Sparkles } from "lucide-react";
 
 import { ThemeToggle } from "@/components/platform/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -29,6 +23,9 @@ import { cn } from "@/lib/utils";
 const navIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   Home,
   Maturity: Layers,
+  "5S": Sparkles,
+  Gemba: Footprints,
+  Schedule: CalendarDays,
   Actions: ClipboardList,
   Templates: FileText,
 };

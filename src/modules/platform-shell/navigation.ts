@@ -20,6 +20,24 @@ export const platformNavigation: PlatformNavItem[] = [
     section: "improvement",
   },
   {
+    href: "/platform/5s",
+    label: "5S",
+    permission: "five_s.read",
+    section: "improvement",
+  },
+  {
+    href: "/platform/gemba",
+    label: "Gemba",
+    permission: "gemba.read",
+    section: "improvement",
+  },
+  {
+    href: "/platform/schedule",
+    label: "Schedule",
+    permission: "schedules.read",
+    section: "improvement",
+  },
+  {
     href: "/platform/actions",
     label: "Actions",
     permission: "actions.read",

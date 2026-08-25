@@ -81,6 +81,17 @@ export const DEMO_ROLES = {
       "maturity.review",
       "maturity.approve",
       "maturity.results.publish",
+      "five_s.read",
+      "five_s.standards.manage",
+      "five_s.audit.perform",
+      "five_s.audit.review",
+      "gemba.read",
+      "gemba.definitions.manage",
+      "gemba.walk.perform",
+      "gemba.walk.review",
+      "schedules.read",
+      "schedules.manage",
+      "schedules.complete",
     ],
     invitationTokenSeed: "apex-demo-manager-invitation-v1",
   },
@@ -98,6 +109,11 @@ export const DEMO_ROLES = {
       "comments.create",
       "maturity.read",
       "maturity.assess.self",
+      "five_s.read",
+      "five_s.audit.perform",
+      "gemba.read",
+      "gemba.walk.perform",
+      "schedules.read",
     ],
     invitationTokenSeed: "apex-demo-operator-invitation-v1",
   },
@@ -154,3 +170,23 @@ export const DEMO_MATURITY_PILLARS = [
     criteria: ["Value stream mapped", "Waste reduction targets set"],
   },
 ] as const;
+
+export const DEMO_FIVE_S_CATEGORIES = [
+  "Sort",
+  "Set in Order",
+  "Shine",
+  "Standardise",
+  "Sustain",
+] as const;
+
+export const DEMO_FIVE_S_STANDARD = {
+  name: "Production 5S Standard",
+  description: "Cornwall Plant / Operations 5S programme.",
+  unitKey: "operations",
+} as const;
+
+export const DEMO_GEMBA_DEFINITION = {
+  name: "Operations Gemba",
+  description: "Weekly operations leadership Gemba walk.",
+  unitKey: "operations",
+} as const;

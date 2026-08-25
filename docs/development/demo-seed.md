@@ -70,16 +70,30 @@ After signing in at `/login`, the admin account should reach:
 | `/platform` | Authenticated platform shell (organisation context + nav) |
 | `/platform/actions` | Universal actions list/create |
 | `/platform/templates` | Template management |
+| `/platform/maturity` | Lean maturity frameworks and assessments |
+| `/platform/5s` | 5S audits overview |
+| `/platform/gemba` | Gemba walks overview |
+| `/platform/schedule` | Scheduled operational activities |
 
 ## Minimal Milestone 4 sample data
 
-The seed creates only:
+The seed also creates:
 
 - One demonstration action: **Review Cornwall line clearance checklist**
 - One published template: **Line clearance checklist**
 
-It does **not** seed Lean Maturity, 5S, Gemba, Projects, Suggestions, or other future
-domain modules.
+## Milestone 5 sample data
+
+- Published **Lean Maturity** framework with pillars, criteria, and sample assessments
+- Official maturity result snapshot for historical reporting
+
+## Milestone 6 sample data
+
+- Published **Production 5S Standard** (five scored sections, one completed audit at 100%)
+- Published **Operations Gemba** definition with a completed walk and observation
+- Weekly schedules for 5S (Monday, all-day) and Gemba (Wednesday 09:00)
+
+It does **not** seed Projects, Suggestions, or other future domain modules.
 
 ## Reset the local demo database
 

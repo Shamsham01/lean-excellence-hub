@@ -6,11 +6,12 @@ import {
 } from "@/modules/platform-shell/navigation";
 
 describe("platform navigation", () => {
-  it("only exposes implemented platform routes", () => {
+  it("exposes M6 platform routes", () => {
     const hrefs = platformNavigation.map((item) => item.href);
+    expect(hrefs).toContain("/platform/5s");
+    expect(hrefs).toContain("/platform/gemba");
     expect(hrefs).toContain("/platform/actions");
     expect(hrefs).toContain("/platform/templates");
-    expect(hrefs.every((href) => !href.includes("gemba"))).toBe(true);
   });
 
   it("filters navigation items by granted permissions", () => {

@@ -41,6 +41,19 @@ export default async function PlatformHomePage() {
     .from("templates")
     .select("id", { count: "exact", head: true });
 
+  const { data: latestFiveS } = await supabase
+    .from("five_s_audits")
+    .select("overall_score_percent")
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { count: gembaWalkCount } = await supabase
+    .from("gemba_walks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "completed");
+
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -72,10 +85,44 @@ export default async function PlatformHomePage() {
           value={recentAssessments?.length ?? 0}
           hint="Recent activity"
         />
+        <MetricCard
+          label="5S"
+          value={latestFiveS?.overall_score_percent != null ? `${latestFiveS.overall_score_percent}%` : "—"}
+          hint="Latest completed audit"
+        />
+        <MetricCard label="Gemba walks" value={gembaWalkCount ?? 0} hint="Completed" />
         <MetricCard label="Templates" value={templateCount ?? 0} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>5S audits</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/platform/5s">Open</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Run scored 5S audits with evidence, findings, and schedule compliance.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Gemba walks</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/platform/gemba">Open</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Capture observations and improvement opportunities on the floor.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Lean maturity</CardTitle>
