@@ -1,4 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
 import {
   DEMO_MATURITY_LEVELS,
@@ -8,7 +11,12 @@ import {
   DEMO_FIVE_S_CATEGORIES,
   DEMO_FIVE_S_STANDARD,
   DEMO_GEMBA_DEFINITION,
+  DEMO_JOB_FUNCTIONS,
+  DEMO_PROFICIENCY_SCALE,
   DEMO_ROLES,
+  DEMO_SKILLS,
+  DEMO_TRAINING_COURSES,
+  DEMO_TRAINING_SESSION,
   DEMO_UNITS,
   DEMO_USERS,
 } from "./constants";
@@ -634,13 +642,16 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
     );
     if (gembaSectionError) throw gembaSectionError;
 
-    const { error: gembaQuestionError } = await client.rpc("add_gemba_question", {
-      target_definition_version_id: gembaVersion.id,
-      target_section_id: sectionId,
-      target_question_type: "long_text",
-      target_prompt: "What did you observe on the operations floor?",
-      target_position: 1,
-    });
+    const { error: gembaQuestionError } = await client.rpc(
+      "add_gemba_question",
+      {
+        target_definition_version_id: gembaVersion.id,
+        target_section_id: sectionId,
+        target_question_type: "long_text",
+        target_prompt: "What did you observe on the operations floor?",
+        target_position: 1,
+      },
+    );
     if (gembaQuestionError) throw gembaQuestionError;
     await client.rpc("publish_gemba_definition_version", {
       target_definition_version_id: gembaVersion.id,
@@ -797,6 +808,291 @@ async function ensurePlatformSamples(client: SupabaseClient) {
   }
 }
 
+async function ensureM7Demo(client: SupabaseClient, unitIds: UnitMap) {
+  const operationsUnitId = unitIds[DEMO_FIVE_S_STANDARD.unitKey];
+  if (!operationsUnitId) return;
+
+  const { data: existingCourse } = await client
+    .from("training_courses")
+    .select("id")
+    .eq("code", "lean-basic")
+    .maybeSingle();
+
+  if (existingCourse) return;
+
+  const jobFunctionIds: Record<string, string> = {};
+  for (const jf of DEMO_JOB_FUNCTIONS) {
+    const { data: id, error } = await client.rpc("create_job_function", {
+      target_name: jf.name,
+      target_code: jf.code,
+    });
+    if (error) throw error;
+    jobFunctionIds[jf.code] = id as string;
+  }
+
+  const courseIds: Record<string, string> = {};
+  const courseVersionIds: Record<string, string> = {};
+  for (const course of DEMO_TRAINING_COURSES) {
+    const { data: courseId, error } = await client.rpc(
+      "create_training_course_draft",
+      {
+        target_name: course.name,
+        target_code: course.code,
+      },
+    );
+    if (error) throw error;
+    courseIds[course.code] = courseId as string;
+
+    const { data: version } = await client
+      .from("training_course_versions")
+      .select("id")
+      .eq("course_id", courseId)
+      .eq("version_number", 1)
+      .maybeSingle();
+
+    if (!version?.id) throw new Error(`Missing version for ${course.code}`);
+
+    await client.rpc("update_training_course_draft_version", {
+      target_course_version_id: version.id,
+      target_validity_days: course.validityDays,
+      target_delivery_method: "classroom",
+    });
+    await client.rpc("publish_training_course_version", {
+      target_course_version_id: version.id,
+    });
+    courseVersionIds[course.code] = version.id;
+  }
+
+  const { data: curriculumId, error: curriculumError } = await client.rpc(
+    "create_training_curriculum_draft",
+    {
+      target_name: "Apex Training Curriculum",
+      target_code: "apex-curriculum",
+    },
+  );
+  if (curriculumError) throw curriculumError;
+
+  const { data: curriculumVersion } = await client
+    .from("training_curriculum_versions")
+    .select("id")
+    .eq("curriculum_id", curriculumId)
+    .eq("version_number", 1)
+    .maybeSingle();
+
+  if (!curriculumVersion?.id)
+    throw new Error("Demo curriculum version missing");
+
+  const curriculumRules: Array<{ jobFunction: string; courses: string[] }> = [
+    { jobFunction: "operator", courses: ["lean-basic"] },
+    {
+      jobFunction: "team-leader",
+      courses: ["lean-basic", "white-belt", "five-s-practitioner"],
+    },
+    {
+      jobFunction: "engineer",
+      courses: ["lean-basic", "yellow-belt", "problem-solving"],
+    },
+    { jobFunction: "shift-manager", courses: ["lean-basic", "yellow-belt"] },
+    { jobFunction: "department-manager", courses: ["green-belt"] },
+  ];
+
+  for (const rule of curriculumRules) {
+    for (const courseCode of rule.courses) {
+      await client.rpc("add_training_requirement", {
+        target_curriculum_version_id: curriculumVersion.id,
+        target_course_id: courseIds[courseCode],
+        target_job_function_id: jobFunctionIds[rule.jobFunction],
+        target_mandatory: true,
+      });
+    }
+  }
+
+  await client.rpc("publish_training_curriculum_version", {
+    target_curriculum_version_id: curriculumVersion.id,
+  });
+
+  const { data: scaleId, error: scaleError } = await client.rpc(
+    "create_skill_proficiency_scale_draft",
+    {
+      target_name: DEMO_PROFICIENCY_SCALE.name,
+    },
+  );
+  if (scaleError) throw scaleError;
+
+  const { data: scaleVersion } = await client
+    .from("skill_proficiency_scale_versions")
+    .select("id")
+    .eq("scale_id", scaleId)
+    .eq("version_number", 1)
+    .maybeSingle();
+
+  if (!scaleVersion?.id) throw new Error("Demo scale version missing");
+
+  const levelIds: Record<number, string> = {};
+  for (const level of DEMO_PROFICIENCY_SCALE.levels) {
+    const { data: levelId, error } = await client.rpc(
+      "add_skill_proficiency_level",
+      {
+        target_scale_version_id: scaleVersion.id,
+        target_order_value: level.order,
+        target_label: level.label,
+      },
+    );
+    if (error) throw error;
+    levelIds[level.order] = levelId as string;
+  }
+
+  await client.rpc("publish_skill_proficiency_scale_version", {
+    target_scale_version_id: scaleVersion.id,
+  });
+
+  const skillIds: Record<string, string> = {};
+  for (const skill of DEMO_SKILLS) {
+    const { data: skillId, error } = await client.rpc("create_skill", {
+      target_name: skill.name,
+      target_code: skill.code,
+    });
+    if (error) throw error;
+    skillIds[skill.code] = skillId as string;
+  }
+
+  const { data: capabilitySetId, error: setError } = await client.rpc(
+    "create_skill_capability_set_draft",
+    {
+      target_name: "Apex Capability Requirements",
+      target_code: "apex-capability",
+    },
+  );
+  if (setError) throw setError;
+
+  const { data: capabilityVersion } = await client
+    .from("skill_capability_set_versions")
+    .select("id")
+    .eq("capability_set_id", capabilitySetId)
+    .eq("version_number", 1)
+    .maybeSingle();
+
+  if (!capabilityVersion?.id)
+    throw new Error("Demo capability set version missing");
+
+  await client.rpc("add_skill_requirement", {
+    target_capability_set_version_id: capabilityVersion.id,
+    target_skill_id: skillIds["a3-facilitation"],
+    target_job_function_id: jobFunctionIds["team-leader"],
+    target_proficiency_scale_version_id: scaleVersion.id,
+    target_target_proficiency_level_id: levelIds[3],
+  });
+
+  await client.rpc("add_skill_requirement", {
+    target_capability_set_version_id: capabilityVersion.id,
+    target_skill_id: skillIds["five-s-auditing"],
+    target_job_function_id: jobFunctionIds["operator"],
+    target_proficiency_scale_version_id: scaleVersion.id,
+    target_target_proficiency_level_id: levelIds[4],
+  });
+
+  await client.rpc("publish_skill_capability_set_version", {
+    target_capability_set_version_id: capabilityVersion.id,
+  });
+
+  const { data: memberships } = await client
+    .from("organisation_memberships")
+    .select("id, user_id")
+    .in("user_id", [DEMO_USERS.manager.id, DEMO_USERS.operator.id]);
+
+  const managerMembership = memberships?.find(
+    (m) => m.user_id === DEMO_USERS.manager.id,
+  );
+  const operatorMembership = memberships?.find(
+    (m) => m.user_id === DEMO_USERS.operator.id,
+  );
+
+  if (managerMembership?.id) {
+    await client.rpc("assign_membership_job_function", {
+      target_membership_id: managerMembership.id,
+      target_job_function_id: jobFunctionIds["team-leader"],
+      target_primary: true,
+      target_organisational_unit_id: operationsUnitId,
+    });
+  }
+
+  if (operatorMembership?.id) {
+    await client.rpc("assign_membership_job_function", {
+      target_membership_id: operatorMembership.id,
+      target_job_function_id: jobFunctionIds["operator"],
+      target_primary: true,
+      target_organisational_unit_id: operationsUnitId,
+    });
+
+    await client.rpc("record_training_completion", {
+      target_membership_id: operatorMembership.id,
+      target_course_version_id: courseVersionIds["lean-basic"],
+      target_completed_at: new Date().toISOString(),
+      target_completion_method: "classroom",
+    });
+
+    await client.rpc("record_skill_validation", {
+      target_membership_id: operatorMembership.id,
+      target_skill_id: skillIds["five-s-auditing"],
+      target_proficiency_scale_version_id: scaleVersion.id,
+      target_proficiency_level_id: levelIds[3],
+      target_assessment_method: "manager_assessment",
+    });
+  }
+
+  if (managerMembership?.id) {
+    const scheduledStart = new Date();
+    scheduledStart.setDate(scheduledStart.getDate() + 7);
+    const { data: sessionId, error: sessionError } = await client.rpc(
+      "create_training_session",
+      {
+        target_course_version_id:
+          courseVersionIds[DEMO_TRAINING_SESSION.courseCode],
+        target_title: DEMO_TRAINING_SESSION.title,
+        target_organisational_unit_id: operationsUnitId,
+        target_scheduled_start: scheduledStart.toISOString(),
+        target_scheduled_end: new Date(
+          scheduledStart.getTime() + 2 * 60 * 60 * 1000,
+        ).toISOString(),
+        target_location: "Cornwall Plant Training Room",
+      },
+    );
+    if (sessionError) throw sessionError;
+
+    await client.rpc("add_training_session_participant", {
+      target_session_id: sessionId as string,
+      target_membership_id: managerMembership.id,
+    });
+  }
+
+  console.log("M7 demo: job functions, training, and skills seeded.");
+}
+
+async function ensureDemoDisplayNames(apiUrl: string, publishableKey: string) {
+  for (const userKey of Object.keys(DEMO_USERS) as DemoUserKey[]) {
+    const user = DEMO_USERS[userKey];
+    const client = await signInUser(apiUrl, publishableKey, userKey);
+    const { error } = await client
+      .from("profiles")
+      .update({ display_name: user.displayName })
+      .eq("user_id", user.id);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  const seedDir = dirname(fileURLToPath(import.meta.url));
+  execSync(
+    `npx supabase db query --local -f "${join(seedDir, "set-membership-display-names.sql")}"`,
+    { stdio: "inherit" },
+  );
+  execSync(
+    `npx supabase db query --local -f "${join(seedDir, "set-profile-display-names.sql")}"`,
+    { stdio: "inherit" },
+  );
+}
+
 async function main() {
   const env = loadLocalSupabaseEnv();
   const admin = createClient(env.apiUrl, env.serviceRoleKey, {
@@ -848,9 +1144,12 @@ async function main() {
     unitIds,
   );
 
+  await ensureDemoDisplayNames(env.apiUrl, env.publishableKey);
+
   await ensurePlatformSamples(adminClient);
   await ensureMaturityDemo(adminClient, unitIds);
   await ensureM6Demo(adminClient, unitIds);
+  await ensureM7Demo(adminClient, unitIds);
 
   console.log("Demo seed complete.");
   console.log(

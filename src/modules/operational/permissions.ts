@@ -17,3 +17,27 @@ export const SCHEDULE_PERMISSIONS = {
   manage: "schedules.manage",
   complete: "schedules.complete",
 } as const;
+
+export const JOB_FUNCTION_PERMISSIONS = {
+  read: "job_functions.read",
+  manage: "job_functions.manage",
+} as const;
+
+export const TRAINING_PERMISSIONS = {
+  read: "training.read",
+  catalogManage: "training.catalog.manage",
+  curriculumManage: "training.curriculum.manage",
+  sessionsManage: "training.sessions.manage",
+  completionsManage: "training.completions.manage",
+} as const;
+
+export const SKILLS_PERMISSIONS = {
+  read: "skills.read",
+  catalogManage: "skills.catalog.manage",
+  requirementsManage: "skills.requirements.manage",
+  assess: "skills.assess",
+} as const;
+
+export const PEOPLE_PERMISSIONS = {
+  capabilityRead: "people.capability.read",
+} as const;

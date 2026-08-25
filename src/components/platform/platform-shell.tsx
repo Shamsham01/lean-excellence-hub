@@ -33,6 +33,9 @@ export async function PlatformShell({
       "five_s.read",
       "gemba.read",
       "schedules.read",
+      "people.capability.read",
+      "training.read",
+      "skills.read",
     ];
     for (const permission of homePermissions) {
       if (await currentMemberHasPermission(permission)) {

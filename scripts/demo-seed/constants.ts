@@ -92,6 +92,18 @@ export const DEMO_ROLES = {
       "schedules.read",
       "schedules.manage",
       "schedules.complete",
+      "job_functions.read",
+      "job_functions.manage",
+      "training.read",
+      "training.catalog.manage",
+      "training.curriculum.manage",
+      "training.sessions.manage",
+      "training.completions.manage",
+      "skills.read",
+      "skills.catalog.manage",
+      "skills.requirements.manage",
+      "skills.assess",
+      "people.capability.read",
     ],
     invitationTokenSeed: "apex-demo-manager-invitation-v1",
   },
@@ -114,6 +126,9 @@ export const DEMO_ROLES = {
       "gemba.read",
       "gemba.walk.perform",
       "schedules.read",
+      "people.capability.read",
+      "training.read",
+      "skills.read",
     ],
     invitationTokenSeed: "apex-demo-operator-invitation-v1",
   },
@@ -189,4 +204,46 @@ export const DEMO_GEMBA_DEFINITION = {
   name: "Operations Gemba",
   description: "Weekly operations leadership Gemba walk.",
   unitKey: "operations",
+} as const;
+
+export const DEMO_JOB_FUNCTIONS = [
+  { code: "operator", name: "Operator" },
+  { code: "team-leader", name: "Team Leader" },
+  { code: "engineer", name: "Engineer" },
+  { code: "shift-manager", name: "Shift Manager" },
+  { code: "department-manager", name: "Department Manager" },
+] as const;
+
+export const DEMO_TRAINING_SESSION = {
+  title: "White Belt Classroom Session",
+  courseCode: "white-belt",
+} as const;
+
+export const DEMO_TRAINING_COURSES = [
+  { code: "lean-basic", name: "Lean Basic", validityDays: 365 },
+  { code: "white-belt", name: "White Belt", validityDays: 365 },
+  { code: "yellow-belt", name: "Yellow Belt", validityDays: 730 },
+  { code: "green-belt", name: "Green Belt", validityDays: 730 },
+  { code: "five-s-practitioner", name: "5S Practitioner", validityDays: 365 },
+  { code: "problem-solving", name: "Problem Solving", validityDays: 365 },
+] as const;
+
+export const DEMO_SKILLS = [
+  { code: "five-s-auditing", name: "5S Auditing" },
+  { code: "gemba-coaching", name: "Gemba Coaching" },
+  { code: "a3-facilitation", name: "A3 Facilitation" },
+  { code: "problem-solving", name: "Problem Solving" },
+  { code: "root-cause-analysis", name: "Root Cause Analysis" },
+] as const;
+
+export const DEMO_PROFICIENCY_SCALE = {
+  name: "Operational Competency Scale",
+  levels: [
+    { order: 0, label: "Not Assessed" },
+    { order: 1, label: "Awareness" },
+    { order: 2, label: "Developing" },
+    { order: 3, label: "Competent" },
+    { order: 4, label: "Advanced" },
+    { order: 5, label: "Coach / Trainer" },
+  ],
 } as const;

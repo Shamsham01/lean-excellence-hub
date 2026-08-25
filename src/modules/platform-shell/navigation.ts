@@ -1,8 +1,10 @@
+export type PlatformNavSection = "main" | "improvement" | "people" | "platform";
+
 export type PlatformNavItem = {
   href: string;
   label: string;
   permission: string;
-  section?: "main" | "improvement";
+  section?: PlatformNavSection;
   icon?: string;
 };
 
@@ -32,22 +34,40 @@ export const platformNavigation: PlatformNavItem[] = [
     section: "improvement",
   },
   {
-    href: "/platform/schedule",
-    label: "Schedule",
-    permission: "schedules.read",
-    section: "improvement",
-  },
-  {
     href: "/platform/actions",
     label: "Actions",
     permission: "actions.read",
     section: "improvement",
   },
   {
+    href: "/platform/people",
+    label: "People",
+    permission: "people.capability.read",
+    section: "people",
+  },
+  {
+    href: "/platform/training",
+    label: "Training",
+    permission: "training.read",
+    section: "people",
+  },
+  {
+    href: "/platform/skills",
+    label: "Skills",
+    permission: "skills.read",
+    section: "people",
+  },
+  {
+    href: "/platform/schedule",
+    label: "Schedule",
+    permission: "schedules.read",
+    section: "platform",
+  },
+  {
     href: "/platform/templates",
     label: "Templates",
     permission: "templates.read",
-    section: "improvement",
+    section: "platform",
   },
 ];
 

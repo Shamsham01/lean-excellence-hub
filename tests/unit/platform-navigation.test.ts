@@ -6,6 +6,13 @@ import {
 } from "@/modules/platform-shell/navigation";
 
 describe("platform navigation", () => {
+  it("exposes M7 people capability routes", () => {
+    const hrefs = platformNavigation.map((item) => item.href);
+    expect(hrefs).toContain("/platform/people");
+    expect(hrefs).toContain("/platform/training");
+    expect(hrefs).toContain("/platform/skills");
+  });
+
   it("exposes M6 platform routes", () => {
     const hrefs = platformNavigation.map((item) => item.href);
     expect(hrefs).toContain("/platform/5s");

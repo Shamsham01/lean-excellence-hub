@@ -54,6 +54,12 @@ export default async function PlatformHomePage() {
     .select("id", { count: "exact", head: true })
     .eq("status", "completed");
 
+  const { data: capabilityDashboard } = await supabase.rpc("get_capability_dashboard");
+  const capabilityObj = capabilityDashboard as {
+    training_compliance_percent?: number | null;
+    skill_coverage_percent?: number | null;
+  } | null;
+
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -91,6 +97,19 @@ export default async function PlatformHomePage() {
           hint="Latest completed audit"
         />
         <MetricCard label="Gemba walks" value={gembaWalkCount ?? 0} hint="Completed" />
+        <MetricCard
+          label="Capability"
+          value={
+            capabilityObj?.training_compliance_percent != null
+              ? `${capabilityObj.training_compliance_percent}%`
+              : "—"
+          }
+          hint={
+            capabilityObj?.skill_coverage_percent != null
+              ? `Skill coverage ${capabilityObj.skill_coverage_percent}%`
+              : "Training compliance"
+          }
+        />
         <MetricCard label="Templates" value={templateCount ?? 0} />
       </div>
 
@@ -133,6 +152,20 @@ export default async function PlatformHomePage() {
           <CardContent>
             <p className="text-sm text-muted-foreground">
               Track framework maturity, run assessments, and publish official results.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>People & capability</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/platform/people">Open</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Training compliance, skills coverage, and workforce capability profiles.
             </p>
           </CardContent>
         </Card>

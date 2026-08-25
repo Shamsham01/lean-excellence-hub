@@ -2,7 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardList, FileText, Footprints, Home, Layers, LogOut, Sparkles } from "lucide-react";
+import {
+  Award,
+  CalendarDays,
+  ClipboardList,
+  FileText,
+  Footprints,
+  GraduationCap,
+  Home,
+  Layers,
+  LogOut,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 import { ThemeToggle } from "@/components/platform/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -17,6 +29,7 @@ import {
 import {
   isNavActive,
   type PlatformNavItem,
+  type PlatformNavSection,
 } from "@/modules/platform-shell/navigation";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +41,16 @@ const navIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   Schedule: CalendarDays,
   Actions: ClipboardList,
   Templates: FileText,
+  People: Users,
+  Training: GraduationCap,
+  Skills: Award,
+};
+
+const sectionLabels: Record<PlatformNavSection, string | null> = {
+  main: null,
+  improvement: "Improvement system",
+  people: "People & capability",
+  platform: "Platform",
 };
 
 type SidebarNavProps = {
@@ -67,8 +90,7 @@ function SidebarContent({
   organisations,
   pathname,
 }: SidebarNavProps & { pathname: string }) {
-  const mainItems = items.filter((i) => i.section === "main");
-  const improvementItems = items.filter((i) => i.section === "improvement");
+  const sections: PlatformNavSection[] = ["main", "improvement", "people", "platform"];
 
   return (
     <div className="flex h-full flex-col">
@@ -90,20 +112,21 @@ function SidebarContent({
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-2" aria-label="Platform">
-        {mainItems.map((item) => (
-          <NavLink key={item.href} item={item} pathname={pathname} />
-        ))}
-
-        {improvementItems.length > 0 ? (
-          <>
-            <p className="px-3 pt-4 pb-1 typography-section-title">
-              Improvement system
-            </p>
-            {improvementItems.map((item) => (
-              <NavLink key={item.href} item={item} pathname={pathname} />
-            ))}
-          </>
-        ) : null}
+        {sections.map((section) => {
+          const sectionItems = items.filter((i) => i.section === section);
+          if (sectionItems.length === 0) return null;
+          const label = sectionLabels[section];
+          return (
+            <div key={section}>
+              {label ? (
+                <p className="px-3 pt-4 pb-1 typography-section-title">{label}</p>
+              ) : null}
+              {sectionItems.map((item) => (
+                <NavLink key={item.href} item={item} pathname={pathname} />
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="flex flex-col gap-1 p-2">

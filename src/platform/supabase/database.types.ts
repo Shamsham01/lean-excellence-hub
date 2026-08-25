@@ -404,6 +404,101 @@ export type Database = {
           },
         ]
       }
+      capability_action_context: {
+        Row: {
+          action_id: string
+          course_id: string | null
+          created_at: string
+          created_by_membership_id: string
+          gap_type: string
+          id: string
+          membership_id: string
+          notes: string | null
+          organisation_id: string
+          skill_assessment_id: string | null
+          skill_id: string | null
+          training_completion_id: string | null
+        }
+        Insert: {
+          action_id: string
+          course_id?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          gap_type: string
+          id?: string
+          membership_id: string
+          notes?: string | null
+          organisation_id: string
+          skill_assessment_id?: string | null
+          skill_id?: string | null
+          training_completion_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          course_id?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          gap_type?: string
+          id?: string
+          membership_id?: string
+          notes?: string | null
+          organisation_id?: string
+          skill_assessment_id?: string | null
+          skill_id?: string | null
+          training_completion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capability_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "capability_action_context_course_fkey"
+            columns: ["organisation_id", "course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "capability_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "capability_action_context_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "capability_action_context_skill_assessment_fkey"
+            columns: ["organisation_id", "skill_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "membership_skill_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "capability_action_context_skill_fkey"
+            columns: ["organisation_id", "skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "capability_action_context_training_completion_fkey"
+            columns: ["organisation_id", "training_completion_id"]
+            isOneToOne: false
+            referencedRelation: "training_completions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_membership_id: string
@@ -1612,6 +1707,63 @@ export type Database = {
           },
         ]
       }
+      job_functions: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          deactivated_at: string | null
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          deactivated_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          deactivated_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_functions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "job_functions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maturity_action_context: {
         Row: {
           action_id: string
@@ -2464,6 +2616,210 @@ export type Database = {
             columns: ["organisation_id", "model_version_id"]
             isOneToOne: false
             referencedRelation: "maturity_model_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      membership_job_function_assignments: {
+        Row: {
+          assigned_by_membership_id: string
+          assignment_reason: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          job_function_code_snapshot: string
+          job_function_id: string
+          job_function_name_snapshot: string
+          membership_id: string
+          organisation_id: string
+          organisational_unit_id: string | null
+          updated_at: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          assigned_by_membership_id: string
+          assignment_reason?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          job_function_code_snapshot: string
+          job_function_id: string
+          job_function_name_snapshot: string
+          membership_id: string
+          organisation_id: string
+          organisational_unit_id?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          assigned_by_membership_id?: string
+          assignment_reason?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          job_function_code_snapshot?: string
+          job_function_id?: string
+          job_function_name_snapshot?: string
+          membership_id?: string
+          organisation_id?: string
+          organisational_unit_id?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_job_function_assignments_assigned_by_fkey"
+            columns: ["organisation_id", "assigned_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_job_function_assignments_job_function_fkey"
+            columns: ["organisation_id", "job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_job_function_assignments_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_job_function_assignments_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_job_function_assignments_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      membership_skill_assessments: {
+        Row: {
+          assertion_type: string
+          assessed_at: string
+          assessment_method: string | null
+          assessor_membership_id: string | null
+          created_at: string
+          id: string
+          is_authoritative: boolean
+          membership_id: string
+          notes: string | null
+          organisation_id: string
+          organisational_unit_id: string | null
+          proficiency_level_id: string
+          proficiency_scale_version_id: string
+          skill_id: string
+          status: string
+          supersedes_assessment_id: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          assertion_type: string
+          assessed_at: string
+          assessment_method?: string | null
+          assessor_membership_id?: string | null
+          created_at?: string
+          id: string
+          is_authoritative?: boolean
+          membership_id: string
+          notes?: string | null
+          organisation_id: string
+          organisational_unit_id?: string | null
+          proficiency_level_id: string
+          proficiency_scale_version_id: string
+          skill_id: string
+          status?: string
+          supersedes_assessment_id?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          assertion_type?: string
+          assessed_at?: string
+          assessment_method?: string | null
+          assessor_membership_id?: string | null
+          created_at?: string
+          id?: string
+          is_authoritative?: boolean
+          membership_id?: string
+          notes?: string | null
+          organisation_id?: string
+          organisational_unit_id?: string | null
+          proficiency_level_id?: string
+          proficiency_scale_version_id?: string
+          skill_id?: string
+          status?: string
+          supersedes_assessment_id?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_skill_assessments_assessor_fkey"
+            columns: ["organisation_id", "assessor_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_level_fkey"
+            columns: ["organisation_id", "proficiency_level_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_levels"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_scale_version_fkey"
+            columns: ["organisation_id", "proficiency_scale_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scale_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_skill_fkey"
+            columns: ["organisation_id", "skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_supersedes_fkey"
+            columns: ["organisation_id", "supersedes_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "membership_skill_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "membership_skill_assessments_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -3374,6 +3730,419 @@ export type Database = {
           },
         ]
       }
+      skill_capability_set_versions: {
+        Row: {
+          archived_at: string | null
+          capability_set_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          capability_set_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          capability_set_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_capability_set_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_capability_set_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_capability_set_versions_set_fkey"
+            columns: ["organisation_id", "capability_set_id"]
+            isOneToOne: false
+            referencedRelation: "skill_capability_sets"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_capability_sets: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_capability_sets_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_capability_sets_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_proficiency_levels: {
+        Row: {
+          created_at: string
+          description: string | null
+          guidance: string | null
+          id: string
+          label: string
+          order_value: number
+          organisation_id: string
+          scale_version_id: string
+          semantic_token: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          label: string
+          order_value: number
+          organisation_id: string
+          scale_version_id: string
+          semantic_token?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          label?: string
+          order_value?: number
+          organisation_id?: string
+          scale_version_id?: string
+          semantic_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_proficiency_levels_version_fkey"
+            columns: ["organisation_id", "scale_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scale_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_proficiency_scale_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          scale_id: string
+          status: string
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          scale_id: string
+          status?: string
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          scale_id?: string
+          status?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_proficiency_scale_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_proficiency_scale_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_proficiency_scale_versions_scale_fkey"
+            columns: ["organisation_id", "scale_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scales"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_proficiency_scales: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_proficiency_scales_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_proficiency_scales_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_requirements: {
+        Row: {
+          capability_set_version_id: string
+          created_at: string
+          evidence_requirement: string | null
+          id: string
+          job_function_id: string | null
+          mandatory: boolean
+          notes: string | null
+          organisation_id: string
+          organisational_unit_id: string | null
+          proficiency_scale_version_id: string
+          skill_id: string
+          target_proficiency_level_id: string
+        }
+        Insert: {
+          capability_set_version_id: string
+          created_at?: string
+          evidence_requirement?: string | null
+          id?: string
+          job_function_id?: string | null
+          mandatory?: boolean
+          notes?: string | null
+          organisation_id: string
+          organisational_unit_id?: string | null
+          proficiency_scale_version_id: string
+          skill_id: string
+          target_proficiency_level_id: string
+        }
+        Update: {
+          capability_set_version_id?: string
+          created_at?: string
+          evidence_requirement?: string | null
+          id?: string
+          job_function_id?: string | null
+          mandatory?: boolean
+          notes?: string | null
+          organisation_id?: string
+          organisational_unit_id?: string | null
+          proficiency_scale_version_id?: string
+          skill_id?: string
+          target_proficiency_level_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_requirements_job_function_fkey"
+            columns: ["organisation_id", "job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_requirements_scale_version_fkey"
+            columns: ["organisation_id", "proficiency_scale_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scale_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_requirements_skill_fkey"
+            columns: ["organisation_id", "skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_requirements_target_level_fkey"
+            columns: ["organisation_id", "target_proficiency_level_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_levels"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_requirements_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_requirements_version_fkey"
+            columns: ["organisation_id", "capability_set_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_capability_set_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          deactivated_at: string | null
+          description: string | null
+          evidence_expectations: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          deactivated_at?: string | null
+          description?: string | null
+          evidence_expectations?: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          deactivated_at?: string | null
+          description?: string | null
+          evidence_expectations?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skills_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skills_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       template_answer_people: {
         Row: {
           created_at: string
@@ -3732,6 +4501,647 @@ export type Database = {
           },
         ]
       }
+      training_completions: {
+        Row: {
+          completed_at: string
+          completion_method: string | null
+          course_id: string
+          course_version_id: string
+          created_at: string
+          expires_at: string | null
+          external_certificate_reference: string | null
+          id: string
+          membership_id: string
+          notes: string | null
+          organisation_id: string
+          recorded_by_membership_id: string
+          session_id: string | null
+          status: string
+          superseded_by_completion_id: string | null
+          trainer_membership_id: string | null
+          trainer_name: string | null
+          updated_at: string
+          validity_days_applied: number | null
+        }
+        Insert: {
+          completed_at: string
+          completion_method?: string | null
+          course_id: string
+          course_version_id: string
+          created_at?: string
+          expires_at?: string | null
+          external_certificate_reference?: string | null
+          id: string
+          membership_id: string
+          notes?: string | null
+          organisation_id: string
+          recorded_by_membership_id: string
+          session_id?: string | null
+          status?: string
+          superseded_by_completion_id?: string | null
+          trainer_membership_id?: string | null
+          trainer_name?: string | null
+          updated_at?: string
+          validity_days_applied?: number | null
+        }
+        Update: {
+          completed_at?: string
+          completion_method?: string | null
+          course_id?: string
+          course_version_id?: string
+          created_at?: string
+          expires_at?: string | null
+          external_certificate_reference?: string | null
+          id?: string
+          membership_id?: string
+          notes?: string | null
+          organisation_id?: string
+          recorded_by_membership_id?: string
+          session_id?: string | null
+          status?: string
+          superseded_by_completion_id?: string | null
+          trainer_membership_id?: string | null
+          trainer_name?: string | null
+          updated_at?: string
+          validity_days_applied?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_completions_course_fkey"
+            columns: ["organisation_id", "course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_course_version_fkey"
+            columns: ["organisation_id", "course_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_course_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_recorded_by_fkey"
+            columns: ["organisation_id", "recorded_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_session_fkey"
+            columns: ["organisation_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_superseded_fkey"
+            columns: ["organisation_id", "superseded_by_completion_id"]
+            isOneToOne: false
+            referencedRelation: "training_completions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_completions_trainer_fkey"
+            columns: ["organisation_id", "trainer_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_course_skill_links: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          organisation_id: string
+          skill_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          skill_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_course_skill_links_course_fkey"
+            columns: ["organisation_id", "course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_course_skill_links_skill_fkey"
+            columns: ["organisation_id", "skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_course_versions: {
+        Row: {
+          archived_at: string | null
+          course_id: string
+          created_at: string
+          created_by_membership_id: string
+          delivery_method: string | null
+          duration_minutes: number | null
+          evidence_requirements: Json | null
+          id: string
+          learning_objectives: string | null
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          trainer_requirements: string | null
+          validity_days: number | null
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          course_id: string
+          created_at?: string
+          created_by_membership_id: string
+          delivery_method?: string | null
+          duration_minutes?: number | null
+          evidence_requirements?: Json | null
+          id?: string
+          learning_objectives?: string | null
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          trainer_requirements?: string | null
+          validity_days?: number | null
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          course_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          delivery_method?: string | null
+          duration_minutes?: number | null
+          evidence_requirements?: Json | null
+          id?: string
+          learning_objectives?: string | null
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          trainer_requirements?: string | null
+          validity_days?: number | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_course_versions_course_fkey"
+            columns: ["organisation_id", "course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_course_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_course_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_courses: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          deactivated_at: string | null
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          deactivated_at?: string | null
+          description?: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          deactivated_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_courses_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_courses_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_curricula: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_curricula_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_curricula_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_curriculum_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          curriculum_id: string
+          id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          curriculum_id: string
+          id?: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          curriculum_id?: string
+          id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_curriculum_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_curriculum_versions_curriculum_fkey"
+            columns: ["organisation_id", "curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "training_curricula"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_curriculum_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_requirements: {
+        Row: {
+          applies_to_all_members: boolean
+          course_id: string
+          created_at: string
+          curriculum_version_id: string
+          grace_period_days: number | null
+          id: string
+          job_function_id: string | null
+          mandatory: boolean
+          notes: string | null
+          organisation_id: string
+          organisational_unit_id: string | null
+          required_within_days: number | null
+          validity_days_override: number | null
+        }
+        Insert: {
+          applies_to_all_members?: boolean
+          course_id: string
+          created_at?: string
+          curriculum_version_id: string
+          grace_period_days?: number | null
+          id?: string
+          job_function_id?: string | null
+          mandatory?: boolean
+          notes?: string | null
+          organisation_id: string
+          organisational_unit_id?: string | null
+          required_within_days?: number | null
+          validity_days_override?: number | null
+        }
+        Update: {
+          applies_to_all_members?: boolean
+          course_id?: string
+          created_at?: string
+          curriculum_version_id?: string
+          grace_period_days?: number | null
+          id?: string
+          job_function_id?: string | null
+          mandatory?: boolean
+          notes?: string | null
+          organisation_id?: string
+          organisational_unit_id?: string | null
+          required_within_days?: number | null
+          validity_days_override?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_requirements_course_fkey"
+            columns: ["organisation_id", "course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_requirements_job_function_fkey"
+            columns: ["organisation_id", "job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_requirements_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_requirements_version_fkey"
+            columns: ["organisation_id", "curriculum_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_curriculum_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_session_participants: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          session_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          session_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          session_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_participants_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_session_participants_session_fkey"
+            columns: ["organisation_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_sessions: {
+        Row: {
+          capacity: number | null
+          course_version_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          location: string | null
+          notes: string | null
+          online_metadata: Json | null
+          organisation_id: string
+          organisational_unit_id: string | null
+          schedule_occurrence_id: string | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          status: string
+          title: string
+          trainer_membership_id: string | null
+          trainer_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          course_version_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id: string
+          location?: string | null
+          notes?: string | null
+          online_metadata?: Json | null
+          organisation_id: string
+          organisational_unit_id?: string | null
+          schedule_occurrence_id?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          title: string
+          trainer_membership_id?: string | null
+          trainer_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          course_version_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          online_metadata?: Json | null
+          organisation_id?: string
+          organisational_unit_id?: string | null
+          schedule_occurrence_id?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          title?: string
+          trainer_membership_id?: string | null
+          trainer_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_course_version_fkey"
+            columns: ["organisation_id", "course_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_course_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_sessions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_sessions_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_sessions_schedule_occurrence_fkey"
+            columns: ["organisation_id", "schedule_occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_occurrences"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_sessions_trainer_fkey"
+            columns: ["organisation_id", "trainer_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_sessions_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -3845,6 +5255,31 @@ export type Database = {
         }
         Returns: boolean
       }
+      add_skill_proficiency_level: {
+        Args: {
+          target_description?: string
+          target_guidance?: string
+          target_label: string
+          target_order_value: number
+          target_scale_version_id: string
+          target_semantic_token?: string
+        }
+        Returns: string
+      }
+      add_skill_requirement: {
+        Args: {
+          target_capability_set_version_id: string
+          target_evidence_requirement?: string
+          target_job_function_id: string
+          target_mandatory?: boolean
+          target_notes?: string
+          target_organisational_unit_id?: string
+          target_proficiency_scale_version_id: string
+          target_skill_id: string
+          target_target_proficiency_level_id: string
+        }
+        Returns: string
+      }
       add_template_question: {
         Args: {
           target_allows_not_applicable?: boolean
@@ -3867,9 +5302,40 @@ export type Database = {
         }
         Returns: string
       }
+      add_training_requirement: {
+        Args: {
+          target_applies_to_all_members?: boolean
+          target_course_id: string
+          target_curriculum_version_id: string
+          target_grace_period_days?: number
+          target_job_function_id?: string
+          target_mandatory?: boolean
+          target_notes?: string
+          target_organisational_unit_id?: string
+          target_required_within_days?: number
+          target_validity_days_override?: number
+        }
+        Returns: string
+      }
+      add_training_session_participant: {
+        Args: { target_membership_id: string; target_session_id: string }
+        Returns: string
+      }
       approve_maturity_assessment: {
         Args: { target_assessment_id: string }
         Returns: boolean
+      }
+      assign_membership_job_function: {
+        Args: {
+          target_assignment_reason?: string
+          target_job_function_id: string
+          target_membership_id: string
+          target_organisational_unit_id?: string
+          target_primary?: boolean
+          target_valid_from?: string
+          target_valid_to?: string
+        }
+        Returns: string
       }
       authentication_rate_limit_allows: {
         Args: {
@@ -3884,6 +5350,20 @@ export type Database = {
       begin_assessor_review: {
         Args: { target_assessment_id: string }
         Returns: boolean
+      }
+      bulk_record_training_completions: {
+        Args: {
+          target_completed_at?: string
+          target_completion_method?: string
+          target_course_version_id: string
+          target_membership_ids: string[]
+          target_notes?: string
+          target_session_id?: string
+          target_trainer_membership_id?: string
+          target_trainer_name?: string
+          target_validity_days_override?: number
+        }
+        Returns: string[]
       }
       calculate_maturity_assessment_scores: {
         Args: { target_assessment_id: string }
@@ -3937,6 +5417,22 @@ export type Database = {
           target_source_resource_id?: string
           target_title: string
           target_unit_id?: string
+        }
+        Returns: string
+      }
+      create_capability_action: {
+        Args: {
+          target_course_id?: string
+          target_description?: string
+          target_due_at?: string
+          target_gap_type: string
+          target_membership_id: string
+          target_notes?: string
+          target_priority?: string
+          target_skill_assessment_id?: string
+          target_skill_id?: string
+          target_title: string
+          target_training_completion_id?: string
         }
         Returns: string
       }
@@ -4018,6 +5514,14 @@ export type Database = {
         }
         Returns: string
       }
+      create_job_function: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_name: string
+        }
+        Returns: string
+      }
       create_maturity_action: {
         Args: {
           target_assessment_id: string
@@ -4083,6 +5587,28 @@ export type Database = {
         }
         Returns: string
       }
+      create_skill: {
+        Args: {
+          target_category?: string
+          target_code: string
+          target_description?: string
+          target_evidence_expectations?: string
+          target_name: string
+        }
+        Returns: string
+      }
+      create_skill_capability_set_draft: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_name: string
+        }
+        Returns: string
+      }
+      create_skill_proficiency_scale_draft: {
+        Args: { target_description?: string; target_name: string }
+        Returns: string
+      }
       create_template_draft: {
         Args: { target_description?: string; target_display_name: string }
         Returns: string
@@ -4095,6 +5621,44 @@ export type Database = {
         Args: { target_template_id: string }
         Returns: string
       }
+      create_training_course_draft: {
+        Args: {
+          target_category?: string
+          target_code: string
+          target_description?: string
+          target_name: string
+        }
+        Returns: string
+      }
+      create_training_course_successor_version: {
+        Args: { target_course_id: string }
+        Returns: string
+      }
+      create_training_curriculum_draft: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_name: string
+        }
+        Returns: string
+      }
+      create_training_session: {
+        Args: {
+          target_capacity?: number
+          target_course_version_id: string
+          target_location?: string
+          target_notes?: string
+          target_online_metadata?: Json
+          target_organisational_unit_id?: string
+          target_schedule_occurrence_id?: string
+          target_scheduled_end?: string
+          target_scheduled_start?: string
+          target_title: string
+          target_trainer_membership_id?: string
+          target_trainer_name?: string
+        }
+        Returns: string
+      }
       current_identity_state: {
         Args: never
         Returns: {
@@ -4105,6 +5669,10 @@ export type Database = {
       }
       current_organisation_id: { Args: never; Returns: string }
       current_workforce_login_identifier: { Args: never; Returns: string }
+      deactivate_job_function: {
+        Args: { target_job_function_id: string }
+        Returns: boolean
+      }
       deactivate_schedule_definition: {
         Args: { target_schedule_definition_id: string }
         Returns: boolean
@@ -4118,12 +5686,33 @@ export type Database = {
         }
         Returns: string
       }
+      derive_skill_gap: {
+        Args: {
+          target_capability_set_version_id?: string
+          target_membership_id: string
+          target_skill_id: string
+        }
+        Returns: Json
+      }
+      derive_training_completion_validity_state: {
+        Args: {
+          target_as_of?: string
+          target_expires_at: string
+          target_expiring_window_days?: number
+          target_status: string
+        }
+        Returns: string
+      }
       disable_workforce_identity: {
         Args: { change_reason: string; target_user_id: string }
         Returns: number
       }
       edit_comment: {
         Args: { target_body: string; target_comment_id: string }
+        Returns: boolean
+      }
+      end_membership_job_function_assignment: {
+        Args: { target_assignment_id: string; target_valid_to?: string }
         Returns: boolean
       }
       ensure_schedule_occurrences: {
@@ -4143,6 +5732,31 @@ export type Database = {
       finalise_identity_enrolment: {
         Args: { target_user_id: string }
         Returns: boolean
+      }
+      get_capability_dashboard: { Args: never; Returns: Json }
+      get_membership_capability_profile_header: {
+        Args: { target_membership_id: string }
+        Returns: Json
+      }
+      get_membership_skills_profile: {
+        Args: { target_membership_id: string }
+        Returns: Json
+      }
+      get_membership_training_profile: {
+        Args: { target_membership_id: string }
+        Returns: Json
+      }
+      get_people_directory: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_search?: string
+        }
+        Returns: Json
+      }
+      get_training_compliance_summary: {
+        Args: { target_unit_id?: string }
+        Returns: Json
       }
       grant_role_version: {
         Args: {
@@ -4290,8 +5904,24 @@ export type Database = {
         Args: { target_organisation_id: string; target_role_version_id: string }
         Returns: boolean
       }
+      publish_skill_capability_set_version: {
+        Args: { target_capability_set_version_id: string }
+        Returns: boolean
+      }
+      publish_skill_proficiency_scale_version: {
+        Args: { target_scale_version_id: string }
+        Returns: boolean
+      }
       publish_template_version: {
         Args: { target_template_version_id: string }
+        Returns: boolean
+      }
+      publish_training_course_version: {
+        Args: { target_course_version_id: string }
+        Returns: boolean
+      }
+      publish_training_curriculum_version: {
+        Args: { target_curriculum_version_id: string }
         Returns: boolean
       }
       record_authentication_rate_limit_failure: {
@@ -4313,6 +5943,47 @@ export type Database = {
         }
         Returns: string
       }
+      record_skill_self_assessment: {
+        Args: {
+          target_assessed_at?: string
+          target_assessment_method?: string
+          target_membership_id: string
+          target_notes?: string
+          target_proficiency_level_id: string
+          target_proficiency_scale_version_id: string
+          target_skill_id: string
+        }
+        Returns: string
+      }
+      record_skill_validation: {
+        Args: {
+          target_assessed_at?: string
+          target_assessment_method?: string
+          target_membership_id: string
+          target_notes?: string
+          target_organisational_unit_id?: string
+          target_proficiency_level_id: string
+          target_proficiency_scale_version_id: string
+          target_skill_id: string
+          target_valid_until?: string
+        }
+        Returns: string
+      }
+      record_training_completion: {
+        Args: {
+          target_completed_at?: string
+          target_completion_method?: string
+          target_course_version_id: string
+          target_external_certificate_reference?: string
+          target_membership_id: string
+          target_notes?: string
+          target_session_id?: string
+          target_trainer_membership_id?: string
+          target_trainer_name?: string
+          target_validity_days_override?: number
+        }
+        Returns: string
+      }
       release_authentication_rate_limit: {
         Args: {
           limiter_dimension: string
@@ -4321,6 +5992,10 @@ export type Database = {
           maximum_attempts: number
           window_seconds: number
         }
+        Returns: boolean
+      }
+      remove_training_session_participant: {
+        Args: { target_participant_id: string; target_session_id: string }
         Returns: boolean
       }
       resolve_workforce_login: {
@@ -4356,6 +6031,10 @@ export type Database = {
           target_invitation_id: string
           target_organisation_id: string
         }
+        Returns: boolean
+      }
+      revoke_training_completion: {
+        Args: { target_completion_id: string; target_notes?: string }
         Returns: boolean
       }
       set_membership_status: {
@@ -4417,6 +6096,14 @@ export type Database = {
         Args: { target_organisation_id: string }
         Returns: boolean
       }
+      update_job_function: {
+        Args: {
+          target_description?: string
+          target_job_function_id: string
+          target_name: string
+        }
+        Returns: boolean
+      }
       update_schedule_definition: {
         Args: {
           target_description?: string
@@ -4430,6 +6117,26 @@ export type Database = {
           target_start_date: string
           target_title: string
           target_unit_id: string
+        }
+        Returns: boolean
+      }
+      update_training_course_draft_version: {
+        Args: {
+          target_course_version_id: string
+          target_delivery_method?: string
+          target_duration_minutes?: number
+          target_evidence_requirements?: Json
+          target_learning_objectives?: string
+          target_trainer_requirements?: string
+          target_validity_days?: number
+        }
+        Returns: boolean
+      }
+      update_training_session_participant_status: {
+        Args: {
+          target_participant_id: string
+          target_session_id: string
+          target_status: string
         }
         Returns: boolean
       }
