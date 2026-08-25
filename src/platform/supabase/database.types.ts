@@ -456,6 +456,862 @@ export type Database = {
           },
         ]
       }
+      maturity_action_context: {
+        Row: {
+          action_id: string
+          assessment_id: string
+          created_at: string
+          created_by_membership_id: string
+          criterion_id: string
+          id: string
+          organisation_id: string
+          pillar_id: string
+          question_id: string | null
+        }
+        Insert: {
+          action_id: string
+          assessment_id: string
+          created_at?: string
+          created_by_membership_id: string
+          criterion_id: string
+          id?: string
+          organisation_id: string
+          pillar_id: string
+          question_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          assessment_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          criterion_id?: string
+          id?: string
+          organisation_id?: string
+          pillar_id?: string
+          question_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_action_context_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_action_context_criterion_fkey"
+            columns: ["organisation_id", "criterion_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_criteria"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_action_context_pillar_fkey"
+            columns: ["organisation_id", "pillar_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_pillars"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_action_context_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_assessment_participants: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          participant_role: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          participant_role?: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          participant_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessment_participants_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_participants_member_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_assessment_scores: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          entity_id: string | null
+          id: string
+          organisation_id: string
+          score: number
+          score_level: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          organisation_id: string
+          score: number
+          score_level: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          organisation_id?: string
+          score?: number
+          score_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessment_scores_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_assessment_transitions: {
+        Row: {
+          actor_membership_id: string
+          assessment_id: string
+          created_at: string
+          from_status: string
+          id: string
+          organisation_id: string
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          actor_membership_id: string
+          assessment_id: string
+          created_at?: string
+          from_status: string
+          id?: string
+          organisation_id: string
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          actor_membership_id?: string
+          assessment_id?: string
+          created_at?: string
+          from_status?: string
+          id?: string
+          organisation_id?: string
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessment_transitions_actor_fkey"
+            columns: ["organisation_id", "actor_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_transitions_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_assessments: {
+        Row: {
+          approved_at: string | null
+          assessment_type: string
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          lead_assessor_membership_id: string | null
+          model_version_id: string
+          organisation_id: string
+          published_at: string | null
+          started_at: string | null
+          status: string
+          submission_id: string
+          submitted_at: string | null
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          assessment_type: string
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id: string
+          lead_assessor_membership_id?: string | null
+          model_version_id: string
+          organisation_id: string
+          published_at?: string | null
+          started_at?: string | null
+          status?: string
+          submission_id: string
+          submitted_at?: string | null
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          assessment_type?: string
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          lead_assessor_membership_id?: string | null
+          model_version_id?: string
+          organisation_id?: string
+          published_at?: string | null
+          started_at?: string | null
+          status?: string
+          submission_id?: string
+          submitted_at?: string | null
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessments_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessments_lead_assessor_fkey"
+            columns: ["organisation_id", "lead_assessor_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessments_model_version_fkey"
+            columns: ["organisation_id", "model_version_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_model_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessments_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessments_submission_fkey"
+            columns: ["organisation_id", "submission_id"]
+            isOneToOne: false
+            referencedRelation: "template_submissions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessments_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_criteria: {
+        Row: {
+          created_at: string
+          description: string | null
+          expected_evidence: string | null
+          guidance: string | null
+          id: string
+          name: string
+          organisation_id: string
+          pillar_id: string
+          position: number
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          expected_evidence?: string | null
+          guidance?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          pillar_id: string
+          position: number
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          expected_evidence?: string | null
+          guidance?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          pillar_id?: string
+          position?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_criteria_pillar_fkey"
+            columns: ["organisation_id", "pillar_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_pillars"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_criterion_questions: {
+        Row: {
+          contributes_to_score: boolean
+          created_at: string
+          criterion_id: string
+          id: string
+          organisation_id: string
+          question_id: string
+          scoring_metadata: Json | null
+        }
+        Insert: {
+          contributes_to_score?: boolean
+          created_at?: string
+          criterion_id: string
+          id?: string
+          organisation_id: string
+          question_id: string
+          scoring_metadata?: Json | null
+        }
+        Update: {
+          contributes_to_score?: boolean
+          created_at?: string
+          criterion_id?: string
+          id?: string
+          organisation_id?: string
+          question_id?: string
+          scoring_metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_criterion_questions_criterion_fkey"
+            columns: ["organisation_id", "criterion_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_criteria"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_criterion_questions_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_evidence_links: {
+        Row: {
+          assessment_id: string
+          attachment_id: string
+          created_at: string
+          created_by_membership_id: string
+          criterion_id: string
+          id: string
+          organisation_id: string
+          question_id: string | null
+        }
+        Insert: {
+          assessment_id: string
+          attachment_id: string
+          created_at?: string
+          created_by_membership_id: string
+          criterion_id: string
+          id?: string
+          organisation_id: string
+          question_id?: string | null
+        }
+        Update: {
+          assessment_id?: string
+          attachment_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          criterion_id?: string
+          id?: string
+          organisation_id?: string
+          question_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_evidence_links_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_evidence_links_criterion_fkey"
+            columns: ["organisation_id", "criterion_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_criteria"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_evidence_links_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_levels: {
+        Row: {
+          color_token: string
+          created_at: string
+          description: string | null
+          guidance: string | null
+          id: string
+          level_number: number
+          model_version_id: string
+          name: string
+          organisation_id: string
+        }
+        Insert: {
+          color_token: string
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          level_number: number
+          model_version_id: string
+          name: string
+          organisation_id: string
+        }
+        Update: {
+          color_token?: string
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          level_number?: number
+          model_version_id?: string
+          name?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_levels_version_fkey"
+            columns: ["organisation_id", "model_version_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_model_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_model_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          model_id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          template_version_id: string
+          version_number: number
+          weighting_enabled: boolean
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          model_id: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          template_version_id: string
+          version_number: number
+          weighting_enabled?: boolean
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          model_id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          template_version_id?: string
+          version_number?: number
+          weighting_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_model_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_model_versions_model_fkey"
+            columns: ["organisation_id", "model_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_models"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_model_versions_template_version_fkey"
+            columns: ["organisation_id", "template_version_id"]
+            isOneToOne: true
+            referencedRelation: "template_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_models: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          display_name: string
+          id: string
+          organisation_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          display_name: string
+          id: string
+          organisation_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          organisation_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_models_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_models_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_models_template_fkey"
+            columns: ["organisation_id", "template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_official_result_levels: {
+        Row: {
+          color_token: string | null
+          created_at: string
+          description: string | null
+          guidance: string | null
+          id: string
+          level_number: number
+          name: string
+          official_result_id: string
+          organisation_id: string
+        }
+        Insert: {
+          color_token?: string | null
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          level_number: number
+          name: string
+          official_result_id: string
+          organisation_id: string
+        }
+        Update: {
+          color_token?: string | null
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          level_number?: number
+          name?: string
+          official_result_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_official_result_levels_result_fkey"
+            columns: ["organisation_id", "official_result_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_official_results"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_official_result_pillars: {
+        Row: {
+          created_at: string
+          id: string
+          official_result_id: string
+          organisation_id: string
+          pillar_id: string
+          pillar_name: string
+          pillar_position: number
+          score: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          official_result_id: string
+          organisation_id: string
+          pillar_id: string
+          pillar_name: string
+          pillar_position: number
+          score: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          official_result_id?: string
+          organisation_id?: string
+          pillar_id?: string
+          pillar_name?: string
+          pillar_position?: number
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_official_result_pillars_pillar_fkey"
+            columns: ["organisation_id", "pillar_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_pillars"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_official_result_pillars_result_fkey"
+            columns: ["organisation_id", "official_result_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_official_results"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_official_results: {
+        Row: {
+          assessment_id: string
+          assessment_type_snapshot: string | null
+          created_at: string
+          id: string
+          model_name_snapshot: string | null
+          model_version_id: string
+          model_version_number_snapshot: number | null
+          organisation_id: string
+          overall_score: number
+          published_at: string
+          published_by_membership_id: string
+          unit_code_snapshot: string | null
+          unit_id_snapshot: string | null
+          unit_name_snapshot: string | null
+        }
+        Insert: {
+          assessment_id: string
+          assessment_type_snapshot?: string | null
+          created_at?: string
+          id?: string
+          model_name_snapshot?: string | null
+          model_version_id: string
+          model_version_number_snapshot?: number | null
+          organisation_id: string
+          overall_score: number
+          published_at?: string
+          published_by_membership_id: string
+          unit_code_snapshot?: string | null
+          unit_id_snapshot?: string | null
+          unit_name_snapshot?: string | null
+        }
+        Update: {
+          assessment_id?: string
+          assessment_type_snapshot?: string | null
+          created_at?: string
+          id?: string
+          model_name_snapshot?: string | null
+          model_version_id?: string
+          model_version_number_snapshot?: number | null
+          organisation_id?: string
+          overall_score?: number
+          published_at?: string
+          published_by_membership_id?: string
+          unit_code_snapshot?: string | null
+          unit_id_snapshot?: string | null
+          unit_name_snapshot?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_official_results_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: true
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_official_results_model_version_fkey"
+            columns: ["organisation_id", "model_version_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_model_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_official_results_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_pillars: {
+        Row: {
+          created_at: string
+          description: string | null
+          guidance: string | null
+          id: string
+          model_version_id: string
+          name: string
+          organisation_id: string
+          position: number
+          section_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          model_version_id: string
+          name: string
+          organisation_id: string
+          position: number
+          section_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          guidance?: string | null
+          id?: string
+          model_version_id?: string
+          name?: string
+          organisation_id?: string
+          position?: number
+          section_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_pillars_section_fkey"
+            columns: ["organisation_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "template_sections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_pillars_version_fkey"
+            columns: ["organisation_id", "model_version_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_model_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       organisation_invitation_grants: {
         Row: {
           created_at: string
@@ -1514,12 +2370,87 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: string
       }
+      add_maturity_criterion: {
+        Args: {
+          target_description?: string
+          target_expected_evidence?: string
+          target_guidance?: string
+          target_name: string
+          target_pillar_id: string
+          target_position: number
+          target_weight?: number
+        }
+        Returns: string
+      }
+      add_maturity_level: {
+        Args: {
+          target_color_token: string
+          target_description?: string
+          target_guidance?: string
+          target_level_number: number
+          target_model_version_id: string
+          target_name: string
+        }
+        Returns: string
+      }
+      add_maturity_pillar: {
+        Args: {
+          target_description?: string
+          target_guidance?: string
+          target_model_version_id: string
+          target_name: string
+          target_position: number
+          target_section_title?: string
+          target_weight?: number
+        }
+        Returns: string
+      }
+      add_maturity_question: {
+        Args: {
+          target_allows_not_applicable?: boolean
+          target_help_text?: string
+          target_is_required?: boolean
+          target_model_version_id: string
+          target_options?: Json
+          target_position: number
+          target_prompt: string
+          target_question_type: string
+          target_section_id: string
+        }
+        Returns: string
+      }
       add_role_permission: {
         Args: {
           target_organisation_id: string
           target_permission_key: string
           target_role_version_id: string
         }
+        Returns: boolean
+      }
+      add_template_question: {
+        Args: {
+          target_allows_not_applicable?: boolean
+          target_help_text?: string
+          target_is_required?: boolean
+          target_options?: Json
+          target_position: number
+          target_prompt: string
+          target_question_type: string
+          target_section_id: string
+          target_template_version_id: string
+        }
+        Returns: string
+      }
+      add_template_section: {
+        Args: {
+          target_position: number
+          target_template_version_id: string
+          target_title: string
+        }
+        Returns: string
+      }
+      approve_maturity_assessment: {
+        Args: { target_assessment_id: string }
         Returns: boolean
       }
       authentication_rate_limit_allows: {
@@ -1530,6 +2461,26 @@ export type Database = {
           maximum_attempts: number
           window_seconds: number
         }
+        Returns: boolean
+      }
+      begin_assessor_review: {
+        Args: { target_assessment_id: string }
+        Returns: boolean
+      }
+      calculate_maturity_assessment_scores: {
+        Args: { target_assessment_id: string }
+        Returns: boolean
+      }
+      can_read_maturity_assessment: {
+        Args: { target_assessment_id: string; target_organisation_id: string }
+        Returns: boolean
+      }
+      cancel_maturity_assessment: {
+        Args: { target_assessment_id: string; target_reason?: string }
+        Returns: boolean
+      }
+      complete_self_assessment: {
+        Args: { target_assessment_id: string }
         Returns: boolean
       }
       complete_template_submission: {
@@ -1567,6 +2518,27 @@ export type Database = {
         Args: { target_body: string; target_resource_id: string }
         Returns: string
       }
+      create_maturity_action: {
+        Args: {
+          target_assessment_id: string
+          target_criterion_id: string
+          target_description?: string
+          target_due_at?: string
+          target_pillar_id: string
+          target_priority?: string
+          target_question_id?: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_maturity_model_draft: {
+        Args: { target_description?: string; target_display_name: string }
+        Returns: string
+      }
+      create_maturity_model_successor_version: {
+        Args: { target_model_id: string }
+        Returns: string
+      }
       create_organisation_unit: {
         Args: {
           target_organisation_id: string
@@ -1601,6 +2573,10 @@ export type Database = {
       }
       create_template_submission: {
         Args: { target_template_version_id: string }
+        Returns: string
+      }
+      create_template_successor_version: {
+        Args: { target_template_id: string }
         Returns: string
       }
       current_identity_state: {
@@ -1676,6 +2652,24 @@ export type Database = {
         }
         Returns: string
       }
+      link_criterion_question: {
+        Args: {
+          target_contributes_to_score?: boolean
+          target_criterion_id: string
+          target_question_id: string
+          target_scoring_metadata?: Json
+        }
+        Returns: string
+      }
+      link_maturity_evidence: {
+        Args: {
+          target_assessment_id: string
+          target_attachment_id: string
+          target_criterion_id: string
+          target_question_id?: string
+        }
+        Returns: string
+      }
       list_my_eligible_organisations: {
         Args: never
         Returns: {
@@ -1719,6 +2713,14 @@ export type Database = {
           reused_existing_account: boolean
           workforce_account_id: string
         }[]
+      }
+      publish_maturity_model_version: {
+        Args: { target_model_version_id: string }
+        Returns: boolean
+      }
+      publish_official_maturity_result: {
+        Args: { target_assessment_id: string }
+        Returns: string
       }
       publish_role_version: {
         Args: { target_organisation_id: string; target_role_version_id: string }
@@ -1810,6 +2812,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      start_maturity_assessment: {
+        Args: {
+          target_assessment_type: string
+          target_lead_assessor_membership_id?: string
+          target_model_version_id: string
+          target_unit_id: string
+        }
+        Returns: string
+      }
+      submit_maturity_assessment: {
+        Args: { target_assessment_id: string }
+        Returns: boolean
+      }
       suspend_or_close_organisation: {
         Args: {
           change_reason: string
@@ -1821,6 +2836,30 @@ export type Database = {
       switch_organisation: {
         Args: { target_organisation_id: string }
         Returns: boolean
+      }
+      upsert_maturity_assessment_answer: {
+        Args: {
+          target_assessment_id: string
+          target_date_value?: string
+          target_is_not_applicable?: boolean
+          target_json_value?: Json
+          target_number_value?: number
+          target_question_id: string
+          target_text_value?: string
+        }
+        Returns: string
+      }
+      upsert_template_answer: {
+        Args: {
+          target_date_value?: string
+          target_is_not_applicable?: boolean
+          target_json_value?: Json
+          target_number_value?: number
+          target_question_id: string
+          target_submission_id: string
+          target_text_value?: string
+        }
+        Returns: string
       }
     }
     Enums: {

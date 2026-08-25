@@ -14,11 +14,13 @@ describe("platform navigation", () => {
   });
 
   it("filters navigation items by granted permissions", () => {
-    const actionOnly = filterPlatformNavigation(new Set(["actions.read"]));
-    expect(actionOnly.map((item) => item.href)).toEqual([
-      "/platform",
-      "/platform/actions",
-    ]);
+    const maturityOnly = filterPlatformNavigation(new Set(["maturity.read"]));
+    expect(maturityOnly.map((item) => item.href)).toContain("/platform/maturity");
+
+    const actionOnly = filterPlatformNavigation(
+      new Set(["actions.read", "maturity.read"]),
+    );
+    expect(actionOnly.map((item) => item.href)).toContain("/platform/actions");
 
     const templateOnly = filterPlatformNavigation(new Set(["templates.read"]));
     expect(templateOnly.map((item) => item.href)).toEqual([

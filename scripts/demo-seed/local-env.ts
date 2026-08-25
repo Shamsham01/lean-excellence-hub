@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 
-import { assertDemoSeedAllowed, isLocalSupabaseUrl } from "./guards.ts";
+import { assertDemoSeedAllowed, isLocalSupabaseUrl } from "./guards";
 
 type LocalSupabaseEnv = {
   apiUrl: string;

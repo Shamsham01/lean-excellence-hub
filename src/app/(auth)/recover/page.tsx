@@ -1,4 +1,10 @@
+import Link from "next/link";
+
 import { requestRecovery } from "./actions";
+import { AuthCard } from "@/components/auth/auth-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default async function RecoverPage({
   searchParams,
@@ -8,19 +14,28 @@ export default async function RecoverPage({
   const { sent } = await searchParams;
 
   return (
-    <main>
-      <h1>Recover access</h1>
+    <AuthCard
+      title="Recover access"
+      description="We'll send recovery instructions if an eligible account exists."
+      footer={
+        <Link href="/login" className="text-sm text-primary hover:underline">
+          Back to sign in
+        </Link>
+      }
+    >
       {sent ? (
-        <p>
+        <p className="text-sm text-muted-foreground">
           If an eligible account exists, recovery instructions have been sent.
         </p>
       ) : (
-        <form action={requestRecovery}>
-          <label htmlFor="email">Email</label>
-          <input id="email" name="email" type="email" required />
-          <button type="submit">Request recovery</button>
+        <form action={requestRecovery} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" required />
+          </div>
+          <Button type="submit" className="w-full">Send recovery email</Button>
         </form>
       )}
-    </main>
+    </AuthCard>
   );
 }

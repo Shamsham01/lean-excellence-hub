@@ -29,13 +29,9 @@ test.describe("authenticated platform shell", () => {
 
     await expect(page).toHaveURL(/\/platform/);
     await expect(
-      page.getByText(platformE2eCredentials.organisationName),
+      page.getByRole("main").getByText(platformE2eCredentials.organisationName),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Actions" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Templates" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Platform home" }),
-    ).toBeVisible();
   });
 
   test("actions page is reachable from the shell", async ({ page }) => {

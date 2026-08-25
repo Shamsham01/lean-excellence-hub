@@ -1,57 +1,83 @@
 import { createAction } from "@/app/(platform)/platform/actions/actions";
+import { PageHeader } from "@/components/platform/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ActionsPage() {
   const supabase = await createServerSupabaseClient();
   const { data: actions } = await supabase
     .from("actions")
-    .select("id, title, status, priority, created_at")
+    .select("id, title, status, priority, created_at, due_at")
     .order("created_at", { ascending: false });
 
+  const openCount =
+    actions?.filter((a) => a.status === "open" || a.status === "in_progress").length ?? 0;
+
   return (
-    <section className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Actions</h1>
-        <p className="mt-2 text-muted-foreground">
-          Universal actions shared across future Lean modules.
-        </p>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title="Actions"
+        description="Improvement actions linked to assessments and operational work."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="bg-surface">
+          <CardContent className="p-4">
+            <p className="typography-metric-label">Open</p>
+            <p className="typography-metric-value">{openCount}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-surface">
+          <CardContent className="p-4">
+            <p className="typography-metric-label">Total</p>
+            <p className="typography-metric-value">{actions?.length ?? 0}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <form
-        action={createAction}
-        className="space-y-3 rounded-xl border border-border bg-card p-4"
-      >
-        <h2 className="text-lg font-medium">Create action</h2>
-        <input
-          className="min-h-11 w-full rounded-lg border border-border bg-background px-3"
-          name="title"
-          placeholder="Action title"
-          required
-        />
-        <textarea
-          className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2"
-          name="description"
-          placeholder="Description (optional)"
-        />
-        <Button type="submit">Create action</Button>
-      </form>
+      <Card>
+        <CardHeader>
+          <CardTitle>Create action</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={createAction} className="flex flex-col gap-4 max-w-lg">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" name="title" required placeholder="Action title" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" name="description" rows={3} />
+            </div>
+            <Button type="submit">Create action</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+      <div className="flex flex-col gap-2">
         {(actions ?? []).map((action) => (
-          <li key={action.id} className="px-4 py-3">
-            <p className="font-medium">{action.title}</p>
-            <p className="text-sm text-muted-foreground">
-              {action.status} · {action.priority}
-            </p>
-          </li>
+          <div
+            key={action.id}
+            className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+          >
+            <div>
+              <p className="font-medium">{action.title}</p>
+              <p className="typography-metadata">
+                {new Date(action.created_at).toLocaleDateString("en-GB")}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Badge variant="outline">{action.status}</Badge>
+              <Badge variant="secondary">{action.priority}</Badge>
+            </div>
+          </div>
         ))}
-        {(actions ?? []).length === 0 ? (
-          <li className="px-4 py-6 text-sm text-muted-foreground">
-            No actions yet.
-          </li>
-        ) : null}
-      </ul>
-    </section>
+      </div>
+    </div>
   );
 }

@@ -24,7 +24,10 @@ export default async function PlatformLayout({
   }
 
   return (
-    <PlatformShell organisationName={current.organisation_name}>
+    <PlatformShell
+      organisationName={current.organisation_name}
+      organisations={organisations}
+    >
       {children}
     </PlatformShell>
   );

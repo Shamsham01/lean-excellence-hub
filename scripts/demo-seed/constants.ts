@@ -76,6 +76,11 @@ export const DEMO_ROLES = {
       "attachments.upload",
       "comments.read",
       "comments.create",
+      "maturity.read",
+      "maturity.assess.formal",
+      "maturity.review",
+      "maturity.approve",
+      "maturity.results.publish",
     ],
     invitationTokenSeed: "apex-demo-manager-invitation-v1",
   },
@@ -88,8 +93,11 @@ export const DEMO_ROLES = {
     permissions: [
       "actions.read",
       "submissions.create",
+      "templates.read",
       "comments.read",
       "comments.create",
+      "maturity.read",
+      "maturity.assess.self",
     ],
     invitationTokenSeed: "apex-demo-operator-invitation-v1",
   },
@@ -100,4 +108,49 @@ export const DEMO_PLATFORM_SAMPLES = {
   templateName: "Line clearance checklist",
   templateDescription:
     "Minimal Milestone 4 template for local platform demonstrations.",
+  maturityFrameworkName: "Lean Excellence Framework",
+  maturityFrameworkDescription:
+    "Demonstration maturity framework for Apex Manufacturing local development.",
 } as const;
+
+export const DEMO_MATURITY_LEVELS = [
+  { number: 1, name: "Initial", color: "maturity-1" },
+  { number: 2, name: "Developing", color: "maturity-2" },
+  { number: 3, name: "Defined", color: "maturity-3" },
+  { number: 4, name: "Embedded", color: "maturity-4" },
+  { number: 5, name: "Excellence", color: "maturity-5" },
+] as const;
+
+export const DEMO_MATURITY_PILLARS = [
+  {
+    name: "Leadership",
+    criteria: [
+      "Leaders conduct structured Gemba",
+      "Leadership standard work visible",
+    ],
+  },
+  {
+    name: "People & Capability",
+    criteria: ["Skills matrix maintained", "Training plans active"],
+  },
+  {
+    name: "Daily Management",
+    criteria: ["Tier meetings run daily", "Visual boards current"],
+  },
+  {
+    name: "Continuous Improvement",
+    criteria: ["CI projects tracked", "Suggestion system active"],
+  },
+  {
+    name: "Problem Solving",
+    criteria: ["A3 countermeasure verification", "Root cause analysis used"],
+  },
+  {
+    name: "Standardisation",
+    criteria: ["Standards documented", "Standards audited"],
+  },
+  {
+    name: "Flow & Waste Elimination",
+    criteria: ["Value stream mapped", "Waste reduction targets set"],
+  },
+] as const;

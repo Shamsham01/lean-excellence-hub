@@ -1,14 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  DEMO_MATURITY_LEVELS,
+  DEMO_MATURITY_PILLARS,
   DEMO_ORGANISATION,
   DEMO_PLATFORM_SAMPLES,
   DEMO_ROLES,
   DEMO_UNITS,
   DEMO_USERS,
-} from "./constants.ts";
-import { invitationTokenDigest, invitationTokenFromSeed } from "./crypto.ts";
-import { loadLocalSupabaseEnv } from "./local-env.ts";
+} from "./constants";
+import { invitationTokenDigest, invitationTokenFromSeed } from "./crypto";
+import { loadLocalSupabaseEnv } from "./local-env";
 
 type DemoUserKey = keyof typeof DEMO_USERS;
 
@@ -41,6 +43,14 @@ async function ensureAuthUser(admin: SupabaseClient, userKey: DemoUserKey) {
     if (updated.error) {
       throw updated.error;
     }
+  }
+
+  const { error: enrolmentError } = await admin.rpc("finalise_identity_enrolment", {
+    target_user_id: user.id,
+  });
+
+  if (enrolmentError) {
+    throw enrolmentError;
   }
 }
 
@@ -338,6 +348,195 @@ async function ensureInvitationAccepted(
   }
 }
 
+async function ensureMaturityDemo(
+  client: SupabaseClient,
+  unitIds: UnitMap,
+) {
+  const { data: existing } = await client
+    .from("maturity_models")
+    .select("id")
+    .eq("display_name", DEMO_PLATFORM_SAMPLES.maturityFrameworkName)
+    .limit(1);
+
+  if ((existing ?? []).length > 0) {
+    return;
+  }
+
+  const { data: modelId, error: modelError } = await client.rpc(
+    "create_maturity_model_draft",
+    {
+      target_display_name: DEMO_PLATFORM_SAMPLES.maturityFrameworkName,
+      target_description: DEMO_PLATFORM_SAMPLES.maturityFrameworkDescription,
+    },
+  );
+
+  if (modelError) {
+    throw modelError;
+  }
+
+  const { data: version } = await client
+    .from("maturity_model_versions")
+    .select("id")
+    .eq("model_id", modelId)
+    .eq("version_number", 1)
+    .maybeSingle();
+
+  if (!version) {
+    throw new Error("Demo maturity version was not created.");
+  }
+
+  for (const level of DEMO_MATURITY_LEVELS) {
+    await client.rpc("add_maturity_level", {
+      target_model_version_id: version.id,
+      target_level_number: level.number,
+      target_name: level.name,
+      target_color_token: level.color,
+    });
+  }
+
+  let pillarPosition = 1;
+  for (const pillar of DEMO_MATURITY_PILLARS) {
+    const { data: pillarId, error: pillarError } = await client.rpc(
+      "add_maturity_pillar",
+      {
+        target_model_version_id: version.id,
+        target_name: pillar.name,
+        target_position: pillarPosition,
+        target_section_title: pillar.name,
+      },
+    );
+
+    if (pillarError) {
+      throw pillarError;
+    }
+
+    const { data: pillarRow } = await client
+      .from("maturity_pillars")
+      .select("section_id")
+      .eq("id", pillarId)
+      .maybeSingle();
+
+    if (!pillarRow?.section_id) {
+      throw new Error("Demo pillar section missing.");
+    }
+
+    let criterionPosition = 1;
+    for (const criterionName of pillar.criteria) {
+      const { data: criterionId, error: criterionError } = await client.rpc(
+        "add_maturity_criterion",
+        {
+          target_pillar_id: pillarId,
+          target_name: criterionName,
+          target_position: criterionPosition,
+        },
+      );
+
+      if (criterionError) {
+        throw criterionError;
+      }
+
+      const { data: questionId, error: questionError } = await client.rpc(
+        "add_maturity_question",
+        {
+          target_model_version_id: version.id,
+          target_section_id: pillarRow.section_id,
+          target_question_type: "score",
+          target_prompt: `Rate: ${criterionName}`,
+          target_position: criterionPosition,
+          target_allows_not_applicable: true,
+        },
+      );
+
+      if (questionError) {
+        throw questionError;
+      }
+
+      await client.rpc("link_criterion_question", {
+        target_criterion_id: criterionId,
+        target_question_id: questionId,
+        target_contributes_to_score: true,
+        target_scoring_metadata: { type: "direct" },
+      });
+
+      criterionPosition += 1;
+    }
+
+    pillarPosition += 1;
+  }
+
+  await client.rpc("publish_maturity_model_version", {
+    target_model_version_id: version.id,
+  });
+
+  const cornwallUnitId = unitIds["cornwall-plant"];
+  if (!cornwallUnitId) {
+    return;
+  }
+
+  const { data: historicalAssessmentId, error: histError } = await client.rpc(
+    "start_maturity_assessment",
+    {
+      target_model_version_id: version.id,
+      target_unit_id: cornwallUnitId,
+      target_assessment_type: "formal",
+    },
+  );
+
+  if (histError) {
+    throw histError;
+  }
+
+  const { data: criteria } = await client
+    .from("maturity_criteria")
+    .select("id")
+    .limit(3);
+
+  for (const criterion of criteria ?? []) {
+    const { data: links } = await client
+      .from("maturity_criterion_questions")
+      .select("question_id")
+      .eq("criterion_id", criterion.id)
+      .limit(1);
+
+    const questionId = links?.[0]?.question_id;
+    if (!questionId) continue;
+
+    await client.rpc("upsert_maturity_assessment_answer", {
+      target_assessment_id: historicalAssessmentId,
+      target_question_id: questionId,
+      target_number_value: 3.5,
+    });
+  }
+
+  await client.rpc("submit_maturity_assessment", {
+    target_assessment_id: historicalAssessmentId,
+  });
+  await client.rpc("begin_assessor_review", {
+    target_assessment_id: historicalAssessmentId,
+  });
+  await client.rpc("approve_maturity_assessment", {
+    target_assessment_id: historicalAssessmentId,
+  });
+  await client.rpc("publish_official_maturity_result", {
+    target_assessment_id: historicalAssessmentId,
+  });
+
+  const { data: selfAssessmentId, error: selfError } = await client.rpc(
+    "start_maturity_assessment",
+    {
+      target_model_version_id: version.id,
+      target_unit_id: cornwallUnitId,
+      target_assessment_type: "self",
+    },
+  );
+
+  if (selfError) {
+    throw selfError;
+  }
+
+  console.log(`Self assessment ready: ${selfAssessmentId}`);
+}
+
 async function ensurePlatformSamples(client: SupabaseClient) {
   const { count: actionCount, error: actionCountError } = await client
     .from("actions")
@@ -459,13 +658,16 @@ async function main() {
   );
 
   await ensurePlatformSamples(adminClient);
+  await ensureMaturityDemo(adminClient, unitIds);
 
   console.log("Demo seed complete.");
   console.log(
     `Organisation: ${DEMO_ORGANISATION.name} (${DEMO_ORGANISATION.code})`,
   );
   console.log("Admin login: admin@apex.local");
-  console.log("Routes: /platform, /platform/actions, /platform/templates");
+  console.log(
+    "Routes: /platform, /platform/maturity, /platform/actions, /platform/templates",
+  );
   console.log("Reset: npm run db:reset && npm run db:seed-demo");
 }
 

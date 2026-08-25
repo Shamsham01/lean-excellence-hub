@@ -62,7 +62,8 @@ jobs:
       - run: npm run db:types
       - name: Confirm committed database types are current
         run: git diff --exit-code -- src/platform/supabase/database.types.ts
-      - name: Playwright authenticated platform smoke
+      - run: npm run db:seed-demo
+      - name: Playwright Supabase-backed E2E
         shell: bash
         run: |
           eval "$(npx supabase status -o env)"
@@ -73,6 +74,6 @@ jobs:
           export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY"
           export SUPABASE_SECRET_KEY="$SERVICE_ROLE_KEY"
           npx playwright install --with-deps chromium
-          npx playwright test tests/e2e/platform-shell.spec.ts --workers=1
+          npx playwright test tests/e2e/platform-shell.spec.ts tests/e2e/maturity-journeys.spec.ts --workers=1
       - if: always()
         run: npm run db:stop

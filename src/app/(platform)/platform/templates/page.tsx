@@ -1,57 +1,63 @@
 import { createTemplate } from "@/app/(platform)/platform/templates/actions";
+import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function TemplatesPage() {
   const supabase = await createServerSupabaseClient();
   const { data: templates } = await supabase
     .from("templates")
-    .select("id, display_name, experience_type, created_at")
+    .select("id, display_name, description, experience_type, created_at")
     .order("created_at", { ascending: false });
 
   return (
-    <section className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Templates</h1>
-        <p className="mt-2 text-muted-foreground">
-          Versioned form foundation for future audits and assessments.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title="Templates"
+        description="Configurable forms and checklists for operational audits."
+      />
 
-      <form
-        action={createTemplate}
-        className="space-y-3 rounded-xl border border-border bg-card p-4"
-      >
-        <h2 className="text-lg font-medium">Create template draft</h2>
-        <input
-          className="min-h-11 w-full rounded-lg border border-border bg-background px-3"
-          name="displayName"
-          placeholder="Template name"
-          required
-        />
-        <textarea
-          className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2"
-          name="description"
-          placeholder="Description (optional)"
-        />
-        <Button type="submit">Create template</Button>
-      </form>
+      <Card>
+        <CardHeader>
+          <CardTitle>New template</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={createTemplate} className="flex flex-col gap-4 max-w-lg">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="displayName">Name</Label>
+              <Input id="displayName" name="displayName" required />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" name="description" rows={3} />
+            </div>
+            <Button type="submit">Create draft template</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+      <div className="grid gap-3 sm:grid-cols-2">
         {(templates ?? []).map((template) => (
-          <li key={template.id} className="px-4 py-3">
-            <p className="font-medium">{template.display_name}</p>
-            <p className="text-sm text-muted-foreground">
-              {template.experience_type}
-            </p>
-          </li>
+          <Card key={template.id} className="bg-surface">
+            <CardContent className="flex flex-col gap-2 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-medium">{template.display_name}</p>
+                <Badge variant="outline">{template.experience_type}</Badge>
+              </div>
+              {template.description ? (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {template.description}
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
         ))}
-        {(templates ?? []).length === 0 ? (
-          <li className="px-4 py-6 text-sm text-muted-foreground">
-            No templates yet.
-          </li>
-        ) : null}
-      </ul>
-    </section>
+      </div>
+    </div>
   );
 }

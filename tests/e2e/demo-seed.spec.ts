@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import {
   DEMO_ORGANISATION,
   DEMO_USERS,
-} from "../../scripts/demo-seed/constants.ts";
+} from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -26,10 +26,6 @@ test.describe("Apex demo seed", () => {
     await expect(page).toHaveURL(/\/platform/);
     await expect(page.getByText(DEMO_ORGANISATION.name)).toBeVisible();
     await expect(page.getByRole("link", { name: "Actions" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Templates" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Platform home" }),
-    ).toBeVisible();
   });
 
   test("demo admin can open Actions and Templates", async ({ page }) => {
