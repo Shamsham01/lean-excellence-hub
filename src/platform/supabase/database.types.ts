@@ -346,6 +346,834 @@ export type Database = {
           },
         ]
       }
+      benefit_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_categories_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benefit_evidence_links: {
+        Row: {
+          attachment_id: string
+          benefit_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+        }
+        Insert: {
+          attachment_id: string
+          benefit_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+        }
+        Update: {
+          attachment_id?: string
+          benefit_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_evidence_links_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_forecast_periods: {
+        Row: {
+          created_at: string
+          display_order: number
+          forecast_amount: number
+          forecast_version_id: string
+          id: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+        }
+        Insert: {
+          created_at?: string
+          display_order: number
+          forecast_amount: number
+          forecast_version_id: string
+          id?: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          forecast_amount?: number
+          forecast_version_id?: string
+          id?: string
+          organisation_id?: string
+          period_end?: string
+          period_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_forecast_periods_version_fkey"
+            columns: ["organisation_id", "forecast_version_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_forecast_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_forecast_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by_membership_id: string | null
+          assumptions: string | null
+          benefit_id: string
+          calculation_basis: string | null
+          created_at: string
+          created_by_membership_id: string
+          forecast_end_date: string
+          forecast_start_date: string
+          forecast_total_amount: number | null
+          id: string
+          lifecycle: string
+          organisation_id: string
+          realisation_pattern: string
+          submitted_at: string | null
+          target_date: string | null
+          target_measure_unit: string | null
+          target_measure_value: number | null
+          version_number: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_membership_id?: string | null
+          assumptions?: string | null
+          benefit_id: string
+          calculation_basis?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          forecast_end_date: string
+          forecast_start_date: string
+          forecast_total_amount?: number | null
+          id?: string
+          lifecycle?: string
+          organisation_id: string
+          realisation_pattern: string
+          submitted_at?: string | null
+          target_date?: string | null
+          target_measure_unit?: string | null
+          target_measure_value?: number | null
+          version_number: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_membership_id?: string | null
+          assumptions?: string | null
+          benefit_id?: string
+          calculation_basis?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          forecast_end_date?: string
+          forecast_start_date?: string
+          forecast_total_amount?: number | null
+          id?: string
+          lifecycle?: string
+          organisation_id?: string
+          realisation_pattern?: string
+          submitted_at?: string | null
+          target_date?: string | null
+          target_measure_unit?: string | null
+          target_measure_value?: number | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_forecast_versions_approver_fkey"
+            columns: ["organisation_id", "approved_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_forecast_versions_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_forecast_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_overlap_allocation_history: {
+        Row: {
+          allocation_percentage: number
+          assigned_by_membership_id: string
+          benefit_id: string
+          effective_from: string
+          id: string
+          organisation_id: string
+          overlap_group_id: string
+          reason: string | null
+          superseded_at: string | null
+        }
+        Insert: {
+          allocation_percentage: number
+          assigned_by_membership_id: string
+          benefit_id: string
+          effective_from?: string
+          id?: string
+          organisation_id: string
+          overlap_group_id: string
+          reason?: string | null
+          superseded_at?: string | null
+        }
+        Update: {
+          allocation_percentage?: number
+          assigned_by_membership_id?: string
+          benefit_id?: string
+          effective_from?: string
+          id?: string
+          organisation_id?: string
+          overlap_group_id?: string
+          reason?: string | null
+          superseded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_overlap_allocation_history_assigner_fkey"
+            columns: ["organisation_id", "assigned_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_overlap_allocation_history_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_overlap_allocation_history_group_fkey"
+            columns: ["organisation_id", "overlap_group_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_overlap_groups"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_overlap_groups: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          name: string
+          organisation_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          name: string
+          organisation_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          name?: string
+          organisation_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_overlap_groups_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_overlap_groups_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benefit_realisation_entries: {
+        Row: {
+          adjustment_of_entry_id: string | null
+          benefit_id: string
+          data_source: string | null
+          entry_kind: string
+          financial_amount: number | null
+          id: string
+          is_correction: boolean
+          measure_unit: string | null
+          measure_value: number | null
+          notes: string | null
+          organisation_id: string
+          period_end: string
+          period_start: string
+          recorded_at: string
+          recorded_by_membership_id: string
+          status: string
+          submitted_at: string | null
+          validated_at: string | null
+          validated_by_membership_id: string | null
+        }
+        Insert: {
+          adjustment_of_entry_id?: string | null
+          benefit_id: string
+          data_source?: string | null
+          entry_kind?: string
+          financial_amount?: number | null
+          id: string
+          is_correction?: boolean
+          measure_unit?: string | null
+          measure_value?: number | null
+          notes?: string | null
+          organisation_id: string
+          period_end: string
+          period_start: string
+          recorded_at?: string
+          recorded_by_membership_id: string
+          status?: string
+          submitted_at?: string | null
+          validated_at?: string | null
+          validated_by_membership_id?: string | null
+        }
+        Update: {
+          adjustment_of_entry_id?: string | null
+          benefit_id?: string
+          data_source?: string | null
+          entry_kind?: string
+          financial_amount?: number | null
+          id?: string
+          is_correction?: boolean
+          measure_unit?: string | null
+          measure_value?: number | null
+          notes?: string | null
+          organisation_id?: string
+          period_end?: string
+          period_start?: string
+          recorded_at?: string
+          recorded_by_membership_id?: string
+          status?: string
+          submitted_at?: string | null
+          validated_at?: string | null
+          validated_by_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_realisation_entries_adjustment_parent_fkey"
+            columns: ["organisation_id", "adjustment_of_entry_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_realisation_entries"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_realisation_entries_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_realisation_entries_recorder_fkey"
+            columns: ["organisation_id", "recorded_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_realisation_entries_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_realisation_entries_validator_fkey"
+            columns: ["organisation_id", "validated_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_reporting_settings: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string | null
+          fiscal_year_start_month: number
+          organisation_id: string
+          updated_at: string
+          updated_by_membership_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id?: string | null
+          fiscal_year_start_month?: number
+          organisation_id: string
+          updated_at?: string
+          updated_by_membership_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string | null
+          fiscal_year_start_month?: number
+          organisation_id?: string
+          updated_at?: string
+          updated_by_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_reporting_settings_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_reporting_settings_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefit_reporting_settings_updater_fkey"
+            columns: ["organisation_id", "updated_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_source_links: {
+        Row: {
+          benefit_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          relationship_role: string
+          source_resource_id: string
+        }
+        Insert: {
+          benefit_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          relationship_role: string
+          source_resource_id: string
+        }
+        Update: {
+          benefit_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          relationship_role?: string
+          source_resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_source_links_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_source_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_source_links_source_fkey"
+            columns: ["organisation_id", "source_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_status_history: {
+        Row: {
+          benefit_id: string
+          changed_at: string
+          changed_by_membership_id: string
+          from_status: string
+          id: string
+          organisation_id: string
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          benefit_id: string
+          changed_at?: string
+          changed_by_membership_id: string
+          from_status: string
+          id?: string
+          organisation_id: string
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          benefit_id?: string
+          changed_at?: string
+          changed_by_membership_id?: string
+          from_status?: string
+          id?: string
+          organisation_id?: string
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_status_history_actor_fkey"
+            columns: ["organisation_id", "changed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_status_history_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_submission_snapshots: {
+        Row: {
+          baseline_description: string | null
+          baseline_financial_value: number | null
+          baseline_measure_unit: string | null
+          baseline_measure_value: number | null
+          baseline_period_end: string | null
+          baseline_period_start: string | null
+          benefit_class: string
+          benefit_id: string
+          benefit_number: string
+          category_code_snapshot: string | null
+          category_id: string | null
+          category_name_snapshot: string | null
+          description: string | null
+          financial_type: string | null
+          forecast_total_amount: number | null
+          forecast_version_id: string | null
+          id: string
+          is_standalone_initiative: boolean
+          non_financial_type: string | null
+          organisation_id: string
+          organisational_unit_id: string
+          owner_display_name_snapshot: string | null
+          owner_membership_id: string
+          planned_realisation_end: string | null
+          planned_realisation_start: string | null
+          reporting_currency_snapshot: string | null
+          source_links_summary: Json
+          submitted_at: string
+          submitted_by_membership_id: string
+          target_date: string | null
+          target_measure_unit: string | null
+          target_measure_value: number | null
+          title: string
+          unit_code_snapshot: string
+          unit_name_snapshot: string
+        }
+        Insert: {
+          baseline_description?: string | null
+          baseline_financial_value?: number | null
+          baseline_measure_unit?: string | null
+          baseline_measure_value?: number | null
+          baseline_period_end?: string | null
+          baseline_period_start?: string | null
+          benefit_class: string
+          benefit_id: string
+          benefit_number: string
+          category_code_snapshot?: string | null
+          category_id?: string | null
+          category_name_snapshot?: string | null
+          description?: string | null
+          financial_type?: string | null
+          forecast_total_amount?: number | null
+          forecast_version_id?: string | null
+          id?: string
+          is_standalone_initiative?: boolean
+          non_financial_type?: string | null
+          organisation_id: string
+          organisational_unit_id: string
+          owner_display_name_snapshot?: string | null
+          owner_membership_id: string
+          planned_realisation_end?: string | null
+          planned_realisation_start?: string | null
+          reporting_currency_snapshot?: string | null
+          source_links_summary?: Json
+          submitted_at?: string
+          submitted_by_membership_id: string
+          target_date?: string | null
+          target_measure_unit?: string | null
+          target_measure_value?: number | null
+          title: string
+          unit_code_snapshot: string
+          unit_name_snapshot: string
+        }
+        Update: {
+          baseline_description?: string | null
+          baseline_financial_value?: number | null
+          baseline_measure_unit?: string | null
+          baseline_measure_value?: number | null
+          baseline_period_end?: string | null
+          baseline_period_start?: string | null
+          benefit_class?: string
+          benefit_id?: string
+          benefit_number?: string
+          category_code_snapshot?: string | null
+          category_id?: string | null
+          category_name_snapshot?: string | null
+          description?: string | null
+          financial_type?: string | null
+          forecast_total_amount?: number | null
+          forecast_version_id?: string | null
+          id?: string
+          is_standalone_initiative?: boolean
+          non_financial_type?: string | null
+          organisation_id?: string
+          organisational_unit_id?: string
+          owner_display_name_snapshot?: string | null
+          owner_membership_id?: string
+          planned_realisation_end?: string | null
+          planned_realisation_start?: string | null
+          reporting_currency_snapshot?: string | null
+          source_links_summary?: Json
+          submitted_at?: string
+          submitted_by_membership_id?: string
+          target_date?: string | null
+          target_measure_unit?: string | null
+          target_measure_value?: number | null
+          title?: string
+          unit_code_snapshot?: string
+          unit_name_snapshot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_submission_snapshots_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_submission_snapshots_submitter_fkey"
+            columns: ["organisation_id", "submitted_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_validation_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by_membership_id: string
+          benefit_id: string
+          completed_at: string | null
+          id: string
+          organisation_id: string
+          status: string
+          validation_role: string
+          validator_membership_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by_membership_id: string
+          benefit_id: string
+          completed_at?: string | null
+          id?: string
+          organisation_id: string
+          status?: string
+          validation_role: string
+          validator_membership_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by_membership_id?: string
+          benefit_id?: string
+          completed_at?: string | null
+          id?: string
+          organisation_id?: string
+          status?: string
+          validation_role?: string
+          validator_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_validation_assignments_assigner_fkey"
+            columns: ["organisation_id", "assigned_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_validation_assignments_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_validation_assignments_validator_fkey"
+            columns: ["organisation_id", "validator_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      benefit_validations: {
+        Row: {
+          benefit_id: string
+          created_at: string
+          decision: string
+          forecast_version_id: string
+          id: string
+          organisation_id: string
+          rationale: string
+          submission_snapshot_id: string
+          validation_role: string
+          validator_membership_id: string
+        }
+        Insert: {
+          benefit_id: string
+          created_at?: string
+          decision: string
+          forecast_version_id: string
+          id?: string
+          organisation_id: string
+          rationale: string
+          submission_snapshot_id: string
+          validation_role: string
+          validator_membership_id: string
+        }
+        Update: {
+          benefit_id?: string
+          created_at?: string
+          decision?: string
+          forecast_version_id?: string
+          id?: string
+          organisation_id?: string
+          rationale?: string
+          submission_snapshot_id?: string
+          validation_role?: string
+          validator_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_validations_benefit_fkey"
+            columns: ["organisation_id", "benefit_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_benefits"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_validations_forecast_version_fkey"
+            columns: ["organisation_id", "forecast_version_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_forecast_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_validations_submission_snapshot_fkey"
+            columns: ["organisation_id", "submission_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_submission_snapshots"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "benefit_validations_validator_fkey"
+            columns: ["organisation_id", "validator_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       business_audit_events: {
         Row: {
           actor_membership_id: string | null
@@ -2476,6 +3304,136 @@ export type Database = {
           {
             foreignKeyName: "gemba_walks_unit_fkey"
             columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      improvement_benefits: {
+        Row: {
+          baseline_description: string | null
+          baseline_financial_value: number | null
+          baseline_measure_unit: string | null
+          baseline_measure_value: number | null
+          baseline_period_end: string | null
+          baseline_period_start: string | null
+          benefit_class: string
+          benefit_number: string | null
+          category_id: string | null
+          created_at: string
+          created_by_membership_id: string
+          current_forecast_version_id: string | null
+          description: string | null
+          financial_type: string | null
+          id: string
+          is_standalone_initiative: boolean
+          non_financial_type: string | null
+          organisation_id: string
+          organisational_unit_id: string
+          owner_membership_id: string
+          planned_realisation_end: string | null
+          planned_realisation_start: string | null
+          reporting_currency_snapshot: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          baseline_description?: string | null
+          baseline_financial_value?: number | null
+          baseline_measure_unit?: string | null
+          baseline_measure_value?: number | null
+          baseline_period_end?: string | null
+          baseline_period_start?: string | null
+          benefit_class: string
+          benefit_number?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          current_forecast_version_id?: string | null
+          description?: string | null
+          financial_type?: string | null
+          id: string
+          is_standalone_initiative?: boolean
+          non_financial_type?: string | null
+          organisation_id: string
+          organisational_unit_id: string
+          owner_membership_id: string
+          planned_realisation_end?: string | null
+          planned_realisation_start?: string | null
+          reporting_currency_snapshot?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          baseline_description?: string | null
+          baseline_financial_value?: number | null
+          baseline_measure_unit?: string | null
+          baseline_measure_value?: number | null
+          baseline_period_end?: string | null
+          baseline_period_start?: string | null
+          benefit_class?: string
+          benefit_number?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          current_forecast_version_id?: string | null
+          description?: string | null
+          financial_type?: string | null
+          id?: string
+          is_standalone_initiative?: boolean
+          non_financial_type?: string | null
+          organisation_id?: string
+          organisational_unit_id?: string
+          owner_membership_id?: string
+          planned_realisation_end?: string | null
+          planned_realisation_start?: string | null
+          reporting_currency_snapshot?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "improvement_benefits_category_fkey"
+            columns: ["organisation_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_categories"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_benefits_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_benefits_current_forecast_version_fkey"
+            columns: ["organisation_id", "current_forecast_version_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_forecast_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_benefits_owner_fkey"
+            columns: ["organisation_id", "owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_benefits_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_benefits_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -6859,6 +7817,23 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: string
       }
+      add_benefit_source_link: {
+        Args: {
+          target_benefit_id: string
+          target_relationship_role?: string
+          target_source_resource_id: string
+        }
+        Returns: string
+      }
+      add_benefit_to_overlap_group: {
+        Args: {
+          target_allocation_percentage: number
+          target_benefit_id: string
+          target_overlap_group_id: string
+          target_reason?: string
+        }
+        Returns: string
+      }
       add_ci_project_methodology_phase: {
         Args: {
           target_description?: string
@@ -7047,11 +8022,19 @@ export type Database = {
         Args: { target_membership_id: string; target_session_id: string }
         Returns: string
       }
+      approve_benefit_forecast: {
+        Args: { target_forecast_version_id: string }
+        Returns: boolean
+      }
       approve_maturity_assessment: {
         Args: { target_assessment_id: string }
         Returns: boolean
       }
       approve_project: { Args: { target_project_id: string }; Returns: boolean }
+      archive_benefit_category: {
+        Args: { target_category_id: string }
+        Returns: boolean
+      }
       assign_ci_project_team_member: {
         Args: {
           target_membership_id: string
@@ -7136,6 +8119,10 @@ export type Database = {
         Args: { target_assessment_id: string; target_organisation_id: string }
         Returns: boolean
       }
+      cancel_benefit: {
+        Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
+      }
       cancel_maturity_assessment: {
         Args: { target_assessment_id: string; target_reason?: string }
         Returns: boolean
@@ -7203,6 +8190,108 @@ export type Database = {
           target_source_resource_id?: string
           target_title: string
           target_unit_id?: string
+        }
+        Returns: string
+      }
+      create_benefit_category: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_display_order?: number
+          target_name: string
+        }
+        Returns: string
+      }
+      create_benefit_draft: {
+        Args: {
+          target_benefit_class: string
+          target_category_id?: string
+          target_description?: string
+          target_financial_type?: string
+          target_is_standalone_initiative?: boolean
+          target_non_financial_type?: string
+          target_organisational_unit_id: string
+          target_owner_membership_id?: string
+          target_primary_source_resource_id?: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_benefit_forecast_draft: {
+        Args: {
+          target_assumptions?: string
+          target_benefit_id: string
+          target_calculation_basis?: string
+          target_forecast_end_date: string
+          target_forecast_start_date: string
+          target_forecast_total_amount?: number
+          target_realisation_pattern: string
+          target_target_date?: string
+          target_target_measure_unit?: string
+          target_target_measure_value?: number
+        }
+        Returns: string
+      }
+      create_benefit_forecast_successor_version: {
+        Args: { target_benefit_id: string }
+        Returns: string
+      }
+      create_benefit_from_ci_project: {
+        Args: {
+          target_benefit_class: string
+          target_category_id?: string
+          target_description?: string
+          target_financial_type?: string
+          target_non_financial_type?: string
+          target_organisational_unit_id?: string
+          target_owner_membership_id?: string
+          target_project_id: string
+          target_title?: string
+        }
+        Returns: string
+      }
+      create_benefit_from_suggestion: {
+        Args: {
+          target_benefit_class: string
+          target_category_id?: string
+          target_description?: string
+          target_financial_type?: string
+          target_non_financial_type?: string
+          target_organisational_unit_id?: string
+          target_owner_membership_id?: string
+          target_suggestion_id: string
+          target_title?: string
+        }
+        Returns: string
+      }
+      create_benefit_overlap_group: {
+        Args: { target_name: string; target_reason?: string }
+        Returns: string
+      }
+      create_benefit_realisation_adjustment: {
+        Args: {
+          target_data_source?: string
+          target_financial_amount?: number
+          target_is_correction?: boolean
+          target_measure_unit?: string
+          target_measure_value?: number
+          target_notes?: string
+          target_parent_entry_id: string
+          target_period_end?: string
+          target_period_start?: string
+        }
+        Returns: string
+      }
+      create_benefit_realisation_entry: {
+        Args: {
+          target_benefit_id: string
+          target_data_source?: string
+          target_financial_amount?: number
+          target_measure_unit?: string
+          target_measure_value?: number
+          target_notes?: string
+          target_period_end: string
+          target_period_start: string
         }
         Returns: string
       }
@@ -7621,6 +8710,36 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      get_benefit_detail: { Args: { target_benefit_id: string }; Returns: Json }
+      get_benefit_forecast_history: {
+        Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      get_benefit_realisation_history: {
+        Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      get_benefit_realisation_summary: {
+        Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      get_benefit_validation_queue: { Args: never; Returns: Json }
+      get_benefits_list: {
+        Args: {
+          target_benefit_class?: string
+          target_category_id?: string
+          target_financial_type?: string
+          target_non_financial_type?: string
+          target_owner_membership_id?: string
+          target_page?: number
+          target_page_size?: number
+          target_search?: string
+          target_status?: string
+          target_unit_id?: string
+        }
+        Returns: Json
+      }
+      get_benefits_overview: { Args: never; Returns: Json }
       get_capability_dashboard: { Args: never; Returns: Json }
       get_ci_project_detail: {
         Args: { target_project_id: string }
@@ -7635,6 +8754,10 @@ export type Database = {
           target_status?: string
           target_unit_id?: string
         }
+        Returns: Json
+      }
+      get_eligible_benefit_validators: {
+        Args: { target_benefit_id: string }
         Returns: Json
       }
       get_membership_capability_profile_header: {
@@ -7665,8 +8788,26 @@ export type Database = {
         }
         Returns: Json
       }
+      get_potential_benefit_overlaps: {
+        Args: { target_benefit_id: string }
+        Returns: {
+          candidate_benefit_id: string
+          candidate_benefit_number: string
+          candidate_title: string
+          signal_detail: string
+          signal_type: string
+        }[]
+      }
+      get_project_benefits: {
+        Args: { target_project_id: string }
+        Returns: Json
+      }
       get_recognition_feed: {
         Args: { target_page?: number; target_page_size?: number }
+        Returns: Json
+      }
+      get_suggestion_benefits: {
+        Args: { target_suggestion_id: string }
         Returns: Json
       }
       get_suggestion_detail: {
@@ -7736,6 +8877,10 @@ export type Database = {
         }
         Returns: string
       }
+      link_benefit_evidence: {
+        Args: { target_attachment_id: string; target_benefit_id: string }
+        Returns: string
+      }
       link_ci_project_evidence: {
         Args: {
           target_attachment_id: string
@@ -7791,6 +8936,10 @@ export type Database = {
           organisation_name: string
           selected: boolean
         }[]
+      }
+      mark_benefit_realised: {
+        Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
       }
       mark_suggestion_implemented: {
         Args: {
@@ -7906,6 +9055,15 @@ export type Database = {
         }
         Returns: string
       }
+      record_benefit_validation: {
+        Args: {
+          target_benefit_id: string
+          target_decision: string
+          target_rationale: string
+          target_validation_role: string
+        }
+        Returns: string
+      }
       record_metric_measurement: {
         Args: {
           target_measured_at?: string
@@ -7967,6 +9125,10 @@ export type Database = {
         }
         Returns: string
       }
+      reject_benefit_realisation_entry: {
+        Args: { target_entry_id: string; target_reason?: string }
+        Returns: boolean
+      }
       release_authentication_rate_limit: {
         Args: {
           limiter_dimension: string
@@ -7977,9 +9139,29 @@ export type Database = {
         }
         Returns: boolean
       }
+      remove_benefit_from_overlap_group: {
+        Args: {
+          target_benefit_id: string
+          target_overlap_group_id: string
+          target_reason?: string
+        }
+        Returns: boolean
+      }
+      remove_benefit_source_link: {
+        Args: { target_benefit_id: string; target_source_resource_id: string }
+        Returns: boolean
+      }
       remove_training_session_participant: {
         Args: { target_participant_id: string; target_session_id: string }
         Returns: boolean
+      }
+      replace_benefit_forecast_periods: {
+        Args: { target_forecast_version_id: string; target_periods: Json }
+        Returns: boolean
+      }
+      resolve_benefit_submit_validators: {
+        Args: { target_benefit_id: string }
+        Returns: Json
       }
       resolve_workforce_login: {
         Args: { organisation_code: string; workforce_alias: string }
@@ -7997,6 +9179,10 @@ export type Database = {
         Returns: boolean
       }
       resume_project: { Args: { target_project_id: string }; Returns: boolean }
+      return_benefit_to_draft: {
+        Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
+      }
       return_project_to_draft: {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
@@ -8047,6 +9233,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      start_benefit_realisation: {
+        Args: { target_benefit_id: string }
+        Returns: boolean
+      }
       start_five_s_audit: {
         Args: {
           target_schedule_occurrence_id?: string
@@ -8073,6 +9263,22 @@ export type Database = {
         Returns: string
       }
       start_project: { Args: { target_project_id: string }; Returns: boolean }
+      submit_benefit: {
+        Args: {
+          target_benefit_id: string
+          target_ci_validator_membership_id: string
+          target_finance_validator_membership_id?: string
+        }
+        Returns: string
+      }
+      submit_benefit_forecast: {
+        Args: { target_forecast_version_id: string }
+        Returns: boolean
+      }
+      submit_benefit_realisation_entry: {
+        Args: { target_entry_id: string }
+        Returns: boolean
+      }
       submit_ci_project_charter: {
         Args: { target_project_id: string }
         Returns: boolean
@@ -8097,6 +9303,62 @@ export type Database = {
       switch_organisation: {
         Args: { target_organisation_id: string }
         Returns: boolean
+      }
+      update_benefit_category: {
+        Args: {
+          target_category_id: string
+          target_description?: string
+          target_display_order?: number
+          target_name: string
+        }
+        Returns: boolean
+      }
+      update_benefit_draft: {
+        Args: {
+          target_baseline_description?: string
+          target_baseline_financial_value?: number
+          target_baseline_measure_unit?: string
+          target_baseline_measure_value?: number
+          target_baseline_period_end?: string
+          target_baseline_period_start?: string
+          target_benefit_class?: string
+          target_benefit_id: string
+          target_category_id?: string
+          target_description?: string
+          target_financial_type?: string
+          target_is_standalone_initiative?: boolean
+          target_non_financial_type?: string
+          target_organisational_unit_id?: string
+          target_owner_membership_id?: string
+          target_planned_realisation_end?: string
+          target_planned_realisation_start?: string
+          target_title: string
+        }
+        Returns: boolean
+      }
+      update_benefit_forecast_draft: {
+        Args: {
+          target_assumptions?: string
+          target_calculation_basis?: string
+          target_forecast_end_date: string
+          target_forecast_start_date: string
+          target_forecast_total_amount?: number
+          target_forecast_version_id: string
+          target_realisation_pattern: string
+          target_target_date?: string
+          target_target_measure_unit?: string
+          target_target_measure_value?: number
+        }
+        Returns: boolean
+      }
+      update_benefit_overlap_allocation: {
+        Args: {
+          target_allocation_percentage: number
+          target_benefit_id: string
+          target_overlap_group_id: string
+          target_reason?: string
+        }
+        Returns: string
       }
       update_ci_project_draft: {
         Args: {
@@ -8175,6 +9437,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      upsert_benefit_reporting_settings: {
+        Args: { target_fiscal_year_start_month: number }
+        Returns: boolean
+      }
       upsert_five_s_audit_answer: {
         Args: {
           target_audit_id: string
@@ -8222,6 +9488,14 @@ export type Database = {
           target_text_value?: string
         }
         Returns: string
+      }
+      validate_benefit_realisation_entry: {
+        Args: { target_entry_id: string }
+        Returns: boolean
+      }
+      withdraw_benefit: {
+        Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
       }
       withdraw_suggestion: {
         Args: { target_reason?: string; target_suggestion_id: string }

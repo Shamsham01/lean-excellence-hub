@@ -3,6 +3,8 @@ import Link from "next/link";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
+import { formatBenefitCurrencyAmount } from "@/lib/benefits/forecast";
+import type { BenefitsOverview } from "@/lib/benefits/types";
 import { AssessmentStatusBadge, ScoreBadge } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,21 @@ export default async function PlatformHomePage() {
     ? ((await supabase.rpc("get_suggestions_overview")).data as Record<string, unknown> | null)
     : null;
 
+  const canReadBenefits = await currentMemberHasPermission("benefits.read");
+  const benefitsOverview = canReadBenefits
+    ? ((await supabase.rpc("get_benefits_overview")).data as BenefitsOverview | null)
+    : null;
+
+  const benefitsAwaitingValidation =
+    (benefitsOverview?.awaiting_validation?.benefits ?? 0) +
+    (benefitsOverview?.awaiting_validation?.realisation_entries ?? 0);
+  const benefitsValidatedYtd =
+    benefitsOverview?.financial_by_type?.reduce(
+      (sum, row) => sum + Number(row.validated_realised_ytd ?? 0),
+      0,
+    ) ?? 0;
+  const benefitsRealising = benefitsOverview?.status_pipeline?.realising ?? 0;
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -119,6 +136,20 @@ export default async function PlatformHomePage() {
             label="Ideas awaiting review"
             value={(suggestionsOverview?.awaiting_review as number) ?? 0}
             hint={`${(suggestionsOverview?.submitted_this_month as number) ?? 0} submitted this month`}
+          />
+        ) : null}
+        {canReadBenefits ? (
+          <MetricCard
+            label="Benefits realising"
+            value={benefitsRealising}
+            hint={`${benefitsAwaitingValidation} awaiting validation`}
+          />
+        ) : null}
+        {canReadBenefits ? (
+          <MetricCard
+            label="Validated benefits YTD"
+            value={formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
+            hint="Financial portfolio (allocated)"
           />
         ) : null}
       </div>
@@ -191,6 +222,24 @@ export default async function PlatformHomePage() {
             <CardContent className="text-sm text-muted-foreground space-y-1">
               <p>{(suggestionsOverview?.implementing as number) ?? 0} implementing</p>
               <p>{(suggestionsOverview?.implemented as number) ?? 0} implemented</p>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {canReadBenefits ? (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Benefits</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/platform/benefits">Open</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-1">
+              <p>{benefitsRealising} realising</p>
+              <p>{benefitsAwaitingValidation} awaiting validation</p>
+              <p>
+                Validated YTD {formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
+              </p>
             </CardContent>
           </Card>
         ) : null}

@@ -46,6 +46,12 @@ export const platformNavigation: PlatformNavItem[] = [
     section: "improvement",
   },
   {
+    href: "/platform/benefits",
+    label: "Benefits",
+    permission: "benefits.read",
+    section: "improvement",
+  },
+  {
     href: "/platform/suggestions",
     label: "Suggestions",
     permission: "suggestions.read",

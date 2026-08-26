@@ -98,17 +98,20 @@ remain in the later shared foundation. See
 
 ## Benefits
 
-Reserved for later implementation:
+Implemented in Milestone 10 as governed improvement-benefit value (not a general ledger):
 
-- `benefit_types`: organisation-configurable definitions seeded from defaults.
-- `benefits`: authoritative identity, one originating resource, owner, type, lifecycle, and non-sensitive description.
-- `benefit_links`: contextual navigation only; never additional reportable value.
-- `benefit_revisions`: immutable forecast/calculation inputs and assumptions.
-- `benefit_financial_details`: sensitive values and currency behind independent financial permission.
-- `benefit_validations`: decisions against an exact revision with default creator/owner separation of duties.
-- `benefit_realisations`: dated delivered value distinct from forecast and validation.
+- `benefit_reporting_settings`: organisation reporting currency and fiscal-year configuration.
+- `benefit_categories`: organisation-configurable categories (no production migration seed; demo via `db:seed-demo`).
+- `improvement_benefits`: authoritative benefit identity, classification (financial/non-financial), owner, unit, lifecycle, reporting-currency snapshot, standalone/source metadata.
+- `benefit_status_history`: append-only lifecycle transitions.
+- `benefit_submission_snapshots`: immutable submit-time benefit + forecast snapshot.
+- `benefit_source_links`: draft-mutable, submit-immutable links to originating resources (project/suggestion); no value duplication.
+- `benefit_forecast_versions` / `benefit_forecast_periods`: versioned forecasts with draft/submit/approve/successor lifecycle; period sums validated at submit/approval.
+- `benefit_validation_assignments` / `benefit_validations`: CI and finance validation with separation of duties.
+- `benefit_overlap_groups` / `benefit_overlap_allocations` / `benefit_overlap_allocation_history`: overlap control with RPC locking and append-only history.
+- `benefit_realisation_entries`: dated actuals/measures with signed-delta adjustments and finance validation.
 
-Reporting calculates forecast, validated, and realised totals from their respective authoritative records. Original currency and organisation reporting-currency context are retained; conversion and calculators are deferred.
+Authoritative money is stored as PostgreSQL `NUMERIC`. Portfolio queries aggregate forecast, validated, and realised totals separately by classification. M8/M9 integration uses `get_project_benefits` and `get_suggestion_benefits` without extending `get_ci_project_detail` or `get_suggestion_detail`.
 
 ## Lifecycle and retention
 

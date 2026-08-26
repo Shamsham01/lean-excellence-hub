@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 
 
 import { SuggestionDetail } from "@/components/suggestions/suggestion-detail";
-
+import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
+import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -84,6 +85,15 @@ export default async function SuggestionDetailPage({
 
 
 
+  const { data: suggestionBenefitsData } = await callBenefitRpc<{ items: LinkedBenefitSummary[] }>(
+    supabase,
+    "get_suggestion_benefits",
+    { target_suggestion_id: suggestionId },
+  );
+  const benefits = suggestionBenefitsData?.items ?? [];
+
+
+
   return (
 
     <div className="flex flex-col gap-6">
@@ -104,6 +114,7 @@ export default async function SuggestionDetailPage({
             mime_type: item.mime_type,
             byte_size: item.byte_size as number,
           }))}
+        benefits={benefits}
 
         canManage={canManage}
 

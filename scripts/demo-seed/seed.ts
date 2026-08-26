@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import {
+  DEMO_BENEFIT_CATEGORIES,
+  DEMO_BENEFITS,
   DEMO_CI_METHODOLOGIES,
   DEMO_CI_PROJECTS,
   DEMO_MATURITY_LEVELS,
@@ -29,6 +31,14 @@ import { invitationTokenDigest, invitationTokenFromSeed } from "./crypto";
 import { loadLocalSupabaseEnv } from "./local-env";
 
 type DemoUserKey = keyof typeof DEMO_USERS;
+
+type DemoRoleKey = keyof typeof DEMO_ROLES;
+
+const DEMO_USER_ROLE_KEY: Record<Exclude<DemoUserKey, "admin">, DemoRoleKey> = {
+  manager: "manager",
+  operator: "operator",
+  finance: "financeValidator",
+};
 
 type UnitMap = Record<string, string>;
 
@@ -349,6 +359,421 @@ async function ensureM9RecognitionAward(
   });
 }
 
+async function isM10DemoComplete(serviceAdmin: SupabaseClient): Promise<boolean> {
+  const { count: categoryCount } = await serviceAdmin
+    .from("benefit_categories")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  const { count: benefitCount } = await serviceAdmin
+    .from("improvement_benefits")
+    .select("id", { count: "exact", head: true });
+
+  const { data: financeMembership } = await serviceAdmin
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.finance.id)
+    .maybeSingle();
+
+  return (
+    categoryCount === DEMO_BENEFIT_CATEGORIES.length &&
+    benefitCount === DEMO_BENEFITS.length &&
+    Boolean(financeMembership)
+  );
+}
+
+type DemoBenefitConfig = (typeof DEMO_BENEFITS)[number];
+
+function buildMonthlyForecastPeriods(
+  startDate: string,
+  endDate: string,
+  monthlyAmount: number,
+) {
+  const periods: Array<{
+    period_start: string;
+    period_end: string;
+    forecast_amount: number;
+    display_order: number;
+  }> = [];
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  let displayOrder = 1;
+
+  while (cursor <= end) {
+    const periodStart = new Date(cursor);
+    const periodEnd = new Date(
+      Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0),
+    );
+
+    if (periodEnd > end) {
+      break;
+    }
+
+    periods.push({
+      period_start: periodStart.toISOString().slice(0, 10),
+      period_end: periodEnd.toISOString().slice(0, 10),
+      forecast_amount: monthlyAmount,
+      display_order: displayOrder,
+    });
+
+    cursor = new Date(
+      Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1),
+    );
+    displayOrder += 1;
+  }
+
+  return periods;
+}
+
+async function ensureDemoBenefitCategories(
+  managerClient: SupabaseClient,
+): Promise<Record<string, string>> {
+  const categoryIds: Record<string, string> = {};
+
+  for (const category of DEMO_BENEFIT_CATEGORIES) {
+    const { data: existing } = await managerClient
+      .from("benefit_categories")
+      .select("id")
+      .eq("code", category.code)
+      .maybeSingle();
+
+    if (existing?.id) {
+      categoryIds[category.code] = existing.id;
+      continue;
+    }
+
+    const insertedId = (await expectRpc(managerClient, "create_benefit_category", {
+      target_name: category.name,
+      target_code: category.code,
+      target_display_order: category.displayOrder,
+    })) as string;
+
+    categoryIds[category.code] = insertedId;
+  }
+
+  return categoryIds;
+}
+
+async function resolveDemoProjectId(
+  client: SupabaseClient,
+  projectCode: string,
+): Promise<string> {
+  const project = DEMO_CI_PROJECTS.find((row) => row.code === projectCode);
+  if (!project) {
+    throw new Error(`Unknown demo project code: ${projectCode}`);
+  }
+
+  const { data, error } = await client
+    .from("ci_projects")
+    .select("id")
+    .eq("title", project.title)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw error ?? new Error(`Demo project missing for code ${projectCode}`);
+  }
+
+  return data.id;
+}
+
+async function seedDemoBenefitForecast(
+  managerClient: SupabaseClient,
+  benefitId: string,
+  config: DemoBenefitConfig,
+) {
+  const forecastArgs: Record<string, unknown> = {
+    target_benefit_id: benefitId,
+    target_realisation_pattern: config.realisationPattern,
+    target_forecast_start_date: config.forecastStart,
+    target_forecast_end_date: config.forecastEnd,
+  };
+
+  if (config.benefitClass === "financial") {
+    forecastArgs.target_forecast_total_amount = config.forecastTotal;
+    forecastArgs.target_calculation_basis = "Demo forecast for local development.";
+  } else {
+    forecastArgs.target_target_measure_value = config.targetMeasureValue;
+    forecastArgs.target_target_measure_unit = config.targetMeasureUnit;
+    forecastArgs.target_target_date = config.targetDate;
+  }
+
+  const forecastVersionId = (await expectRpc(
+    managerClient,
+    "create_benefit_forecast_draft",
+    forecastArgs,
+  )) as string;
+
+  if (
+    config.benefitClass === "financial" &&
+    config.realisationPattern === "recurring" &&
+    "monthlyForecastAmount" in config
+  ) {
+    await expectRpc(managerClient, "replace_benefit_forecast_periods", {
+      target_forecast_version_id: forecastVersionId,
+      target_periods: buildMonthlyForecastPeriods(
+        config.forecastStart,
+        config.forecastEnd,
+        config.monthlyForecastAmount,
+      ),
+    });
+  } else if (config.benefitClass === "financial") {
+    await expectRpc(managerClient, "replace_benefit_forecast_periods", {
+      target_forecast_version_id: forecastVersionId,
+      target_periods: [
+        {
+          period_start: config.forecastStart,
+          period_end: config.forecastEnd,
+          forecast_amount: config.forecastTotal,
+          display_order: 1,
+        },
+      ],
+    });
+  }
+
+  await expectRpc(managerClient, "submit_benefit_forecast", {
+    target_forecast_version_id: forecastVersionId,
+  });
+
+  return forecastVersionId;
+}
+
+async function submitDemoBenefitForValidation(
+  managerClient: SupabaseClient,
+  benefitId: string,
+  managerMembershipId: string,
+  financeMembershipId: string | null,
+) {
+  await expectRpc(managerClient, "submit_benefit", {
+    target_benefit_id: benefitId,
+    target_ci_validator_membership_id: managerMembershipId,
+    target_finance_validator_membership_id: financeMembershipId,
+  });
+}
+
+async function seedDemoBenefitRealisationEntries(
+  managerClient: SupabaseClient,
+  financeClient: SupabaseClient,
+  benefitId: string,
+  config: DemoBenefitConfig,
+) {
+  if (!("realisationEntries" in config) || !config.realisationEntries?.length) {
+    return;
+  }
+
+  for (const entry of config.realisationEntries) {
+    const entryId = (await expectRpc(managerClient, "create_benefit_realisation_entry", {
+      target_benefit_id: benefitId,
+      target_period_start: entry.periodStart,
+      target_period_end: entry.periodEnd,
+      target_financial_amount:
+        "financialAmount" in entry ? entry.financialAmount : null,
+      target_measure_value: "measureValue" in entry ? entry.measureValue : null,
+      target_measure_unit: "measureUnit" in entry ? entry.measureUnit : null,
+      target_data_source: entry.dataSource,
+    })) as string;
+
+    await expectRpc(managerClient, "submit_benefit_realisation_entry", {
+      target_entry_id: entryId,
+    });
+
+    await expectRpc(financeClient, "validate_benefit_realisation_entry", {
+      target_entry_id: entryId,
+    });
+  }
+}
+
+async function seedDemoBenefitStory(
+  managerClient: SupabaseClient,
+  financeClient: SupabaseClient,
+  operationsUnitId: string,
+  categoryIds: Record<string, string>,
+  managerMembershipId: string,
+  financeMembershipId: string,
+  config: DemoBenefitConfig,
+) {
+  const { data: existing } = await managerClient
+    .from("improvement_benefits")
+    .select("id, status")
+    .eq("title", config.title)
+    .maybeSingle();
+
+  if (existing) {
+    return;
+  }
+
+  let benefitId: string;
+
+  if ("standalone" in config && config.standalone) {
+    benefitId = (await expectRpc(managerClient, "create_benefit_draft", {
+      target_title: config.title,
+      target_organisational_unit_id: operationsUnitId,
+      target_benefit_class: config.benefitClass,
+      target_financial_type: config.financialType,
+      target_category_id: categoryIds[config.categoryCode],
+      target_owner_membership_id: managerMembershipId,
+      target_is_standalone_initiative: true,
+      target_description: config.baselineDescription,
+    })) as string;
+  } else if ("projectCode" in config && config.projectCode) {
+    const projectId = await resolveDemoProjectId(managerClient, config.projectCode);
+    benefitId = (await expectRpc(managerClient, "create_benefit_from_ci_project", {
+      target_project_id: projectId,
+      target_benefit_class: config.benefitClass,
+      target_title: config.title,
+      target_financial_type:
+        config.benefitClass === "financial" ? config.financialType : null,
+      target_non_financial_type:
+        config.benefitClass === "non_financial" ? config.nonFinancialType : null,
+      target_category_id: categoryIds[config.categoryCode],
+      target_organisational_unit_id: operationsUnitId,
+      target_owner_membership_id: managerMembershipId,
+    })) as string;
+  } else {
+    throw new Error(`Demo benefit ${config.key} is missing a source configuration`);
+  }
+
+  const updateArgs: Record<string, unknown> = {
+    target_benefit_id: benefitId,
+    target_title: config.title,
+    target_description: config.baselineDescription,
+    target_category_id: categoryIds[config.categoryCode],
+    target_organisational_unit_id: operationsUnitId,
+    target_owner_membership_id: managerMembershipId,
+    target_baseline_description: config.baselineDescription,
+  };
+
+  if (config.benefitClass === "financial") {
+    updateArgs.target_baseline_financial_value = config.baselineFinancialValue;
+  } else {
+    updateArgs.target_baseline_measure_value = config.baselineMeasureValue;
+    updateArgs.target_baseline_measure_unit = config.baselineMeasureUnit;
+  }
+
+  await expectRpc(managerClient, "update_benefit_draft", updateArgs);
+  await seedDemoBenefitForecast(managerClient, benefitId, config);
+
+  const financeValidatorId =
+    config.benefitClass === "financial" ? financeMembershipId : null;
+  await submitDemoBenefitForValidation(
+    managerClient,
+    benefitId,
+    managerMembershipId,
+    financeValidatorId,
+  );
+
+  if ("ciValidated" in config && config.ciValidated) {
+    await expectRpc(managerClient, "record_benefit_validation", {
+      target_benefit_id: benefitId,
+      target_validation_role: "ci",
+      target_decision: "approve",
+      target_rationale: "CI validation approved for demo seed.",
+    });
+    return;
+  }
+
+  await expectRpc(managerClient, "record_benefit_validation", {
+    target_benefit_id: benefitId,
+    target_validation_role: "ci",
+    target_decision: "approve",
+    target_rationale: "CI validation approved for demo seed.",
+  });
+
+  if (config.benefitClass === "financial") {
+    await expectRpc(financeClient, "record_benefit_validation", {
+      target_benefit_id: benefitId,
+      target_validation_role: "finance",
+      target_decision: "approve",
+      target_rationale: "Finance validation approved for demo seed.",
+    });
+  }
+
+  await expectRpc(managerClient, "start_benefit_realisation", {
+    target_benefit_id: benefitId,
+  });
+
+  await seedDemoBenefitRealisationEntries(
+    managerClient,
+    financeClient,
+    benefitId,
+    config,
+  );
+
+  if (config.targetStatus === "realised") {
+    await expectRpc(managerClient, "mark_benefit_realised", {
+      target_benefit_id: benefitId,
+      target_reason: "Target measure sustained for demo seed.",
+    });
+  }
+}
+
+async function ensureM10Demo(
+  signedInAdmin: SupabaseClient,
+  serviceAdmin: SupabaseClient,
+  organisationId: string,
+  unitIds: UnitMap,
+  apiUrl: string,
+  publishableKey: string,
+) {
+  if (await isM10DemoComplete(serviceAdmin)) {
+    console.log("M10 demo already seeded.");
+    return;
+  }
+
+  const operationsUnitId = unitIds.operations;
+  if (!operationsUnitId) {
+    throw new Error("Demo operations unit is missing.");
+  }
+
+  const adminClient = await signInUser(apiUrl, publishableKey, "admin");
+  await switchOrganisation(
+    adminClient,
+    (await resolveOrganisationId(adminClient)) as string,
+  );
+  const categoryIds = await ensureDemoBenefitCategories(adminClient);
+
+  const managerClient = await signInUser(apiUrl, publishableKey, "manager");
+  await switchOrganisation(
+    managerClient,
+    (await resolveOrganisationId(managerClient)) as string,
+  );
+
+  const financeClient = await signInUser(apiUrl, publishableKey, "finance");
+  await switchOrganisation(
+    financeClient,
+    (await resolveOrganisationId(financeClient)) as string,
+  );
+
+  const { data: managerMembership } = await managerClient
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.manager.id)
+    .maybeSingle();
+  const { data: financeMembership } = await financeClient
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.finance.id)
+    .maybeSingle();
+
+  if (!managerMembership?.id || !financeMembership?.id) {
+    throw new Error("M10 demo memberships missing");
+  }
+
+  for (const benefit of DEMO_BENEFITS) {
+    await seedDemoBenefitStory(
+      managerClient,
+      financeClient,
+      operationsUnitId,
+      categoryIds,
+      managerMembership.id,
+      financeMembership.id,
+      benefit,
+    );
+  }
+
+  console.log("M10 demo: benefit categories, finance persona, and benefits seeded.");
+}
+
 async function isM9DemoComplete(serviceAdmin: SupabaseClient): Promise<boolean> {
   const { count: programmeCount } = await serviceAdmin
     .from("suggestion_programmes")
@@ -648,7 +1073,7 @@ async function ensureInvitationAccepted(
     return;
   }
 
-  const role = DEMO_ROLES[userKey];
+  const role = DEMO_ROLES[DEMO_USER_ROLE_KEY[userKey]];
   const token = invitationTokenFromSeed(role.invitationTokenSeed);
   const digest = invitationTokenDigest(token);
   const scopeUnitId =
@@ -1689,6 +2114,11 @@ async function main() {
     organisationId,
     "operator",
   );
+  const financeRoleVersionId = await ensurePublishedRole(
+    adminClient,
+    organisationId,
+    "financeValidator",
+  );
 
   await ensureInvitationAccepted(
     adminClient,
@@ -1708,6 +2138,15 @@ async function main() {
     operatorRoleVersionId,
     unitIds,
   );
+  await ensureInvitationAccepted(
+    adminClient,
+    env.apiUrl,
+    env.publishableKey,
+    organisationId,
+    "finance",
+    financeRoleVersionId,
+    unitIds,
+  );
 
   await ensureDemoDisplayNames(env.apiUrl, env.publishableKey);
 
@@ -1717,6 +2156,14 @@ async function main() {
   await ensureM7Demo(adminClient, unitIds);
   await ensureM8Demo(adminClient, unitIds, env.apiUrl, env.publishableKey);
   await ensureM9Demo(adminClient, admin, unitIds, env.apiUrl, env.publishableKey);
+  await ensureM10Demo(
+    adminClient,
+    admin,
+    organisationId,
+    unitIds,
+    env.apiUrl,
+    env.publishableKey,
+  );
 
   console.log("Demo seed complete.");
   console.log(
@@ -1724,7 +2171,7 @@ async function main() {
   );
   console.log("Admin login: admin@apex.local");
   console.log(
-    "Routes: /platform, /platform/maturity, /platform/5s, /platform/gemba, /platform/schedule",
+    "Routes: /platform, /platform/maturity, /platform/5s, /platform/gemba, /platform/schedule, /platform/benefits",
   );
   console.log("Reset: npm run db:reset && npm run db:seed-demo");
 }

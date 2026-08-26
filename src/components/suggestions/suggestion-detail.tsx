@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -14,6 +15,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  classificationSummary,
+  classificationBadgeVariant,
+} from "@/lib/benefits/classification";
+import {
+  formatBenefitCurrencyAmount,
+  formatMeasureValue,
+} from "@/lib/benefits/forecast";
+import {
+  benefitStatusBadgeVariant,
+  benefitStatusLabel,
+} from "@/lib/benefits/status";
+import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { suggestionStatusLabel } from "@/lib/suggestions/status";
 
 type StatusHistoryRow = {
@@ -28,6 +42,7 @@ type SuggestionDetailProps = {
   comments: CommentRow[];
   statusHistory: StatusHistoryRow[];
   evidence: EvidenceItem[];
+  benefits: LinkedBenefitSummary[];
   canManage: boolean;
   canCreateProject: boolean;
   canUploadEvidence: boolean;
@@ -38,6 +53,7 @@ export function SuggestionDetail({
   comments,
   statusHistory,
   evidence,
+  benefits,
   canManage,
   canCreateProject,
   canUploadEvidence,
@@ -84,6 +100,7 @@ export function SuggestionDetail({
       <Tabs defaultValue="overview" className="min-w-0">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="benefits">Benefits</TabsTrigger>
           <TabsTrigger value="discussion">Discussion</TabsTrigger>
           <TabsTrigger value="implementation">Implementation</TabsTrigger>
           <TabsTrigger value="evidence">Evidence</TabsTrigger>
@@ -116,6 +133,69 @@ export function SuggestionDetail({
               <p className="text-xs text-muted-foreground">
                 Programme: {detail.programme_name_snapshot as string}
               </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="benefits">
+          <Card data-testid="suggestion-benefits-panel">
+            <CardHeader>
+              <CardTitle>Linked benefits</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {benefits.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No formal benefits linked yet.
+                  {detail.expected_benefit_summary ? (
+                    <span className="mt-2 block text-muted-foreground">
+                      Expected benefit (narrative): {detail.expected_benefit_summary as string}
+                    </span>
+                  ) : null}
+                </p>
+              ) : (
+                benefits.map((benefit) => (
+                  <Link
+                    key={benefit.id}
+                    href={`/platform/benefits/${benefit.id}`}
+                    className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {benefit.benefit_number ? `${benefit.benefit_number} · ` : ""}
+                        {benefit.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {classificationSummary(
+                          benefit.benefit_class,
+                          benefit.financial_type,
+                          benefit.non_financial_type,
+                        )}
+                        · {benefit.relationship_role}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={classificationBadgeVariant(benefit.benefit_class)}>
+                        {benefit.benefit_class}
+                      </Badge>
+                      <Badge variant={benefitStatusBadgeVariant(benefit.status)}>
+                        {benefitStatusLabel(benefit.status)}
+                      </Badge>
+                      {benefit.benefit_class === "financial" ? (
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          Forecast{" "}
+                          {formatBenefitCurrencyAmount(benefit.forecast_total_amount, null)}
+                          · Validated{" "}
+                          {formatBenefitCurrencyAmount(benefit.validated_realised_total, null)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Target {formatMeasureValue(benefit.forecast_total_amount, null)}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>

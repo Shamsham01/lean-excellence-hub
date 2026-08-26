@@ -399,6 +399,74 @@ start.
 | CI | Full M3–M9 Playwright suite: 37 passed, 0 failed, 0 skipped (`workers=1`, clean `db:reset` + `db:seed-demo`) |
 | Visual QA | Manager/operator identities; routes above at 1440/1024/768/390 light/dark; overflow PASS; `milestone9-closure` re-run after polish |
 
+## Milestone 10 — Benefits, Savings & Value Realisation Engine
+
+Milestone 10 is complete. It delivers governed improvement benefits with
+financial/non-financial classification, forecast versioning, dual validation
+(CI + finance SoD), overlap allocation control, realisation entries with signed
+adjustments, portfolio analytics, and M8/M9 source integration — without
+auto-seeded production categories, ledger posting, or executive dashboards.
+
+### In scope
+
+- **Permissions:** exactly eight benefit permissions (`benefits.read`,
+  `benefits.create`, `benefits.manage`, `benefits.validate.ci`,
+  `benefits.validate.finance`, `benefits.realisation.record`,
+  `benefits.realisation.validate`, `benefits.categories.manage`).
+- **Domain:** `improvement_benefits` lifecycle (`draft` → `submitted` →
+  `approved` → `realising` → `realised` / `rejected` / `withdrawn` / `cancelled`),
+  status history, submission snapshots, mutable draft source links with submit
+  immutability, `benefit_categories` and `benefit_reporting_settings` (no
+  migration seed — demo categories via `db:seed-demo` only).
+- **Forecasts:** draft/create/update/submit/approve/successor versions,
+  `benefit_forecast_periods`; period-sum integrity enforced at submit/approval
+  only; authoritative money as PostgreSQL `NUMERIC`.
+- **Validation:** CI and finance assignments with separation of duties (creator
+  cannot be finance validator; one membership cannot satisfy both roles);
+  `resolve_benefit_submit_validators` for membership-directory-safe submit.
+- **Overlap:** allocation groups with RPC locking and append-only allocation
+  history (no unsafe CHECK).
+- **Realisation:** entries, signed-delta adjustments, finance validation of
+  actuals; immutable validated history.
+- **Integrations:** `create_benefit_from_ci_project`, `create_benefit_from_suggestion`;
+  `get_project_benefits` / `get_suggestion_benefits` (M8/M9 detail RPCs unchanged).
+- **Application:** `/platform/benefits` portfolio, create wizard, tabbed
+  workspace, validation queue, category admin; project/suggestion benefit
+  sections; `finance@apex.local` finance-validator persona in demo seed.
+- **Regression evidence:** eight pgTAP benefit suites; Vitest benefit helpers;
+  Supabase-backed Playwright `milestone10-closure`.
+
+### Explicitly excluded
+
+Auto-seeded production benefit categories, general ledger integration,
+executive dashboard, AI, notifications, hosted Supabase changes, and Milestone
+11 work.
+
+### Acceptance checklist
+
+- [x] M10 migrations `20260826007000`–`20260826007012` applied in dependency order.
+- [x] Eight permissions only; owner upgrade includes all benefit grants.
+- [x] Financial forecast period integrity at submit/approval, not on every draft edit.
+- [x] Full RLS on M10 tenant tables; source access does not leak via benefit queries.
+- [x] Demo seed: four benefit stories, finance persona, categories via RPC (not migration).
+- [x] Local `db:reset`, `db:lint`, full pgTAP, `db:types`, Vitest, lint, typecheck,
+  production build, `db:seed-demo`, and Supabase-backed Playwright pass.
+- [x] Visual/product acceptance: flagship benefits screens at 1440/1024/768/390
+  light and dark; portfolio, wizard, workspace tabs, validation queue, category
+  admin; responsive smoke in `milestone10-closure`.
+
+### Acceptance evidence (2026-08-26)
+
+| Gate | Evidence |
+| --- | --- |
+| Migrations | M10 `07000`–`07012` (permissions, domain, forecasts, validation, overlap, realisation, access, integrations, queries, categories, validator fix, submit-validator resolver) |
+| pgTAP | 47 files, 426 tests (`npm run test:db`); includes `benefit_*` and `benefits_security` suites |
+| Application | Benefits portfolio, create wizard, workspace (forecast/realisation/validation), validation queue, category admin, M8/M9 benefit panels |
+| Unit tests | 16 files, 58 tests (`npm test`); includes benefit status/forecast/navigation helpers |
+| E2E | `milestone10-closure` (14 tests: create/submit/validate, finance queue, seeded stories, operator denial, responsive smoke) |
+| CI | Database job includes `milestone10-closure.spec.ts` with `E2E_WITH_SUPABASE=1` |
+| Demo | `finance@apex.local` / `Finance@Apex-Dev-2026!`; Packaging Waste, Changeover, Maintenance Avoidance, Visual Standards stories |
+
 ## Later milestones
 
 1. Core Lean domains: training/skills, projects, suggestions, problem-solving,

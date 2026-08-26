@@ -60,3 +60,14 @@ export const PROJECTS_PERMISSIONS = {
   read: "projects.read",
   manage: "projects.manage",
 } as const;
+
+export const BENEFITS_PERMISSIONS = {
+  read: "benefits.read",
+  create: "benefits.create",
+  manage: "benefits.manage",
+  validateCi: "benefits.validate.ci",
+  validateFinance: "benefits.validate.finance",
+  realisationRecord: "benefits.realisation.record",
+  realisationValidate: "benefits.realisation.validate",
+  categoriesManage: "benefits.categories.manage",
+} as const;

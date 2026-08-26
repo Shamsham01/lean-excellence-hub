@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProjectWorkspace } from "@/components/projects/project-workspace";
+import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
+import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
 import type { ProjectDetail } from "@/lib/projects/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -145,6 +147,13 @@ export default async function ProjectDetailPage({
     display_name: membershipNameById.get(member.membership_id) ?? member.membership_id.slice(0, 8),
   }));
 
+  const { data: projectBenefitsData } = await callBenefitRpc<{ items: LinkedBenefitSummary[] }>(
+    supabase,
+    "get_project_benefits",
+    { target_project_id: projectId },
+  );
+  const benefits = projectBenefitsData?.items ?? [];
+
   return (
     <div data-testid="project-detail-page">
       <ProjectWorkspace
@@ -152,6 +161,7 @@ export default async function ProjectDetailPage({
         actions={actions}
         evidence={enrichedEvidence}
         teamMembers={enrichedTeam}
+        benefits={benefits}
         unitName={unitRow?.name ?? null}
         methodologyLabel={methodologyLabel}
         currentPhaseTitle={currentPhase?.title_snapshot ?? null}

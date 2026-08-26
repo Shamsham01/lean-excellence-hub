@@ -19,6 +19,11 @@ describe("platform navigation", () => {
     expect(hrefs).toContain("/platform/recognition");
   });
 
+  it("exposes M10 benefits routes", () => {
+    const hrefs = platformNavigation.map((item) => item.href);
+    expect(hrefs).toContain("/platform/benefits");
+  });
+
   it("exposes M6 platform routes", () => {
     const hrefs = platformNavigation.map((item) => item.href);
     expect(hrefs).toContain("/platform/5s");
