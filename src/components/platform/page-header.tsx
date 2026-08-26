@@ -8,7 +8,7 @@ export function PageHeader({
   actions,
   className,
 }: {
-  title: string;
+  title: ReactNode;
   description?: string;
   actions?: ReactNode;
   className?: string;
@@ -26,7 +26,7 @@ export function PageHeader({
           <p className="typography-page-description max-w-2xl">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }

@@ -154,7 +154,10 @@ export default async function AssessmentDetailPage({
 
   async function submitAction() {
     "use server";
-    await submitAssessment(id);
+    const result = await submitAssessment(id);
+    if (result && "error" in result && result.error) {
+      throw new Error(result.error);
+    }
   }
 
   async function beginReviewAction() {

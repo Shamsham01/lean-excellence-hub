@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import {
+  DEMO_CI_METHODOLOGIES,
+  DEMO_CI_PROJECTS,
   DEMO_MATURITY_LEVELS,
   DEMO_MATURITY_PILLARS,
   DEMO_ORGANISATION,
@@ -13,8 +15,11 @@ import {
   DEMO_GEMBA_DEFINITION,
   DEMO_JOB_FUNCTIONS,
   DEMO_PROFICIENCY_SCALE,
+  DEMO_RECOGNITION_TYPES,
   DEMO_ROLES,
   DEMO_SKILLS,
+  DEMO_SUGGESTION_CATEGORIES,
+  DEMO_SUGGESTION_PROGRAMME,
   DEMO_TRAINING_COURSES,
   DEMO_TRAINING_SESSION,
   DEMO_UNITS,
@@ -26,6 +31,336 @@ import { loadLocalSupabaseEnv } from "./local-env";
 type DemoUserKey = keyof typeof DEMO_USERS;
 
 type UnitMap = Record<string, string>;
+
+async function expectRpc(
+  client: SupabaseClient,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  const { data, error } = await client.rpc(fn, args);
+  if (error) {
+    throw new Error(`RPC ${fn} failed: ${error.message}`);
+  }
+  return data;
+}
+
+async function isM8DemoComplete(managerClient: SupabaseClient): Promise<boolean> {
+  const { count: publishedCount } = await managerClient
+    .from("ci_project_methodology_versions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "published");
+
+  if (publishedCount !== DEMO_CI_METHODOLOGIES.length) {
+    return false;
+  }
+
+  const { data: completedProject } = await managerClient
+    .from("ci_projects")
+    .select("status")
+    .eq("title", "Visual Standards Improvement")
+    .maybeSingle();
+
+  return completedProject?.status === "completed";
+}
+
+async function ensurePublishedMethodology(
+  managerClient: SupabaseClient,
+  methodology: (typeof DEMO_CI_METHODOLOGIES)[number],
+): Promise<string> {
+  const { data: existingMethodology } = await managerClient
+    .from("ci_project_methodologies")
+    .select("id")
+    .eq("code", methodology.code)
+    .maybeSingle();
+
+  let methodologyId = existingMethodology?.id;
+  if (!methodologyId) {
+    methodologyId = (await expectRpc(managerClient, "create_ci_project_methodology_draft", {
+      target_name: methodology.name,
+      target_code: methodology.code,
+      target_description: `${methodology.name} improvement methodology.`,
+    })) as string;
+  }
+
+  const { data: versionRow, error: versionError } = await managerClient
+    .from("ci_project_methodology_versions")
+    .select("id, status")
+    .eq("methodology_id", methodologyId)
+    .eq("version_number", 1)
+    .single();
+
+  if (versionError || !versionRow) {
+    throw versionError ?? new Error(`methodology version missing for ${methodology.code}`);
+  }
+
+  if (versionRow.status === "draft") {
+    const { count: phaseCount } = await managerClient
+      .from("ci_project_methodology_phases")
+      .select("id", { count: "exact", head: true })
+      .eq("methodology_version_id", versionRow.id);
+
+    if (phaseCount === 0) {
+      for (let index = 0; index < methodology.phases.length; index += 1) {
+        await expectRpc(managerClient, "add_ci_project_methodology_phase", {
+          target_methodology_version_id: versionRow.id,
+          target_phase_key: `${methodology.code}-${index + 1}`,
+          target_title: methodology.phases[index],
+          target_display_order: index + 1,
+        });
+      }
+    }
+
+    await expectRpc(managerClient, "publish_ci_project_methodology_version", {
+      target_methodology_version_id: versionRow.id,
+    });
+  }
+
+  const { data: publishedVersion, error: publishedError } = await managerClient
+    .from("ci_project_methodology_versions")
+    .select("id")
+    .eq("methodology_id", methodologyId)
+    .eq("status", "published")
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (publishedError || !publishedVersion) {
+    throw publishedError ?? new Error(`published version missing for ${methodology.code}`);
+  }
+
+  return publishedVersion.id;
+}
+
+async function advanceDemoProjectToActive(
+  managerClient: SupabaseClient,
+  projectId: string,
+  currentStatus: string,
+): Promise<void> {
+  let status = currentStatus;
+
+  if (status === "draft") {
+    await expectRpc(managerClient, "submit_project", { target_project_id: projectId });
+    status = "submitted";
+  }
+  if (status === "submitted") {
+    await expectRpc(managerClient, "approve_project", { target_project_id: projectId });
+    status = "approved";
+  }
+  if (status === "approved") {
+    await expectRpc(managerClient, "start_project", { target_project_id: projectId });
+  }
+}
+
+async function finalizeDemoProjectTarget(
+  managerClient: SupabaseClient,
+  projectId: string,
+  currentStatus: string,
+  project: (typeof DEMO_CI_PROJECTS)[number],
+): Promise<void> {
+  let status = currentStatus;
+
+  if (status === "draft" || status === "submitted" || status === "approved") {
+    await advanceDemoProjectToActive(managerClient, projectId, status);
+    status = "active";
+  }
+
+  if (project.status === "on_hold" && status === "active") {
+    await expectRpc(managerClient, "hold_project", {
+      target_project_id: projectId,
+      target_reason: "Waiting for tooling delivery.",
+    });
+    status = "on_hold";
+  }
+
+  if (project.status === "completed" && status !== "completed") {
+    if (status === "on_hold") {
+      await expectRpc(managerClient, "resume_project", { target_project_id: projectId });
+    }
+    await expectRpc(managerClient, "complete_project", {
+      target_project_id: projectId,
+      target_outcome_summary: "Visual standards deployed and sustained on packaging lines.",
+      target_lessons_learned: "Early operator involvement improved adoption.",
+      target_sustainment_summary: "Weekly visual checks added to line leader checklist.",
+    });
+  }
+}
+
+async function ensureDemoProject(
+  managerClient: SupabaseClient,
+  operationsUnitId: string,
+  project: (typeof DEMO_CI_PROJECTS)[number],
+  methodologyVersionId: string,
+  managerMembershipId: string | undefined,
+  operatorMembershipId: string | undefined,
+): Promise<void> {
+  const { data: existing } = await managerClient
+    .from("ci_projects")
+    .select("id, status")
+    .eq("title", project.title)
+    .maybeSingle();
+
+  if (existing) {
+    if (existing.status === "draft") {
+      await expectRpc(managerClient, "update_ci_project_draft", {
+        target_project_id: existing.id,
+        target_methodology_version_id: methodologyVersionId,
+      });
+
+      if (managerMembershipId) {
+        await expectRpc(managerClient, "assign_ci_project_team_member", {
+          target_project_id: existing.id,
+          target_membership_id: managerMembershipId,
+          target_team_role: "owner",
+        });
+      }
+
+      if (operatorMembershipId) {
+        await expectRpc(managerClient, "assign_ci_project_team_member", {
+          target_project_id: existing.id,
+          target_membership_id: operatorMembershipId,
+          target_team_role: "member",
+        });
+      }
+    }
+
+    if (existing.status !== "completed") {
+      await advanceDemoProjectToActive(managerClient, existing.id, existing.status);
+      await expectRpc(managerClient, "create_project_action", {
+        target_title: `Follow up: ${project.title}`,
+        target_project_id: existing.id,
+        target_description: "Track weekly progress on the primary measure.",
+      });
+    }
+
+    await finalizeDemoProjectTarget(managerClient, existing.id, existing.status, project);
+    return;
+  }
+
+  const projectId = (await expectRpc(managerClient, "create_improvement_project", {
+    target_title: project.title,
+    target_unit_id: operationsUnitId,
+    target_problem_statement: project.problem,
+    target_objective: project.objective,
+  })) as string;
+
+  await expectRpc(managerClient, "update_ci_project_draft", {
+    target_project_id: projectId,
+    target_methodology_version_id: methodologyVersionId,
+  });
+
+  if (managerMembershipId) {
+    await expectRpc(managerClient, "assign_ci_project_team_member", {
+      target_project_id: projectId,
+      target_membership_id: managerMembershipId,
+      target_team_role: "owner",
+    });
+  }
+
+  if (operatorMembershipId) {
+    await expectRpc(managerClient, "assign_ci_project_team_member", {
+      target_project_id: projectId,
+      target_membership_id: operatorMembershipId,
+      target_team_role: "member",
+    });
+  }
+
+  const metricId = (await expectRpc(managerClient, "create_ci_project_metric", {
+    target_project_id: projectId,
+    target_metric_key: project.metric.key,
+    target_display_name: project.metric.name,
+    target_unit_label: project.metric.unit,
+    target_baseline_value: project.metric.baseline,
+    target_target_value: project.metric.target,
+  })) as string;
+
+  await advanceDemoProjectToActive(managerClient, projectId, "draft");
+
+  await expectRpc(managerClient, "record_metric_measurement", {
+    target_metric_id: metricId,
+    target_measured_value: project.metric.baseline - 2,
+  });
+
+  await expectRpc(managerClient, "create_project_action", {
+    target_title: `Follow up: ${project.title}`,
+    target_project_id: projectId,
+    target_description: "Track weekly progress on the primary measure.",
+  });
+
+  await finalizeDemoProjectTarget(managerClient, projectId, "active", project);
+}
+
+async function ensureM9RecognitionAward(
+  managerClient: SupabaseClient,
+  signedInAdmin: SupabaseClient,
+  operationsUnitId: string,
+  apiUrl: string,
+  publishableKey: string,
+): Promise<void> {
+  const { count: awardCount } = await managerClient
+    .from("recognition_awards")
+    .select("id", { count: "exact", head: true });
+
+  if (awardCount && awardCount > 0) {
+    return;
+  }
+
+  const operatorClient = await signInUser(apiUrl, publishableKey, "operator");
+  await switchOrganisation(
+    operatorClient,
+    (await resolveOrganisationId(operatorClient)) as string,
+  );
+
+  const { data: operatorMembership, error: membershipError } = await operatorClient
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.operator.id)
+    .single();
+
+  const { data: implementedSuggestion } = await managerClient
+    .from("improvement_suggestions")
+    .select("id")
+    .eq("title", "Pre-stage changeover tooling")
+    .maybeSingle();
+
+  const { data: greatIdeaType, error: typeError } = await signedInAdmin
+    .from("recognition_types")
+    .select("id")
+    .eq("code", "great-idea")
+    .single();
+
+  if (membershipError || !operatorMembership) {
+    throw membershipError ?? new Error("M9 recognition demo operator membership missing");
+  }
+  if (typeError || !greatIdeaType) {
+    throw typeError ?? new Error("M9 recognition demo great-idea type missing");
+  }
+  if (!implementedSuggestion) {
+    throw new Error("M9 recognition demo implemented suggestion missing");
+  }
+
+  await expectRpc(managerClient, "award_recognition", {
+    target_recognition_type_id: greatIdeaType.id,
+    target_title: "Great Idea",
+    target_message: "Thank you for the pre-stage tooling improvement.",
+    target_organisational_unit_id: operationsUnitId,
+    target_visibility: "organisation",
+    target_recipient_membership_ids: [operatorMembership.id],
+    target_source_resource_id: implementedSuggestion.id,
+  });
+}
+
+async function isM9DemoComplete(serviceAdmin: SupabaseClient): Promise<boolean> {
+  const { count: programmeCount } = await serviceAdmin
+    .from("suggestion_programmes")
+    .select("id", { count: "exact", head: true })
+    .eq("code", DEMO_SUGGESTION_PROGRAMME.code);
+
+  const { count: awardCount } = await serviceAdmin
+    .from("recognition_awards")
+    .select("id", { count: "exact", head: true });
+
+  return Boolean(programmeCount && programmeCount > 0 && awardCount && awardCount > 0);
+}
 
 async function ensureAuthUser(admin: SupabaseClient, userKey: DemoUserKey) {
   const user = DEMO_USERS[userKey];
@@ -1068,6 +1403,236 @@ async function ensureM7Demo(client: SupabaseClient, unitIds: UnitMap) {
   console.log("M7 demo: job functions, training, and skills seeded.");
 }
 
+async function ensureM9Demo(
+  signedInAdmin: SupabaseClient,
+  serviceAdmin: SupabaseClient,
+  unitIds: UnitMap,
+  apiUrl: string,
+  publishableKey: string,
+) {
+  if (await isM9DemoComplete(signedInAdmin)) {
+    console.log("M9 demo already seeded.");
+    return;
+  }
+
+  const operationsUnitId = unitIds["operations"];
+  if (!operationsUnitId) {
+    throw new Error("Demo operations unit is missing.");
+  }
+
+  const { data: existingProgramme } = await signedInAdmin
+    .from("suggestion_programmes")
+    .select("id")
+    .eq("code", DEMO_SUGGESTION_PROGRAMME.code)
+    .maybeSingle();
+
+  if (existingProgramme) {
+    const managerClient = await signInUser(apiUrl, publishableKey, "manager");
+    await switchOrganisation(
+      managerClient,
+      (await resolveOrganisationId(managerClient)) as string,
+    );
+    await ensureM9RecognitionAward(
+      managerClient,
+      signedInAdmin,
+      operationsUnitId,
+      apiUrl,
+      publishableKey,
+    );
+    console.log("M9 demo: recognition award repaired.");
+    return;
+  }
+
+  const { data: programmeId, error: programmeError } = await signedInAdmin.rpc(
+    "create_suggestion_programme_draft",
+    {
+      target_name: DEMO_SUGGESTION_PROGRAMME.name,
+      target_code: DEMO_SUGGESTION_PROGRAMME.code,
+      target_description: "Frontline everyday improvement programme.",
+    },
+  );
+  if (programmeError) throw programmeError;
+
+  const { data: programmeVersion, error: programmeVersionError } = await signedInAdmin
+    .from("suggestion_programme_versions")
+    .select("id")
+    .eq("programme_id", programmeId as string)
+    .eq("version_number", 1)
+    .single();
+
+  if (programmeVersionError || !programmeVersion) {
+    throw programmeVersionError ?? new Error("programme version missing");
+  }
+
+  await signedInAdmin
+    .from("suggestion_programme_versions")
+    .update({
+      review_target_days: DEMO_SUGGESTION_PROGRAMME.reviewTargetDays,
+      applicable_unit_id: operationsUnitId,
+    })
+    .eq("id", programmeVersion.id);
+
+  await signedInAdmin.rpc("publish_suggestion_programme_version", {
+    target_programme_version_id: programmeVersion.id,
+  });
+
+  const categoryIds: Record<string, string> = {};
+  for (const category of DEMO_SUGGESTION_CATEGORIES) {
+    const { data: categoryId, error } = await signedInAdmin.rpc("create_suggestion_category", {
+      target_name: category.name,
+      target_code: category.code,
+    });
+    if (error) throw error;
+    categoryIds[category.code] = categoryId as string;
+  }
+
+  for (const type of DEMO_RECOGNITION_TYPES) {
+    await signedInAdmin.rpc("create_recognition_type", {
+      target_name: type.name,
+      target_code: type.code,
+    });
+  }
+
+  const managerClient = await signInUser(apiUrl, publishableKey, "manager");
+  await switchOrganisation(
+    managerClient,
+    (await resolveOrganisationId(managerClient)) as string,
+  );
+
+  const operatorClient = await signInUser(apiUrl, publishableKey, "operator");
+  await switchOrganisation(
+    operatorClient,
+    (await resolveOrganisationId(operatorClient)) as string,
+  );
+
+  const { data: operatorMembership } = await operatorClient
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.operator.id)
+    .single();
+
+  const { data: draftSubmitted } = await operatorClient.rpc("create_suggestion_draft", {
+    target_programme_version_id: programmeVersion.id,
+    target_category_id: categoryIds.quality,
+    target_title: "Visual defect sample board",
+    target_problem_or_opportunity: "Operators struggle to judge minor defects consistently.",
+    target_proposed_idea: "Install a visual defect sample board at the inspection station.",
+    target_expected_benefit_summary: "Fewer customer complaints on appearance.",
+  });
+  await operatorClient.rpc("submit_suggestion", { target_suggestion_id: draftSubmitted as string });
+  await managerClient.rpc("begin_suggestion_review", { target_suggestion_id: draftSubmitted as string });
+
+  const { data: implementedId } = await operatorClient.rpc("create_suggestion_draft", {
+    target_programme_version_id: programmeVersion.id,
+    target_category_id: categoryIds.delivery,
+    target_title: "Pre-stage changeover tooling",
+    target_problem_or_opportunity: "Changeover team waits for required tooling.",
+    target_proposed_idea: "Prepare tooling trolley before shutdown.",
+    target_expected_benefit_summary: "Shorter changeover time.",
+  });
+  await operatorClient.rpc("submit_suggestion", { target_suggestion_id: implementedId as string });
+  await managerClient.rpc("begin_suggestion_review", { target_suggestion_id: implementedId as string });
+  await managerClient.rpc("record_suggestion_review", {
+    target_suggestion_id: implementedId as string,
+    target_decision: "accept",
+    target_impact_level: "medium",
+    target_effort_level: "low",
+    target_rationale: "Quick win with clear benefit.",
+  });
+  await managerClient.rpc("begin_suggestion_implementation", { target_suggestion_id: implementedId as string });
+  await managerClient.rpc("create_suggestion_action", {
+    target_suggestion_id: implementedId as string,
+    target_title: "Create standard pre-stage trolley",
+    target_description: "Standardise tooling trolley layout before changeover.",
+  });
+  await managerClient.rpc("mark_suggestion_implemented", {
+    target_suggestion_id: implementedId as string,
+    target_implementation_summary: "Trolley pre-staged before each changeover.",
+  });
+
+  const { data: greatIdeaType, error: typeError } = await signedInAdmin
+    .from("recognition_types")
+    .select("id")
+    .eq("code", "great-idea")
+    .single();
+
+  if (!operatorMembership || typeError || !greatIdeaType) {
+    throw typeError ?? new Error("M9 recognition demo prerequisites missing");
+  }
+
+  await expectRpc(managerClient, "award_recognition", {
+    target_recognition_type_id: greatIdeaType.id,
+    target_title: "Great Idea",
+    target_message: "Thank you for the pre-stage tooling improvement.",
+    target_organisational_unit_id: operationsUnitId,
+    target_visibility: "organisation",
+    target_recipient_membership_ids: [operatorMembership.id],
+    target_source_resource_id: implementedId as string,
+  });
+
+  console.log("M9 demo: suggestions and recognition seeded.");
+}
+
+async function ensureM8Demo(
+  signedInAdmin: SupabaseClient,
+  unitIds: UnitMap,
+  apiUrl: string,
+  publishableKey: string,
+) {
+  const managerClient = await signInUser(apiUrl, publishableKey, "manager");
+  await switchOrganisation(
+    managerClient,
+    (await resolveOrganisationId(managerClient)) as string,
+  );
+
+  if (await isM8DemoComplete(managerClient)) {
+    console.log("M8 demo already seeded.");
+    return;
+  }
+
+  const operationsUnitId = unitIds["operations"];
+  if (!operationsUnitId) {
+    throw new Error("Demo operations unit is missing.");
+  }
+
+  const { data: memberships } = await managerClient
+    .from("organisation_memberships")
+    .select("id, user_id");
+  const managerMembership = memberships?.find(
+    (row) => row.user_id === DEMO_USERS.manager.id,
+  );
+  const operatorMembership = memberships?.find(
+    (row) => row.user_id === DEMO_USERS.operator.id,
+  );
+
+  const methodologyVersionIds: Record<string, string> = {};
+
+  for (const methodology of DEMO_CI_METHODOLOGIES) {
+    methodologyVersionIds[methodology.code] = await ensurePublishedMethodology(
+      managerClient,
+      methodology,
+    );
+  }
+
+  for (const project of DEMO_CI_PROJECTS) {
+    const methodologyVersionId = methodologyVersionIds[project.methodologyCode];
+    if (!methodologyVersionId) {
+      throw new Error(`Missing published methodology for ${project.methodologyCode}`);
+    }
+
+    await ensureDemoProject(
+      managerClient,
+      operationsUnitId,
+      project,
+      methodologyVersionId,
+      managerMembership?.id,
+      operatorMembership?.id,
+    );
+  }
+
+  console.log("M8 demo: methodologies and projects seeded.");
+}
+
 async function ensureDemoDisplayNames(apiUrl: string, publishableKey: string) {
   for (const userKey of Object.keys(DEMO_USERS) as DemoUserKey[]) {
     const user = DEMO_USERS[userKey];
@@ -1150,6 +1715,8 @@ async function main() {
   await ensureMaturityDemo(adminClient, unitIds);
   await ensureM6Demo(adminClient, unitIds);
   await ensureM7Demo(adminClient, unitIds);
+  await ensureM8Demo(adminClient, unitIds, env.apiUrl, env.publishableKey);
+  await ensureM9Demo(adminClient, admin, unitIds, env.apiUrl, env.publishableKey);
 
   console.log("Demo seed complete.");
   console.log(

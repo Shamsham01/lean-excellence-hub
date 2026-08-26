@@ -499,6 +499,781 @@ export type Database = {
           },
         ]
       }
+      ci_project_action_context: {
+        Row: {
+          action_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          project_id: string
+          project_phase_id: string | null
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          project_id: string
+          project_phase_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          project_phase_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_action_context_phase_fkey"
+            columns: ["organisation_id", "project_phase_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_phases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_action_context_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_completion_snapshots: {
+        Row: {
+          captured_at: string
+          captured_by_membership_id: string
+          id: string
+          lessons_learned: string | null
+          organisation_id: string
+          outcome_summary: string
+          project_id: string
+          sustainment_summary: string | null
+        }
+        Insert: {
+          captured_at?: string
+          captured_by_membership_id: string
+          id?: string
+          lessons_learned?: string | null
+          organisation_id: string
+          outcome_summary: string
+          project_id: string
+          sustainment_summary?: string | null
+        }
+        Update: {
+          captured_at?: string
+          captured_by_membership_id?: string
+          id?: string
+          lessons_learned?: string | null
+          organisation_id?: string
+          outcome_summary?: string
+          project_id?: string
+          sustainment_summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_completion_snapshots_capturer_fkey"
+            columns: ["organisation_id", "captured_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_completion_snapshots_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: true
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_evidence_links: {
+        Row: {
+          attachment_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          project_id: string
+          project_phase_id: string | null
+        }
+        Insert: {
+          attachment_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          project_id: string
+          project_phase_id?: string | null
+        }
+        Update: {
+          attachment_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          project_phase_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_evidence_links_phase_fkey"
+            columns: ["organisation_id", "project_phase_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_phases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_evidence_links_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_methodologies: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_methodologies_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_methodologies_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ci_project_methodology_phases: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          methodology_version_id: string
+          organisation_id: string
+          phase_key: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order: number
+          id?: string
+          methodology_version_id: string
+          organisation_id: string
+          phase_key: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          methodology_version_id?: string
+          organisation_id?: string
+          phase_key?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_methodology_phases_version_fkey"
+            columns: ["organisation_id", "methodology_version_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_methodology_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_methodology_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          methodology_id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          template_version_id: string | null
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          methodology_id: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          template_version_id?: string | null
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          methodology_id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          template_version_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_methodology_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_methodology_versions_methodology_fkey"
+            columns: ["organisation_id", "methodology_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_methodologies"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_methodology_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_methodology_versions_template_version_fkey"
+            columns: ["organisation_id", "template_version_id"]
+            isOneToOne: true
+            referencedRelation: "template_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_metric_measurements: {
+        Row: {
+          created_at: string
+          id: string
+          measured_at: string
+          measured_value: number
+          metric_id: string
+          note: string | null
+          organisation_id: string
+          recorded_by_membership_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          measured_at?: string
+          measured_value: number
+          metric_id: string
+          note?: string | null
+          organisation_id: string
+          recorded_by_membership_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          measured_at?: string
+          measured_value?: number
+          metric_id?: string
+          note?: string | null
+          organisation_id?: string
+          recorded_by_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_metric_measurements_metric_fkey"
+            columns: ["organisation_id", "metric_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_metrics"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_metric_measurements_recorder_fkey"
+            columns: ["organisation_id", "recorded_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_metrics: {
+        Row: {
+          baseline_value: number | null
+          created_at: string
+          created_by_membership_id: string
+          display_name: string
+          id: string
+          is_locked: boolean
+          metric_key: string
+          organisation_id: string
+          project_id: string
+          target_value: number | null
+          unit_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          baseline_value?: number | null
+          created_at?: string
+          created_by_membership_id: string
+          display_name: string
+          id?: string
+          is_locked?: boolean
+          metric_key: string
+          organisation_id: string
+          project_id: string
+          target_value?: number | null
+          unit_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          baseline_value?: number | null
+          created_at?: string
+          created_by_membership_id?: string
+          display_name?: string
+          id?: string
+          is_locked?: boolean
+          metric_key?: string
+          organisation_id?: string
+          project_id?: string
+          target_value?: number | null
+          unit_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_metrics_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_metrics_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_phases: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description_snapshot: string | null
+          display_order: number
+          id: string
+          methodology_phase_id: string | null
+          organisation_id: string
+          phase_key_snapshot: string
+          project_id: string
+          started_at: string | null
+          status: string
+          title_snapshot: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description_snapshot?: string | null
+          display_order: number
+          id?: string
+          methodology_phase_id?: string | null
+          organisation_id: string
+          phase_key_snapshot: string
+          project_id: string
+          started_at?: string | null
+          status?: string
+          title_snapshot: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description_snapshot?: string | null
+          display_order?: number
+          id?: string
+          methodology_phase_id?: string | null
+          organisation_id?: string
+          phase_key_snapshot?: string
+          project_id?: string
+          started_at?: string | null
+          status?: string
+          title_snapshot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_phases_methodology_phase_fkey"
+            columns: ["organisation_id", "methodology_phase_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_methodology_phases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_phases_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_source_links: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          project_id: string
+          source_resource_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          project_id: string
+          source_resource_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          source_resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_source_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_source_links_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_source_links_source_fkey"
+            columns: ["organisation_id", "source_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_status_history: {
+        Row: {
+          changed_at: string
+          changed_by_membership_id: string
+          from_status: string
+          id: string
+          organisation_id: string
+          project_id: string
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by_membership_id: string
+          from_status: string
+          id?: string
+          organisation_id: string
+          project_id: string
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by_membership_id?: string
+          from_status?: string
+          id?: string
+          organisation_id?: string
+          project_id?: string
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_status_history_actor_fkey"
+            columns: ["organisation_id", "changed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_status_history_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_project_team_assignments: {
+        Row: {
+          assigned_by_membership_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          project_id: string
+          team_role: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          assigned_by_membership_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          project_id: string
+          team_role: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          assigned_by_membership_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          project_id?: string
+          team_role?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_project_team_assignments_assigner_fkey"
+            columns: ["organisation_id", "assigned_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_team_assignments_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_project_team_assignments_project_fkey"
+            columns: ["organisation_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ci_projects: {
+        Row: {
+          actual_end_at: string | null
+          actual_start_at: string | null
+          baseline_summary: string | null
+          charter_submitted_at: string | null
+          charter_submitted_by_membership_id: string | null
+          constraints_risks: string | null
+          created_at: string
+          created_by_membership_id: string
+          expected_impact_summary: string | null
+          id: string
+          methodology_version_id: string | null
+          objective: string | null
+          organisation_id: string
+          planned_end_date: string | null
+          planned_start_date: string | null
+          priority: string
+          problem_statement: string | null
+          project_number: string
+          scope_in: string | null
+          scope_out: string | null
+          status: string
+          sustainment_expectation: string | null
+          target_summary: string | null
+          title: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          baseline_summary?: string | null
+          charter_submitted_at?: string | null
+          charter_submitted_by_membership_id?: string | null
+          constraints_risks?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          expected_impact_summary?: string | null
+          id: string
+          methodology_version_id?: string | null
+          objective?: string | null
+          organisation_id: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string
+          problem_statement?: string | null
+          project_number: string
+          scope_in?: string | null
+          scope_out?: string | null
+          status?: string
+          sustainment_expectation?: string | null
+          target_summary?: string | null
+          title: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          baseline_summary?: string | null
+          charter_submitted_at?: string | null
+          charter_submitted_by_membership_id?: string | null
+          constraints_risks?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          expected_impact_summary?: string | null
+          id?: string
+          methodology_version_id?: string | null
+          objective?: string | null
+          organisation_id?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string
+          problem_statement?: string | null
+          project_number?: string
+          scope_in?: string | null
+          scope_out?: string | null
+          status?: string
+          sustainment_expectation?: string | null
+          target_summary?: string | null
+          title?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_projects_charter_submitter_fkey"
+            columns: ["organisation_id", "charter_submitted_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_projects_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_projects_methodology_version_fkey"
+            columns: ["organisation_id", "methodology_version_id"]
+            isOneToOne: false
+            referencedRelation: "ci_project_methodology_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_projects_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ci_projects_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_membership_id: string
@@ -1707,6 +2482,181 @@ export type Database = {
           },
         ]
       }
+      improvement_suggestions: {
+        Row: {
+          accepted_at: string | null
+          author_membership_id: string
+          category_code_snapshot: string | null
+          category_id: string
+          category_name_snapshot: string | null
+          created_at: string
+          expected_benefit_summary: string | null
+          id: string
+          implementation_outcome: string | null
+          implementation_started_at: string | null
+          implementation_summary: string | null
+          implemented_at: string | null
+          implemented_by_membership_id: string | null
+          organisation_id: string
+          origin_unit_code_snapshot: string | null
+          origin_unit_id: string
+          origin_unit_name_snapshot: string | null
+          problem_or_opportunity: string
+          programme_code_snapshot: string | null
+          programme_name_snapshot: string | null
+          programme_version_id: string
+          proposed_idea: string
+          rejected_at: string | null
+          review_jurisdiction_unit_id: string
+          status: string
+          submitted_at: string | null
+          suggestion_number: string | null
+          target_unit_code_snapshot: string | null
+          target_unit_id: string | null
+          target_unit_name_snapshot: string | null
+          template_submission_id: string | null
+          title: string
+          updated_at: string
+          withdrawn_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          author_membership_id: string
+          category_code_snapshot?: string | null
+          category_id: string
+          category_name_snapshot?: string | null
+          created_at?: string
+          expected_benefit_summary?: string | null
+          id: string
+          implementation_outcome?: string | null
+          implementation_started_at?: string | null
+          implementation_summary?: string | null
+          implemented_at?: string | null
+          implemented_by_membership_id?: string | null
+          organisation_id: string
+          origin_unit_code_snapshot?: string | null
+          origin_unit_id: string
+          origin_unit_name_snapshot?: string | null
+          problem_or_opportunity: string
+          programme_code_snapshot?: string | null
+          programme_name_snapshot?: string | null
+          programme_version_id: string
+          proposed_idea: string
+          rejected_at?: string | null
+          review_jurisdiction_unit_id: string
+          status?: string
+          submitted_at?: string | null
+          suggestion_number?: string | null
+          target_unit_code_snapshot?: string | null
+          target_unit_id?: string | null
+          target_unit_name_snapshot?: string | null
+          template_submission_id?: string | null
+          title: string
+          updated_at?: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          author_membership_id?: string
+          category_code_snapshot?: string | null
+          category_id?: string
+          category_name_snapshot?: string | null
+          created_at?: string
+          expected_benefit_summary?: string | null
+          id?: string
+          implementation_outcome?: string | null
+          implementation_started_at?: string | null
+          implementation_summary?: string | null
+          implemented_at?: string | null
+          implemented_by_membership_id?: string | null
+          organisation_id?: string
+          origin_unit_code_snapshot?: string | null
+          origin_unit_id?: string
+          origin_unit_name_snapshot?: string | null
+          problem_or_opportunity?: string
+          programme_code_snapshot?: string | null
+          programme_name_snapshot?: string | null
+          programme_version_id?: string
+          proposed_idea?: string
+          rejected_at?: string | null
+          review_jurisdiction_unit_id?: string
+          status?: string
+          submitted_at?: string | null
+          suggestion_number?: string | null
+          target_unit_code_snapshot?: string | null
+          target_unit_id?: string | null
+          target_unit_name_snapshot?: string | null
+          template_submission_id?: string | null
+          title?: string
+          updated_at?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "improvement_suggestions_author_fkey"
+            columns: ["organisation_id", "author_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_category_fkey"
+            columns: ["organisation_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "suggestion_categories"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_implemented_by_fkey"
+            columns: ["organisation_id", "implemented_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_jurisdiction_unit_fkey"
+            columns: ["organisation_id", "review_jurisdiction_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_origin_unit_fkey"
+            columns: ["organisation_id", "origin_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_programme_version_fkey"
+            columns: ["organisation_id", "programme_version_id"]
+            isOneToOne: false
+            referencedRelation: "suggestion_programme_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_target_unit_fkey"
+            columns: ["organisation_id", "target_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "improvement_suggestions_template_submission_fkey"
+            columns: ["organisation_id", "template_submission_id"]
+            isOneToOne: false
+            referencedRelation: "template_submissions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       job_functions: {
         Row: {
           code: string
@@ -2824,6 +3774,35 @@ export type Database = {
           },
         ]
       }
+      organisation_document_sequences: {
+        Row: {
+          last_value: number
+          organisation_id: string
+          sequence_key: string
+          sequence_year: number
+        }
+        Insert: {
+          last_value?: number
+          organisation_id: string
+          sequence_key: string
+          sequence_year: number
+        }
+        Update: {
+          last_value?: number
+          organisation_id?: string
+          sequence_key?: string
+          sequence_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_document_sequences_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_invitation_grants: {
         Row: {
           created_at: string
@@ -3239,6 +4218,231 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recognition_awards: {
+        Row: {
+          awarded_at: string
+          awarded_by_membership_id: string
+          created_at: string
+          id: string
+          message: string
+          organisation_id: string
+          organisational_unit_id: string
+          recognition_type_id: string
+          recognition_type_name_snapshot: string
+          source_resource_id: string | null
+          status: string
+          title: string
+          visibility: string
+        }
+        Insert: {
+          awarded_at?: string
+          awarded_by_membership_id: string
+          created_at?: string
+          id: string
+          message: string
+          organisation_id: string
+          organisational_unit_id: string
+          recognition_type_id: string
+          recognition_type_name_snapshot: string
+          source_resource_id?: string | null
+          status?: string
+          title: string
+          visibility?: string
+        }
+        Update: {
+          awarded_at?: string
+          awarded_by_membership_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          organisation_id?: string
+          organisational_unit_id?: string
+          recognition_type_id?: string
+          recognition_type_name_snapshot?: string
+          source_resource_id?: string | null
+          status?: string
+          title?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_awards_awarder_fkey"
+            columns: ["organisation_id", "awarded_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_awards_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_awards_source_fkey"
+            columns: ["organisation_id", "source_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_awards_type_fkey"
+            columns: ["organisation_id", "recognition_type_id"]
+            isOneToOne: false
+            referencedRelation: "recognition_types"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_awards_unit_fkey"
+            columns: ["organisation_id", "organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      recognition_recipients: {
+        Row: {
+          contribution_summary: string | null
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          recognition_award_id: string
+        }
+        Insert: {
+          contribution_summary?: string | null
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          recognition_award_id: string
+        }
+        Update: {
+          contribution_summary?: string | null
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          recognition_award_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_recipients_award_fkey"
+            columns: ["organisation_id", "recognition_award_id"]
+            isOneToOne: false
+            referencedRelation: "recognition_awards"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_recipients_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      recognition_revocations: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          reason: string
+          recognition_award_id: string
+          revoked_at: string
+          revoked_by_membership_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          reason: string
+          recognition_award_id: string
+          revoked_at?: string
+          revoked_by_membership_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          reason?: string
+          recognition_award_id?: string
+          revoked_at?: string
+          revoked_by_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_revocations_award_fkey"
+            columns: ["organisation_id", "recognition_award_id"]
+            isOneToOne: true
+            referencedRelation: "recognition_awards"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_revocations_revoker_fkey"
+            columns: ["organisation_id", "revoked_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      recognition_types: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          display_metadata: Json | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          display_metadata?: Json | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          display_metadata?: Json | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_types_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "recognition_types_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resource_records: {
         Row: {
@@ -4139,6 +5343,510 @@ export type Database = {
             columns: ["organisation_id", "id"]
             isOneToOne: false
             referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_action_context: {
+        Row: {
+          action_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          purpose: string | null
+          suggestion_id: string
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          purpose?: string | null
+          suggestion_id: string
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          purpose?: string | null
+          suggestion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_action_context_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_categories_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggestion_contributor_assignments: {
+        Row: {
+          assigned_by_membership_id: string
+          contribution_role: string
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          suggestion_id: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          assigned_by_membership_id: string
+          contribution_role: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          suggestion_id: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          assigned_by_membership_id?: string
+          contribution_role?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          suggestion_id?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_contributor_assignments_assigner_fkey"
+            columns: ["organisation_id", "assigned_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_contributor_assignments_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_contributor_assignments_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_implementation_links: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          implementation_resource_id: string
+          implementation_role: string
+          organisation_id: string
+          suggestion_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          implementation_resource_id: string
+          implementation_role: string
+          organisation_id: string
+          suggestion_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          implementation_resource_id?: string
+          implementation_role?: string
+          organisation_id?: string
+          suggestion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_implementation_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_implementation_links_resource_fkey"
+            columns: ["organisation_id", "implementation_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_implementation_links_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_programme_versions: {
+        Row: {
+          applicable_unit_id: string | null
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          lifecycle: string
+          organisation_id: string
+          programme_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          review_target_days: number | null
+          submission_guidance: string | null
+          template_version_id: string | null
+          version_number: number
+        }
+        Insert: {
+          applicable_unit_id?: string | null
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          lifecycle?: string
+          organisation_id: string
+          programme_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          review_target_days?: number | null
+          submission_guidance?: string | null
+          template_version_id?: string | null
+          version_number: number
+        }
+        Update: {
+          applicable_unit_id?: string | null
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          lifecycle?: string
+          organisation_id?: string
+          programme_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          review_target_days?: number | null
+          submission_guidance?: string | null
+          template_version_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_programme_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_programme_versions_programme_fkey"
+            columns: ["organisation_id", "programme_id"]
+            isOneToOne: false
+            referencedRelation: "suggestion_programmes"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_programme_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_programme_versions_template_version_fkey"
+            columns: ["organisation_id", "template_version_id"]
+            isOneToOne: false
+            referencedRelation: "template_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_programme_versions_unit_fkey"
+            columns: ["organisation_id", "applicable_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_programmes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          id: string
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_programmes_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_programmes_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggestion_review_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by_membership_id: string
+          completed_at: string | null
+          id: string
+          organisation_id: string
+          reviewer_membership_id: string
+          status: string
+          suggestion_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by_membership_id: string
+          completed_at?: string | null
+          id?: string
+          organisation_id: string
+          reviewer_membership_id: string
+          status?: string
+          suggestion_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by_membership_id?: string
+          completed_at?: string | null
+          id?: string
+          organisation_id?: string
+          reviewer_membership_id?: string
+          status?: string
+          suggestion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_review_assignments_assigner_fkey"
+            columns: ["organisation_id", "assigned_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_review_assignments_reviewer_fkey"
+            columns: ["organisation_id", "reviewer_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_review_assignments_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_reviews: {
+        Row: {
+          created_at: string
+          decision: string
+          effort_level: string
+          id: string
+          impact_level: string
+          implementation_recommendation: string | null
+          organisation_id: string
+          rationale: string
+          review_date: string
+          reviewer_membership_id: string
+          suggestion_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          effort_level: string
+          id?: string
+          impact_level: string
+          implementation_recommendation?: string | null
+          organisation_id: string
+          rationale: string
+          review_date?: string
+          reviewer_membership_id: string
+          suggestion_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          effort_level?: string
+          id?: string
+          impact_level?: string
+          implementation_recommendation?: string | null
+          organisation_id?: string
+          rationale?: string
+          review_date?: string
+          reviewer_membership_id?: string
+          suggestion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_reviews_reviewer_fkey"
+            columns: ["organisation_id", "reviewer_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_reviews_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_status_history: {
+        Row: {
+          changed_at: string
+          changed_by_membership_id: string
+          from_status: string
+          id: string
+          organisation_id: string
+          reason: string | null
+          suggestion_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by_membership_id: string
+          from_status: string
+          id?: string
+          organisation_id: string
+          reason?: string | null
+          suggestion_id: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by_membership_id?: string
+          from_status?: string
+          id?: string
+          organisation_id?: string
+          reason?: string | null
+          suggestion_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_status_history_actor_fkey"
+            columns: ["organisation_id", "changed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_status_history_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -5151,6 +6859,16 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: string
       }
+      add_ci_project_methodology_phase: {
+        Args: {
+          target_description?: string
+          target_display_order: number
+          target_methodology_version_id: string
+          target_phase_key: string
+          target_title: string
+        }
+        Returns: string
+      }
       add_five_s_question: {
         Args: {
           target_allows_not_applicable?: boolean
@@ -5280,6 +6998,14 @@ export type Database = {
         }
         Returns: string
       }
+      add_suggestion_contributor: {
+        Args: {
+          target_contribution_role: string
+          target_membership_id: string
+          target_suggestion_id: string
+        }
+        Returns: string
+      }
       add_template_question: {
         Args: {
           target_allows_not_applicable?: boolean
@@ -5325,6 +7051,15 @@ export type Database = {
         Args: { target_assessment_id: string }
         Returns: boolean
       }
+      approve_project: { Args: { target_project_id: string }; Returns: boolean }
+      assign_ci_project_team_member: {
+        Args: {
+          target_membership_id: string
+          target_project_id: string
+          target_team_role: string
+        }
+        Returns: string
+      }
       assign_membership_job_function: {
         Args: {
           target_assignment_reason?: string
@@ -5334,6 +7069,13 @@ export type Database = {
           target_primary?: boolean
           target_valid_from?: string
           target_valid_to?: string
+        }
+        Returns: string
+      }
+      assign_suggestion_reviewer: {
+        Args: {
+          target_reviewer_membership_id: string
+          target_suggestion_id: string
         }
         Returns: string
       }
@@ -5347,8 +7089,29 @@ export type Database = {
         }
         Returns: boolean
       }
+      award_recognition: {
+        Args: {
+          target_contribution_summaries?: string[]
+          target_message: string
+          target_organisational_unit_id: string
+          target_recipient_membership_ids: string[]
+          target_recognition_type_id: string
+          target_source_resource_id?: string
+          target_title: string
+          target_visibility: string
+        }
+        Returns: string
+      }
       begin_assessor_review: {
         Args: { target_assessment_id: string }
+        Returns: boolean
+      }
+      begin_suggestion_implementation: {
+        Args: { target_suggestion_id: string }
+        Returns: boolean
+      }
+      begin_suggestion_review: {
+        Args: { target_suggestion_id: string }
         Returns: boolean
       }
       bulk_record_training_completions: {
@@ -5377,12 +7140,35 @@ export type Database = {
         Args: { target_assessment_id: string; target_reason?: string }
         Returns: boolean
       }
+      cancel_project: {
+        Args: { target_project_id: string; target_reason?: string }
+        Returns: boolean
+      }
       complete_five_s_audit: {
         Args: { target_audit_id: string }
         Returns: boolean
       }
       complete_gemba_walk: {
         Args: { target_summary_notes?: string; target_walk_id: string }
+        Returns: boolean
+      }
+      complete_project:
+        | { Args: { target_project_id: string }; Returns: boolean }
+        | {
+            Args: {
+              target_lessons_learned?: string
+              target_outcome_summary: string
+              target_project_id: string
+              target_sustainment_summary?: string
+            }
+            Returns: boolean
+          }
+      complete_project_phase: {
+        Args: {
+          target_mark_skipped?: boolean
+          target_phase_id: string
+          target_project_id: string
+        }
         Returns: boolean
       }
       complete_self_assessment: {
@@ -5433,6 +7219,29 @@ export type Database = {
           target_skill_id?: string
           target_title: string
           target_training_completion_id?: string
+        }
+        Returns: string
+      }
+      create_ci_project_methodology_draft: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_name: string
+        }
+        Returns: string
+      }
+      create_ci_project_methodology_successor_version: {
+        Args: { target_methodology_id: string }
+        Returns: string
+      }
+      create_ci_project_metric: {
+        Args: {
+          target_baseline_value?: number
+          target_display_name: string
+          target_metric_key: string
+          target_project_id: string
+          target_target_value?: number
+          target_unit_label?: string
         }
         Returns: string
       }
@@ -5514,6 +7323,21 @@ export type Database = {
         }
         Returns: string
       }
+      create_improvement_project: {
+        Args: {
+          target_expected_impact_summary?: string
+          target_objective?: string
+          target_problem_statement?: string
+          target_source_resource_id?: string
+          target_title: string
+          target_unit_id: string
+        }
+        Returns: string
+      }
+      create_improvement_project_from_suggestion: {
+        Args: { target_suggestion_id: string }
+        Returns: string
+      }
       create_job_function: {
         Args: {
           target_code: string
@@ -5553,12 +7377,31 @@ export type Database = {
         }
         Returns: string
       }
+      create_project_action: {
+        Args: {
+          target_description?: string
+          target_due_at?: string
+          target_priority?: string
+          target_project_id: string
+          target_project_phase_id?: string
+          target_title: string
+        }
+        Returns: string
+      }
       create_protected_role_draft: {
         Args: {
           role_canonical_name: string
           role_description?: string
           role_display_name: string
           target_organisation_id: string
+        }
+        Returns: string
+      }
+      create_recognition_type: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_name: string
         }
         Returns: string
       }
@@ -5607,6 +7450,51 @@ export type Database = {
       }
       create_skill_proficiency_scale_draft: {
         Args: { target_description?: string; target_name: string }
+        Returns: string
+      }
+      create_suggestion_action: {
+        Args: {
+          target_description?: string
+          target_due_at?: string
+          target_priority?: string
+          target_purpose?: string
+          target_suggestion_id: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_suggestion_category: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_display_order?: number
+          target_name: string
+        }
+        Returns: string
+      }
+      create_suggestion_draft: {
+        Args: {
+          target_category_id: string
+          target_expected_benefit_summary?: string
+          target_problem_or_opportunity: string
+          target_programme_version_id: string
+          target_proposed_idea: string
+          target_target_unit_id?: string
+          target_template_submission_id?: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_suggestion_programme_draft: {
+        Args: {
+          target_code: string
+          target_description?: string
+          target_name: string
+        }
+        Returns: string
+      }
+      create_suggestion_programme_successor_version: {
+        Args: { target_programme_id: string }
         Returns: string
       }
       create_template_draft: {
@@ -5734,7 +7622,30 @@ export type Database = {
         Returns: boolean
       }
       get_capability_dashboard: { Args: never; Returns: Json }
+      get_ci_project_detail: {
+        Args: { target_project_id: string }
+        Returns: Json
+      }
+      get_ci_projects_portfolio: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_priority?: string
+          target_search?: string
+          target_status?: string
+          target_unit_id?: string
+        }
+        Returns: Json
+      }
       get_membership_capability_profile_header: {
+        Args: { target_membership_id: string }
+        Returns: Json
+      }
+      get_membership_improvement_contribution: {
+        Args: { target_membership_id: string }
+        Returns: Json
+      }
+      get_membership_recognition: {
         Args: { target_membership_id: string }
         Returns: Json
       }
@@ -5754,6 +7665,25 @@ export type Database = {
         }
         Returns: Json
       }
+      get_recognition_feed: {
+        Args: { target_page?: number; target_page_size?: number }
+        Returns: Json
+      }
+      get_suggestion_detail: {
+        Args: { target_suggestion_id: string }
+        Returns: Json
+      }
+      get_suggestion_review_queue: { Args: never; Returns: Json }
+      get_suggestions_list: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_search?: string
+          target_status?: string
+        }
+        Returns: Json
+      }
+      get_suggestions_overview: { Args: never; Returns: Json }
       get_training_compliance_summary: {
         Args: { target_unit_id?: string }
         Returns: Json
@@ -5775,6 +7705,10 @@ export type Database = {
           target_permission_key: string
           target_unit_id?: string
         }
+        Returns: boolean
+      }
+      hold_project: {
+        Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
       }
       initiate_attachment_upload: {
@@ -5799,6 +7733,14 @@ export type Database = {
           offered_scope_type: string
           offered_scope_unit_id?: string
           target_organisation_id: string
+        }
+        Returns: string
+      }
+      link_ci_project_evidence: {
+        Args: {
+          target_attachment_id: string
+          target_project_id: string
+          target_project_phase_id?: string
         }
         Returns: string
       }
@@ -5850,6 +7792,19 @@ export type Database = {
           selected: boolean
         }[]
       }
+      mark_suggestion_implemented: {
+        Args: {
+          target_follow_up_note?: string
+          target_implementation_outcome?: string
+          target_implementation_summary: string
+          target_suggestion_id: string
+        }
+        Returns: boolean
+      }
+      member_has_permission: {
+        Args: { target_permission_key: string }
+        Returns: boolean
+      }
       move_organisation_unit: {
         Args: {
           target_organisation_id: string
@@ -5884,6 +7839,10 @@ export type Database = {
           workforce_account_id: string
         }[]
       }
+      publish_ci_project_methodology_version: {
+        Args: { target_methodology_version_id: string }
+        Returns: boolean
+      }
       publish_five_s_standard_version: {
         Args: { target_standard_version_id: string }
         Returns: boolean
@@ -5910,6 +7869,10 @@ export type Database = {
       }
       publish_skill_proficiency_scale_version: {
         Args: { target_scale_version_id: string }
+        Returns: boolean
+      }
+      publish_suggestion_programme_version: {
+        Args: { target_programme_version_id: string }
         Returns: boolean
       }
       publish_template_version: {
@@ -5943,6 +7906,15 @@ export type Database = {
         }
         Returns: string
       }
+      record_metric_measurement: {
+        Args: {
+          target_measured_at?: string
+          target_measured_value: number
+          target_metric_id: string
+          target_note?: string
+        }
+        Returns: string
+      }
       record_skill_self_assessment: {
         Args: {
           target_assessed_at?: string
@@ -5966,6 +7938,17 @@ export type Database = {
           target_proficiency_scale_version_id: string
           target_skill_id: string
           target_valid_until?: string
+        }
+        Returns: string
+      }
+      record_suggestion_review: {
+        Args: {
+          target_decision: string
+          target_effort_level: string
+          target_impact_level: string
+          target_implementation_recommendation?: string
+          target_rationale: string
+          target_suggestion_id: string
         }
         Returns: string
       }
@@ -6013,6 +7996,11 @@ export type Database = {
         Args: { change_reason: string; target_organisation_id: string }
         Returns: boolean
       }
+      resume_project: { Args: { target_project_id: string }; Returns: boolean }
+      return_project_to_draft: {
+        Args: { target_project_id: string; target_reason?: string }
+        Returns: boolean
+      }
       revoke_access_grant: {
         Args: {
           change_reason: string
@@ -6031,6 +8019,10 @@ export type Database = {
           target_invitation_id: string
           target_organisation_id: string
         }
+        Returns: boolean
+      }
+      revoke_recognition: {
+        Args: { target_award_id: string; target_reason: string }
         Returns: boolean
       }
       revoke_training_completion: {
@@ -6080,8 +8072,18 @@ export type Database = {
         }
         Returns: string
       }
+      start_project: { Args: { target_project_id: string }; Returns: boolean }
+      submit_ci_project_charter: {
+        Args: { target_project_id: string }
+        Returns: boolean
+      }
       submit_maturity_assessment: {
         Args: { target_assessment_id: string }
+        Returns: boolean
+      }
+      submit_project: { Args: { target_project_id: string }; Returns: boolean }
+      submit_suggestion: {
+        Args: { target_suggestion_id: string }
         Returns: boolean
       }
       suspend_or_close_organisation: {
@@ -6094,6 +8096,26 @@ export type Database = {
       }
       switch_organisation: {
         Args: { target_organisation_id: string }
+        Returns: boolean
+      }
+      update_ci_project_draft: {
+        Args: {
+          target_baseline_summary?: string
+          target_constraints_risks?: string
+          target_expected_impact_summary?: string
+          target_methodology_version_id?: string
+          target_objective?: string
+          target_planned_end_date?: string
+          target_planned_start_date?: string
+          target_priority?: string
+          target_problem_statement?: string
+          target_project_id: string
+          target_scope_in?: string
+          target_scope_out?: string
+          target_sustainment_expectation?: string
+          target_target_summary?: string
+          target_title?: string
+        }
         Returns: boolean
       }
       update_job_function: {
@@ -6117,6 +8139,19 @@ export type Database = {
           target_start_date: string
           target_title: string
           target_unit_id: string
+        }
+        Returns: boolean
+      }
+      update_suggestion_draft: {
+        Args: {
+          target_category_id?: string
+          target_expected_benefit_summary?: string
+          target_problem_or_opportunity: string
+          target_proposed_idea: string
+          target_suggestion_id: string
+          target_target_unit_id?: string
+          target_template_submission_id?: string
+          target_title: string
         }
         Returns: boolean
       }
@@ -6187,6 +8222,10 @@ export type Database = {
           target_text_value?: string
         }
         Returns: string
+      }
+      withdraw_suggestion: {
+        Args: { target_reason?: string; target_suggestion_id: string }
+        Returns: boolean
       }
     }
     Enums: {

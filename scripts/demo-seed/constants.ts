@@ -104,6 +104,15 @@ export const DEMO_ROLES = {
       "skills.requirements.manage",
       "skills.assess",
       "people.capability.read",
+      "training.read",
+      "skills.read",
+      "suggestions.read",
+      "suggestions.review",
+      "suggestions.manage",
+      "recognition.read",
+      "recognition.award",
+      "projects.read",
+      "projects.manage",
     ],
     invitationTokenSeed: "apex-demo-manager-invitation-v1",
   },
@@ -129,6 +138,9 @@ export const DEMO_ROLES = {
       "people.capability.read",
       "training.read",
       "skills.read",
+      "suggestions.read",
+      "suggestions.submit",
+      "recognition.read",
     ],
     invitationTokenSeed: "apex-demo-operator-invitation-v1",
   },
@@ -247,3 +259,111 @@ export const DEMO_PROFICIENCY_SCALE = {
     { order: 5, label: "Coach / Trainer" },
   ],
 } as const;
+
+export const DEMO_SUGGESTION_PROGRAMME = {
+  name: "Everyday Improvement Ideas",
+  code: "everyday-ideas",
+  reviewTargetDays: 7,
+} as const;
+
+export const DEMO_SUGGESTION_CATEGORIES = [
+  { code: "safety", name: "Safety" },
+  { code: "quality", name: "Quality" },
+  { code: "delivery", name: "Delivery" },
+  { code: "cost", name: "Cost" },
+  { code: "people", name: "People" },
+  { code: "waste", name: "Waste" },
+] as const;
+
+export const DEMO_RECOGNITION_TYPES = [
+  { code: "great-idea", name: "Great Idea" },
+  { code: "kaizen-contributor", name: "Kaizen Contributor" },
+  { code: "improvement-champion", name: "Improvement Champion" },
+  { code: "coach-support", name: "Coach & Support" },
+] as const;
+
+export const DEMO_CI_METHODOLOGIES = [
+  {
+    code: "dmaic",
+    name: "DMAIC",
+    phases: ["Define", "Measure", "Analyze", "Improve", "Control"],
+  },
+  {
+    code: "pdca",
+    name: "PDCA",
+    phases: ["Plan", "Do", "Check", "Act"],
+  },
+  {
+    code: "kaizen-event",
+    name: "Kaizen Event",
+    phases: ["Prepare", "Discover", "Implement", "Close"],
+  },
+  {
+    code: "basic-improvement",
+    name: "Basic Improvement",
+    phases: ["Identify", "Implement", "Verify"],
+  },
+] as const;
+
+export const DEMO_CI_PROJECTS = [
+  {
+    code: "changeover-reduction",
+    title: "Changeover Reduction",
+    methodologyCode: "dmaic",
+    status: "active" as const,
+    problem: "Changeovers on Line 2 exceed the 45-minute target.",
+    objective: "Reduce average changeover time below 30 minutes.",
+    metric: {
+      key: "changeover-minutes",
+      name: "Changeover duration",
+      unit: "minutes",
+      baseline: 48,
+      target: 28,
+    },
+  },
+  {
+    code: "packaging-waste",
+    title: "Packaging Waste Reduction",
+    methodologyCode: "pdca",
+    status: "active" as const,
+    problem: "Packaging scrap on the filler line is above target.",
+    objective: "Cut packaging waste by 20%.",
+    metric: {
+      key: "scrap-rate",
+      name: "Packaging scrap rate",
+      unit: "%",
+      baseline: 4.2,
+      target: 3.0,
+    },
+  },
+  {
+    code: "line3-kaizen",
+    title: "Line 3 Workplace Organisation Kaizen",
+    methodologyCode: "kaizen-event",
+    status: "on_hold" as const,
+    problem: "Line 3 workstations lack consistent organisation.",
+    objective: "Standardise workplace layout and tooling placement.",
+    metric: {
+      key: "audit-score",
+      name: "5S audit score",
+      unit: "points",
+      baseline: 62,
+      target: 85,
+    },
+  },
+  {
+    code: "visual-standards",
+    title: "Visual Standards Improvement",
+    methodologyCode: "basic-improvement",
+    status: "completed" as const,
+    problem: "Visual standards for labels were inconsistent.",
+    objective: "Deploy consistent visual standards across packaging.",
+    metric: {
+      key: "defect-rate",
+      name: "Visual defect rate",
+      unit: "ppm",
+      baseline: 120,
+      target: 60,
+    },
+  },
+] as const;

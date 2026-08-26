@@ -50,12 +50,19 @@ type ProficiencyLevel = {
   scale_version_id: string;
 };
 
+type ImprovementContribution = {
+  suggestions_authored?: number;
+  suggestions_implemented_involvement?: number;
+  recognition_received?: number;
+};
+
 type CapabilityProfileProps = {
   membershipId: string;
   displayName: string;
   trainingProfile: Record<string, unknown> | null;
   skillsProfile: Record<string, unknown> | null;
   proficiencyLevels: ProficiencyLevel[];
+  improvementContribution?: ImprovementContribution | null;
   canValidateSkills: boolean;
   canSelfAssess: boolean;
   canCreateActions: boolean;
@@ -72,6 +79,7 @@ export function CapabilityProfile({
   trainingProfile,
   skillsProfile,
   proficiencyLevels,
+  improvementContribution,
   canValidateSkills,
   canSelfAssess,
   canCreateActions,
@@ -279,6 +287,32 @@ export function CapabilityProfile({
           </div>
         </section>
       </div>
+
+      {improvementContribution ? (
+        <section className="rounded-lg border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold">Improvement & recognition</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3 text-sm">
+            <div>
+              <p className="text-muted-foreground">Suggestions authored</p>
+              <p className="text-2xl font-semibold tabular-nums">
+                {improvementContribution.suggestions_authored ?? 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Implementation involvement</p>
+              <p className="text-2xl font-semibold tabular-nums">
+                {improvementContribution.suggestions_implemented_involvement ?? 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Recognition received</p>
+              <p className="text-2xl font-semibold tabular-nums">
+                {improvementContribution.recognition_received ?? 0}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {(canValidateSkills || canSelfAssess) && assessmentOpen ? (
         <SkillAssessmentDialog

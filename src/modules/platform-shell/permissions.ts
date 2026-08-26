@@ -3,7 +3,14 @@ import "server-only";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export async function currentMemberHasPermission(permissionKey: string) {
-  return currentMemberHasScopedPermission(permissionKey);
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_permission", {
+    target_permission_key: permissionKey,
+  });
+  if (result.error) {
+    return false;
+  }
+  return result.data === true;
 }
 
 export async function currentMemberHasScopedPermission(

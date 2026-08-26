@@ -36,6 +36,8 @@ export async function PlatformShell({
       "people.capability.read",
       "training.read",
       "skills.read",
+      "suggestions.read",
+      "recognition.read",
     ];
     for (const permission of homePermissions) {
       if (await currentMemberHasPermission(permission)) {

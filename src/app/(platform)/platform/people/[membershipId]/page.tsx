@@ -70,6 +70,12 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
   );
   const canSelfAssess = isOwnProfile;
   const canCreateActions = await currentMemberHasPermission("actions.create");
+  const canReadSuggestions = await currentMemberHasPermission("suggestions.read");
+  const improvementContribution = canReadSuggestions
+    ? ((await supabase.rpc("get_membership_improvement_contribution", {
+        target_membership_id: membershipId,
+      })).data as Record<string, unknown> | null)
+    : null;
   const displayName = header.display_name ?? "Person";
 
   return (
@@ -86,6 +92,13 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
         trainingProfile={(trainingProfile as Record<string, unknown>) ?? null}
         skillsProfile={(skillsProfile as Record<string, unknown>) ?? null}
         proficiencyLevels={proficiencyLevels ?? []}
+        improvementContribution={
+          improvementContribution as {
+            suggestions_authored?: number;
+            suggestions_implemented_involvement?: number;
+            recognition_received?: number;
+          } | null
+        }
         canValidateSkills={canValidateSkills}
         canSelfAssess={canSelfAssess}
         canCreateActions={canCreateActions}

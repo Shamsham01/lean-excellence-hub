@@ -271,6 +271,134 @@ acceptance above.
 | Low | No dedicated pgTAP tests for `create_five_s_standard_successor_version` / `create_gemba_definition_successor_version` (covered at application layer + 5S E2E). |
 | Low | Smoke `end-to-end` CI job runs Playwright without Supabase (`E2E_WITH_SUPABASE` unset); Milestone 6 journeys skip there. The `database` job is the authoritative M6 E2E gate. |
 
+## Milestone 8 — CI Improvement Projects
+
+Milestone 8 is complete. It delivers methodology versioning, charter-led project
+governance, team history, phased execution, universal actions, evidence, metrics,
+portfolio/workspace UX, and local Apex demo projects — without Benefits Engine,
+financial savings, or project task tables.
+
+### In scope
+
+- **Methodologies:** `ci_project_methodologies`, versioned phases, publish/successor
+  RPCs, methodology manager UI.
+- **Projects:** charter fields, lifecycle (`draft` → `submitted` → `approved` →
+  `active` / `on_hold` → `completed` / `cancelled`), status history, team
+  assignments (domain roles, not RBAC), phase instantiation, action/evidence
+  context, metrics with append-only measurements, completion snapshots.
+- **Application:** `/platform/projects` portfolio, multi-step create wizard,
+  tabbed workspace, methodology manager/editor.
+- **Demo seed:** DMAIC/PDCA/Kaizen/Basic Improvement methodologies; four named
+  demo projects with realistic lifecycle, metrics, actions, and completion states.
+- **Regression evidence:** pgTAP `ci_projects_security`; Vitest `project-lifecycle`;
+  Supabase-backed Playwright `milestone8-closure`.
+
+### Explicitly excluded
+
+Benefits Engine, ROI/savings calculations, finance approval, project-specific task
+tables, AI, Milestone 10 work, and hosted Supabase changes.
+
+### Acceptance checklist
+
+- [x] M8 migrations `20260825005000`–`20260825005014` plus closure migrations
+  `20260825006015`–`20260825006017` applied in dependency order.
+- [x] Methodology publish registers resource records for business audit integrity.
+- [x] Project team participation does not grant application permissions (pgTAP).
+- [x] Demo seed publishes methodologies via manager grant and advances projects
+  through authoritative lifecycle RPCs.
+- [x] Local `db:reset`, `db:seed-demo`, `db:lint`, full pgTAP, `db:types`,
+  Vitest, lint, typecheck, production build, and Supabase-backed Playwright pass.
+- [x] Visual/product acceptance: flagship M8 screens inspected at 1440/1024/768/390
+  light and dark; portfolio, wizard, workspace tabs, methodology catalogue/editor,
+  completion state; no horizontal overflow; responsive tabs and human-readable
+  team/evidence; premium header hierarchy (2026-08-26).
+
+### Acceptance evidence (2026-08-26)
+
+| Gate | Evidence |
+| --- | --- |
+| Migrations | M8 `05000`–`05014`; closure `06015`, `06017` |
+| pgTAP | 39 files, 331 tests (`npm run test:db`); includes `ci_projects_security` |
+| Application | `/platform/projects`, create wizard, workspace tabs, methodology manager |
+| Unit tests | 11 files, 34 tests (`npm test`); includes `project-lifecycle` |
+| E2E | `milestone8-closure` (methodology editor, wizard create, lifecycle, phase/measurement, operator denial) |
+| CI | Database job includes `milestone8-closure.spec.ts` with `E2E_WITH_SUPABASE=1` |
+| Visual QA | Manager identity; routes above at 1440/1024/768/390 light/dark; overflow PASS; `milestone8-closure` re-run after polish |
+
+## Milestone 9 — Suggestions, Ideas & Recognition
+
+Milestone 9 is complete. It delivers frontline suggestion capture, manager
+review workspace, programme/type management, recognition history/revocation,
+shared evidence on suggestions, and human recognition — without engagement
+scoring, gamification, or notification delivery.
+
+### In scope
+
+- **Suggestion programmes:** versioned programmes, categories, optional template
+  pin (`improvement_suggestion` experience type), review-target metadata, and
+  programme management permissions.
+- **Improvement suggestions:** draft → submit with programme/category/unit
+  snapshots, document numbers via the shared organisation sequence allocator,
+  submitted-content immutability, review jurisdiction, atomic review recording
+  (`accept`/`reject` complete assignments; `needs_more_information` keeps
+  assignments active), implementation lifecycle, and contributor/reviewer
+  assignments (non-RBAC).
+- **Implementation:** `suggestion_action_context`, implementation links, and
+  `create_improvement_project_from_suggestion` through the authoritative M8 CI
+  project pathway.
+- **Recognition:** types, immutable awards/recipients, restrictive visibility
+  (never permission-granting), `award_recognition` / `revoke_recognition` with
+  idempotent revocation, and scoped profile aggregates.
+- **Query layer:** overview, list, detail, review queue, recognition feed, and
+  caller-visible profile contribution counts (no count/source leak).
+- **Application:** Suggestions overview, new suggestion, detail (overview,
+  discussion, activity), review queue, programmes catalog; Recognition feed,
+  award flow, types management; navigation and home signals; capability profile
+  improvement section.
+- **Regression evidence:** pgTAP security, atomic review, needs-info semantics,
+  recognition revocation idempotency, profile aggregates, engagement seam; Vitest
+  helpers; Supabase-backed Playwright `milestone9-closure`.
+
+### Explicitly excluded
+
+Engagement Score, points/leaderboards/gamification, auto-recognition,
+notifications, AI, Benefits (Milestone 10), Problem Solving, and Milestone 10
+start.
+
+### Acceptance checklist
+
+- [x] M8 prerequisite symbols present (`ci_projects`, source links, document
+  sequence allocator, `projects.*` permissions, `can_access_resource` branch).
+- [x] M9 migrations `20260825006000`–`20260825006010` plus closure migrations
+  `20260825006011`–`20260825006016` applied in dependency order.
+- [x] Submitted suggestion and template immutability enforced at database layer.
+- [x] `record_suggestion_review` is atomic; `needs_more_information` preserves
+  active reviewer assignment.
+- [x] Recognition awards/recipients immutable; second revoke rejected; single
+  revocation history row.
+- [x] Profile contribution RPC counts only caller-visible activity.
+- [x] Apex demo seed: Operator `recognition.read` (self), Manager M9 review/award
+  grants; programme, categories, suggestions, recognition types/awards.
+- [x] Local `db:reset`, `db:lint`, full pgTAP, `db:types`, Vitest, lint,
+  typecheck, format check, production build, and Supabase-backed Playwright pass.
+- [x] Visual/product acceptance: flagship M9 screens inspected at 1440/1024/768/390
+  light and dark; overview, list, new suggestion, detail workspace tabs, review
+  queue/workspace, programmes, recognition feed/award/types/history; frontline form
+  usable at 390px; no horizontal overflow; polished recognition feed without
+  social-media styling (2026-08-26).
+
+### Acceptance evidence (2026-08-26)
+
+| Gate | Evidence |
+| --- | --- |
+| Migrations | M8 `05000`–`05014`; M9 `06000`–`06010`; closure `06011`–`06016` |
+| pgTAP | 39 files, 331 tests; M9 suites include programme security, template submit, contributor/reviewer separation, implementation links, recognition immutability |
+| Application | Tabbed suggestion detail, review workspace, programme editor, recognition feed/history/revoke, evidence uploader |
+| Unit tests | 11 files, 34 tests; includes `suggestion-review-sla`, `platform-navigation` |
+| E2E | `milestone9-closure` (operator submit, manager recognition feed, review queue, operator award denial) |
+| CI | Full M3–M9 Playwright suite: 37 passed, 0 failed, 0 skipped (`workers=1`, clean `db:reset` + `db:seed-demo`) |
+| Visual QA | Manager/operator identities; routes above at 1440/1024/768/390 light/dark; overflow PASS; `milestone9-closure` re-run after polish |
+
 ## Later milestones
 
 1. Core Lean domains: training/skills, projects, suggestions, problem-solving,

@@ -94,7 +94,10 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page).toHaveURL(/\/platform\/maturity\/assessments\//);
 
     const scoreInput = page.locator('input[type="number"]').first();
-    await scoreInput.fill("4");
+    await scoreInput.click();
+    await scoreInput.pressSequentially("4");
+    await scoreInput.blur();
+    await page.waitForTimeout(500);
 
     const evidenceFile = join(tmpdir(), `e2e-evidence-${Date.now()}.txt`);
     writeFileSync(evidenceFile, "E2E maturity evidence sample");
@@ -107,7 +110,8 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByRole("button", { name: "Create action" }).click();
 
     await page.getByTestId("submit-assessment").click();
-    await expect(page.getByText("Submitted")).toBeVisible();
+    await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
+    await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
   });
 
   test("approver: review → approve → publish official result", async ({

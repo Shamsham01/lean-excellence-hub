@@ -74,6 +74,6 @@ jobs:
           export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY"
           export SUPABASE_SECRET_KEY="$SERVICE_ROLE_KEY"
           npx playwright install --with-deps chromium
-          npx playwright test tests/e2e/platform-shell.spec.ts tests/e2e/maturity-journeys.spec.ts tests/e2e/five-s-journeys.spec.ts tests/e2e/gemba-journeys.spec.ts tests/e2e/scheduling-journeys.spec.ts tests/e2e/milestone6-closure.spec.ts tests/e2e/training-journeys.spec.ts tests/e2e/milestone7-closure.spec.ts --workers=1
+          npx playwright test tests/e2e/platform-shell.spec.ts tests/e2e/maturity-journeys.spec.ts tests/e2e/five-s-journeys.spec.ts tests/e2e/gemba-journeys.spec.ts tests/e2e/scheduling-journeys.spec.ts tests/e2e/milestone6-closure.spec.ts tests/e2e/training-journeys.spec.ts tests/e2e/milestone7-closure.spec.ts tests/e2e/milestone8-closure.spec.ts tests/e2e/milestone9-closure.spec.ts --workers=1
       - if: always()
         run: npm run db:stop

@@ -2,11 +2,13 @@ import Link from "next/link";
 
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { TimeGreeting } from "@/components/platform/time-greeting";
 import { AssessmentStatusBadge, ScoreBadge } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 
 export default async function PlatformHomePage() {
   const supabase = await createServerSupabaseClient();
@@ -60,14 +62,15 @@ export default async function PlatformHomePage() {
     skill_coverage_percent?: number | null;
   } | null;
 
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const canReadSuggestions = await currentMemberHasPermission("suggestions.read");
+  const suggestionsOverview = canReadSuggestions
+    ? ((await supabase.rpc("get_suggestions_overview")).data as Record<string, unknown> | null)
+    : null;
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title={`${greeting}`}
+        title={<TimeGreeting />}
         description={currentOrg?.organisation_name ?? "Your organisation"}
       />
 
@@ -111,6 +114,13 @@ export default async function PlatformHomePage() {
           }
         />
         <MetricCard label="Templates" value={templateCount ?? 0} />
+        {canReadSuggestions ? (
+          <MetricCard
+            label="Ideas awaiting review"
+            value={(suggestionsOverview?.awaiting_review as number) ?? 0}
+            hint={`${(suggestionsOverview?.submitted_this_month as number) ?? 0} submitted this month`}
+          />
+        ) : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -169,6 +179,21 @@ export default async function PlatformHomePage() {
             </p>
           </CardContent>
         </Card>
+
+        {canReadSuggestions ? (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Suggestions</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/platform/suggestions">Open</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-1">
+              <p>{(suggestionsOverview?.implementing as number) ?? 0} implementing</p>
+              <p>{(suggestionsOverview?.implemented as number) ?? 0} implemented</p>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader>

@@ -40,6 +40,18 @@ export const platformNavigation: PlatformNavItem[] = [
     section: "improvement",
   },
   {
+    href: "/platform/projects",
+    label: "Projects",
+    permission: "projects.read",
+    section: "improvement",
+  },
+  {
+    href: "/platform/suggestions",
+    label: "Suggestions",
+    permission: "suggestions.read",
+    section: "improvement",
+  },
+  {
     href: "/platform/people",
     label: "People",
     permission: "people.capability.read",
@@ -55,6 +67,12 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/skills",
     label: "Skills",
     permission: "skills.read",
+    section: "people",
+  },
+  {
+    href: "/platform/recognition",
+    label: "Recognition",
+    permission: "recognition.read",
     section: "people",
   },
   {

@@ -41,3 +41,22 @@ export const SKILLS_PERMISSIONS = {
 export const PEOPLE_PERMISSIONS = {
   capabilityRead: "people.capability.read",
 } as const;
+
+export const SUGGESTIONS_PERMISSIONS = {
+  read: "suggestions.read",
+  submit: "suggestions.submit",
+  review: "suggestions.review",
+  manage: "suggestions.manage",
+  programmesManage: "suggestions.programmes.manage",
+} as const;
+
+export const RECOGNITION_PERMISSIONS = {
+  read: "recognition.read",
+  award: "recognition.award",
+  manage: "recognition.manage",
+} as const;
+
+export const PROJECTS_PERMISSIONS = {
+  read: "projects.read",
+  manage: "projects.manage",
+} as const;
