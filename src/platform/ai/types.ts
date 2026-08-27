@@ -103,6 +103,17 @@ export type ProviderUsage = {
   reasoningTokens: number;
 };
 
+export const AI_REASONING_EFFORTS = [
+  "none",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
+
+export type AiReasoningEffort = (typeof AI_REASONING_EFFORTS)[number];
+
 export type CreateResponseInput = {
   model: string;
   systemPrompt: string;
@@ -111,6 +122,8 @@ export type CreateResponseInput = {
   maxOutputTokens: number;
   timeoutMs: number;
   previousResponseId?: string;
+  reasoningEffort?: AiReasoningEffort;
+  expectsStructuredOutput?: boolean;
 };
 
 export type CreateResponseResult = {

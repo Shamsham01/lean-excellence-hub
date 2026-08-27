@@ -9,6 +9,7 @@ import {
   getAiEnvironment,
   isApplicationAiProviderAvailable,
 } from "@/platform/ai/config";
+import { AiProviderError } from "@/platform/ai/providers/errors";
 import {
   PROMPT_KEY,
   PROMPT_VERSION,
@@ -71,6 +72,8 @@ export async function runAiTurn(
     env.AI_MAX_OUTPUT_TOKENS ?? AI_DEFAULTS.maxOutputTokens;
   const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const reasoningEffort = env.AI_MODEL_REASONING;
+  const expectsStructuredOutput = provider.name === "openai";
 
   const systemPrompt = buildSystemPrompt(input.mode, input.stageKey);
   const promptHash = hashPrompt(systemPrompt);
@@ -123,7 +126,9 @@ export async function runAiTurn(
         tools: buildOpenAiTools(),
         maxOutputTokens,
         timeoutMs,
+        ...(reasoningEffort ? { reasoningEffort } : {}),
         ...(providerRequestId ? { previousResponseId: providerRequestId } : {}),
+        ...(expectsStructuredOutput ? { expectsStructuredOutput: true } : {}),
       });
 
       providerRequestId = response.responseId ?? providerRequestId;
@@ -133,8 +138,17 @@ export async function runAiTurn(
       totalUsage.reasoningTokens += response.usage.reasoningTokens;
 
       if (response.toolCalls.length === 0) {
-        outputText = response.outputText;
-        envelope = response.structuredOutput ?? fallbackEnvelope(outputText);
+        if (expectsStructuredOutput) {
+          if (!response.structuredOutput) {
+            throw new Error(
+              "Lean AI received an invalid structured response from the provider. Please retry or contact an administrator.",
+            );
+          }
+          envelope = response.structuredOutput;
+        } else {
+          envelope =
+            response.structuredOutput ?? fallbackEnvelope(response.outputText);
+        }
         break;
       }
 
@@ -269,9 +283,11 @@ export async function runAiTurn(
           ? "timeout"
           : "provider_error",
       target_final_output:
-        error instanceof Error
+        error instanceof AiProviderError
           ? error.message
-          : "Lean AI encountered an error.",
+          : error instanceof Error
+            ? error.message
+            : "Lean AI encountered an error.",
     });
     throw error;
   }

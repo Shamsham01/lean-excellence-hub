@@ -2,13 +2,18 @@ import "server-only";
 
 import { z } from "zod";
 
+import { AI_REASONING_EFFORTS } from "@/platform/ai/types";
+
+export { AI_REASONING_EFFORTS } from "@/platform/ai/types";
+export type { AiReasoningEffort } from "@/platform/ai/types";
+
 const aiEnvironmentSchema = z.object({
   AI_ENABLED: z.enum(["0", "1"]).optional(),
   AI_PROVIDER: z.enum(["openai", "fake"]).optional(),
   AI_ALLOW_FAKE_PROVIDER: z.enum(["0", "1"]).optional(),
   OPENAI_API_KEY: z.string().optional(),
   AI_MODEL_DEFAULT: z.string().optional(),
-  AI_MODEL_REASONING: z.string().optional(),
+  AI_MODEL_REASONING: z.enum(AI_REASONING_EFFORTS).optional(),
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().optional(),
   AI_MAX_TOOL_CALLS: z.coerce.number().int().positive().optional(),
   AI_RUN_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
@@ -38,7 +43,7 @@ export function getAiEnvironment(): AiEnvironment {
 
 export const AI_DEFAULTS = {
   model: "gpt-4.1-mini",
-  maxOutputTokens: 2048,
+  maxOutputTokens: 6000,
   maxToolCalls: 8,
   runTimeoutMs: 45_000,
 } as const;

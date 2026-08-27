@@ -1,33 +1,22 @@
 import OpenAI from "openai";
 
+import { facilitatorEnvelopeJsonSchema } from "@/platform/ai/providers/openai-transport";
 import {
-  facilitatorEnvelopeJsonSchema,
-  normalizeTransportEnvelope,
-  type OpenAiFacilitatorEnvelopeTransport,
-} from "@/platform/ai/providers/openai-transport";
+  parseStructuredOpenAiResponse,
+  type OpenAiResponseSnapshot,
+} from "@/platform/ai/providers/openai-response-parser";
 import type {
   AIProvider,
   CreateResponseInput,
   CreateResponseResult,
-  FacilitatorEnvelope,
 } from "@/platform/ai/types";
 
-export class OpenAIResponsesProvider implements AIProvider {
-  readonly name = "openai";
-  private client: OpenAI;
-
-  constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
-  }
-
-  async healthCheck() {
-    return { ok: true, provider: this.name };
-  }
-
-  async createResponse(
-    input: CreateResponseInput,
-  ): Promise<CreateResponseResult> {
-    const inputItems: OpenAI.Responses.ResponseInputItem[] = [
+export function buildResponsesCreateParams(
+  input: CreateResponseInput,
+): OpenAI.Responses.ResponseCreateParamsNonStreaming {
+  return {
+    model: input.model,
+    input: [
       {
         role: "user",
         content: [
@@ -46,73 +35,51 @@ export class OpenAIResponsesProvider implements AIProvider {
           },
         ],
       })),
-    ];
-
-    const response = await this.client.responses.create(
-      {
-        model: input.model,
-        input: inputItems,
-        tools: input.tools as unknown as OpenAI.Responses.Tool[],
-        max_output_tokens: input.maxOutputTokens,
-        store: false,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "facilitator_envelope",
-            schema: facilitatorEnvelopeJsonSchema,
-            strict: true,
-          },
-        },
+    ],
+    tools: input.tools as unknown as OpenAI.Responses.Tool[],
+    max_output_tokens: input.maxOutputTokens,
+    ...(input.previousResponseId
+      ? { previous_response_id: input.previousResponseId }
+      : {}),
+    ...(input.reasoningEffort
+      ? { reasoning: { effort: input.reasoningEffort } }
+      : {}),
+    store: false,
+    text: {
+      format: {
+        type: "json_schema",
+        name: "facilitator_envelope",
+        schema: facilitatorEnvelopeJsonSchema,
+        strict: true,
       },
+    },
+  };
+}
+
+export class OpenAIResponsesProvider implements AIProvider {
+  readonly name = "openai";
+  private client: OpenAI;
+
+  constructor(apiKey: string) {
+    this.client = new OpenAI({ apiKey });
+  }
+
+  async healthCheck() {
+    return { ok: true, provider: this.name };
+  }
+
+  async createResponse(
+    input: CreateResponseInput,
+  ): Promise<CreateResponseResult> {
+    const response = await this.client.responses.create(
+      buildResponsesCreateParams(input),
       { timeout: input.timeoutMs },
     );
 
-    const toolCalls: CreateResponseResult["toolCalls"] = [];
-    for (const item of response.output ?? []) {
-      if (item.type === "function_call") {
-        toolCalls.push({
-          id: item.call_id ?? item.id ?? `call-${toolCalls.length}`,
-          name: item.name,
-          arguments: JSON.parse(item.arguments || "{}") as Record<
-            string,
-            unknown
-          >,
-        });
-      }
-    }
-
-    let structuredOutput: FacilitatorEnvelope | undefined;
-    let outputText = response.output_text ?? "";
-    if (outputText) {
-      try {
-        const transport = JSON.parse(
-          outputText,
-        ) as OpenAiFacilitatorEnvelopeTransport;
-        structuredOutput = normalizeTransportEnvelope(transport);
-        outputText = structuredOutput.message ?? outputText;
-      } catch {
-        structuredOutput = undefined;
-      }
-    }
-
-    const usage = response.usage;
-
-    const result: CreateResponseResult = {
-      responseId: response.id,
-      outputText,
-      toolCalls,
-      usage: {
-        inputTokens: usage?.input_tokens ?? 0,
-        outputTokens: usage?.output_tokens ?? 0,
-        cachedInputTokens: usage?.input_tokens_details?.cached_tokens ?? 0,
-        reasoningTokens: usage?.output_tokens_details?.reasoning_tokens ?? 0,
-      },
-    };
-
-    if (structuredOutput) {
-      result.structuredOutput = structuredOutput;
-    }
-
-    return result;
+    return parseStructuredOpenAiResponse(response as OpenAiResponseSnapshot, {
+      provider: this.name,
+      model: input.model,
+      maxOutputTokens: input.maxOutputTokens,
+    });
   }
 }
