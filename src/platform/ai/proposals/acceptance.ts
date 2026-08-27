@@ -1,92 +1,11 @@
 import "server-only";
 
-import { z } from "zod";
-
 import { PROBLEM_SOLVING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AiProposalType } from "@/platform/ai/types";
-
-const proposalPayloadSchemas = {
-  current_condition_item: z
-    .object({
-      category: z.string(),
-      statement: z.string().min(1),
-    })
-    .strict(),
-  hypothesis: z
-    .object({
-      statement: z.string().min(1),
-      category: z.string().optional(),
-      rationale: z.string().optional(),
-      parent_hypothesis_id: z.string().uuid().optional(),
-    })
-    .strict(),
-  hypothesis_test: z
-    .object({
-      hypothesis_id: z.string().uuid(),
-      test_question: z.string().min(1),
-      expected_result: z.string().min(1),
-      method: z.string().optional(),
-    })
-    .strict(),
-  containment: z
-    .object({
-      description: z.string().min(1),
-      rationale: z.string().optional(),
-    })
-    .strict(),
-  countermeasure: z
-    .object({
-      title: z.string().min(1),
-      description: z.string().optional(),
-      rationale: z.string().optional(),
-      hypothesis_ids: z.array(z.string().uuid()).optional(),
-    })
-    .strict(),
-  universal_action: z
-    .object({
-      title: z.string().min(1),
-      description: z.string().optional(),
-      context_role: z.enum(["containment", "countermeasure", "sustainment"]),
-    })
-    .strict(),
-  effectiveness_check: z
-    .object({
-      criterion: z.string().min(1),
-      baseline_description: z.string().optional(),
-      target_description: z.string().optional(),
-    })
-    .strict(),
-  sustainment_item: z
-    .object({
-      what: z.string().min(1),
-      check_method: z.string().optional(),
-    })
-    .strict(),
-  session_question: z
-    .object({
-      session_id: z.string().uuid(),
-      body: z.string().min(1),
-    })
-    .strict(),
-  session_summary: z
-    .object({
-      session_id: z.string().uuid(),
-      body: z.string().min(1),
-    })
-    .strict(),
-  lessons_learned: z
-    .object({
-      what_happened: z.string().min(1),
-      what_learned: z.string().min(1),
-      standardise: z.string().optional(),
-      apply_elsewhere: z.string().optional(),
-      notes: z.string().optional(),
-    })
-    .strict(),
-} satisfies Record<AiProposalType, z.ZodType>;
+import { proposalPayloadSchemas } from "@/platform/ai/proposals/contracts";
 
 async function requirePermission(permission: string): Promise<void> {
   const allowed = await currentMemberHasPermission(permission);

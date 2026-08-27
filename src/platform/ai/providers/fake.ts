@@ -2,6 +2,7 @@ import type {
   AIProvider,
   CreateResponseInput,
   CreateResponseResult,
+  FacilitatorEnvelope,
 } from "@/platform/ai/types";
 
 export class FakeAIProvider implements AIProvider {
@@ -79,39 +80,73 @@ export class FakeAIProvider implements AIProvider {
       };
     }
 
+    if (lastUser.toLowerCase().includes("propose hypothesis")) {
+      return this.envelopeResponse(
+        "A technical hypothesis remains unverified until tested.",
+        {
+          proposal_type: "hypothesis",
+          payload: {
+            statement:
+              "Thermal expansion during hot-running shifts seal alignment.",
+            category: "technical",
+            rationale:
+              "Defect rate rises after sustained hot runs in similar cases.",
+          },
+          explanation:
+            "This is a testable technical hypothesis, not a verified root cause.",
+        },
+      );
+    }
+
+    if (lastUser.toLowerCase().includes("propose containment")) {
+      return this.envelopeResponse(
+        "Containment should isolate suspect product while testing continues.",
+        {
+          proposal_type: "containment",
+          payload: {
+            description:
+              "Quarantine output from the last three hot-running batches.",
+            rationale:
+              "Prevents suspect product reaching customers while testing proceeds.",
+          },
+          explanation:
+            "Short-term containment until hot-running hypothesis is tested.",
+        },
+      );
+    }
+
+    if (lastUser.toLowerCase().includes("propose condition")) {
+      return this.envelopeResponse(
+        "A measured current-condition gap should be recorded explicitly.",
+        {
+          proposal_type: "current_condition_item",
+          payload: {
+            category: "performance",
+            statement:
+              "Hot-running defect rate is 2.4x the cold-start baseline.",
+          },
+          explanation: "Records the measured gap separately from assumptions.",
+        },
+      );
+    }
+
     if (lastUser.toLowerCase().includes("hypothesis test")) {
-      return {
-        outputText: "Consider a controlled test under hot-running conditions.",
-        structuredOutput: {
-          message: "Consider a controlled test under hot-running conditions.",
-          observations: [],
-          questions: [],
-          warnings: [],
-          source_refs: [],
-          proposals: [
-            {
-              proposal_type: "hypothesis_test",
-              payload: {
-                hypothesis_id: "00000000-0000-4000-8000-000000000001",
-                test_question:
-                  "Does defect rate increase under sustained hot-running conditions?",
-                expected_result:
-                  "Higher ppm during hot runs than cold start baseline.",
-                method: "Compare ppm across three consecutive hot runs.",
-              },
-              explanation:
-                "A hot-running test would distinguish thermal drift from operator pacing.",
-            },
-          ],
+      return this.envelopeResponse(
+        "Consider a controlled test under hot-running conditions.",
+        {
+          proposal_type: "hypothesis_test",
+          payload: {
+            hypothesis_id: "00000000-0000-4000-8000-000000000001",
+            test_question:
+              "Does defect rate increase under sustained hot-running conditions?",
+            expected_result:
+              "Higher ppm during hot runs than cold start baseline.",
+            method: "Compare ppm across three consecutive hot runs.",
+          },
+          explanation:
+            "A hot-running test would distinguish thermal drift from operator pacing.",
         },
-        toolCalls: [],
-        usage: {
-          inputTokens: 40,
-          outputTokens: 80,
-          cachedInputTokens: 0,
-          reasoningTokens: 0,
-        },
-      };
+      );
     }
 
     return {
@@ -136,6 +171,30 @@ export class FakeAIProvider implements AIProvider {
       usage: {
         inputTokens: 30,
         outputTokens: 60,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+      },
+    };
+  }
+
+  private envelopeResponse(
+    message: string,
+    proposal: FacilitatorEnvelope["proposals"][number],
+  ): CreateResponseResult {
+    return {
+      outputText: message,
+      structuredOutput: {
+        message,
+        observations: [],
+        questions: [],
+        warnings: [],
+        source_refs: [],
+        proposals: [proposal],
+      },
+      toolCalls: [],
+      usage: {
+        inputTokens: 40,
+        outputTokens: 80,
         cachedInputTokens: 0,
         reasoningTokens: 0,
       },

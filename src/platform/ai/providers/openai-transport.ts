@@ -1,16 +1,15 @@
 import type {
-  AiProposalType,
   FacilitatorEnvelope,
   SourceRefKey,
   SupportLevel,
   TypedSourceRef,
 } from "@/platform/ai/types";
+import { SOURCE_REF_KEYS, SUPPORT_LEVELS } from "@/platform/ai/types";
 import {
-  AI_PROPOSAL_TYPES,
-  FORBIDDEN_PROPOSAL_TYPES,
-  SOURCE_REF_KEYS,
-  SUPPORT_LEVELS,
-} from "@/platform/ai/types";
+  type OpenAiProposalsTransport,
+  normalizeProposalsTransport,
+  proposalsTransportJsonSchema,
+} from "@/platform/ai/proposals/proposal-transport";
 
 export type OpenAiFacilitatorEnvelopeTransport = {
   message: string;
@@ -22,12 +21,10 @@ export type OpenAiFacilitatorEnvelopeTransport = {
     ref_type: SourceRefKey;
     ref_id: string;
   }>;
-  proposals: Array<{
-    proposal_type: string;
-    payload_json: string;
-    explanation: string;
-  }>;
+  proposals: OpenAiProposalsTransport;
 };
+
+export { proposalsTransportJsonSchema };
 
 export const facilitatorEnvelopeJsonSchema = {
   type: "object",
@@ -66,22 +63,7 @@ export const facilitatorEnvelopeJsonSchema = {
         additionalProperties: false,
       },
     },
-    proposals: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          proposal_type: {
-            type: "string",
-            enum: [...AI_PROPOSAL_TYPES],
-          },
-          payload_json: { type: "string" },
-          explanation: { type: "string" },
-        },
-        required: ["proposal_type", "payload_json", "explanation"],
-        additionalProperties: false,
-      },
-    },
+    proposals: proposalsTransportJsonSchema,
   },
   required: [
     "message",
@@ -94,58 +76,11 @@ export const facilitatorEnvelopeJsonSchema = {
   additionalProperties: false,
 } as const;
 
-const forbiddenProposalTypeSet = new Set<string>(FORBIDDEN_PROPOSAL_TYPES);
-const allowedProposalTypeSet = new Set<string>(AI_PROPOSAL_TYPES);
 const allowedSourceRefKeySet = new Set<string>(SOURCE_REF_KEYS);
-
-export function isAllowedProposalType(
-  proposalType: string,
-): proposalType is AiProposalType {
-  return (
-    allowedProposalTypeSet.has(proposalType) &&
-    !forbiddenProposalTypeSet.has(proposalType)
-  );
-}
-
-function parseProposalPayload(
-  payloadJson: string,
-): Record<string, unknown> | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(payloadJson);
-  } catch {
-    return null;
-  }
-
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return null;
-  }
-
-  return parsed as Record<string, unknown>;
-}
 
 export function normalizeTransportEnvelope(
   transport: OpenAiFacilitatorEnvelopeTransport,
 ): FacilitatorEnvelope {
-  const proposals: FacilitatorEnvelope["proposals"] = [];
-
-  for (const proposal of transport.proposals) {
-    if (!isAllowedProposalType(proposal.proposal_type)) {
-      continue;
-    }
-
-    const payload = parseProposalPayload(proposal.payload_json);
-    if (!payload) {
-      continue;
-    }
-
-    proposals.push({
-      proposal_type: proposal.proposal_type,
-      payload,
-      explanation: proposal.explanation,
-    });
-  }
-
   return {
     message: transport.message,
     observations: transport.observations.map((observation) => ({
@@ -160,7 +95,7 @@ export function normalizeTransportEnvelope(
         label: sourceRef.label,
         ref: { [sourceRef.ref_type]: sourceRef.ref_id } as TypedSourceRef,
       })),
-    proposals,
+    proposals: normalizeProposalsTransport(transport.proposals),
   };
 }
 

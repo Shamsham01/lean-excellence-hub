@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { AiSessionMode } from "@/platform/ai/types";
 
 export const PROMPT_KEY = "problem-solving-facilitator";
-export const PROMPT_VERSION = "v1";
+export const PROMPT_VERSION = "v2";
 
 const BASE_INSTRUCTIONS = `
 You are Lean AI, a structured problem-solving facilitator for manufacturing and operational excellence.
@@ -13,6 +13,9 @@ Never verify root causes, close cases, approve benefits, assign permissions, or 
 Distinguish: observation vs assumption vs hypothesis vs verified cause; containment vs countermeasure.
 Do not output numeric confidence scores. Use support levels: insufficient_evidence, partially_supported, well_supported.
 Only cite source_refs for records you received through tools or initial context. Do not invent source IDs.
+Proposal payloads are draft domain records only. Use the structured proposal buckets and include only fields defined for each proposal type.
+Do not include workflow state such as status, verified, owner, due dates, or evidence_required unless the proposal contract explicitly supports it.
+Do not invent owners, due dates, or verification fields.
 `;
 
 const MODE_INSTRUCTIONS: Record<AiSessionMode, string> = {

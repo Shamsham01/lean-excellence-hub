@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { runAiTurn } from "@/platform/ai/orchestrator";
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
+import { formatProposalAcceptanceError } from "@/platform/ai/proposals/contracts";
 import type { AiSessionMode } from "@/platform/ai/types";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -128,8 +129,7 @@ export async function acceptProblemSolvingAiProposal(input: {
     return { ok: true, data: { resultId: result.resultId } };
   } catch (error) {
     return {
-      error:
-        error instanceof Error ? error.message : "Could not accept proposal.",
+      error: formatProposalAcceptanceError(error),
     };
   }
 }

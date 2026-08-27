@@ -128,7 +128,11 @@ export function AiFacilitatorPanel({
       proposalId: proposal.id,
       payload: proposal.payload_json,
     });
-    setActionMessage(result.error ?? "Proposal accepted.");
+    if (result.error) {
+      setActionMessage(result.error);
+      return;
+    }
+    setActionMessage("Proposal accepted.");
     setPendingProposals((prev) =>
       prev.filter((item) => item.id !== proposal.id),
     );
@@ -138,7 +142,11 @@ export function AiFacilitatorPanel({
   async function handleReject(proposalId: string) {
     setActionMessage(null);
     const result = await rejectProblemSolvingAiProposal({ caseId, proposalId });
-    setActionMessage(result.error ?? "Proposal rejected.");
+    if (result.error) {
+      setActionMessage(result.error);
+      return;
+    }
+    setActionMessage("Proposal rejected.");
     setPendingProposals((prev) =>
       prev.filter((item) => item.id !== proposalId),
     );

@@ -59,4 +59,68 @@ test.describe("Milestone 12 closure", () => {
     await page.goto("/platform/settings/ai");
     await expect(page.getByTestId("ai-settings-page")).toHaveCount(0);
   });
+
+  async function openLeanAiPanel(page: Page) {
+    await page.goto("/platform/problem-solving");
+    await page
+      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
+      .click();
+    await page.getByTestId("tab-lean-ai").click();
+    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+  }
+
+  test("accepts a valid hypothesis proposal from fake provider", async ({
+    page,
+  }) => {
+    await loginAs(page, "manager");
+    await openLeanAiPanel(page);
+    await page
+      .getByTestId("lean-ai-input")
+      .fill("Please propose hypothesis for the hot-running defect pattern.");
+    await page.getByTestId("lean-ai-send").click();
+    await expect(page.getByTestId("ai-proposal-card")).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByTestId("ai-proposal-accept").click();
+    await expect(page.getByText("Proposal accepted.")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
+  });
+
+  test("accepts a valid containment proposal from fake provider", async ({
+    page,
+  }) => {
+    await loginAs(page, "manager");
+    await openLeanAiPanel(page);
+    await page
+      .getByTestId("lean-ai-input")
+      .fill("Please propose containment for suspect hot-running batches.");
+    await page.getByTestId("lean-ai-send").click();
+    await expect(page.getByTestId("ai-proposal-card")).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByTestId("ai-proposal-accept").click();
+    await expect(page.getByText("Proposal accepted.")).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+
+  test("accepts a valid current condition proposal from fake provider", async ({
+    page,
+  }) => {
+    await loginAs(page, "manager");
+    await openLeanAiPanel(page);
+    await page
+      .getByTestId("lean-ai-input")
+      .fill("Please propose condition for the measured hot-running gap.");
+    await page.getByTestId("lean-ai-send").click();
+    await expect(page.getByTestId("ai-proposal-card")).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByTestId("ai-proposal-accept").click();
+    await expect(page.getByText("Proposal accepted.")).toBeVisible({
+      timeout: 15_000,
+    });
+  });
 });

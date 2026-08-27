@@ -21,6 +21,7 @@ import {
   filterAllowedSourceRefs,
   toDbSourceRef,
 } from "@/platform/ai/source-allowlist";
+import { sanitizeEnvelopeProposals } from "@/platform/ai/proposals/contracts";
 import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-executors";
 import {
   PROBLEM_SOLVING_READ_TOOLS,
@@ -211,6 +212,8 @@ export async function runAiTurn(
       allowlist,
       envelope.source_refs,
     );
+
+    envelope.proposals = sanitizeEnvelopeProposals(envelope.proposals);
 
     const sourceRefsDb = envelope.source_refs.map((item) =>
       toDbSourceRef(item.ref),

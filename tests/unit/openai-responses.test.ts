@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { createEmptyProposalsTransport } from "@/platform/ai/proposals/proposal-transport";
 import {
   addToAllowlist,
   createSourceAllowlist,
@@ -8,7 +9,6 @@ import {
 import {
   assertStrictJsonSchemaCompatible,
   facilitatorEnvelopeJsonSchema,
-  isAllowedProposalType,
   normalizeTransportEnvelope,
   type OpenAiFacilitatorEnvelopeTransport,
 } from "@/platform/ai/providers/openai-transport";
@@ -60,26 +60,25 @@ describe("facilitatorEnvelopeJsonSchema", () => {
     expect(sourceRefItem.properties).not.toHaveProperty("ref");
   });
 
-  it("uses payload_json instead of free-form proposal payload objects", () => {
-    const proposalItem = (
-      facilitatorEnvelopeJsonSchema.properties.proposals as unknown as {
-        items: {
-          required: readonly string[];
-          properties: Record<string, unknown>;
-          additionalProperties: boolean;
-        };
-      }
-    ).items;
+  it("uses typed proposal buckets instead of free-form payload_json", () => {
+    const proposalsSchema = facilitatorEnvelopeJsonSchema.properties
+      .proposals as unknown as {
+      type: string;
+      required: readonly string[];
+      properties: Record<string, unknown>;
+      additionalProperties: boolean;
+    };
 
-    expect(proposalItem.required).toEqual(
-      expect.arrayContaining(["proposal_type", "payload_json", "explanation"]),
+    expect(proposalsSchema.type).toBe("object");
+    expect(proposalsSchema.additionalProperties).toBe(false);
+    expect(proposalsSchema.required).toEqual(
+      expect.arrayContaining([
+        "hypotheses",
+        "containments",
+        "current_condition_items",
+      ]),
     );
-    expect(proposalItem.required).toHaveLength(
-      Object.keys(proposalItem.properties).length,
-    );
-    expect(proposalItem.additionalProperties).toBe(false);
-    expect(proposalItem.properties.payload_json).toEqual({ type: "string" });
-    expect(proposalItem.properties).not.toHaveProperty("payload");
+    expect(proposalsSchema.properties).not.toHaveProperty("payload_json");
   });
 });
 
@@ -99,7 +98,7 @@ describe("normalizeTransportEnvelope", () => {
     questions: ["What evidence exists?"],
     warnings: ["Do not close the case yet."],
     source_refs: [],
-    proposals: [],
+    proposals: createEmptyProposalsTransport(),
   };
 
   it("preserves required observation support levels", () => {
@@ -162,20 +161,21 @@ describe("normalizeTransportEnvelope", () => {
     expect(filtered[0]?.label).toBe("Allowed");
   });
 
-  it("parses valid proposal payload JSON into internal proposals", () => {
+  it("flattens valid typed proposal transport into internal proposals", () => {
     const envelope = normalizeTransportEnvelope({
       ...baseTransport,
-      proposals: [
-        {
-          proposal_type: "hypothesis_test",
-          payload_json: JSON.stringify({
+      proposals: {
+        ...createEmptyProposalsTransport(),
+        hypothesis_tests: [
+          {
             hypothesis_id: "00000000-0000-4000-8000-000000000001",
             test_question: "Does ppm increase under hot runs?",
             expected_result: "Higher ppm during hot runs.",
-          }),
-          explanation: "A hot-running test would isolate thermal drift.",
-        },
-      ],
+            method: null,
+            explanation: "A hot-running test would isolate thermal drift.",
+          },
+        ],
+      },
     });
 
     expect(envelope.proposals).toHaveLength(1);
@@ -187,55 +187,25 @@ describe("normalizeTransportEnvelope", () => {
     });
   });
 
-  it("discards malformed proposal payload JSON safely", () => {
+  it("discards invalid proposal transport before persistence", () => {
     const envelope = normalizeTransportEnvelope({
       ...baseTransport,
-      proposals: [
-        {
-          proposal_type: "hypothesis",
-          payload_json: "{not-json",
-          explanation: "Invalid JSON should be dropped.",
-        },
-        {
-          proposal_type: "hypothesis",
-          payload_json: "[]",
-          explanation: "Array payloads should be dropped.",
-        },
-        {
-          proposal_type: "hypothesis",
-          payload_json: "null",
-          explanation: "Null payloads should be dropped.",
-        },
-      ],
-    });
-
-    expect(envelope.proposals).toEqual([]);
-  });
-
-  it("rejects forbidden and unknown proposal types", () => {
-    expect(isAllowedProposalType("verify_root_cause")).toBe(false);
-    expect(isAllowedProposalType("close_case")).toBe(false);
-    expect(isAllowedProposalType("not_a_real_type")).toBe(false);
-
-    const envelope = normalizeTransportEnvelope({
-      ...baseTransport,
-      proposals: [
-        {
-          proposal_type: "verify_root_cause",
-          payload_json: JSON.stringify({ statement: "Root cause verified" }),
-          explanation: "Must never be accepted from transport.",
-        },
-        {
-          proposal_type: "close_case",
-          payload_json: JSON.stringify({}),
-          explanation: "Must never be accepted from transport.",
-        },
-        {
-          proposal_type: "unknown_type",
-          payload_json: JSON.stringify({ title: "Nope" }),
-          explanation: "Unknown types must be dropped.",
-        },
-      ],
+      proposals: {
+        ...createEmptyProposalsTransport(),
+        hypotheses: [
+          {
+            statement: "Invalid hypothesis.",
+            category: null,
+            rationale: null,
+            parent_hypothesis_id: null,
+            explanation:
+              "Missing required statement min length is fine but extra fields fail.",
+            type: "technical",
+            status: "unverified",
+            evidence_required: ["data"],
+          } as never,
+        ],
+      },
     });
 
     expect(envelope.proposals).toEqual([]);
