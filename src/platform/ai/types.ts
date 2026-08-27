@@ -121,7 +121,6 @@ export type CreateResponseInput = {
   tools: Array<Record<string, unknown>>;
   maxOutputTokens: number;
   timeoutMs: number;
-  previousResponseId?: string;
   reasoningEffort?: AiReasoningEffort;
   expectsStructuredOutput?: boolean;
 };

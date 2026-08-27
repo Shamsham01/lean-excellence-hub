@@ -127,7 +127,6 @@ export async function runAiTurn(
         maxOutputTokens,
         timeoutMs,
         ...(reasoningEffort ? { reasoningEffort } : {}),
-        ...(providerRequestId ? { previousResponseId: providerRequestId } : {}),
         ...(expectsStructuredOutput ? { expectsStructuredOutput: true } : {}),
       });
 

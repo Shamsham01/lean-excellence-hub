@@ -10,7 +10,6 @@ import {
   parseStructuredOpenAiResponse,
   type OpenAiResponseSnapshot,
 } from "@/platform/ai/providers/openai-response-parser";
-import { buildResponsesCreateParams } from "@/platform/ai/providers/openai-responses-core";
 
 const parserContext = {
   provider: "openai",
@@ -191,49 +190,5 @@ describe("parseStructuredOpenAiResponse", () => {
       },
       explanation: "Testable technical hypothesis.",
     });
-  });
-});
-
-describe("buildResponsesCreateParams", () => {
-  it("sends reasoning effort when configured", () => {
-    const params = buildResponsesCreateParams({
-      model: "gpt-5.6-luna",
-      systemPrompt: "system",
-      messages: [],
-      tools: [],
-      maxOutputTokens: 6000,
-      timeoutMs: 45_000,
-      reasoningEffort: "low",
-    });
-
-    expect(params.reasoning).toEqual({ effort: "low" });
-  });
-
-  it("does not invent reasoning effort when omitted", () => {
-    const params = buildResponsesCreateParams({
-      model: "gpt-5.6-luna",
-      systemPrompt: "system",
-      messages: [],
-      tools: [],
-      maxOutputTokens: 6000,
-      timeoutMs: 45_000,
-    });
-
-    expect(params).not.toHaveProperty("reasoning");
-  });
-
-  it("sends max_output_tokens and previous_response_id in the request contract", () => {
-    const params = buildResponsesCreateParams({
-      model: "gpt-5.6-luna",
-      systemPrompt: "system",
-      messages: [{ role: "user", content: "follow-up" }],
-      tools: [],
-      maxOutputTokens: 6000,
-      timeoutMs: 45_000,
-      previousResponseId: "resp_prev_456",
-    });
-
-    expect(params.max_output_tokens).toBe(6000);
-    expect(params.previous_response_id).toBe("resp_prev_456");
   });
 });

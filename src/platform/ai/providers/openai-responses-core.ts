@@ -38,12 +38,13 @@ export function buildResponsesCreateParams(
     ],
     tools: input.tools as unknown as OpenAI.Responses.Tool[],
     max_output_tokens: input.maxOutputTokens,
-    ...(input.previousResponseId
-      ? { previous_response_id: input.previousResponseId }
-      : {}),
     ...(input.reasoningEffort
       ? { reasoning: { effort: input.reasoningEffort } }
       : {}),
+    // Application-managed context is replayed on every request with store:false.
+    // Do not send previous_response_id; retained provider responses conflict with
+    // the M12 privacy architecture. Future optimisation could replay stateless
+    // response items or encrypted reasoning if benchmarks justify it.
     store: false,
     text: {
       format: {
