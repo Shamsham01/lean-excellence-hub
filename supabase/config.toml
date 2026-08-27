@@ -221,8 +221,9 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
-enable_signup = false
+# Keep the email provider enabled for existing-user sign-in. Public signup remains
+# blocked by [auth].enable_signup = false; demo users are provisioned via admin API.
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true

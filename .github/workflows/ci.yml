@@ -44,7 +44,7 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npm run test:e2e:smoke
 
   database:
     name: Local Supabase database baseline

@@ -5,7 +5,9 @@ test("exposes email and workforce sign-in without public signup", async ({
 }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /workforce ID/i })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /workforce sign in/i }),
+  ).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Forgot password/i }),
   ).toBeVisible();

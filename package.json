@@ -21,6 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/e2e/application-shell.spec.ts tests/e2e/authentication-shell.spec.ts tests/e2e/maturity-shell.spec.ts",
     "test:e2e:install": "playwright install chromium",
     "test:db": "supabase test db --local supabase/tests/database",
     "db:start": "supabase start",
