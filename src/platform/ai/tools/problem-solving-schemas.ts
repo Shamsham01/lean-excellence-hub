@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { zodToJsonSchema } from "@/platform/ai/zod-to-json-schema";
-
 export const emptyToolArgsSchema = z.object({}).strict();
 
 export const hypothesisFilterSchema = z
@@ -35,16 +33,77 @@ export const PROBLEM_SOLVING_READ_TOOLS = [
 export type ProblemSolvingToolName =
   (typeof PROBLEM_SOLVING_READ_TOOLS)[number];
 
-export function getToolJsonSchema(
+const emptyToolParametersSchema = {
+  type: "object",
+  properties: {},
+  required: [],
+  additionalProperties: false,
+} as const;
+
+const hypothesisFilterParametersSchema = {
+  type: "object",
+  properties: {
+    status: {
+      type: ["string", "null"],
+    },
+  },
+  required: ["status"],
+  additionalProperties: false,
+} as const;
+
+const searchRelatedCasesParametersSchema = {
+  type: "object",
+  properties: {
+    limit: {
+      type: ["integer", "null"],
+      minimum: 1,
+      maximum: 20,
+    },
+  },
+  required: ["limit"],
+  additionalProperties: false,
+} as const;
+
+export function getOpenAiToolParametersSchema(
   name: ProblemSolvingToolName,
 ): Record<string, unknown> {
   switch (name) {
     case "get_hypotheses":
-      return zodToJsonSchema(hypothesisFilterSchema);
+      return hypothesisFilterParametersSchema;
     case "search_related_problem_solving_cases":
-      return zodToJsonSchema(searchRelatedCasesSchema);
+      return searchRelatedCasesParametersSchema;
     default:
-      return zodToJsonSchema(emptyToolArgsSchema);
+      return emptyToolParametersSchema;
+  }
+}
+
+export {
+  emptyToolParametersSchema,
+  hypothesisFilterParametersSchema,
+  searchRelatedCasesParametersSchema,
+};
+
+function normalizeToolTransportArgs(
+  name: ProblemSolvingToolName,
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  switch (name) {
+    case "get_hypotheses": {
+      const status = raw.status;
+      if (status === null || status === undefined) {
+        return {};
+      }
+      return { status };
+    }
+    case "search_related_problem_solving_cases": {
+      const limit = raw.limit;
+      if (limit === null || limit === undefined) {
+        return {};
+      }
+      return { limit };
+    }
+    default:
+      return raw;
   }
 }
 
@@ -52,13 +111,15 @@ export function parseToolArgs(
   name: ProblemSolvingToolName,
   raw: Record<string, unknown>,
 ): Record<string, unknown> {
+  const args = normalizeToolTransportArgs(name, raw);
+
   switch (name) {
     case "get_hypotheses":
-      return hypothesisFilterSchema.parse(raw);
+      return hypothesisFilterSchema.parse(args);
     case "search_related_problem_solving_cases":
-      return searchRelatedCasesSchema.parse(raw);
+      return searchRelatedCasesSchema.parse(args);
     default:
-      return emptyToolArgsSchema.parse(raw);
+      return emptyToolArgsSchema.parse(args);
   }
 }
 
@@ -67,7 +128,7 @@ export function buildOpenAiTools(): Array<Record<string, unknown>> {
     type: "function",
     name,
     description: `Read authorised problem-solving data for the current case. Tool: ${name}`,
-    parameters: getToolJsonSchema(name),
+    parameters: getOpenAiToolParametersSchema(name),
     strict: true,
   }));
 }
