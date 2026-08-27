@@ -8,7 +8,10 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function TrainingOverviewPage() {
   const supabase = await createServerSupabaseClient();
-  const { data: summary } = await supabase.rpc("get_training_compliance_summary", {});
+  const { data: summary } = await supabase.rpc(
+    "get_training_compliance_summary",
+    {},
+  );
 
   const summaryObj = summary as {
     compliance_percent?: number | null;
@@ -75,10 +78,16 @@ export default async function TrainingOverviewPage() {
             <CardTitle>Setup</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Link href="/platform/training/curriculum" className="text-sm hover:underline">
+            <Link
+              href="/platform/training/curriculum"
+              className="text-sm hover:underline"
+            >
               Curriculum editor
             </Link>
-            <Link href="/platform/training/sessions" className="text-sm hover:underline">
+            <Link
+              href="/platform/training/sessions"
+              className="text-sm hover:underline"
+            >
               Training sessions
             </Link>
           </CardContent>

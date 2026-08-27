@@ -67,6 +67,15 @@ export default defineConfig({
         process.env.SUPABASE_SECRET_KEY ??
         localSupabaseEnv.SUPABASE_SECRET_KEY ??
         "sb_secret_playwright_placeholder",
+      AI_ENABLED:
+        process.env.E2E_WITH_SUPABASE === "1"
+          ? "1"
+          : (process.env.AI_ENABLED ?? "0"),
+      AI_PROVIDER:
+        process.env.E2E_WITH_SUPABASE === "1"
+          ? "fake"
+          : (process.env.AI_PROVIDER ?? "openai"),
+      AI_ALLOW_FAKE_PROVIDER: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
     },
     reuseExistingServer: !process.env.CI,
     url: baseURL,

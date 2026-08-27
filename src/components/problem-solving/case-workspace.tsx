@@ -11,9 +11,13 @@ import { HistoryPanel } from "@/components/problem-solving/history-panel";
 import { OverviewPanel } from "@/components/problem-solving/overview-panel";
 import { SessionsPanel } from "@/components/problem-solving/sessions-panel";
 import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
+import { AiFacilitatorPanel } from "@/components/problem-solving/ai/ai-facilitator-panel";
 import { VerificationPanel } from "@/components/problem-solving/verification-panel";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import { ResourceComments, type CommentRow } from "@/components/comments/resource-comments";
+import {
+  ResourceComments,
+  type CommentRow,
+} from "@/components/comments/resource-comments";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { MethodStage } from "@/lib/problem-solving/stages";
@@ -46,6 +50,8 @@ type CaseWorkspaceProps = {
   canFacilitate: boolean;
   canVerifyCause: boolean;
   canClose: boolean;
+  canUseAi: boolean;
+  providerAvailable: boolean;
 };
 
 export function CaseWorkspace({
@@ -67,11 +73,16 @@ export function CaseWorkspace({
   canFacilitate,
   canVerifyCause,
   canClose,
+  canUseAi,
+  providerAvailable,
 }: CaseWorkspaceProps) {
   const [message, setMessage] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col gap-6" data-testid="problem-solving-workspace">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="problem-solving-workspace"
+    >
       <CaseHeader
         detail={detail}
         methodStages={methodStages}
@@ -80,7 +91,10 @@ export function CaseWorkspace({
         canManage={canManage}
         canFacilitate={canFacilitate}
         canClose={canClose}
-        methods={methods.map((method) => ({ id: method.id, name: method.name }))}
+        methods={methods.map((method) => ({
+          id: method.id,
+          name: method.name,
+        }))}
         message={message}
         onMessage={setMessage}
       />
@@ -90,7 +104,10 @@ export function CaseWorkspace({
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="current-condition" data-testid="tab-current-condition">
+          <TabsTrigger
+            value="current-condition"
+            data-testid="tab-current-condition"
+          >
             Current condition
           </TabsTrigger>
           <TabsTrigger value="containment" data-testid="tab-containment">
@@ -99,7 +116,10 @@ export function CaseWorkspace({
           <TabsTrigger value="cause-analysis" data-testid="tab-cause-analysis">
             Cause analysis
           </TabsTrigger>
-          <TabsTrigger value="countermeasures" data-testid="tab-countermeasures">
+          <TabsTrigger
+            value="countermeasures"
+            data-testid="tab-countermeasures"
+          >
             Countermeasures
           </TabsTrigger>
           <TabsTrigger value="verification" data-testid="tab-verification">
@@ -110,6 +130,9 @@ export function CaseWorkspace({
           </TabsTrigger>
           <TabsTrigger value="sessions" data-testid="tab-sessions">
             Sessions
+          </TabsTrigger>
+          <TabsTrigger value="lean-ai" data-testid="tab-lean-ai">
+            Lean AI
           </TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">
             History
@@ -168,7 +191,11 @@ export function CaseWorkspace({
         </TabsContent>
 
         <TabsContent value="verification">
-          <VerificationPanel caseId={detail.id} detail={detail} canManage={canManage} />
+          <VerificationPanel
+            caseId={detail.id}
+            detail={detail}
+            canManage={canManage}
+          />
         </TabsContent>
 
         <TabsContent value="sustainment">
@@ -189,8 +216,20 @@ export function CaseWorkspace({
           />
         </TabsContent>
 
+        <TabsContent value="lean-ai">
+          <AiFacilitatorPanel
+            caseId={detail.id}
+            stageKey={detail.current_stage?.semantic_stage_key ?? null}
+            canUseAi={canUseAi}
+            providerAvailable={providerAvailable}
+          />
+        </TabsContent>
+
         <TabsContent value="history">
-          <HistoryPanel detail={detail} membershipNameById={membershipNameById} />
+          <HistoryPanel
+            detail={detail}
+            membershipNameById={membershipNameById}
+          />
         </TabsContent>
       </Tabs>
     </div>

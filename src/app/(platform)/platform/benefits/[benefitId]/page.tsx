@@ -29,28 +29,37 @@ export default async function BenefitDetailPage({
   if (error || !detail) notFound();
 
   const canManage = await currentMemberHasPermission("benefits.manage");
-  const canValidateCi = await currentMemberHasPermission("benefits.validate.ci");
-  const canValidateFinance = await currentMemberHasPermission("benefits.validate.finance");
-  const canRecordRealisation = await currentMemberHasPermission("benefits.realisation.record");
-  const canValidateRealisation = await currentMemberHasPermission("benefits.realisation.validate");
-
-  const { data: forecastHistoryData } = await callBenefitRpc<{ items: BenefitForecastVersion[] }>(
-    supabase,
-    "get_benefit_forecast_history",
-    { target_benefit_id: benefitId },
+  const canValidateCi = await currentMemberHasPermission(
+    "benefits.validate.ci",
+  );
+  const canValidateFinance = await currentMemberHasPermission(
+    "benefits.validate.finance",
+  );
+  const canRecordRealisation = await currentMemberHasPermission(
+    "benefits.realisation.record",
+  );
+  const canValidateRealisation = await currentMemberHasPermission(
+    "benefits.realisation.validate",
   );
 
-  const { data: realisationHistoryData } = await callBenefitRpc<{ items: BenefitRealisationEntry[] }>(
-    supabase,
-    "get_benefit_realisation_history",
-    { target_benefit_id: benefitId },
-  );
+  const { data: forecastHistoryData } = await callBenefitRpc<{
+    items: BenefitForecastVersion[];
+  }>(supabase, "get_benefit_forecast_history", {
+    target_benefit_id: benefitId,
+  });
 
-  const { data: realisationSummary } = await callBenefitRpc<BenefitRealisationSummary>(
-    supabase,
-    "get_benefit_realisation_summary",
-    { target_benefit_id: benefitId },
-  );
+  const { data: realisationHistoryData } = await callBenefitRpc<{
+    items: BenefitRealisationEntry[];
+  }>(supabase, "get_benefit_realisation_history", {
+    target_benefit_id: benefitId,
+  });
+
+  const { data: realisationSummary } =
+    await callBenefitRpc<BenefitRealisationSummary>(
+      supabase,
+      "get_benefit_realisation_summary",
+      { target_benefit_id: benefitId },
+    );
 
   const { data: comments } = await supabase
     .from("comments")
@@ -58,13 +67,17 @@ export default async function BenefitDetailPage({
     .eq("target_resource_id", benefitId)
     .order("created_at");
 
-  const { data: evidenceLinks } = await untypedFrom(supabase, "benefit_evidence_links")
+  const { data: evidenceLinks } = await untypedFrom(
+    supabase,
+    "benefit_evidence_links",
+  )
     .select("attachment_id")
     .eq("benefit_id", benefitId);
 
   const attachmentIds =
-    (evidenceLinks as Array<{ attachment_id: string }> | null)?.map((row) => row.attachment_id) ??
-    [];
+    (evidenceLinks as Array<{ attachment_id: string }> | null)?.map(
+      (row) => row.attachment_id,
+    ) ?? [];
 
   let evidence: Array<{
     id: string;
@@ -94,9 +107,13 @@ export default async function BenefitDetailPage({
       detail.owner_membership_id,
       detail.created_by_membership_id,
       ...detail.status_history.map((entry) => entry.changed_by_membership_id),
-      ...detail.validation_assignments.map((row) => row.validator_membership_id),
+      ...detail.validation_assignments.map(
+        (row) => row.validator_membership_id,
+      ),
       ...detail.validations.map((row) => row.validator_membership_id),
-      ...realisationHistoryData?.items?.map((row) => row.recorded_by_membership_id) ?? [],
+      ...(realisationHistoryData?.items?.map(
+        (row) => row.recorded_by_membership_id,
+      ) ?? []),
     ]),
   ];
 

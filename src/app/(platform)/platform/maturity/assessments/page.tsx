@@ -19,7 +19,9 @@ export default async function AssessmentsListPage() {
         description="Formal and self assessments across organisational units."
         actions={
           <Button asChild>
-            <Link href="/platform/maturity/assessments/new">Start assessment</Link>
+            <Link href="/platform/maturity/assessments/new">
+              Start assessment
+            </Link>
           </Button>
         }
       />

@@ -25,14 +25,20 @@ export default async function LoginPage({
           >
             Workforce sign in
           </Link>
-          <Link href="/recover" className="text-muted-foreground hover:text-foreground">
+          <Link
+            href="/recover"
+            className="text-muted-foreground hover:text-foreground"
+          >
             Forgot password?
           </Link>
         </div>
       }
     >
       {error ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+        <p
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          role="alert"
+        >
           Unable to sign in with those credentials.
         </p>
       ) : null}
@@ -58,7 +64,9 @@ export default async function LoginPage({
             required
           />
         </div>
-        <Button type="submit" className="w-full">Email sign in</Button>
+        <Button type="submit" className="w-full">
+          Email sign in
+        </Button>
       </form>
     </AuthCard>
   );

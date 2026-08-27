@@ -30,7 +30,9 @@ export function SessionsPanel({
 }: SessionsPanelProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [entryBodies, setEntryBodies] = useState<Record<string, { note: string; decision: string }>>({});
+  const [entryBodies, setEntryBodies] = useState<
+    Record<string, { note: string; decision: string }>
+  >({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -42,15 +44,24 @@ export function SessionsPanel({
     event.preventDefault();
     if (!title.trim()) return;
     setLoading(true);
-    const result = await startProblemSolvingSession({ caseId, title: title.trim() });
+    const result = await startProblemSolvingSession({
+      caseId,
+      title: title.trim(),
+    });
     setMessage(result.error ?? "Session started");
     setTitle("");
     setLoading(false);
     router.refresh();
   }
 
-  async function handleAddEntry(sessionId: string, entryType: "note" | "decision") {
-    const body = entryType === "note" ? entriesFor(sessionId).note : entriesFor(sessionId).decision;
+  async function handleAddEntry(
+    sessionId: string,
+    entryType: "note" | "decision",
+  ) {
+    const body =
+      entryType === "note"
+        ? entriesFor(sessionId).note
+        : entriesFor(sessionId).decision;
     if (!body.trim()) return;
     setLoading(true);
     const result = await addSessionEntry({
@@ -77,14 +88,20 @@ export function SessionsPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-sessions-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-sessions-panel"
+    >
       {canFacilitate ? (
         <Card>
           <CardHeader>
             <CardTitle>Start session</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleStart} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <form
+              onSubmit={handleStart}
+              className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            >
               <label className="flex flex-1 flex-col gap-1 text-sm">
                 <span>Session title</span>
                 <Input
@@ -122,13 +139,16 @@ export function SessionsPanel({
                       <Badge variant="outline">{session.status}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {session.participants.length} participants · {session.entry_count} entries
+                      {session.participants.length} participants ·{" "}
+                      {session.entry_count} entries
                       {session.facilitator_membership_id
                         ? ` · Facilitator ${membershipNameById[session.facilitator_membership_id] ?? "—"}`
                         : ""}
                     </p>
                     {session.summary ? (
-                      <p className="mt-1 text-muted-foreground">{session.summary}</p>
+                      <p className="mt-1 text-muted-foreground">
+                        {session.summary}
+                      </p>
                     ) : null}
                   </div>
                   {canFacilitate && session.status !== "completed" ? (
@@ -153,7 +173,10 @@ export function SessionsPanel({
                         onChange={(e) =>
                           setEntryBodies((current) => ({
                             ...current,
-                            [session.id]: { ...entriesFor(session.id), note: e.target.value },
+                            [session.id]: {
+                              ...entriesFor(session.id),
+                              note: e.target.value,
+                            },
                           }))
                         }
                         data-testid={`session-note-${session.id}`}
@@ -176,7 +199,10 @@ export function SessionsPanel({
                         onChange={(e) =>
                           setEntryBodies((current) => ({
                             ...current,
-                            [session.id]: { ...entriesFor(session.id), decision: e.target.value },
+                            [session.id]: {
+                              ...entriesFor(session.id),
+                              decision: e.target.value,
+                            },
                           }))
                         }
                         data-testid={`session-decision-${session.id}`}
@@ -199,7 +225,9 @@ export function SessionsPanel({
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

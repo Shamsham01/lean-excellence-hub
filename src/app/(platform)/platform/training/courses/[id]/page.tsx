@@ -35,20 +35,32 @@ export default async function TrainingCourseDetailPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={course.name} description={course.description ?? course.code} />
+      <PageHeader
+        title={course.name}
+        description={course.description ?? course.code}
+      />
       {canManageCatalog && hasPublished && !hasDraft ? (
         <form action={createCourseSuccessorFromForm}>
           <input type="hidden" name="courseId" value={id} />
-          <Button type="submit" variant="outline" data-testid="create-course-successor">
+          <Button
+            type="submit"
+            variant="outline"
+            data-testid="create-course-successor"
+          >
             Create successor version
           </Button>
         </form>
       ) : null}
       <ul className="space-y-2 text-sm">
         {versions?.map((version) => (
-          <li key={version.id} className="rounded-md border border-border px-4 py-3">
+          <li
+            key={version.id}
+            className="rounded-md border border-border px-4 py-3"
+          >
             Version {version.version_number} — {version.status}
-            {version.validity_days ? ` · Valid ${version.validity_days} days` : ""}
+            {version.validity_days
+              ? ` · Valid ${version.validity_days} days`
+              : ""}
           </li>
         ))}
       </ul>

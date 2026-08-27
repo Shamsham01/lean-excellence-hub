@@ -19,7 +19,10 @@ export function CardHeader({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex flex-col gap-1.5 p-4 pb-0", className)} {...props} />
+    <div
+      className={cn("flex flex-col gap-1.5 p-4 pb-0", className)}
+      {...props}
+    />
   );
 }
 
@@ -29,7 +32,7 @@ export function CardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-sm font-semibold leading-none", className)}
+      className={cn("text-sm leading-none font-semibold", className)}
       {...props}
     />
   );

@@ -21,11 +21,18 @@ function normaliseSourceLinks(
   return [];
 }
 
-export function OverviewPanel({ detail, evidence, canContribute }: OverviewPanelProps) {
+export function OverviewPanel({
+  detail,
+  evidence,
+  canContribute,
+}: OverviewPanelProps) {
   const sourceLinks = normaliseSourceLinks(detail.source_links);
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-overview-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-overview-panel"
+    >
       <Card>
         <CardHeader>
           <CardTitle>Case definition</CardTitle>
@@ -33,16 +40,22 @@ export function OverviewPanel({ detail, evidence, canContribute }: OverviewPanel
         <CardContent className="flex flex-col gap-4 text-sm">
           <div>
             <p className="font-medium">Problem statement</p>
-            <p className="text-muted-foreground">{detail.problem_statement ?? "—"}</p>
+            <p className="text-muted-foreground">
+              {detail.problem_statement ?? "—"}
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="font-medium">Background</p>
-              <p className="text-muted-foreground">{detail.background ?? "—"}</p>
+              <p className="text-muted-foreground">
+                {detail.background ?? "—"}
+              </p>
             </div>
             <div>
               <p className="font-medium">Business impact</p>
-              <p className="text-muted-foreground">{detail.business_impact ?? "—"}</p>
+              <p className="text-muted-foreground">
+                {detail.business_impact ?? "—"}
+              </p>
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -57,14 +70,18 @@ export function OverviewPanel({ detail, evidence, canContribute }: OverviewPanel
           </div>
           <div>
             <p className="font-medium">Target condition</p>
-            <p className="text-muted-foreground">{detail.target_condition ?? "—"}</p>
+            <p className="text-muted-foreground">
+              {detail.target_condition ?? "—"}
+            </p>
           </div>
           {detail.closure_outcome ? (
             <div>
               <p className="font-medium">Closure</p>
               <p className="text-muted-foreground">
                 {closureOutcomeLabel(detail.closure_outcome)}
-                {detail.closure_rationale ? ` · ${detail.closure_rationale}` : ""}
+                {detail.closure_rationale
+                  ? ` · ${detail.closure_rationale}`
+                  : ""}
               </p>
             </div>
           ) : null}
@@ -81,7 +98,10 @@ export function OverviewPanel({ detail, evidence, canContribute }: OverviewPanel
                   >
                     <span>
                       {link.source_resource_id.slice(0, 8)}
-                      <span className="text-muted-foreground"> · {link.resource_type}</span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {link.resource_type}
+                      </span>
                     </span>
                     <Badge variant="outline">{link.link_role}</Badge>
                   </div>

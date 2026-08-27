@@ -63,25 +63,33 @@ export function BenefitSubmitDialog({
   const isFinancial = benefitClass === "financial";
 
   const ciCandidates = useMemo(
-    () => eligibility?.candidates.filter((candidate) => candidate.can_validate_ci) ?? [],
+    () =>
+      eligibility?.candidates.filter(
+        (candidate) => candidate.can_validate_ci,
+      ) ?? [],
     [eligibility],
   );
 
   const financeCandidates = useMemo(
-    () => eligibility?.candidates.filter((candidate) => candidate.can_validate_finance) ?? [],
+    () =>
+      eligibility?.candidates.filter(
+        (candidate) => candidate.can_validate_finance,
+      ) ?? [],
     [eligibility],
   );
 
   const resolvedCiValidatorId =
     ciValidatorId || eligibility?.default_ci_validator_membership_id || "";
   const resolvedFinanceValidatorId =
-    financeValidatorId || eligibility?.default_finance_validator_membership_id || "";
+    financeValidatorId ||
+    eligibility?.default_finance_validator_membership_id ||
+    "";
 
   const canSubmit =
-    Boolean(resolvedCiValidatorId)
-    && (!isFinancial || Boolean(resolvedFinanceValidatorId))
-    && !submitting
-    && !loading;
+    Boolean(resolvedCiValidatorId) &&
+    (!isFinancial || Boolean(resolvedFinanceValidatorId)) &&
+    !submitting &&
+    !loading;
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -124,13 +132,15 @@ export function BenefitSubmitDialog({
         <DialogHeader>
           <DialogTitle>Submit for validation</DialogTitle>
           <DialogDescription>
-            Select the validators who will review this benefit. Assignments do not grant
-            additional permissions.
+            Select the validators who will review this benefit. Assignments do
+            not grant additional permissions.
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading validator options…</p>
+          <p className="text-sm text-muted-foreground">
+            Loading validator options…
+          </p>
         ) : null}
 
         {!loading && eligibility ? (
@@ -140,7 +150,7 @@ export function BenefitSubmitDialog({
               <select
                 id="benefit-ci-validator"
                 data-testid="benefit-ci-validator-select"
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="border-input rounded-md border bg-background px-3 py-2 text-sm"
                 value={resolvedCiValidatorId}
                 onChange={(event) => setCiValidatorId(event.target.value)}
                 disabled={ciCandidates.length === 0}
@@ -151,7 +161,10 @@ export function BenefitSubmitDialog({
                     : "Select CI validator"}
                 </option>
                 {ciCandidates.map((candidate) => (
-                  <option key={candidate.membership_id} value={candidate.membership_id}>
+                  <option
+                    key={candidate.membership_id}
+                    value={candidate.membership_id}
+                  >
                     {candidate.display_name}
                   </option>
                 ))}
@@ -160,13 +173,17 @@ export function BenefitSubmitDialog({
 
             {isFinancial ? (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="benefit-finance-validator">Finance validator</Label>
+                <Label htmlFor="benefit-finance-validator">
+                  Finance validator
+                </Label>
                 <select
                   id="benefit-finance-validator"
                   data-testid="benefit-finance-validator-select"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="border-input rounded-md border bg-background px-3 py-2 text-sm"
                   value={resolvedFinanceValidatorId}
-                  onChange={(event) => setFinanceValidatorId(event.target.value)}
+                  onChange={(event) =>
+                    setFinanceValidatorId(event.target.value)
+                  }
                   disabled={financeCandidates.length === 0}
                 >
                   <option value="">
@@ -175,7 +192,10 @@ export function BenefitSubmitDialog({
                       : "Select finance validator"}
                   </option>
                   {financeCandidates.map((candidate) => (
-                    <option key={candidate.membership_id} value={candidate.membership_id}>
+                    <option
+                      key={candidate.membership_id}
+                      value={candidate.membership_id}
+                    >
                       {candidate.display_name}
                     </option>
                   ))}
@@ -192,7 +212,11 @@ export function BenefitSubmitDialog({
         ) : null}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button

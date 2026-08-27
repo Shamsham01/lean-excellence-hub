@@ -20,18 +20,28 @@ export default async function NewProjectPage() {
     .eq("status", "active")
     .order("name");
 
-  const { data: methodologies } = await untypedFrom(supabase, "ci_project_methodologies")
+  const { data: methodologies } = await untypedFrom(
+    supabase,
+    "ci_project_methodologies",
+  )
     .select("id, name, code")
     .eq("status", "active")
     .order("name");
 
-  const { data: versions } = await untypedFrom(supabase, "ci_project_methodology_versions")
+  const { data: versions } = await untypedFrom(
+    supabase,
+    "ci_project_methodology_versions",
+  )
     .select("id, methodology_id, version_number, status")
     .eq("status", "published")
     .order("version_number");
 
   const methodologyRows =
-    (methodologies as Array<{ id: string; name: string; code: string }> | null) ?? [];
+    (methodologies as Array<{
+      id: string;
+      name: string;
+      code: string;
+    }> | null) ?? [];
   const versionRows =
     (versions as Array<{
       id: string;
@@ -39,7 +49,9 @@ export default async function NewProjectPage() {
       version_number: number;
     }> | null) ?? [];
 
-  const methodologyNameById = new Map(methodologyRows.map((row) => [row.id, row.name]));
+  const methodologyNameById = new Map(
+    methodologyRows.map((row) => [row.id, row.name]),
+  );
 
   const methodologyOptions = versionRows.map((version) => ({
     versionId: version.id,
@@ -62,7 +74,10 @@ export default async function NewProjectPage() {
     })) ?? [];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6" data-testid="create-project-page">
+    <div
+      className="mx-auto flex max-w-2xl flex-col gap-6"
+      data-testid="create-project-page"
+    >
       <PageHeader
         title="New improvement project"
         description="Work through the charter step by step — basics, scope, methodology, team, and measures."

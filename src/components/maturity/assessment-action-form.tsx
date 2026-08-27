@@ -25,13 +25,22 @@ export function AssessmentActionForm({
       <input type="hidden" name="assessmentId" value={assessmentId} />
       <input type="hidden" name="pillarId" value={pillarId} />
       <input type="hidden" name="criterionId" value={criterionId} />
-      {questionId ? <input type="hidden" name="questionId" value={questionId} /> : null}
+      {questionId ? (
+        <input type="hidden" name="questionId" value={questionId} />
+      ) : null}
       <div className="flex flex-col gap-2">
         <Label htmlFor="action-title">Create action</Label>
-        <Input id="action-title" name="title" required placeholder="Improvement action" />
+        <Input
+          id="action-title"
+          name="title"
+          required
+          placeholder="Improvement action"
+        />
       </div>
       <Textarea name="description" rows={2} placeholder="Finding context" />
-      <Button type="submit" size="sm" variant="outline">Create action</Button>
+      <Button type="submit" size="sm" variant="outline">
+        Create action
+      </Button>
     </form>
   );
 }

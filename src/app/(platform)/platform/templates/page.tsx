@@ -27,7 +27,10 @@ export default async function TemplatesPage() {
           <CardTitle>New template</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createTemplate} className="flex flex-col gap-4 max-w-lg">
+          <form
+            action={createTemplate}
+            className="flex max-w-lg flex-col gap-4"
+          >
             <div className="flex flex-col gap-2">
               <Label htmlFor="displayName">Name</Label>
               <Input id="displayName" name="displayName" required />
@@ -50,7 +53,7 @@ export default async function TemplatesPage() {
                 <Badge variant="outline">{template.experience_type}</Badge>
               </div>
               {template.description ? (
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="line-clamp-2 text-sm text-muted-foreground">
                   {template.description}
                 </p>
               ) : null}

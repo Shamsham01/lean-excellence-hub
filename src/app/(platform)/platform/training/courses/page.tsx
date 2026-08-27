@@ -11,7 +11,10 @@ export default async function TrainingCoursesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Training courses" description="Organisation training catalogue." />
+      <PageHeader
+        title="Training courses"
+        description="Organisation training catalogue."
+      />
       <Card>
         <CardContent className="divide-y divide-border p-0">
           {courses?.map((course) => (
@@ -21,7 +24,9 @@ export default async function TrainingCoursesPage() {
               className="flex min-h-11 items-center justify-between px-4 py-3 hover:bg-surface"
             >
               <span>{course.name}</span>
-              <span className="text-sm text-muted-foreground">{course.code}</span>
+              <span className="text-sm text-muted-foreground">
+                {course.code}
+              </span>
             </a>
           ))}
         </CardContent>

@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 
 import { MethodologyEditor } from "@/components/projects/methodology-editor";
 import { untypedFrom } from "@/lib/projects/supabase-untyped";
-import type { MethodologyPhaseRow, MethodologyVersionRow } from "@/lib/projects/types";
+import type {
+  MethodologyPhaseRow,
+  MethodologyVersionRow,
+} from "@/lib/projects/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -20,7 +23,10 @@ export default async function MethodologyDetailPage({
     notFound();
   }
 
-  const { data: methodology } = await untypedFrom(supabase, "ci_project_methodologies")
+  const { data: methodology } = await untypedFrom(
+    supabase,
+    "ci_project_methodologies",
+  )
     .select("id, name, code, description, status")
     .eq("id", methodologyId)
     .maybeSingle();
@@ -35,7 +41,10 @@ export default async function MethodologyDetailPage({
 
   if (!methodologyRow) notFound();
 
-  const { data: versions } = await untypedFrom(supabase, "ci_project_methodology_versions")
+  const { data: versions } = await untypedFrom(
+    supabase,
+    "ci_project_methodology_versions",
+  )
     .select("id, methodology_id, version_number, status, published_at")
     .eq("methodology_id", methodologyId)
     .order("version_number");
@@ -45,8 +54,13 @@ export default async function MethodologyDetailPage({
   let phases: MethodologyPhaseRow[] = [];
 
   if (versionIds.length > 0) {
-    const { data: phaseRows } = await untypedFrom(supabase, "ci_project_methodology_phases")
-      .select("id, methodology_version_id, phase_key, title, description, display_order")
+    const { data: phaseRows } = await untypedFrom(
+      supabase,
+      "ci_project_methodology_phases",
+    )
+      .select(
+        "id, methodology_version_id, phase_key, title, description, display_order",
+      )
       .in("methodology_version_id", versionIds)
       .order("display_order");
 

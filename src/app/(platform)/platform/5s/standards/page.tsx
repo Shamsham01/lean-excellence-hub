@@ -27,14 +27,17 @@ export default async function FiveSStandardsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="5S standards" description="Configurable audit templates per area." />
+      <PageHeader
+        title="5S standards"
+        description="Configurable audit templates per area."
+      />
 
       <Card>
         <CardHeader>
           <CardTitle>Create standard</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createAction} className="flex flex-col gap-4 max-w-lg">
+          <form action={createAction} className="flex max-w-lg flex-col gap-4">
             <div>
               <Label htmlFor="name">Name</Label>
               <Input id="name" name="name" required className="mt-2 min-h-11" />
@@ -45,9 +48,17 @@ export default async function FiveSStandardsPage() {
             </div>
             <div>
               <Label htmlFor="threshold">Target threshold (%)</Label>
-              <Input id="threshold" name="threshold" type="number" defaultValue={90} className="mt-2" />
+              <Input
+                id="threshold"
+                name="threshold"
+                type="number"
+                defaultValue={90}
+                className="mt-2"
+              />
             </div>
-            <Button type="submit" className="min-h-11">Create draft standard</Button>
+            <Button type="submit" className="min-h-11">
+              Create draft standard
+            </Button>
           </form>
         </CardContent>
       </Card>

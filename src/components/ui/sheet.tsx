@@ -34,7 +34,7 @@ export function SheetContent({
       >
         {children}
         <SheetPrimitive.Close
-          className="absolute right-3 top-3 rounded-md p-2 opacity-70 hover:bg-sidebar-accent hover:opacity-100"
+          className="absolute top-3 right-3 rounded-md p-2 opacity-70 hover:bg-sidebar-accent hover:opacity-100"
           aria-label="Close"
         >
           <X className="size-4" />
@@ -44,7 +44,10 @@ export function SheetContent({
   );
 }
 
-export function SheetHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export function SheetHeader({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("flex flex-col gap-1", className)} {...props} />;
 }
 

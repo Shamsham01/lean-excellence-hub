@@ -35,6 +35,8 @@ describe("benefit realisation helpers", () => {
 
   it("labels realisation entry statuses", () => {
     expect(realisationEntryStatusLabel("validated")).toBe("Validated");
-    expect(realisationEntryStatusLabel("submitted")).toBe("Awaiting Validation");
+    expect(realisationEntryStatusLabel("submitted")).toBe(
+      "Awaiting Validation",
+    );
   });
 });

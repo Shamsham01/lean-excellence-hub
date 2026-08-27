@@ -27,7 +27,10 @@ export async function createMaturityModel(formData: FormData) {
   return { modelId: data as string };
 }
 
-export async function publishMaturityModel(versionId: string, modelId?: string) {
+export async function publishMaturityModel(
+  versionId: string,
+  modelId?: string,
+) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("publish_maturity_model_version", {
     target_model_version_id: versionId,
@@ -91,7 +94,10 @@ export async function saveAssessmentAnswer(
     rpcArgs.target_number_value = payload.numberValue;
   }
 
-  const { error } = await supabase.rpc("upsert_maturity_assessment_answer", rpcArgs);
+  const { error } = await supabase.rpc(
+    "upsert_maturity_assessment_answer",
+    rpcArgs,
+  );
 
   if (error) {
     return { error: error.message };
@@ -122,9 +128,12 @@ export async function approveAssessment(assessmentId: string) {
 
 export async function publishOfficialResult(assessmentId: string) {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc("publish_official_maturity_result", {
-    target_assessment_id: assessmentId,
-  });
+  const { data, error } = await supabase.rpc(
+    "publish_official_maturity_result",
+    {
+      target_assessment_id: assessmentId,
+    },
+  );
   if (error) return { error: error.message };
   revalidatePath("/platform/maturity");
   return { resultId: data as string };
@@ -256,7 +265,9 @@ export async function initiateEvidenceUpload(
     target_byte_size: byteSize,
   });
   if (error) return { error: error.message };
-  const row = (data as Array<{ attachment_id: string; storage_object_path: string }>)[0];
+  const row = (
+    data as Array<{ attachment_id: string; storage_object_path: string }>
+  )[0];
   if (!row) return { error: "Upload initiation failed" };
   return {
     attachmentId: row.attachment_id,

@@ -63,17 +63,27 @@ export async function createImprovementProject(input: {
     target_project_id: projectId,
     ...(input.scopeIn ? { target_scope_in: input.scopeIn } : {}),
     ...(input.scopeOut ? { target_scope_out: input.scopeOut } : {}),
-    ...(input.baselineSummary ? { target_baseline_summary: input.baselineSummary } : {}),
-    ...(input.targetSummary ? { target_target_summary: input.targetSummary } : {}),
-    ...(input.constraintsRisks ? { target_constraints_risks: input.constraintsRisks } : {}),
+    ...(input.baselineSummary
+      ? { target_baseline_summary: input.baselineSummary }
+      : {}),
+    ...(input.targetSummary
+      ? { target_target_summary: input.targetSummary }
+      : {}),
+    ...(input.constraintsRisks
+      ? { target_constraints_risks: input.constraintsRisks }
+      : {}),
     ...(input.sustainmentExpectation
       ? { target_sustainment_expectation: input.sustainmentExpectation }
       : {}),
     ...(input.methodologyVersionId
       ? { target_methodology_version_id: input.methodologyVersionId }
       : {}),
-    ...(input.plannedStartDate ? { target_planned_start_date: input.plannedStartDate } : {}),
-    ...(input.plannedEndDate ? { target_planned_end_date: input.plannedEndDate } : {}),
+    ...(input.plannedStartDate
+      ? { target_planned_start_date: input.plannedStartDate }
+      : {}),
+    ...(input.plannedEndDate
+      ? { target_planned_end_date: input.plannedEndDate }
+      : {}),
     ...(input.priority ? { target_priority: input.priority } : {}),
   });
 
@@ -110,7 +120,9 @@ export async function createImprovementProject(input: {
       ...(measure.baseline !== undefined
         ? { target_baseline_value: measure.baseline }
         : {}),
-      ...(measure.target !== undefined ? { target_target_value: measure.target } : {}),
+      ...(measure.target !== undefined
+        ? { target_target_value: measure.target }
+        : {}),
     });
   }
 
@@ -202,11 +214,14 @@ export async function createCiProjectMethodologyDraft(input: {
   code: string;
   description?: string;
 }) {
-  const methodologyId = await callRpc<string>("create_ci_project_methodology_draft", {
-    target_name: input.name,
-    target_code: input.code,
-    ...(input.description ? { target_description: input.description } : {}),
-  });
+  const methodologyId = await callRpc<string>(
+    "create_ci_project_methodology_draft",
+    {
+      target_name: input.name,
+      target_code: input.code,
+      ...(input.description ? { target_description: input.description } : {}),
+    },
+  );
   revalidatePath("/platform/projects/methodologies");
   return methodologyId;
 }
@@ -228,14 +243,18 @@ export async function addCiProjectMethodologyPhase(input: {
   revalidatePath("/platform/projects/methodologies");
 }
 
-export async function publishCiProjectMethodologyVersion(methodologyVersionId: string) {
+export async function publishCiProjectMethodologyVersion(
+  methodologyVersionId: string,
+) {
   await callRpc("publish_ci_project_methodology_version", {
     target_methodology_version_id: methodologyVersionId,
   });
   revalidatePath("/platform/projects/methodologies");
 }
 
-export async function createCiProjectMethodologySuccessorVersion(methodologyId: string) {
+export async function createCiProjectMethodologySuccessorVersion(
+  methodologyId: string,
+) {
   const versionId = await callRpc<string>(
     "create_ci_project_methodology_successor_version",
     { target_methodology_id: methodologyId },

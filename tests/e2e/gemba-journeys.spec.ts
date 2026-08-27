@@ -34,7 +34,9 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await loginAs(page, "admin");
     await page.goto("/platform/gemba");
 
-    await expect(page.getByRole("heading", { name: "Gemba walks" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Gemba walks" }),
+    ).toBeVisible();
     await expect(page.getByText("Completed walks")).toBeVisible();
 
     await page.getByRole("link", { name: "Definitions" }).click();
@@ -50,7 +52,9 @@ test.describe("Milestone 6 Gemba journeys", () => {
   test("admin: walk history shows completed demo walk", async ({ page }) => {
     await loginAs(page, "admin");
     await page.goto("/platform/gemba/history");
-    await expect(page.getByRole("heading", { name: "Gemba history" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Gemba history" }),
+    ).toBeVisible();
     await expect(page.getByText(DEMO_GEMBA_DEFINITION.name)).toBeVisible();
   });
 });

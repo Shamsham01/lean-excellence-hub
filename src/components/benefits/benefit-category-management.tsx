@@ -13,7 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { BenefitCategoryRow, BenefitReportingSettingsRow } from "@/lib/benefits/types";
+import type {
+  BenefitCategoryRow,
+  BenefitReportingSettingsRow,
+} from "@/lib/benefits/types";
 
 type BenefitCategoryManagementProps = {
   categories: BenefitCategoryRow[];
@@ -70,7 +73,10 @@ export function BenefitCategoryManagement({
   }
 
   return (
-    <div className="flex flex-col gap-6" data-testid="benefit-category-management">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="benefit-category-management"
+    >
       <Card>
         <CardHeader>
           <CardTitle>Reporting settings</CardTitle>
@@ -107,9 +113,17 @@ export function BenefitCategoryManagement({
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label>Description</Label>
-            <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Textarea
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </div>
-          <Button size="sm" className="sm:col-span-2" onClick={() => handleCreateCategory()}>
+          <Button
+            size="sm"
+            className="sm:col-span-2"
+            onClick={() => handleCreateCategory()}
+          >
             Add category
           </Button>
         </CardContent>
@@ -121,7 +135,9 @@ export function BenefitCategoryManagement({
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No categories configured yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No categories configured yet.
+            </p>
           ) : (
             categories.map((category) => (
               <div
@@ -136,9 +152,15 @@ export function BenefitCategoryManagement({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{category.status}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {category.status}
+                  </span>
                   {category.status === "active" ? (
-                    <Button size="sm" variant="outline" onClick={() => handleArchiveCategory(category.id)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleArchiveCategory(category.id)}
+                    >
                       Archive
                     </Button>
                   ) : null}

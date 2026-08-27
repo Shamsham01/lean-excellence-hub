@@ -19,7 +19,11 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
   }
 
   return (
-    <div className="h-64 w-full" role="img" aria-label="Pillar maturity radar chart">
+    <div
+      className="h-64 w-full"
+      role="img"
+      aria-label="Pillar maturity radar chart"
+    >
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
           <PolarGrid stroke="var(--border)" />
@@ -36,7 +40,7 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
           />
         </RadarChart>
       </ResponsiveContainer>
-      <table className="mt-4 w-full text-sm sr-only">
+      <table className="sr-only mt-4 w-full text-sm">
         <caption>Pillar scores</caption>
         <thead>
           <tr>
@@ -66,7 +70,7 @@ export function PillarScoreList({ data }: { data: PillarScore[] }) {
           className="flex items-center justify-between gap-4 rounded-md border border-border bg-surface px-3 py-2"
         >
           <span className="text-sm text-foreground">{pillar.name}</span>
-          <span className="font-mono text-sm tabular-nums text-foreground">
+          <span className="font-mono text-sm text-foreground tabular-nums">
             {pillar.score.toFixed(1)}
           </span>
         </li>

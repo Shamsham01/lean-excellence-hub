@@ -29,8 +29,18 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]["id"];
 
 type LevelRow = { level_number: number; name: string };
-type PillarRow = { id: string; name: string; position: number; section_id: string };
-type CriterionRow = { id: string; name: string; pillar_id: string; position: number };
+type PillarRow = {
+  id: string;
+  name: string;
+  position: number;
+  section_id: string;
+};
+type CriterionRow = {
+  id: string;
+  name: string;
+  pillar_id: string;
+  position: number;
+};
 type QuestionRow = { id: string; prompt: string; criterion_id: string };
 
 type FrameworkEditorProps = {
@@ -66,7 +76,12 @@ export function FrameworkEditor({
     setError(null);
     const result = await action();
     setBusy(false);
-    if (result && typeof result === "object" && "error" in result && result.error) {
+    if (
+      result &&
+      typeof result === "object" &&
+      "error" in result &&
+      result.error
+    ) {
       setError(result.error);
       return false;
     }
@@ -85,7 +100,10 @@ export function FrameworkEditor({
     <Card data-testid="framework-editor">
       <CardHeader>
         <CardTitle>Draft version {versionNumber}</CardTitle>
-        <nav className="flex flex-wrap gap-2" aria-label="Framework setup steps">
+        <nav
+          className="flex flex-wrap gap-2"
+          aria-label="Framework setup steps"
+        >
           {STEPS.map((s) => (
             <Button
               key={s.id}
@@ -102,22 +120,30 @@ export function FrameworkEditor({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {error ? (
-          <p className="text-sm text-destructive" role="alert">{error}</p>
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
         ) : null}
 
         {step === "details" ? (
           <div className="flex flex-col gap-2 text-sm">
-            <p><span className="font-medium">Name:</span> {modelName}</p>
-            <p><span className="font-medium">Description:</span> {modelDescription ?? "—"}</p>
+            <p>
+              <span className="font-medium">Name:</span> {modelName}
+            </p>
+            <p>
+              <span className="font-medium">Description:</span>{" "}
+              {modelDescription ?? "—"}
+            </p>
             <p className="text-muted-foreground">
-              Create the framework draft from the models list to set the name. Continue with levels and pillars.
+              Create the framework draft from the models list to set the name.
+              Continue with levels and pillars.
             </p>
           </div>
         ) : null}
 
         {step === "levels" ? (
           <form
-            className="flex flex-col gap-3 max-w-md"
+            className="flex max-w-md flex-col gap-3"
             onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget;
@@ -144,16 +170,29 @@ export function FrameworkEditor({
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="levelName">Level name</Label>
-              <Input id="levelName" name="levelName" required placeholder="Initial" />
+              <Input
+                id="levelName"
+                name="levelName"
+                required
+                placeholder="Initial"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="levelColor">Color token</Label>
-              <Input id="levelColor" name="levelColor" placeholder="maturity-1" />
+              <Input
+                id="levelColor"
+                name="levelColor"
+                placeholder="maturity-1"
+              />
             </div>
-            <Button type="submit" disabled={busy}>Add level</Button>
+            <Button type="submit" disabled={busy}>
+              Add level
+            </Button>
             <ul className="text-sm">
               {levels.map((l) => (
-                <li key={l.level_number}>{l.level_number}. {l.name}</li>
+                <li key={l.level_number}>
+                  {l.level_number}. {l.name}
+                </li>
               ))}
             </ul>
           </form>
@@ -161,20 +200,27 @@ export function FrameworkEditor({
 
         {step === "pillars" ? (
           <form
-            className="flex flex-col gap-3 max-w-md"
+            className="flex max-w-md flex-col gap-3"
             onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget;
               const name = form.pillarName.value.trim();
               const position = Number(form.pillarPosition.value);
               if (!name) return;
-              await run(() => addMaturityPillar(versionId, name, position, modelId));
+              await run(() =>
+                addMaturityPillar(versionId, name, position, modelId),
+              );
               form.reset();
             }}
           >
             <div className="flex flex-col gap-2">
               <Label htmlFor="pillarName">Pillar name</Label>
-              <Input id="pillarName" name="pillarName" required placeholder="Leadership" />
+              <Input
+                id="pillarName"
+                name="pillarName"
+                required
+                placeholder="Leadership"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="pillarPosition">Position</Label>
@@ -187,10 +233,14 @@ export function FrameworkEditor({
                 defaultValue={pillars.length + 1}
               />
             </div>
-            <Button type="submit" disabled={busy}>Add pillar</Button>
+            <Button type="submit" disabled={busy}>
+              Add pillar
+            </Button>
             <ul className="text-sm">
               {pillars.map((p) => (
-                <li key={p.id}>{p.position}. {p.name}</li>
+                <li key={p.id}>
+                  {p.position}. {p.name}
+                </li>
               ))}
             </ul>
           </form>
@@ -198,7 +248,7 @@ export function FrameworkEditor({
 
         {step === "criteria" ? (
           <form
-            className="flex flex-col gap-3 max-w-md"
+            className="flex max-w-md flex-col gap-3"
             onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget;
@@ -206,7 +256,9 @@ export function FrameworkEditor({
               const name = form.criterionName.value.trim();
               const position = Number(form.criterionPosition.value);
               if (!name || !pillarId) return;
-              await run(() => addMaturityCriterion(pillarId, name, position, modelId));
+              await run(() =>
+                addMaturityCriterion(pillarId, name, position, modelId),
+              );
               form.reset();
             }}
           >
@@ -219,7 +271,9 @@ export function FrameworkEditor({
                 className="h-9 rounded-md border border-border bg-background px-3 text-sm"
               >
                 {pillars.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -238,7 +292,9 @@ export function FrameworkEditor({
                 defaultValue={1}
               />
             </div>
-            <Button type="submit" disabled={busy || pillars.length === 0}>Add criterion</Button>
+            <Button type="submit" disabled={busy || pillars.length === 0}>
+              Add criterion
+            </Button>
             <ul className="text-sm">
               {criteria.map((c) => (
                 <li key={c.id}>{c.name}</li>
@@ -249,7 +305,7 @@ export function FrameworkEditor({
 
         {step === "questions" ? (
           <form
-            className="flex flex-col gap-3 max-w-md"
+            className="flex max-w-md flex-col gap-3"
             onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget;
@@ -257,7 +313,9 @@ export function FrameworkEditor({
               const prompt = form.questionPrompt.value.trim();
               const position = Number(form.questionPosition.value);
               const pillar = pillars.find((p) =>
-                criteria.some((c) => c.id === criterionId && c.pillar_id === p.id),
+                criteria.some(
+                  (c) => c.id === criterionId && c.pillar_id === p.id,
+                ),
               );
               const criterion = criteria.find((c) => c.id === criterionId);
               if (!prompt || !criterion || !pillar) return;
@@ -270,7 +328,11 @@ export function FrameworkEditor({
                   modelId,
                 );
                 if (q.error || !q.questionId) return q;
-                return linkCriterionQuestion(criterionId, q.questionId, modelId);
+                return linkCriterionQuestion(
+                  criterionId,
+                  q.questionId,
+                  modelId,
+                );
               });
               if (ok) form.reset();
             }}
@@ -284,13 +346,20 @@ export function FrameworkEditor({
                 className="h-9 rounded-md border border-border bg-background px-3 text-sm"
               >
                 {criteria.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="questionPrompt">Question prompt</Label>
-              <Input id="questionPrompt" name="questionPrompt" required placeholder="Rate this criterion" />
+              <Input
+                id="questionPrompt"
+                name="questionPrompt"
+                required
+                placeholder="Rate this criterion"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="questionPosition">Position</Label>
@@ -316,24 +385,39 @@ export function FrameworkEditor({
 
         {step === "review" ? (
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div><dt className="font-medium">Levels</dt><dd>{levels.length}</dd></div>
-            <div><dt className="font-medium">Pillars</dt><dd>{pillars.length}</dd></div>
-            <div><dt className="font-medium">Criteria</dt><dd>{criteria.length}</dd></div>
-            <div><dt className="font-medium">Scored questions</dt><dd>{linkedQuestionCount}</dd></div>
+            <div>
+              <dt className="font-medium">Levels</dt>
+              <dd>{levels.length}</dd>
+            </div>
+            <div>
+              <dt className="font-medium">Pillars</dt>
+              <dd>{pillars.length}</dd>
+            </div>
+            <div>
+              <dt className="font-medium">Criteria</dt>
+              <dd>{criteria.length}</dd>
+            </div>
+            <div>
+              <dt className="font-medium">Scored questions</dt>
+              <dd>{linkedQuestionCount}</dd>
+            </div>
           </dl>
         ) : null}
 
         {step === "publish" ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              Publishing locks this version for assessments. Requires at least one level, pillar, criterion, and scored question.
+              Publishing locks this version for assessments. Requires at least
+              one level, pillar, criterion, and scored question.
             </p>
             <Button
               type="button"
               disabled={!canPublish || busy}
               data-testid="publish-framework"
               onClick={async () => {
-                const ok = await run(() => publishMaturityModel(versionId, modelId));
+                const ok = await run(() =>
+                  publishMaturityModel(versionId, modelId),
+                );
                 if (ok) router.refresh();
               }}
             >

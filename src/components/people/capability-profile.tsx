@@ -291,7 +291,7 @@ export function CapabilityProfile({
       {improvementContribution ? (
         <section className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-lg font-semibold">Improvement & recognition</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3 text-sm">
+          <div className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
             <div>
               <p className="text-muted-foreground">Suggestions authored</p>
               <p className="text-2xl font-semibold tabular-nums">
@@ -299,9 +299,12 @@ export function CapabilityProfile({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Implementation involvement</p>
+              <p className="text-muted-foreground">
+                Implementation involvement
+              </p>
               <p className="text-2xl font-semibold tabular-nums">
-                {improvementContribution.suggestions_implemented_involvement ?? 0}
+                {improvementContribution.suggestions_implemented_involvement ??
+                  0}
               </p>
             </div>
             <div>

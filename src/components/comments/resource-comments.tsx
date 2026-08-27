@@ -43,10 +43,13 @@ export function ResourceComments({
     setError(null);
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data: commentId, error: rpcError } = await supabase.rpc("create_comment", {
-        target_resource_id: resourceId,
-        target_body: commentBody.trim(),
-      });
+      const { data: commentId, error: rpcError } = await supabase.rpc(
+        "create_comment",
+        {
+          target_resource_id: resourceId,
+          target_body: commentBody.trim(),
+        },
+      );
       if (rpcError) throw rpcError;
       setLocalComments((prev) => [
         ...prev,
@@ -76,7 +79,10 @@ export function ResourceComments({
         ) : (
           <ul className="flex flex-col gap-2">
             {localComments.map((comment) => (
-              <li key={comment.id} className="rounded-md border border-border p-3">
+              <li
+                key={comment.id}
+                className="rounded-md border border-border p-3"
+              >
                 <p>{comment.body}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {new Date(comment.created_at).toLocaleString("en-GB")}

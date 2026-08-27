@@ -20,11 +20,15 @@ export default async function GembaWalkPage({
 }) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
-  const canEdit = await currentMemberHasPermission(GEMBA_PERMISSIONS.walkPerform);
+  const canEdit = await currentMemberHasPermission(
+    GEMBA_PERMISSIONS.walkPerform,
+  );
 
   const { data: walk } = await supabase
     .from("gemba_walks")
-    .select("id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at")
+    .select(
+      "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!walk) notFound();
@@ -101,19 +105,30 @@ export default async function GembaWalkPage({
   if (walk.status === "completed") {
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="Gemba walk summary" description={walk.definition_name_snapshot ?? ""} />
+        <PageHeader
+          title="Gemba walk summary"
+          description={walk.definition_name_snapshot ?? ""}
+        />
         <Card>
-          <CardContent className="py-6 flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">{walk.unit_name_snapshot}</p>
+          <CardContent className="flex flex-col gap-4 py-6">
+            <p className="text-sm text-muted-foreground">
+              {walk.unit_name_snapshot}
+            </p>
             {walk.summary_notes ? <p>{walk.summary_notes}</p> : null}
             <ul className="flex flex-col gap-2">
               {observations?.map((o) => (
-                <li key={o.id} className="rounded-md border border-border px-3 py-2 text-sm">
-                  <span className="font-medium">{o.observation_type}</span>: {o.observation_text}
+                <li
+                  key={o.id}
+                  className="rounded-md border border-border px-3 py-2 text-sm"
+                >
+                  <span className="font-medium">{o.observation_type}</span>:{" "}
+                  {o.observation_text}
                 </li>
               ))}
             </ul>
-            <Button variant="outline" asChild><Link href="/platform/gemba/history">History</Link></Button>
+            <Button variant="outline" asChild>
+              <Link href="/platform/gemba/history">History</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -129,23 +144,35 @@ export default async function GembaWalkPage({
           canEdit ? (
             <form action={completeGembaWalkFromForm}>
               <input type="hidden" name="walkId" value={id} />
-              <Button type="submit" className="min-h-11">Complete walk</Button>
+              <Button type="submit" className="min-h-11">
+                Complete walk
+              </Button>
             </form>
           ) : null
         }
       />
 
       <div className="flex flex-wrap gap-2">
-        {["positive_practice", "improvement_opportunity", "issue"].map((type) => (
-          <form key={type} action={createGembaObservationFromForm}>
-            <input type="hidden" name="walkId" value={id} />
-            <input type="hidden" name="observationType" value={type} />
-            <input type="hidden" name="text" value={`Observation: ${type.replace(/_/g, " ")}`} />
-            <Button type="submit" variant="outline" className="min-h-11 capitalize">
-              {type.replace(/_/g, " ")}
-            </Button>
-          </form>
-        ))}
+        {["positive_practice", "improvement_opportunity", "issue"].map(
+          (type) => (
+            <form key={type} action={createGembaObservationFromForm}>
+              <input type="hidden" name="walkId" value={id} />
+              <input type="hidden" name="observationType" value={type} />
+              <input
+                type="hidden"
+                name="text"
+                value={`Observation: ${type.replace(/_/g, " ")}`}
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                className="min-h-11 capitalize"
+              >
+                {type.replace(/_/g, " ")}
+              </Button>
+            </form>
+          ),
+        )}
       </div>
 
       <GembaWalkWorkspace

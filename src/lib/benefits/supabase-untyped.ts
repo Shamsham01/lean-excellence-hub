@@ -8,9 +8,11 @@ export function untypedFrom(
   supabase: SupabaseClient<Database>,
   table: string,
 ): UntypedQueryBuilder {
-  return (supabase as SupabaseClient<Database> & {
-    from: (relation: string) => UntypedQueryBuilder;
-  }).from(table);
+  return (
+    supabase as SupabaseClient<Database> & {
+      from: (relation: string) => UntypedQueryBuilder;
+    }
+  ).from(table);
 }
 
 export async function callBenefitRpc<T = unknown>(
@@ -22,5 +24,8 @@ export async function callBenefitRpc<T = unknown>(
     fn as "create_benefit_draft",
     (args ?? {}) as never,
   );
-  return { data: data as T | null, error: error ? new Error(error.message) : null };
+  return {
+    data: data as T | null,
+    error: error ? new Error(error.message) : null,
+  };
 }

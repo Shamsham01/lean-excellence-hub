@@ -70,7 +70,9 @@ export function BenefitRealisationPanel({
   const [periodEnd, setPeriodEnd] = useState("");
   const [financialAmount, setFinancialAmount] = useState("");
   const [measureValue, setMeasureValue] = useState("");
-  const [measureUnit, setMeasureUnit] = useState(detail.baseline_measure_unit ?? "");
+  const [measureUnit, setMeasureUnit] = useState(
+    detail.baseline_measure_unit ?? "",
+  );
   const [notes, setNotes] = useState("");
 
   const isFinancial = detail.benefit_class === "financial";
@@ -79,7 +81,10 @@ export function BenefitRealisationPanel({
   const chartData = useMemo(
     () =>
       (summary?.periods ?? []).map((period) => ({
-        label: realisationPeriodChartLabel(period.period_start, period.period_end),
+        label: realisationPeriodChartLabel(
+          period.period_start,
+          period.period_end,
+        ),
         forecast: Number(period.forecast_amount),
         validated: Number(period.validated_amount),
       })),
@@ -130,7 +135,10 @@ export function BenefitRealisationPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="benefit-realisation-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="benefit-realisation-panel"
+    >
       {summary ? (
         <div className="grid gap-3 sm:grid-cols-3">
           <MetricCard
@@ -141,7 +149,10 @@ export function BenefitRealisationPanel({
                     summary.totals.forecast_total,
                     detail.reporting_currency_snapshot,
                   )
-                : formatMeasureValue(summary.totals.forecast_total, detail.baseline_measure_unit)
+                : formatMeasureValue(
+                    summary.totals.forecast_total,
+                    detail.baseline_measure_unit,
+                  )
             }
           />
           <MetricCard
@@ -186,9 +197,16 @@ export function BenefitRealisationPanel({
             </p>
           </CardHeader>
           <CardContent>
-            <div className="h-72 w-full" role="img" aria-label="Forecast versus validated actual chart">
+            <div
+              className="h-72 w-full"
+              role="img"
+              aria-label="Forecast versus validated actual chart"
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                >
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="label"
@@ -198,17 +216,23 @@ export function BenefitRealisationPanel({
                     textAnchor="end"
                     height={60}
                   />
-                  <YAxis tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+                  <YAxis
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                  />
                   <Tooltip
                     formatter={(value, name) => {
-                      const numeric = typeof value === "number" ? value : Number(value ?? 0);
+                      const numeric =
+                        typeof value === "number" ? value : Number(value ?? 0);
                       return [
                         isFinancial
                           ? formatBenefitCurrencyAmount(
                               numeric,
                               detail.reporting_currency_snapshot,
                             )
-                          : formatMeasureValue(numeric, detail.baseline_measure_unit),
+                          : formatMeasureValue(
+                              numeric,
+                              detail.baseline_measure_unit,
+                            ),
                         String(name),
                       ];
                     }}
@@ -245,11 +269,19 @@ export function BenefitRealisationPanel({
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
               <span>Period start</span>
-              <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+              <Input
+                type="date"
+                value={periodStart}
+                onChange={(e) => setPeriodStart(e.target.value)}
+              />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span>Period end</span>
-              <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+              <Input
+                type="date"
+                value={periodEnd}
+                onChange={(e) => setPeriodEnd(e.target.value)}
+              />
             </label>
             {isFinancial ? (
               <label className="flex flex-col gap-1 text-sm sm:col-span-2">
@@ -272,15 +304,26 @@ export function BenefitRealisationPanel({
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Measure unit</span>
-                  <Input value={measureUnit} onChange={(e) => setMeasureUnit(e.target.value)} />
+                  <Input
+                    value={measureUnit}
+                    onChange={(e) => setMeasureUnit(e.target.value)}
+                  />
                 </label>
               </>
             )}
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
               <span>Notes</span>
-              <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <Textarea
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
             </label>
-            <Button size="sm" className="sm:col-span-2" onClick={() => handleCreateEntry()}>
+            <Button
+              size="sm"
+              className="sm:col-span-2"
+              onClick={() => handleCreateEntry()}
+            >
               Record entry
             </Button>
           </CardContent>
@@ -293,7 +336,9 @@ export function BenefitRealisationPanel({
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No realisation entries yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No realisation entries yet.
+            </p>
           ) : (
             entries.map((entry) => (
               <div
@@ -316,16 +361,25 @@ export function BenefitRealisationPanel({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={realisationEntryStatusBadgeVariant(entry.status)}>
+                  <Badge
+                    variant={realisationEntryStatusBadgeVariant(entry.status)}
+                  >
                     {realisationEntryStatusLabel(entry.status)}
                   </Badge>
                   {canRecord && entry.status === "draft" ? (
-                    <Button size="sm" variant="outline" onClick={() => handleSubmitEntry(entry.id)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSubmitEntry(entry.id)}
+                    >
                       Submit
                     </Button>
                   ) : null}
                   {canValidate && entry.status === "submitted" ? (
-                    <Button size="sm" onClick={() => handleValidateEntry(entry.id)}>
+                    <Button
+                      size="sm"
+                      onClick={() => handleValidateEntry(entry.id)}
+                    >
                       Validate actual
                     </Button>
                   ) : null}
@@ -336,7 +390,9 @@ export function BenefitRealisationPanel({
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

@@ -29,7 +29,12 @@ describe("problem solving status helpers", () => {
   });
 
   it("exposes portfolio filter statuses", () => {
-    expect(portfolioFilterStatuses()).toEqual(["draft", "active", "closed", "cancelled"]);
+    expect(portfolioFilterStatuses()).toEqual([
+      "draft",
+      "active",
+      "closed",
+      "cancelled",
+    ]);
   });
 
   it("labels severity and priority values", () => {

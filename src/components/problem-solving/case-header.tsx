@@ -11,14 +11,20 @@ import {
 } from "@/app/(platform)/platform/problem-solving/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CLOSURE_OUTCOMES, closureOutcomeLabel } from "@/lib/problem-solving/closure";
+import {
+  CLOSURE_OUTCOMES,
+  closureOutcomeLabel,
+} from "@/lib/problem-solving/closure";
 import {
   problemSolvingStatusBadgeVariant,
   problemSolvingStatusLabel,
   priorityLabel,
   severityLabel,
 } from "@/lib/problem-solving/status";
-import { sortMethodStages, type MethodStage } from "@/lib/problem-solving/stages";
+import {
+  sortMethodStages,
+  type MethodStage,
+} from "@/lib/problem-solving/stages";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import { cn } from "@/lib/utils";
 
@@ -49,9 +55,13 @@ export function CaseHeader({
 }: CaseHeaderProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [selectedMethodId, setSelectedMethodId] = useState(methods[0]?.id ?? "");
+  const [selectedMethodId, setSelectedMethodId] = useState(
+    methods[0]?.id ?? "",
+  );
   const [showCloseDialog, setShowCloseDialog] = useState(false);
-  const [closureOutcome, setClosureOutcome] = useState<string>("resolved_verified_cause");
+  const [closureOutcome, setClosureOutcome] = useState<string>(
+    "resolved_verified_cause",
+  );
   const [closureRationale, setClosureRationale] = useState("");
   const sortedStages = sortMethodStages(methodStages);
   const currentStageId = detail.current_method_stage_id;
@@ -61,7 +71,9 @@ export function CaseHeader({
   const showClose = canClose && detail.status === "active";
   const showCancel = canManage && ["draft", "active"].includes(detail.status);
   const canMoveStage =
-    (canManage || canFacilitate) && detail.status === "active" && sortedStages.length > 0;
+    (canManage || canFacilitate) &&
+    detail.status === "active" &&
+    sortedStages.length > 0;
 
   async function handleActivate() {
     const methodId = selectedMethodId || methods[0]?.id;
@@ -96,14 +108,20 @@ export function CaseHeader({
 
   async function handleCancel() {
     setLoading(true);
-    const result = await cancelProblemSolvingCase(detail.id, "Cancelled from workspace");
+    const result = await cancelProblemSolvingCase(
+      detail.id,
+      "Cancelled from workspace",
+    );
     onMessage?.(result.error ?? "Case cancelled");
     setLoading(false);
     router.refresh();
   }
 
   return (
-    <div className="flex flex-col gap-4 border-b border-border pb-6" data-testid="problem-solving-header">
+    <div
+      className="flex flex-col gap-4 border-b border-border pb-6"
+      data-testid="problem-solving-header"
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">
@@ -117,7 +135,9 @@ export function CaseHeader({
             <Badge variant="outline">{severityLabel(detail.severity)}</Badge>
             <Badge variant="outline">{priorityLabel(detail.priority)}</Badge>
             {detail.closure_outcome ? (
-              <Badge variant="secondary">{closureOutcomeLabel(detail.closure_outcome)}</Badge>
+              <Badge variant="secondary">
+                {closureOutcomeLabel(detail.closure_outcome)}
+              </Badge>
             ) : null}
           </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -155,11 +175,11 @@ export function CaseHeader({
             ) : null}
           </dl>
         </div>
-        <div className="flex flex-col gap-2 shrink-0">
+        <div className="flex shrink-0 flex-col gap-2">
           {showActivate ? (
             <>
               <select
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-sm"
                 value={selectedMethodId}
                 onChange={(e) => setSelectedMethodId(e.target.value)}
                 data-testid="activate-method-select"
@@ -191,7 +211,12 @@ export function CaseHeader({
             </Button>
           ) : null}
           {showCancel ? (
-            <Button size="sm" variant="outline" onClick={handleCancel} disabled={loading}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={loading}
+            >
               Cancel
             </Button>
           ) : null}
@@ -208,7 +233,7 @@ export function CaseHeader({
             <label className="flex flex-col gap-1 text-sm">
               <span>Closure outcome</span>
               <select
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 value={closureOutcome}
                 onChange={(e) => setClosureOutcome(e.target.value)}
                 data-testid="closure-outcome-select"
@@ -223,17 +248,26 @@ export function CaseHeader({
             <label className="flex flex-col gap-1 text-sm">
               <span>Rationale</span>
               <textarea
-                className="min-h-20 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-20 rounded-md border bg-background px-3 py-2"
                 value={closureRationale}
                 onChange={(e) => setClosureRationale(e.target.value)}
                 data-testid="closure-rationale"
               />
             </label>
             <div className="flex gap-2">
-              <Button size="sm" disabled={loading} onClick={handleClose} data-testid="confirm-close-case">
+              <Button
+                size="sm"
+                disabled={loading}
+                onClick={handleClose}
+                data-testid="confirm-close-case"
+              >
                 Confirm close
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setShowCloseDialog(false)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowCloseDialog(false)}
+              >
                 Cancel
               </Button>
             </div>
@@ -243,7 +277,7 @@ export function CaseHeader({
 
       {sortedStages.length > 0 ? (
         <nav
-          className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
           data-testid="problem-solving-stage-stepper"
         >
           {sortedStages.map((stage, index) => {
@@ -258,7 +292,7 @@ export function CaseHeader({
                 disabled={!canMoveStage || loading || isCurrent}
                 onClick={() => handleMoveStage(stage.id)}
                 className={cn(
-                  "shrink-0 rounded-md border px-3 py-2 text-xs font-medium min-h-9",
+                  "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
                   isCurrent
                     ? "border-primary bg-primary/10 text-foreground"
                     : isPast

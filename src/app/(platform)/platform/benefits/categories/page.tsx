@@ -3,12 +3,17 @@ import { notFound } from "next/navigation";
 import { BenefitCategoryManagement } from "@/components/benefits/benefit-category-management";
 import { PageHeader } from "@/components/platform/page-header";
 import { untypedFrom } from "@/lib/benefits/supabase-untyped";
-import type { BenefitCategoryRow, BenefitReportingSettingsRow } from "@/lib/benefits/types";
+import type {
+  BenefitCategoryRow,
+  BenefitReportingSettingsRow,
+} from "@/lib/benefits/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitCategoriesPage() {
-  const canManage = await currentMemberHasPermission("benefits.categories.manage");
+  const canManage = await currentMemberHasPermission(
+    "benefits.categories.manage",
+  );
   if (!canManage) notFound();
 
   const supabase = await createServerSupabaseClient();
@@ -17,7 +22,10 @@ export default async function BenefitCategoriesPage() {
     .select("id, code, name, description, status, display_order")
     .order("display_order");
 
-  const { data: settingsRows } = await untypedFrom(supabase, "benefit_reporting_settings")
+  const { data: settingsRows } = await untypedFrom(
+    supabase,
+    "benefit_reporting_settings",
+  )
     .select("organisation_id, fiscal_year_start_month")
     .limit(1);
 

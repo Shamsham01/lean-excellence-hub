@@ -37,7 +37,8 @@ export function BenefitValidationPanel({
   canManage,
 }: BenefitValidationPanelProps) {
   const router = useRouter();
-  const [ciDecision, setCiDecision] = useState<(typeof VALIDATION_DECISIONS)[number]["value"]>("approve");
+  const [ciDecision, setCiDecision] =
+    useState<(typeof VALIDATION_DECISIONS)[number]["value"]>("approve");
   const [financeDecision, setFinanceDecision] =
     useState<(typeof VALIDATION_DECISIONS)[number]["value"]>("approve");
   const [ciRationale, setCiRationale] = useState("");
@@ -53,12 +54,21 @@ export function BenefitValidationPanel({
     (row) => row.validation_role === "finance" && row.status === "active",
   );
 
-  async function handleValidation(role: "ci" | "finance", decision: string, rationale: string) {
+  async function handleValidation(
+    role: "ci" | "finance",
+    decision: string,
+    rationale: string,
+  ) {
     if (!rationale.trim()) {
       setMessage("Rationale is required");
       return;
     }
-    const result = await recordBenefitValidation(detail.id, role, decision, rationale.trim());
+    const result = await recordBenefitValidation(
+      detail.id,
+      role,
+      decision,
+      rationale.trim(),
+    );
     setMessage(result.error ?? `${role.toUpperCase()} validation recorded`);
     router.refresh();
   }
@@ -105,12 +115,18 @@ export function BenefitValidationPanel({
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           {detail.validations.length === 0 ? (
-            <p className="text-muted-foreground">No validation decisions recorded.</p>
+            <p className="text-muted-foreground">
+              No validation decisions recorded.
+            </p>
           ) : (
             detail.validations.map((validation) => (
-              <div key={validation.id} className="rounded-md border border-border px-3 py-2">
+              <div
+                key={validation.id}
+                className="rounded-md border border-border px-3 py-2"
+              >
                 <p className="font-medium">
-                  {validation.validation_role.toUpperCase()} · {validation.decision}
+                  {validation.validation_role.toUpperCase()} ·{" "}
+                  {validation.decision}
                 </p>
                 <p className="text-muted-foreground">{validation.rationale}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -137,7 +153,9 @@ export function BenefitValidationPanel({
                     <Button
                       key={option.value}
                       size="sm"
-                      variant={ciDecision === option.value ? "default" : "outline"}
+                      variant={
+                        ciDecision === option.value ? "default" : "outline"
+                      }
                       onClick={() => setCiDecision(option.value)}
                     >
                       {option.label}
@@ -155,7 +173,9 @@ export function BenefitValidationPanel({
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => handleValidation("ci", ciDecision, ciRationale)}
+                  onClick={() =>
+                    handleValidation("ci", ciDecision, ciRationale)
+                  }
                 >
                   Record CI validation
                 </Button>
@@ -174,7 +194,9 @@ export function BenefitValidationPanel({
                     <Button
                       key={option.value}
                       size="sm"
-                      variant={financeDecision === option.value ? "default" : "outline"}
+                      variant={
+                        financeDecision === option.value ? "default" : "outline"
+                      }
                       onClick={() => setFinanceDecision(option.value)}
                     >
                       {option.label}
@@ -182,7 +204,9 @@ export function BenefitValidationPanel({
                   ))}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="finance-validation-rationale">Rationale</Label>
+                  <Label htmlFor="finance-validation-rationale">
+                    Rationale
+                  </Label>
                   <Textarea
                     id="finance-validation-rationale"
                     rows={3}
@@ -192,7 +216,13 @@ export function BenefitValidationPanel({
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => handleValidation("finance", financeDecision, financeRationale)}
+                  onClick={() =>
+                    handleValidation(
+                      "finance",
+                      financeDecision,
+                      financeRationale,
+                    )
+                  }
                 >
                   Record finance validation
                 </Button>
@@ -221,7 +251,11 @@ export function BenefitValidationPanel({
               onChange={(e) => setReturnReason(e.target.value)}
               placeholder="Optional reason"
             />
-            <Button size="sm" variant="outline" onClick={() => handleReturnToDraft()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleReturnToDraft()}
+            >
               Return to draft
             </Button>
           </CardContent>
@@ -235,10 +269,14 @@ export function BenefitValidationPanel({
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
             {detail.submission_snapshots.map((snapshot) => (
-              <div key={snapshot.id} className="rounded-md border border-border px-3 py-2">
+              <div
+                key={snapshot.id}
+                className="rounded-md border border-border px-3 py-2"
+              >
                 <p className="font-medium">{snapshot.title}</p>
                 <p className="text-muted-foreground">
-                  Submitted {new Date(snapshot.submitted_at).toLocaleString("en-GB")}
+                  Submitted{" "}
+                  {new Date(snapshot.submitted_at).toLocaleString("en-GB")}
                 </p>
               </div>
             ))}
@@ -246,7 +284,9 @@ export function BenefitValidationPanel({
         </Card>
       ) : null}
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

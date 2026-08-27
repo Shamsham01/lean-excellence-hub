@@ -1,4 +1,7 @@
-import type { ProjectPortfolioItem, ProjectPortfolioMetrics } from "@/lib/projects/types";
+import type {
+  ProjectPortfolioItem,
+  ProjectPortfolioMetrics,
+} from "@/lib/projects/types";
 
 function isOverdue(item: ProjectPortfolioItem, today: Date): boolean {
   if (!item.planned_end_date) return false;

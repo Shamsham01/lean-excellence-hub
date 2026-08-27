@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CaseWorkspace } from "@/components/problem-solving/case-workspace";
-import { callProblemSolvingRpc, untypedFrom } from "@/lib/problem-solving/supabase-untyped";
+import {
+  callProblemSolvingRpc,
+  untypedFrom,
+} from "@/lib/problem-solving/supabase-untyped";
 import type {
   ProblemSolvingAnalysis,
   ProblemSolvingAnalysisNode,
@@ -14,6 +17,7 @@ import type {
 } from "@/lib/problem-solving/types";
 import type { MethodStage } from "@/lib/problem-solving/stages";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProblemSolvingCaseDetailPage({
@@ -27,19 +31,28 @@ export default async function ProblemSolvingCaseDetailPage({
 
   const supabase = await createServerSupabaseClient();
 
-  const { data: detail, error } = await callProblemSolvingRpc<ProblemSolvingCaseDetail>(
-    supabase,
-    "get_problem_solving_detail",
-    { target_case_id: caseId },
-  );
+  const { data: detail, error } =
+    await callProblemSolvingRpc<ProblemSolvingCaseDetail>(
+      supabase,
+      "get_problem_solving_detail",
+      { target_case_id: caseId },
+    );
 
   if (error || !detail) notFound();
 
   const canManage = await currentMemberHasPermission("problem_solving.manage");
-  const canContribute = await currentMemberHasPermission("problem_solving.contribute");
-  const canFacilitate = await currentMemberHasPermission("problem_solving.facilitate");
-  const canVerifyCause = await currentMemberHasPermission("problem_solving.verify_cause");
+  const canContribute = await currentMemberHasPermission(
+    "problem_solving.contribute",
+  );
+  const canFacilitate = await currentMemberHasPermission(
+    "problem_solving.facilitate",
+  );
+  const canVerifyCause = await currentMemberHasPermission(
+    "problem_solving.verify_cause",
+  );
   const canClose = await currentMemberHasPermission("problem_solving.close");
+  const canUseAi = await currentMemberHasPermission("ai.use");
+  const providerAvailable = isApplicationAiProviderAvailable();
 
   const { data: currentConditionRows } = await untypedFrom(
     supabase,
@@ -49,20 +62,31 @@ export default async function ProblemSolvingCaseDetailPage({
     .eq("case_id", caseId)
     .order("created_at");
 
-  const { data: containmentRows } = await untypedFrom(supabase, "problem_solving_containments")
+  const { data: containmentRows } = await untypedFrom(
+    supabase,
+    "problem_solving_containments",
+  )
     .select("*")
     .eq("problem_solving_case_id", caseId)
     .order("created_at");
 
-  const { data: analysisRows } = await untypedFrom(supabase, "problem_solving_analyses")
+  const { data: analysisRows } = await untypedFrom(
+    supabase,
+    "problem_solving_analyses",
+  )
     .select("*")
     .eq("problem_solving_case_id", caseId)
     .order("created_at");
 
-  const analysisIds = (analysisRows as ProblemSolvingAnalysis[] | null)?.map((row) => row.id) ?? [];
+  const analysisIds =
+    (analysisRows as ProblemSolvingAnalysis[] | null)?.map((row) => row.id) ??
+    [];
   let analysisNodes: ProblemSolvingAnalysisNode[] = [];
   if (analysisIds.length > 0) {
-    const { data: nodeRows } = await untypedFrom(supabase, "problem_solving_analysis_nodes")
+    const { data: nodeRows } = await untypedFrom(
+      supabase,
+      "problem_solving_analysis_nodes",
+    )
       .select("*")
       .in("analysis_id", analysisIds)
       .order("sort_order");
@@ -72,7 +96,10 @@ export default async function ProblemSolvingCaseDetailPage({
   const hypothesisIds = detail.hypotheses.map((row) => row.id);
   let hypothesisTests: ProblemSolvingHypothesisTest[] = [];
   if (hypothesisIds.length > 0) {
-    const { data: testRows } = await untypedFrom(supabase, "problem_solving_hypothesis_tests")
+    const { data: testRows } = await untypedFrom(
+      supabase,
+      "problem_solving_hypothesis_tests",
+    )
       .select("*")
       .in("hypothesis_id", hypothesisIds)
       .order("created_at");
@@ -81,17 +108,21 @@ export default async function ProblemSolvingCaseDetailPage({
 
   let methodStages: MethodStage[] = [];
   if (detail.method_version_id) {
-    const { data: stageRows } = await untypedFrom(supabase, "problem_solving_method_stages")
+    const { data: stageRows } = await untypedFrom(
+      supabase,
+      "problem_solving_method_stages",
+    )
       .select("id, title, semantic_stage_key, description, display_order")
       .eq("method_version_id", detail.method_version_id)
       .order("display_order");
     methodStages = (stageRows as MethodStage[] | null) ?? [];
   }
 
-  const { data: methodsData } = await callProblemSolvingRpc<ProblemSolvingMethodsResponse>(
-    supabase,
-    "get_problem_solving_methods",
-  );
+  const { data: methodsData } =
+    await callProblemSolvingRpc<ProblemSolvingMethodsResponse>(
+      supabase,
+      "get_problem_solving_methods",
+    );
 
   const { data: comments } = await supabase
     .from("comments")
@@ -135,7 +166,9 @@ export default async function ProblemSolvingCaseDetailPage({
       ...detail.stage_history.map((entry) => entry.changed_by_membership_id),
       ...detail.hypotheses.map((row) => row.created_by_membership_id),
       ...detail.countermeasures.map((row) => row.proposed_by_membership_id),
-      ...detail.sessions.map((row) => row.facilitator_membership_id).filter(Boolean),
+      ...detail.sessions
+        .map((row) => row.facilitator_membership_id)
+        .filter(Boolean),
     ]),
   ].filter((id): id is string => Boolean(id));
 
@@ -154,8 +187,13 @@ export default async function ProblemSolvingCaseDetailPage({
     <div data-testid="problem-solving-detail-page">
       <CaseWorkspace
         detail={detail}
-        currentConditionItems={(currentConditionRows as ProblemSolvingCurrentConditionItem[] | null) ?? []}
-        containments={(containmentRows as ProblemSolvingContainment[] | null) ?? []}
+        currentConditionItems={
+          (currentConditionRows as
+            ProblemSolvingCurrentConditionItem[] | null) ?? []
+        }
+        containments={
+          (containmentRows as ProblemSolvingContainment[] | null) ?? []
+        }
         analyses={(analysisRows as ProblemSolvingAnalysis[] | null) ?? []}
         analysisNodes={analysisNodes}
         hypothesisTests={hypothesisTests}
@@ -167,7 +205,7 @@ export default async function ProblemSolvingCaseDetailPage({
         ownerName={membershipNameById[detail.owner_membership_id] ?? null}
         facilitatorName={
           detail.facilitator_membership_id
-            ? membershipNameById[detail.facilitator_membership_id] ?? null
+            ? (membershipNameById[detail.facilitator_membership_id] ?? null)
             : null
         }
         canManage={canManage}
@@ -175,6 +213,8 @@ export default async function ProblemSolvingCaseDetailPage({
         canFacilitate={canFacilitate}
         canVerifyCause={canVerifyCause}
         canClose={canClose}
+        canUseAi={canUseAi}
+        providerAvailable={providerAvailable}
       />
       <Link
         href="/platform/problem-solving"

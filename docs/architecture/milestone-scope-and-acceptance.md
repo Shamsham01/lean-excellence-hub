@@ -502,6 +502,43 @@ AI/LLM, vector search, executive dashboard, sophisticated Fishbone canvas, metho
 - [x] Local `db:reset`, `db:lint`, full pgTAP (591), `db:types`, Vitest (67), lint, typecheck, production build, `db:seed-demo`, and `milestone11-closure` Playwright (10) pass.
 - [x] Visual/product acceptance: problem-solving portfolio, wizard, workspace tabs at 1440/1024/768/390 (responsive smoke in E2E).
 
+## Milestone 12 — AI Platform + Problem Solving Facilitator
+
+Milestone 12 delivers a governed Lean AI platform with typed problem-solving sessions, orchestrated tool reads, human-in-the-loop proposals, usage ledger, org settings, and fake-provider regression — without hosted Supabase changes or post-M12 commercial work.
+
+### In scope
+
+- **Permissions:** `ai.use`, `ai.view_history`, `ai.manage_settings`.
+- **Database:** 11 migrations `20260827009000`–`20260827009010` (sessions, runs, tools, proposals, usage, RLS, operations, FTS similar-case search, hardening).
+- **Platform:** `src/platform/ai` orchestrator, OpenAI Responses + fake providers, source allowlist, M11 RPC proposal acceptance.
+- **Application:** Lean AI tab on problem-solving cases; `/platform/settings/ai`.
+- **Regression:** pgTAP `ai_lifecycle`, `ai_security`; Vitest allowlist; E2E `milestone12-closure`; eval corpus `tests/evals/problem-solving/`.
+
+### Explicitly excluded
+
+Hosted Supabase changes, pgvector, autonomous provider tool execution, forbidden proposal types at accept, executive dashboard, notifications, and Milestone 13+ commercial platform work.
+
+### Acceptance checklist
+
+- [x] Eleven M12 migrations applied locally in order.
+- [x] `can_use_ai()` checks org settings and permissions; app checks `AI_ENABLED` + provider env separately.
+- [x] AI session privacy: creator or `ai.view_history` with case read; case read alone insufficient.
+- [x] Proposal acceptance dispatches exact M11 RPCs; `record_ai_proposal_accepted` for provenance only.
+- [x] Usage ledger append-only (no authenticated UPDATE/DELETE grants).
+- [x] Local `db:reset`, `test:db` (609 tests), `npm test` (68), `typecheck`, `build`, `eval:ai:fake`, `db:seed-demo`.
+
+### Acceptance evidence (2026-08-27)
+
+| Gate | Evidence |
+| --- | --- |
+| Migrations | M12 `09000`–`09010` (11 files) |
+| pgTAP | 65 files, 609 tests; includes `ai_lifecycle` (10), `ai_security` (8) |
+| Application | Lean AI panel, AI settings page, orchestrator + fake provider |
+| Unit tests | 20 files, 68 tests |
+| E2E | `milestone12-closure` (3 journeys; fake provider via Playwright env) |
+| Eval | `npm run eval:ai:fake` (2 fixtures); live smoke via `eval:ai:live` when `AI_ENABLED=1` + `OPENAI_API_KEY` |
+| Live OpenAI | **READY FOR LIVE PROVIDER VALIDATION** (not run in this closure pass) |
+
 ## Later milestones
 
 1. Core Lean domains: training/skills, projects, suggestions, problem-solving,

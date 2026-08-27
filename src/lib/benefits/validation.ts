@@ -1,7 +1,5 @@
 export type BenefitValidationDecision =
-  | "approve"
-  | "reject"
-  | "needs_more_information";
+  "approve" | "reject" | "needs_more_information";
 
 export type BenefitValidationRole = "ci" | "finance";
 
@@ -36,11 +34,18 @@ export function deriveBenefitValidationState(input: {
   ciDecision?: string | null;
   financeDecision?: string | null;
 }): BenefitValidationState {
-  if (input.benefitStatus === "rejected" || input.financeDecision === "reject" || input.ciDecision === "reject") {
+  if (
+    input.benefitStatus === "rejected" ||
+    input.financeDecision === "reject" ||
+    input.ciDecision === "reject"
+  ) {
     return "rejected";
   }
 
-  if (input.ciDecision === "needs_more_information" || input.financeDecision === "needs_more_information") {
+  if (
+    input.ciDecision === "needs_more_information" ||
+    input.financeDecision === "needs_more_information"
+  ) {
     return "needs_more_information";
   }
 
@@ -53,7 +58,10 @@ export function deriveBenefitValidationState(input: {
       return "awaiting_ci";
     }
 
-    if (input.benefitClass === "financial" && input.financeDecision !== "approve") {
+    if (
+      input.benefitClass === "financial" &&
+      input.financeDecision !== "approve"
+    ) {
       return "awaiting_finance";
     }
 

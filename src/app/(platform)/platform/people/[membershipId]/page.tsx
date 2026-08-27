@@ -70,11 +70,14 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
   );
   const canSelfAssess = isOwnProfile;
   const canCreateActions = await currentMemberHasPermission("actions.create");
-  const canReadSuggestions = await currentMemberHasPermission("suggestions.read");
+  const canReadSuggestions =
+    await currentMemberHasPermission("suggestions.read");
   const improvementContribution = canReadSuggestions
-    ? ((await supabase.rpc("get_membership_improvement_contribution", {
-        target_membership_id: membershipId,
-      })).data as Record<string, unknown> | null)
+    ? ((
+        await supabase.rpc("get_membership_improvement_contribution", {
+          target_membership_id: membershipId,
+        })
+      ).data as Record<string, unknown> | null)
     : null;
   const displayName = header.display_name ?? "Person";
 

@@ -26,7 +26,7 @@ export function EmptyState({
             {icon}
           </div>
         ) : null}
-        <div className="flex flex-col gap-1.5 max-w-md">
+        <div className="flex max-w-md flex-col gap-1.5">
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
@@ -35,7 +35,9 @@ export function EmptyState({
             <a href={actionHref}>{actionLabel}</a>
           </Button>
         ) : actionLabel && onAction ? (
-          <Button type="button" onClick={onAction}>{actionLabel}</Button>
+          <Button type="button" onClick={onAction}>
+            {actionLabel}
+          </Button>
         ) : null}
       </CardContent>
     </Card>

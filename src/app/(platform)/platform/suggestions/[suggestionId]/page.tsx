@@ -2,8 +2,6 @@ import Link from "next/link";
 
 import { notFound } from "next/navigation";
 
-
-
 import { SuggestionDetail } from "@/components/suggestions/suggestion-detail";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
@@ -11,41 +9,27 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-
-
 export default async function SuggestionDetailPage({
-
   params,
-
 }: {
-
   params: Promise<{ suggestionId: string }>;
-
 }) {
-
   const { suggestionId } = await params;
 
   const supabase = await createServerSupabaseClient();
 
   const { data: detail, error } = await supabase.rpc("get_suggestion_detail", {
-
     target_suggestion_id: suggestionId,
-
   });
 
-
-
   if (error || !detail) notFound();
-
-
 
   const canManage = await currentMemberHasPermission("suggestions.manage");
 
   const canCreateProject = await currentMemberHasPermission("projects.manage");
 
-  const canUploadEvidence = await currentMemberHasPermission("attachments.upload");
-
-
+  const canUploadEvidence =
+    await currentMemberHasPermission("attachments.upload");
 
   const { data: comments } = await supabase
 
@@ -57,8 +41,6 @@ export default async function SuggestionDetailPage({
 
     .order("created_at");
 
-
-
   const { data: statusHistory } = await supabase
 
     .from("suggestion_status_history")
@@ -68,8 +50,6 @@ export default async function SuggestionDetailPage({
     .eq("suggestion_id", suggestionId)
 
     .order("changed_at");
-
-
 
   const { data: evidence } = await supabase
 
@@ -83,23 +63,16 @@ export default async function SuggestionDetailPage({
 
     .order("created_at");
 
-
-
-  const { data: suggestionBenefitsData } = await callBenefitRpc<{ items: LinkedBenefitSummary[] }>(
-    supabase,
-    "get_suggestion_benefits",
-    { target_suggestion_id: suggestionId },
-  );
+  const { data: suggestionBenefitsData } = await callBenefitRpc<{
+    items: LinkedBenefitSummary[];
+  }>(supabase, "get_suggestion_benefits", {
+    target_suggestion_id: suggestionId,
+  });
   const benefits = suggestionBenefitsData?.items ?? [];
 
-
-
   return (
-
     <div className="flex flex-col gap-6">
-
       <SuggestionDetail
-
         detail={detail as Record<string, unknown>}
 
         comments={comments ?? []}
@@ -121,25 +94,15 @@ export default async function SuggestionDetailPage({
         canCreateProject={canCreateProject}
 
         canUploadEvidence={canUploadEvidence}
-
       />
 
       <Link
-
         href="/platform/suggestions"
 
         className="text-sm text-muted-foreground hover:underline"
-
       >
-
         Back to suggestions
-
       </Link>
-
     </div>
-
   );
-
 }
-
-

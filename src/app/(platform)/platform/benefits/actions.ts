@@ -9,7 +9,10 @@ type ActionResult = { error?: string; ok?: true; id?: string };
 
 async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc(fn as "create_benefit_draft", (args ?? {}) as never);
+  const { data, error } = await supabase.rpc(
+    fn as "create_benefit_draft",
+    (args ?? {}) as never,
+  );
   if (error) throw error;
   return data as T;
 }
@@ -67,10 +70,16 @@ export async function createBenefitWizardDraft(input: {
       target_organisational_unit_id: input.organisationalUnitId,
       target_benefit_class: input.benefitClass,
       ...(input.description ? { target_description: input.description } : {}),
-      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
-      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.financialType
+        ? { target_financial_type: input.financialType }
+        : {}),
+      ...(input.nonFinancialType
+        ? { target_non_financial_type: input.nonFinancialType }
+        : {}),
       ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
       ...(input.isStandaloneInitiative !== undefined
         ? { target_is_standalone_initiative: input.isStandaloneInitiative }
         : {}),
@@ -82,22 +91,34 @@ export async function createBenefitWizardDraft(input: {
     await callRpc("update_benefit_draft", {
       target_benefit_id: benefitId,
       target_title: input.title,
-      ...(input.description !== undefined ? { target_description: input.description } : {}),
-      ...(input.benefitClass ? { target_benefit_class: input.benefitClass } : {}),
-      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
-      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.description !== undefined
+        ? { target_description: input.description }
+        : {}),
+      ...(input.benefitClass
+        ? { target_benefit_class: input.benefitClass }
+        : {}),
+      ...(input.financialType
+        ? { target_financial_type: input.financialType }
+        : {}),
+      ...(input.nonFinancialType
+        ? { target_non_financial_type: input.nonFinancialType }
+        : {}),
       ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
       ...(input.organisationalUnitId
         ? { target_organisational_unit_id: input.organisationalUnitId }
         : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
       ...(input.baselineDescription
         ? { target_baseline_description: input.baselineDescription }
         : {}),
       ...(input.baselinePeriodStart
         ? { target_baseline_period_start: input.baselinePeriodStart }
         : {}),
-      ...(input.baselinePeriodEnd ? { target_baseline_period_end: input.baselinePeriodEnd } : {}),
+      ...(input.baselinePeriodEnd
+        ? { target_baseline_period_end: input.baselinePeriodEnd }
+        : {}),
       ...(input.baselineMeasureValue !== undefined
         ? { target_baseline_measure_value: input.baselineMeasureValue }
         : {}),
@@ -118,23 +139,36 @@ export async function createBenefitWizardDraft(input: {
         : {}),
     });
 
-    if (input.forecastStartDate && input.forecastEndDate && input.realisationPattern) {
-      const forecastId = await callRpc<string>("create_benefit_forecast_draft", {
-        target_benefit_id: benefitId,
-        target_realisation_pattern: input.realisationPattern,
-        target_forecast_start_date: input.forecastStartDate,
-        target_forecast_end_date: input.forecastEndDate,
-        ...(input.forecastTotalAmount !== undefined
-          ? { target_forecast_total_amount: input.forecastTotalAmount }
-          : {}),
-        ...(input.calculationBasis ? { target_calculation_basis: input.calculationBasis } : {}),
-        ...(input.assumptions ? { target_assumptions: input.assumptions } : {}),
-        ...(input.targetMeasureValue !== undefined
-          ? { target_target_measure_value: input.targetMeasureValue }
-          : {}),
-        ...(input.targetMeasureUnit ? { target_target_measure_unit: input.targetMeasureUnit } : {}),
-        ...(input.targetDate ? { target_target_date: input.targetDate } : {}),
-      });
+    if (
+      input.forecastStartDate &&
+      input.forecastEndDate &&
+      input.realisationPattern
+    ) {
+      const forecastId = await callRpc<string>(
+        "create_benefit_forecast_draft",
+        {
+          target_benefit_id: benefitId,
+          target_realisation_pattern: input.realisationPattern,
+          target_forecast_start_date: input.forecastStartDate,
+          target_forecast_end_date: input.forecastEndDate,
+          ...(input.forecastTotalAmount !== undefined
+            ? { target_forecast_total_amount: input.forecastTotalAmount }
+            : {}),
+          ...(input.calculationBasis
+            ? { target_calculation_basis: input.calculationBasis }
+            : {}),
+          ...(input.assumptions
+            ? { target_assumptions: input.assumptions }
+            : {}),
+          ...(input.targetMeasureValue !== undefined
+            ? { target_target_measure_value: input.targetMeasureValue }
+            : {}),
+          ...(input.targetMeasureUnit
+            ? { target_target_measure_unit: input.targetMeasureUnit }
+            : {}),
+          ...(input.targetDate ? { target_target_date: input.targetDate } : {}),
+        },
+      );
 
       if (input.forecastPeriods && input.forecastPeriods.length > 0) {
         await callRpc("replace_benefit_forecast_periods", {
@@ -177,10 +211,16 @@ export async function createBenefitDraft(input: {
       target_organisational_unit_id: input.organisationalUnitId,
       target_benefit_class: input.benefitClass,
       ...(input.description ? { target_description: input.description } : {}),
-      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
-      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.financialType
+        ? { target_financial_type: input.financialType }
+        : {}),
+      ...(input.nonFinancialType
+        ? { target_non_financial_type: input.nonFinancialType }
+        : {}),
       ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
       ...(input.isStandaloneInitiative !== undefined
         ? { target_is_standalone_initiative: input.isStandaloneInitiative }
         : {}),
@@ -219,22 +259,34 @@ export async function updateBenefitDraft(input: {
     await callRpc("update_benefit_draft", {
       target_benefit_id: input.benefitId,
       target_title: input.title,
-      ...(input.description !== undefined ? { target_description: input.description } : {}),
-      ...(input.benefitClass ? { target_benefit_class: input.benefitClass } : {}),
-      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
-      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.description !== undefined
+        ? { target_description: input.description }
+        : {}),
+      ...(input.benefitClass
+        ? { target_benefit_class: input.benefitClass }
+        : {}),
+      ...(input.financialType
+        ? { target_financial_type: input.financialType }
+        : {}),
+      ...(input.nonFinancialType
+        ? { target_non_financial_type: input.nonFinancialType }
+        : {}),
       ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
       ...(input.organisationalUnitId
         ? { target_organisational_unit_id: input.organisationalUnitId }
         : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
       ...(input.baselineDescription
         ? { target_baseline_description: input.baselineDescription }
         : {}),
       ...(input.baselinePeriodStart
         ? { target_baseline_period_start: input.baselinePeriodStart }
         : {}),
-      ...(input.baselinePeriodEnd ? { target_baseline_period_end: input.baselinePeriodEnd } : {}),
+      ...(input.baselinePeriodEnd
+        ? { target_baseline_period_end: input.baselinePeriodEnd }
+        : {}),
       ...(input.baselineMeasureValue !== undefined
         ? { target_baseline_measure_value: input.baselineMeasureValue }
         : {}),
@@ -330,7 +382,10 @@ export async function getEligibleBenefitValidators(benefitId: string): Promise<{
     return { data };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Unable to load validator options",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to load validator options",
     };
   }
 }
@@ -345,7 +400,10 @@ export async function submitBenefit(
       target_benefit_id: benefitId,
       target_ci_validator_membership_id: ciValidatorMembershipId,
       ...(financeValidatorMembershipId
-        ? { target_finance_validator_membership_id: financeValidatorMembershipId }
+        ? {
+            target_finance_validator_membership_id:
+              financeValidatorMembershipId,
+          }
         : {}),
     });
     revalidateBenefitPaths(benefitId);
@@ -388,21 +446,33 @@ export async function recordBenefitValidation(
     revalidatePath("/platform/benefits/validation");
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Validation failed" };
+    return {
+      error: error instanceof Error ? error.message : "Validation failed",
+    };
   }
 }
 
-export async function startBenefitRealisation(benefitId: string): Promise<ActionResult> {
+export async function startBenefitRealisation(
+  benefitId: string,
+): Promise<ActionResult> {
   try {
-    await callRpc("start_benefit_realisation", { target_benefit_id: benefitId });
+    await callRpc("start_benefit_realisation", {
+      target_benefit_id: benefitId,
+    });
     revalidateBenefitPaths(benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Start realisation failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Start realisation failed",
+    };
   }
 }
 
-export async function markBenefitRealised(benefitId: string, reason?: string): Promise<ActionResult> {
+export async function markBenefitRealised(
+  benefitId: string,
+  reason?: string,
+): Promise<ActionResult> {
   try {
     await callRpc("mark_benefit_realised", {
       target_benefit_id: benefitId,
@@ -411,11 +481,16 @@ export async function markBenefitRealised(benefitId: string, reason?: string): P
     revalidateBenefitPaths(benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Mark realised failed" };
+    return {
+      error: error instanceof Error ? error.message : "Mark realised failed",
+    };
   }
 }
 
-export async function withdrawBenefit(benefitId: string, reason?: string): Promise<ActionResult> {
+export async function withdrawBenefit(
+  benefitId: string,
+  reason?: string,
+): Promise<ActionResult> {
   try {
     await callRpc("withdraw_benefit", {
       target_benefit_id: benefitId,
@@ -424,11 +499,16 @@ export async function withdrawBenefit(benefitId: string, reason?: string): Promi
     revalidateBenefitPaths(benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Withdraw failed" };
+    return {
+      error: error instanceof Error ? error.message : "Withdraw failed",
+    };
   }
 }
 
-export async function cancelBenefit(benefitId: string, reason?: string): Promise<ActionResult> {
+export async function cancelBenefit(
+  benefitId: string,
+  reason?: string,
+): Promise<ActionResult> {
   try {
     await callRpc("cancel_benefit", {
       target_benefit_id: benefitId,
@@ -462,18 +542,24 @@ export async function createBenefitForecastDraft(input: {
       ...(input.forecastTotalAmount !== undefined
         ? { target_forecast_total_amount: input.forecastTotalAmount }
         : {}),
-      ...(input.calculationBasis ? { target_calculation_basis: input.calculationBasis } : {}),
+      ...(input.calculationBasis
+        ? { target_calculation_basis: input.calculationBasis }
+        : {}),
       ...(input.assumptions ? { target_assumptions: input.assumptions } : {}),
       ...(input.targetMeasureValue !== undefined
         ? { target_target_measure_value: input.targetMeasureValue }
         : {}),
-      ...(input.targetMeasureUnit ? { target_target_measure_unit: input.targetMeasureUnit } : {}),
+      ...(input.targetMeasureUnit
+        ? { target_target_measure_unit: input.targetMeasureUnit }
+        : {}),
       ...(input.targetDate ? { target_target_date: input.targetDate } : {}),
     });
     revalidateBenefitPaths(input.benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Forecast draft failed" };
+    return {
+      error: error instanceof Error ? error.message : "Forecast draft failed",
+    };
   }
 }
 
@@ -499,18 +585,24 @@ export async function updateBenefitForecastDraft(input: {
       ...(input.forecastTotalAmount !== undefined
         ? { target_forecast_total_amount: input.forecastTotalAmount }
         : {}),
-      ...(input.calculationBasis ? { target_calculation_basis: input.calculationBasis } : {}),
+      ...(input.calculationBasis
+        ? { target_calculation_basis: input.calculationBasis }
+        : {}),
       ...(input.assumptions ? { target_assumptions: input.assumptions } : {}),
       ...(input.targetMeasureValue !== undefined
         ? { target_target_measure_value: input.targetMeasureValue }
         : {}),
-      ...(input.targetMeasureUnit ? { target_target_measure_unit: input.targetMeasureUnit } : {}),
+      ...(input.targetMeasureUnit
+        ? { target_target_measure_unit: input.targetMeasureUnit }
+        : {}),
       ...(input.targetDate ? { target_target_date: input.targetDate } : {}),
     });
     revalidateBenefitPaths(input.benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Forecast update failed" };
+    return {
+      error: error instanceof Error ? error.message : "Forecast update failed",
+    };
   }
 }
 
@@ -532,7 +624,9 @@ export async function replaceBenefitForecastPeriods(
     revalidateBenefitPaths(benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Period replace failed" };
+    return {
+      error: error instanceof Error ? error.message : "Period replace failed",
+    };
   }
 }
 
@@ -547,7 +641,9 @@ export async function submitBenefitForecast(
     revalidateBenefitPaths(benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Forecast submit failed" };
+    return {
+      error: error instanceof Error ? error.message : "Forecast submit failed",
+    };
   }
 }
 
@@ -562,7 +658,9 @@ export async function approveBenefitForecast(
     revalidateBenefitPaths(benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Forecast approve failed" };
+    return {
+      error: error instanceof Error ? error.message : "Forecast approve failed",
+    };
   }
 }
 
@@ -570,13 +668,19 @@ export async function createBenefitForecastSuccessorVersion(
   benefitId: string,
 ): Promise<ActionResult> {
   try {
-    const id = await callRpc<string>("create_benefit_forecast_successor_version", {
-      target_benefit_id: benefitId,
-    });
+    const id = await callRpc<string>(
+      "create_benefit_forecast_successor_version",
+      {
+        target_benefit_id: benefitId,
+      },
+    );
     revalidateBenefitPaths(benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Successor forecast failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Successor forecast failed",
+    };
   }
 }
 
@@ -598,7 +702,9 @@ export async function createBenefitRealisationEntry(input: {
       ...(input.financialAmount !== undefined
         ? { target_financial_amount: input.financialAmount }
         : {}),
-      ...(input.measureValue !== undefined ? { target_measure_value: input.measureValue } : {}),
+      ...(input.measureValue !== undefined
+        ? { target_measure_value: input.measureValue }
+        : {}),
       ...(input.measureUnit ? { target_measure_unit: input.measureUnit } : {}),
       ...(input.dataSource ? { target_data_source: input.dataSource } : {}),
       ...(input.notes ? { target_notes: input.notes } : {}),
@@ -606,7 +712,9 @@ export async function createBenefitRealisationEntry(input: {
     revalidateBenefitPaths(input.benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Entry create failed" };
+    return {
+      error: error instanceof Error ? error.message : "Entry create failed",
+    };
   }
 }
 
@@ -628,18 +736,24 @@ export async function createBenefitRealisationAdjustment(input: {
       ...(input.financialAmount !== undefined
         ? { target_financial_amount: input.financialAmount }
         : {}),
-      ...(input.measureValue !== undefined ? { target_measure_value: input.measureValue } : {}),
+      ...(input.measureValue !== undefined
+        ? { target_measure_value: input.measureValue }
+        : {}),
       ...(input.measureUnit ? { target_measure_unit: input.measureUnit } : {}),
       ...(input.periodStart ? { target_period_start: input.periodStart } : {}),
       ...(input.periodEnd ? { target_period_end: input.periodEnd } : {}),
       ...(input.dataSource ? { target_data_source: input.dataSource } : {}),
       ...(input.notes ? { target_notes: input.notes } : {}),
-      ...(input.isCorrection !== undefined ? { target_is_correction: input.isCorrection } : {}),
+      ...(input.isCorrection !== undefined
+        ? { target_is_correction: input.isCorrection }
+        : {}),
     });
     revalidateBenefitPaths(input.benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Adjustment failed" };
+    return {
+      error: error instanceof Error ? error.message : "Adjustment failed",
+    };
   }
 }
 
@@ -648,12 +762,16 @@ export async function submitBenefitRealisationEntry(
   benefitId: string,
 ): Promise<ActionResult> {
   try {
-    await callRpc("submit_benefit_realisation_entry", { target_entry_id: entryId });
+    await callRpc("submit_benefit_realisation_entry", {
+      target_entry_id: entryId,
+    });
     revalidateBenefitPaths(benefitId);
     revalidatePath("/platform/benefits/validation");
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Entry submit failed" };
+    return {
+      error: error instanceof Error ? error.message : "Entry submit failed",
+    };
   }
 }
 
@@ -662,12 +780,16 @@ export async function validateBenefitRealisationEntry(
   benefitId: string,
 ): Promise<ActionResult> {
   try {
-    await callRpc("validate_benefit_realisation_entry", { target_entry_id: entryId });
+    await callRpc("validate_benefit_realisation_entry", {
+      target_entry_id: entryId,
+    });
     revalidateBenefitPaths(benefitId);
     revalidatePath("/platform/benefits/validation");
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Entry validate failed" };
+    return {
+      error: error instanceof Error ? error.message : "Entry validate failed",
+    };
   }
 }
 
@@ -685,11 +807,16 @@ export async function rejectBenefitRealisationEntry(
     revalidatePath("/platform/benefits/validation");
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Entry reject failed" };
+    return {
+      error: error instanceof Error ? error.message : "Entry reject failed",
+    };
   }
 }
 
-export async function createBenefitOverlapGroup(name: string, reason?: string): Promise<ActionResult> {
+export async function createBenefitOverlapGroup(
+  name: string,
+  reason?: string,
+): Promise<ActionResult> {
   try {
     const id = await callRpc<string>("create_benefit_overlap_group", {
       target_name: name,
@@ -698,7 +825,9 @@ export async function createBenefitOverlapGroup(name: string, reason?: string): 
     revalidatePath("/platform/benefits");
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Overlap group failed" };
+    return {
+      error: error instanceof Error ? error.message : "Overlap group failed",
+    };
   }
 }
 
@@ -718,7 +847,9 @@ export async function addBenefitToOverlapGroup(input: {
     revalidateBenefitPaths(input.benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Overlap add failed" };
+    return {
+      error: error instanceof Error ? error.message : "Overlap add failed",
+    };
   }
 }
 
@@ -738,7 +869,9 @@ export async function updateBenefitOverlapAllocation(input: {
     revalidateBenefitPaths(input.benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Overlap update failed" };
+    return {
+      error: error instanceof Error ? error.message : "Overlap update failed",
+    };
   }
 }
 
@@ -756,7 +889,9 @@ export async function removeBenefitFromOverlapGroup(input: {
     revalidateBenefitPaths(input.benefitId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Overlap remove failed" };
+    return {
+      error: error instanceof Error ? error.message : "Overlap remove failed",
+    };
   }
 }
 
@@ -777,19 +912,28 @@ export async function createBenefitFromCiProject(input: {
       target_benefit_class: input.benefitClass,
       ...(input.title ? { target_title: input.title } : {}),
       ...(input.description ? { target_description: input.description } : {}),
-      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
-      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.financialType
+        ? { target_financial_type: input.financialType }
+        : {}),
+      ...(input.nonFinancialType
+        ? { target_non_financial_type: input.nonFinancialType }
+        : {}),
       ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
       ...(input.organisationalUnitId
         ? { target_organisational_unit_id: input.organisationalUnitId }
         : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
     });
     revalidateBenefitPaths(id);
     revalidatePath(`/platform/projects/${input.projectId}`);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Create from project failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Create from project failed",
+    };
   }
 }
 
@@ -810,19 +954,30 @@ export async function createBenefitFromSuggestion(input: {
       target_benefit_class: input.benefitClass,
       ...(input.title ? { target_title: input.title } : {}),
       ...(input.description ? { target_description: input.description } : {}),
-      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
-      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.financialType
+        ? { target_financial_type: input.financialType }
+        : {}),
+      ...(input.nonFinancialType
+        ? { target_non_financial_type: input.nonFinancialType }
+        : {}),
       ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
       ...(input.organisationalUnitId
         ? { target_organisational_unit_id: input.organisationalUnitId }
         : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
     });
     revalidateBenefitPaths(id);
     revalidatePath(`/platform/suggestions/${input.suggestionId}`);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Create from suggestion failed" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Create from suggestion failed",
+    };
   }
 }
 
@@ -838,7 +993,9 @@ export async function linkBenefitEvidence(
     revalidateBenefitPaths(benefitId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Evidence link failed" };
+    return {
+      error: error instanceof Error ? error.message : "Evidence link failed",
+    };
   }
 }
 
@@ -853,7 +1010,9 @@ export async function createBenefitCategory(input: {
     const { data, error } = await supabase.rpc("create_benefit_category", {
       target_name: input.name.trim(),
       target_code: input.code.trim(),
-      ...(input.description !== undefined ? { target_description: input.description } : {}),
+      ...(input.description !== undefined
+        ? { target_description: input.description }
+        : {}),
       target_display_order: input.displayOrder ?? 0,
     });
     if (error) throw error;
@@ -861,7 +1020,9 @@ export async function createBenefitCategory(input: {
     revalidatePath("/platform/benefits/new");
     return { ok: true, id: data as string };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Category create failed" };
+    return {
+      error: error instanceof Error ? error.message : "Category create failed",
+    };
   }
 }
 
@@ -876,18 +1037,26 @@ export async function updateBenefitCategory(input: {
     const { error } = await supabase.rpc("update_benefit_category", {
       target_category_id: input.categoryId,
       target_name: input.name.trim(),
-      ...(input.description !== undefined ? { target_description: input.description } : {}),
-      ...(input.displayOrder !== undefined ? { target_display_order: input.displayOrder } : {}),
+      ...(input.description !== undefined
+        ? { target_description: input.description }
+        : {}),
+      ...(input.displayOrder !== undefined
+        ? { target_display_order: input.displayOrder }
+        : {}),
     });
     if (error) throw error;
     revalidatePath("/platform/benefits/categories");
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Category update failed" };
+    return {
+      error: error instanceof Error ? error.message : "Category update failed",
+    };
   }
 }
 
-export async function archiveBenefitCategory(categoryId: string): Promise<ActionResult> {
+export async function archiveBenefitCategory(
+  categoryId: string,
+): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
   try {
     const { error } = await supabase.rpc("archive_benefit_category", {
@@ -897,7 +1066,9 @@ export async function archiveBenefitCategory(categoryId: string): Promise<Action
     revalidatePath("/platform/benefits/categories");
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Category archive failed" };
+    return {
+      error: error instanceof Error ? error.message : "Category archive failed",
+    };
   }
 }
 
@@ -914,7 +1085,10 @@ export async function upsertBenefitReportingSettings(
     return { ok: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Reporting settings update failed",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Reporting settings update failed",
     };
   }
 }

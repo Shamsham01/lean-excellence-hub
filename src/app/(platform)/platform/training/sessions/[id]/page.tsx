@@ -12,8 +12,12 @@ export default async function TrainingSessionDetailPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
 
-  const canManage = await currentMemberHasPermission(TRAINING_PERMISSIONS.sessionsManage);
-  const canComplete = await currentMemberHasPermission(TRAINING_PERMISSIONS.completionsManage);
+  const canManage = await currentMemberHasPermission(
+    TRAINING_PERMISSIONS.sessionsManage,
+  );
+  const canComplete = await currentMemberHasPermission(
+    TRAINING_PERMISSIONS.completionsManage,
+  );
 
   const { data: session } = await supabase
     .from("training_sessions")

@@ -34,7 +34,9 @@ test.describe("Milestone 6 5S journeys", () => {
     await loginAs(page, "admin");
     await page.goto("/platform/5s");
 
-    await expect(page.getByRole("heading", { name: "5S Audits" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "5S Audits" }),
+    ).toBeVisible();
     await expect(page.getByText("Completed audits")).toBeVisible();
 
     await page.getByRole("link", { name: "Standards" }).click();
@@ -42,7 +44,9 @@ test.describe("Milestone 6 5S journeys", () => {
     await expect(page.getByText(DEMO_FIVE_S_STANDARD.name)).toBeVisible();
 
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
-    await expect(page.getByRole("heading", { name: DEMO_FIVE_S_STANDARD.name })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: DEMO_FIVE_S_STANDARD.name }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Start audit" }).click();
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
@@ -52,7 +56,9 @@ test.describe("Milestone 6 5S journeys", () => {
   test("admin: audit history shows completed demo audit", async ({ page }) => {
     await loginAs(page, "admin");
     await page.goto("/platform/5s/history");
-    await expect(page.getByRole("heading", { name: "5S history" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "5S history" }),
+    ).toBeVisible();
     await expect(page.getByText("100%").first()).toBeVisible();
   });
 });

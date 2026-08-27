@@ -69,12 +69,17 @@ export default async function OfficialResultPage({
         <CardContent className="flex flex-col gap-2">
           <ScoreBadge score={Number(result.overall_score)} />
           <p className="typography-metadata">
-            {result.assessment_type_snapshot === "formal" ? "Formal assessment" : result.assessment_type_snapshot}
+            {result.assessment_type_snapshot === "formal"
+              ? "Formal assessment"
+              : result.assessment_type_snapshot}
             {" · "}
-            Published {new Date(result.published_at).toLocaleDateString("en-GB")}
+            Published{" "}
+            {new Date(result.published_at).toLocaleDateString("en-GB")}
           </p>
           {result.unit_code_snapshot ? (
-            <p className="text-sm text-muted-foreground">Unit code: {result.unit_code_snapshot}</p>
+            <p className="text-sm text-muted-foreground">
+              Unit code: {result.unit_code_snapshot}
+            </p>
           ) : null}
         </CardContent>
       </Card>

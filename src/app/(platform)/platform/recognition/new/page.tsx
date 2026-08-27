@@ -23,8 +23,14 @@ export default async function NewRecognitionPage({
     .eq("status", "active");
 
   return (
-    <div className="mx-auto max-w-xl flex flex-col gap-6" data-testid="award-recognition-page">
-      <PageHeader title="Award recognition" description="Recognise meaningful improvement contribution." />
+    <div
+      className="mx-auto flex max-w-xl flex-col gap-6"
+      data-testid="award-recognition-page"
+    >
+      <PageHeader
+        title="Award recognition"
+        description="Recognise meaningful improvement contribution."
+      />
       <AwardRecognitionForm
         types={types ?? []}
         organisationalUnitId={params.unit ?? ""}

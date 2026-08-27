@@ -49,7 +49,9 @@ export default async function TrainingCurriculumPage() {
               {requirements
                 ?.filter((r) => r.job_function_id === jf.id)
                 .map((req) => {
-                  const course = courses.data?.find((c) => c.id === req.course_id);
+                  const course = courses.data?.find(
+                    (c) => c.id === req.course_id,
+                  );
                   return (
                     <li key={req.id}>
                       {course?.name ?? req.course_id}

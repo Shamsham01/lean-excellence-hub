@@ -5,7 +5,10 @@ import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
 import { formatBenefitCurrencyAmount } from "@/lib/benefits/forecast";
 import type { BenefitsOverview } from "@/lib/benefits/types";
-import { AssessmentStatusBadge, ScoreBadge } from "@/modules/maturity/status-badges";
+import {
+  AssessmentStatusBadge,
+  ScoreBadge,
+} from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,20 +61,27 @@ export default async function PlatformHomePage() {
     .select("id", { count: "exact", head: true })
     .eq("status", "completed");
 
-  const { data: capabilityDashboard } = await supabase.rpc("get_capability_dashboard");
+  const { data: capabilityDashboard } = await supabase.rpc(
+    "get_capability_dashboard",
+  );
   const capabilityObj = capabilityDashboard as {
     training_compliance_percent?: number | null;
     skill_coverage_percent?: number | null;
   } | null;
 
-  const canReadSuggestions = await currentMemberHasPermission("suggestions.read");
+  const canReadSuggestions =
+    await currentMemberHasPermission("suggestions.read");
   const suggestionsOverview = canReadSuggestions
-    ? ((await supabase.rpc("get_suggestions_overview")).data as Record<string, unknown> | null)
+    ? ((await supabase.rpc("get_suggestions_overview")).data as Record<
+        string,
+        unknown
+      > | null)
     : null;
 
   const canReadBenefits = await currentMemberHasPermission("benefits.read");
   const benefitsOverview = canReadBenefits
-    ? ((await supabase.rpc("get_benefits_overview")).data as BenefitsOverview | null)
+    ? ((await supabase.rpc("get_benefits_overview"))
+        .data as BenefitsOverview | null)
     : null;
 
   const benefitsAwaitingValidation =
@@ -95,9 +105,11 @@ export default async function PlatformHomePage() {
         <MetricCard
           label="Maturity"
           value={
-            latestResult
-              ? <ScoreBadge score={Number(latestResult.overall_score)} />
-              : "—"
+            latestResult ? (
+              <ScoreBadge score={Number(latestResult.overall_score)} />
+            ) : (
+              "—"
+            )
           }
           hint={
             latestResult?.published_at
@@ -105,7 +117,11 @@ export default async function PlatformHomePage() {
               : "No official result"
           }
         />
-        <MetricCard label="Open actions" value={openActions ?? 0} hint={`${overdueActions ?? 0} overdue`} />
+        <MetricCard
+          label="Open actions"
+          value={openActions ?? 0}
+          hint={`${overdueActions ?? 0} overdue`}
+        />
         <MetricCard
           label="Assessments"
           value={recentAssessments?.length ?? 0}
@@ -113,10 +129,18 @@ export default async function PlatformHomePage() {
         />
         <MetricCard
           label="5S"
-          value={latestFiveS?.overall_score_percent != null ? `${latestFiveS.overall_score_percent}%` : "—"}
+          value={
+            latestFiveS?.overall_score_percent != null
+              ? `${latestFiveS.overall_score_percent}%`
+              : "—"
+          }
           hint="Latest completed audit"
         />
-        <MetricCard label="Gemba walks" value={gembaWalkCount ?? 0} hint="Completed" />
+        <MetricCard
+          label="Gemba walks"
+          value={gembaWalkCount ?? 0}
+          hint="Completed"
+        />
         <MetricCard
           label="Capability"
           value={
@@ -164,7 +188,8 @@ export default async function PlatformHomePage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Run scored 5S audits with evidence, findings, and schedule compliance.
+              Run scored 5S audits with evidence, findings, and schedule
+              compliance.
             </p>
           </CardContent>
         </Card>
@@ -192,7 +217,8 @@ export default async function PlatformHomePage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Track framework maturity, run assessments, and publish official results.
+              Track framework maturity, run assessments, and publish official
+              results.
             </p>
           </CardContent>
         </Card>
@@ -206,7 +232,8 @@ export default async function PlatformHomePage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Training compliance, skills coverage, and workforce capability profiles.
+              Training compliance, skills coverage, and workforce capability
+              profiles.
             </p>
           </CardContent>
         </Card>
@@ -219,9 +246,14 @@ export default async function PlatformHomePage() {
                 <Link href="/platform/suggestions">Open</Link>
               </Button>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-1">
-              <p>{(suggestionsOverview?.implementing as number) ?? 0} implementing</p>
-              <p>{(suggestionsOverview?.implemented as number) ?? 0} implemented</p>
+            <CardContent className="space-y-1 text-sm text-muted-foreground">
+              <p>
+                {(suggestionsOverview?.implementing as number) ?? 0}{" "}
+                implementing
+              </p>
+              <p>
+                {(suggestionsOverview?.implemented as number) ?? 0} implemented
+              </p>
             </CardContent>
           </Card>
         ) : null}
@@ -234,11 +266,12 @@ export default async function PlatformHomePage() {
                 <Link href="/platform/benefits">Open</Link>
               </Button>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-1">
+            <CardContent className="space-y-1 text-sm text-muted-foreground">
               <p>{benefitsRealising} realising</p>
               <p>{benefitsAwaitingValidation} awaiting validation</p>
               <p>
-                Validated YTD {formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
+                Validated YTD{" "}
+                {formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
               </p>
             </CardContent>
           </Card>
@@ -256,12 +289,16 @@ export default async function PlatformHomePage() {
                   href={`/platform/maturity/assessments/${a.id}`}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="capitalize">{a.assessment_type.replace("_", " ")}</span>
+                  <span className="capitalize">
+                    {a.assessment_type.replace("_", " ")}
+                  </span>
                   <AssessmentStatusBadge status={a.status} />
                 </Link>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">No assessments yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No assessments yet.
+              </p>
             )}
           </CardContent>
         </Card>

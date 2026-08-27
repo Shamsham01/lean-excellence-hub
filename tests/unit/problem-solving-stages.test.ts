@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { semanticStageLabel, sortMethodStages } from "@/lib/problem-solving/stages";
+import {
+  semanticStageLabel,
+  sortMethodStages,
+} from "@/lib/problem-solving/stages";
 
 describe("problem solving stage helpers", () => {
   it("labels semantic stage keys", () => {
@@ -25,6 +28,9 @@ describe("problem solving stage helpers", () => {
         display_order: 1,
       },
     ]);
-    expect(sorted.map((stage) => stage.semantic_stage_key)).toEqual(["DEFINE", "ROOT_CAUSE_ANALYSIS"]);
+    expect(sorted.map((stage) => stage.semantic_stage_key)).toEqual([
+      "DEFINE",
+      "ROOT_CAUSE_ANALYSIS",
+    ]);
   });
 });

@@ -82,3 +82,9 @@ export const PROBLEM_SOLVING_PERMISSIONS = {
   close: "problem_solving.close",
   methodsManage: "problem_solving.methods.manage",
 } as const;
+
+export const AI_PERMISSIONS = {
+  use: "ai.use",
+  viewHistory: "ai.view_history",
+  manageSettings: "ai.manage_settings",
+} as const;

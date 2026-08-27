@@ -25,9 +25,16 @@ export function SuggestionEvidenceBlock({
       existingEvidence={evidence}
       canEdit={canEdit}
       onInitiate={(filename, mimeType, byteSize) =>
-        initiateSuggestionEvidenceUpload(suggestionId, filename, mimeType, byteSize)
+        initiateSuggestionEvidenceUpload(
+          suggestionId,
+          filename,
+          mimeType,
+          byteSize,
+        )
       }
-      onConfirm={(attachmentId) => confirmSuggestionEvidenceUpload(suggestionId, attachmentId)}
+      onConfirm={(attachmentId) =>
+        confirmSuggestionEvidenceUpload(suggestionId, attachmentId)
+      }
       onLink={async () => ({})}
     />
   );

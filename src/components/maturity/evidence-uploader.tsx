@@ -169,13 +169,20 @@ export function EvidenceUploader({
           </div>
 
           {state === "uploading" ? (
-            <p className="mt-2 text-center text-sm text-muted-foreground">Uploading…</p>
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              Uploading…
+            </p>
           ) : null}
           {state === "success" ? (
-            <p className="mt-2 text-center text-sm text-success">Evidence attached</p>
+            <p className="mt-2 text-center text-sm text-success">
+              Evidence attached
+            </p>
           ) : null}
           {state === "error" && error ? (
-            <p className="mt-2 flex items-center justify-center gap-1 text-sm text-destructive" role="alert">
+            <p
+              className="mt-2 flex items-center justify-center gap-1 text-sm text-destructive"
+              role="alert"
+            >
               <X className="size-4" />
               {error}
             </p>

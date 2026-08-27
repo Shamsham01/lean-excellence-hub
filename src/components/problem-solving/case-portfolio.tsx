@@ -15,7 +15,10 @@ import {
   severityLabel,
   SEVERITIES,
 } from "@/lib/problem-solving/status";
-import type { ProblemSolvingOverview, ProblemSolvingPortfolioItem } from "@/lib/problem-solving/types";
+import type {
+  ProblemSolvingOverview,
+  ProblemSolvingPortfolioItem,
+} from "@/lib/problem-solving/types";
 
 type CasePortfolioProps = {
   items: ProblemSolvingPortfolioItem[];
@@ -50,11 +53,18 @@ export function CasePortfolio({
     if (search) params.set("search", search);
     if (severityValue) params.set("severity", severityValue);
     const query = params.toString();
-    router.push(query ? `/platform/problem-solving?${query}` : "/platform/problem-solving");
+    router.push(
+      query
+        ? `/platform/problem-solving?${query}`
+        : "/platform/problem-solving",
+    );
   }
 
   return (
-    <div className="flex flex-col gap-6" data-testid="problem-solving-portfolio">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="problem-solving-portfolio"
+    >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard label="Active" value={pipeline.active ?? 0} />
         <MetricCard label="Draft" value={pipeline.draft ?? 0} />
@@ -79,7 +89,9 @@ export function CasePortfolio({
         <CardHeader className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <CardTitle>Case portfolio</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">{totalCount} cases</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {totalCount} cases
+            </p>
           </div>
           <form
             onSubmit={(event) => {
@@ -103,7 +115,7 @@ export function CasePortfolio({
               <select
                 name="status"
                 defaultValue={statusFilter ?? ""}
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 data-testid="problem-solving-portfolio-status"
               >
                 <option value="">All statuses</option>
@@ -119,7 +131,7 @@ export function CasePortfolio({
               <select
                 name="severity"
                 defaultValue={severityFilter ?? ""}
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               >
                 <option value="">All severities</option>
                 {SEVERITIES.map((value) => (
@@ -139,7 +151,8 @@ export function CasePortfolio({
             <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
               <p className="text-sm font-medium">No cases match your filters</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Adjust search or filters, or register a new problem solving case.
+                Adjust search or filters, or register a new problem solving
+                case.
               </p>
               {canCreate ? (
                 <Button size="sm" className="mt-4" asChild>
@@ -168,12 +181,17 @@ export function CasePortfolio({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={problemSolvingStatusBadgeVariant(item.status)}>
+                  <Badge
+                    variant={problemSolvingStatusBadgeVariant(item.status)}
+                  >
                     {problemSolvingStatusLabel(item.status)}
                   </Badge>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    {item.hypothesis_count} hypotheses · {item.countermeasure_count} countermeasures
-                    {item.open_action_count > 0 ? ` · ${item.open_action_count} open actions` : ""}
+                    {item.hypothesis_count} hypotheses ·{" "}
+                    {item.countermeasure_count} countermeasures
+                    {item.open_action_count > 0
+                      ? ` · ${item.open_action_count} open actions`
+                      : ""}
                   </span>
                 </div>
               </Link>

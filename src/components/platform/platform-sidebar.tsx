@@ -63,7 +63,13 @@ type SidebarNavProps = {
   }>;
 };
 
-function NavLink({ item, pathname }: { item: PlatformNavItem; pathname: string }) {
+function NavLink({
+  item,
+  pathname,
+}: {
+  item: PlatformNavItem;
+  pathname: string;
+}) {
   const active = isNavActive(pathname, item.href);
   const Icon = navIcons[item.label] ?? Home;
 
@@ -90,14 +96,19 @@ function SidebarContent({
   organisations,
   pathname,
 }: SidebarNavProps & { pathname: string }) {
-  const sections: PlatformNavSection[] = ["main", "improvement", "people", "platform"];
+  const sections: PlatformNavSection[] = [
+    "main",
+    "improvement",
+    "people",
+    "platform",
+  ];
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-3 p-4">
         <p className="typography-product-identity">Lean Hub</p>
         <div>
-          <p className="text-sm font-semibold text-sidebar-foreground truncate">
+          <p className="truncate text-sm font-semibold text-sidebar-foreground">
             {organisationName}
           </p>
           {organisations.length > 1 ? (
@@ -119,7 +130,9 @@ function SidebarContent({
           return (
             <div key={section}>
               {label ? (
-                <p className="px-3 pt-4 pb-1 typography-section-title">{label}</p>
+                <p className="typography-section-title px-3 pt-4 pb-1">
+                  {label}
+                </p>
               ) : null}
               {sectionItems.map((item) => (
                 <NavLink key={item.href} item={item} pathname={pathname} />
@@ -171,7 +184,9 @@ export function PlatformSidebar(props: SidebarNavProps) {
             <SidebarContent {...props} pathname={pathname} />
           </SheetContent>
         </Sheet>
-        <span className="text-sm font-semibold truncate">{props.organisationName}</span>
+        <span className="truncate text-sm font-semibold">
+          {props.organisationName}
+        </span>
       </div>
     </>
   );

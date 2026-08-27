@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DEMO_ORGANISATION, DEMO_USERS } from "../../scripts/demo-seed/constants";
+import {
+  DEMO_ORGANISATION,
+  DEMO_USERS,
+} from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -13,15 +16,22 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/platform/);
-  await expect(page.getByRole("main").getByText(DEMO_ORGANISATION.name)).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText(DEMO_ORGANISATION.name),
+  ).toBeVisible();
 }
 
 test.describe("Milestone 8 closure", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(90_000);
-  test.skip(!hasSupabaseE2e, "Requires E2E_WITH_SUPABASE=1 and demo seed applied");
+  test.skip(
+    !hasSupabaseE2e,
+    "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
+  );
 
-  test("manager opens methodology editor with published version", async ({ page }) => {
+  test("manager opens methodology editor with published version", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/projects/methodologies");
     await expect(page.getByTestId("methodology-manager-page")).toBeVisible();
@@ -38,8 +48,14 @@ test.describe("Milestone 8 closure", () => {
 
     const projectTitle = `E2E Closure Project ${uniqueSuffix}`;
     await page.getByLabel("Project title").fill(projectTitle);
-    await page.locator("textarea").first().fill("Changeovers exceed the 45-minute target.");
-    await page.locator("textarea").nth(1).fill("Reduce average changeover below 30 minutes.");
+    await page
+      .locator("textarea")
+      .first()
+      .fill("Changeovers exceed the 45-minute target.");
+    await page
+      .locator("textarea")
+      .nth(1)
+      .fill("Reduce average changeover below 30 minutes.");
 
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
@@ -58,19 +74,29 @@ test.describe("Milestone 8 closure", () => {
 
     await page.getByRole("button", { name: "Create project" }).click();
     await expect(page.getByTestId("project-detail-page")).toBeVisible();
-    await expect(page.getByRole("heading", { name: projectTitle })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: projectTitle }),
+    ).toBeVisible();
   });
 
-  test("manager submits, approves, and starts the project", async ({ page }) => {
+  test("manager submits, approves, and starts the project", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/projects");
-    await page.getByRole("link", { name: new RegExp(`E2E Closure Project ${uniqueSuffix}`) }).click();
+    await page
+      .getByRole("link", {
+        name: new RegExp(`E2E Closure Project ${uniqueSuffix}`),
+      })
+      .click();
     await expect(page.getByTestId("project-detail-page")).toBeVisible();
 
     const submitButton = page.getByRole("button", { name: "Submit charter" });
     await expect(submitButton).toBeVisible();
     await submitButton.click();
-    await expect(page.getByText("Project submitted for approval")).toBeVisible();
+    await expect(
+      page.getByText("Project submitted for approval"),
+    ).toBeVisible();
 
     const approveButton = page.getByRole("button", { name: "Approve" });
     await expect(approveButton).toBeVisible();
@@ -83,14 +109,22 @@ test.describe("Milestone 8 closure", () => {
     await expect(page.getByText("Project started")).toBeVisible();
   });
 
-  test("manager completes a phase and records a measurement", async ({ page }) => {
+  test("manager completes a phase and records a measurement", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/projects");
-    await page.getByRole("link", { name: new RegExp(`E2E Closure Project ${uniqueSuffix}`) }).click();
+    await page
+      .getByRole("link", {
+        name: new RegExp(`E2E Closure Project ${uniqueSuffix}`),
+      })
+      .click();
     await expect(page.getByTestId("project-detail-page")).toBeVisible();
 
     await page.getByRole("tab", { name: "Phases" }).click();
-    const completePhase = page.getByRole("button", { name: "Complete" }).first();
+    const completePhase = page
+      .getByRole("button", { name: "Complete" })
+      .first();
     if (await completePhase.isVisible()) {
       await completePhase.click();
       await expect(page.getByText("Phase completed")).toBeVisible();
@@ -110,6 +144,8 @@ test.describe("Milestone 8 closure", () => {
     await expect(page.getByTestId("create-project-page")).not.toBeVisible();
 
     await page.goto("/platform/projects/methodologies");
-    await expect(page.getByTestId("methodology-manager-page")).not.toBeVisible();
+    await expect(
+      page.getByTestId("methodology-manager-page"),
+    ).not.toBeVisible();
   });
 });

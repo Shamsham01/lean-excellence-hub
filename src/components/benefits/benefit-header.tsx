@@ -53,7 +53,10 @@ export function BenefitHeader({
     onWithdraw;
 
   return (
-    <div className="flex flex-col gap-4 border-b border-border pb-6" data-testid="benefit-header">
+    <div
+      className="flex flex-col gap-4 border-b border-border pb-6"
+      data-testid="benefit-header"
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">
@@ -71,7 +74,9 @@ export function BenefitHeader({
                 detail.non_financial_type,
               )}
             </Badge>
-            <Badge variant="outline">{benefitClassLabel(detail.benefit_class)}</Badge>
+            <Badge variant="outline">
+              {benefitClassLabel(detail.benefit_class)}
+            </Badge>
           </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             {detail.unit_name ? (
@@ -95,12 +100,16 @@ export function BenefitHeader({
             {detail.planned_realisation_end ? (
               <div>
                 <dt className="text-muted-foreground">Planned end</dt>
-                <dd className="font-medium">{detail.planned_realisation_end}</dd>
+                <dd className="font-medium">
+                  {detail.planned_realisation_end}
+                </dd>
               </div>
             ) : null}
             {detail.benefit_class === "financial" ? (
               <div>
-                <dt className="text-muted-foreground">Validated actual total</dt>
+                <dt className="text-muted-foreground">
+                  Validated actual total
+                </dt>
                 <dd className="font-medium tabular-nums">
                   {formatBenefitCurrencyAmount(
                     detail.validated_realised_total,
@@ -110,7 +119,9 @@ export function BenefitHeader({
               </div>
             ) : (
               <div>
-                <dt className="text-muted-foreground">Validated actual measure</dt>
+                <dt className="text-muted-foreground">
+                  Validated actual measure
+                </dt>
                 <dd className="font-medium tabular-nums">
                   {formatMeasureValue(
                     detail.validated_realised_total,
@@ -128,15 +139,20 @@ export function BenefitHeader({
               </div>
             ) : null}
           </dl>
-          {(canValidateCi || canValidateFinance || canRecordRealisation) && detail.status === "submitted" ? (
+          {(canValidateCi || canValidateFinance || canRecordRealisation) &&
+          detail.status === "submitted" ? (
             <p className="mt-3 text-xs text-muted-foreground">
               Validation queue may include this benefit for assigned validators.
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {showSubmit ? (
-            <Button size="sm" onClick={onSubmit} data-testid="benefit-submit-button">
+            <Button
+              size="sm"
+              onClick={onSubmit}
+              data-testid="benefit-submit-button"
+            >
               Submit for validation
             </Button>
           ) : null}

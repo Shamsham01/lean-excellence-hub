@@ -63,7 +63,10 @@ export function CauseAnalysisPanel({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [testForms, setTestForms] = useState<
-    Record<string, { question: string; expected: string; actual: string; conclusion: string }>
+    Record<
+      string,
+      { question: string; expected: string; actual: string; conclusion: string }
+    >
   >({});
 
   const activeAnalysis = analyses[0] ?? null;
@@ -81,7 +84,12 @@ export function CauseAnalysisPanel({
 
   function updateTestForm(
     hypothesisId: string,
-    patch: Partial<{ question: string; expected: string; actual: string; conclusion: string }>,
+    patch: Partial<{
+      question: string;
+      expected: string;
+      actual: string;
+      conclusion: string;
+    }>,
   ) {
     setTestForms((current) => ({
       ...current,
@@ -136,7 +144,12 @@ export function CauseAnalysisPanel({
 
   async function handleStartTesting(hypothesisId: string) {
     setLoading(true);
-    const result = await updateHypothesisStatus(hypothesisId, caseId, "testing", "Investigation started");
+    const result = await updateHypothesisStatus(
+      hypothesisId,
+      caseId,
+      "testing",
+      "Investigation started",
+    );
     setMessage(result.error ?? "Hypothesis moved to testing");
     setLoading(false);
     router.refresh();
@@ -169,7 +182,12 @@ export function CauseAnalysisPanel({
       conclusion: form.conclusion,
     });
     if (!result.error && form.conclusion === "supports") {
-      await updateHypothesisStatus(hypothesisId, caseId, "supported", "Test supports hypothesis");
+      await updateHypothesisStatus(
+        hypothesisId,
+        caseId,
+        "supported",
+        "Test supports hypothesis",
+      );
     }
     setMessage(result.error ?? "Hypothesis test completed");
     setLoading(false);
@@ -182,7 +200,11 @@ export function CauseAnalysisPanel({
       return;
     }
     setLoading(true);
-    const result = await verifyCauseHypothesis(hypothesisId, caseId, verifyRationale.trim());
+    const result = await verifyCauseHypothesis(
+      hypothesisId,
+      caseId,
+      verifyRationale.trim(),
+    );
     setMessage(result.error ?? "Verified cause recorded");
     setVerifyTargetId(null);
     setVerifyRationale("");
@@ -203,14 +225,20 @@ export function CauseAnalysisPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-cause-analysis-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-cause-analysis-panel"
+    >
       {canManage ? (
         <Card>
           <CardHeader>
             <CardTitle>Create fishbone analysis</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateAnalysis} className="flex flex-col gap-3">
+            <form
+              onSubmit={handleCreateAnalysis}
+              className="flex flex-col gap-3"
+            >
               <label className="flex flex-col gap-1 text-sm">
                 <span>Analysis title</span>
                 <Input
@@ -228,7 +256,12 @@ export function CauseAnalysisPanel({
                   placeholder="Machine"
                 />
               </label>
-              <Button type="submit" size="sm" disabled={loading} data-testid="create-analysis-button">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={loading}
+                data-testid="create-analysis-button"
+              >
                 Create fishbone analysis
               </Button>
             </form>
@@ -242,11 +275,14 @@ export function CauseAnalysisPanel({
             <CardTitle>Add hypothesis</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateHypothesis} className="flex flex-col gap-3">
+            <form
+              onSubmit={handleCreateHypothesis}
+              className="flex flex-col gap-3"
+            >
               <label className="flex flex-col gap-1 text-sm">
                 <span>Category</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 >
@@ -283,7 +319,9 @@ export function CauseAnalysisPanel({
             <p className="text-muted-foreground">No hypotheses yet.</p>
           ) : (
             detail.hypotheses.map((hypothesis) => {
-              const tests = hypothesisTests.filter((test) => test.hypothesis_id === hypothesis.id);
+              const tests = hypothesisTests.filter(
+                (test) => test.hypothesis_id === hypothesis.id,
+              );
               const pendingTest = tests.find((test) => !test.completed_date);
               const form = testFormFor(hypothesis.id);
               return (
@@ -293,18 +331,25 @@ export function CauseAnalysisPanel({
                   data-testid={`hypothesis-item-${hypothesis.id}`}
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={hypothesisStatusBadgeVariant(hypothesis.status)}>
+                    <Badge
+                      variant={hypothesisStatusBadgeVariant(hypothesis.status)}
+                    >
                       {hypothesisStatusLabel(hypothesis.status)}
                     </Badge>
                     {hypothesis.category ? (
-                      <Badge variant="outline">{hypothesisCategoryLabel(hypothesis.category)}</Badge>
+                      <Badge variant="outline">
+                        {hypothesisCategoryLabel(hypothesis.category)}
+                      </Badge>
                     ) : null}
                   </div>
                   <p className="mt-2">{hypothesis.statement}</p>
                   {tests.length > 0 ? (
                     <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                       {tests.map((test) => (
-                        <li key={test.id} data-testid={`hypothesis-test-${test.id}`}>
+                        <li
+                          key={test.id}
+                          data-testid={`hypothesis-test-${test.id}`}
+                        >
                           Test: {test.test_question} —{" "}
                           {test.completed_date
                             ? hypothesisTestConclusionLabel(test.conclusion)
@@ -327,19 +372,32 @@ export function CauseAnalysisPanel({
                     </Button>
                   ) : null}
 
-                  {canContribute && ["proposed", "testing", "supported"].includes(hypothesis.status) ? (
+                  {canContribute &&
+                  ["proposed", "testing", "supported"].includes(
+                    hypothesis.status,
+                  ) ? (
                     <div className="mt-3 flex flex-col gap-2 rounded-md border border-dashed border-border p-3">
-                      <p className="text-xs font-medium text-muted-foreground">Hypothesis test</p>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Hypothesis test
+                      </p>
                       <Input
                         placeholder="Test question"
                         value={form.question}
-                        onChange={(e) => updateTestForm(hypothesis.id, { question: e.target.value })}
+                        onChange={(e) =>
+                          updateTestForm(hypothesis.id, {
+                            question: e.target.value,
+                          })
+                        }
                         data-testid={`hypothesis-test-question-${hypothesis.id}`}
                       />
                       <Input
                         placeholder="Expected result"
                         value={form.expected}
-                        onChange={(e) => updateTestForm(hypothesis.id, { expected: e.target.value })}
+                        onChange={(e) =>
+                          updateTestForm(hypothesis.id, {
+                            expected: e.target.value,
+                          })
+                        }
                         data-testid={`hypothesis-test-expected-${hypothesis.id}`}
                       />
                       {!pendingTest ? (
@@ -356,13 +414,21 @@ export function CauseAnalysisPanel({
                           <Input
                             placeholder="Actual result"
                             value={form.actual}
-                            onChange={(e) => updateTestForm(hypothesis.id, { actual: e.target.value })}
+                            onChange={(e) =>
+                              updateTestForm(hypothesis.id, {
+                                actual: e.target.value,
+                              })
+                            }
                             data-testid={`hypothesis-test-actual-${hypothesis.id}`}
                           />
                           <select
-                            className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                            className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                             value={form.conclusion}
-                            onChange={(e) => updateTestForm(hypothesis.id, { conclusion: e.target.value })}
+                            onChange={(e) =>
+                              updateTestForm(hypothesis.id, {
+                                conclusion: e.target.value,
+                              })
+                            }
                             data-testid={`hypothesis-test-conclusion-${hypothesis.id}`}
                           >
                             <option value="supports">Supports</option>
@@ -372,7 +438,9 @@ export function CauseAnalysisPanel({
                           <Button
                             size="sm"
                             disabled={loading}
-                            onClick={() => handleCompleteTest(pendingTest.id, hypothesis.id)}
+                            onClick={() =>
+                              handleCompleteTest(pendingTest.id, hypothesis.id)
+                            }
                             data-testid={`complete-hypothesis-test-${hypothesis.id}`}
                           >
                             Complete test
@@ -382,7 +450,8 @@ export function CauseAnalysisPanel({
                     </div>
                   ) : null}
 
-                  {canVerifyCause && ["testing", "supported"].includes(hypothesis.status) ? (
+                  {canVerifyCause &&
+                  ["testing", "supported"].includes(hypothesis.status) ? (
                     <div className="mt-2 flex flex-col gap-2">
                       {verifyTargetId === hypothesis.id ? (
                         <>
@@ -424,7 +493,8 @@ export function CauseAnalysisPanel({
                     </div>
                   ) : null}
 
-                  {canVerifyCause && ["testing", "supported"].includes(hypothesis.status) ? (
+                  {canVerifyCause &&
+                  ["testing", "supported"].includes(hypothesis.status) ? (
                     <Button
                       size="sm"
                       variant="outline"
@@ -450,9 +520,14 @@ export function CauseAnalysisPanel({
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
             {analyses.map((analysis) => {
-              const nodes = analysisNodes.filter((node) => node.analysis_id === analysis.id);
+              const nodes = analysisNodes.filter(
+                (node) => node.analysis_id === analysis.id,
+              );
               return (
-                <div key={analysis.id} className="rounded-md border border-border px-3 py-2">
+                <div
+                  key={analysis.id}
+                  className="rounded-md border border-border px-3 py-2"
+                >
                   <p className="font-medium">
                     {analysis.title} ({analysis.analysis_type})
                   </p>
@@ -473,7 +548,10 @@ export function CauseAnalysisPanel({
       ) : null}
 
       {message ? (
-        <p className="text-sm text-muted-foreground" data-testid="cause-analysis-message">
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="cause-analysis-message"
+        >
           {message}
         </p>
       ) : null}

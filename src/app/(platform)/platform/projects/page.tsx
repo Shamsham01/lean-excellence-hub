@@ -21,16 +21,17 @@ export default async function ProjectsPortfolioPage({
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission("projects.manage");
 
-  const { data: portfolioData } = await callProjectRpc<ProjectPortfolioResponse>(
-    supabase,
-    "get_ci_projects_portfolio",
-    {
-      target_search: params.search ?? null,
-      target_status: params.status ?? null,
-      target_page: 1,
-      target_page_size: 25,
-    },
-  );
+  const { data: portfolioData } =
+    await callProjectRpc<ProjectPortfolioResponse>(
+      supabase,
+      "get_ci_projects_portfolio",
+      {
+        target_search: params.search ?? null,
+        target_status: params.status ?? null,
+        target_page: 1,
+        target_page_size: 25,
+      },
+    );
 
   const portfolio = portfolioData ?? {
     items: [],
@@ -50,12 +51,15 @@ export default async function ProjectsPortfolioPage({
 
   const allItems = (metricsData?.items as ProjectPortfolioItem[]) ?? [];
 
-  const { data: actionContexts } = await untypedFrom(supabase, "ci_project_action_context").select(
-    "action_id, project_id",
-  );
+  const { data: actionContexts } = await untypedFrom(
+    supabase,
+    "ci_project_action_context",
+  ).select("action_id, project_id");
 
   const actionIds =
-    (actionContexts as Array<{ action_id: string }> | null)?.map((row) => row.action_id) ?? [];
+    (actionContexts as Array<{ action_id: string }> | null)?.map(
+      (row) => row.action_id,
+    ) ?? [];
   let openActions = 0;
 
   if (actionIds.length > 0) {
@@ -78,7 +82,8 @@ export default async function ProjectsPortfolioPage({
       .in("project_id", activeProjectIds);
 
     const metricRows =
-      (metrics as Array<{ id: string; target_value: number | null }> | null) ?? [];
+      (metrics as Array<{ id: string; target_value: number | null }> | null) ??
+      [];
 
     if (metricRows.length > 0) {
       const metricIds = metricRows.map((metric) => metric.id);

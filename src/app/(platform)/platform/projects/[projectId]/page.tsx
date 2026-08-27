@@ -35,14 +35,23 @@ export default async function ProjectDetailPage({
 
   let methodologyLabel: string | null = null;
   if (detail.methodology_version_id) {
-    const { data: versionRow } = await untypedFrom(supabase, "ci_project_methodology_versions")
+    const { data: versionRow } = await untypedFrom(
+      supabase,
+      "ci_project_methodology_versions",
+    )
       .select("methodology_id, version_number")
       .eq("id", detail.methodology_version_id)
       .maybeSingle();
 
     if (versionRow) {
-      const version = versionRow as { methodology_id: string; version_number: number };
-      const { data: methodologyRow } = await untypedFrom(supabase, "ci_project_methodologies")
+      const version = versionRow as {
+        methodology_id: string;
+        version_number: number;
+      };
+      const { data: methodologyRow } = await untypedFrom(
+        supabase,
+        "ci_project_methodologies",
+      )
         .select("name")
         .eq("id", version.methodology_id)
         .maybeSingle();
@@ -73,20 +82,25 @@ export default async function ProjectDetailPage({
     (member) => member.team_role === "owner" && member.valid_to == null,
   );
   const ownerName = activeOwner
-    ? membershipNameById.get(activeOwner.membership_id) ?? null
+    ? (membershipNameById.get(activeOwner.membership_id) ?? null)
     : null;
 
   const currentPhase =
     detail.phases.find((phase) => phase.status === "in_progress") ??
     detail.phases.find((phase) => phase.status === "not_started");
 
-  const { data: actionContexts } = await untypedFrom(supabase, "ci_project_action_context")
+  const { data: actionContexts } = await untypedFrom(
+    supabase,
+    "ci_project_action_context",
+  )
     .select("action_id, project_phase_id")
     .eq("project_id", projectId);
 
   const contexts =
-    (actionContexts as Array<{ action_id: string; project_phase_id: string | null }> | null) ??
-    [];
+    (actionContexts as Array<{
+      action_id: string;
+      project_phase_id: string | null;
+    }> | null) ?? [];
   const actionIds = contexts.map((row) => row.action_id);
   let actions: Array<{
     id: string;
@@ -106,11 +120,15 @@ export default async function ProjectDetailPage({
       actionRows?.map((action) => ({
         ...action,
         project_phase_id:
-          contexts.find((ctx) => ctx.action_id === action.id)?.project_phase_id ?? null,
+          contexts.find((ctx) => ctx.action_id === action.id)
+            ?.project_phase_id ?? null,
       })) ?? [];
   }
 
-  const { data: evidence } = await untypedFrom(supabase, "ci_project_evidence_links")
+  const { data: evidence } = await untypedFrom(
+    supabase,
+    "ci_project_evidence_links",
+  )
     .select("id, attachment_id, project_phase_id, created_at")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
@@ -144,14 +162,14 @@ export default async function ProjectDetailPage({
 
   const enrichedTeam = detail.team_members.map((member) => ({
     ...member,
-    display_name: membershipNameById.get(member.membership_id) ?? member.membership_id.slice(0, 8),
+    display_name:
+      membershipNameById.get(member.membership_id) ??
+      member.membership_id.slice(0, 8),
   }));
 
-  const { data: projectBenefitsData } = await callBenefitRpc<{ items: LinkedBenefitSummary[] }>(
-    supabase,
-    "get_project_benefits",
-    { target_project_id: projectId },
-  );
+  const { data: projectBenefitsData } = await callBenefitRpc<{
+    items: LinkedBenefitSummary[];
+  }>(supabase, "get_project_benefits", { target_project_id: projectId });
   const benefits = projectBenefitsData?.items ?? [];
 
   return (

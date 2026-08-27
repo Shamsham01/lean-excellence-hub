@@ -32,10 +32,18 @@ export function validateScoringMetadata(
     return metadata.type === "direct" || metadata.min != null;
   }
   if (questionType === "yes_no") {
-    return metadata.type === "yes_no" && metadata.yes_value != null && metadata.no_value != null;
+    return (
+      metadata.type === "yes_no" &&
+      metadata.yes_value != null &&
+      metadata.no_value != null
+    );
   }
   if (questionType === "single_select") {
-    return metadata.type === "option_map" && Boolean(metadata.option_values) && Object.keys(metadata.option_values ?? {}).length > 0;
+    return (
+      metadata.type === "option_map" &&
+      Boolean(metadata.option_values) &&
+      Object.keys(metadata.option_values ?? {}).length > 0
+    );
   }
   return metadata.type === "direct";
 }
@@ -80,7 +88,8 @@ export function scoreAnswerFromMetadata(
   }
 
   if (questionType === "single_select" && metadata.option_values) {
-    const key = answer.text_value ?? (answer.json_value as { value?: string })?.value;
+    const key =
+      answer.text_value ?? (answer.json_value as { value?: string })?.value;
     if (!key) {
       return null;
     }

@@ -7,9 +7,15 @@ type HistoryPanelProps = {
   membershipNameById: Record<string, string>;
 };
 
-export function HistoryPanel({ detail, membershipNameById }: HistoryPanelProps) {
+export function HistoryPanel({
+  detail,
+  membershipNameById,
+}: HistoryPanelProps) {
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-history-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-history-panel"
+    >
       <Card>
         <CardHeader>
           <CardTitle>Status history</CardTitle>
@@ -54,7 +60,8 @@ export function HistoryPanel({ detail, membershipNameById }: HistoryPanelProps) 
                 className="flex flex-col gap-1 rounded-md border border-border px-3 py-2 sm:flex-row sm:justify-between"
               >
                 <span>
-                  {entry.from_stage?.title ?? "Start"} → {entry.to_stage?.title ?? "—"}
+                  {entry.from_stage?.title ?? "Start"} →{" "}
+                  {entry.to_stage?.title ?? "—"}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {new Date(entry.changed_at).toLocaleString("en-GB")}

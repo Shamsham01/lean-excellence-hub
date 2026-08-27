@@ -1,6 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 
-const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "warning" | "success" | "information" | "destructive" }> = {
+const statusLabels: Record<
+  string,
+  {
+    label: string;
+    variant:
+      | "default"
+      | "secondary"
+      | "warning"
+      | "success"
+      | "information"
+      | "destructive";
+  }
+> = {
   draft: { label: "Draft", variant: "secondary" },
   in_progress: { label: "In progress", variant: "information" },
   submitted: { label: "Submitted", variant: "warning" },
@@ -12,11 +24,20 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
 };
 
 export function AssessmentStatusBadge({ status }: { status: string }) {
-  const config = statusLabels[status] ?? { label: status, variant: "secondary" as const };
+  const config = statusLabels[status] ?? {
+    label: status,
+    variant: "secondary" as const,
+  };
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-export function ScoreBadge({ score, max = 5 }: { score: number | null; max?: number }) {
+export function ScoreBadge({
+  score,
+  max = 5,
+}: {
+  score: number | null;
+  max?: number;
+}) {
   if (score == null) {
     return <Badge variant="secondary">—</Badge>;
   }

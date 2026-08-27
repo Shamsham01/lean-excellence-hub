@@ -19,5 +19,11 @@ export function suggestionStatusLabel(status: string): string {
 }
 
 export function pipelineStatuses(): SuggestionStatus[] {
-  return ["submitted", "under_review", "accepted", "implementing", "implemented"];
+  return [
+    "submitted",
+    "under_review",
+    "accepted",
+    "implementing",
+    "implemented",
+  ];
 }

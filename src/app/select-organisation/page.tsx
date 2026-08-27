@@ -34,7 +34,11 @@ export default async function SelectOrganisationPage({
               name="organisationId"
               value={organisation.organisation_id}
             />
-            <Button type="submit" variant="outline" className="w-full justify-start">
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full justify-start"
+            >
               {organisation.organisation_name}
             </Button>
           </form>

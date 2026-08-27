@@ -39,7 +39,9 @@ describe("platform navigation", () => {
 
   it("filters navigation items by granted permissions", () => {
     const maturityOnly = filterPlatformNavigation(new Set(["maturity.read"]));
-    expect(maturityOnly.map((item) => item.href)).toContain("/platform/maturity");
+    expect(maturityOnly.map((item) => item.href)).toContain(
+      "/platform/maturity",
+    );
 
     const actionOnly = filterPlatformNavigation(
       new Set(["actions.read", "maturity.read"]),

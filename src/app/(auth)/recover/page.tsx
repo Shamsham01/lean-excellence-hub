@@ -33,7 +33,9 @@ export default async function RecoverPage({
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required />
           </div>
-          <Button type="submit" className="w-full">Send recovery email</Button>
+          <Button type="submit" className="w-full">
+            Send recovery email
+          </Button>
         </form>
       )}
     </AuthCard>

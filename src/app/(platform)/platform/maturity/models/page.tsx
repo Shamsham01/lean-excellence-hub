@@ -49,7 +49,12 @@ export default async function MaturityModelsPage() {
             <form action={createAction} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" required placeholder="Lean Excellence Framework" />
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="Lean Excellence Framework"
+                />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="description">Description</Label>
@@ -70,7 +75,9 @@ export default async function MaturityModelsPage() {
           >
             <p className="font-medium">{model.display_name}</p>
             {model.description ? (
-              <p className="mt-1 text-sm text-muted-foreground">{model.description}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {model.description}
+              </p>
             ) : null}
           </Link>
         ))}

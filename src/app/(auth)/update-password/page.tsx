@@ -12,7 +12,10 @@ export default async function UpdatePasswordPage({
   const { error } = await searchParams;
 
   return (
-    <AuthCard title="Set a new password" description="Choose a strong password for your account.">
+    <AuthCard
+      title="Set a new password"
+      description="Choose a strong password for your account."
+    >
       {error ? (
         <p className="text-sm text-destructive" role="alert">
           The password could not be updated.
@@ -30,7 +33,9 @@ export default async function UpdatePasswordPage({
             required
           />
         </div>
-        <Button type="submit" className="w-full">Update password</Button>
+        <Button type="submit" className="w-full">
+          Update password
+        </Button>
       </form>
     </AuthCard>
   );

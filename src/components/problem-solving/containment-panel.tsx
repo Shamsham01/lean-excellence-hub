@@ -22,7 +22,11 @@ type ContainmentPanelProps = {
   canContribute: boolean;
 };
 
-export function ContainmentPanel({ caseId, containments, canContribute }: ContainmentPanelProps) {
+export function ContainmentPanel({
+  caseId,
+  containments,
+  canContribute,
+}: ContainmentPanelProps) {
   const router = useRouter();
   const [description, setDescription] = useState("");
   const [rationale, setRationale] = useState("");
@@ -48,7 +52,11 @@ export function ContainmentPanel({ caseId, containments, canContribute }: Contai
 
   async function handleRelease(containmentId: string) {
     setLoading(true);
-    const result = await releaseContainment(containmentId, caseId, "Released from workspace");
+    const result = await releaseContainment(
+      containmentId,
+      caseId,
+      "Released from workspace",
+    );
     setMessage(result.error ?? "Containment released");
     setLoading(false);
     router.refresh();
@@ -71,7 +79,10 @@ export function ContainmentPanel({ caseId, containments, canContribute }: Contai
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-containment-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-containment-panel"
+    >
       {canContribute ? (
         <Card>
           <CardHeader>
@@ -90,7 +101,10 @@ export function ContainmentPanel({ caseId, containments, canContribute }: Contai
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Rationale</span>
-                <Input value={rationale} onChange={(e) => setRationale(e.target.value)} />
+                <Input
+                  value={rationale}
+                  onChange={(e) => setRationale(e.target.value)}
+                />
               </label>
               <Button type="submit" size="sm" disabled={loading}>
                 Create containment
@@ -121,7 +135,9 @@ export function ContainmentPanel({ caseId, containments, canContribute }: Contai
                     </Badge>
                     <p>{item.description}</p>
                     {item.rationale ? (
-                      <p className="text-xs text-muted-foreground">{item.rationale}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.rationale}
+                      </p>
                     ) : null}
                   </div>
                   {canContribute && item.status !== "released" ? (
@@ -142,7 +158,10 @@ export function ContainmentPanel({ caseId, containments, canContribute }: Contai
                       <Input
                         value={actionTitles[item.id] ?? ""}
                         onChange={(e) =>
-                          setActionTitles((current) => ({ ...current, [item.id]: e.target.value }))
+                          setActionTitles((current) => ({
+                            ...current,
+                            [item.id]: e.target.value,
+                          }))
                         }
                         data-testid={`containment-action-title-${item.id}`}
                         placeholder="Action title"
@@ -164,7 +183,9 @@ export function ContainmentPanel({ caseId, containments, canContribute }: Contai
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

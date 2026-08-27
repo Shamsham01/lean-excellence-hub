@@ -27,11 +27,16 @@ export default async function GembaDefinitionsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Gemba definitions" description="Templates for structured walks." />
+      <PageHeader
+        title="Gemba definitions"
+        description="Templates for structured walks."
+      />
       <Card>
-        <CardHeader><CardTitle>Create definition</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Create definition</CardTitle>
+        </CardHeader>
         <CardContent>
-          <form action={createAction} className="flex flex-col gap-4 max-w-lg">
+          <form action={createAction} className="flex max-w-lg flex-col gap-4">
             <div>
               <Label htmlFor="name">Name</Label>
               <Input id="name" name="name" required className="mt-2 min-h-11" />
@@ -40,15 +45,23 @@ export default async function GembaDefinitionsPage() {
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" name="description" className="mt-2" />
             </div>
-            <Button type="submit" className="min-h-11">Create draft</Button>
+            <Button type="submit" className="min-h-11">
+              Create draft
+            </Button>
           </form>
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle>Definitions</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Definitions</CardTitle>
+        </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {definitions?.map((d) => (
-            <Link key={d.id} href={`/platform/gemba/definitions/${d.id}`} className="rounded-md border border-border px-4 py-3 hover:bg-surface">
+            <Link
+              key={d.id}
+              href={`/platform/gemba/definitions/${d.id}`}
+              className="rounded-md border border-border px-4 py-3 hover:bg-surface"
+            >
               <p className="font-medium">{d.display_name}</p>
             </Link>
           ))}

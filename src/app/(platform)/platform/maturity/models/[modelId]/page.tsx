@@ -41,9 +41,20 @@ export default async function MaturityModelPage({
   const publishedVersion = versions?.find((v) => v.status === "published");
 
   let levels: Array<{ level_number: number; name: string }> = [];
-  let pillars: Array<{ id: string; name: string; position: number; section_id: string }> = [];
-  const criteria: Array<{ id: string; name: string; pillar_id: string; position: number }> = [];
-  const questions: Array<{ id: string; prompt: string; criterion_id: string }> = [];
+  let pillars: Array<{
+    id: string;
+    name: string;
+    position: number;
+    section_id: string;
+  }> = [];
+  const criteria: Array<{
+    id: string;
+    name: string;
+    pillar_id: string;
+    position: number;
+  }> = [];
+  const questions: Array<{ id: string; prompt: string; criterion_id: string }> =
+    [];
 
   if (draftVersion) {
     const { data: levelRows } = await supabase
@@ -105,7 +116,10 @@ export default async function MaturityModelPage({
 
       <div className="flex flex-wrap gap-2">
         {versions?.map((v) => (
-          <Badge key={v.id} variant={v.status === "published" ? "success" : "secondary"}>
+          <Badge
+            key={v.id}
+            variant={v.status === "published" ? "success" : "secondary"}
+          >
             v{v.version_number} · {v.status}
           </Badge>
         ))}
@@ -128,7 +142,9 @@ export default async function MaturityModelPage({
       {publishedVersion ? (
         <Card>
           <CardHeader>
-            <CardTitle>Published version {publishedVersion.version_number}</CardTitle>
+            <CardTitle>
+              Published version {publishedVersion.version_number}
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">

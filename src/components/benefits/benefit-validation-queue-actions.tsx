@@ -32,7 +32,9 @@ export function BenefitValidationActions({
       <Button size="sm" onClick={() => handleValidate()} disabled={loading}>
         Validate actual
       </Button>
-      {message ? <span className="text-xs text-muted-foreground">{message}</span> : null}
+      {message ? (
+        <span className="text-xs text-muted-foreground">{message}</span>
+      ) : null}
     </div>
   );
 }

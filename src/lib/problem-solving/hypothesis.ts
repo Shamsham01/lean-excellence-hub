@@ -73,7 +73,9 @@ export const HYPOTHESIS_TEST_CONCLUSIONS = [
   "inconclusive",
 ] as const;
 
-export function hypothesisTestConclusionLabel(conclusion: string | null): string {
+export function hypothesisTestConclusionLabel(
+  conclusion: string | null,
+): string {
   if (!conclusion) return "—";
   switch (conclusion) {
     case "supports":

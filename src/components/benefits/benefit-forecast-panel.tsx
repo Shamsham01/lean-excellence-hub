@@ -20,7 +20,10 @@ import {
   realisationPatternLabel,
 } from "@/lib/benefits/forecast";
 import { benefitStatusBadgeVariant } from "@/lib/benefits/status";
-import type { BenefitDetail, BenefitForecastVersion } from "@/lib/benefits/types";
+import type {
+  BenefitDetail,
+  BenefitForecastVersion,
+} from "@/lib/benefits/types";
 
 type BenefitForecastPanelProps = {
   detail: BenefitDetail;
@@ -64,7 +67,9 @@ export function BenefitForecastPanel({
         <Card className="border-primary/20 bg-muted/20">
           <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div>
-              <CardTitle>Current forecast (v{current.version_number})</CardTitle>
+              <CardTitle>
+                Current forecast (v{current.version_number})
+              </CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 {realisationPatternLabel(current.realisation_pattern)} ·{" "}
                 {current.forecast_start_date} → {current.forecast_end_date}
@@ -76,8 +81,10 @@ export function BenefitForecastPanel({
           </CardHeader>
           <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
             <div>
-              <p className="font-medium">{forecastTotalPresentationLabel(isFinancial)}</p>
-              <p className="mt-1 tabular-nums text-muted-foreground">
+              <p className="font-medium">
+                {forecastTotalPresentationLabel(isFinancial)}
+              </p>
+              <p className="mt-1 text-muted-foreground tabular-nums">
                 {isFinancial
                   ? formatBenefitCurrencyAmount(
                       current.forecast_total_amount,
@@ -92,13 +99,17 @@ export function BenefitForecastPanel({
             {current.calculation_basis ? (
               <div>
                 <p className="font-medium">Calculation basis</p>
-                <p className="mt-1 text-muted-foreground">{current.calculation_basis}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {current.calculation_basis}
+                </p>
               </div>
             ) : null}
             {current.assumptions ? (
               <div className="sm:col-span-2">
                 <p className="font-medium">Assumptions</p>
-                <p className="mt-1 text-muted-foreground">{current.assumptions}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {current.assumptions}
+                </p>
               </div>
             ) : null}
             {detail.current_forecast_periods.length > 0 ? (
@@ -110,14 +121,22 @@ export function BenefitForecastPanel({
                       key={period.id}
                       className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                     >
-                      <span>{formatPeriodLabel(period.period_start, period.period_end)}</span>
-                      <span className="tabular-nums text-muted-foreground">
+                      <span>
+                        {formatPeriodLabel(
+                          period.period_start,
+                          period.period_end,
+                        )}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
                         {isFinancial
                           ? formatBenefitCurrencyAmount(
                               period.forecast_amount,
                               detail.reporting_currency_snapshot,
                             )
-                          : formatMeasureValue(period.forecast_amount, current.target_measure_unit)}
+                          : formatMeasureValue(
+                              period.forecast_amount,
+                              current.target_measure_unit,
+                            )}
                       </span>
                     </div>
                   ))}
@@ -126,17 +145,27 @@ export function BenefitForecastPanel({
             ) : null}
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               {canManage && current.lifecycle === "draft" ? (
-                <Button size="sm" onClick={() => handleSubmitForecast(current.id)}>
+                <Button
+                  size="sm"
+                  onClick={() => handleSubmitForecast(current.id)}
+                >
                   Submit forecast
                 </Button>
               ) : null}
               {canApproveForecast && current.lifecycle === "submitted" ? (
-                <Button size="sm" onClick={() => handleApproveForecast(current.id)}>
+                <Button
+                  size="sm"
+                  onClick={() => handleApproveForecast(current.id)}
+                >
                   Approve forecast
                 </Button>
               ) : null}
               {canManage && current.lifecycle === "approved" ? (
-                <Button size="sm" variant="outline" onClick={() => handleSuccessorVersion()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSuccessorVersion()}
+                >
                   New forecast version
                 </Button>
               ) : null}
@@ -146,7 +175,8 @@ export function BenefitForecastPanel({
       ) : (
         <Card>
           <CardContent className="py-8 text-sm text-muted-foreground">
-            No forecast version linked yet. Add a draft forecast while the benefit is in draft.
+            No forecast version linked yet. Add a draft forecast while the
+            benefit is in draft.
           </CardContent>
         </Card>
       )}
@@ -157,7 +187,9 @@ export function BenefitForecastPanel({
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {forecastHistory.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No forecast versions recorded.</p>
+            <p className="text-sm text-muted-foreground">
+              No forecast versions recorded.
+            </p>
           ) : (
             forecastHistory.map((version) => (
               <div
@@ -166,13 +198,14 @@ export function BenefitForecastPanel({
               >
                 <div>
                   <p className="font-medium">
-                    Version {version.version_number} · {forecastLifecycleLabel(version.lifecycle)}
+                    Version {version.version_number} ·{" "}
+                    {forecastLifecycleLabel(version.lifecycle)}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {version.forecast_start_date} → {version.forecast_end_date}
                   </p>
                 </div>
-                <span className="text-sm tabular-nums text-muted-foreground">
+                <span className="text-sm text-muted-foreground tabular-nums">
                   {isFinancial
                     ? formatBenefitCurrencyAmount(
                         version.forecast_total_amount,

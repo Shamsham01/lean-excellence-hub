@@ -12,9 +12,14 @@ import { Sparkles } from "lucide-react";
 
 export default async function FiveSOverviewPage() {
   const supabase = await createServerSupabaseClient();
-  const canManage = await currentMemberHasPermission(FIVE_S_PERMISSIONS.standardsManage);
+  const canManage = await currentMemberHasPermission(
+    FIVE_S_PERMISSIONS.standardsManage,
+  );
 
-  const { data: standards } = await supabase.from("five_s_standards").select("id, display_name").limit(1);
+  const { data: standards } = await supabase
+    .from("five_s_standards")
+    .select("id, display_name")
+    .limit(1);
   const { count: auditCount } = await supabase
     .from("five_s_audits")
     .select("id", { count: "exact", head: true })
@@ -36,12 +41,20 @@ export default async function FiveSOverviewPage() {
   if (!standards?.length) {
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="5S Audits" description="Digital 5S auditing with scoring, evidence, and accountability." />
+        <PageHeader
+          title="5S Audits"
+          description="Digital 5S auditing with scoring, evidence, and accountability."
+        />
         <EmptyState
           title="No 5S standards yet"
           description="Create a configurable 5S standard for your areas and teams."
           icon={<Sparkles className="size-5" />}
-          {...(canManage ? { actionLabel: "Create standard", actionHref: "/platform/5s/standards" } : {})}
+          {...(canManage
+            ? {
+                actionLabel: "Create standard",
+                actionHref: "/platform/5s/standards",
+              }
+            : {})}
         />
       </div>
     );
@@ -62,7 +75,11 @@ export default async function FiveSOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label="Latest score"
-          value={latestAudit?.overall_score_percent != null ? `${latestAudit.overall_score_percent}%` : "—"}
+          value={
+            latestAudit?.overall_score_percent != null
+              ? `${latestAudit.overall_score_percent}%`
+              : "—"
+          }
           hint={
             latestAudit?.target_percent != null
               ? `Target ${latestAudit.target_percent}%`

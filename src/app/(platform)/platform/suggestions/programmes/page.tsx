@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-
-
 import { PageHeader } from "@/components/platform/page-header";
 
 import { ProgrammeManagement } from "@/components/suggestions/programme-management";
@@ -12,31 +10,20 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-
-
 export default async function SuggestionProgrammesPage() {
-
   const supabase = await createServerSupabaseClient();
 
-  const canManage = await currentMemberHasPermission("suggestions.programmes.manage");
-
-
+  const canManage = await currentMemberHasPermission(
+    "suggestions.programmes.manage",
+  );
 
   if (!canManage) {
-
     return (
-
       <div className="text-sm text-muted-foreground">
-
         Programme management is not available for your role.
-
       </div>
-
     );
-
   }
-
-
 
   const { data: programmes } = await supabase
 
@@ -46,21 +33,15 @@ export default async function SuggestionProgrammesPage() {
 
     .order("name");
 
-
-
   const { data: versions } = await supabase
 
     .from("suggestion_programme_versions")
 
     .select(
-
       "id, programme_id, version_number, lifecycle, review_target_days, submission_guidance, template_version_id",
-
     )
 
     .order("version_number", { ascending: false });
-
-
 
   const { data: categories } = await supabase
 
@@ -69,8 +50,6 @@ export default async function SuggestionProgrammesPage() {
     .select("id, name, code, status")
 
     .order("display_order");
-
-
 
   const { data: templateVersions } = await supabase
 
@@ -82,46 +61,36 @@ export default async function SuggestionProgrammesPage() {
 
     .order("version_number", { ascending: false });
 
-
-
   return (
-
-    <div className="flex flex-col gap-8" data-testid="suggestion-programmes-page">
-
+    <div
+      className="flex flex-col gap-8"
+      data-testid="suggestion-programmes-page"
+    >
       <PageHeader
-
         title="Suggestion programmes"
 
         description="Configure programmes, review targets, and categories for frontline ideas."
 
         actions={
-
           <Button variant="outline" size="sm" asChild>
-
             <Link href="/platform/suggestions">Back to suggestions</Link>
-
           </Button>
-
         }
-
       />
 
       <ProgrammeManagement
-
         programmes={programmes ?? []}
 
         versions={versions ?? []}
 
         categories={categories ?? []}
 
-        templateVersions={(templateVersions ?? []) as Parameters<typeof ProgrammeManagement>[0]["templateVersions"]}
-
+        templateVersions={
+          (templateVersions ?? []) as Parameters<
+            typeof ProgrammeManagement
+          >[0]["templateVersions"]
+        }
       />
-
     </div>
-
   );
-
 }
-
-

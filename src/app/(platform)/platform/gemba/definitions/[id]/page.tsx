@@ -12,7 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { GEMBA_PERMISSIONS, SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
+import {
+  GEMBA_PERMISSIONS,
+  SCHEDULE_PERMISSIONS,
+} from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -23,8 +26,12 @@ export default async function GembaDefinitionPage({
 }) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
-  const canManage = await currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage);
-  const canSchedule = await currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage);
+  const canManage = await currentMemberHasPermission(
+    GEMBA_PERMISSIONS.definitionsManage,
+  );
+  const canSchedule = await currentMemberHasPermission(
+    SCHEDULE_PERMISSIONS.manage,
+  );
 
   const { data: definition } = await supabase
     .from("gemba_definitions")
@@ -42,7 +49,10 @@ export default async function GembaDefinitionPage({
   const draftVersion = versions?.find((v) => v.status === "draft");
   const publishedVersion = versions?.find((v) => v.status === "published");
 
-  const { data: units } = await supabase.from("organisation_units").select("id, name").order("name");
+  const { data: units } = await supabase
+    .from("organisation_units")
+    .select("id, name")
+    .order("name");
 
   return (
     <div className="flex flex-col gap-8">
@@ -72,12 +82,19 @@ export default async function GembaDefinitionPage({
               <form action={startGembaWalkFromForm}>
                 <input type="hidden" name="definitionId" value={id} />
                 <div className="flex items-end gap-2">
-                  <select name="unitId" className="min-h-11 rounded-md border border-border px-3">
+                  <select
+                    name="unitId"
+                    className="min-h-11 rounded-md border border-border px-3"
+                  >
                     {units?.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
                     ))}
                   </select>
-                  <Button type="submit" className="min-h-11">Start walk</Button>
+                  <Button type="submit" className="min-h-11">
+                    Start walk
+                  </Button>
                 </div>
               </form>
             ) : null}
@@ -95,26 +112,42 @@ export default async function GembaDefinitionPage({
 
       {draftVersion ? (
         <Card>
-          <CardHeader><CardTitle>Draft v{draftVersion.version_number}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Draft v{draftVersion.version_number}</CardTitle>
+          </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <form action={addGembaSectionFromForm} className="flex flex-wrap items-end gap-3">
+            <form
+              action={addGembaSectionFromForm}
+              className="flex flex-wrap items-end gap-3"
+            >
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="definitionId" value={id} />
               <input type="hidden" name="position" value={1} />
-              <Input name="sectionTitle" placeholder="Section title" required className="min-h-11" />
-              <Button type="submit" className="min-h-11">Add section</Button>
+              <Input
+                name="sectionTitle"
+                placeholder="Section title"
+                required
+                className="min-h-11"
+              />
+              <Button type="submit" className="min-h-11">
+                Add section
+              </Button>
             </form>
             <form action={publishGembaDefinitionFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="definitionId" value={id} />
-              <Button type="submit" className="min-h-11">Publish definition</Button>
+              <Button type="submit" className="min-h-11">
+                Publish definition
+              </Button>
             </form>
           </CardContent>
         </Card>
       ) : publishedVersion ? (
         <Card>
           <CardContent className="py-6">
-            <Link href="/platform/gemba/history" className="text-sm underline">View walk history</Link>
+            <Link href="/platform/gemba/history" className="text-sm underline">
+              View walk history
+            </Link>
           </CardContent>
         </Card>
       ) : null}

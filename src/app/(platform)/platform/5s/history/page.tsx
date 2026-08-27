@@ -17,7 +17,10 @@ export default async function FiveSHistoryPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="5S history" description="Completed audits with immutable scores." />
+      <PageHeader
+        title="5S history"
+        description="Completed audits with immutable scores."
+      />
       <Card>
         <CardContent className="flex flex-col gap-2 py-6">
           {audits?.length ? (
@@ -28,8 +31,12 @@ export default async function FiveSHistoryPage() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-4 py-3 hover:bg-surface"
               >
                 <div>
-                  <p className="font-medium">{audit.standard_name_snapshot ?? "5S audit"}</p>
-                  <p className="text-sm text-muted-foreground">{audit.unit_name_snapshot}</p>
+                  <p className="font-medium">
+                    {audit.standard_name_snapshot ?? "5S audit"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {audit.unit_name_snapshot}
+                  </p>
                 </div>
                 <div className="text-right text-sm">
                   <p className="font-medium">{audit.overall_score_percent}%</p>
@@ -38,7 +45,9 @@ export default async function FiveSHistoryPage() {
               </Link>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No completed audits yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No completed audits yet.
+            </p>
           )}
         </CardContent>
       </Card>

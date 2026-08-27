@@ -23,7 +23,11 @@ type VerificationPanelProps = {
   canManage: boolean;
 };
 
-export function VerificationPanel({ caseId, detail, canManage }: VerificationPanelProps) {
+export function VerificationPanel({
+  caseId,
+  detail,
+  canManage,
+}: VerificationPanelProps) {
   const router = useRouter();
   const [criterion, setCriterion] = useState("");
   const [baselineNumeric, setBaselineNumeric] = useState("");
@@ -70,7 +74,10 @@ export function VerificationPanel({ caseId, detail, canManage }: VerificationPan
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-verification-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-verification-panel"
+    >
       {canManage ? (
         <Card>
           <CardHeader>
@@ -107,10 +114,18 @@ export function VerificationPanel({ caseId, detail, canManage }: VerificationPan
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Unit</span>
-                  <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
+                  <Input
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                  />
                 </label>
               </div>
-              <Button type="submit" size="sm" disabled={loading} data-testid="create-effectiveness-check">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={loading}
+                data-testid="create-effectiveness-check"
+              >
                 Create effectiveness check
               </Button>
             </form>
@@ -126,7 +141,9 @@ export function VerificationPanel({ caseId, detail, canManage }: VerificationPan
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           {detail.effectiveness_checks.length === 0 ? (
-            <p className="text-muted-foreground">No effectiveness checks defined yet.</p>
+            <p className="text-muted-foreground">
+              No effectiveness checks defined yet.
+            </p>
           ) : (
             detail.effectiveness_checks.map((check) => (
               <div
@@ -135,19 +152,27 @@ export function VerificationPanel({ caseId, detail, canManage }: VerificationPan
                 data-testid={`effectiveness-check-${check.id}`}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={effectivenessResultBadgeVariant(check.result)}>
+                  <Badge
+                    variant={effectivenessResultBadgeVariant(check.result)}
+                  >
                     {effectivenessResultLabel(check.result)}
                   </Badge>
                 </div>
                 <p className="mt-2 font-medium">{check.criterion}</p>
-                <dl className="mt-2 grid gap-2 sm:grid-cols-2 text-muted-foreground">
+                <dl className="mt-2 grid gap-2 text-muted-foreground sm:grid-cols-2">
                   <div>
                     <dt>Baseline</dt>
-                    <dd>{check.baseline_description ?? check.baseline_numeric ?? "—"}</dd>
+                    <dd>
+                      {check.baseline_description ??
+                        check.baseline_numeric ??
+                        "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt>Target</dt>
-                    <dd>{check.target_description ?? check.target_numeric ?? "—"}</dd>
+                    <dd>
+                      {check.target_description ?? check.target_numeric ?? "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt>Actual</dt>
@@ -214,7 +239,9 @@ export function VerificationPanel({ caseId, detail, canManage }: VerificationPan
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

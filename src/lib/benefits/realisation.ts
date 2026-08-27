@@ -19,7 +19,9 @@ export function applyPortfolioAllocation(
 }
 
 export function computeCumulativeRealised(
-  entries: ReadonlyArray<Pick<RealisationAmountEntry, "financialAmount" | "status">>,
+  entries: ReadonlyArray<
+    Pick<RealisationAmountEntry, "financialAmount" | "status">
+  >,
 ): number {
   return entries.reduce((total, entry) => {
     if (entry.status && entry.status !== "validated") {
@@ -71,7 +73,10 @@ export function varianceTone(
   return variance > 0 ? "positive" : "negative";
 }
 
-export function realisationPeriodChartLabel(periodStart: string, periodEnd: string): string {
+export function realisationPeriodChartLabel(
+  periodStart: string,
+  periodEnd: string,
+): string {
   return formatPeriodLabel(periodStart, periodEnd);
 }
 

@@ -8,9 +8,9 @@ import {
 
 describe("maturity scoring", () => {
   it("validates direct score metadata", () => {
-    expect(
-      validateScoringMetadata("score", true, { type: "direct" }),
-    ).toBe(true);
+    expect(validateScoringMetadata("score", true, { type: "direct" })).toBe(
+      true,
+    );
     expect(validateScoringMetadata("score", true, null)).toBe(false);
   });
 
@@ -26,9 +26,14 @@ describe("maturity scoring", () => {
 
   it("scores direct numeric answers", () => {
     expect(
-      scoreAnswerFromMetadata("score", true, { type: "direct" }, {
-        number_value: 4,
-      }),
+      scoreAnswerFromMetadata(
+        "score",
+        true,
+        { type: "direct" },
+        {
+          number_value: 4,
+        },
+      ),
     ).toBe(4);
   });
 

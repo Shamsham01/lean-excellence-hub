@@ -44,9 +44,11 @@ export function ReviewWorkspace({ suggestion }: ReviewWorkspaceProps) {
   const router = useRouter();
   const [impact, setImpact] = useState<(typeof LEVELS)[number]>("medium");
   const [effort, setEffort] = useState<(typeof LEVELS)[number]>("medium");
-  const [decision, setDecision] = useState<(typeof DECISIONS)[number]["value"]>("accept");
+  const [decision, setDecision] =
+    useState<(typeof DECISIONS)[number]["value"]>("accept");
   const [rationale, setRationale] = useState("");
-  const [implementationRecommendation, setImplementationRecommendation] = useState("");
+  const [implementationRecommendation, setImplementationRecommendation] =
+    useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -88,14 +90,16 @@ export function ReviewWorkspace({ suggestion }: ReviewWorkspaceProps) {
         <p className="text-sm text-muted-foreground">
           {suggestionStatusLabel(suggestion.status)}
           {suggestion.category_name ? ` · ${suggestion.category_name}` : ""}
-          {suggestion.origin_unit_name ? ` · ${suggestion.origin_unit_name}` : ""}
+          {suggestion.origin_unit_name
+            ? ` · ${suggestion.origin_unit_name}`
+            : ""}
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-5 text-sm">
         {suggestion.problem_or_opportunity ? (
           <div>
             <p className="font-medium">What was noticed</p>
-            <p className="mt-1 text-muted-foreground leading-relaxed">
+            <p className="mt-1 leading-relaxed text-muted-foreground">
               {suggestion.problem_or_opportunity}
             </p>
           </div>
@@ -103,21 +107,26 @@ export function ReviewWorkspace({ suggestion }: ReviewWorkspaceProps) {
         {suggestion.proposed_idea ? (
           <div>
             <p className="font-medium">Proposed change</p>
-            <p className="mt-1 text-muted-foreground leading-relaxed">
+            <p className="mt-1 leading-relaxed text-muted-foreground">
               {suggestion.proposed_idea}
             </p>
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 border-t border-border pt-5">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4 border-t border-border pt-5"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <Label htmlFor="review-impact">Impact</Label>
               <select
                 id="review-impact"
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 value={impact}
-                onChange={(event) => setImpact(event.target.value as (typeof LEVELS)[number])}
+                onChange={(event) =>
+                  setImpact(event.target.value as (typeof LEVELS)[number])
+                }
               >
                 {LEVELS.map((level) => (
                   <option key={level} value={level}>
@@ -130,9 +139,11 @@ export function ReviewWorkspace({ suggestion }: ReviewWorkspaceProps) {
               <Label htmlFor="review-effort">Effort</Label>
               <select
                 id="review-effort"
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 value={effort}
-                onChange={(event) => setEffort(event.target.value as (typeof LEVELS)[number])}
+                onChange={(event) =>
+                  setEffort(event.target.value as (typeof LEVELS)[number])
+                }
               >
                 {LEVELS.map((level) => (
                   <option key={level} value={level}>
@@ -181,18 +192,26 @@ export function ReviewWorkspace({ suggestion }: ReviewWorkspaceProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <Label htmlFor="review-implementation">Implementation recommendation</Label>
+            <Label htmlFor="review-implementation">
+              Implementation recommendation
+            </Label>
             <Textarea
               id="review-implementation"
               rows={2}
               value={implementationRecommendation}
-              onChange={(event) => setImplementationRecommendation(event.target.value)}
+              onChange={(event) =>
+                setImplementationRecommendation(event.target.value)
+              }
             />
           </label>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-          <Button type="submit" disabled={loading} className="min-h-11 w-full sm:w-auto">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="min-h-11 w-full sm:w-auto"
+          >
             {loading ? "Recording review…" : "Record review"}
           </Button>
         </form>

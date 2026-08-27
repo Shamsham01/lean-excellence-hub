@@ -14,7 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { FIVE_S_PERMISSIONS, SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
+import {
+  FIVE_S_PERMISSIONS,
+  SCHEDULE_PERMISSIONS,
+} from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -25,8 +28,12 @@ export default async function FiveSStandardDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
-  const canManage = await currentMemberHasPermission(FIVE_S_PERMISSIONS.standardsManage);
-  const canSchedule = await currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage);
+  const canManage = await currentMemberHasPermission(
+    FIVE_S_PERMISSIONS.standardsManage,
+  );
+  const canSchedule = await currentMemberHasPermission(
+    SCHEDULE_PERMISSIONS.manage,
+  );
 
   const { data: standard } = await supabase
     .from("five_s_standards")
@@ -71,7 +78,12 @@ export default async function FiveSStandardDetailPage({
             {publishedVersion && !draftVersion && canManage ? (
               <form action={createFiveSStandardSuccessorFromForm}>
                 <input type="hidden" name="standardId" value={id} />
-                <Button type="submit" variant="outline" className="min-h-11" data-testid="create-successor">
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="min-h-11"
+                  data-testid="create-successor"
+                >
                   Create new version
                 </Button>
               </form>
@@ -92,13 +104,21 @@ export default async function FiveSStandardDetailPage({
                 <div className="flex items-end gap-2">
                   <div>
                     <Label htmlFor="unitId">Start audit for unit</Label>
-                    <select id="unitId" name="unitId" className="mt-2 min-h-11 rounded-md border border-border bg-background px-3">
+                    <select
+                      id="unitId"
+                      name="unitId"
+                      className="mt-2 min-h-11 rounded-md border border-border bg-background px-3"
+                    >
                       {units?.map((u) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
                       ))}
                     </select>
                   </div>
-                  <Button type="submit" className="min-h-11">Start audit</Button>
+                  <Button type="submit" className="min-h-11">
+                    Start audit
+                  </Button>
                 </div>
               </form>
             ) : null}
@@ -120,22 +140,46 @@ export default async function FiveSStandardDetailPage({
             <CardTitle>Draft v{draftVersion.version_number}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
-            <form action={addFiveSSectionFromForm} className="flex flex-wrap items-end gap-3">
+            <form
+              action={addFiveSSectionFromForm}
+              className="flex flex-wrap items-end gap-3"
+            >
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="standardId" value={id} />
-              <input type="hidden" name="position" value={sections.length + 1} />
+              <input
+                type="hidden"
+                name="position"
+                value={sections.length + 1}
+              />
               <div>
                 <Label htmlFor="sectionTitle">Category name</Label>
-                <Input id="sectionTitle" name="sectionTitle" required className="mt-2 min-h-11" />
+                <Input
+                  id="sectionTitle"
+                  name="sectionTitle"
+                  required
+                  className="mt-2 min-h-11"
+                />
               </div>
-              <Button type="submit" className="min-h-11">Add category</Button>
+              <Button type="submit" className="min-h-11">
+                Add category
+              </Button>
             </form>
 
             {sections.map((section) => (
-              <div key={section.id} className="rounded-lg border border-border p-4">
+              <div
+                key={section.id}
+                className="rounded-lg border border-border p-4"
+              >
                 <p className="font-medium">{section.title}</p>
-                <form action={addFiveSQuestionFromForm} className="mt-3 flex flex-wrap items-end gap-3">
-                  <input type="hidden" name="versionId" value={draftVersion.id} />
+                <form
+                  action={addFiveSQuestionFromForm}
+                  className="mt-3 flex flex-wrap items-end gap-3"
+                >
+                  <input
+                    type="hidden"
+                    name="versionId"
+                    value={draftVersion.id}
+                  />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="standardId" value={id} />
                   <div>
@@ -144,13 +188,18 @@ export default async function FiveSStandardDetailPage({
                   </div>
                   <div>
                     <Label>Type</Label>
-                    <select name="questionType" className="mt-2 min-h-11 rounded-md border border-border px-3">
+                    <select
+                      name="questionType"
+                      className="mt-2 min-h-11 rounded-md border border-border px-3"
+                    >
                       <option value="yes_no">Yes / No</option>
                       <option value="score">Score</option>
                       <option value="short_text">Text</option>
                     </select>
                   </div>
-                  <Button type="submit" className="min-h-11">Add question</Button>
+                  <Button type="submit" className="min-h-11">
+                    Add question
+                  </Button>
                 </form>
               </div>
             ))}
@@ -158,7 +207,9 @@ export default async function FiveSStandardDetailPage({
             <form action={publishFiveSStandardFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="standardId" value={id} />
-              <Button type="submit" className="min-h-11">Publish standard</Button>
+              <Button type="submit" className="min-h-11">
+                Publish standard
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -166,8 +217,11 @@ export default async function FiveSStandardDetailPage({
         <Card>
           <CardContent className="py-6">
             <p className="text-sm text-muted-foreground">
-              Published version {publishedVersion.version_number} is active for audits and schedules.{" "}
-              <Link href="/platform/5s/history" className="underline">View audit history</Link>
+              Published version {publishedVersion.version_number} is active for
+              audits and schedules.{" "}
+              <Link href="/platform/5s/history" className="underline">
+                View audit history
+              </Link>
             </p>
           </CardContent>
         </Card>

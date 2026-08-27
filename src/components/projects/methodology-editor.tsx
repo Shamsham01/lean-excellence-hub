@@ -12,7 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { MethodologyPhaseRow, MethodologyVersionRow } from "@/lib/projects/types";
+import type {
+  MethodologyPhaseRow,
+  MethodologyVersionRow,
+} from "@/lib/projects/types";
 
 type MethodologyEditorProps = {
   methodologyId: string;
@@ -32,7 +35,9 @@ export function MethodologyEditor({
   canManage,
 }: MethodologyEditorProps) {
   const draftVersion = versions.find((version) => version.status === "draft");
-  const publishedVersion = versions.find((version) => version.status === "published");
+  const publishedVersion = versions.find(
+    (version) => version.status === "published",
+  );
   const draftPhases = phases.filter(
     (phase) => phase.methodology_version_id === draftVersion?.id,
   );
@@ -78,7 +83,9 @@ export function MethodologyEditor({
       await createCiProjectMethodologySuccessorVersion(methodologyId);
       setMessage("Successor draft created");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Successor creation failed");
+      setMessage(
+        err instanceof Error ? err.message : "Successor creation failed",
+      );
     }
   }
 
@@ -89,7 +96,9 @@ export function MethodologyEditor({
         <p className="text-sm text-muted-foreground">{methodologyCode}</p>
       </div>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -118,14 +127,21 @@ export function MethodologyEditor({
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Draft phases</CardTitle>
             {canManage ? (
-              <Button size="sm" onClick={handlePublish} disabled={draftPhases.length === 0}>
+              <Button
+                size="sm"
+                onClick={handlePublish}
+                disabled={draftPhases.length === 0}
+              >
                 Publish version
               </Button>
             ) : null}
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {draftPhases.map((phase) => (
-              <div key={phase.id} className="rounded-md border border-border px-3 py-2 text-sm">
+              <div
+                key={phase.id}
+                className="rounded-md border border-border px-3 py-2 text-sm"
+              >
                 <p className="font-medium">
                   {phase.display_order}. {phase.title}
                 </p>
@@ -170,9 +186,14 @@ export function MethodologyEditor({
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {phases
-              .filter((phase) => phase.methodology_version_id === publishedVersion.id)
+              .filter(
+                (phase) => phase.methodology_version_id === publishedVersion.id,
+              )
               .map((phase) => (
-                <div key={phase.id} className="rounded-md border border-border px-3 py-2 text-sm">
+                <div
+                  key={phase.id}
+                  className="rounded-md border border-border px-3 py-2 text-sm"
+                >
                   {phase.display_order}. {phase.title}
                 </div>
               ))}

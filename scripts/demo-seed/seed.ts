@@ -56,7 +56,9 @@ async function expectRpc(
   return data;
 }
 
-async function isM8DemoComplete(managerClient: SupabaseClient): Promise<boolean> {
+async function isM8DemoComplete(
+  managerClient: SupabaseClient,
+): Promise<boolean> {
   const { count: publishedCount } = await managerClient
     .from("ci_project_methodology_versions")
     .select("id", { count: "exact", head: true })
@@ -87,11 +89,15 @@ async function ensurePublishedMethodology(
 
   let methodologyId = existingMethodology?.id;
   if (!methodologyId) {
-    methodologyId = (await expectRpc(managerClient, "create_ci_project_methodology_draft", {
-      target_name: methodology.name,
-      target_code: methodology.code,
-      target_description: `${methodology.name} improvement methodology.`,
-    })) as string;
+    methodologyId = (await expectRpc(
+      managerClient,
+      "create_ci_project_methodology_draft",
+      {
+        target_name: methodology.name,
+        target_code: methodology.code,
+        target_description: `${methodology.name} improvement methodology.`,
+      },
+    )) as string;
   }
 
   const { data: versionRow, error: versionError } = await managerClient
@@ -102,7 +108,10 @@ async function ensurePublishedMethodology(
     .single();
 
   if (versionError || !versionRow) {
-    throw versionError ?? new Error(`methodology version missing for ${methodology.code}`);
+    throw (
+      versionError ??
+      new Error(`methodology version missing for ${methodology.code}`)
+    );
   }
 
   if (versionRow.status === "draft") {
@@ -137,7 +146,10 @@ async function ensurePublishedMethodology(
     .single();
 
   if (publishedError || !publishedVersion) {
-    throw publishedError ?? new Error(`published version missing for ${methodology.code}`);
+    throw (
+      publishedError ??
+      new Error(`published version missing for ${methodology.code}`)
+    );
   }
 
   return publishedVersion.id;
@@ -151,15 +163,21 @@ async function advanceDemoProjectToActive(
   let status = currentStatus;
 
   if (status === "draft") {
-    await expectRpc(managerClient, "submit_project", { target_project_id: projectId });
+    await expectRpc(managerClient, "submit_project", {
+      target_project_id: projectId,
+    });
     status = "submitted";
   }
   if (status === "submitted") {
-    await expectRpc(managerClient, "approve_project", { target_project_id: projectId });
+    await expectRpc(managerClient, "approve_project", {
+      target_project_id: projectId,
+    });
     status = "approved";
   }
   if (status === "approved") {
-    await expectRpc(managerClient, "start_project", { target_project_id: projectId });
+    await expectRpc(managerClient, "start_project", {
+      target_project_id: projectId,
+    });
   }
 }
 
@@ -186,13 +204,17 @@ async function finalizeDemoProjectTarget(
 
   if (project.status === "completed" && status !== "completed") {
     if (status === "on_hold") {
-      await expectRpc(managerClient, "resume_project", { target_project_id: projectId });
+      await expectRpc(managerClient, "resume_project", {
+        target_project_id: projectId,
+      });
     }
     await expectRpc(managerClient, "complete_project", {
       target_project_id: projectId,
-      target_outcome_summary: "Visual standards deployed and sustained on packaging lines.",
+      target_outcome_summary:
+        "Visual standards deployed and sustained on packaging lines.",
       target_lessons_learned: "Early operator involvement improved adoption.",
-      target_sustainment_summary: "Weekly visual checks added to line leader checklist.",
+      target_sustainment_summary:
+        "Weekly visual checks added to line leader checklist.",
     });
   }
 }
@@ -236,7 +258,11 @@ async function ensureDemoProject(
     }
 
     if (existing.status !== "completed") {
-      await advanceDemoProjectToActive(managerClient, existing.id, existing.status);
+      await advanceDemoProjectToActive(
+        managerClient,
+        existing.id,
+        existing.status,
+      );
       await expectRpc(managerClient, "create_project_action", {
         target_title: `Follow up: ${project.title}`,
         target_project_id: existing.id,
@@ -244,16 +270,25 @@ async function ensureDemoProject(
       });
     }
 
-    await finalizeDemoProjectTarget(managerClient, existing.id, existing.status, project);
+    await finalizeDemoProjectTarget(
+      managerClient,
+      existing.id,
+      existing.status,
+      project,
+    );
     return;
   }
 
-  const projectId = (await expectRpc(managerClient, "create_improvement_project", {
-    target_title: project.title,
-    target_unit_id: operationsUnitId,
-    target_problem_statement: project.problem,
-    target_objective: project.objective,
-  })) as string;
+  const projectId = (await expectRpc(
+    managerClient,
+    "create_improvement_project",
+    {
+      target_title: project.title,
+      target_unit_id: operationsUnitId,
+      target_problem_statement: project.problem,
+      target_objective: project.objective,
+    },
+  )) as string;
 
   await expectRpc(managerClient, "update_ci_project_draft", {
     target_project_id: projectId,
@@ -322,11 +357,12 @@ async function ensureM9RecognitionAward(
     (await resolveOrganisationId(operatorClient)) as string,
   );
 
-  const { data: operatorMembership, error: membershipError } = await operatorClient
-    .from("organisation_memberships")
-    .select("id")
-    .eq("user_id", DEMO_USERS.operator.id)
-    .single();
+  const { data: operatorMembership, error: membershipError } =
+    await operatorClient
+      .from("organisation_memberships")
+      .select("id")
+      .eq("user_id", DEMO_USERS.operator.id)
+      .single();
 
   const { data: implementedSuggestion } = await managerClient
     .from("improvement_suggestions")
@@ -341,7 +377,10 @@ async function ensureM9RecognitionAward(
     .single();
 
   if (membershipError || !operatorMembership) {
-    throw membershipError ?? new Error("M9 recognition demo operator membership missing");
+    throw (
+      membershipError ??
+      new Error("M9 recognition demo operator membership missing")
+    );
   }
   if (typeError || !greatIdeaType) {
     throw typeError ?? new Error("M9 recognition demo great-idea type missing");
@@ -361,7 +400,9 @@ async function ensureM9RecognitionAward(
   });
 }
 
-async function isM10DemoComplete(serviceAdmin: SupabaseClient): Promise<boolean> {
+async function isM10DemoComplete(
+  serviceAdmin: SupabaseClient,
+): Promise<boolean> {
   const { count: categoryCount } = await serviceAdmin
     .from("benefit_categories")
     .select("id", { count: "exact", head: true })
@@ -399,7 +440,9 @@ function buildMonthlyForecastPeriods(
   }> = [];
   const start = new Date(`${startDate}T00:00:00Z`);
   const end = new Date(`${endDate}T00:00:00Z`);
-  let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  let cursor = new Date(
+    Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1),
+  );
   let displayOrder = 1;
 
   while (cursor <= end) {
@@ -445,11 +488,15 @@ async function ensureDemoBenefitCategories(
       continue;
     }
 
-    const insertedId = (await expectRpc(managerClient, "create_benefit_category", {
-      target_name: category.name,
-      target_code: category.code,
-      target_display_order: category.displayOrder,
-    })) as string;
+    const insertedId = (await expectRpc(
+      managerClient,
+      "create_benefit_category",
+      {
+        target_name: category.name,
+        target_code: category.code,
+        target_display_order: category.displayOrder,
+      },
+    )) as string;
 
     categoryIds[category.code] = insertedId;
   }
@@ -493,7 +540,8 @@ async function seedDemoBenefitForecast(
 
   if (config.benefitClass === "financial") {
     forecastArgs.target_forecast_total_amount = config.forecastTotal;
-    forecastArgs.target_calculation_basis = "Demo forecast for local development.";
+    forecastArgs.target_calculation_basis =
+      "Demo forecast for local development.";
   } else {
     forecastArgs.target_target_measure_value = config.targetMeasureValue;
     forecastArgs.target_target_measure_unit = config.targetMeasureUnit;
@@ -564,16 +612,21 @@ async function seedDemoBenefitRealisationEntries(
   }
 
   for (const entry of config.realisationEntries) {
-    const entryId = (await expectRpc(managerClient, "create_benefit_realisation_entry", {
-      target_benefit_id: benefitId,
-      target_period_start: entry.periodStart,
-      target_period_end: entry.periodEnd,
-      target_financial_amount:
-        "financialAmount" in entry ? entry.financialAmount : null,
-      target_measure_value: "measureValue" in entry ? entry.measureValue : null,
-      target_measure_unit: "measureUnit" in entry ? entry.measureUnit : null,
-      target_data_source: entry.dataSource,
-    })) as string;
+    const entryId = (await expectRpc(
+      managerClient,
+      "create_benefit_realisation_entry",
+      {
+        target_benefit_id: benefitId,
+        target_period_start: entry.periodStart,
+        target_period_end: entry.periodEnd,
+        target_financial_amount:
+          "financialAmount" in entry ? entry.financialAmount : null,
+        target_measure_value:
+          "measureValue" in entry ? entry.measureValue : null,
+        target_measure_unit: "measureUnit" in entry ? entry.measureUnit : null,
+        target_data_source: entry.dataSource,
+      },
+    )) as string;
 
     await expectRpc(managerClient, "submit_benefit_realisation_entry", {
       target_entry_id: entryId,
@@ -618,21 +671,32 @@ async function seedDemoBenefitStory(
       target_description: config.baselineDescription,
     })) as string;
   } else if ("projectCode" in config && config.projectCode) {
-    const projectId = await resolveDemoProjectId(managerClient, config.projectCode);
-    benefitId = (await expectRpc(managerClient, "create_benefit_from_ci_project", {
-      target_project_id: projectId,
-      target_benefit_class: config.benefitClass,
-      target_title: config.title,
-      target_financial_type:
-        config.benefitClass === "financial" ? config.financialType : null,
-      target_non_financial_type:
-        config.benefitClass === "non_financial" ? config.nonFinancialType : null,
-      target_category_id: categoryIds[config.categoryCode],
-      target_organisational_unit_id: operationsUnitId,
-      target_owner_membership_id: managerMembershipId,
-    })) as string;
+    const projectId = await resolveDemoProjectId(
+      managerClient,
+      config.projectCode,
+    );
+    benefitId = (await expectRpc(
+      managerClient,
+      "create_benefit_from_ci_project",
+      {
+        target_project_id: projectId,
+        target_benefit_class: config.benefitClass,
+        target_title: config.title,
+        target_financial_type:
+          config.benefitClass === "financial" ? config.financialType : null,
+        target_non_financial_type:
+          config.benefitClass === "non_financial"
+            ? config.nonFinancialType
+            : null,
+        target_category_id: categoryIds[config.categoryCode],
+        target_organisational_unit_id: operationsUnitId,
+        target_owner_membership_id: managerMembershipId,
+      },
+    )) as string;
   } else {
-    throw new Error(`Demo benefit ${config.key} is missing a source configuration`);
+    throw new Error(
+      `Demo benefit ${config.key} is missing a source configuration`,
+    );
   }
 
   const updateArgs: Record<string, unknown> = {
@@ -717,7 +781,9 @@ async function upgradeDemoManagerProblemSolvingPermissions(): Promise<void> {
   );
 }
 
-async function isM11DemoComplete(managerClient: SupabaseClient): Promise<boolean> {
+async function isM11DemoComplete(
+  managerClient: SupabaseClient,
+): Promise<boolean> {
   const result = (await expectRpc(managerClient, "get_problem_solving_list", {
     target_search: DEMO_PROBLEM_SOLVING_CASE.title,
     target_status: "closed",
@@ -774,7 +840,11 @@ async function resolveProblemSolvingMethodId(
   client: SupabaseClient,
   builtinCode: string,
 ): Promise<string> {
-  const catalog = (await expectRpc(client, "get_problem_solving_methods", {})) as {
+  const catalog = (await expectRpc(
+    client,
+    "get_problem_solving_methods",
+    {},
+  )) as {
     items?: Array<{ id: string; code: string }>;
   };
 
@@ -814,11 +884,17 @@ async function seedDemoProblemSolvingCase(
   }
 
   if (existing?.id && (existing.hypothesis_count ?? 0) > 0) {
-    console.log("M11 demo case already in progress; skipping narrative re-seed.");
+    console.log(
+      "M11 demo case already in progress; skipping narrative re-seed.",
+    );
     return;
   }
 
-  await expectRpc(managerClient, "ensure_problem_solving_methods_provisioned", {});
+  await expectRpc(
+    managerClient,
+    "ensure_problem_solving_methods_provisioned",
+    {},
+  );
 
   const methodId = await resolveProblemSolvingMethodId(
     managerClient,
@@ -828,21 +904,25 @@ async function seedDemoProblemSolvingCase(
   let caseId = existing?.id;
 
   if (!caseId) {
-    caseId = (await expectRpc(managerClient, "create_problem_solving_case_draft", {
-      target_title: story.title,
-      target_organisation_unit_id: operationsUnitId,
-      target_problem_statement: story.problemStatement,
-      target_background: story.background,
-      target_business_impact: story.businessImpact,
-      target_scope_in: story.scopeIn,
-      target_scope_out: story.scopeOut,
-      target_target_condition: story.targetCondition,
-      target_detected_at: new Date("2026-01-15T08:00:00Z").toISOString(),
-      target_priority: story.priority,
-      target_severity: story.severity,
-      target_owner_membership_id: managerMembershipId,
-      target_facilitator_membership_id: managerMembershipId,
-    })) as string;
+    caseId = (await expectRpc(
+      managerClient,
+      "create_problem_solving_case_draft",
+      {
+        target_title: story.title,
+        target_organisation_unit_id: operationsUnitId,
+        target_problem_statement: story.problemStatement,
+        target_background: story.background,
+        target_business_impact: story.businessImpact,
+        target_scope_in: story.scopeIn,
+        target_scope_out: story.scopeOut,
+        target_target_condition: story.targetCondition,
+        target_detected_at: new Date("2026-01-15T08:00:00Z").toISOString(),
+        target_priority: story.priority,
+        target_severity: story.severity,
+        target_owner_membership_id: managerMembershipId,
+        target_facilitator_membership_id: managerMembershipId,
+      },
+    )) as string;
 
     try {
       const packagingWasteProjectId = await resolveDemoProjectId(
@@ -886,7 +966,8 @@ async function seedDemoProblemSolvingCase(
 
   await expectRpc(managerClient, "verify_current_condition_item", {
     target_item_id: measuredFactId,
-    target_verification_rationale: "Supported by quality inspection run summaries.",
+    target_verification_rationale:
+      "Supported by quality inspection run summaries.",
   });
 
   await expectRpc(managerClient, "create_current_condition_item", {
@@ -915,24 +996,37 @@ async function seedDemoProblemSolvingCase(
     target_description: "Temporary containment task for Line 3 seal defects.",
   });
 
-  const pressureHypothesisId = (await expectRpc(managerClient, "create_hypothesis", {
-    target_problem_solving_case_id: caseId,
-    target_statement: story.hypotheses.pressureVariation.statement,
-    target_category: story.hypotheses.pressureVariation.category,
-    target_rationale: "Pressure drift observed after maintenance intervention.",
-  })) as string;
+  const pressureHypothesisId = (await expectRpc(
+    managerClient,
+    "create_hypothesis",
+    {
+      target_problem_solving_case_id: caseId,
+      target_statement: story.hypotheses.pressureVariation.statement,
+      target_category: story.hypotheses.pressureVariation.category,
+      target_rationale:
+        "Pressure drift observed after maintenance intervention.",
+    },
+  )) as string;
 
-  const filmTensionHypothesisId = (await expectRpc(managerClient, "create_hypothesis", {
-    target_problem_solving_case_id: caseId,
-    target_statement: story.hypotheses.filmTension.statement,
-    target_category: story.hypotheses.filmTension.category,
-  })) as string;
+  const filmTensionHypothesisId = (await expectRpc(
+    managerClient,
+    "create_hypothesis",
+    {
+      target_problem_solving_case_id: caseId,
+      target_statement: story.hypotheses.filmTension.statement,
+      target_category: story.hypotheses.filmTension.category,
+    },
+  )) as string;
 
-  const setupHypothesisId = (await expectRpc(managerClient, "create_hypothesis", {
-    target_problem_solving_case_id: caseId,
-    target_statement: story.hypotheses.setupInconsistency.statement,
-    target_category: story.hypotheses.setupInconsistency.category,
-  })) as string;
+  const setupHypothesisId = (await expectRpc(
+    managerClient,
+    "create_hypothesis",
+    {
+      target_problem_solving_case_id: caseId,
+      target_statement: story.hypotheses.setupInconsistency.statement,
+      target_category: story.hypotheses.setupInconsistency.category,
+    },
+  )) as string;
 
   const analysisId = (await expectRpc(managerClient, "create_analysis", {
     target_problem_solving_case_id: caseId,
@@ -982,14 +1076,19 @@ async function seedDemoProblemSolvingCase(
     target_reason: "Pressure logging test planned.",
   });
 
-  const pressureTestId = (await expectRpc(managerClient, "create_hypothesis_test", {
-    target_hypothesis_id: pressureHypothesisId,
-    target_test_question: "Does sealing jaw pressure remain within validated limits across a full run?",
-    target_expected_result: "Pressure remains within +/- 5% of setup target.",
-    target_method: "Pressure trace logging during production run",
-    target_owner_membership_id: managerMembershipId,
-    target_planned_date: "2026-01-20",
-  })) as string;
+  const pressureTestId = (await expectRpc(
+    managerClient,
+    "create_hypothesis_test",
+    {
+      target_hypothesis_id: pressureHypothesisId,
+      target_test_question:
+        "Does sealing jaw pressure remain within validated limits across a full run?",
+      target_expected_result: "Pressure remains within +/- 5% of setup target.",
+      target_method: "Pressure trace logging during production run",
+      target_owner_membership_id: managerMembershipId,
+      target_planned_date: "2026-01-20",
+    },
+  )) as string;
 
   await expectRpc(managerClient, "complete_hypothesis_test", {
     target_hypothesis_test_id: pressureTestId,
@@ -1000,7 +1099,8 @@ async function seedDemoProblemSolvingCase(
 
   const filmTestId = (await expectRpc(managerClient, "create_hypothesis_test", {
     target_hypothesis_id: filmTensionHypothesisId,
-    target_test_question: "Does film tension correlate with seal defect timing?",
+    target_test_question:
+      "Does film tension correlate with seal defect timing?",
     target_expected_result: "Defects increase when tension drifts high.",
     target_method: "Tension trend comparison against defect log",
     target_owner_membership_id: managerMembershipId,
@@ -1015,18 +1115,21 @@ async function seedDemoProblemSolvingCase(
 
   await expectRpc(managerClient, "reject_cause_hypothesis", {
     target_hypothesis_id: filmTensionHypothesisId,
-    target_rejection_rationale: "Film tension test did not support the hypothesis.",
+    target_rejection_rationale:
+      "Film tension test did not support the hypothesis.",
   });
 
   await expectRpc(managerClient, "reject_cause_hypothesis", {
     target_hypothesis_id: setupHypothesisId,
-    target_rejection_rationale: "Setup audit showed consistent jaw height settings between shifts.",
+    target_rejection_rationale:
+      "Setup audit showed consistent jaw height settings between shifts.",
   });
 
   await expectRpc(managerClient, "update_hypothesis_status", {
     target_hypothesis_id: pressureHypothesisId,
     target_status: "supported",
-    target_reason: "Pressure trace test supports pressure variation hypothesis.",
+    target_reason:
+      "Pressure trace test supports pressure variation hypothesis.",
   });
 
   await expectRpc(managerClient, "verify_cause_hypothesis", {
@@ -1035,12 +1138,16 @@ async function seedDemoProblemSolvingCase(
       "Completed pressure test and maintenance review confirm regulator-induced sealing jaw pressure instability as the verified cause.",
   });
 
-  const countermeasureId = (await expectRpc(managerClient, "create_countermeasure", {
-    target_case_id: caseId,
-    target_title: story.countermeasure.title,
-    target_description: story.countermeasure.description,
-    target_rationale: story.countermeasure.rationale,
-  })) as string;
+  const countermeasureId = (await expectRpc(
+    managerClient,
+    "create_countermeasure",
+    {
+      target_case_id: caseId,
+      target_title: story.countermeasure.title,
+      target_description: story.countermeasure.description,
+      target_rationale: story.countermeasure.rationale,
+    },
+  )) as string;
 
   await expectRpc(managerClient, "link_countermeasure_causes", {
     target_countermeasure_id: countermeasureId,
@@ -1049,7 +1156,8 @@ async function seedDemoProblemSolvingCase(
 
   await expectRpc(managerClient, "select_countermeasure", {
     target_countermeasure_id: countermeasureId,
-    target_rationale: "Addresses verified regulator instability with standardised verification.",
+    target_rationale:
+      "Addresses verified regulator instability with standardised verification.",
   });
 
   await expectRpc(managerClient, "create_problem_solving_action", {
@@ -1057,7 +1165,8 @@ async function seedDemoProblemSolvingCase(
     target_problem_solving_case_id: caseId,
     target_context_role: "countermeasure",
     target_countermeasure_id: countermeasureId,
-    target_description: "Implement regulator replacement and update PM checklist.",
+    target_description:
+      "Implement regulator replacement and update PM checklist.",
   });
 
   const effectivenessCheckId = (await expectRpc(
@@ -1066,12 +1175,15 @@ async function seedDemoProblemSolvingCase(
     {
       target_case_id: caseId,
       target_criterion: story.effectiveness.criterion,
-      target_baseline_description: "Average seal defect rate before countermeasure.",
-      target_target_description: "Sustain seal defect rate below target after countermeasure.",
+      target_baseline_description:
+        "Average seal defect rate before countermeasure.",
+      target_target_description:
+        "Sustain seal defect rate below target after countermeasure.",
       target_baseline_numeric: story.effectiveness.baselineNumeric,
       target_target_numeric: story.effectiveness.targetNumeric,
       target_unit: story.effectiveness.unit,
-      target_observation_window_start: story.effectiveness.observationWindowStart,
+      target_observation_window_start:
+        story.effectiveness.observationWindowStart,
       target_observation_window_end: story.effectiveness.observationWindowEnd,
     },
   )) as string;
@@ -1080,21 +1192,27 @@ async function seedDemoProblemSolvingCase(
     target_effectiveness_check_id: effectivenessCheckId,
     target_result: "pass",
     target_actual_numeric: story.effectiveness.actualNumeric,
-    target_verification_rationale: "February quality data shows sustained improvement below target.",
+    target_verification_rationale:
+      "February quality data shows sustained improvement below target.",
   });
 
-  const sustainmentItemId = (await expectRpc(managerClient, "create_sustainment_item", {
-    target_case_id: caseId,
-    target_what: story.sustainment.what,
-    target_owner_membership_id: managerMembershipId,
-    target_check_method: story.sustainment.checkMethod,
-    target_follow_up_date: "2026-03-15",
-  })) as string;
+  const sustainmentItemId = (await expectRpc(
+    managerClient,
+    "create_sustainment_item",
+    {
+      target_case_id: caseId,
+      target_what: story.sustainment.what,
+      target_owner_membership_id: managerMembershipId,
+      target_check_method: story.sustainment.checkMethod,
+      target_follow_up_date: "2026-03-15",
+    },
+  )) as string;
 
   await expectRpc(managerClient, "record_sustainment_result", {
     target_sustainment_item_id: sustainmentItemId,
     target_result: story.sustainment.result,
-    target_evidence: "Updated changeover standard and first PM audit record on file.",
+    target_evidence:
+      "Updated changeover standard and first PM audit record on file.",
   });
 
   await expectRpc(managerClient, "create_problem_solving_action", {
@@ -1105,12 +1223,16 @@ async function seedDemoProblemSolvingCase(
     target_description: "Confirm sustainment checks are performed on schedule.",
   });
 
-  const sessionId = (await expectRpc(managerClient, "start_problem_solving_session", {
-    target_case_id: caseId,
-    target_title: story.session.title,
-    target_facilitator_membership_id: managerMembershipId,
-    target_scheduled_at: new Date("2026-02-05T13:00:00Z").toISOString(),
-  })) as string;
+  const sessionId = (await expectRpc(
+    managerClient,
+    "start_problem_solving_session",
+    {
+      target_case_id: caseId,
+      target_title: story.session.title,
+      target_facilitator_membership_id: managerMembershipId,
+      target_scheduled_at: new Date("2026-02-05T13:00:00Z").toISOString(),
+    },
+  )) as string;
 
   await expectRpc(managerClient, "add_session_entry", {
     target_session_id: sessionId,
@@ -1145,11 +1267,16 @@ async function ensureM11Demo(
 ): Promise<void> {
   await upgradeDemoManagerProblemSolvingPermissions();
 
+  const adminClient = await signInUser(apiUrl, publishableKey, "admin");
+  const organisationId = (await resolveOrganisationId(adminClient)) as string;
+  await switchOrganisation(adminClient, organisationId);
+
+  await expectRpc(adminClient, "update_organisation_ai_settings", {
+    target_ai_enabled: true,
+  });
+
   const managerClient = await signInUser(apiUrl, publishableKey, "manager");
-  await switchOrganisation(
-    managerClient,
-    (await resolveOrganisationId(managerClient)) as string,
-  );
+  await switchOrganisation(managerClient, organisationId);
 
   if (await isM11DemoComplete(managerClient)) {
     console.log("M11 demo already seeded.");
@@ -1251,10 +1378,14 @@ async function ensureM10Demo(
     );
   }
 
-  console.log("M10 demo: benefit categories, finance persona, and benefits seeded.");
+  console.log(
+    "M10 demo: benefit categories, finance persona, and benefits seeded.",
+  );
 }
 
-async function isM9DemoComplete(serviceAdmin: SupabaseClient): Promise<boolean> {
+async function isM9DemoComplete(
+  serviceAdmin: SupabaseClient,
+): Promise<boolean> {
   const { count: programmeCount } = await serviceAdmin
     .from("suggestion_programmes")
     .select("id", { count: "exact", head: true })
@@ -1264,7 +1395,9 @@ async function isM9DemoComplete(serviceAdmin: SupabaseClient): Promise<boolean> 
     .from("recognition_awards")
     .select("id", { count: "exact", head: true });
 
-  return Boolean(programmeCount && programmeCount > 0 && awardCount && awardCount > 0);
+  return Boolean(
+    programmeCount && programmeCount > 0 && awardCount && awardCount > 0,
+  );
 }
 
 async function ensureAuthUser(admin: SupabaseClient, userKey: DemoUserKey) {
@@ -2358,12 +2491,13 @@ async function ensureM9Demo(
   );
   if (programmeError) throw programmeError;
 
-  const { data: programmeVersion, error: programmeVersionError } = await signedInAdmin
-    .from("suggestion_programme_versions")
-    .select("id")
-    .eq("programme_id", programmeId as string)
-    .eq("version_number", 1)
-    .single();
+  const { data: programmeVersion, error: programmeVersionError } =
+    await signedInAdmin
+      .from("suggestion_programme_versions")
+      .select("id")
+      .eq("programme_id", programmeId as string)
+      .eq("version_number", 1)
+      .single();
 
   if (programmeVersionError || !programmeVersion) {
     throw programmeVersionError ?? new Error("programme version missing");
@@ -2383,10 +2517,13 @@ async function ensureM9Demo(
 
   const categoryIds: Record<string, string> = {};
   for (const category of DEMO_SUGGESTION_CATEGORIES) {
-    const { data: categoryId, error } = await signedInAdmin.rpc("create_suggestion_category", {
-      target_name: category.name,
-      target_code: category.code,
-    });
+    const { data: categoryId, error } = await signedInAdmin.rpc(
+      "create_suggestion_category",
+      {
+        target_name: category.name,
+        target_code: category.code,
+      },
+    );
     if (error) throw error;
     categoryIds[category.code] = categoryId as string;
   }
@@ -2416,27 +2553,45 @@ async function ensureM9Demo(
     .eq("user_id", DEMO_USERS.operator.id)
     .single();
 
-  const { data: draftSubmitted } = await operatorClient.rpc("create_suggestion_draft", {
-    target_programme_version_id: programmeVersion.id,
-    target_category_id: categoryIds.quality,
-    target_title: "Visual defect sample board",
-    target_problem_or_opportunity: "Operators struggle to judge minor defects consistently.",
-    target_proposed_idea: "Install a visual defect sample board at the inspection station.",
-    target_expected_benefit_summary: "Fewer customer complaints on appearance.",
+  const { data: draftSubmitted } = await operatorClient.rpc(
+    "create_suggestion_draft",
+    {
+      target_programme_version_id: programmeVersion.id,
+      target_category_id: categoryIds.quality,
+      target_title: "Visual defect sample board",
+      target_problem_or_opportunity:
+        "Operators struggle to judge minor defects consistently.",
+      target_proposed_idea:
+        "Install a visual defect sample board at the inspection station.",
+      target_expected_benefit_summary:
+        "Fewer customer complaints on appearance.",
+    },
+  );
+  await operatorClient.rpc("submit_suggestion", {
+    target_suggestion_id: draftSubmitted as string,
   });
-  await operatorClient.rpc("submit_suggestion", { target_suggestion_id: draftSubmitted as string });
-  await managerClient.rpc("begin_suggestion_review", { target_suggestion_id: draftSubmitted as string });
+  await managerClient.rpc("begin_suggestion_review", {
+    target_suggestion_id: draftSubmitted as string,
+  });
 
-  const { data: implementedId } = await operatorClient.rpc("create_suggestion_draft", {
-    target_programme_version_id: programmeVersion.id,
-    target_category_id: categoryIds.delivery,
-    target_title: "Pre-stage changeover tooling",
-    target_problem_or_opportunity: "Changeover team waits for required tooling.",
-    target_proposed_idea: "Prepare tooling trolley before shutdown.",
-    target_expected_benefit_summary: "Shorter changeover time.",
+  const { data: implementedId } = await operatorClient.rpc(
+    "create_suggestion_draft",
+    {
+      target_programme_version_id: programmeVersion.id,
+      target_category_id: categoryIds.delivery,
+      target_title: "Pre-stage changeover tooling",
+      target_problem_or_opportunity:
+        "Changeover team waits for required tooling.",
+      target_proposed_idea: "Prepare tooling trolley before shutdown.",
+      target_expected_benefit_summary: "Shorter changeover time.",
+    },
+  );
+  await operatorClient.rpc("submit_suggestion", {
+    target_suggestion_id: implementedId as string,
   });
-  await operatorClient.rpc("submit_suggestion", { target_suggestion_id: implementedId as string });
-  await managerClient.rpc("begin_suggestion_review", { target_suggestion_id: implementedId as string });
+  await managerClient.rpc("begin_suggestion_review", {
+    target_suggestion_id: implementedId as string,
+  });
   await managerClient.rpc("record_suggestion_review", {
     target_suggestion_id: implementedId as string,
     target_decision: "accept",
@@ -2444,7 +2599,9 @@ async function ensureM9Demo(
     target_effort_level: "low",
     target_rationale: "Quick win with clear benefit.",
   });
-  await managerClient.rpc("begin_suggestion_implementation", { target_suggestion_id: implementedId as string });
+  await managerClient.rpc("begin_suggestion_implementation", {
+    target_suggestion_id: implementedId as string,
+  });
   await managerClient.rpc("create_suggestion_action", {
     target_suggestion_id: implementedId as string,
     target_title: "Create standard pre-stage trolley",
@@ -2522,7 +2679,9 @@ async function ensureM8Demo(
   for (const project of DEMO_CI_PROJECTS) {
     const methodologyVersionId = methodologyVersionIds[project.methodologyCode];
     if (!methodologyVersionId) {
-      throw new Error(`Missing published methodology for ${project.methodologyCode}`);
+      throw new Error(
+        `Missing published methodology for ${project.methodologyCode}`,
+      );
     }
 
     await ensureDemoProject(
@@ -2649,7 +2808,13 @@ async function main() {
   await ensureM6Demo(adminClient, unitIds);
   await ensureM7Demo(adminClient, unitIds);
   await ensureM8Demo(adminClient, unitIds, env.apiUrl, env.publishableKey);
-  await ensureM9Demo(adminClient, admin, unitIds, env.apiUrl, env.publishableKey);
+  await ensureM9Demo(
+    adminClient,
+    admin,
+    unitIds,
+    env.apiUrl,
+    env.publishableKey,
+  );
   await ensureM10Demo(
     adminClient,
     admin,

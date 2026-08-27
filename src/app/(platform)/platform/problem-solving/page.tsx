@@ -27,22 +27,24 @@ export default async function ProblemSolvingPortfolioPage({
 
   const supabase = await createServerSupabaseClient();
   const canCreate = await currentMemberHasPermission("problem_solving.create");
-  const { data: overviewData } = await callProblemSolvingRpc<ProblemSolvingOverview>(
-    supabase,
-    "get_problem_solving_overview",
-  );
+  const { data: overviewData } =
+    await callProblemSolvingRpc<ProblemSolvingOverview>(
+      supabase,
+      "get_problem_solving_overview",
+    );
 
-  const { data: listData } = await callProblemSolvingRpc<ProblemSolvingListResponse>(
-    supabase,
-    "get_problem_solving_list",
-    {
-      target_search: params.search ?? null,
-      target_status: params.status ?? null,
-      target_severity: params.severity ?? null,
-      target_page: 1,
-      target_page_size: 25,
-    },
-  );
+  const { data: listData } =
+    await callProblemSolvingRpc<ProblemSolvingListResponse>(
+      supabase,
+      "get_problem_solving_list",
+      {
+        target_search: params.search ?? null,
+        target_status: params.status ?? null,
+        target_severity: params.severity ?? null,
+        target_page: 1,
+        target_page_size: 25,
+      },
+    );
 
   const portfolio = listData ?? {
     items: [],
@@ -52,7 +54,10 @@ export default async function ProblemSolvingPortfolioPage({
   };
 
   return (
-    <div className="flex flex-col gap-8" data-testid="problem-solving-portfolio-page">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="problem-solving-portfolio-page"
+    >
       <PageHeader
         title="Problem solving"
         description="Structured root cause analysis and countermeasure tracking across the portfolio."

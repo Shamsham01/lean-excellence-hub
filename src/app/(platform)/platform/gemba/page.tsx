@@ -10,7 +10,10 @@ import { Footprints } from "lucide-react";
 
 export default async function GembaOverviewPage() {
   const supabase = await createServerSupabaseClient();
-  const { data: definitions } = await supabase.from("gemba_definitions").select("id").limit(1);
+  const { data: definitions } = await supabase
+    .from("gemba_definitions")
+    .select("id")
+    .limit(1);
   const { count: walkCount } = await supabase
     .from("gemba_walks")
     .select("id", { count: "exact", head: true })
@@ -22,7 +25,10 @@ export default async function GembaOverviewPage() {
   if (!definitions?.length) {
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="Gemba walks" description="Structured walks with observations and follow-up." />
+        <PageHeader
+          title="Gemba walks"
+          description="Structured walks with observations and follow-up."
+        />
         <EmptyState
           title="No Gemba definitions yet"
           description="Create a Gemba walk template for your teams."
@@ -50,10 +56,16 @@ export default async function GembaOverviewPage() {
         <MetricCard label="Observations" value={observationCount ?? 0} />
       </div>
       <Card>
-        <CardHeader><CardTitle>Quick links</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Quick links</CardTitle>
+        </CardHeader>
         <CardContent className="flex gap-3">
-          <Button variant="outline" asChild><Link href="/platform/gemba/definitions">Definitions</Link></Button>
-          <Button variant="outline" asChild><Link href="/platform/gemba/history">History</Link></Button>
+          <Button variant="outline" asChild>
+            <Link href="/platform/gemba/definitions">Definitions</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/platform/gemba/history">History</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

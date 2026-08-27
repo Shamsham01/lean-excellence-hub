@@ -94,7 +94,9 @@ export function CreateProjectWizard({
         ...(baseline.trim() ? { baselineSummary: baseline.trim() } : {}),
         ...(target.trim() ? { targetSummary: target.trim() } : {}),
         ...(constraints.trim() ? { constraintsRisks: constraints.trim() } : {}),
-        ...(sustainment.trim() ? { sustainmentExpectation: sustainment.trim() } : {}),
+        ...(sustainment.trim()
+          ? { sustainmentExpectation: sustainment.trim() }
+          : {}),
         ...(methodologyVersionId ? { methodologyVersionId } : {}),
         ...(ownerId ? { ownerMembershipId: ownerId } : {}),
         measures: measures
@@ -106,9 +108,13 @@ export function CreateProjectWizard({
             ...(measure.baseline.trim()
               ? { baseline: Number(measure.baseline) }
               : {}),
-            ...(measure.target.trim() ? { target: Number(measure.target) } : {}),
+            ...(measure.target.trim()
+              ? { target: Number(measure.target) }
+              : {}),
           })),
-        ...(sourceResourceId.trim() ? { sourceResourceId: sourceResourceId.trim() } : {}),
+        ...(sourceResourceId.trim()
+          ? { sourceResourceId: sourceResourceId.trim() }
+          : {}),
       });
       router.push(`/platform/projects/${projectId}`);
       router.refresh();
@@ -121,14 +127,14 @@ export function CreateProjectWizard({
 
   return (
     <div className="flex flex-col gap-6" data-testid="create-project-wizard">
-      <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
         {WIZARD_STEPS.map((label, index) => (
           <button
             key={label}
             type="button"
             onClick={() => setStep(index)}
             className={cn(
-              "shrink-0 rounded-md border px-3 py-2 text-xs font-medium min-h-9",
+              "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
               index === step
                 ? "border-primary bg-primary/10 text-foreground"
                 : "border-border text-muted-foreground",
@@ -148,12 +154,16 @@ export function CreateProjectWizard({
             <>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Project title</span>
-                <Input required value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Organisation unit</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={unitId}
                   onChange={(e) => setUnitId(e.target.value)}
                 >
@@ -166,15 +176,27 @@ export function CreateProjectWizard({
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Problem statement</span>
-                <Textarea rows={3} value={problem} onChange={(e) => setProblem(e.target.value)} />
+                <Textarea
+                  rows={3}
+                  value={problem}
+                  onChange={(e) => setProblem(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Objective</span>
-                <Textarea rows={3} value={objective} onChange={(e) => setObjective(e.target.value)} />
+                <Textarea
+                  rows={3}
+                  value={objective}
+                  onChange={(e) => setObjective(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Expected impact</span>
-                <Textarea rows={2} value={impact} onChange={(e) => setImpact(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={impact}
+                  onChange={(e) => setImpact(e.target.value)}
+                />
               </label>
             </>
           ) : null}
@@ -183,27 +205,51 @@ export function CreateProjectWizard({
             <>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Scope in</span>
-                <Textarea rows={2} value={scopeIn} onChange={(e) => setScopeIn(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={scopeIn}
+                  onChange={(e) => setScopeIn(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Scope out</span>
-                <Textarea rows={2} value={scopeOut} onChange={(e) => setScopeOut(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={scopeOut}
+                  onChange={(e) => setScopeOut(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Baseline summary</span>
-                <Textarea rows={2} value={baseline} onChange={(e) => setBaseline(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={baseline}
+                  onChange={(e) => setBaseline(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Target summary</span>
-                <Textarea rows={2} value={target} onChange={(e) => setTarget(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Constraints & risks</span>
-                <Textarea rows={2} value={constraints} onChange={(e) => setConstraints(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={constraints}
+                  onChange={(e) => setConstraints(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Sustainment expectation</span>
-                <Textarea rows={2} value={sustainment} onChange={(e) => setSustainment(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={sustainment}
+                  onChange={(e) => setSustainment(e.target.value)}
+                />
               </label>
             </>
           ) : null}
@@ -212,7 +258,7 @@ export function CreateProjectWizard({
             <label className="flex flex-col gap-1 text-sm">
               <span>Methodology</span>
               <select
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 value={methodologyVersionId}
                 onChange={(e) => setMethodologyVersionId(e.target.value)}
               >
@@ -220,7 +266,10 @@ export function CreateProjectWizard({
                   <option value="">No published methodologies</option>
                 ) : (
                   methodologies.map((methodology) => (
-                    <option key={methodology.versionId} value={methodology.versionId}>
+                    <option
+                      key={methodology.versionId}
+                      value={methodology.versionId}
+                    >
                       {methodology.label}
                     </option>
                   ))
@@ -233,7 +282,7 @@ export function CreateProjectWizard({
             <label className="flex flex-col gap-1 text-sm">
               <span>Project owner</span>
               <select
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 value={ownerId}
                 onChange={(e) => setOwnerId(e.target.value)}
               >
@@ -249,8 +298,13 @@ export function CreateProjectWizard({
           {step === 4 ? (
             <div className="flex flex-col gap-4">
               {measures.map((measure, index) => (
-                <div key={measure.key} className="rounded-lg border border-border p-3">
-                  <p className="mb-2 text-sm font-medium">Measure {index + 1}</p>
+                <div
+                  key={measure.key}
+                  className="rounded-lg border border-border p-3"
+                >
+                  <p className="mb-2 text-sm font-medium">
+                    Measure {index + 1}
+                  </p>
                   <div className="flex flex-col gap-2">
                     <Input
                       placeholder="Display name"
@@ -258,7 +312,9 @@ export function CreateProjectWizard({
                       onChange={(e) =>
                         setMeasures((prev) =>
                           prev.map((row, i) =>
-                            i === index ? { ...row, name: e.target.value } : row,
+                            i === index
+                              ? { ...row, name: e.target.value }
+                              : row,
                           ),
                         )
                       }
@@ -270,7 +326,9 @@ export function CreateProjectWizard({
                         onChange={(e) =>
                           setMeasures((prev) =>
                             prev.map((row, i) =>
-                              i === index ? { ...row, unit: e.target.value } : row,
+                              i === index
+                                ? { ...row, unit: e.target.value }
+                                : row,
                             ),
                           )
                         }
@@ -281,7 +339,9 @@ export function CreateProjectWizard({
                         onChange={(e) =>
                           setMeasures((prev) =>
                             prev.map((row, i) =>
-                              i === index ? { ...row, baseline: e.target.value } : row,
+                              i === index
+                                ? { ...row, baseline: e.target.value }
+                                : row,
                             ),
                           )
                         }
@@ -292,7 +352,9 @@ export function CreateProjectWizard({
                         onChange={(e) =>
                           setMeasures((prev) =>
                             prev.map((row, i) =>
-                              i === index ? { ...row, target: e.target.value } : row,
+                              i === index
+                                ? { ...row, target: e.target.value }
+                                : row,
                             ),
                           )
                         }
@@ -345,8 +407,8 @@ export function CreateProjectWizard({
               </p>
               <p>
                 <span className="font-medium">Methodology:</span>{" "}
-                {methodologies.find((m) => m.versionId === methodologyVersionId)?.label ??
-                  "Not selected"}
+                {methodologies.find((m) => m.versionId === methodologyVersionId)
+                  ?.label ?? "Not selected"}
               </p>
               <p>
                 <span className="font-medium">Owner:</span>{" "}
@@ -357,8 +419,9 @@ export function CreateProjectWizard({
                 {measures.filter((m) => m.name.trim()).length} defined
               </p>
               <p className="text-muted-foreground">
-                Charter, methodology, team, and measures are captured in this wizard and can be
-                completed on the project workspace after creation.
+                Charter, methodology, team, and measures are captured in this
+                wizard and can be completed on the project workspace after
+                creation.
               </p>
             </div>
           ) : null}
@@ -372,11 +435,19 @@ export function CreateProjectWizard({
               </Button>
             ) : null}
             {step < WIZARD_STEPS.length - 1 ? (
-              <Button type="button" onClick={nextStep} disabled={step === 0 && !title.trim()}>
+              <Button
+                type="button"
+                onClick={nextStep}
+                disabled={step === 0 && !title.trim()}
+              >
                 Continue
               </Button>
             ) : (
-              <Button type="button" onClick={handleCreate} disabled={loading || !title.trim()}>
+              <Button
+                type="button"
+                onClick={handleCreate}
+                disabled={loading || !title.trim()}
+              >
                 {loading ? "Creating…" : "Create project"}
               </Button>
             )}

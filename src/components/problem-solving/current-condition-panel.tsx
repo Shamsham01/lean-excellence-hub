@@ -29,7 +29,9 @@ export function CurrentConditionPanel({
   canContribute,
 }: CurrentConditionPanelProps) {
   const router = useRouter();
-  const [category, setCategory] = useState<string>(CURRENT_CONDITION_CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(
+    CURRENT_CONDITION_CATEGORIES[0],
+  );
   const [statement, setStatement] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -53,14 +55,21 @@ export function CurrentConditionPanel({
 
   async function handleVerify(itemId: string) {
     setLoading(true);
-    const result = await verifyCurrentConditionItem(itemId, caseId, "Verified from workspace");
+    const result = await verifyCurrentConditionItem(
+      itemId,
+      caseId,
+      "Verified from workspace",
+    );
     setMessage(result.error ?? "Item verified");
     setLoading(false);
     router.refresh();
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-current-condition-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-current-condition-panel"
+    >
       {canContribute ? (
         <Card>
           <CardHeader>
@@ -71,7 +80,7 @@ export function CurrentConditionPanel({
               <label className="flex flex-col gap-1 text-sm">
                 <span>Category</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   data-testid="current-condition-category"
@@ -105,7 +114,9 @@ export function CurrentConditionPanel({
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           {activeItems.length === 0 ? (
-            <p className="text-muted-foreground">No current condition items yet.</p>
+            <p className="text-muted-foreground">
+              No current condition items yet.
+            </p>
           ) : (
             activeItems.map((item) => (
               <div
@@ -138,7 +149,9 @@ export function CurrentConditionPanel({
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

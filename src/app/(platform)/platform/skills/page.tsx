@@ -9,7 +9,9 @@ export default async function SkillsOverviewPage() {
   const supabase = await createServerSupabaseClient();
   const { data: dashboard } = await supabase.rpc("get_capability_dashboard");
 
-  const dashboardObj = dashboard as { skill_coverage_percent?: number | null } | null;
+  const dashboardObj = dashboard as {
+    skill_coverage_percent?: number | null;
+  } | null;
   const coverage = dashboardObj?.skill_coverage_percent ?? null;
   const { count: skillCount } = await supabase
     .from("skills")

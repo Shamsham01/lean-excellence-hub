@@ -15,15 +15,26 @@ type CaseEvidenceBlockProps = {
   canEdit: boolean;
 };
 
-export function CaseEvidenceBlock({ caseId, evidence, canEdit }: CaseEvidenceBlockProps) {
+export function CaseEvidenceBlock({
+  caseId,
+  evidence,
+  canEdit,
+}: CaseEvidenceBlockProps) {
   return (
     <EvidenceUploader
       existingEvidence={evidence}
       canEdit={canEdit}
       onInitiate={(filename, mimeType, byteSize) =>
-        initiateProblemSolvingEvidenceUpload(caseId, filename, mimeType, byteSize)
+        initiateProblemSolvingEvidenceUpload(
+          caseId,
+          filename,
+          mimeType,
+          byteSize,
+        )
       }
-      onConfirm={(attachmentId) => confirmProblemSolvingEvidenceUpload(caseId, attachmentId)}
+      onConfirm={(attachmentId) =>
+        confirmProblemSolvingEvidenceUpload(caseId, attachmentId)
+      }
       onLink={async () => ({})}
     />
   );

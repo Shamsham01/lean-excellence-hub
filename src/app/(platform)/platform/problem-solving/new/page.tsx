@@ -12,7 +12,10 @@ export default async function NewProblemSolvingCasePage() {
   if (!canCreate) notFound();
 
   const supabase = await createServerSupabaseClient();
-  await callProblemSolvingRpc(supabase, "ensure_problem_solving_methods_provisioned");
+  await callProblemSolvingRpc(
+    supabase,
+    "ensure_problem_solving_methods_provisioned",
+  );
 
   const { data: units } = await supabase
     .from("organisation_units")
@@ -26,13 +29,17 @@ export default async function NewProblemSolvingCasePage() {
     .eq("status", "active")
     .order("display_name");
 
-  const { data: methodsData } = await callProblemSolvingRpc<ProblemSolvingMethodsResponse>(
-    supabase,
-    "get_problem_solving_methods",
-  );
+  const { data: methodsData } =
+    await callProblemSolvingRpc<ProblemSolvingMethodsResponse>(
+      supabase,
+      "get_problem_solving_methods",
+    );
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6" data-testid="create-problem-solving-page">
+    <div
+      className="mx-auto flex max-w-2xl flex-col gap-6"
+      data-testid="create-problem-solving-page"
+    >
       <PageHeader
         title="New problem solving case"
         description="Define the problem, scope, and method before activation."

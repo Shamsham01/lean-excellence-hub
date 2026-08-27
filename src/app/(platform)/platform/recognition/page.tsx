@@ -13,7 +13,9 @@ export default async function RecognitionPage() {
 
   const { data: awards } = await supabase
     .from("recognition_awards")
-    .select("id, title, message, recognition_type_name_snapshot, awarded_at, status")
+    .select(
+      "id, title, message, recognition_type_name_snapshot, awarded_at, status",
+    )
     .order("awarded_at", { ascending: false })
     .limit(50);
 
@@ -53,21 +55,24 @@ export default async function RecognitionPage() {
       <div className="grid gap-3">
         {feedItems.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-            No recognition awards yet. Meaningful contributions will appear here when awarded.
+            No recognition awards yet. Meaningful contributions will appear here
+            when awarded.
           </div>
         ) : (
           feedItems.map((item) => (
             <div
               key={item.id}
-              className="rounded-lg border border-border border-l-4 border-l-primary/40 bg-card px-4 py-4 shadow-xs"
+              className="rounded-lg border border-l-4 border-border border-l-primary/40 bg-card px-4 py-4 shadow-xs"
               data-testid="recognition-feed-item"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-medium">{item.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{item.message}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    {item.message}
+                  </p>
                 </div>
-                <div className="text-xs text-muted-foreground shrink-0 sm:text-right">
+                <div className="shrink-0 text-xs text-muted-foreground sm:text-right">
                   <p>{item.recognition_type_name}</p>
                   <p>{new Date(item.awarded_at).toLocaleDateString("en-GB")}</p>
                 </div>

@@ -50,7 +50,14 @@ type AssessmentWorkspaceProps = {
   status: string;
   assessmentType: string;
   pillars: Pillar[];
-  answers: Record<string, { text_value?: string | null; number_value?: number | null; is_not_applicable?: boolean }>;
+  answers: Record<
+    string,
+    {
+      text_value?: string | null;
+      number_value?: number | null;
+      is_not_applicable?: boolean;
+    }
+  >;
   evidence: EvidenceItem[];
   canEdit: boolean;
   actionSlot?: ReactNode;
@@ -76,17 +83,19 @@ export function AssessmentWorkspace({
     : 0;
 
   if (!current) {
-    return <p className="text-sm text-muted-foreground">No criteria configured.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">No criteria configured.</p>
+    );
   }
 
   const { pillar, criterion } = current;
 
   return (
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[12rem_1fr_16rem] lg:gap-8">
-      <aside className="hidden lg:flex flex-col gap-1">
+      <aside className="hidden flex-col gap-1 lg:flex">
         {pillars.map((p) => (
           <div key={p.id} className="mb-3">
-            <p className="px-2 text-xs font-semibold uppercase text-muted-foreground">
+            <p className="px-2 text-xs font-semibold text-muted-foreground uppercase">
               {p.name}
             </p>
             {p.criteria.map((c) => {
@@ -99,7 +108,9 @@ export function AssessmentWorkspace({
                   type="button"
                   onClick={() => setIndex(idx)}
                   className={`w-full rounded-md px-2 py-2 text-left text-sm ${
-                    idx === index ? "bg-accent text-accent-foreground" : "hover:bg-muted"
+                    idx === index
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted"
                   }`}
                 >
                   {c.name}
@@ -113,7 +124,7 @@ export function AssessmentWorkspace({
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <AssessmentStatusBadge status={status} />
-          <span className="text-sm capitalize text-muted-foreground">
+          <span className="text-sm text-muted-foreground capitalize">
             {assessmentType.replace("_", " ")}
           </span>
         </div>
@@ -122,7 +133,9 @@ export function AssessmentWorkspace({
           <p className="typography-section-title">{pillar.name}</p>
           <h2 className="mt-1 text-lg font-semibold">{criterion.name}</h2>
           {criterion.description ? (
-            <p className="mt-2 text-sm text-muted-foreground">{criterion.description}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {criterion.description}
+            </p>
           ) : null}
         </div>
 
@@ -144,12 +157,12 @@ export function AssessmentWorkspace({
         </div>
 
         {actionSlot ? (
-          <div className="rounded-lg border border-border bg-card p-4 max-w-lg">
+          <div className="max-w-lg rounded-lg border border-border bg-card p-4">
             {actionSlot}
           </div>
         ) : null}
 
-        <div className="flex gap-2 sticky bottom-4 bg-background/95 p-2 backdrop-blur border border-border rounded-lg">
+        <div className="sticky bottom-4 flex gap-2 rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
           <Button
             type="button"
             variant="outline"
@@ -171,7 +184,8 @@ export function AssessmentWorkspace({
       <aside className="rounded-lg border border-border bg-surface p-4 text-sm">
         <p className="font-semibold">Guidance</p>
         <p className="mt-2 text-muted-foreground">
-          {criterion.guidance ?? "Review the criterion and provide evidence where required."}
+          {criterion.guidance ??
+            "Review the criterion and provide evidence where required."}
         </p>
       </aside>
     </div>
@@ -190,7 +204,11 @@ function QuestionField({
   criterionId: string;
   question: Question;
   evidence: EvidenceItem[];
-  answer?: { text_value?: string | null; number_value?: number | null; is_not_applicable?: boolean };
+  answer?: {
+    text_value?: string | null;
+    number_value?: number | null;
+    is_not_applicable?: boolean;
+  };
   canEdit: boolean;
 }) {
   const [saving, setSaving] = useState(false);
@@ -210,17 +228,20 @@ function QuestionField({
     <div className="rounded-lg border border-border bg-card p-4">
       <Label className="text-sm font-medium">{question.prompt}</Label>
       {question.help_text ? (
-        <p className="mt-1 typography-helper">{question.help_text}</p>
+        <p className="typography-helper mt-1">{question.help_text}</p>
       ) : null}
 
-      {question.question_type === "score" || question.question_type === "number" ? (
+      {question.question_type === "score" ||
+      question.question_type === "number" ? (
         <Input
           type="number"
           className="mt-3 max-w-[8rem]"
           disabled={!canEdit}
           value={answer?.number_value ?? ""}
           onChange={(e) =>
-            save({ numberValue: e.target.value ? Number(e.target.value) : null })
+            save({
+              numberValue: e.target.value ? Number(e.target.value) : null,
+            })
           }
         />
       ) : question.question_type === "long_text" ? (
@@ -273,7 +294,7 @@ function QuestionField({
         </Button>
       ) : null}
 
-      {saving ? <p className="mt-2 typography-caption">Saving…</p> : null}
+      {saving ? <p className="typography-caption mt-2">Saving…</p> : null}
 
       <EvidenceUploader
         assessmentId={assessmentId}

@@ -8,9 +8,11 @@ export function untypedFrom(
   supabase: SupabaseClient<Database>,
   table: string,
 ): UntypedQueryBuilder {
-  return (supabase as SupabaseClient<Database> & {
-    from: (relation: string) => UntypedQueryBuilder;
-  }).from(table);
+  return (
+    supabase as SupabaseClient<Database> & {
+      from: (relation: string) => UntypedQueryBuilder;
+    }
+  ).from(table);
 }
 
 export async function callProblemSolvingRpc<T = unknown>(
@@ -25,5 +27,8 @@ export async function callProblemSolvingRpc<T = unknown>(
     ) => ReturnType<SupabaseClient<Database>["rpc"]>;
   };
   const { data, error } = await client.rpc(fn, args ?? {});
-  return { data: data as T | null, error: error ? new Error(error.message) : null };
+  return {
+    data: data as T | null,
+    error: error ? new Error(error.message) : null,
+  };
 }

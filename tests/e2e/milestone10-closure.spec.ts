@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DEMO_ORGANISATION, DEMO_USERS } from "../../scripts/demo-seed/constants";
+import {
+  DEMO_ORGANISATION,
+  DEMO_USERS,
+} from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -19,22 +22,35 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/platform/);
-  await expect(page.getByRole("main").getByText(DEMO_ORGANISATION.name)).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText(DEMO_ORGANISATION.name),
+  ).toBeVisible();
 }
 
 test.describe("Milestone 10 closure", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(120_000);
-  test.skip(!hasSupabaseE2e, "Requires E2E_WITH_SUPABASE=1 and demo seed applied");
+  test.skip(
+    !hasSupabaseE2e,
+    "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
+  );
 
-  test("manager opens benefits portfolio with seeded stories", async ({ page }) => {
+  test("manager opens benefits portfolio with seeded stories", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
     await expect(page.getByTestId("benefits-portfolio-page")).toBeVisible();
     await expect(page.getByTestId("benefit-portfolio")).toBeVisible();
-    await expect(page.getByText("Packaging Waste Reduction Savings")).toBeVisible();
-    await expect(page.getByText("Preventive Maintenance Cost Avoidance")).toBeVisible();
-    await expect(page.getByText("Visual Standards Quality Improvement")).toBeVisible();
+    await expect(
+      page.getByText("Packaging Waste Reduction Savings"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Preventive Maintenance Cost Avoidance"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Visual Standards Quality Improvement"),
+    ).toBeVisible();
   });
 
   test("manager creates a financial benefit draft", async ({ page }) => {
@@ -51,7 +67,9 @@ test.describe("Milestone 10 closure", () => {
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByLabel("Baseline financial value").fill("15000");
-    await page.getByLabel("Baseline description").fill("Baseline scrap cost for E2E benefit.");
+    await page
+      .getByLabel("Baseline description")
+      .fill("Baseline scrap cost for E2E benefit.");
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByLabel("Forecast start").fill("2026-04-01");
@@ -59,7 +77,9 @@ test.describe("Milestone 10 closure", () => {
     await page.getByLabel("Forecast total amount").fill("9000");
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await page.getByLabel("Standalone initiative (no source link required)").check();
+    await page
+      .getByLabel("Standalone initiative (no source link required)")
+      .check();
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Create benefit draft" }).click();
 
@@ -68,10 +88,14 @@ test.describe("Milestone 10 closure", () => {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   });
 
-  test("manager submits forecast and benefit for validation", async ({ page }) => {
+  test("manager submits forecast and benefit for validation", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
-    await page.getByRole("link", { name: new RegExp(`E2E Benefit ${uniqueSuffix}`) }).click();
+    await page
+      .getByRole("link", { name: new RegExp(`E2E Benefit ${uniqueSuffix}`) })
+      .click();
     await expect(page.getByTestId("benefit-workspace")).toBeVisible();
 
     await page.getByRole("tab", { name: "Forecast" }).click();
@@ -80,25 +104,41 @@ test.describe("Milestone 10 closure", () => {
 
     await page.getByTestId("benefit-submit-button").click();
     await expect(page.getByTestId("benefit-submit-dialog")).toBeVisible();
-    await page.getByTestId("benefit-ci-validator-select").selectOption({ label: "Apex Manager" });
-    await page.getByTestId("benefit-finance-validator-select").selectOption({ label: "Apex Finance" });
+    await page
+      .getByTestId("benefit-ci-validator-select")
+      .selectOption({ label: "Apex Manager" });
+    await page
+      .getByTestId("benefit-finance-validator-select")
+      .selectOption({ label: "Apex Finance" });
     await page.getByTestId("benefit-submit-confirm-button").click();
-    await expect(page.getByText(/Benefit submitted for validation/i)).toBeVisible();
     await expect(
-      page.getByTestId("benefit-header").getByText("Submitted", { exact: true }),
+      page.getByText(/Benefit submitted for validation/i),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByTestId("benefit-header")
+        .getByText("Submitted", { exact: true }),
     ).toBeVisible();
   });
 
-  test("manager records CI approval while finance approval remains pending", async ({ page }) => {
+  test("manager records CI approval while finance approval remains pending", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
-    await page.getByRole("link", { name: new RegExp(`E2E Benefit ${uniqueSuffix}`) }).click();
+    await page
+      .getByRole("link", { name: new RegExp(`E2E Benefit ${uniqueSuffix}`) })
+      .click();
     await page.getByRole("tab", { name: "Validation" }).click();
-    await page.getByLabel("Rationale", { exact: true }).fill("CI validation approved in E2E.");
+    await page
+      .getByLabel("Rationale", { exact: true })
+      .fill("CI validation approved in E2E.");
     await page.getByRole("button", { name: "Record CI validation" }).click();
     await expect(page.getByText(/CI validation recorded/i)).toBeVisible();
     await expect(
-      page.getByTestId("benefit-header").getByText("Submitted", { exact: true }),
+      page
+        .getByTestId("benefit-header")
+        .getByText("Submitted", { exact: true }),
     ).toBeVisible();
   });
 
@@ -107,8 +147,12 @@ test.describe("Milestone 10 closure", () => {
   }) => {
     await loginAs(page, "finance");
     await page.goto("/platform/benefits/validation");
-    await expect(page.getByTestId("benefit-validation-queue-page")).toBeVisible();
-    await expect(page.getByText(new RegExp(`E2E Benefit ${uniqueSuffix}`))).toBeVisible();
+    await expect(
+      page.getByTestId("benefit-validation-queue-page"),
+    ).toBeVisible();
+    await expect(
+      page.getByText(new RegExp(`E2E Benefit ${uniqueSuffix}`)),
+    ).toBeVisible();
 
     await page
       .getByTestId("benefit-validation-queue-page")
@@ -119,8 +163,12 @@ test.describe("Milestone 10 closure", () => {
       .click();
     await expect(page.getByTestId("benefit-workspace")).toBeVisible();
     await page.getByRole("tab", { name: "Validation" }).click();
-    await page.locator("#finance-validation-rationale").fill("Finance validation approved in E2E.");
-    await page.getByRole("button", { name: "Record finance validation" }).click();
+    await page
+      .locator("#finance-validation-rationale")
+      .fill("Finance validation approved in E2E.");
+    await page
+      .getByRole("button", { name: "Record finance validation" })
+      .click();
     await expect(page.getByText("FINANCE validation recorded")).toBeVisible();
     await expect(
       page.getByTestId("benefit-header").getByText("Approved", { exact: true }),
@@ -130,7 +178,9 @@ test.describe("Milestone 10 closure", () => {
     await expect(page.getByTestId("create-project-page")).not.toBeVisible();
   });
 
-  test("manager views realising benefit with validated actuals", async ({ page }) => {
+  test("manager views realising benefit with validated actuals", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
     await page.getByRole("link", { name: /Changeover Time Savings/i }).click();
@@ -138,21 +188,31 @@ test.describe("Milestone 10 closure", () => {
     await page.getByRole("tab", { name: "Realisation" }).click();
     await expect(page.getByTestId("benefit-realisation-panel")).toBeVisible();
     await expect(
-      page.getByTestId("benefit-realisation-panel").getByText("Validated Actual", { exact: true }).first(),
+      page
+        .getByTestId("benefit-realisation-panel")
+        .getByText("Validated Actual", { exact: true })
+        .first(),
     ).toBeVisible();
   });
 
-  test("manager views non-financial realised benefit measure history", async ({ page }) => {
+  test("manager views non-financial realised benefit measure history", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
-    await page.getByRole("link", { name: /Visual Standards Quality Improvement/i }).click();
+    await page
+      .getByRole("link", { name: /Visual Standards Quality Improvement/i })
+      .click();
     await expect(page.getByTestId("benefit-workspace")).toBeVisible();
     await expect(
       page.getByTestId("benefit-header").getByText("Realised", { exact: true }),
     ).toBeVisible();
     await page.getByRole("tab", { name: "Realisation" }).click();
     await expect(
-      page.getByTestId("benefit-realisation-panel").getByText("Validated Measure", { exact: true }).first(),
+      page
+        .getByTestId("benefit-realisation-panel")
+        .getByText("Validated Measure", { exact: true })
+        .first(),
     ).toBeVisible();
   });
 
@@ -162,35 +222,63 @@ test.describe("Milestone 10 closure", () => {
     await expect(page.getByTestId("create-benefit-page")).not.toBeVisible();
 
     await page.goto("/platform/benefits/validation");
-    await expect(page.getByTestId("benefit-validation-queue-page")).not.toBeVisible();
+    await expect(
+      page.getByTestId("benefit-validation-queue-page"),
+    ).not.toBeVisible();
   });
 
-  test("forecast history remains visible on seeded benefit", async ({ page }) => {
+  test("forecast history remains visible on seeded benefit", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
-    await page.getByRole("link", { name: /Packaging Waste Reduction Savings/i }).click();
+    await page
+      .getByRole("link", { name: /Packaging Waste Reduction Savings/i })
+      .click();
     await page.getByRole("tab", { name: "Forecast" }).click();
     await expect(page.getByTestId("benefit-forecast-panel")).toBeVisible();
-    await expect(page.getByTestId("benefit-forecast-panel").getByText("Forecast history")).toBeVisible();
-    await expect(page.getByTestId("benefit-forecast-panel").getByText(/Version 1/)).toBeVisible();
+    await expect(
+      page.getByTestId("benefit-forecast-panel").getByText("Forecast history"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("benefit-forecast-panel").getByText(/Version 1/),
+    ).toBeVisible();
   });
 
-  test("realisation history keeps validated entries visible", async ({ page }) => {
+  test("realisation history keeps validated entries visible", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/benefits");
-    await page.getByRole("link", { name: /Packaging Waste Reduction Savings/i }).click();
+    await page
+      .getByRole("link", { name: /Packaging Waste Reduction Savings/i })
+      .click();
     await page.getByRole("tab", { name: "Realisation" }).click();
     await expect(
-      page.getByTestId("benefit-realisation-panel").getByText("Validated Actual", { exact: true }).first(),
+      page
+        .getByTestId("benefit-realisation-panel")
+        .getByText("Validated Actual", { exact: true })
+        .first(),
     ).toBeVisible();
-    await expect(page.getByTestId("benefit-realisation-panel").getByText("£2,800")).toBeVisible();
-    await expect(page.getByTestId("benefit-realisation-panel").getByText("Validated").first()).toBeVisible();
+    await expect(
+      page.getByTestId("benefit-realisation-panel").getByText("£2,800"),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByTestId("benefit-realisation-panel")
+        .getByText("Validated")
+        .first(),
+    ).toBeVisible();
   });
 
-  test("manager opens suggestion benefits integration for implemented suggestion", async ({ page }) => {
+  test("manager opens suggestion benefits integration for implemented suggestion", async ({
+    page,
+  }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/suggestions");
-    await page.getByRole("link", { name: /Pre-stage changeover tooling/i }).click();
+    await page
+      .getByRole("link", { name: /Pre-stage changeover tooling/i })
+      .click();
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
     await page.getByRole("tab", { name: "Benefits" }).click();
     await expect(page.getByTestId("suggestion-benefits-panel")).toBeVisible();

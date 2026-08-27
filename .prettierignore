@@ -1,6 +1,8 @@
 .next
+.agents
 .cursor
 coverage
+skills-lock.json
 docs
 node_modules
 package-lock.json

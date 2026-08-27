@@ -11,11 +11,17 @@ import {
 } from "@/app/(platform)/platform/benefits/actions";
 import { BenefitForecastPanel } from "@/components/benefits/benefit-forecast-panel";
 import { BenefitHeader } from "@/components/benefits/benefit-header";
-import { BenefitSubmitDialog, type BenefitValidatorEligibility } from "@/components/benefits/benefit-submit-dialog";
+import {
+  BenefitSubmitDialog,
+  type BenefitValidatorEligibility,
+} from "@/components/benefits/benefit-submit-dialog";
 import { BenefitRealisationPanel } from "@/components/benefits/benefit-realisation-panel";
 import { BenefitValidationPanel } from "@/components/benefits/benefit-validation-panel";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import { ResourceComments, type CommentRow } from "@/components/comments/resource-comments";
+import {
+  ResourceComments,
+  type CommentRow,
+} from "@/components/comments/resource-comments";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,9 +81,13 @@ export function BenefitWorkspace({
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
-  const [submitEligibility, setSubmitEligibility] = useState<BenefitValidatorEligibility | null>(null);
-  const [submitEligibilityLoading, setSubmitEligibilityLoading] = useState(false);
-  const [submitEligibilityError, setSubmitEligibilityError] = useState<string | null>(null);
+  const [submitEligibility, setSubmitEligibility] =
+    useState<BenefitValidatorEligibility | null>(null);
+  const [submitEligibilityLoading, setSubmitEligibilityLoading] =
+    useState(false);
+  const [submitEligibilityError, setSubmitEligibilityError] = useState<
+    string | null
+  >(null);
   const sourceLinks = normaliseSourceLinks(detail.source_links);
 
   async function handleSubmitDialogOpen() {
@@ -90,7 +100,9 @@ export function BenefitWorkspace({
     setSubmitEligibilityLoading(false);
 
     if (result.error || !result.data) {
-      setSubmitEligibilityError(result.error ?? "Unable to load validator options");
+      setSubmitEligibilityError(
+        result.error ?? "Unable to load validator options",
+      );
       return;
     }
 
@@ -165,12 +177,16 @@ export function BenefitWorkspace({
             <CardContent className="flex flex-col gap-4 text-sm">
               <div>
                 <p className="font-medium">Description</p>
-                <p className="text-muted-foreground">{detail.description ?? "—"}</p>
+                <p className="text-muted-foreground">
+                  {detail.description ?? "—"}
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="font-medium">Baseline description</p>
-                  <p className="text-muted-foreground">{detail.baseline_description ?? "—"}</p>
+                  <p className="text-muted-foreground">
+                    {detail.baseline_description ?? "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium">Baseline period</p>
@@ -184,7 +200,7 @@ export function BenefitWorkspace({
               {detail.benefit_class === "financial" ? (
                 <div>
                   <p className="font-medium">Baseline financial value</p>
-                  <p className="tabular-nums text-muted-foreground">
+                  <p className="text-muted-foreground tabular-nums">
                     {formatBenefitCurrencyAmount(
                       detail.baseline_financial_value,
                       detail.reporting_currency_snapshot,
@@ -194,7 +210,7 @@ export function BenefitWorkspace({
               ) : (
                 <div>
                   <p className="font-medium">Baseline measure</p>
-                  <p className="tabular-nums text-muted-foreground">
+                  <p className="text-muted-foreground tabular-nums">
                     {formatMeasureValue(
                       detail.baseline_measure_value,
                       detail.baseline_measure_unit,
@@ -203,7 +219,7 @@ export function BenefitWorkspace({
                 </div>
               )}
               <div>
-                <p className="font-medium mb-2">Source links</p>
+                <p className="mb-2 font-medium">Source links</p>
                 {sourceLinks.length === 0 ? (
                   <p className="text-muted-foreground">No linked sources.</p>
                 ) : (
@@ -220,7 +236,9 @@ export function BenefitWorkspace({
                             · {link.resource_type}
                           </span>
                         </span>
-                        <Badge variant="outline">{link.relationship_role}</Badge>
+                        <Badge variant="outline">
+                          {link.relationship_role}
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -310,7 +328,9 @@ export function BenefitWorkspace({
                     className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                   >
                     <span className="font-medium">{item.filename}</span>
-                    <span className="text-muted-foreground">{item.mime_type}</span>
+                    <span className="text-muted-foreground">
+                      {item.mime_type}
+                    </span>
                   </div>
                 ))
               )}

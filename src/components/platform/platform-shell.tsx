@@ -2,7 +2,10 @@ import type { ReactNode } from "react";
 
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { platformNavigation } from "@/modules/platform-shell/navigation";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  currentMemberHasPermission,
+  currentMemberHasScopedPermission,
+} from "@/modules/platform-shell/permissions";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 
 type PlatformShellProps = {
@@ -18,7 +21,10 @@ export async function PlatformShell({
 }: PlatformShellProps) {
   const visibleNav = [];
   for (const item of platformNavigation) {
-    if (await currentMemberHasPermission(item.permission)) {
+    const canAccess = item.organisationScopeOnly
+      ? await currentMemberHasScopedPermission(item.permission)
+      : await currentMemberHasPermission(item.permission);
+    if (canAccess) {
       visibleNav.push(item);
     }
   }

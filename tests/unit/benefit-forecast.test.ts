@@ -31,7 +31,9 @@ describe("benefit forecast helpers", () => {
   });
 
   it("formats forecast period labels", () => {
-    expect(formatForecastPeriodLabel("2026-01-01", "2026-01-31")).toContain("2026");
+    expect(formatForecastPeriodLabel("2026-01-01", "2026-01-31")).toContain(
+      "2026",
+    );
   });
 
   it("calculates fiscal year ranges", () => {

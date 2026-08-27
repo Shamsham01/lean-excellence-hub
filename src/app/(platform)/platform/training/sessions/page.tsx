@@ -12,7 +12,10 @@ export default async function TrainingSessionsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Training sessions" description="Scheduled and completed training sessions." />
+      <PageHeader
+        title="Training sessions"
+        description="Scheduled and completed training sessions."
+      />
       <Card>
         <CardContent className="divide-y divide-border p-0">
           {sessions?.map((session) => (
@@ -22,7 +25,9 @@ export default async function TrainingSessionsPage() {
               className="flex min-h-11 items-center justify-between px-4 py-3 hover:bg-surface"
             >
               <span>{session.title}</span>
-              <span className="text-sm text-muted-foreground">{session.status}</span>
+              <span className="text-sm text-muted-foreground">
+                {session.status}
+              </span>
             </a>
           ))}
         </CardContent>

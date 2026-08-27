@@ -1,0 +1,10 @@
+{
+  "id": "challenge-assumptions",
+  "mode": "challenge",
+  "userMessage": "Please review assumptions in this case.",
+  "expect": {
+    "messageContains": ["assumption"],
+    "observationCountMin": 1,
+    "forbiddenProposalTypes": ["close_case", "verify_root_cause", "assign_rbac"]
+  }
+}

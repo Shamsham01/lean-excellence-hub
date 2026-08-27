@@ -10,17 +10,23 @@ export async function updateSessionParticipantStatus(
   status: string,
 ) {
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("update_training_session_participant_status", {
-    target_session_id: sessionId,
-    target_participant_id: participantId,
-    target_status: status,
-  });
+  const { error } = await supabase.rpc(
+    "update_training_session_participant_status",
+    {
+      target_session_id: sessionId,
+      target_participant_id: participantId,
+      target_status: status,
+    },
+  );
   if (error) return { error: error.message };
   revalidatePath(`/platform/training/sessions/${sessionId}`);
   return { ok: true };
 }
 
-export async function removeSessionParticipant(sessionId: string, participantId: string) {
+export async function removeSessionParticipant(
+  sessionId: string,
+  participantId: string,
+) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("remove_training_session_participant", {
     target_session_id: sessionId,
@@ -31,7 +37,10 @@ export async function removeSessionParticipant(sessionId: string, participantId:
   return { ok: true };
 }
 
-export async function addSessionParticipant(sessionId: string, membershipId: string) {
+export async function addSessionParticipant(
+  sessionId: string,
+  membershipId: string,
+) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("add_training_session_participant", {
     target_session_id: sessionId,
@@ -51,14 +60,17 @@ export async function bulkRecordCompletions(input: {
   notes?: string;
 }) {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc("bulk_record_training_completions", {
-    target_membership_ids: input.membershipIds,
-    target_course_version_id: input.courseVersionId,
-    target_completed_at: input.completedAt,
-    target_completion_method: input.completionMethod ?? "classroom",
-    target_session_id: input.sessionId,
-    ...(input.notes ? { target_notes: input.notes } : {}),
-  });
+  const { data, error } = await supabase.rpc(
+    "bulk_record_training_completions",
+    {
+      target_membership_ids: input.membershipIds,
+      target_course_version_id: input.courseVersionId,
+      target_completed_at: input.completedAt,
+      target_completion_method: input.completionMethod ?? "classroom",
+      target_session_id: input.sessionId,
+      ...(input.notes ? { target_notes: input.notes } : {}),
+    },
+  );
   if (error) return { error: error.message };
 
   for (const membershipId of input.membershipIds) {
@@ -112,9 +124,12 @@ export async function createCapabilityAction(input: {
 
 export async function createCourseSuccessorVersion(courseId: string) {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc("create_training_course_successor_version", {
-    target_course_id: courseId,
-  });
+  const { data, error } = await supabase.rpc(
+    "create_training_course_successor_version",
+    {
+      target_course_id: courseId,
+    },
+  );
   if (error) return { error: error.message };
   revalidatePath(`/platform/training/courses/${courseId}`);
   return { versionId: data as string };

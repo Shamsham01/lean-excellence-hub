@@ -15,7 +15,10 @@ import {
   projectStatusBadgeVariant,
   projectStatusLabel,
 } from "@/lib/projects/status";
-import type { ProjectPortfolioItem, ProjectPortfolioMetrics } from "@/lib/projects/types";
+import type {
+  ProjectPortfolioItem,
+  ProjectPortfolioMetrics,
+} from "@/lib/projects/types";
 
 type ProjectPortfolioProps = {
   items: ProjectPortfolioItem[];
@@ -35,7 +38,11 @@ export function ProjectPortfolio({
   canManage,
 }: ProjectPortfolioProps) {
   const router = useRouter();
-  const computed = computePortfolioMetrics(items, metrics.openActions, metrics.meetingTarget);
+  const computed = computePortfolioMetrics(
+    items,
+    metrics.openActions,
+    metrics.meetingTarget,
+  );
 
   function applyFilters(formData: FormData) {
     const params = new URLSearchParams();
@@ -62,7 +69,9 @@ export function ProjectPortfolio({
         <CardHeader className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <CardTitle>Project portfolio</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">{totalCount} projects</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {totalCount} projects
+            </p>
           </div>
           <form
             onSubmit={(event) => {
@@ -85,7 +94,7 @@ export function ProjectPortfolio({
               <select
                 name="status"
                 defaultValue={statusFilter ?? ""}
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               >
                 <option value="">All statuses</option>
                 {portfolioFilterStatuses().map((status) => (
@@ -103,7 +112,9 @@ export function ProjectPortfolio({
         <CardContent className="flex flex-col gap-2 pt-4">
           {items.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
-              <p className="text-sm font-medium">No projects match your filters</p>
+              <p className="text-sm font-medium">
+                No projects match your filters
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Adjust search or status, or create a new improvement project.
               </p>
@@ -121,7 +132,7 @@ export function ProjectPortfolio({
                 className="flex flex-col gap-3 rounded-lg border border-border px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="font-medium truncate">
+                  <p className="truncate font-medium">
                     {item.project_number} · {item.title}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -131,11 +142,13 @@ export function ProjectPortfolio({
                     {item.planned_end_date ? ` – ${item.planned_end_date}` : ""}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <Badge variant={projectStatusBadgeVariant(item.status)}>
                     {projectStatusLabel(item.status)}
                   </Badge>
-                  <Badge variant="outline">{projectPriorityLabel(item.priority)}</Badge>
+                  <Badge variant="outline">
+                    {projectPriorityLabel(item.priority)}
+                  </Badge>
                 </div>
               </Link>
             ))

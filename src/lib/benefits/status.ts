@@ -72,7 +72,14 @@ export function pipelineStatuses(): BenefitStatus[] {
 }
 
 export function portfolioFilterStatuses(): BenefitStatus[] {
-  return ["draft", "submitted", "approved", "realising", "realised", "rejected"];
+  return [
+    "draft",
+    "submitted",
+    "approved",
+    "realising",
+    "realised",
+    "rejected",
+  ];
 }
 
 export function realisationEntryStatusLabel(status: string): string {

@@ -16,17 +16,21 @@ import {
   formatMeasureValue,
   formatPeriodLabel,
 } from "@/lib/benefits/forecast";
-import { benefitStatusBadgeVariant, benefitStatusLabel } from "@/lib/benefits/status";
+import {
+  benefitStatusBadgeVariant,
+  benefitStatusLabel,
+} from "@/lib/benefits/status";
 import type { BenefitValidationQueue } from "@/lib/benefits/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitValidationQueuePage() {
-  const [canValidateCi, canValidateFinance, canValidateRealisation] = await Promise.all([
-    currentMemberHasPermission("benefits.validate.ci"),
-    currentMemberHasPermission("benefits.validate.finance"),
-    currentMemberHasPermission("benefits.realisation.validate"),
-  ]);
+  const [canValidateCi, canValidateFinance, canValidateRealisation] =
+    await Promise.all([
+      currentMemberHasPermission("benefits.validate.ci"),
+      currentMemberHasPermission("benefits.validate.finance"),
+      currentMemberHasPermission("benefits.realisation.validate"),
+    ]);
   if (!canValidateCi && !canValidateFinance && !canValidateRealisation) {
     notFound();
   }
@@ -40,7 +44,10 @@ export default async function BenefitValidationQueuePage() {
   const queue = queueData ?? { benefits: [], realisation_entries: [] };
 
   return (
-    <div className="flex flex-col gap-6" data-testid="benefit-validation-queue-page">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="benefit-validation-queue-page"
+    >
       <PageHeader
         title="Benefit validation queue"
         description="Benefits and realisation entries awaiting your validation decision."
@@ -53,7 +60,9 @@ export default async function BenefitValidationQueuePage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {queue.benefits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No benefits in your validation queue.</p>
+              <p className="text-sm text-muted-foreground">
+                No benefits in your validation queue.
+              </p>
             ) : (
               queue.benefits.map((benefit) => (
                 <div
@@ -62,7 +71,9 @@ export default async function BenefitValidationQueuePage() {
                 >
                   <div>
                     <p className="font-medium">
-                      {benefit.benefit_number ? `${benefit.benefit_number} · ` : ""}
+                      {benefit.benefit_number
+                        ? `${benefit.benefit_number} · `
+                        : ""}
                       {benefit.title}
                     </p>
                     <p className="text-sm text-muted-foreground">
@@ -78,11 +89,17 @@ export default async function BenefitValidationQueuePage() {
                     <Badge variant={benefitStatusBadgeVariant(benefit.status)}>
                       {benefitStatusLabel(benefit.status)}
                     </Badge>
-                    <Badge variant={classificationBadgeVariant(benefit.benefit_class)}>
+                    <Badge
+                      variant={classificationBadgeVariant(
+                        benefit.benefit_class,
+                      )}
+                    >
                       {benefit.benefit_class}
                     </Badge>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/platform/benefits/${benefit.id}`}>Open</Link>
+                      <Link href={`/platform/benefits/${benefit.id}`}>
+                        Open
+                      </Link>
                     </Button>
                   </div>
                 </div>
@@ -97,7 +114,9 @@ export default async function BenefitValidationQueuePage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {queue.realisation_entries.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No realisation entries awaiting validation.</p>
+              <p className="text-sm text-muted-foreground">
+                No realisation entries awaiting validation.
+              </p>
             ) : (
               queue.realisation_entries.map((entry) => (
                 <div
@@ -108,16 +127,27 @@ export default async function BenefitValidationQueuePage() {
                     <div>
                       <p className="font-medium">{entry.benefit_title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatPeriodLabel(entry.period_start, entry.period_end)}
+                        {formatPeriodLabel(
+                          entry.period_start,
+                          entry.period_end,
+                        )}
                       </p>
-                      <p className="text-sm tabular-nums text-muted-foreground">
+                      <p className="text-sm text-muted-foreground tabular-nums">
                         {entry.financial_amount != null
-                          ? formatBenefitCurrencyAmount(entry.financial_amount, null)
-                          : formatMeasureValue(entry.measure_value, entry.measure_unit)}
+                          ? formatBenefitCurrencyAmount(
+                              entry.financial_amount,
+                              null,
+                            )
+                          : formatMeasureValue(
+                              entry.measure_value,
+                              entry.measure_unit,
+                            )}
                       </p>
                     </div>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/platform/benefits/${entry.benefit_id}`}>Open benefit</Link>
+                      <Link href={`/platform/benefits/${entry.benefit_id}`}>
+                        Open benefit
+                      </Link>
                     </Button>
                   </div>
                   <BenefitValidationActions

@@ -21,7 +21,9 @@ export function generateRecurringPeriods(
   const start = new Date(`${startDate}T00:00:00Z`);
   const end = new Date(`${endDate}T00:00:00Z`);
   const periods: ForecastPeriodDraft[] = [];
-  let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  let cursor = new Date(
+    Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1),
+  );
   let displayOrder = 1;
 
   while (cursor <= end) {
@@ -117,7 +119,10 @@ export function formatMeasureValue(
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
-export function formatPeriodLabel(periodStart: string, periodEnd: string): string {
+export function formatPeriodLabel(
+  periodStart: string,
+  periodEnd: string,
+): string {
   return formatForecastPeriodLabel(periodStart, periodEnd);
 }
 

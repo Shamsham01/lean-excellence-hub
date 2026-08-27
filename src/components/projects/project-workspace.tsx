@@ -125,7 +125,9 @@ export function ProjectWorkspace({
       setMessage("Phase completed");
       router.refresh();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Phase completion failed");
+      setMessage(
+        err instanceof Error ? err.message : "Phase completion failed",
+      );
     }
   }
 
@@ -228,11 +230,15 @@ export function ProjectWorkspace({
             <CardContent className="flex flex-col gap-4 text-sm">
               <div>
                 <p className="font-medium">Problem statement</p>
-                <p className="text-muted-foreground">{detail.problem_statement ?? "—"}</p>
+                <p className="text-muted-foreground">
+                  {detail.problem_statement ?? "—"}
+                </p>
               </div>
               <div>
                 <p className="font-medium">Objective</p>
-                <p className="text-muted-foreground">{detail.objective ?? "—"}</p>
+                <p className="text-muted-foreground">
+                  {detail.objective ?? "—"}
+                </p>
               </div>
               <div>
                 <p className="font-medium">Expected impact</p>
@@ -243,26 +249,36 @@ export function ProjectWorkspace({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="font-medium">Scope in</p>
-                  <p className="text-muted-foreground">{detail.scope_in ?? "—"}</p>
+                  <p className="text-muted-foreground">
+                    {detail.scope_in ?? "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium">Scope out</p>
-                  <p className="text-muted-foreground">{detail.scope_out ?? "—"}</p>
+                  <p className="text-muted-foreground">
+                    {detail.scope_out ?? "—"}
+                  </p>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="font-medium">Baseline</p>
-                  <p className="text-muted-foreground">{detail.baseline_summary ?? "—"}</p>
+                  <p className="text-muted-foreground">
+                    {detail.baseline_summary ?? "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium">Target</p>
-                  <p className="text-muted-foreground">{detail.target_summary ?? "—"}</p>
+                  <p className="text-muted-foreground">
+                    {detail.target_summary ?? "—"}
+                  </p>
                 </div>
               </div>
               <div>
                 <p className="font-medium">Constraints & risks</p>
-                <p className="text-muted-foreground">{detail.constraints_risks ?? "—"}</p>
+                <p className="text-muted-foreground">
+                  {detail.constraints_risks ?? "—"}
+                </p>
               </div>
               <div>
                 <p className="font-medium">Sustainment expectation</p>
@@ -307,7 +323,11 @@ export function ProjectWorkspace({
                       {canManage &&
                       detail.status === "active" &&
                       phase.status === "in_progress" ? (
-                        <Button size="sm" variant="outline" onClick={() => handleCompletePhase(phase.id)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCompletePhase(phase.id)}
+                        >
                           Complete
                         </Button>
                       ) : null}
@@ -338,7 +358,9 @@ export function ProjectWorkspace({
                 </div>
               ) : null}
               {actions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No linked actions yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No linked actions yet.
+                </p>
               ) : (
                 actions.map((action) => (
                   <div
@@ -361,10 +383,15 @@ export function ProjectWorkspace({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {detail.metrics.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No measures defined.</p>
+                <p className="text-sm text-muted-foreground">
+                  No measures defined.
+                </p>
               ) : (
                 detail.metrics.map((metric) => (
-                  <div key={metric.id} className="rounded-lg border border-border p-3">
+                  <div
+                    key={metric.id}
+                    className="rounded-lg border border-border p-3"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-medium">{metric.display_name}</p>
                       {metric.is_locked ? (
@@ -376,7 +403,10 @@ export function ProjectWorkspace({
                       {metric.target_value ?? "—"}
                       {metric.unit_label ? ` ${metric.unit_label}` : ""}
                     </p>
-                    {canManage && ["active", "on_hold", "completed"].includes(detail.status) ? (
+                    {canManage &&
+                    ["active", "on_hold", "completed"].includes(
+                      detail.status,
+                    ) ? (
                       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                         <Input
                           type="number"
@@ -412,7 +442,9 @@ export function ProjectWorkspace({
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {benefits.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No benefits linked to this project.</p>
+                <p className="text-sm text-muted-foreground">
+                  No benefits linked to this project.
+                </p>
               ) : (
                 benefits.map((benefit) => (
                   <Link
@@ -422,7 +454,9 @@ export function ProjectWorkspace({
                   >
                     <div>
                       <p className="font-medium">
-                        {benefit.benefit_number ? `${benefit.benefit_number} · ` : ""}
+                        {benefit.benefit_number
+                          ? `${benefit.benefit_number} · `
+                          : ""}
                         {benefit.title}
                       </p>
                       <p className="text-sm text-muted-foreground">
@@ -435,22 +469,38 @@ export function ProjectWorkspace({
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={classificationBadgeVariant(benefit.benefit_class)}>
+                      <Badge
+                        variant={classificationBadgeVariant(
+                          benefit.benefit_class,
+                        )}
+                      >
                         {benefit.benefit_class}
                       </Badge>
-                      <Badge variant={benefitStatusBadgeVariant(benefit.status)}>
+                      <Badge
+                        variant={benefitStatusBadgeVariant(benefit.status)}
+                      >
                         {benefitStatusLabel(benefit.status)}
                       </Badge>
                       {benefit.benefit_class === "financial" ? (
-                        <span className="text-xs tabular-nums text-muted-foreground">
+                        <span className="text-xs text-muted-foreground tabular-nums">
                           Forecast{" "}
-                          {formatBenefitCurrencyAmount(benefit.forecast_total_amount, null)}
+                          {formatBenefitCurrencyAmount(
+                            benefit.forecast_total_amount,
+                            null,
+                          )}
                           · Validated{" "}
-                          {formatBenefitCurrencyAmount(benefit.validated_realised_total, null)}
+                          {formatBenefitCurrencyAmount(
+                            benefit.validated_realised_total,
+                            null,
+                          )}
                         </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">
-                          Target {formatMeasureValue(benefit.forecast_total_amount, null)}
+                          Target{" "}
+                          {formatMeasureValue(
+                            benefit.forecast_total_amount,
+                            null,
+                          )}
                         </span>
                       )}
                     </div>
@@ -468,7 +518,9 @@ export function ProjectWorkspace({
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {teamMembers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No team assignments yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No team assignments yet.
+                </p>
               ) : (
                 teamMembers.map((member) => (
                   <div
@@ -476,7 +528,9 @@ export function ProjectWorkspace({
                     className="flex flex-col gap-1 rounded-lg border border-border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
                   >
                     <span className="font-medium">{member.display_name}</span>
-                    <Badge variant="outline">{teamRoleLabel(member.team_role)}</Badge>
+                    <Badge variant="outline">
+                      {teamRoleLabel(member.team_role)}
+                    </Badge>
                   </div>
                 ))
               )}
@@ -491,7 +545,9 @@ export function ProjectWorkspace({
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {evidence.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No evidence linked yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No evidence linked yet.
+                </p>
               ) : (
                 evidence.map((link) => (
                   <div
@@ -516,7 +572,9 @@ export function ProjectWorkspace({
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {detail.status_history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No status changes recorded.</p>
+                <p className="text-sm text-muted-foreground">
+                  No status changes recorded.
+                </p>
               ) : (
                 detail.status_history.map((entry) => (
                   <div

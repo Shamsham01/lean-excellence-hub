@@ -23,11 +23,18 @@ export default async function WorkforceLoginPage({
       }
     >
       {error ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+        <p
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          role="alert"
+        >
           Unable to sign in with those credentials.
         </p>
       ) : null}
-      <form action="/api/auth/workforce" method="post" className="flex flex-col gap-4">
+      <form
+        action="/api/auth/workforce"
+        method="post"
+        className="flex flex-col gap-4"
+      >
         <div className="flex flex-col gap-2">
           <Label htmlFor="organisationCode">Organisation code</Label>
           <Input id="organisationCode" name="organisationCode" required />
@@ -46,7 +53,9 @@ export default async function WorkforceLoginPage({
             required
           />
         </div>
-        <Button type="submit" className="w-full">Sign in</Button>
+        <Button type="submit" className="w-full">
+          Sign in
+        </Button>
       </form>
     </AuthCard>
   );

@@ -16,7 +16,8 @@ export default async function ActionsPage() {
     .order("created_at", { ascending: false });
 
   const openCount =
-    actions?.filter((a) => a.status === "open" || a.status === "in_progress").length ?? 0;
+    actions?.filter((a) => a.status === "open" || a.status === "in_progress")
+      .length ?? 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -45,10 +46,15 @@ export default async function ActionsPage() {
           <CardTitle>Create action</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createAction} className="flex flex-col gap-4 max-w-lg">
+          <form action={createAction} className="flex max-w-lg flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" required placeholder="Action title" />
+              <Input
+                id="title"
+                name="title"
+                required
+                placeholder="Action title"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="description">Description</Label>

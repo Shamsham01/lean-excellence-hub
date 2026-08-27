@@ -49,21 +49,33 @@ export async function createProblemSolvingCaseDraft(input: {
     const id = await callRpc<string>("create_problem_solving_case_draft", {
       target_title: input.title,
       target_organisation_unit_id: input.organisationalUnitId,
-      ...(input.problemStatement ? { target_problem_statement: input.problemStatement } : {}),
+      ...(input.problemStatement
+        ? { target_problem_statement: input.problemStatement }
+        : {}),
       ...(input.background ? { target_background: input.background } : {}),
-      ...(input.businessImpact ? { target_business_impact: input.businessImpact } : {}),
+      ...(input.businessImpact
+        ? { target_business_impact: input.businessImpact }
+        : {}),
       ...(input.scopeIn ? { target_scope_in: input.scopeIn } : {}),
       ...(input.scopeOut ? { target_scope_out: input.scopeOut } : {}),
-      ...(input.targetCondition ? { target_target_condition: input.targetCondition } : {}),
+      ...(input.targetCondition
+        ? { target_target_condition: input.targetCondition }
+        : {}),
       ...(input.detectedAt ? { target_detected_at: input.detectedAt } : {}),
       ...(input.priority ? { target_priority: input.priority } : {}),
       ...(input.severity ? { target_severity: input.severity } : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
       ...(input.facilitatorMembershipId
         ? { target_facilitator_membership_id: input.facilitatorMembershipId }
         : {}),
-      ...(input.methodVersionId ? { target_method_version_id: input.methodVersionId } : {}),
-      ...(input.sourceResourceId ? { target_source_resource_id: input.sourceResourceId } : {}),
+      ...(input.methodVersionId
+        ? { target_method_version_id: input.methodVersionId }
+        : {}),
+      ...(input.sourceResourceId
+        ? { target_source_resource_id: input.sourceResourceId }
+        : {}),
     });
     revalidateCasePaths(id);
     return { ok: true, id };
@@ -96,23 +108,33 @@ export async function updateProblemSolvingCaseDraft(input: {
       ...(input.problemStatement !== undefined
         ? { target_problem_statement: input.problemStatement }
         : {}),
-      ...(input.background !== undefined ? { target_background: input.background } : {}),
+      ...(input.background !== undefined
+        ? { target_background: input.background }
+        : {}),
       ...(input.businessImpact !== undefined
         ? { target_business_impact: input.businessImpact }
         : {}),
-      ...(input.scopeIn !== undefined ? { target_scope_in: input.scopeIn } : {}),
-      ...(input.scopeOut !== undefined ? { target_scope_out: input.scopeOut } : {}),
+      ...(input.scopeIn !== undefined
+        ? { target_scope_in: input.scopeIn }
+        : {}),
+      ...(input.scopeOut !== undefined
+        ? { target_scope_out: input.scopeOut }
+        : {}),
       ...(input.targetCondition !== undefined
         ? { target_target_condition: input.targetCondition }
         : {}),
       ...(input.detectedAt ? { target_detected_at: input.detectedAt } : {}),
       ...(input.priority ? { target_priority: input.priority } : {}),
       ...(input.severity ? { target_severity: input.severity } : {}),
-      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.ownerMembershipId
+        ? { target_owner_membership_id: input.ownerMembershipId }
+        : {}),
       ...(input.facilitatorMembershipId
         ? { target_facilitator_membership_id: input.facilitatorMembershipId }
         : {}),
-      ...(input.methodVersionId ? { target_method_version_id: input.methodVersionId } : {}),
+      ...(input.methodVersionId
+        ? { target_method_version_id: input.methodVersionId }
+        : {}),
       ...(input.targetDueAt ? { target_target_due_at: input.targetDueAt } : {}),
     });
     revalidateCasePaths(input.caseId);
@@ -140,9 +162,14 @@ export async function addProblemSolvingSourceLink(
   }
 }
 
-export async function removeProblemSolvingSourceLink(linkId: string, caseId: string): Promise<ActionResult> {
+export async function removeProblemSolvingSourceLink(
+  linkId: string,
+  caseId: string,
+): Promise<ActionResult> {
   try {
-    await callRpc("remove_problem_solving_source_link", { target_link_id: linkId });
+    await callRpc("remove_problem_solving_source_link", {
+      target_link_id: linkId,
+    });
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
@@ -162,7 +189,9 @@ export async function activateProblemSolvingCase(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Activation failed" };
+    return {
+      error: error instanceof Error ? error.message : "Activation failed",
+    };
   }
 }
 
@@ -178,7 +207,9 @@ export async function moveProblemSolvingStage(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Stage move failed" };
+    return {
+      error: error instanceof Error ? error.message : "Stage move failed",
+    };
   }
 }
 
@@ -191,7 +222,9 @@ export async function closeProblemSolvingCase(
     await callRpc("close_problem_solving_case", {
       target_case_id: caseId,
       target_closure_outcome: closureOutcome,
-      ...(closureRationale ? { target_closure_rationale: closureRationale } : {}),
+      ...(closureRationale
+        ? { target_closure_rationale: closureRationale }
+        : {}),
     });
     revalidateCasePaths(caseId);
     return { ok: true };
@@ -227,12 +260,16 @@ export async function createCurrentConditionItem(input: {
       target_case_id: input.caseId,
       target_category: input.category,
       target_statement: input.statement,
-      ...(input.supersedesItemId ? { target_supersedes_item_id: input.supersedesItemId } : {}),
+      ...(input.supersedesItemId
+        ? { target_supersedes_item_id: input.supersedesItemId }
+        : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Item create failed" };
+    return {
+      error: error instanceof Error ? error.message : "Item create failed",
+    };
   }
 }
 
@@ -244,12 +281,16 @@ export async function verifyCurrentConditionItem(
   try {
     await callRpc("verify_current_condition_item", {
       target_item_id: itemId,
-      ...(verificationRationale ? { target_verification_rationale: verificationRationale } : {}),
+      ...(verificationRationale
+        ? { target_verification_rationale: verificationRationale }
+        : {}),
     });
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Verification failed" };
+    return {
+      error: error instanceof Error ? error.message : "Verification failed",
+    };
   }
 }
 
@@ -267,7 +308,10 @@ export async function createContainment(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Containment create failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Containment create failed",
+    };
   }
 }
 
@@ -279,7 +323,9 @@ export async function releaseContainment(
   try {
     await callRpc("release_containment", {
       target_containment_id: containmentId,
-      ...(releaseRationale ? { target_release_rationale: releaseRationale } : {}),
+      ...(releaseRationale
+        ? { target_release_rationale: releaseRationale }
+        : {}),
     });
     revalidateCasePaths(caseId);
     return { ok: true };
@@ -299,14 +345,19 @@ export async function createHypothesis(input: {
     const id = await callRpc<string>("create_hypothesis", {
       target_problem_solving_case_id: input.caseId,
       target_statement: input.statement,
-      ...(input.parentHypothesisId ? { target_parent_hypothesis_id: input.parentHypothesisId } : {}),
+      ...(input.parentHypothesisId
+        ? { target_parent_hypothesis_id: input.parentHypothesisId }
+        : {}),
       ...(input.category ? { target_category: input.category } : {}),
       ...(input.rationale ? { target_rationale: input.rationale } : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Hypothesis create failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Hypothesis create failed",
+    };
   }
 }
 
@@ -323,7 +374,9 @@ export async function verifyCauseHypothesis(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Verification failed" };
+    return {
+      error: error instanceof Error ? error.message : "Verification failed",
+    };
   }
 }
 
@@ -335,12 +388,16 @@ export async function rejectCauseHypothesis(
   try {
     await callRpc("reject_cause_hypothesis", {
       target_hypothesis_id: hypothesisId,
-      ...(rejectionRationale ? { target_rejection_rationale: rejectionRationale } : {}),
+      ...(rejectionRationale
+        ? { target_rejection_rationale: rejectionRationale }
+        : {}),
     });
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Rejection failed" };
+    return {
+      error: error instanceof Error ? error.message : "Rejection failed",
+    };
   }
 }
 
@@ -360,7 +417,10 @@ export async function createCountermeasure(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Countermeasure create failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Countermeasure create failed",
+    };
   }
 }
 
@@ -377,7 +437,9 @@ export async function selectCountermeasure(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Selection failed" };
+    return {
+      error: error instanceof Error ? error.message : "Selection failed",
+    };
   }
 }
 
@@ -399,7 +461,9 @@ export async function startProblemSolvingSession(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Session start failed" };
+    return {
+      error: error instanceof Error ? error.message : "Session start failed",
+    };
   }
 }
 
@@ -416,7 +480,9 @@ export async function completeProblemSolvingSession(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Session complete failed" };
+    return {
+      error: error instanceof Error ? error.message : "Session complete failed",
+    };
   }
 }
 
@@ -436,17 +502,25 @@ export async function linkProblemSolvingEvidence(
       target_case_id: caseId,
       target_attachment_id: attachmentId,
       target_is_case_level: options?.isCaseLevel ?? true,
-      ...(options?.hypothesisId ? { target_hypothesis_id: options.hypothesisId } : {}),
-      ...(options?.countermeasureId ? { target_countermeasure_id: options.countermeasureId } : {}),
+      ...(options?.hypothesisId
+        ? { target_hypothesis_id: options.hypothesisId }
+        : {}),
+      ...(options?.countermeasureId
+        ? { target_countermeasure_id: options.countermeasureId }
+        : {}),
       ...(options?.currentConditionItemId
         ? { target_current_condition_item_id: options.currentConditionItemId }
         : {}),
-      ...(options?.containmentId ? { target_containment_id: options.containmentId } : {}),
+      ...(options?.containmentId
+        ? { target_containment_id: options.containmentId }
+        : {}),
     });
     revalidateCasePaths(caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Evidence link failed" };
+    return {
+      error: error instanceof Error ? error.message : "Evidence link failed",
+    };
   }
 }
 
@@ -464,9 +538,14 @@ export async function initiateProblemSolvingEvidenceUpload(
     target_byte_size: byteSize,
   });
   if (error) return { error: error.message };
-  const row = (data as Array<{ attachment_id: string; storage_object_path: string }>)[0];
+  const row = (
+    data as Array<{ attachment_id: string; storage_object_path: string }>
+  )[0];
   if (!row) return { error: "Upload initiation failed" };
-  return { attachmentId: row.attachment_id, storagePath: row.storage_object_path };
+  return {
+    attachmentId: row.attachment_id,
+    storagePath: row.storage_object_path,
+  };
 }
 
 export async function confirmProblemSolvingEvidenceUpload(
@@ -478,7 +557,9 @@ export async function confirmProblemSolvingEvidenceUpload(
     target_attachment_id: attachmentId,
   });
   if (error) return { error: error.message };
-  const linkResult = await linkProblemSolvingEvidence(caseId, attachmentId, { isCaseLevel: true });
+  const linkResult = await linkProblemSolvingEvidence(caseId, attachmentId, {
+    isCaseLevel: true,
+  });
   if (linkResult.error) return { error: linkResult.error };
   revalidateCasePaths(caseId);
   return {};
@@ -498,7 +579,9 @@ export async function createAnalysis(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Analysis create failed" };
+    return {
+      error: error instanceof Error ? error.message : "Analysis create failed",
+    };
   }
 }
 
@@ -514,12 +597,17 @@ export async function addAnalysisNode(input: {
       target_analysis_id: input.analysisId,
       target_label: input.label,
       ...(input.category ? { target_category: input.category } : {}),
-      ...(input.sortOrder != null ? { target_sort_order: input.sortOrder } : {}),
+      ...(input.sortOrder != null
+        ? { target_sort_order: input.sortOrder }
+        : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Analysis node create failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Analysis node create failed",
+    };
   }
 }
 
@@ -538,7 +626,12 @@ export async function updateHypothesisStatus(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Hypothesis status update failed" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Hypothesis status update failed",
+    };
   }
 }
 
@@ -559,7 +652,12 @@ export async function createHypothesisTest(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Hypothesis test create failed" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Hypothesis test create failed",
+    };
   }
 }
 
@@ -578,7 +676,12 @@ export async function completeHypothesisTest(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Hypothesis test completion failed" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Hypothesis test completion failed",
+    };
   }
 }
 
@@ -595,14 +698,20 @@ export async function createProblemSolvingAction(input: {
       target_title: input.title,
       target_problem_solving_case_id: input.caseId,
       target_context_role: input.contextRole,
-      ...(input.containmentId ? { target_containment_id: input.containmentId } : {}),
-      ...(input.countermeasureId ? { target_countermeasure_id: input.countermeasureId } : {}),
+      ...(input.containmentId
+        ? { target_containment_id: input.containmentId }
+        : {}),
+      ...(input.countermeasureId
+        ? { target_countermeasure_id: input.countermeasureId }
+        : {}),
       ...(input.description ? { target_description: input.description } : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Action create failed" };
+    return {
+      error: error instanceof Error ? error.message : "Action create failed",
+    };
   }
 }
 
@@ -619,7 +728,9 @@ export async function linkCountermeasureCauses(
     revalidateCasePaths(caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Cause link failed" };
+    return {
+      error: error instanceof Error ? error.message : "Cause link failed",
+    };
   }
 }
 
@@ -636,8 +747,12 @@ export async function createEffectivenessCheck(input: {
     const id = await callRpc<string>("create_effectiveness_check", {
       target_case_id: input.caseId,
       target_criterion: input.criterion,
-      ...(input.baselineNumeric != null ? { target_baseline_numeric: input.baselineNumeric } : {}),
-      ...(input.targetNumeric != null ? { target_target_numeric: input.targetNumeric } : {}),
+      ...(input.baselineNumeric != null
+        ? { target_baseline_numeric: input.baselineNumeric }
+        : {}),
+      ...(input.targetNumeric != null
+        ? { target_target_numeric: input.targetNumeric }
+        : {}),
       ...(input.unit ? { target_unit: input.unit } : {}),
       ...(input.observationWindowStart
         ? { target_observation_window_start: input.observationWindowStart }
@@ -649,7 +764,12 @@ export async function createEffectivenessCheck(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Effectiveness check create failed" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Effectiveness check create failed",
+    };
   }
 }
 
@@ -664,7 +784,9 @@ export async function recordEffectivenessResult(input: {
     await callRpc("record_effectiveness_result", {
       target_effectiveness_check_id: input.effectivenessCheckId,
       target_result: input.result,
-      ...(input.actualNumeric != null ? { target_actual_numeric: input.actualNumeric } : {}),
+      ...(input.actualNumeric != null
+        ? { target_actual_numeric: input.actualNumeric }
+        : {}),
       ...(input.verificationRationale
         ? { target_verification_rationale: input.verificationRationale }
         : {}),
@@ -672,7 +794,10 @@ export async function recordEffectivenessResult(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Effectiveness result failed" };
+    return {
+      error:
+        error instanceof Error ? error.message : "Effectiveness result failed",
+    };
   }
 }
 
@@ -687,12 +812,19 @@ export async function createSustainmentItem(input: {
       target_case_id: input.caseId,
       target_what: input.what,
       ...(input.checkMethod ? { target_check_method: input.checkMethod } : {}),
-      ...(input.followUpDate ? { target_follow_up_date: input.followUpDate } : {}),
+      ...(input.followUpDate
+        ? { target_follow_up_date: input.followUpDate }
+        : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Sustainment item create failed" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Sustainment item create failed",
+    };
   }
 }
 
@@ -711,6 +843,8 @@ export async function addSessionEntry(input: {
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Session entry failed" };
+    return {
+      error: error instanceof Error ? error.message : "Session entry failed",
+    };
   }
 }

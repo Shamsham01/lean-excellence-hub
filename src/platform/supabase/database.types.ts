@@ -276,6 +276,771 @@ export type Database = {
           },
         ]
       }
+      ai_acceptance_provenance: {
+        Row: {
+          accepted_at: string
+          accepted_by_membership_id: string
+          action_id: string | null
+          ai_proposal_id: string
+          ai_run_id: string
+          containment_id: string | null
+          countermeasure_id: string | null
+          current_condition_item_id: string | null
+          effectiveness_check_id: string | null
+          hypothesis_id: string | null
+          hypothesis_test_id: string | null
+          id: string
+          lesson_learned_id: string | null
+          organisation_id: string
+          problem_solving_session_id: string | null
+          session_entry_id: string | null
+          sustainment_item_id: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_by_membership_id: string
+          action_id?: string | null
+          ai_proposal_id: string
+          ai_run_id: string
+          containment_id?: string | null
+          countermeasure_id?: string | null
+          current_condition_item_id?: string | null
+          effectiveness_check_id?: string | null
+          hypothesis_id?: string | null
+          hypothesis_test_id?: string | null
+          id?: string
+          lesson_learned_id?: string | null
+          organisation_id: string
+          problem_solving_session_id?: string | null
+          session_entry_id?: string | null
+          sustainment_item_id?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          accepted_by_membership_id?: string
+          action_id?: string | null
+          ai_proposal_id?: string
+          ai_run_id?: string
+          containment_id?: string | null
+          countermeasure_id?: string | null
+          current_condition_item_id?: string | null
+          effectiveness_check_id?: string | null
+          hypothesis_id?: string | null
+          hypothesis_test_id?: string | null
+          id?: string
+          lesson_learned_id?: string | null
+          organisation_id?: string
+          problem_solving_session_id?: string | null
+          session_entry_id?: string | null
+          sustainment_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_acceptance_provenance_accepter_fkey"
+            columns: ["organisation_id", "accepted_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_cc_item_fkey"
+            columns: ["organisation_id", "current_condition_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_current_condition_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_containment_fkey"
+            columns: ["organisation_id", "containment_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_containments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_countermeasure_fkey"
+            columns: ["organisation_id", "countermeasure_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_countermeasures"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_effectiveness_fkey"
+            columns: ["organisation_id", "effectiveness_check_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_effectiveness_checks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_hypothesis_fkey"
+            columns: ["organisation_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_hypothesis_test_fkey"
+            columns: ["organisation_id", "hypothesis_test_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypothesis_tests"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_lesson_fkey"
+            columns: ["organisation_id", "lesson_learned_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_lessons_learned"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_proposal_fkey"
+            columns: ["organisation_id", "ai_proposal_id"]
+            isOneToOne: true
+            referencedRelation: "ai_proposals"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_ps_session_fkey"
+            columns: ["organisation_id", "problem_solving_session_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_session_entry_fkey"
+            columns: ["organisation_id", "session_entry_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_session_entries"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_sustainment_fkey"
+            columns: ["organisation_id", "sustainment_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sustainment_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          ai_run_id: string | null
+          ai_session_id: string
+          content: string
+          created_at: string
+          id: string
+          organisation_id: string
+          role: string
+          structured_payload: Json | null
+        }
+        Insert: {
+          ai_run_id?: string | null
+          ai_session_id: string
+          content: string
+          created_at?: string
+          id?: string
+          organisation_id: string
+          role: string
+          structured_payload?: Json | null
+        }
+        Update: {
+          ai_run_id?: string | null
+          ai_session_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          role?: string
+          structured_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_messages_session_fkey"
+            columns: ["organisation_id", "ai_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_proposals: {
+        Row: {
+          ai_message_id: string | null
+          ai_run_id: string
+          ai_session_id: string
+          created_at: string
+          display_permission_key: string | null
+          human_explanation: string
+          id: string
+          organisation_id: string
+          payload_json: Json
+          problem_solving_case_id: string
+          proposal_type: string
+          rejection_reason: string | null
+          resolved_at: string | null
+          resolved_by_membership_id: string | null
+          status: string
+        }
+        Insert: {
+          ai_message_id?: string | null
+          ai_run_id: string
+          ai_session_id: string
+          created_at?: string
+          display_permission_key?: string | null
+          human_explanation: string
+          id?: string
+          organisation_id: string
+          payload_json: Json
+          problem_solving_case_id: string
+          proposal_type: string
+          rejection_reason?: string | null
+          resolved_at?: string | null
+          resolved_by_membership_id?: string | null
+          status?: string
+        }
+        Update: {
+          ai_message_id?: string | null
+          ai_run_id?: string
+          ai_session_id?: string
+          created_at?: string
+          display_permission_key?: string | null
+          human_explanation?: string
+          id?: string
+          organisation_id?: string
+          payload_json?: Json
+          problem_solving_case_id?: string
+          proposal_type?: string
+          rejection_reason?: string | null
+          resolved_at?: string | null
+          resolved_by_membership_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_proposals_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_proposals_message_fkey"
+            columns: ["organisation_id", "ai_message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_proposals_resolver_fkey"
+            columns: ["organisation_id", "resolved_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_proposals_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_proposals_session_fkey"
+            columns: ["organisation_id", "ai_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_run_context_manifest: {
+        Row: {
+          ai_run_id: string
+          created_at: string
+          manifest_hash: string
+          manifest_json: Json
+          manifest_version: string
+          organisation_id: string
+        }
+        Insert: {
+          ai_run_id: string
+          created_at?: string
+          manifest_hash: string
+          manifest_json: Json
+          manifest_version: string
+          organisation_id: string
+        }
+        Update: {
+          ai_run_id?: string
+          created_at?: string
+          manifest_hash?: string
+          manifest_json?: Json
+          manifest_version?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_run_context_manifest_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_runs: {
+        Row: {
+          ai_session_id: string
+          cached_input_token_count: number
+          completed_at: string | null
+          error_category: string | null
+          final_output: string | null
+          id: string
+          idempotency_key: string | null
+          input_token_count: number
+          model: string
+          organisation_id: string
+          output_token_count: number
+          prompt_hash: string
+          prompt_key: string
+          prompt_version: string
+          provider: string
+          provider_request_id: string | null
+          reasoning_token_count: number
+          requested_by_membership_id: string
+          started_at: string
+          status: string
+          tool_call_count: number
+        }
+        Insert: {
+          ai_session_id: string
+          cached_input_token_count?: number
+          completed_at?: string | null
+          error_category?: string | null
+          final_output?: string | null
+          id?: string
+          idempotency_key?: string | null
+          input_token_count?: number
+          model: string
+          organisation_id: string
+          output_token_count?: number
+          prompt_hash: string
+          prompt_key: string
+          prompt_version: string
+          provider: string
+          provider_request_id?: string | null
+          reasoning_token_count?: number
+          requested_by_membership_id: string
+          started_at?: string
+          status?: string
+          tool_call_count?: number
+        }
+        Update: {
+          ai_session_id?: string
+          cached_input_token_count?: number
+          completed_at?: string | null
+          error_category?: string | null
+          final_output?: string | null
+          id?: string
+          idempotency_key?: string | null
+          input_token_count?: number
+          model?: string
+          organisation_id?: string
+          output_token_count?: number
+          prompt_hash?: string
+          prompt_key?: string
+          prompt_version?: string
+          provider?: string
+          provider_request_id?: string | null
+          reasoning_token_count?: number
+          requested_by_membership_id?: string
+          started_at?: string
+          status?: string
+          tool_call_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_runs_requester_fkey"
+            columns: ["organisation_id", "requested_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_runs_session_fkey"
+            columns: ["organisation_id", "ai_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          mode: string
+          organisation_id: string
+          problem_solving_case_id: string
+          problem_solving_session_id: string | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          mode: string
+          organisation_id: string
+          problem_solving_case_id: string
+          problem_solving_session_id?: string | null
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          mode?: string
+          organisation_id?: string
+          problem_solving_case_id?: string
+          problem_solving_session_id?: string | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_sessions_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_sessions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_sessions_ps_session_fkey"
+            columns: ["organisation_id", "problem_solving_session_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_source_references: {
+        Row: {
+          action_id: string | null
+          ai_message_id: string | null
+          ai_proposal_id: string | null
+          ai_run_id: string | null
+          containment_id: string | null
+          countermeasure_id: string | null
+          created_at: string
+          current_condition_item_id: string | null
+          effectiveness_check_id: string | null
+          hypothesis_id: string | null
+          hypothesis_test_id: string | null
+          id: string
+          lesson_learned_id: string | null
+          organisation_id: string
+          problem_solving_case_id: string | null
+          problem_solving_session_id: string | null
+          sustainment_item_id: string | null
+        }
+        Insert: {
+          action_id?: string | null
+          ai_message_id?: string | null
+          ai_proposal_id?: string | null
+          ai_run_id?: string | null
+          containment_id?: string | null
+          countermeasure_id?: string | null
+          created_at?: string
+          current_condition_item_id?: string | null
+          effectiveness_check_id?: string | null
+          hypothesis_id?: string | null
+          hypothesis_test_id?: string | null
+          id?: string
+          lesson_learned_id?: string | null
+          organisation_id: string
+          problem_solving_case_id?: string | null
+          problem_solving_session_id?: string | null
+          sustainment_item_id?: string | null
+        }
+        Update: {
+          action_id?: string | null
+          ai_message_id?: string | null
+          ai_proposal_id?: string | null
+          ai_run_id?: string | null
+          containment_id?: string | null
+          countermeasure_id?: string | null
+          created_at?: string
+          current_condition_item_id?: string | null
+          effectiveness_check_id?: string | null
+          hypothesis_id?: string | null
+          hypothesis_test_id?: string | null
+          id?: string
+          lesson_learned_id?: string | null
+          organisation_id?: string
+          problem_solving_case_id?: string | null
+          problem_solving_session_id?: string | null
+          sustainment_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_source_references_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_cc_item_fkey"
+            columns: ["organisation_id", "current_condition_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_current_condition_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_containment_fkey"
+            columns: ["organisation_id", "containment_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_containments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_countermeasure_fkey"
+            columns: ["organisation_id", "countermeasure_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_countermeasures"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_effectiveness_fkey"
+            columns: ["organisation_id", "effectiveness_check_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_effectiveness_checks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_hypothesis_fkey"
+            columns: ["organisation_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_hypothesis_test_fkey"
+            columns: ["organisation_id", "hypothesis_test_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypothesis_tests"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_lesson_fkey"
+            columns: ["organisation_id", "lesson_learned_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_lessons_learned"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_message_fkey"
+            columns: ["organisation_id", "ai_message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_proposal_fkey"
+            columns: ["organisation_id", "ai_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_proposals"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_ps_session_fkey"
+            columns: ["organisation_id", "problem_solving_session_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_source_references_sustainment_fkey"
+            columns: ["organisation_id", "sustainment_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sustainment_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_tool_calls: {
+        Row: {
+          ai_run_id: string
+          arguments_hash: string
+          arguments_json: Json
+          created_at: string
+          denial_reason: string | null
+          duration_ms: number
+          id: string
+          organisation_id: string
+          result_metadata_json: Json | null
+          sequence_number: number
+          status: string
+          tool_name: string
+        }
+        Insert: {
+          ai_run_id: string
+          arguments_hash: string
+          arguments_json: Json
+          created_at?: string
+          denial_reason?: string | null
+          duration_ms?: number
+          id?: string
+          organisation_id: string
+          result_metadata_json?: Json | null
+          sequence_number: number
+          status: string
+          tool_name: string
+        }
+        Update: {
+          ai_run_id?: string
+          arguments_hash?: string
+          arguments_json?: Json
+          created_at?: string
+          denial_reason?: string | null
+          duration_ms?: number
+          id?: string
+          organisation_id?: string
+          result_metadata_json?: Json | null
+          sequence_number?: number
+          status?: string
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_tool_calls_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      ai_usage_events: {
+        Row: {
+          ai_run_id: string
+          ai_session_id: string
+          cached_input_tokens: number
+          created_at: string
+          duration_ms: number
+          id: string
+          input_tokens: number
+          membership_id: string
+          model: string
+          organisation_id: string
+          output_tokens: number
+          provider: string
+          reasoning_tokens: number
+          tool_call_count: number
+        }
+        Insert: {
+          ai_run_id: string
+          ai_session_id: string
+          cached_input_tokens?: number
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          input_tokens?: number
+          membership_id: string
+          model: string
+          organisation_id: string
+          output_tokens?: number
+          provider: string
+          reasoning_tokens?: number
+          tool_call_count?: number
+        }
+        Update: {
+          ai_run_id?: string
+          ai_session_id?: string
+          cached_input_tokens?: number
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          input_tokens?: number
+          membership_id?: string
+          model?: string
+          organisation_id?: string
+          output_tokens?: number
+          provider?: string
+          reasoning_tokens?: number
+          tool_call_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_events_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_usage_events_run_fkey"
+            columns: ["organisation_id", "ai_run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_runs"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_usage_events_session_fkey"
+            columns: ["organisation_id", "ai_session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       attachments: {
         Row: {
           byte_size: number | null
@@ -4729,6 +5494,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      organisation_ai_settings: {
+        Row: {
+          ai_enabled: boolean
+          monthly_token_ceiling: number | null
+          organisation_id: string
+          updated_at: string
+          updated_by_membership_id: string | null
+        }
+        Insert: {
+          ai_enabled?: boolean
+          monthly_token_ceiling?: number | null
+          organisation_id: string
+          updated_at?: string
+          updated_by_membership_id?: string | null
+        }
+        Update: {
+          ai_enabled?: boolean
+          monthly_token_ceiling?: number | null
+          organisation_id?: string
+          updated_at?: string
+          updated_by_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_ai_settings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -10136,6 +10933,15 @@ export type Database = {
         }
         Returns: string
       }
+      create_ai_session: {
+        Args: {
+          target_mode: string
+          target_problem_solving_case_id: string
+          target_problem_solving_session_id?: string
+          target_title?: string
+        }
+        Returns: string
+      }
       create_analysis: {
         Args: {
           target_analysis_type: string
@@ -10513,6 +11319,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_problem_solving_lessons_learned: {
+        Args: {
+          target_apply_elsewhere?: string
+          target_case_id: string
+          target_notes?: string
+          target_standardise?: string
+          target_what_happened: string
+          target_what_learned: string
+        }
+        Returns: string
+      }
       create_project_action: {
         Args: {
           target_description?: string
@@ -10767,10 +11584,44 @@ export type Database = {
           expired_invitations: number
         }[]
       }
+      fail_ai_run: {
+        Args: {
+          target_ai_run_id: string
+          target_error_category: string
+          target_final_output?: string
+        }
+        Returns: undefined
+      }
       finalise_identity_enrolment: {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      finish_ai_run: {
+        Args: {
+          target_ai_run_id: string
+          target_assistant_content: string
+          target_cached_input_tokens?: number
+          target_duration_ms?: number
+          target_input_tokens?: number
+          target_manifest_hash: string
+          target_manifest_json: Json
+          target_manifest_version: string
+          target_output_tokens?: number
+          target_proposals?: Json
+          target_provider_request_id?: string
+          target_reasoning_tokens?: number
+          target_source_references?: Json
+          target_structured_payload: Json
+          target_tool_call_count?: number
+          target_tool_calls?: Json
+        }
+        Returns: string
+      }
+      get_ai_session_detail: {
+        Args: { target_ai_session_id: string }
+        Returns: Json
+      }
+      get_ai_usage_summary: { Args: never; Returns: Json }
       get_benefit_detail: { Args: { target_benefit_id: string }; Returns: Json }
       get_benefit_forecast_history: {
         Args: { target_benefit_id: string }
@@ -11153,6 +12004,23 @@ export type Database = {
         Args: { target_curriculum_version_id: string }
         Returns: boolean
       }
+      record_ai_proposal_accepted: {
+        Args: {
+          target_action_id?: string
+          target_ai_proposal_id: string
+          target_containment_id?: string
+          target_countermeasure_id?: string
+          target_current_condition_item_id?: string
+          target_effectiveness_check_id?: string
+          target_hypothesis_id?: string
+          target_hypothesis_test_id?: string
+          target_lesson_learned_id?: string
+          target_problem_solving_session_id?: string
+          target_session_entry_id?: string
+          target_sustainment_item_id?: string
+        }
+        Returns: undefined
+      }
       record_authentication_rate_limit_failure: {
         Args: {
           block_seconds: number
@@ -11258,6 +12126,13 @@ export type Database = {
           target_validity_days_override?: number
         }
         Returns: string
+      }
+      reject_ai_proposal: {
+        Args: {
+          target_ai_proposal_id: string
+          target_rejection_reason?: string
+        }
+        Returns: undefined
       }
       reject_benefit_realisation_entry: {
         Args: { target_entry_id: string; target_reason?: string }
@@ -11371,6 +12246,10 @@ export type Database = {
         Args: { target_completion_id: string; target_notes?: string }
         Returns: boolean
       }
+      search_similar_problem_solving_cases: {
+        Args: { target_case_id: string; target_limit?: number }
+        Returns: Json
+      }
       select_countermeasure: {
         Args: { target_countermeasure_id: string; target_rationale?: string }
         Returns: boolean
@@ -11392,6 +12271,19 @@ export type Database = {
           target_unit_id: string
         }
         Returns: boolean
+      }
+      start_ai_run: {
+        Args: {
+          target_ai_session_id: string
+          target_idempotency_key: string
+          target_model: string
+          target_prompt_hash: string
+          target_prompt_key: string
+          target_prompt_version: string
+          target_provider: string
+          target_user_message: string
+        }
+        Returns: string
       }
       start_benefit_realisation: {
         Args: { target_benefit_id: string }
@@ -11573,6 +12465,13 @@ export type Database = {
           target_name: string
         }
         Returns: boolean
+      }
+      update_organisation_ai_settings: {
+        Args: {
+          target_ai_enabled: boolean
+          target_monthly_token_ceiling?: number
+        }
+        Returns: undefined
       }
       update_problem_solving_case_draft: {
         Args: {

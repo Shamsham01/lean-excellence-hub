@@ -15,7 +15,9 @@ declare
     'problem_solving.manage',
     'problem_solving.facilitate',
     'problem_solving.verify_cause',
-    'problem_solving.close'
+    'problem_solving.close',
+    'ai.use',
+    'ai.view_history'
   ];
   active_grant_row record;
 begin
@@ -161,7 +163,7 @@ begin
     set status = 'revoked',
         revoked_at = statement_timestamp(),
         revoked_by_membership_id = owner_membership_id,
-        revocation_reason = 'demo plant-manager problem-solving permission upgrade'
+        revocation_reason = 'demo plant-manager problem-solving and ai permission upgrade'
     where bound_grant.organisation_id = target_org_id
       and bound_grant.id = active_grant_row.id;
 

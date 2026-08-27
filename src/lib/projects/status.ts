@@ -10,7 +10,12 @@ export const PROJECT_STATUSES = [
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
-export const PROJECT_PRIORITIES = ["low", "normal", "high", "critical"] as const;
+export const PROJECT_PRIORITIES = [
+  "low",
+  "normal",
+  "high",
+  "critical",
+] as const;
 
 export type ProjectPriority = (typeof PROJECT_PRIORITIES)[number];
 
@@ -55,7 +60,14 @@ export function teamRoleLabel(role: string): string {
 
 export function projectStatusBadgeVariant(
   status: string,
-): "default" | "secondary" | "outline" | "success" | "warning" | "destructive" | "information" {
+):
+  | "default"
+  | "secondary"
+  | "outline"
+  | "success"
+  | "warning"
+  | "destructive"
+  | "information" {
   switch (status) {
     case "active":
       return "success";
@@ -75,5 +87,13 @@ export function projectStatusBadgeVariant(
 }
 
 export function portfolioFilterStatuses(): ProjectStatus[] {
-  return ["active", "on_hold", "submitted", "approved", "draft", "completed", "cancelled"];
+  return [
+    "active",
+    "on_hold",
+    "submitted",
+    "approved",
+    "draft",
+    "completed",
+    "cancelled",
+  ];
 }

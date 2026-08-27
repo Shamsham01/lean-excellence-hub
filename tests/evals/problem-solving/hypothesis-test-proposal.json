@@ -1,0 +1,10 @@
+{
+  "id": "hypothesis-test-proposal",
+  "mode": "facilitate",
+  "userMessage": "Suggest a hypothesis test for the thermal drift theory.",
+  "expect": {
+    "messageContains": ["test"],
+    "allowedProposalTypes": ["hypothesis_test"],
+    "forbiddenProposalTypes": ["close_case"]
+  }
+}

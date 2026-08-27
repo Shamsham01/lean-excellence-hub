@@ -17,11 +17,17 @@ export default async function ProjectMethodologiesPage() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data: methodologies } = await untypedFrom(supabase, "ci_project_methodologies")
+  const { data: methodologies } = await untypedFrom(
+    supabase,
+    "ci_project_methodologies",
+  )
     .select("id, name, code, description, status")
     .order("name");
 
-  const { data: versions } = await untypedFrom(supabase, "ci_project_methodology_versions")
+  const { data: versions } = await untypedFrom(
+    supabase,
+    "ci_project_methodology_versions",
+  )
     .select("id, methodology_id, version_number, status, published_at")
     .order("version_number");
 
@@ -76,12 +82,16 @@ export default async function ProjectMethodologiesPage() {
                       {methodology.name}
                     </Link>
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">{methodology.code}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {methodology.code}
+                  </p>
                 </div>
                 <Badge variant="outline">{methodology.status}</Badge>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                {methodology.description ? <p>{methodology.description}</p> : null}
+                {methodology.description ? (
+                  <p>{methodology.description}</p>
+                ) : null}
                 {published ? (
                   <p className="mt-2">
                     Published version {published.version_number}
@@ -94,7 +104,9 @@ export default async function ProjectMethodologiesPage() {
                 )}
                 {canManage ? (
                   <Button size="sm" variant="outline" className="mt-3" asChild>
-                    <Link href={`/platform/projects/methodologies/${methodology.id}`}>
+                    <Link
+                      href={`/platform/projects/methodologies/${methodology.id}`}
+                    >
                       Open editor
                     </Link>
                   </Button>

@@ -14,9 +14,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="sm"
       className="w-full justify-start gap-2 text-sidebar-foreground"
-      onClick={() =>
-        setTheme(resolvedTheme === "dark" ? "light" : "dark")
-      }
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
     >
       {resolvedTheme === "dark" ? (

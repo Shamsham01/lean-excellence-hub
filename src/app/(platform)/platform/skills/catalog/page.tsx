@@ -10,11 +10,17 @@ export default async function SkillsCatalogPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Skills catalogue" description="Organisation-defined operational skills." />
+      <PageHeader
+        title="Skills catalogue"
+        description="Organisation-defined operational skills."
+      />
       <ul className="divide-y divide-border rounded-lg border border-border">
         {skills?.map((skill) => (
           <li key={skill.id} className="px-4 py-3 text-sm">
-            <a href={`/platform/skills/${skill.id}`} className="font-medium hover:underline">
+            <a
+              href={`/platform/skills/${skill.id}`}
+              className="font-medium hover:underline"
+            >
               {skill.name}
             </a>
             <span className="ml-2 text-muted-foreground">{skill.code}</span>

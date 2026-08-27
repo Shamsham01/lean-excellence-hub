@@ -22,7 +22,10 @@ import {
   benefitStatusLabel,
   portfolioFilterStatuses,
 } from "@/lib/benefits/status";
-import type { BenefitPortfolioItem, BenefitsOverview } from "@/lib/benefits/types";
+import type {
+  BenefitPortfolioItem,
+  BenefitsOverview,
+} from "@/lib/benefits/types";
 
 type BenefitPortfolioProps = {
   items: BenefitPortfolioItem[];
@@ -81,7 +84,9 @@ export function BenefitPortfolio({
         <MetricCard label="Submitted" value={pipeline.submitted ?? 0} />
         <MetricCard
           label="Awaiting validation"
-          value={awaitingValidation.benefits + awaitingValidation.realisation_entries}
+          value={
+            awaitingValidation.benefits + awaitingValidation.realisation_entries
+          }
           hint={`${awaitingValidation.benefits} benefits · ${awaitingValidation.realisation_entries} entries`}
         />
         <MetricCard
@@ -100,7 +105,9 @@ export function BenefitPortfolio({
         <CardHeader className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <CardTitle>Benefit portfolio</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">{totalCount} benefits</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {totalCount} benefits
+            </p>
           </div>
           <form
             onSubmit={(event) => {
@@ -124,7 +131,7 @@ export function BenefitPortfolio({
               <select
                 name="status"
                 defaultValue={statusFilter ?? ""}
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 data-testid="benefit-portfolio-status"
               >
                 <option value="">All statuses</option>
@@ -140,11 +147,15 @@ export function BenefitPortfolio({
               <select
                 name="benefit_class"
                 defaultValue={benefitClassFilter ?? ""}
-                className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               >
                 <option value="">All classes</option>
-                <option value="financial">{benefitClassLabel("financial")}</option>
-                <option value="non_financial">{benefitClassLabel("non_financial")}</option>
+                <option value="financial">
+                  {benefitClassLabel("financial")}
+                </option>
+                <option value="non_financial">
+                  {benefitClassLabel("non_financial")}
+                </option>
               </select>
             </label>
             <Button type="submit" variant="outline" className="min-h-11">
@@ -155,7 +166,9 @@ export function BenefitPortfolio({
         <CardContent className="flex flex-col gap-2 pt-4">
           {items.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
-              <p className="text-sm font-medium">No benefits match your filters</p>
+              <p className="text-sm font-medium">
+                No benefits match your filters
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Adjust search or filters, or register a new improvement benefit.
               </p>
@@ -187,7 +200,9 @@ export function BenefitPortfolio({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={classificationBadgeVariant(item.benefit_class)}>
+                  <Badge
+                    variant={classificationBadgeVariant(item.benefit_class)}
+                  >
                     {benefitClassLabel(item.benefit_class)}
                   </Badge>
                   <Badge variant={benefitStatusBadgeVariant(item.status)}>

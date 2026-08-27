@@ -8,7 +8,9 @@ export default async function GembaHistoryPage() {
   const supabase = await createServerSupabaseClient();
   const { data: walks } = await supabase
     .from("gemba_walks")
-    .select("id, definition_name_snapshot, unit_name_snapshot, completed_at, summary_notes")
+    .select(
+      "id, definition_name_snapshot, unit_name_snapshot, completed_at, summary_notes",
+    )
     .eq("status", "completed")
     .order("completed_at", { ascending: false })
     .limit(50);
@@ -25,7 +27,9 @@ export default async function GembaHistoryPage() {
               className="rounded-md border border-border px-4 py-3 hover:bg-surface"
             >
               <p className="font-medium">{walk.definition_name_snapshot}</p>
-              <p className="text-sm text-muted-foreground">{walk.unit_name_snapshot}</p>
+              <p className="text-sm text-muted-foreground">
+                {walk.unit_name_snapshot}
+              </p>
             </Link>
           ))}
         </CardContent>

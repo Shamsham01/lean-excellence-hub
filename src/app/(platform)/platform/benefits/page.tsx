@@ -4,7 +4,10 @@ import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
-import type { BenefitsListResponse, BenefitsOverview } from "@/lib/benefits/types";
+import type {
+  BenefitsListResponse,
+  BenefitsOverview,
+} from "@/lib/benefits/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 

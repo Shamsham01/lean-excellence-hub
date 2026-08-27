@@ -33,12 +33,16 @@ export function CountermeasuresPanel({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedCauseIds, setSelectedCauseIds] = useState<Record<string, string>>({});
+  const [selectedCauseIds, setSelectedCauseIds] = useState<
+    Record<string, string>
+  >({});
   const [actionTitles, setActionTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const verifiedHypotheses = detail.hypotheses.filter((row) => row.status === "verified");
+  const verifiedHypotheses = detail.hypotheses.filter(
+    (row) => row.status === "verified",
+  );
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -62,7 +66,11 @@ export function CountermeasuresPanel({
     if (causeId) {
       await linkCountermeasureCauses(countermeasureId, caseId, [causeId]);
     }
-    const result = await selectCountermeasure(countermeasureId, caseId, "Selected from workspace");
+    const result = await selectCountermeasure(
+      countermeasureId,
+      caseId,
+      "Selected from workspace",
+    );
     setMessage(result.error ?? "Countermeasure selected");
     setLoading(false);
     router.refresh();
@@ -85,7 +93,10 @@ export function CountermeasuresPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4" data-testid="problem-solving-countermeasures-panel">
+    <div
+      className="flex flex-col gap-4"
+      data-testid="problem-solving-countermeasures-panel"
+    >
       {canContribute ? (
         <Card>
           <CardHeader>
@@ -103,7 +114,11 @@ export function CountermeasuresPanel({
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Description</span>
-                <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </label>
               <Button type="submit" size="sm" disabled={loading}>
                 Create countermeasure
@@ -115,7 +130,9 @@ export function CountermeasuresPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Countermeasures ({detail.countermeasures.length})</CardTitle>
+          <CardTitle>
+            Countermeasures ({detail.countermeasures.length})
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           {detail.countermeasures.length === 0 ? (
@@ -134,13 +151,22 @@ export function CountermeasuresPanel({
                     </Badge>
                     <p className="font-medium">{item.title}</p>
                     {item.description ? (
-                      <p className="text-muted-foreground">{item.description}</p>
+                      <p className="text-muted-foreground">
+                        {item.description}
+                      </p>
                     ) : null}
                     {item.cause_links.length > 0 ? (
-                      <p className="mt-1 text-xs text-muted-foreground" data-testid={`countermeasure-causes-${item.id}`}>
+                      <p
+                        className="mt-1 text-xs text-muted-foreground"
+                        data-testid={`countermeasure-causes-${item.id}`}
+                      >
                         Linked causes:{" "}
                         {item.cause_links
-                          .map((link) => link.hypothesis_statement ?? link.hypothesis_id.slice(0, 8))
+                          .map(
+                            (link) =>
+                              link.hypothesis_statement ??
+                              link.hypothesis_id.slice(0, 8),
+                          )
                           .join(", ")}
                       </p>
                     ) : null}
@@ -148,7 +174,7 @@ export function CountermeasuresPanel({
                   {canManage && item.status === "proposed" ? (
                     <div className="flex flex-col gap-2">
                       <select
-                        className="min-h-11 rounded-md border border-input bg-background px-3 py-2 text-xs"
+                        className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-xs"
                         value={selectedCauseIds[item.id] ?? ""}
                         onChange={(e) =>
                           setSelectedCauseIds((current) => ({
@@ -177,14 +203,23 @@ export function CountermeasuresPanel({
                     </div>
                   ) : null}
                 </div>
-                {canManage && ["selected", "implementing", "implemented", "effective"].includes(item.status) ? (
+                {canManage &&
+                [
+                  "selected",
+                  "implementing",
+                  "implemented",
+                  "effective",
+                ].includes(item.status) ? (
                   <div className="flex flex-col gap-2 border-t border-border pt-2 sm:flex-row sm:items-end">
                     <label className="flex flex-1 flex-col gap-1 text-xs">
                       <span>Universal action for this countermeasure</span>
                       <Input
                         value={actionTitles[item.id] ?? ""}
                         onChange={(e) =>
-                          setActionTitles((current) => ({ ...current, [item.id]: e.target.value }))
+                          setActionTitles((current) => ({
+                            ...current,
+                            [item.id]: e.target.value,
+                          }))
                         }
                         data-testid={`countermeasure-action-title-${item.id}`}
                         placeholder="Action title"
@@ -206,7 +241,9 @@ export function CountermeasuresPanel({
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

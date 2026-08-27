@@ -23,7 +23,9 @@ export async function recordSkillValidation(input: {
     target_assessment_method: input.assessmentMethod ?? "manager_assessment",
     ...(input.notes ? { target_notes: input.notes } : {}),
     ...(input.validUntil ? { target_valid_until: input.validUntil } : {}),
-    ...(input.organisationalUnitId ? { target_organisational_unit_id: input.organisationalUnitId } : {}),
+    ...(input.organisationalUnitId
+      ? { target_organisational_unit_id: input.organisationalUnitId }
+      : {}),
   });
   if (error) return { error: error.message };
   revalidatePath(`/platform/people/${input.membershipId}`);

@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
-import { AssessmentStatusBadge, ScoreBadge } from "@/modules/maturity/status-badges";
+import {
+  AssessmentStatusBadge,
+  ScoreBadge,
+} from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function MaturityOverviewPage() {
@@ -102,9 +105,11 @@ export default async function MaturityOverviewPage() {
         <MetricCard
           label="Current maturity"
           value={
-            latestResult
-              ? <ScoreBadge score={Number(latestResult.overall_score)} />
-              : "—"
+            latestResult ? (
+              <ScoreBadge score={Number(latestResult.overall_score)} />
+            ) : (
+              "—"
+            )
           }
           hint={
             latestResult?.published_at
@@ -116,14 +121,16 @@ export default async function MaturityOverviewPage() {
         <MetricCard
           label="Draft assessments"
           value={
-            assessments?.filter((a) => a.status === "draft" || a.status === "in_progress").length ?? 0
+            assessments?.filter(
+              (a) => a.status === "draft" || a.status === "in_progress",
+            ).length ?? 0
           }
         />
         <MetricCard
           label="In review"
           value={
-            assessments?.filter((a) =>
-              a.status === "submitted" || a.status === "assessor_review",
+            assessments?.filter(
+              (a) => a.status === "submitted" || a.status === "assessor_review",
             ).length ?? 0
           }
         />
@@ -169,7 +176,9 @@ export default async function MaturityOverviewPage() {
                 </Link>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">No assessments yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No assessments yet.
+              </p>
             )}
           </CardContent>
         </Card>

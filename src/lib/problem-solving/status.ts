@@ -26,7 +26,9 @@ const STATUS_BADGE_VARIANTS: Record<
 
 const EDITABLE_STATUSES = new Set<ProblemSolvingStatus>(["draft"]);
 
-const LEGAL_TRANSITIONS: Partial<Record<ProblemSolvingStatus, ProblemSolvingStatus[]>> = {
+const LEGAL_TRANSITIONS: Partial<
+  Record<ProblemSolvingStatus, ProblemSolvingStatus[]>
+> = {
   draft: ["active", "cancelled"],
   active: ["closed", "cancelled"],
 };

@@ -137,6 +137,8 @@ export const DEMO_ROLES = {
       "problem_solving.facilitate",
       "problem_solving.verify_cause",
       "problem_solving.close",
+      "ai.use",
+      "ai.view_history",
     ],
     invitationTokenSeed: "apex-demo-manager-invitation-v1",
   },
@@ -158,7 +160,8 @@ export const DEMO_ROLES = {
   psContributor: {
     canonicalName: "ps-contributor",
     displayName: "Problem Solving Contributor",
-    description: "View and contribute to problem solving cases without verify or close rights.",
+    description:
+      "View and contribute to problem solving cases without verify or close rights.",
     scopeType: "organisation" as const,
     scopeUnitKey: null,
     permissions: ["problem_solving.view", "problem_solving.contribute"],
@@ -439,7 +442,8 @@ export const DEMO_BENEFITS = [
     financialType: "hard_saving" as const,
     categoryCode: "materials",
     baselineFinancialValue: 42_000,
-    baselineDescription: "Annual packaging scrap cost before reduction programme.",
+    baselineDescription:
+      "Annual packaging scrap cost before reduction programme.",
     forecastTotal: 36_000,
     realisationPattern: "recurring" as const,
     forecastStart: "2026-01-01",
@@ -548,7 +552,8 @@ export const DEMO_PROBLEM_SOLVING_CASE = {
     "Higher scrap, repeated rework, and elevated customer complaint risk on appearance-sensitive packs.",
   scopeIn: "Packaging Line 3 sealing station, film feed, and changeover setup.",
   scopeOut: "Upstream filler chemistry and downstream palletising.",
-  targetCondition: "Seal defect rate sustained below 120 ppm with stable changeover performance.",
+  targetCondition:
+    "Seal defect rate sustained below 120 ppm with stable changeover performance.",
   priority: "high" as const,
   severity: "major" as const,
   currentCondition: {
@@ -560,21 +565,25 @@ export const DEMO_PROBLEM_SOLVING_CASE = {
       "Operators may be rushing changeover because the line is behind schedule.",
   },
   containment: {
-    description: "Increase in-process seal inspection frequency and hold suspect packs after splice events.",
+    description:
+      "Increase in-process seal inspection frequency and hold suspect packs after splice events.",
     rationale: "Reduce customer exposure while root cause analysis proceeds.",
     actionTitle: "Hold packs after film splice until seal check passes",
   },
   hypotheses: {
     pressureVariation: {
-      statement: "Sealing jaw pressure varies outside the validated setup window.",
+      statement:
+        "Sealing jaw pressure varies outside the validated setup window.",
       category: "Machine",
     },
     filmTension: {
-      statement: "Film tension drift during run causes inconsistent seal bead formation.",
+      statement:
+        "Film tension drift during run causes inconsistent seal bead formation.",
       category: "Material",
     },
     setupInconsistency: {
-      statement: "Changeover setup for jaw height is inconsistent between shifts.",
+      statement:
+        "Changeover setup for jaw height is inconsistent between shifts.",
       category: "Method",
     },
   },
@@ -582,7 +591,8 @@ export const DEMO_PROBLEM_SOLVING_CASE = {
     title: "Replace sealing jaw regulator and add pressure verification check",
     description:
       "Replace the faulty regulator, recalibrate jaw pressure, and add a pre-run pressure verification step.",
-    rationale: "Pressure test evidence supports mechanical instability as the verified cause.",
+    rationale:
+      "Pressure test evidence supports mechanical instability as the verified cause.",
     actionTitle: "Replace Line 3 sealing jaw regulator and update PM checklist",
   },
   effectiveness: {
@@ -596,8 +606,10 @@ export const DEMO_PROBLEM_SOLVING_CASE = {
   },
   sustainment: {
     what: "Add sealing jaw pressure verification to the Line 3 changeover standard and weekly PM checklist.",
-    checkMethod: "Technician verifies pressure within validated range before release to run.",
-    result: "Standard work updated and first audit completed without deviation.",
+    checkMethod:
+      "Technician verifies pressure within validated range before release to run.",
+    result:
+      "Standard work updated and first audit completed without deviation.",
   },
   session: {
     title: "Line 3 seal defect investigation review",

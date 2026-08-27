@@ -9,7 +9,10 @@ import {
   markSuggestionImplemented,
 } from "@/app/(platform)/platform/suggestions/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import { ResourceComments, type CommentRow } from "@/components/comments/resource-comments";
+import {
+  ResourceComments,
+  type CommentRow,
+} from "@/components/comments/resource-comments";
 import { SuggestionEvidenceBlock } from "@/components/suggestions/suggestion-evidence-block";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,17 +66,25 @@ export function SuggestionDetail({
   const id = detail.id as string;
 
   async function handleAction() {
-    const result = await createSuggestionAction(id, `Action: ${detail.title as string}`);
+    const result = await createSuggestionAction(
+      id,
+      `Action: ${detail.title as string}`,
+    );
     setMessage(result.error ? result.error : "Action created");
   }
 
   async function handleProject() {
     const result = await createProjectFromSuggestion(id);
-    setMessage(result.error ? result.error : `Project created: ${result.id ?? ""}`);
+    setMessage(
+      result.error ? result.error : `Project created: ${result.id ?? ""}`,
+    );
   }
 
   async function handleImplemented() {
-    const result = await markSuggestionImplemented(id, "Improvement completed on the floor.");
+    const result = await markSuggestionImplemented(
+      id,
+      "Improvement completed on the floor.",
+    );
     setMessage(result.error ? result.error : "Marked implemented");
   }
 
@@ -87,7 +98,9 @@ export function SuggestionDetail({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{suggestionStatusLabel(status)}</Badge>
           {detail.category_name_snapshot ? (
-            <Badge variant="outline">{detail.category_name_snapshot as string}</Badge>
+            <Badge variant="outline">
+              {detail.category_name_snapshot as string}
+            </Badge>
           ) : null}
           {detail.origin_unit_name_snapshot ? (
             <span className="text-sm text-muted-foreground">
@@ -112,20 +125,20 @@ export function SuggestionDetail({
             <CardContent className="flex flex-col gap-5 pt-6 text-sm">
               <div>
                 <p className="font-medium">What was noticed</p>
-                <p className="mt-1 text-muted-foreground leading-relaxed">
+                <p className="mt-1 leading-relaxed text-muted-foreground">
                   {detail.problem_or_opportunity as string}
                 </p>
               </div>
               <div>
                 <p className="font-medium">Proposed change</p>
-                <p className="mt-1 text-muted-foreground leading-relaxed">
+                <p className="mt-1 leading-relaxed text-muted-foreground">
                   {detail.proposed_idea as string}
                 </p>
               </div>
               {detail.expected_benefit_summary ? (
                 <div>
                   <p className="font-medium">Expected benefit</p>
-                  <p className="mt-1 text-muted-foreground leading-relaxed">
+                  <p className="mt-1 leading-relaxed text-muted-foreground">
                     {detail.expected_benefit_summary as string}
                   </p>
                 </div>
@@ -148,7 +161,8 @@ export function SuggestionDetail({
                   No formal benefits linked yet.
                   {detail.expected_benefit_summary ? (
                     <span className="mt-2 block text-muted-foreground">
-                      Expected benefit (narrative): {detail.expected_benefit_summary as string}
+                      Expected benefit (narrative):{" "}
+                      {detail.expected_benefit_summary as string}
                     </span>
                   ) : null}
                 </p>
@@ -161,7 +175,9 @@ export function SuggestionDetail({
                   >
                     <div>
                       <p className="font-medium">
-                        {benefit.benefit_number ? `${benefit.benefit_number} · ` : ""}
+                        {benefit.benefit_number
+                          ? `${benefit.benefit_number} · `
+                          : ""}
                         {benefit.title}
                       </p>
                       <p className="text-sm text-muted-foreground">
@@ -174,22 +190,38 @@ export function SuggestionDetail({
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={classificationBadgeVariant(benefit.benefit_class)}>
+                      <Badge
+                        variant={classificationBadgeVariant(
+                          benefit.benefit_class,
+                        )}
+                      >
                         {benefit.benefit_class}
                       </Badge>
-                      <Badge variant={benefitStatusBadgeVariant(benefit.status)}>
+                      <Badge
+                        variant={benefitStatusBadgeVariant(benefit.status)}
+                      >
                         {benefitStatusLabel(benefit.status)}
                       </Badge>
                       {benefit.benefit_class === "financial" ? (
-                        <span className="text-xs tabular-nums text-muted-foreground">
+                        <span className="text-xs text-muted-foreground tabular-nums">
                           Forecast{" "}
-                          {formatBenefitCurrencyAmount(benefit.forecast_total_amount, null)}
+                          {formatBenefitCurrencyAmount(
+                            benefit.forecast_total_amount,
+                            null,
+                          )}
                           · Validated{" "}
-                          {formatBenefitCurrencyAmount(benefit.validated_realised_total, null)}
+                          {formatBenefitCurrencyAmount(
+                            benefit.validated_realised_total,
+                            null,
+                          )}
                         </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">
-                          Target {formatMeasureValue(benefit.forecast_total_amount, null)}
+                          Target{" "}
+                          {formatMeasureValue(
+                            benefit.forecast_total_amount,
+                            null,
+                          )}
                         </span>
                       )}
                     </div>
@@ -217,18 +249,26 @@ export function SuggestionDetail({
               {detail.implementation_summary ? (
                 <div>
                   <p className="font-medium">Summary</p>
-                  <p className="mt-1 text-muted-foreground leading-relaxed">
+                  <p className="mt-1 leading-relaxed text-muted-foreground">
                     {detail.implementation_summary as string}
                   </p>
                 </div>
               ) : null}
               {canManage && ["accepted", "implementing"].includes(status) ? (
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleAction()}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAction()}
+                  >
                     Create action
                   </Button>
                   {canCreateProject ? (
-                    <Button size="sm" variant="outline" onClick={() => handleProject()}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleProject()}
+                    >
                       Create project
                     </Button>
                   ) : null}

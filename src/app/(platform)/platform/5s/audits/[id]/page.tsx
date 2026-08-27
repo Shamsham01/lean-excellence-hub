@@ -17,7 +17,9 @@ export default async function FiveSAuditPage({
 }) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
-  const canEdit = await currentMemberHasPermission(FIVE_S_PERMISSIONS.auditPerform);
+  const canEdit = await currentMemberHasPermission(
+    FIVE_S_PERMISSIONS.auditPerform,
+  );
 
   const { data: audit } = await supabase
     .from("five_s_audits")
@@ -43,7 +45,9 @@ export default async function FiveSAuditPage({
 
   const { data: questionsRaw } = await supabase
     .from("template_questions")
-    .select("id, section_id, prompt, question_type, is_required, allows_not_applicable, help_text, position")
+    .select(
+      "id, section_id, prompt, question_type, is_required, allows_not_applicable, help_text, position",
+    )
     .eq("template_version_id", version?.template_version_id ?? "")
     .order("position");
 
@@ -69,7 +73,14 @@ export default async function FiveSAuditPage({
     .select("question_id, text_value, number_value, is_not_applicable")
     .eq("submission_id", audit.submission_id);
 
-  const answers: Record<string, { text_value?: string | null; number_value?: number | null; is_not_applicable?: boolean }> = {};
+  const answers: Record<
+    string,
+    {
+      text_value?: string | null;
+      number_value?: number | null;
+      is_not_applicable?: boolean;
+    }
+  > = {};
   for (const a of answersRaw ?? []) {
     answers[a.question_id] = a;
   }
@@ -102,12 +113,18 @@ export default async function FiveSAuditPage({
   if (audit.status === "completed") {
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="5S audit result" description={audit.standard_name_snapshot ?? "Completed audit"} />
+        <PageHeader
+          title="5S audit result"
+          description={audit.standard_name_snapshot ?? "Completed audit"}
+        />
         <Card>
-          <CardContent className="py-6 flex flex-col gap-2">
-            <p className="text-2xl font-semibold">{audit.overall_score_percent}%</p>
+          <CardContent className="flex flex-col gap-2 py-6">
+            <p className="text-2xl font-semibold">
+              {audit.overall_score_percent}%
+            </p>
             <p className="text-sm text-muted-foreground">
-              Target {audit.target_percent}% · {audit.result_status} · {audit.unit_name_snapshot}
+              Target {audit.target_percent}% · {audit.result_status} ·{" "}
+              {audit.unit_name_snapshot}
             </p>
             <Button variant="outline" asChild className="mt-4">
               <Link href="/platform/5s/history">Back to history</Link>
@@ -127,7 +144,9 @@ export default async function FiveSAuditPage({
           canEdit && audit.status === "in_progress" ? (
             <form action={completeFiveSAuditFromForm}>
               <input type="hidden" name="auditId" value={id} />
-              <Button type="submit" className="min-h-11">Complete audit</Button>
+              <Button type="submit" className="min-h-11">
+                Complete audit
+              </Button>
             </form>
           ) : null
         }

@@ -4,6 +4,7 @@ export type PlatformNavItem = {
   href: string;
   label: string;
   permission: string;
+  organisationScopeOnly?: boolean;
   section?: PlatformNavSection;
   icon?: string;
 };
@@ -97,6 +98,13 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/templates",
     label: "Templates",
     permission: "templates.read",
+    section: "platform",
+  },
+  {
+    href: "/platform/settings/ai",
+    label: "Lean AI",
+    permission: "ai.manage_settings",
+    organisationScopeOnly: true,
     section: "platform",
   },
 ];

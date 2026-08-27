@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  createBenefitWizardDraft,
-} from "@/app/(platform)/platform/benefits/actions";
+import { createBenefitWizardDraft } from "@/app/(platform)/platform/benefits/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +15,10 @@ import {
   financialTypeLabel,
   nonFinancialTypeLabel,
 } from "@/lib/benefits/classification";
-import { REALISATION_PATTERNS, realisationPatternLabel } from "@/lib/benefits/forecast";
+import {
+  REALISATION_PATTERNS,
+  realisationPatternLabel,
+} from "@/lib/benefits/forecast";
 import { cn } from "@/lib/utils";
 
 const WIZARD_STEPS = [
@@ -39,7 +40,11 @@ type CreateBenefitWizardProps = {
   categories: CategoryOption[];
 };
 
-export function CreateBenefitWizard({ units, members, categories }: CreateBenefitWizardProps) {
+export function CreateBenefitWizard({
+  units,
+  members,
+  categories,
+}: CreateBenefitWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -53,9 +58,13 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
   const [plannedStart, setPlannedStart] = useState("");
   const [plannedEnd, setPlannedEnd] = useState("");
 
-  const [benefitClass, setBenefitClass] = useState<"financial" | "non_financial">("financial");
+  const [benefitClass, setBenefitClass] = useState<
+    "financial" | "non_financial"
+  >("financial");
   const [financialType, setFinancialType] = useState(FINANCIAL_TYPES[0]);
-  const [nonFinancialType, setNonFinancialType] = useState(NON_FINANCIAL_TYPES[0]);
+  const [nonFinancialType, setNonFinancialType] = useState(
+    NON_FINANCIAL_TYPES[0],
+  );
 
   const [baselineDescription, setBaselineDescription] = useState("");
   const [baselinePeriodStart, setBaselinePeriodStart] = useState("");
@@ -64,7 +73,9 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
   const [baselineMeasureUnit, setBaselineMeasureUnit] = useState("");
   const [baselineFinancialValue, setBaselineFinancialValue] = useState("");
 
-  const [realisationPattern, setRealisationPattern] = useState<string>(REALISATION_PATTERNS[0]);
+  const [realisationPattern, setRealisationPattern] = useState<string>(
+    REALISATION_PATTERNS[0],
+  );
   const [forecastStart, setForecastStart] = useState("");
   const [forecastEnd, setForecastEnd] = useState("");
   const [forecastTotal, setForecastTotal] = useState("");
@@ -140,7 +151,9 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
         ...(baselineMeasureValue.trim()
           ? { baselineMeasureValue: Number(baselineMeasureValue) }
           : {}),
-        ...(baselineMeasureUnit.trim() ? { baselineMeasureUnit: baselineMeasureUnit.trim() } : {}),
+        ...(baselineMeasureUnit.trim()
+          ? { baselineMeasureUnit: baselineMeasureUnit.trim() }
+          : {}),
         ...(baselineFinancialValue.trim()
           ? { baselineFinancialValue: Number(baselineFinancialValue) }
           : {}),
@@ -154,12 +167,18 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
               ...(benefitClass === "financial" && forecastTotal.trim()
                 ? { forecastTotalAmount: Number(forecastTotal) }
                 : {}),
-              ...(calculationBasis.trim() ? { calculationBasis: calculationBasis.trim() } : {}),
-              ...(assumptions.trim() ? { assumptions: assumptions.trim() } : {}),
+              ...(calculationBasis.trim()
+                ? { calculationBasis: calculationBasis.trim() }
+                : {}),
+              ...(assumptions.trim()
+                ? { assumptions: assumptions.trim() }
+                : {}),
               ...(benefitClass === "non_financial" && targetMeasureValue.trim()
                 ? { targetMeasureValue: Number(targetMeasureValue) }
                 : {}),
-              ...(targetMeasureUnit.trim() ? { targetMeasureUnit: targetMeasureUnit.trim() } : {}),
+              ...(targetMeasureUnit.trim()
+                ? { targetMeasureUnit: targetMeasureUnit.trim() }
+                : {}),
               ...(targetDate ? { targetDate } : {}),
               ...(forecastPeriods ? { forecastPeriods } : {}),
             }
@@ -182,14 +201,14 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
 
   return (
     <div className="flex flex-col gap-6" data-testid="create-benefit-wizard">
-      <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
         {WIZARD_STEPS.map((label, index) => (
           <button
             key={label}
             type="button"
             onClick={() => setStep(index)}
             className={cn(
-              "shrink-0 rounded-md border px-3 py-2 text-xs font-medium min-h-9",
+              "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
               index === step
                 ? "border-primary bg-primary/10 text-foreground"
                 : "border-border text-muted-foreground",
@@ -209,57 +228,79 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
             <>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Benefit title</span>
-                <Input required value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Organisation unit</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={unitId}
                   onChange={(e) => setUnitId(e.target.value)}
                 >
                   {units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>{unit.name}</option>
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </option>
                   ))}
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Owner</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={ownerId}
                   onChange={(e) => setOwnerId(e.target.value)}
                 >
                   {members.map((member) => (
-                    <option key={member.id} value={member.id}>{member.label}</option>
+                    <option key={member.id} value={member.id}>
+                      {member.label}
+                    </option>
                   ))}
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Category</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                 >
                   <option value="">No category</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>{category.label}</option>
+                    <option key={category.id} value={category.id}>
+                      {category.label}
+                    </option>
                   ))}
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Description</span>
-                <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+                <Textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Planned realisation start</span>
-                  <Input type="date" value={plannedStart} onChange={(e) => setPlannedStart(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={plannedStart}
+                    onChange={(e) => setPlannedStart(e.target.value)}
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Planned realisation end</span>
-                  <Input type="date" value={plannedEnd} onChange={(e) => setPlannedEnd(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={plannedEnd}
+                    onChange={(e) => setPlannedEnd(e.target.value)}
+                  />
                 </label>
               </div>
             </>
@@ -278,7 +319,9 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
                 </Button>
                 <Button
                   type="button"
-                  variant={benefitClass === "non_financial" ? "default" : "outline"}
+                  variant={
+                    benefitClass === "non_financial" ? "default" : "outline"
+                  }
                   size="sm"
                   onClick={() => setBenefitClass("non_financial")}
                 >
@@ -289,12 +332,16 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Financial type</span>
                   <select
-                    className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                    className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                     value={financialType}
-                    onChange={(e) => setFinancialType(e.target.value as typeof financialType)}
+                    onChange={(e) =>
+                      setFinancialType(e.target.value as typeof financialType)
+                    }
                   >
                     {FINANCIAL_TYPES.map((type) => (
-                      <option key={type} value={type}>{financialTypeLabel(type)}</option>
+                      <option key={type} value={type}>
+                        {financialTypeLabel(type)}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -302,12 +349,18 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Non-financial type</span>
                   <select
-                    className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                    className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                     value={nonFinancialType}
-                    onChange={(e) => setNonFinancialType(e.target.value as typeof nonFinancialType)}
+                    onChange={(e) =>
+                      setNonFinancialType(
+                        e.target.value as typeof nonFinancialType,
+                      )
+                    }
                   >
                     {NON_FINANCIAL_TYPES.map((type) => (
-                      <option key={type} value={type}>{nonFinancialTypeLabel(type)}</option>
+                      <option key={type} value={type}>
+                        {nonFinancialTypeLabel(type)}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -379,7 +432,7 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
               <label className="flex flex-col gap-1 text-sm">
                 <span>Realisation pattern</span>
                 <select
-                  className="min-h-11 rounded-md border border-input bg-background px-3 py-2"
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                   value={realisationPattern}
                   onChange={(e) => setRealisationPattern(e.target.value)}
                 >
@@ -393,11 +446,19 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Forecast start</span>
-                  <Input type="date" value={forecastStart} onChange={(e) => setForecastStart(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={forecastStart}
+                    onChange={(e) => setForecastStart(e.target.value)}
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
                   <span>Forecast end</span>
-                  <Input type="date" value={forecastEnd} onChange={(e) => setForecastEnd(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={forecastEnd}
+                    onChange={(e) => setForecastEnd(e.target.value)}
+                  />
                 </label>
               </div>
               {benefitClass === "financial" ? (
@@ -448,13 +509,21 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
                   </label>
                   <label className="flex flex-col gap-1 text-sm">
                     <span>Target date</span>
-                    <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+                    <Input
+                      type="date"
+                      value={targetDate}
+                      onChange={(e) => setTargetDate(e.target.value)}
+                    />
                   </label>
                 </div>
               )}
               <label className="flex flex-col gap-1 text-sm">
                 <span>Assumptions</span>
-                <Textarea rows={2} value={assumptions} onChange={(e) => setAssumptions(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={assumptions}
+                  onChange={(e) => setAssumptions(e.target.value)}
+                />
               </label>
             </>
           ) : null}
@@ -484,7 +553,9 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
 
           {step === 5 ? (
             <div className="flex flex-col gap-3 text-sm">
-              <p><span className="font-medium">Title:</span> {title}</p>
+              <p>
+                <span className="font-medium">Title:</span> {title}
+              </p>
               <p>
                 <span className="font-medium">Class:</span>{" "}
                 {benefitClass === "financial"
@@ -493,11 +564,14 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
               </p>
               <p>
                 <span className="font-medium">Forecast window:</span>{" "}
-                {forecastStart && forecastEnd ? `${forecastStart} → ${forecastEnd}` : "—"}
+                {forecastStart && forecastEnd
+                  ? `${forecastStart} → ${forecastEnd}`
+                  : "—"}
               </p>
               {benefitClass === "financial" ? (
                 <p>
-                  <span className="font-medium">Forecast total:</span> {forecastTotal || "—"}
+                  <span className="font-medium">Forecast total:</span>{" "}
+                  {forecastTotal || "—"}
                 </p>
               ) : (
                 <p>
@@ -507,7 +581,9 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
               )}
               <p>
                 <span className="font-medium">Source:</span>{" "}
-                {isStandalone ? "Standalone" : sourceResourceId || "Linked later"}
+                {isStandalone
+                  ? "Standalone"
+                  : sourceResourceId || "Linked later"}
               </p>
             </div>
           ) : null}
@@ -525,7 +601,9 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
               </Button>
             ) : null}
             {step < WIZARD_STEPS.length - 1 ? (
-              <Button type="button" onClick={nextStep}>Continue</Button>
+              <Button type="button" onClick={nextStep}>
+                Continue
+              </Button>
             ) : (
               <Button type="button" onClick={handleCreate} disabled={loading}>
                 {loading ? "Creating…" : "Create benefit draft"}

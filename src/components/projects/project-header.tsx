@@ -40,13 +40,17 @@ export function ProjectHeader({
     <div className="flex flex-col gap-4 border-b border-border pb-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">{detail.project_number}</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            {detail.project_number}
+          </p>
           <h1 className="typography-page-title">{detail.title}</h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant={projectStatusBadgeVariant(detail.status)}>
               {projectStatusLabel(detail.status)}
             </Badge>
-            <Badge variant="outline">{projectPriorityLabel(detail.priority)}</Badge>
+            <Badge variant="outline">
+              {projectPriorityLabel(detail.priority)}
+            </Badge>
           </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             {unitName ? (
@@ -81,7 +85,7 @@ export function ProjectHeader({
             ) : null}
           </dl>
         </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {showSubmit ? (
             <Button size="sm" onClick={onSubmit}>
               Submit charter

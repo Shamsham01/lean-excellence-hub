@@ -24,13 +24,19 @@ export default async function NewBenefitPage() {
     .eq("status", "active")
     .order("display_name");
 
-  const { data: categoryRows } = await untypedFrom(supabase, "benefit_categories")
+  const { data: categoryRows } = await untypedFrom(
+    supabase,
+    "benefit_categories",
+  )
     .select("id, name, code, status")
     .eq("status", "active")
     .order("display_order");
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6" data-testid="create-benefit-page">
+    <div
+      className="mx-auto flex max-w-2xl flex-col gap-6"
+      data-testid="create-benefit-page"
+    >
       <PageHeader
         title="New improvement benefit"
         description="Define classification, baseline, forecast, and source links before submission."
@@ -47,12 +53,16 @@ export default async function NewBenefitPage() {
           })) ?? []
         }
         categories={
-          (categoryRows as Array<{ id: string; name: string; code: string }> | null)?.map(
-            (category) => ({
-              id: category.id,
-              label: `${category.name} (${category.code})`,
-            }),
-          ) ?? []
+          (
+            categoryRows as Array<{
+              id: string;
+              name: string;
+              code: string;
+            }> | null
+          )?.map((category) => ({
+            id: category.id,
+            label: `${category.name} (${category.code})`,
+          })) ?? []
         }
       />
     </div>
