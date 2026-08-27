@@ -65,12 +65,12 @@ describe("proposal contracts for all 11 types", () => {
       type: "current_condition_item",
       bucket: "current_condition_items",
       validTransportItem: {
-        category: "performance",
+        category: "measured_fact",
         statement: "Hot-running defect rate exceeds baseline.",
         explanation: "Records the measured gap.",
       },
       validPayload: {
-        category: "performance",
+        category: "measured_fact",
         statement: "Hot-running defect rate exceeds baseline.",
       },
     },
@@ -265,6 +265,57 @@ describe("proposal contracts for all 11 types", () => {
       expect(safeValidateProposalPayload(type, broken).success).toBe(false);
     },
   );
+});
+
+describe("current condition category domain constraints", () => {
+  it("rejects invalid categories before persistence", () => {
+    expect(
+      safeValidateProposalPayload("current_condition_item", {
+        category: "performance",
+        statement: "Hot-running defect rate is 2.4x the cold-start baseline.",
+      }).success,
+    ).toBe(false);
+
+    const proposals = flattenValidatedProposalsFromTransport(
+      transportWith({
+        current_condition_items: [
+          {
+            category: "performance",
+            statement:
+              "Hot-running defect rate is 2.4x the cold-start baseline.",
+            explanation: "Invalid category must be dropped.",
+          } as never,
+        ],
+      }),
+    );
+
+    expect(proposals).toHaveLength(0);
+  });
+
+  it("accepts measured_fact for a measured observation", () => {
+    const payload = validateProposalPayload("current_condition_item", {
+      category: "measured_fact",
+      statement: "Hot-running defect rate is 2.4x the cold-start baseline.",
+    });
+
+    expect(payload.category).toBe("measured_fact");
+
+    const proposals = flattenValidatedProposalsFromTransport(
+      transportWith({
+        current_condition_items: [
+          {
+            category: "measured_fact",
+            statement:
+              "Hot-running defect rate is 2.4x the cold-start baseline.",
+            explanation: "Records the measured gap.",
+          },
+        ],
+      }),
+    );
+
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]?.payload).toEqual(payload);
+  });
 });
 
 describe("proposal transport regression cases", () => {

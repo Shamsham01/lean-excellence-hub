@@ -1,4 +1,5 @@
 import type { AiProposalType } from "@/platform/ai/types";
+import { CURRENT_CONDITION_CATEGORIES } from "@/lib/problem-solving/types";
 import {
   safeValidateProposalPayload,
   sanitizeEnvelopeProposals,
@@ -14,7 +15,10 @@ const uuidStringArray = {
 const currentConditionItemTransportItemSchema = {
   type: "object",
   properties: {
-    category: { type: "string" },
+    category: {
+      type: "string",
+      enum: [...CURRENT_CONDITION_CATEGORIES],
+    },
     statement: { type: "string" },
     explanation: explanationField,
   },

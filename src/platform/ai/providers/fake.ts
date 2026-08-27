@@ -115,13 +115,29 @@ export class FakeAIProvider implements AIProvider {
       );
     }
 
+    if (lastUser.toLowerCase().includes("propose invalid condition")) {
+      return this.envelopeResponse(
+        "This draft used an invalid current-condition category and was not offered for acceptance.",
+        {
+          proposal_type: "current_condition_item",
+          payload: {
+            category: "performance",
+            statement:
+              "Hot-running defect rate is 2.4x the cold-start baseline.",
+          },
+          explanation:
+            "Invalid category should be filtered before persistence.",
+        },
+      );
+    }
+
     if (lastUser.toLowerCase().includes("propose condition")) {
       return this.envelopeResponse(
         "A measured current-condition gap should be recorded explicitly.",
         {
           proposal_type: "current_condition_item",
           payload: {
-            category: "performance",
+            category: "measured_fact",
             statement:
               "Hot-running defect rate is 2.4x the cold-start baseline.",
           },

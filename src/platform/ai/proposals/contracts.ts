@@ -1,12 +1,13 @@
 import { z } from "zod";
 
+import { CURRENT_CONDITION_CATEGORIES } from "@/lib/problem-solving/types";
 import type { AiProposalType } from "@/platform/ai/types";
 
 export const proposalPayloadSchemas = {
   current_condition_item: z
     .object({
-      category: z.string(),
-      statement: z.string().min(1),
+      category: z.enum(CURRENT_CONDITION_CATEGORIES),
+      statement: z.string().trim().min(1).max(2000),
     })
     .strict(),
   hypothesis: z
