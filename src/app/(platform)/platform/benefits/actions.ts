@@ -23,6 +23,142 @@ function revalidateBenefitPaths(benefitId?: string) {
   }
 }
 
+type BenefitWizardPeriodInput = {
+  period_start: string;
+  period_end: string;
+  forecast_amount: number;
+  display_order: number;
+};
+
+export async function createBenefitWizardDraft(input: {
+  title: string;
+  organisationalUnitId: string;
+  benefitClass: string;
+  description?: string;
+  financialType?: string;
+  nonFinancialType?: string;
+  categoryId?: string;
+  ownerMembershipId: string;
+  isStandaloneInitiative?: boolean;
+  primarySourceResourceId?: string;
+  baselineDescription?: string;
+  baselinePeriodStart?: string;
+  baselinePeriodEnd?: string;
+  baselineMeasureValue?: number;
+  baselineMeasureUnit?: string;
+  baselineFinancialValue?: number;
+  plannedRealisationStart?: string;
+  plannedRealisationEnd?: string;
+  realisationPattern?: string;
+  forecastStartDate?: string;
+  forecastEndDate?: string;
+  forecastTotalAmount?: number;
+  calculationBasis?: string;
+  assumptions?: string;
+  targetMeasureValue?: number;
+  targetMeasureUnit?: string;
+  targetDate?: string;
+  forecastPeriods?: BenefitWizardPeriodInput[];
+  sourceResourceId?: string;
+}): Promise<ActionResult> {
+  try {
+    const benefitId = await callRpc<string>("create_benefit_draft", {
+      target_title: input.title,
+      target_organisational_unit_id: input.organisationalUnitId,
+      target_benefit_class: input.benefitClass,
+      ...(input.description ? { target_description: input.description } : {}),
+      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
+      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
+      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.isStandaloneInitiative !== undefined
+        ? { target_is_standalone_initiative: input.isStandaloneInitiative }
+        : {}),
+      ...(input.primarySourceResourceId
+        ? { target_primary_source_resource_id: input.primarySourceResourceId }
+        : {}),
+    });
+
+    await callRpc("update_benefit_draft", {
+      target_benefit_id: benefitId,
+      target_title: input.title,
+      ...(input.description !== undefined ? { target_description: input.description } : {}),
+      ...(input.benefitClass ? { target_benefit_class: input.benefitClass } : {}),
+      ...(input.financialType ? { target_financial_type: input.financialType } : {}),
+      ...(input.nonFinancialType ? { target_non_financial_type: input.nonFinancialType } : {}),
+      ...(input.categoryId ? { target_category_id: input.categoryId } : {}),
+      ...(input.organisationalUnitId
+        ? { target_organisational_unit_id: input.organisationalUnitId }
+        : {}),
+      ...(input.ownerMembershipId ? { target_owner_membership_id: input.ownerMembershipId } : {}),
+      ...(input.baselineDescription
+        ? { target_baseline_description: input.baselineDescription }
+        : {}),
+      ...(input.baselinePeriodStart
+        ? { target_baseline_period_start: input.baselinePeriodStart }
+        : {}),
+      ...(input.baselinePeriodEnd ? { target_baseline_period_end: input.baselinePeriodEnd } : {}),
+      ...(input.baselineMeasureValue !== undefined
+        ? { target_baseline_measure_value: input.baselineMeasureValue }
+        : {}),
+      ...(input.baselineMeasureUnit
+        ? { target_baseline_measure_unit: input.baselineMeasureUnit }
+        : {}),
+      ...(input.baselineFinancialValue !== undefined
+        ? { target_baseline_financial_value: input.baselineFinancialValue }
+        : {}),
+      ...(input.plannedRealisationStart
+        ? { target_planned_realisation_start: input.plannedRealisationStart }
+        : {}),
+      ...(input.plannedRealisationEnd
+        ? { target_planned_realisation_end: input.plannedRealisationEnd }
+        : {}),
+      ...(input.isStandaloneInitiative !== undefined
+        ? { target_is_standalone_initiative: input.isStandaloneInitiative }
+        : {}),
+    });
+
+    if (input.forecastStartDate && input.forecastEndDate && input.realisationPattern) {
+      const forecastId = await callRpc<string>("create_benefit_forecast_draft", {
+        target_benefit_id: benefitId,
+        target_realisation_pattern: input.realisationPattern,
+        target_forecast_start_date: input.forecastStartDate,
+        target_forecast_end_date: input.forecastEndDate,
+        ...(input.forecastTotalAmount !== undefined
+          ? { target_forecast_total_amount: input.forecastTotalAmount }
+          : {}),
+        ...(input.calculationBasis ? { target_calculation_basis: input.calculationBasis } : {}),
+        ...(input.assumptions ? { target_assumptions: input.assumptions } : {}),
+        ...(input.targetMeasureValue !== undefined
+          ? { target_target_measure_value: input.targetMeasureValue }
+          : {}),
+        ...(input.targetMeasureUnit ? { target_target_measure_unit: input.targetMeasureUnit } : {}),
+        ...(input.targetDate ? { target_target_date: input.targetDate } : {}),
+      });
+
+      if (input.forecastPeriods && input.forecastPeriods.length > 0) {
+        await callRpc("replace_benefit_forecast_periods", {
+          target_forecast_version_id: forecastId,
+          target_periods: input.forecastPeriods,
+        });
+      }
+    }
+
+    if (input.sourceResourceId) {
+      await callRpc("add_benefit_source_link", {
+        target_benefit_id: benefitId,
+        target_source_resource_id: input.sourceResourceId,
+        target_relationship_role: "contributing",
+      });
+    }
+
+    revalidateBenefitPaths(benefitId);
+    return { ok: true, id: benefitId };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Create failed" };
+  }
+}
+
 export async function createBenefitDraft(input: {
   title: string;
   organisationalUnitId: string;

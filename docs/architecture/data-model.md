@@ -113,6 +113,29 @@ Implemented in Milestone 10 as governed improvement-benefit value (not a general
 
 Authoritative money is stored as PostgreSQL `NUMERIC`. Portfolio queries aggregate forecast, validated, and realised totals separately by classification. M8/M9 integration uses `get_project_benefits` and `get_suggestion_benefits` without extending `get_ci_project_detail` or `get_suggestion_detail`.
 
+## Problem Solving (Milestone 11)
+
+Governed structured problem-solving cases with versioned methods and semantic separation of facts, assumptions, hypotheses, and verified causes:
+
+- `problem_solving_methods`, `problem_solving_method_versions`, `problem_solving_method_stages`: built-in and organisation methods; published versions immutable; semantic stage keys (`DEFINE`, `CURRENT_CONDITION`, `CONTAIN`, `ROOT_CAUSE_ANALYSIS`, `COUNTERMEASURES`, `EFFECTIVENESS_CHECK`, `SUSTAIN`, etc.).
+- `problem_solving_cases`: first-class case identity in `resource_records`; lifecycle `draft` → `active` → `closed` / `cancelled`; pinned `method_version_id` and `current_method_stage_id`; closure outcomes `resolved_verified_cause`, `resolved_without_verified_cause`, `transferred`.
+- `problem_solving_status_history`, `problem_solving_stage_history`: append-only transition evidence.
+- `problem_solving_source_links`: generic resource links (`primary` / `related`) without granting source access.
+- `problem_solving_participants`: case team roles separate from RBAC grants.
+- `problem_solving_current_condition_items`: categorised observations/facts/assumptions with verification and supersession.
+- `problem_solving_evidence_links`: shared attachment links with exactly-one subject constraint (condition, containment, hypothesis, test, countermeasure, effectiveness, sustainment, session, case-level).
+- `problem_solving_containments`: temporary control records (`proposed` / `active` / `released`).
+- `problem_solving_hypotheses`, `problem_solving_hypothesis_status_history`: cause hypotheses with controlled verification.
+- `problem_solving_hypothesis_tests`: explicit tests (`supports` / `refutes` / `inconclusive`).
+- `problem_solving_analyses`, `problem_solving_analysis_nodes`: structured analysis graphs linked to hypotheses.
+- `problem_solving_countermeasures`, `problem_solving_countermeasure_cause_links`: countermeasure lifecycle and cause relationships.
+- `problem_solving_action_context`: links universal `actions` to containment, countermeasure, or sustainment context.
+- `problem_solving_effectiveness_checks`, `problem_solving_effectiveness_evidence_links`: post-implementation verification.
+- `problem_solving_sustainment_items`, `problem_solving_lessons_learned`: standardisation and closure knowledge.
+- `problem_solving_sessions`, `problem_solving_session_participants`, `problem_solving_session_entries`: human facilitation history.
+
+Authoritative mutations use scoped RPCs; portfolio/detail reads use `get_problem_solving_overview`, `get_problem_solving_list`, `get_problem_solving_detail`, and `get_problem_solving_methods`. See [problem-solving-engine.md](./problem-solving-engine.md).
+
 ## Lifecycle and retention
 
 No universal soft-delete convention is approved. Each aggregate chooses an

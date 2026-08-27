@@ -4,11 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
-  addBenefitSourceLink,
-  createBenefitDraft,
-  createBenefitForecastDraft,
-  replaceBenefitForecastPeriods,
-  updateBenefitDraft,
+  createBenefitWizardDraft,
 } from "@/app/(platform)/platform/benefits/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +94,31 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
     setLoading(true);
     setError(null);
     try {
-      const draftResult = await createBenefitDraft({
+      const forecastPeriods =
+        forecastStart &&
+        forecastEnd &&
+        benefitClass === "financial" &&
+        forecastTotal.trim()
+          ? realisationPattern === "recurring" && periodAmount.trim()
+            ? [
+                {
+                  period_start: forecastStart,
+                  period_end: forecastEnd,
+                  forecast_amount: Number(periodAmount),
+                  display_order: 1,
+                },
+              ]
+            : [
+                {
+                  period_start: forecastStart,
+                  period_end: forecastEnd,
+                  forecast_amount: Number(forecastTotal),
+                  display_order: 1,
+                },
+              ]
+          : undefined;
+
+      const result = await createBenefitWizardDraft({
         title: title.trim(),
         organisationalUnitId: unitId,
         benefitClass,
@@ -112,23 +132,6 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
         ...(sourceResourceId.trim() && !isStandalone
           ? { primarySourceResourceId: sourceResourceId.trim() }
           : {}),
-      });
-      if (draftResult.error || !draftResult.id) {
-        throw new Error(draftResult.error ?? "Draft creation failed");
-      }
-      const benefitId = draftResult.id;
-
-      const updateResult = await updateBenefitDraft({
-        benefitId,
-        title: title.trim(),
-        ...(description.trim() ? { description: description.trim() } : {}),
-        benefitClass,
-        ...(benefitClass === "financial"
-          ? { financialType }
-          : { nonFinancialType }),
-        ...(categoryId ? { categoryId } : {}),
-        organisationalUnitId: unitId,
-        ownerMembershipId: ownerId,
         ...(baselineDescription.trim()
           ? { baselineDescription: baselineDescription.trim() }
           : {}),
@@ -143,66 +146,33 @@ export function CreateBenefitWizard({ units, members, categories }: CreateBenefi
           : {}),
         ...(plannedStart ? { plannedRealisationStart: plannedStart } : {}),
         ...(plannedEnd ? { plannedRealisationEnd: plannedEnd } : {}),
-        isStandaloneInitiative: isStandalone,
+        ...(forecastStart && forecastEnd
+          ? {
+              realisationPattern,
+              forecastStartDate: forecastStart,
+              forecastEndDate: forecastEnd,
+              ...(benefitClass === "financial" && forecastTotal.trim()
+                ? { forecastTotalAmount: Number(forecastTotal) }
+                : {}),
+              ...(calculationBasis.trim() ? { calculationBasis: calculationBasis.trim() } : {}),
+              ...(assumptions.trim() ? { assumptions: assumptions.trim() } : {}),
+              ...(benefitClass === "non_financial" && targetMeasureValue.trim()
+                ? { targetMeasureValue: Number(targetMeasureValue) }
+                : {}),
+              ...(targetMeasureUnit.trim() ? { targetMeasureUnit: targetMeasureUnit.trim() } : {}),
+              ...(targetDate ? { targetDate } : {}),
+              ...(forecastPeriods ? { forecastPeriods } : {}),
+            }
+          : {}),
+        ...(sourceResourceId.trim() && !isStandalone
+          ? { sourceResourceId: sourceResourceId.trim() }
+          : {}),
       });
-      if (updateResult.error) throw new Error(updateResult.error);
-
-      if (forecastStart && forecastEnd) {
-        const forecastResult = await createBenefitForecastDraft({
-          benefitId,
-          realisationPattern,
-          forecastStartDate: forecastStart,
-          forecastEndDate: forecastEnd,
-          ...(benefitClass === "financial" && forecastTotal.trim()
-            ? { forecastTotalAmount: Number(forecastTotal) }
-            : {}),
-          ...(calculationBasis.trim() ? { calculationBasis: calculationBasis.trim() } : {}),
-          ...(assumptions.trim() ? { assumptions: assumptions.trim() } : {}),
-          ...(benefitClass === "non_financial" && targetMeasureValue.trim()
-            ? { targetMeasureValue: Number(targetMeasureValue) }
-            : {}),
-          ...(targetMeasureUnit.trim() ? { targetMeasureUnit: targetMeasureUnit.trim() } : {}),
-          ...(targetDate ? { targetDate } : {}),
-        });
-        if (forecastResult.error || !forecastResult.id) {
-          throw new Error(forecastResult.error ?? "Forecast draft failed");
-        }
-        if (benefitClass === "financial" && forecastTotal.trim()) {
-          const periods =
-            realisationPattern === "recurring" && periodAmount.trim()
-              ? [
-                  {
-                    period_start: forecastStart,
-                    period_end: forecastEnd,
-                    forecast_amount: Number(periodAmount),
-                    display_order: 1,
-                  },
-                ]
-              : [
-                  {
-                    period_start: forecastStart,
-                    period_end: forecastEnd,
-                    forecast_amount: Number(forecastTotal),
-                    display_order: 1,
-                  },
-                ];
-          const periodsResult = await replaceBenefitForecastPeriods(
-            forecastResult.id,
-            benefitId,
-            periods,
-          );
-          if (periodsResult.error) {
-            throw new Error(periodsResult.error);
-          }
-        }
+      if (result.error || !result.id) {
+        throw new Error(result.error ?? "Draft creation failed");
       }
 
-      if (sourceResourceId.trim() && !isStandalone) {
-        await addBenefitSourceLink(benefitId, sourceResourceId.trim(), "contributing");
-      }
-
-      router.push(`/platform/benefits/${benefitId}`);
-      router.refresh();
+      router.push(`/platform/benefits/${result.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Benefit creation failed");
     } finally {

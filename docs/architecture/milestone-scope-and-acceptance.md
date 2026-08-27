@@ -467,6 +467,41 @@ executive dashboard, AI, notifications, hosted Supabase changes, and Milestone
 | CI | Database job includes `milestone10-closure.spec.ts` with `E2E_WITH_SUPABASE=1` |
 | Demo | `finance@apex.local` / `Finance@Apex-Dev-2026!`; Packaging Waste, Changeover, Maintenance Avoidance, Visual Standards stories |
 
+## Milestone 11 — Enterprise Problem Solving Engine
+
+Milestone 11 delivers a governed structured problem-solving domain with versioned methods, case lifecycle, facts vs assumptions vs hypotheses, analysis artifacts, countermeasures, effectiveness, sustainment, sessions, and closure — without AI, executive dashboards, or hosted demo seed changes.
+
+### In scope
+
+- **Permissions:** exactly eight problem-solving permissions (`problem_solving.view`, `problem_solving.create`, `problem_solving.contribute`, `problem_solving.manage`, `problem_solving.facilitate`, `problem_solving.verify_cause`, `problem_solving.close`, `problem_solving.methods.manage`).
+- **Methods:** `problem_solving_methods`, versioned stages, built-in provisioning (`a3_structured`, `rapid_rca`, `five_why`); method pinned on activation.
+- **Cases:** `problem_solving_cases` in `resource_records`; draft/active/closed/cancelled lifecycle; source links without permission leak; participants distinct from RBAC.
+- **Current condition:** categorised items with verification and supersession semantics.
+- **Containment:** first-class `problem_solving_containments` plus universal action context.
+- **Hypotheses & tests:** status history; controlled verification; tests do not auto-verify.
+- **Analysis:** five whys, fishbone, cause tree, brainstorm node graphs.
+- **Countermeasures:** cause links, selection lifecycle, action context.
+- **Effectiveness & sustainment:** explicit checks and sustainment items; governed closure outcomes.
+- **Sessions:** human-led sessions with structured entries and immutability after completion.
+- **Application:** `/platform/problem-solving` portfolio, create wizard, tabbed case workspace.
+- **Regression evidence:** pgTAP security and lifecycle suites; Vitest helpers; `milestone11-closure` Playwright.
+- **Demo seed:** Packaging Line 3 seal-defect case via RPCs; manager PS grants; operator none.
+
+### Explicitly excluded
+
+AI/LLM, vector search, executive dashboard, sophisticated Fishbone canvas, method editor UI, notifications, hosted Supabase changes, and Milestone 12 work.
+
+### Acceptance checklist
+
+- [x] M11 migrations `20260826008000`–`20260826008015` applied in dependency order.
+- [x] Eight permissions only; owner upgrade includes all grants.
+- [x] Published method versions immutable; cases pin method version on activation.
+- [x] Source links do not leak inaccessible resources.
+- [x] Verify-cause and close require explicit permissions; participant ≠ RBAC escalation.
+- [x] Demo seed: closed `resolved_verified_cause` case; manager PS permissions; operator denied create route.
+- [x] Local `db:reset`, `db:lint`, full pgTAP (591), `db:types`, Vitest (67), lint, typecheck, production build, `db:seed-demo`, and `milestone11-closure` Playwright (10) pass.
+- [x] Visual/product acceptance: problem-solving portfolio, wizard, workspace tabs at 1440/1024/768/390 (responsive smoke in E2E).
+
 ## Later milestones
 
 1. Core Lean domains: training/skills, projects, suggestions, problem-solving,

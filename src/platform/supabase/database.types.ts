@@ -5153,6 +5153,1883 @@ export type Database = {
         }
         Relationships: []
       }
+      problem_solving_action_context: {
+        Row: {
+          action_id: string
+          containment_id: string | null
+          context_role: string
+          countermeasure_id: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          problem_solving_case_id: string
+          sustainment_item_id: string | null
+        }
+        Insert: {
+          action_id: string
+          containment_id?: string | null
+          context_role: string
+          countermeasure_id?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          problem_solving_case_id: string
+          sustainment_item_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          containment_id?: string | null
+          context_role?: string
+          countermeasure_id?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          problem_solving_case_id?: string
+          sustainment_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_action_context_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: true
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_action_context_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_action_context_containment_fkey"
+            columns: ["organisation_id", "containment_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_containments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_action_context_countermeasure_fkey"
+            columns: ["organisation_id", "countermeasure_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_countermeasures"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_action_context_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_action_context_sustainment_item_fkey"
+            columns: ["organisation_id", "sustainment_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sustainment_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_analyses: {
+        Row: {
+          analysis_type: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          problem_solving_case_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_type: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          problem_solving_case_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_type?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          problem_solving_case_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_analyses_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_analyses_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_analysis_nodes: {
+        Row: {
+          analysis_id: string
+          category: string | null
+          created_at: string
+          created_by_membership_id: string
+          display_metadata: Json
+          id: string
+          label: string
+          linked_hypothesis_id: string | null
+          organisation_id: string
+          parent_node_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          analysis_id: string
+          category?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          display_metadata?: Json
+          id?: string
+          label: string
+          linked_hypothesis_id?: string | null
+          organisation_id: string
+          parent_node_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string
+          category?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          display_metadata?: Json
+          id?: string
+          label?: string
+          linked_hypothesis_id?: string | null
+          organisation_id?: string
+          parent_node_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_analysis_nodes_analysis_fkey"
+            columns: ["organisation_id", "analysis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_analyses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_analysis_nodes_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_analysis_nodes_hypothesis_fkey"
+            columns: ["organisation_id", "linked_hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_analysis_nodes_parent_fkey"
+            columns: ["organisation_id", "parent_node_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_analysis_nodes"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_cases: {
+        Row: {
+          activated_at: string | null
+          background: string | null
+          business_impact: string | null
+          cancellation_rationale: string | null
+          cancelled_at: string | null
+          cancelled_by_membership_id: string | null
+          case_number: string | null
+          closed_at: string | null
+          closed_by_membership_id: string | null
+          closure_outcome: string | null
+          closure_rationale: string | null
+          created_at: string
+          created_by_membership_id: string
+          current_method_stage_id: string | null
+          detected_at: string | null
+          facilitator_membership_id: string | null
+          id: string
+          method_version_id: string | null
+          organisation_id: string
+          organisation_unit_id: string
+          owner_membership_id: string
+          priority: string | null
+          problem_statement: string | null
+          scope_in: string | null
+          scope_out: string | null
+          severity: string | null
+          status: string
+          target_condition: string | null
+          target_due_at: string | null
+          title: string
+          transferred_to_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          background?: string | null
+          business_impact?: string | null
+          cancellation_rationale?: string | null
+          cancelled_at?: string | null
+          cancelled_by_membership_id?: string | null
+          case_number?: string | null
+          closed_at?: string | null
+          closed_by_membership_id?: string | null
+          closure_outcome?: string | null
+          closure_rationale?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          current_method_stage_id?: string | null
+          detected_at?: string | null
+          facilitator_membership_id?: string | null
+          id: string
+          method_version_id?: string | null
+          organisation_id: string
+          organisation_unit_id: string
+          owner_membership_id: string
+          priority?: string | null
+          problem_statement?: string | null
+          scope_in?: string | null
+          scope_out?: string | null
+          severity?: string | null
+          status?: string
+          target_condition?: string | null
+          target_due_at?: string | null
+          title: string
+          transferred_to_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          background?: string | null
+          business_impact?: string | null
+          cancellation_rationale?: string | null
+          cancelled_at?: string | null
+          cancelled_by_membership_id?: string | null
+          case_number?: string | null
+          closed_at?: string | null
+          closed_by_membership_id?: string | null
+          closure_outcome?: string | null
+          closure_rationale?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          current_method_stage_id?: string | null
+          detected_at?: string | null
+          facilitator_membership_id?: string | null
+          id?: string
+          method_version_id?: string | null
+          organisation_id?: string
+          organisation_unit_id?: string
+          owner_membership_id?: string
+          priority?: string | null
+          problem_statement?: string | null
+          scope_in?: string | null
+          scope_out?: string | null
+          severity?: string | null
+          status?: string
+          target_condition?: string | null
+          target_due_at?: string | null
+          title?: string
+          transferred_to_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_cases_cancelled_by_fkey"
+            columns: ["organisation_id", "cancelled_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_closed_by_fkey"
+            columns: ["organisation_id", "closed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_current_stage_fkey"
+            columns: ["organisation_id", "current_method_stage_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_method_stages"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_facilitator_fkey"
+            columns: ["organisation_id", "facilitator_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_method_version_fkey"
+            columns: ["organisation_id", "method_version_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_method_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_owner_fkey"
+            columns: ["organisation_id", "owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_resource_fkey"
+            columns: ["organisation_id", "id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_unit_fkey"
+            columns: ["organisation_id", "organisation_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_containments: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          description: string
+          id: string
+          implemented_at: string | null
+          is_still_required: boolean
+          organisation_id: string
+          problem_solving_case_id: string
+          rationale: string | null
+          release_rationale: string | null
+          released_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          description: string
+          id?: string
+          implemented_at?: string | null
+          is_still_required?: boolean
+          organisation_id: string
+          problem_solving_case_id: string
+          rationale?: string | null
+          release_rationale?: string | null
+          released_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string
+          id?: string
+          implemented_at?: string | null
+          is_still_required?: boolean
+          organisation_id?: string
+          problem_solving_case_id?: string
+          rationale?: string | null
+          release_rationale?: string | null
+          released_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_containments_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_containments_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_countermeasure_cause_links: {
+        Row: {
+          countermeasure_id: string
+          created_at: string
+          created_by_membership_id: string
+          hypothesis_id: string
+          id: string
+          organisation_id: string
+        }
+        Insert: {
+          countermeasure_id: string
+          created_at?: string
+          created_by_membership_id: string
+          hypothesis_id: string
+          id?: string
+          organisation_id: string
+        }
+        Update: {
+          countermeasure_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          hypothesis_id?: string
+          id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_cm_cause_links_countermeasure_fkey"
+            columns: ["organisation_id", "countermeasure_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_countermeasures"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_cm_cause_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_cm_cause_links_hypothesis_fkey"
+            columns: ["organisation_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_countermeasures: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          organisation_id: string
+          problem_solving_case_id: string
+          proposed_by_membership_id: string
+          rationale: string | null
+          rejected_at: string | null
+          rejected_by_membership_id: string | null
+          rejected_rationale: string | null
+          selected_at: string | null
+          selected_by_membership_id: string | null
+          selected_rationale: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          organisation_id: string
+          problem_solving_case_id: string
+          proposed_by_membership_id: string
+          rationale?: string | null
+          rejected_at?: string | null
+          rejected_by_membership_id?: string | null
+          rejected_rationale?: string | null
+          selected_at?: string | null
+          selected_by_membership_id?: string | null
+          selected_rationale?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          organisation_id?: string
+          problem_solving_case_id?: string
+          proposed_by_membership_id?: string
+          rationale?: string | null
+          rejected_at?: string | null
+          rejected_by_membership_id?: string | null
+          rejected_rationale?: string | null
+          selected_at?: string | null
+          selected_by_membership_id?: string | null
+          selected_rationale?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_countermeasures_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_countermeasures_proposer_fkey"
+            columns: ["organisation_id", "proposed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_countermeasures_rejector_fkey"
+            columns: ["organisation_id", "rejected_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_countermeasures_selector_fkey"
+            columns: ["organisation_id", "selected_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_current_condition_items: {
+        Row: {
+          case_id: string
+          category: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          statement: string
+          status: string
+          superseded_at: string | null
+          supersedes_item_id: string | null
+          verification_rationale: string | null
+          verified_at: string | null
+          verified_by_membership_id: string | null
+        }
+        Insert: {
+          case_id: string
+          category: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          statement: string
+          status?: string
+          superseded_at?: string | null
+          supersedes_item_id?: string | null
+          verification_rationale?: string | null
+          verified_at?: string | null
+          verified_by_membership_id?: string | null
+        }
+        Update: {
+          case_id?: string
+          category?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          statement?: string
+          status?: string
+          superseded_at?: string | null
+          supersedes_item_id?: string | null
+          verification_rationale?: string | null
+          verified_at?: string | null
+          verified_by_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_current_condition_items_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_current_condition_items_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_current_condition_items_supersedes_fkey"
+            columns: ["organisation_id", "supersedes_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_current_condition_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_current_condition_items_verified_by_fkey"
+            columns: ["organisation_id", "verified_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_effectiveness_checks: {
+        Row: {
+          actual_numeric: number | null
+          baseline_description: string | null
+          baseline_numeric: number | null
+          case_id: string
+          created_at: string
+          created_by_membership_id: string
+          criterion: string
+          due_date: string | null
+          id: string
+          observation_window_end: string | null
+          observation_window_start: string | null
+          organisation_id: string
+          result: string | null
+          target_description: string | null
+          target_numeric: number | null
+          unit: string | null
+          updated_at: string
+          verified_at: string | null
+          verified_by_membership_id: string | null
+        }
+        Insert: {
+          actual_numeric?: number | null
+          baseline_description?: string | null
+          baseline_numeric?: number | null
+          case_id: string
+          created_at?: string
+          created_by_membership_id: string
+          criterion: string
+          due_date?: string | null
+          id?: string
+          observation_window_end?: string | null
+          observation_window_start?: string | null
+          organisation_id: string
+          result?: string | null
+          target_description?: string | null
+          target_numeric?: number | null
+          unit?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verified_by_membership_id?: string | null
+        }
+        Update: {
+          actual_numeric?: number | null
+          baseline_description?: string | null
+          baseline_numeric?: number | null
+          case_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          criterion?: string
+          due_date?: string | null
+          id?: string
+          observation_window_end?: string | null
+          observation_window_start?: string | null
+          organisation_id?: string
+          result?: string | null
+          target_description?: string | null
+          target_numeric?: number | null
+          unit?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verified_by_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_effectiveness_checks_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_effectiveness_checks_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_effectiveness_checks_verifier_fkey"
+            columns: ["organisation_id", "verified_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_effectiveness_evidence_links: {
+        Row: {
+          attachment_id: string
+          created_at: string
+          created_by_membership_id: string
+          effectiveness_check_id: string
+          id: string
+          organisation_id: string
+        }
+        Insert: {
+          attachment_id: string
+          created_at?: string
+          created_by_membership_id: string
+          effectiveness_check_id: string
+          id?: string
+          organisation_id: string
+        }
+        Update: {
+          attachment_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          effectiveness_check_id?: string
+          id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_eff_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_eff_evidence_links_check_fkey"
+            columns: ["organisation_id", "effectiveness_check_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_effectiveness_checks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_eff_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_evidence_links: {
+        Row: {
+          attachment_id: string
+          containment_id: string | null
+          countermeasure_id: string | null
+          created_at: string
+          created_by_membership_id: string
+          current_condition_item_id: string | null
+          effectiveness_check_id: string | null
+          hypothesis_id: string | null
+          hypothesis_test_id: string | null
+          id: string
+          is_case_level: boolean
+          link_rationale: string | null
+          organisation_id: string
+          problem_solving_case_id: string
+          session_entry_id: string | null
+          session_id: string | null
+          sustainment_item_id: string | null
+        }
+        Insert: {
+          attachment_id: string
+          containment_id?: string | null
+          countermeasure_id?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          current_condition_item_id?: string | null
+          effectiveness_check_id?: string | null
+          hypothesis_id?: string | null
+          hypothesis_test_id?: string | null
+          id?: string
+          is_case_level?: boolean
+          link_rationale?: string | null
+          organisation_id: string
+          problem_solving_case_id: string
+          session_entry_id?: string | null
+          session_id?: string | null
+          sustainment_item_id?: string | null
+        }
+        Update: {
+          attachment_id?: string
+          containment_id?: string | null
+          countermeasure_id?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          current_condition_item_id?: string | null
+          effectiveness_check_id?: string | null
+          hypothesis_id?: string | null
+          hypothesis_test_id?: string | null
+          id?: string
+          is_case_level?: boolean
+          link_rationale?: string | null
+          organisation_id?: string
+          problem_solving_case_id?: string
+          session_entry_id?: string | null
+          session_id?: string | null
+          sustainment_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_evidence_links_attachment_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_condition_item_fkey"
+            columns: ["organisation_id", "current_condition_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_current_condition_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_containment_fkey"
+            columns: ["organisation_id", "containment_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_containments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_countermeasure_fkey"
+            columns: ["organisation_id", "countermeasure_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_countermeasures"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_effectiveness_check_fkey"
+            columns: ["organisation_id", "effectiveness_check_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_effectiveness_checks"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_hypothesis_fkey"
+            columns: ["organisation_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_hypothesis_test_fkey"
+            columns: ["organisation_id", "hypothesis_test_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypothesis_tests"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_session_entry_fkey"
+            columns: ["organisation_id", "session_entry_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_session_entries"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_session_fkey"
+            columns: ["organisation_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_evidence_links_sustainment_item_fkey"
+            columns: ["organisation_id", "sustainment_item_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sustainment_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_hypotheses: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          parent_hypothesis_id: string | null
+          problem_solving_case_id: string
+          rationale: string | null
+          rejected_at: string | null
+          rejected_by_membership_id: string | null
+          rejection_rationale: string | null
+          statement: string
+          status: string
+          updated_at: string
+          verification_rationale: string | null
+          verified_at: string | null
+          verified_by_membership_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          parent_hypothesis_id?: string | null
+          problem_solving_case_id: string
+          rationale?: string | null
+          rejected_at?: string | null
+          rejected_by_membership_id?: string | null
+          rejection_rationale?: string | null
+          statement: string
+          status?: string
+          updated_at?: string
+          verification_rationale?: string | null
+          verified_at?: string | null
+          verified_by_membership_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          parent_hypothesis_id?: string | null
+          problem_solving_case_id?: string
+          rationale?: string | null
+          rejected_at?: string | null
+          rejected_by_membership_id?: string | null
+          rejection_rationale?: string | null
+          statement?: string
+          status?: string
+          updated_at?: string
+          verification_rationale?: string | null
+          verified_at?: string | null
+          verified_by_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_hypotheses_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypotheses_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypotheses_parent_fkey"
+            columns: ["organisation_id", "parent_hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypotheses_rejected_by_fkey"
+            columns: ["organisation_id", "rejected_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypotheses_verified_by_fkey"
+            columns: ["organisation_id", "verified_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_hypothesis_status_history: {
+        Row: {
+          changed_at: string
+          changed_by_membership_id: string
+          from_status: string
+          hypothesis_id: string
+          id: string
+          organisation_id: string
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by_membership_id: string
+          from_status: string
+          hypothesis_id: string
+          id?: string
+          organisation_id: string
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by_membership_id?: string
+          from_status?: string
+          hypothesis_id?: string
+          id?: string
+          organisation_id?: string
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_hypothesis_status_history_actor_fkey"
+            columns: ["organisation_id", "changed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_hypothesis_status_history_hypothesis_fkey"
+            columns: ["organisation_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_hypothesis_tests: {
+        Row: {
+          actual_result: string | null
+          completed_date: string | null
+          conclusion: string | null
+          created_at: string
+          created_by_membership_id: string
+          expected_result: string
+          hypothesis_id: string
+          id: string
+          method: string | null
+          organisation_id: string
+          owner_membership_id: string
+          planned_date: string | null
+          problem_solving_case_id: string
+          test_question: string
+          updated_at: string
+        }
+        Insert: {
+          actual_result?: string | null
+          completed_date?: string | null
+          conclusion?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          expected_result: string
+          hypothesis_id: string
+          id?: string
+          method?: string | null
+          organisation_id: string
+          owner_membership_id: string
+          planned_date?: string | null
+          problem_solving_case_id: string
+          test_question: string
+          updated_at?: string
+        }
+        Update: {
+          actual_result?: string | null
+          completed_date?: string | null
+          conclusion?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          expected_result?: string
+          hypothesis_id?: string
+          id?: string
+          method?: string | null
+          organisation_id?: string
+          owner_membership_id?: string
+          planned_date?: string | null
+          problem_solving_case_id?: string
+          test_question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_hypothesis_tests_case_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypothesis_tests_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypothesis_tests_hypothesis_fkey"
+            columns: ["organisation_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_hypothesis_tests_owner_fkey"
+            columns: ["organisation_id", "owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_lessons_learned: {
+        Row: {
+          apply_elsewhere: string | null
+          case_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          notes: string | null
+          organisation_id: string
+          standardise: string | null
+          updated_at: string
+          what_happened: string
+          what_learned: string
+        }
+        Insert: {
+          apply_elsewhere?: string | null
+          case_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          standardise?: string | null
+          updated_at?: string
+          what_happened: string
+          what_learned: string
+        }
+        Update: {
+          apply_elsewhere?: string | null
+          case_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          standardise?: string | null
+          updated_at?: string
+          what_happened?: string
+          what_learned?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_lessons_learned_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_lessons_learned_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_method_stages: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          method_version_id: string
+          organisation_id: string
+          semantic_stage_key: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order: number
+          id?: string
+          method_version_id: string
+          organisation_id: string
+          semantic_stage_key: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          method_version_id?: string
+          organisation_id?: string
+          semantic_stage_key?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_method_stages_version_fkey"
+            columns: ["organisation_id", "method_version_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_method_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_method_versions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          method_id: string
+          organisation_id: string
+          published_at: string | null
+          published_by_membership_id: string | null
+          status: string
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          method_id: string
+          organisation_id: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          method_id?: string
+          organisation_id?: string
+          published_at?: string | null
+          published_by_membership_id?: string | null
+          status?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_method_versions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_method_versions_method_fkey"
+            columns: ["organisation_id", "method_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_methods"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_method_versions_publisher_fkey"
+            columns: ["organisation_id", "published_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_methods: {
+        Row: {
+          builtin_code: string | null
+          code: string
+          created_at: string
+          created_by_membership_id: string
+          description: string | null
+          id: string
+          is_builtin: boolean
+          name: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          builtin_code?: string | null
+          code: string
+          created_at?: string
+          created_by_membership_id: string
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          name: string
+          organisation_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          builtin_code?: string | null
+          code?: string
+          created_at?: string
+          created_by_membership_id?: string
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          name?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_methods_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_methods_organisation_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_solving_participants: {
+        Row: {
+          added_at: string
+          added_by_membership_id: string
+          case_id: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          participant_role: string
+          removed_at: string | null
+        }
+        Insert: {
+          added_at?: string
+          added_by_membership_id: string
+          case_id: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          participant_role: string
+          removed_at?: string | null
+        }
+        Update: {
+          added_at?: string
+          added_by_membership_id?: string
+          case_id?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          participant_role?: string
+          removed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_participants_added_by_fkey"
+            columns: ["organisation_id", "added_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_participants_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_participants_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_session_entries: {
+        Row: {
+          body: string
+          created_at: string
+          created_by_membership_id: string
+          entry_type: string
+          id: string
+          organisation_id: string
+          reference_action_id: string | null
+          reference_attachment_id: string | null
+          reference_hypothesis_id: string | null
+          session_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by_membership_id: string
+          entry_type: string
+          id?: string
+          organisation_id: string
+          reference_action_id?: string | null
+          reference_attachment_id?: string | null
+          reference_hypothesis_id?: string | null
+          session_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by_membership_id?: string
+          entry_type?: string
+          id?: string
+          organisation_id?: string
+          reference_action_id?: string | null
+          reference_attachment_id?: string | null
+          reference_hypothesis_id?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_session_entries_action_fkey"
+            columns: ["organisation_id", "reference_action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_session_entries_attachment_fkey"
+            columns: ["organisation_id", "reference_attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_session_entries_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_session_entries_hypothesis_fkey"
+            columns: ["organisation_id", "reference_hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_hypotheses"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_session_entries_session_fkey"
+            columns: ["organisation_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_session_participants: {
+        Row: {
+          added_at: string
+          added_by_membership_id: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          session_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by_membership_id: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          session_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by_membership_id?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_session_participants_adder_fkey"
+            columns: ["organisation_id", "added_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_session_participants_member_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_session_participants_session_fkey"
+            columns: ["organisation_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_sessions: {
+        Row: {
+          case_id: string
+          completed_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          facilitator_membership_id: string
+          id: string
+          organisation_id: string
+          scheduled_at: string | null
+          started_at: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          facilitator_membership_id: string
+          id?: string
+          organisation_id: string
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          facilitator_membership_id?: string
+          id?: string
+          organisation_id?: string
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_sessions_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_sessions_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_sessions_facilitator_fkey"
+            columns: ["organisation_id", "facilitator_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_source_links: {
+        Row: {
+          case_id: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          link_role: string
+          organisation_id: string
+          source_resource_id: string
+          source_resource_type: string | null
+          source_title_snapshot: string | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          link_role?: string
+          organisation_id: string
+          source_resource_id: string
+          source_resource_type?: string | null
+          source_title_snapshot?: string | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          link_role?: string
+          organisation_id?: string
+          source_resource_id?: string
+          source_resource_type?: string | null
+          source_title_snapshot?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_source_links_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_source_links_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_source_links_source_fkey"
+            columns: ["organisation_id", "source_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_stage_history: {
+        Row: {
+          case_id: string
+          changed_at: string
+          changed_by_membership_id: string
+          from_stage_id: string | null
+          id: string
+          notes: string | null
+          organisation_id: string
+          to_stage_id: string
+        }
+        Insert: {
+          case_id: string
+          changed_at?: string
+          changed_by_membership_id: string
+          from_stage_id?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id: string
+          to_stage_id: string
+        }
+        Update: {
+          case_id?: string
+          changed_at?: string
+          changed_by_membership_id?: string
+          from_stage_id?: string | null
+          id?: string
+          notes?: string | null
+          organisation_id?: string
+          to_stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_stage_history_actor_fkey"
+            columns: ["organisation_id", "changed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_stage_history_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_stage_history_from_stage_fkey"
+            columns: ["organisation_id", "from_stage_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_method_stages"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_stage_history_to_stage_fkey"
+            columns: ["organisation_id", "to_stage_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_method_stages"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_status_history: {
+        Row: {
+          case_id: string
+          changed_at: string
+          changed_by_membership_id: string
+          from_status: string
+          id: string
+          organisation_id: string
+          rationale: string | null
+          to_status: string
+        }
+        Insert: {
+          case_id: string
+          changed_at?: string
+          changed_by_membership_id: string
+          from_status: string
+          id?: string
+          organisation_id: string
+          rationale?: string | null
+          to_status: string
+        }
+        Update: {
+          case_id?: string
+          changed_at?: string
+          changed_by_membership_id?: string
+          from_status?: string
+          id?: string
+          organisation_id?: string
+          rationale?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_status_history_actor_fkey"
+            columns: ["organisation_id", "changed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_status_history_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_sustainment_items: {
+        Row: {
+          case_id: string
+          check_method: string | null
+          created_at: string
+          created_by_membership_id: string
+          evidence: string | null
+          follow_up_date: string | null
+          id: string
+          organisation_id: string
+          owner_membership_id: string | null
+          result: string | null
+          schedule_definition_id: string | null
+          training_session_id: string | null
+          updated_at: string
+          what: string
+        }
+        Insert: {
+          case_id: string
+          check_method?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          evidence?: string | null
+          follow_up_date?: string | null
+          id?: string
+          organisation_id: string
+          owner_membership_id?: string | null
+          result?: string | null
+          schedule_definition_id?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          what: string
+        }
+        Update: {
+          case_id?: string
+          check_method?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          evidence?: string | null
+          follow_up_date?: string | null
+          id?: string
+          organisation_id?: string
+          owner_membership_id?: string | null
+          result?: string | null
+          schedule_definition_id?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          what?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ps_sustainment_items_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_sustainment_items_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_sustainment_items_owner_fkey"
+            columns: ["organisation_id", "owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_sustainment_items_schedule_fkey"
+            columns: ["organisation_id", "schedule_definition_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ps_sustainment_items_training_fkey"
+            columns: ["organisation_id", "training_session_id"]
+            isOneToOne: false
+            referencedRelation: "resource_records"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -7817,6 +9694,21 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: string
       }
+      activate_problem_solving_case: {
+        Args: { target_case_id: string; target_method_id: string }
+        Returns: boolean
+      }
+      add_analysis_node: {
+        Args: {
+          target_analysis_id: string
+          target_category?: string
+          target_display_metadata?: Json
+          target_label: string
+          target_parent_node_id?: string
+          target_sort_order?: number
+        }
+        Returns: string
+      }
       add_benefit_source_link: {
         Args: {
           target_benefit_id: string
@@ -7940,6 +9832,22 @@ export type Database = {
         }
         Returns: string
       }
+      add_problem_solving_participant: {
+        Args: {
+          target_case_id: string
+          target_membership_id: string
+          target_participant_role: string
+        }
+        Returns: string
+      }
+      add_problem_solving_source_link: {
+        Args: {
+          target_case_id: string
+          target_link_role?: string
+          target_source_resource_id: string
+        }
+        Returns: string
+      }
       add_role_permission: {
         Args: {
           target_organisation_id: string
@@ -7947,6 +9855,17 @@ export type Database = {
           target_role_version_id: string
         }
         Returns: boolean
+      }
+      add_session_entry: {
+        Args: {
+          target_body: string
+          target_entry_type: string
+          target_reference_action_id?: string
+          target_reference_attachment_id?: string
+          target_reference_hypothesis_id?: string
+          target_session_id: string
+        }
+        Returns: string
       }
       add_skill_proficiency_level: {
         Args: {
@@ -8127,8 +10046,20 @@ export type Database = {
         Args: { target_assessment_id: string; target_reason?: string }
         Returns: boolean
       }
+      cancel_problem_solving_case: {
+        Args: { target_cancellation_rationale: string; target_case_id: string }
+        Returns: boolean
+      }
       cancel_project: {
         Args: { target_project_id: string; target_reason?: string }
+        Returns: boolean
+      }
+      close_problem_solving_case: {
+        Args: {
+          target_case_id: string
+          target_closure_outcome: string
+          target_closure_rationale?: string
+        }
         Returns: boolean
       }
       complete_five_s_audit: {
@@ -8137,6 +10068,18 @@ export type Database = {
       }
       complete_gemba_walk: {
         Args: { target_summary_notes?: string; target_walk_id: string }
+        Returns: boolean
+      }
+      complete_hypothesis_test: {
+        Args: {
+          target_actual_result: string
+          target_conclusion: string
+          target_hypothesis_test_id: string
+        }
+        Returns: boolean
+      }
+      complete_problem_solving_session: {
+        Args: { target_session_id: string; target_summary?: string }
         Returns: boolean
       }
       complete_project:
@@ -8190,6 +10133,14 @@ export type Database = {
           target_source_resource_id?: string
           target_title: string
           target_unit_id?: string
+        }
+        Returns: string
+      }
+      create_analysis: {
+        Args: {
+          target_analysis_type: string
+          target_problem_solving_case_id: string
+          target_title: string
         }
         Returns: string
       }
@@ -8338,6 +10289,47 @@ export type Database = {
         Args: { target_body: string; target_resource_id: string }
         Returns: string
       }
+      create_containment: {
+        Args: {
+          target_description: string
+          target_problem_solving_case_id: string
+          target_rationale?: string
+        }
+        Returns: string
+      }
+      create_countermeasure: {
+        Args: {
+          target_case_id: string
+          target_description?: string
+          target_rationale?: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_current_condition_item: {
+        Args: {
+          target_case_id: string
+          target_category: string
+          target_statement: string
+          target_supersedes_item_id?: string
+        }
+        Returns: string
+      }
+      create_effectiveness_check: {
+        Args: {
+          target_baseline_description?: string
+          target_baseline_numeric?: number
+          target_case_id: string
+          target_criterion: string
+          target_due_date?: string
+          target_observation_window_end?: string
+          target_observation_window_start?: string
+          target_target_description?: string
+          target_target_numeric?: number
+          target_unit?: string
+        }
+        Returns: string
+      }
       create_five_s_action: {
         Args: {
           target_audit_id: string
@@ -8412,6 +10404,27 @@ export type Database = {
         }
         Returns: string
       }
+      create_hypothesis: {
+        Args: {
+          target_category?: string
+          target_parent_hypothesis_id?: string
+          target_problem_solving_case_id: string
+          target_rationale?: string
+          target_statement: string
+        }
+        Returns: string
+      }
+      create_hypothesis_test: {
+        Args: {
+          target_expected_result: string
+          target_hypothesis_id: string
+          target_method?: string
+          target_owner_membership_id?: string
+          target_planned_date?: string
+          target_test_question: string
+        }
+        Returns: string
+      }
       create_improvement_project: {
         Args: {
           target_expected_impact_summary?: string
@@ -8463,6 +10476,40 @@ export type Database = {
           unit_code: string
           unit_name: string
           unit_type: string
+        }
+        Returns: string
+      }
+      create_problem_solving_action: {
+        Args: {
+          target_containment_id?: string
+          target_context_role: string
+          target_countermeasure_id?: string
+          target_description?: string
+          target_due_at?: string
+          target_priority?: string
+          target_problem_solving_case_id: string
+          target_sustainment_item_id?: string
+          target_title: string
+        }
+        Returns: string
+      }
+      create_problem_solving_case_draft: {
+        Args: {
+          target_background?: string
+          target_business_impact?: string
+          target_detected_at?: string
+          target_facilitator_membership_id?: string
+          target_method_version_id?: string
+          target_organisation_unit_id: string
+          target_owner_membership_id?: string
+          target_priority?: string
+          target_problem_statement?: string
+          target_scope_in?: string
+          target_scope_out?: string
+          target_severity?: string
+          target_source_resource_id?: string
+          target_target_condition?: string
+          target_title: string
         }
         Returns: string
       }
@@ -8586,6 +10633,16 @@ export type Database = {
         Args: { target_programme_id: string }
         Returns: string
       }
+      create_sustainment_item: {
+        Args: {
+          target_case_id: string
+          target_check_method?: string
+          target_follow_up_date?: string
+          target_owner_membership_id?: string
+          target_what: string
+        }
+        Returns: string
+      }
       create_template_draft: {
         Args: { target_description?: string; target_display_name: string }
         Returns: string
@@ -8690,6 +10747,10 @@ export type Database = {
       }
       end_membership_job_function_assignment: {
         Args: { target_assignment_id: string; target_valid_to?: string }
+        Returns: boolean
+      }
+      ensure_problem_solving_methods_provisioned: {
+        Args: never
         Returns: boolean
       }
       ensure_schedule_occurrences: {
@@ -8798,6 +10859,25 @@ export type Database = {
           signal_type: string
         }[]
       }
+      get_problem_solving_detail: {
+        Args: { target_case_id: string }
+        Returns: Json
+      }
+      get_problem_solving_list: {
+        Args: {
+          target_facilitator_membership_id?: string
+          target_owner_membership_id?: string
+          target_page?: number
+          target_page_size?: number
+          target_search?: string
+          target_severity?: string
+          target_status?: string
+          target_unit_id?: string
+        }
+        Returns: Json
+      }
+      get_problem_solving_methods: { Args: never; Returns: Json }
+      get_problem_solving_overview: { Args: never; Returns: Json }
       get_project_benefits: {
         Args: { target_project_id: string }
         Returns: Json
@@ -8889,6 +10969,13 @@ export type Database = {
         }
         Returns: string
       }
+      link_countermeasure_causes: {
+        Args: {
+          target_countermeasure_id: string
+          target_hypothesis_ids: string[]
+        }
+        Returns: number
+      }
       link_criterion_question: {
         Args: {
           target_contributes_to_score?: boolean
@@ -8927,6 +11014,28 @@ export type Database = {
         }
         Returns: string
       }
+      link_node_hypothesis: {
+        Args: { target_hypothesis_id: string; target_node_id: string }
+        Returns: boolean
+      }
+      link_problem_solving_evidence: {
+        Args: {
+          target_attachment_id: string
+          target_case_id: string
+          target_containment_id?: string
+          target_countermeasure_id?: string
+          target_current_condition_item_id?: string
+          target_effectiveness_check_id?: string
+          target_hypothesis_id?: string
+          target_hypothesis_test_id?: string
+          target_is_case_level?: boolean
+          target_link_rationale?: string
+          target_session_entry_id?: string
+          target_session_id?: string
+          target_sustainment_item_id?: string
+        }
+        Returns: string
+      }
       list_my_eligible_organisations: {
         Args: never
         Returns: {
@@ -8960,6 +11069,10 @@ export type Database = {
           target_parent_unit_id: string
           target_unit_id: string
         }
+        Returns: boolean
+      }
+      move_problem_solving_stage: {
+        Args: { target_case_id: string; target_stage_id: string }
         Returns: boolean
       }
       provision_organisation: {
@@ -9007,6 +11120,10 @@ export type Database = {
       publish_official_maturity_result: {
         Args: { target_assessment_id: string }
         Returns: string
+      }
+      publish_problem_solving_method_version: {
+        Args: { target_method_version_id: string }
+        Returns: boolean
       }
       publish_role_version: {
         Args: { target_organisation_id: string; target_role_version_id: string }
@@ -9064,6 +11181,15 @@ export type Database = {
         }
         Returns: string
       }
+      record_effectiveness_result: {
+        Args: {
+          target_actual_numeric?: number
+          target_effectiveness_check_id: string
+          target_result: string
+          target_verification_rationale?: string
+        }
+        Returns: boolean
+      }
       record_metric_measurement: {
         Args: {
           target_measured_at?: string
@@ -9110,6 +11236,14 @@ export type Database = {
         }
         Returns: string
       }
+      record_sustainment_result: {
+        Args: {
+          target_evidence?: string
+          target_result: string
+          target_sustainment_item_id: string
+        }
+        Returns: boolean
+      }
       record_training_completion: {
         Args: {
           target_completed_at?: string
@@ -9129,6 +11263,17 @@ export type Database = {
         Args: { target_entry_id: string; target_reason?: string }
         Returns: boolean
       }
+      reject_cause_hypothesis: {
+        Args: {
+          target_hypothesis_id: string
+          target_rejection_rationale?: string
+        }
+        Returns: boolean
+      }
+      reject_countermeasure: {
+        Args: { target_countermeasure_id: string; target_rationale?: string }
+        Returns: boolean
+      }
       release_authentication_rate_limit: {
         Args: {
           limiter_dimension: string
@@ -9136,6 +11281,13 @@ export type Database = {
           limiter_purpose: string
           maximum_attempts: number
           window_seconds: number
+        }
+        Returns: boolean
+      }
+      release_containment: {
+        Args: {
+          target_containment_id: string
+          target_release_rationale?: string
         }
         Returns: boolean
       }
@@ -9149,6 +11301,10 @@ export type Database = {
       }
       remove_benefit_source_link: {
         Args: { target_benefit_id: string; target_source_resource_id: string }
+        Returns: boolean
+      }
+      remove_problem_solving_source_link: {
+        Args: { target_link_id: string }
         Returns: boolean
       }
       remove_training_session_participant: {
@@ -9215,6 +11371,10 @@ export type Database = {
         Args: { target_completion_id: string; target_notes?: string }
         Returns: boolean
       }
+      select_countermeasure: {
+        Args: { target_countermeasure_id: string; target_rationale?: string }
+        Returns: boolean
+      }
       set_membership_status: {
         Args: {
           change_reason: string
@@ -9259,6 +11419,15 @@ export type Database = {
           target_lead_assessor_membership_id?: string
           target_model_version_id: string
           target_unit_id: string
+        }
+        Returns: string
+      }
+      start_problem_solving_session: {
+        Args: {
+          target_case_id: string
+          target_facilitator_membership_id?: string
+          target_scheduled_at?: string
+          target_title: string
         }
         Returns: string
       }
@@ -9380,11 +11549,48 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_containment: {
+        Args: {
+          target_containment_id: string
+          target_description?: string
+          target_is_still_required?: boolean
+          target_rationale?: string
+        }
+        Returns: boolean
+      }
+      update_hypothesis_status: {
+        Args: {
+          target_hypothesis_id: string
+          target_reason?: string
+          target_status: string
+        }
+        Returns: boolean
+      }
       update_job_function: {
         Args: {
           target_description?: string
           target_job_function_id: string
           target_name: string
+        }
+        Returns: boolean
+      }
+      update_problem_solving_case_draft: {
+        Args: {
+          target_background?: string
+          target_business_impact?: string
+          target_case_id: string
+          target_detected_at?: string
+          target_facilitator_membership_id?: string
+          target_method_version_id?: string
+          target_owner_membership_id?: string
+          target_priority?: string
+          target_problem_statement?: string
+          target_scope_in?: string
+          target_scope_out?: string
+          target_severity?: string
+          target_target_condition?: string
+          target_target_due_at?: string
+          target_title?: string
         }
         Returns: boolean
       }
@@ -9491,6 +11697,17 @@ export type Database = {
       }
       validate_benefit_realisation_entry: {
         Args: { target_entry_id: string }
+        Returns: boolean
+      }
+      verify_cause_hypothesis: {
+        Args: {
+          target_hypothesis_id: string
+          target_verification_rationale: string
+        }
+        Returns: boolean
+      }
+      verify_current_condition_item: {
+        Args: { target_item_id: string; target_verification_rationale?: string }
         Returns: boolean
       }
       withdraw_benefit: {

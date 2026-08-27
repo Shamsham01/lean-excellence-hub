@@ -71,3 +71,14 @@ export const BENEFITS_PERMISSIONS = {
   realisationValidate: "benefits.realisation.validate",
   categoriesManage: "benefits.categories.manage",
 } as const;
+
+export const PROBLEM_SOLVING_PERMISSIONS = {
+  view: "problem_solving.view",
+  create: "problem_solving.create",
+  contribute: "problem_solving.contribute",
+  manage: "problem_solving.manage",
+  facilitate: "problem_solving.facilitate",
+  verifyCause: "problem_solving.verify_cause",
+  close: "problem_solving.close",
+  methodsManage: "problem_solving.methods.manage",
+} as const;

@@ -28,6 +28,12 @@ export const DEMO_USERS = {
     password: "Finance@Apex-Dev-2026!",
     displayName: "Apex Finance",
   },
+  psContributor: {
+    id: "a0000000-0000-0000-0000-000000000005",
+    email: "ps-contributor@apex.local",
+    password: "PsContributor@Apex-Dev-2026!",
+    displayName: "PS Contributor",
+  },
 } as const;
 
 export const DEMO_UNITS = [
@@ -124,6 +130,13 @@ export const DEMO_ROLES = {
       "benefits.manage",
       "benefits.validate.ci",
       "benefits.realisation.record",
+      "problem_solving.view",
+      "problem_solving.create",
+      "problem_solving.contribute",
+      "problem_solving.manage",
+      "problem_solving.facilitate",
+      "problem_solving.verify_cause",
+      "problem_solving.close",
     ],
     invitationTokenSeed: "apex-demo-manager-invitation-v1",
   },
@@ -141,6 +154,15 @@ export const DEMO_ROLES = {
       "benefits.realisation.validate",
     ],
     invitationTokenSeed: "apex-demo-finance-invitation-v1",
+  },
+  psContributor: {
+    canonicalName: "ps-contributor",
+    displayName: "Problem Solving Contributor",
+    description: "View and contribute to problem solving cases without verify or close rights.",
+    scopeType: "organisation" as const,
+    scopeUnitKey: null,
+    permissions: ["problem_solving.view", "problem_solving.contribute"],
+    invitationTokenSeed: "apex-demo-ps-contributor-invitation-v1",
   },
   operator: {
     canonicalName: "line-operator",
@@ -514,3 +536,76 @@ export const DEMO_BENEFITS = [
     ],
   },
 ] as const;
+
+export const DEMO_PROBLEM_SOLVING_CASE = {
+  title: "Packaging Line 3 Recurring Seal Defects",
+  methodBuiltinCode: "a3_structured",
+  problemStatement:
+    "Recurring seal defects on Packaging Line 3 exceed the expected quality level and drive rework and scrap.",
+  background:
+    "Seal defects have increased over the last three production weeks on Line 3 after a maintenance intervention on the sealing station.",
+  businessImpact:
+    "Higher scrap, repeated rework, and elevated customer complaint risk on appearance-sensitive packs.",
+  scopeIn: "Packaging Line 3 sealing station, film feed, and changeover setup.",
+  scopeOut: "Upstream filler chemistry and downstream palletising.",
+  targetCondition: "Seal defect rate sustained below 120 ppm with stable changeover performance.",
+  priority: "high" as const,
+  severity: "major" as const,
+  currentCondition: {
+    measuredFact:
+      "Seal defect rate averaged 210 ppm across the last five production runs on Line 3.",
+    observation:
+      "Defects cluster on the leading seal immediately after film splice events.",
+    assumption:
+      "Operators may be rushing changeover because the line is behind schedule.",
+  },
+  containment: {
+    description: "Increase in-process seal inspection frequency and hold suspect packs after splice events.",
+    rationale: "Reduce customer exposure while root cause analysis proceeds.",
+    actionTitle: "Hold packs after film splice until seal check passes",
+  },
+  hypotheses: {
+    pressureVariation: {
+      statement: "Sealing jaw pressure varies outside the validated setup window.",
+      category: "Machine",
+    },
+    filmTension: {
+      statement: "Film tension drift during run causes inconsistent seal bead formation.",
+      category: "Material",
+    },
+    setupInconsistency: {
+      statement: "Changeover setup for jaw height is inconsistent between shifts.",
+      category: "Method",
+    },
+  },
+  countermeasure: {
+    title: "Replace sealing jaw regulator and add pressure verification check",
+    description:
+      "Replace the faulty regulator, recalibrate jaw pressure, and add a pre-run pressure verification step.",
+    rationale: "Pressure test evidence supports mechanical instability as the verified cause.",
+    actionTitle: "Replace Line 3 sealing jaw regulator and update PM checklist",
+  },
+  effectiveness: {
+    criterion: "Seal defect rate (ppm)",
+    baselineNumeric: 210,
+    targetNumeric: 120,
+    actualNumeric: 95,
+    unit: "ppm",
+    observationWindowStart: "2026-02-01",
+    observationWindowEnd: "2026-02-28",
+  },
+  sustainment: {
+    what: "Add sealing jaw pressure verification to the Line 3 changeover standard and weekly PM checklist.",
+    checkMethod: "Technician verifies pressure within validated range before release to run.",
+    result: "Standard work updated and first audit completed without deviation.",
+  },
+  session: {
+    title: "Line 3 seal defect investigation review",
+    summary:
+      "Team reviewed test evidence, confirmed regulator instability as verified cause, and agreed countermeasure plus sustainment actions.",
+    decision:
+      "Proceed with regulator replacement and add pressure verification to changeover standard work.",
+  },
+  closureRationale:
+    "Verified mechanical cause addressed with selected countermeasure; effectiveness check passed across the observation window.",
+} as const;

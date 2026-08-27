@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+
 import { createClient } from "@supabase/supabase-js";
 
 export const platformE2eCredentials = {
@@ -7,9 +9,39 @@ export const platformE2eCredentials = {
   userId: "e2e00000-0000-0000-0000-000000000001",
 } as const;
 
-export async function ensurePlatformE2eUser() {
+function resolveSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (url && serviceRoleKey) {
+    return { url, serviceRoleKey };
+  }
+
+  if (process.env.E2E_WITH_SUPABASE !== "1") {
+    return { url, serviceRoleKey };
+  }
+
+  try {
+    const output = execSync("npx supabase status -o json", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "ignore"],
+    });
+    const status = JSON.parse(output) as {
+      API_URL?: string;
+      SERVICE_ROLE_KEY?: string;
+    };
+
+    return {
+      url: url ?? status.API_URL,
+      serviceRoleKey: serviceRoleKey ?? status.SERVICE_ROLE_KEY,
+    };
+  } catch {
+    return { url, serviceRoleKey };
+  }
+}
+
+export async function ensurePlatformE2eUser() {
+  const { url, serviceRoleKey } = resolveSupabaseEnv();
 
   if (!url || !serviceRoleKey) {
     throw new Error(

@@ -12,6 +12,7 @@ import {
   DEMO_MATURITY_PILLARS,
   DEMO_ORGANISATION,
   DEMO_PLATFORM_SAMPLES,
+  DEMO_PROBLEM_SOLVING_CASE,
   DEMO_FIVE_S_CATEGORIES,
   DEMO_FIVE_S_STANDARD,
   DEMO_GEMBA_DEFINITION,
@@ -38,6 +39,7 @@ const DEMO_USER_ROLE_KEY: Record<Exclude<DemoUserKey, "admin">, DemoRoleKey> = {
   manager: "manager",
   operator: "operator",
   finance: "financeValidator",
+  psContributor: "psContributor",
 };
 
 type UnitMap = Record<string, string>;
@@ -705,6 +707,484 @@ async function seedDemoBenefitStory(
       target_reason: "Target measure sustained for demo seed.",
     });
   }
+}
+
+async function upgradeDemoManagerProblemSolvingPermissions(): Promise<void> {
+  const seedDir = dirname(fileURLToPath(import.meta.url));
+  execSync(
+    `npx supabase db query --local -f "${join(seedDir, "upgrade-demo-manager-ps-permissions.sql")}"`,
+    { stdio: "inherit" },
+  );
+}
+
+async function isM11DemoComplete(managerClient: SupabaseClient): Promise<boolean> {
+  const result = (await expectRpc(managerClient, "get_problem_solving_list", {
+    target_search: DEMO_PROBLEM_SOLVING_CASE.title,
+    target_status: "closed",
+    target_page_size: 10,
+  })) as {
+    items?: Array<{ title: string; closure_outcome: string | null }>;
+  };
+
+  return (
+    result.items?.some(
+      (item) =>
+        item.title === DEMO_PROBLEM_SOLVING_CASE.title &&
+        item.closure_outcome === "resolved_verified_cause",
+    ) ?? false
+  );
+}
+
+async function findDemoProblemSolvingCase(
+  managerClient: SupabaseClient,
+  options: { excludeClosed?: boolean } = {},
+): Promise<{
+  id: string;
+  status: string;
+  hypothesis_count?: number;
+} | null> {
+  const result = (await expectRpc(managerClient, "get_problem_solving_list", {
+    target_search: DEMO_PROBLEM_SOLVING_CASE.title,
+    target_page_size: 10,
+  })) as {
+    items?: Array<{
+      id: string;
+      title: string;
+      status: string;
+      hypothesis_count?: number;
+    }>;
+  };
+
+  const match = result.items?.find(
+    (item) => item.title === DEMO_PROBLEM_SOLVING_CASE.title,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  if (options.excludeClosed && match.status === "closed") {
+    return null;
+  }
+
+  return match;
+}
+
+async function resolveProblemSolvingMethodId(
+  client: SupabaseClient,
+  builtinCode: string,
+): Promise<string> {
+  const catalog = (await expectRpc(client, "get_problem_solving_methods", {})) as {
+    items?: Array<{ id: string; code: string }>;
+  };
+
+  const codeByBuiltin: Record<string, string> = {
+    a3_structured: "a3-structured",
+    rapid_rca: "rapid-rca",
+    five_why: "five-why",
+  };
+  const targetCode = codeByBuiltin[builtinCode] ?? builtinCode;
+
+  const method = catalog.items?.find((row) => row.code === targetCode);
+  if (!method?.id) {
+    throw new Error(`Problem solving method missing for ${builtinCode}`);
+  }
+
+  return method.id;
+}
+
+async function seedDemoProblemSolvingCase(
+  managerClient: SupabaseClient,
+  operationsUnitId: string,
+  managerMembershipId: string,
+  operatorMembershipId: string | undefined,
+): Promise<void> {
+  const story = DEMO_PROBLEM_SOLVING_CASE;
+
+  if (await isM11DemoComplete(managerClient)) {
+    return;
+  }
+
+  const existing = await findDemoProblemSolvingCase(managerClient, {
+    excludeClosed: true,
+  });
+
+  if (existing?.status === "closed") {
+    return;
+  }
+
+  if (existing?.id && (existing.hypothesis_count ?? 0) > 0) {
+    console.log("M11 demo case already in progress; skipping narrative re-seed.");
+    return;
+  }
+
+  await expectRpc(managerClient, "ensure_problem_solving_methods_provisioned", {});
+
+  const methodId = await resolveProblemSolvingMethodId(
+    managerClient,
+    story.methodBuiltinCode,
+  );
+
+  let caseId = existing?.id;
+
+  if (!caseId) {
+    caseId = (await expectRpc(managerClient, "create_problem_solving_case_draft", {
+      target_title: story.title,
+      target_organisation_unit_id: operationsUnitId,
+      target_problem_statement: story.problemStatement,
+      target_background: story.background,
+      target_business_impact: story.businessImpact,
+      target_scope_in: story.scopeIn,
+      target_scope_out: story.scopeOut,
+      target_target_condition: story.targetCondition,
+      target_detected_at: new Date("2026-01-15T08:00:00Z").toISOString(),
+      target_priority: story.priority,
+      target_severity: story.severity,
+      target_owner_membership_id: managerMembershipId,
+      target_facilitator_membership_id: managerMembershipId,
+    })) as string;
+
+    try {
+      const packagingWasteProjectId = await resolveDemoProjectId(
+        managerClient,
+        "packaging-waste",
+      );
+      await expectRpc(managerClient, "add_problem_solving_source_link", {
+        target_case_id: caseId,
+        target_source_resource_id: packagingWasteProjectId,
+        target_link_role: "related",
+      });
+    } catch {
+      // Optional related project link when M8 demo project is absent.
+    }
+  }
+
+  if (existing?.status === "draft" || !existing) {
+    await expectRpc(managerClient, "activate_problem_solving_case", {
+      target_case_id: caseId,
+      target_method_id: methodId,
+    });
+  }
+
+  if (operatorMembershipId) {
+    await expectRpc(managerClient, "add_problem_solving_participant", {
+      target_case_id: caseId,
+      target_membership_id: operatorMembershipId,
+      target_participant_role: "contributor",
+    });
+  }
+
+  const measuredFactId = (await expectRpc(
+    managerClient,
+    "create_current_condition_item",
+    {
+      target_case_id: caseId,
+      target_category: "measured_fact",
+      target_statement: story.currentCondition.measuredFact,
+    },
+  )) as string;
+
+  await expectRpc(managerClient, "verify_current_condition_item", {
+    target_item_id: measuredFactId,
+    target_verification_rationale: "Supported by quality inspection run summaries.",
+  });
+
+  await expectRpc(managerClient, "create_current_condition_item", {
+    target_case_id: caseId,
+    target_category: "observation",
+    target_statement: story.currentCondition.observation,
+  });
+
+  await expectRpc(managerClient, "create_current_condition_item", {
+    target_case_id: caseId,
+    target_category: "assumption",
+    target_statement: story.currentCondition.assumption,
+  });
+
+  const containmentId = (await expectRpc(managerClient, "create_containment", {
+    target_problem_solving_case_id: caseId,
+    target_description: story.containment.description,
+    target_rationale: story.containment.rationale,
+  })) as string;
+
+  await expectRpc(managerClient, "create_problem_solving_action", {
+    target_title: story.containment.actionTitle,
+    target_problem_solving_case_id: caseId,
+    target_context_role: "containment",
+    target_containment_id: containmentId,
+    target_description: "Temporary containment task for Line 3 seal defects.",
+  });
+
+  const pressureHypothesisId = (await expectRpc(managerClient, "create_hypothesis", {
+    target_problem_solving_case_id: caseId,
+    target_statement: story.hypotheses.pressureVariation.statement,
+    target_category: story.hypotheses.pressureVariation.category,
+    target_rationale: "Pressure drift observed after maintenance intervention.",
+  })) as string;
+
+  const filmTensionHypothesisId = (await expectRpc(managerClient, "create_hypothesis", {
+    target_problem_solving_case_id: caseId,
+    target_statement: story.hypotheses.filmTension.statement,
+    target_category: story.hypotheses.filmTension.category,
+  })) as string;
+
+  const setupHypothesisId = (await expectRpc(managerClient, "create_hypothesis", {
+    target_problem_solving_case_id: caseId,
+    target_statement: story.hypotheses.setupInconsistency.statement,
+    target_category: story.hypotheses.setupInconsistency.category,
+  })) as string;
+
+  const analysisId = (await expectRpc(managerClient, "create_analysis", {
+    target_problem_solving_case_id: caseId,
+    target_analysis_type: "fishbone",
+    target_title: "Line 3 seal defect fishbone",
+  })) as string;
+
+  const machineNodeId = (await expectRpc(managerClient, "add_analysis_node", {
+    target_analysis_id: analysisId,
+    target_label: "Machine",
+    target_category: "Machine",
+    target_sort_order: 1,
+  })) as string;
+
+  await expectRpc(managerClient, "link_node_hypothesis", {
+    target_node_id: machineNodeId,
+    target_hypothesis_id: pressureHypothesisId,
+  });
+
+  const materialNodeId = (await expectRpc(managerClient, "add_analysis_node", {
+    target_analysis_id: analysisId,
+    target_label: "Material",
+    target_category: "Material",
+    target_sort_order: 2,
+  })) as string;
+
+  await expectRpc(managerClient, "link_node_hypothesis", {
+    target_node_id: materialNodeId,
+    target_hypothesis_id: filmTensionHypothesisId,
+  });
+
+  const methodNodeId = (await expectRpc(managerClient, "add_analysis_node", {
+    target_analysis_id: analysisId,
+    target_label: "Method",
+    target_category: "Method",
+    target_sort_order: 3,
+  })) as string;
+
+  await expectRpc(managerClient, "link_node_hypothesis", {
+    target_node_id: methodNodeId,
+    target_hypothesis_id: setupHypothesisId,
+  });
+
+  await expectRpc(managerClient, "update_hypothesis_status", {
+    target_hypothesis_id: pressureHypothesisId,
+    target_status: "testing",
+    target_reason: "Pressure logging test planned.",
+  });
+
+  const pressureTestId = (await expectRpc(managerClient, "create_hypothesis_test", {
+    target_hypothesis_id: pressureHypothesisId,
+    target_test_question: "Does sealing jaw pressure remain within validated limits across a full run?",
+    target_expected_result: "Pressure remains within +/- 5% of setup target.",
+    target_method: "Pressure trace logging during production run",
+    target_owner_membership_id: managerMembershipId,
+    target_planned_date: "2026-01-20",
+  })) as string;
+
+  await expectRpc(managerClient, "complete_hypothesis_test", {
+    target_hypothesis_test_id: pressureTestId,
+    target_actual_result:
+      "Pressure dropped below validated minimum three times after splice events.",
+    target_conclusion: "supports",
+  });
+
+  const filmTestId = (await expectRpc(managerClient, "create_hypothesis_test", {
+    target_hypothesis_id: filmTensionHypothesisId,
+    target_test_question: "Does film tension correlate with seal defect timing?",
+    target_expected_result: "Defects increase when tension drifts high.",
+    target_method: "Tension trend comparison against defect log",
+    target_owner_membership_id: managerMembershipId,
+    target_planned_date: "2026-01-21",
+  })) as string;
+
+  await expectRpc(managerClient, "complete_hypothesis_test", {
+    target_hypothesis_test_id: filmTestId,
+    target_actual_result: "Tension remained stable during defect clusters.",
+    target_conclusion: "refutes",
+  });
+
+  await expectRpc(managerClient, "reject_cause_hypothesis", {
+    target_hypothesis_id: filmTensionHypothesisId,
+    target_rejection_rationale: "Film tension test did not support the hypothesis.",
+  });
+
+  await expectRpc(managerClient, "reject_cause_hypothesis", {
+    target_hypothesis_id: setupHypothesisId,
+    target_rejection_rationale: "Setup audit showed consistent jaw height settings between shifts.",
+  });
+
+  await expectRpc(managerClient, "update_hypothesis_status", {
+    target_hypothesis_id: pressureHypothesisId,
+    target_status: "supported",
+    target_reason: "Pressure trace test supports pressure variation hypothesis.",
+  });
+
+  await expectRpc(managerClient, "verify_cause_hypothesis", {
+    target_hypothesis_id: pressureHypothesisId,
+    target_verification_rationale:
+      "Completed pressure test and maintenance review confirm regulator-induced sealing jaw pressure instability as the verified cause.",
+  });
+
+  const countermeasureId = (await expectRpc(managerClient, "create_countermeasure", {
+    target_case_id: caseId,
+    target_title: story.countermeasure.title,
+    target_description: story.countermeasure.description,
+    target_rationale: story.countermeasure.rationale,
+  })) as string;
+
+  await expectRpc(managerClient, "link_countermeasure_causes", {
+    target_countermeasure_id: countermeasureId,
+    target_hypothesis_ids: [pressureHypothesisId],
+  });
+
+  await expectRpc(managerClient, "select_countermeasure", {
+    target_countermeasure_id: countermeasureId,
+    target_rationale: "Addresses verified regulator instability with standardised verification.",
+  });
+
+  await expectRpc(managerClient, "create_problem_solving_action", {
+    target_title: story.countermeasure.actionTitle,
+    target_problem_solving_case_id: caseId,
+    target_context_role: "countermeasure",
+    target_countermeasure_id: countermeasureId,
+    target_description: "Implement regulator replacement and update PM checklist.",
+  });
+
+  const effectivenessCheckId = (await expectRpc(
+    managerClient,
+    "create_effectiveness_check",
+    {
+      target_case_id: caseId,
+      target_criterion: story.effectiveness.criterion,
+      target_baseline_description: "Average seal defect rate before countermeasure.",
+      target_target_description: "Sustain seal defect rate below target after countermeasure.",
+      target_baseline_numeric: story.effectiveness.baselineNumeric,
+      target_target_numeric: story.effectiveness.targetNumeric,
+      target_unit: story.effectiveness.unit,
+      target_observation_window_start: story.effectiveness.observationWindowStart,
+      target_observation_window_end: story.effectiveness.observationWindowEnd,
+    },
+  )) as string;
+
+  await expectRpc(managerClient, "record_effectiveness_result", {
+    target_effectiveness_check_id: effectivenessCheckId,
+    target_result: "pass",
+    target_actual_numeric: story.effectiveness.actualNumeric,
+    target_verification_rationale: "February quality data shows sustained improvement below target.",
+  });
+
+  const sustainmentItemId = (await expectRpc(managerClient, "create_sustainment_item", {
+    target_case_id: caseId,
+    target_what: story.sustainment.what,
+    target_owner_membership_id: managerMembershipId,
+    target_check_method: story.sustainment.checkMethod,
+    target_follow_up_date: "2026-03-15",
+  })) as string;
+
+  await expectRpc(managerClient, "record_sustainment_result", {
+    target_sustainment_item_id: sustainmentItemId,
+    target_result: story.sustainment.result,
+    target_evidence: "Updated changeover standard and first PM audit record on file.",
+  });
+
+  await expectRpc(managerClient, "create_problem_solving_action", {
+    target_title: "Audit Line 3 pressure verification standard work",
+    target_problem_solving_case_id: caseId,
+    target_context_role: "sustainment",
+    target_sustainment_item_id: sustainmentItemId,
+    target_description: "Confirm sustainment checks are performed on schedule.",
+  });
+
+  const sessionId = (await expectRpc(managerClient, "start_problem_solving_session", {
+    target_case_id: caseId,
+    target_title: story.session.title,
+    target_facilitator_membership_id: managerMembershipId,
+    target_scheduled_at: new Date("2026-02-05T13:00:00Z").toISOString(),
+  })) as string;
+
+  await expectRpc(managerClient, "add_session_entry", {
+    target_session_id: sessionId,
+    target_entry_type: "decision",
+    target_body: story.session.decision,
+    target_reference_hypothesis_id: pressureHypothesisId,
+  });
+
+  await expectRpc(managerClient, "add_session_entry", {
+    target_session_id: sessionId,
+    target_entry_type: "note",
+    target_body:
+      "Pressure trace review and maintenance history reviewed with engineering and operations.",
+  });
+
+  await expectRpc(managerClient, "complete_problem_solving_session", {
+    target_session_id: sessionId,
+    target_summary: story.session.summary,
+  });
+
+  await expectRpc(managerClient, "close_problem_solving_case", {
+    target_case_id: caseId,
+    target_closure_outcome: "resolved_verified_cause",
+    target_closure_rationale: story.closureRationale,
+  });
+}
+
+async function ensureM11Demo(
+  apiUrl: string,
+  publishableKey: string,
+  unitIds: UnitMap,
+): Promise<void> {
+  await upgradeDemoManagerProblemSolvingPermissions();
+
+  const managerClient = await signInUser(apiUrl, publishableKey, "manager");
+  await switchOrganisation(
+    managerClient,
+    (await resolveOrganisationId(managerClient)) as string,
+  );
+
+  if (await isM11DemoComplete(managerClient)) {
+    console.log("M11 demo already seeded.");
+    return;
+  }
+
+  const operationsUnitId = unitIds.operations;
+  if (!operationsUnitId) {
+    throw new Error("Demo operations unit is missing.");
+  }
+
+  const { data: managerMembership } = await managerClient
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.manager.id)
+    .maybeSingle();
+
+  const { data: operatorMembership } = await managerClient
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.operator.id)
+    .maybeSingle();
+
+  if (!managerMembership?.id) {
+    throw new Error("M11 demo manager membership missing");
+  }
+
+  await seedDemoProblemSolvingCase(
+    managerClient,
+    operationsUnitId,
+    managerMembership.id,
+    operatorMembership?.id,
+  );
+
+  console.log("M11 demo: Packaging Line 3 problem solving case seeded.");
 }
 
 async function ensureM10Demo(
@@ -2119,6 +2599,11 @@ async function main() {
     organisationId,
     "financeValidator",
   );
+  const psContributorRoleVersionId = await ensurePublishedRole(
+    adminClient,
+    organisationId,
+    "psContributor",
+  );
 
   await ensureInvitationAccepted(
     adminClient,
@@ -2147,6 +2632,15 @@ async function main() {
     financeRoleVersionId,
     unitIds,
   );
+  await ensureInvitationAccepted(
+    adminClient,
+    env.apiUrl,
+    env.publishableKey,
+    organisationId,
+    "psContributor",
+    psContributorRoleVersionId,
+    unitIds,
+  );
 
   await ensureDemoDisplayNames(env.apiUrl, env.publishableKey);
 
@@ -2164,6 +2658,7 @@ async function main() {
     env.apiUrl,
     env.publishableKey,
   );
+  await ensureM11Demo(env.apiUrl, env.publishableKey, unitIds);
 
   console.log("Demo seed complete.");
   console.log(
@@ -2171,7 +2666,7 @@ async function main() {
   );
   console.log("Admin login: admin@apex.local");
   console.log(
-    "Routes: /platform, /platform/maturity, /platform/5s, /platform/gemba, /platform/schedule, /platform/benefits",
+    "Routes: /platform, /platform/maturity, /platform/5s, /platform/gemba, /platform/schedule, /platform/benefits, /platform/problem-solving",
   );
   console.log("Reset: npm run db:reset && npm run db:seed-demo");
 }
