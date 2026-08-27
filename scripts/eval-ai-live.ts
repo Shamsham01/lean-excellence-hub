@@ -5,8 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { getAiEnvironment } from "../src/platform/ai/config";
-import { createOpenAIProvider } from "../src/platform/ai/providers/openai-responses";
+import { OpenAIResponsesProvider } from "../src/platform/ai/providers/openai-responses-core";
 import { buildSystemPrompt } from "../src/platform/ai/prompts/problem-solving-facilitator";
 import { buildOpenAiTools } from "../src/platform/ai/tools/problem-solving-schemas";
 
@@ -16,11 +15,11 @@ const fixturePath = join(
 );
 
 async function main(): Promise<void> {
-  const env = getAiEnvironment();
-  if (!env.AI_ENABLED) {
+  if (process.env.AI_ENABLED !== "1") {
     throw new Error("Set AI_ENABLED=1 for live eval smoke.");
   }
-  if (!env.OPENAI_API_KEY?.trim()) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
     throw new Error("OPENAI_API_KEY is required for live eval smoke.");
   }
 
@@ -28,11 +27,11 @@ async function main(): Promise<void> {
     userMessage: string;
   };
 
-  const provider = createOpenAIProvider();
+  const provider = new OpenAIResponsesProvider(apiKey);
   const systemPrompt = buildSystemPrompt("challenge", null);
 
   const response = await provider.createResponse({
-    model: env.AI_MODEL_DEFAULT ?? "gpt-4.1-mini",
+    model: process.env.AI_MODEL_DEFAULT ?? "gpt-4.1-mini",
     systemPrompt,
     messages: [{ role: "user", content: fixture.userMessage }],
     tools: buildOpenAiTools(),

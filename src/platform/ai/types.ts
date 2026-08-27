@@ -18,6 +18,20 @@ export type AiProposalType =
   | "session_summary"
   | "lessons_learned";
 
+export const AI_PROPOSAL_TYPES = [
+  "current_condition_item",
+  "hypothesis",
+  "hypothesis_test",
+  "containment",
+  "countermeasure",
+  "universal_action",
+  "effectiveness_check",
+  "sustainment_item",
+  "session_question",
+  "session_summary",
+  "lessons_learned",
+] as const satisfies readonly AiProposalType[];
+
 export const FORBIDDEN_PROPOSAL_TYPES = [
   "verify_root_cause",
   "close_case",
@@ -39,14 +53,33 @@ export type SourceRefKey =
   | "action_id"
   | "lesson_learned_id";
 
+export const SOURCE_REF_KEYS = [
+  "problem_solving_case_id",
+  "current_condition_item_id",
+  "containment_id",
+  "hypothesis_id",
+  "hypothesis_test_id",
+  "countermeasure_id",
+  "effectiveness_check_id",
+  "sustainment_item_id",
+  "problem_solving_session_id",
+  "action_id",
+  "lesson_learned_id",
+] as const satisfies readonly SourceRefKey[];
+
 export type TypedSourceRef = Partial<Record<SourceRefKey, string>>;
 
-export type SupportLevel =
-  "insufficient_evidence" | "partially_supported" | "well_supported";
+export const SUPPORT_LEVELS = [
+  "insufficient_evidence",
+  "partially_supported",
+  "well_supported",
+] as const;
+
+export type SupportLevel = (typeof SUPPORT_LEVELS)[number];
 
 export type FacilitatorEnvelope = {
   message: string;
-  observations: Array<{ text: string; support_level?: SupportLevel }>;
+  observations: Array<{ text: string; support_level: SupportLevel }>;
   questions: string[];
   warnings: string[];
   source_refs: Array<{ label: string; ref: TypedSourceRef }>;
