@@ -50,6 +50,12 @@ values
     statement_timestamp(), statement_timestamp()
   );
 
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = '91000000-0000-0000-0000-000000000002';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"91000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"92000000-0000-0000-0000-000000000001","email":"remediation-owner@example.test"}',

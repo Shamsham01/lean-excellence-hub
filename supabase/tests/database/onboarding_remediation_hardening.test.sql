@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -102,6 +102,12 @@ select 'sibling_unit', public.create_organisation_unit(
 
 insert into hardening_ids (key, id)
 select 'job_function', public.create_job_function('Team Leader', 'team-leader');
+
+insert into hardening_ids (key, id)
+select 'provision_job_function', public.create_job_function(
+  'Provisioning Role',
+  'provisioning-role'
+);
 
 insert into hardening_ids (key, id)
 select 'delegate_role_draft', public.create_role_draft(
@@ -308,6 +314,11 @@ select set_config(
   true
 );
 
+select ok(
+  public.switch_organisation((select id from hardening_ids where key = 'organisation')),
+  'owner reselects organisation before invitation provisioning checks'
+);
+
 insert into hardening_ids (key, id)
 select 'provision_invitation', public.issue_organisation_member_invitation(
   'email',
@@ -318,13 +329,13 @@ select 'provision_invitation', public.issue_organisation_member_invitation(
   'organisation',
   null,
   'Invitee Name',
-  (select id from hardening_ids where key = 'job_function'),
+  (select id from hardening_ids where key = 'provision_job_function'),
   (select id from hardening_ids where key = 'child_unit')
 );
 
 update public.job_functions
 set status = 'inactive'
-where id = (select id from hardening_ids where key = 'job_function');
+where id = (select id from hardening_ids where key = 'provision_job_function');
 
 select set_config(
   'request.jwt.claims',
@@ -356,6 +367,19 @@ select ok(
     where user_id = '93000000-0000-0000-0000-000000000003'
   ),
   'failed accept does not create membership'
+);
+
+select ok(
+  not exists (
+    select 1
+    from public.access_grants
+    where grantee_membership_id in (
+      select id
+      from public.organisation_memberships
+      where user_id = '93000000-0000-0000-0000-000000000003'
+    )
+  ),
+  'failed accept does not create access grants'
 );
 
 select * from finish();
