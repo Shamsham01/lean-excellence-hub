@@ -23,10 +23,14 @@ export function setupStatusLabel(status: SetupItemStatus) {
   }
 }
 
-function adminHelper(canPerform: boolean) {
-  return canPerform
-    ? undefined
-    : "Ask an Organisation Administrator to complete this step.";
+function adminHelper(canPerform: boolean, isAdmin = false) {
+  if (canPerform) {
+    return undefined;
+  }
+  if (isAdmin) {
+    return "You can complete this step from the linked settings page.";
+  }
+  return "Ask an Organisation Administrator to complete this step.";
 }
 
 function buildCoreItems(
@@ -98,7 +102,30 @@ function buildCoreItems(
       canAssess: unitCanAssess,
       canPerform: permissions.canManageHierarchyAtOrgScope,
       href: "/platform/settings/structure",
-      helperMessage: adminHelper(permissions.canManageHierarchyAtOrgScope),
+      helperMessage: adminHelper(
+        permissions.canManageHierarchyAtOrgScope,
+        permissions.canManageHierarchyAtOrgScope,
+      ),
+    },
+    {
+      id: "admin_organisational_assignment",
+      tier: "core",
+      title: "Your organisation assignment",
+      description:
+        "Your primary work area is assigned so you can use downstream modules such as suggestions.",
+      status: data.adminAssignmentUnavailable
+        ? "unavailable"
+        : data.currentAdminHasPrimaryAssignment
+          ? "complete"
+          : "not_started",
+      canAssess: !data.adminAssignmentUnavailable,
+      canPerform: permissions.canManageJobFunctions,
+      href:
+        permissions.currentMembershipAdminHref ?? "/platform/settings/profile",
+      helperMessage: adminHelper(
+        permissions.canManageJobFunctions,
+        permissions.canManageJobFunctions,
+      ),
     },
   ];
 }
@@ -210,8 +237,10 @@ function buildRecommendedItems(
       status: rolesStatus,
       canAssess: !data.grantsCheckUnavailable,
       canPerform: permissions.canReadRoles,
-      href: "/platform/settings",
-      helperMessage: adminHelper(permissions.canReadRoles),
+      href: "/platform/settings/people",
+      helperMessage: adminHelper(
+        permissions.canManageInvitations || permissions.canReadRoles,
+      ),
     },
     {
       id: "job_functions",
@@ -245,7 +274,10 @@ function buildRecommendedItems(
       canAssess: !data.trainingCatalogUnavailable,
       canPerform: permissions.canManageTraining,
       href: "/platform/training",
-      helperMessage: adminHelper(permissions.canManageTraining),
+      helperMessage: adminHelper(
+        permissions.canManageTraining,
+        permissions.canManageTraining,
+      ),
     },
   ];
 }

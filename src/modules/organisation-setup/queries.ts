@@ -212,7 +212,7 @@ async function countJobFunctionAssignments(
   const { count, error } = await supabase
     .from("membership_job_function_assignments")
     .select("id", { count: "exact", head: true })
-    .is("ended_at", null);
+    .is("valid_to", null);
 
   if (isPermissionDenied(error)) {
     return { unavailable: true as const };
@@ -253,6 +253,24 @@ async function countLeanConfigSignals(
   }
 
   return { signalCount, unavailable: false as const };
+}
+
+async function checkCurrentAdminPrimaryAssignment(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+) {
+  const { data, error } = await supabase.rpc(
+    "get_current_membership_primary_unit",
+  );
+
+  if (isPermissionDenied(error)) {
+    return { unavailable: true as const };
+  }
+
+  const payload = data as { has_primary_unit?: boolean } | null;
+  return {
+    hasAssignment: payload?.has_primary_unit === true,
+    unavailable: false as const,
+  };
 }
 
 async function countTrainingCatalog(
@@ -302,6 +320,7 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     customRoles,
     jobFunctions,
     jobAssignments,
+    adminAssignment,
     leanConfig,
     training,
   ] = await Promise.all([
@@ -314,6 +333,7 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     checkCustomRolesWithoutGrants(supabase),
     countJobFunctions(supabase),
     countJobFunctionAssignments(supabase),
+    checkCurrentAdminPrimaryAssignment(supabase),
     countLeanConfigSignals(supabase),
     countTrainingCatalog(supabase),
   ]);
@@ -344,6 +364,10 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
       ? null
       : jobAssignments.count,
     jobFunctionAssignmentsUnavailable: jobAssignments.unavailable,
+    currentAdminHasPrimaryAssignment: adminAssignment.unavailable
+      ? null
+      : adminAssignment.hasAssignment,
+    adminAssignmentUnavailable: adminAssignment.unavailable,
     leanConfigSignalCount: leanConfig.unavailable
       ? null
       : leanConfig.signalCount,

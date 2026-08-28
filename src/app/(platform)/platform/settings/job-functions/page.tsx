@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { JobFunctionCreateForm } from "@/components/job-functions/job-function-create-form";
+import { JobFunctionsList } from "@/components/job-functions/job-functions-list";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,7 @@ export default async function JobFunctionsSettingsPage() {
     >
       <PageHeader
         title="Job functions"
-        description="Define the roles people perform in your organisation."
+        description="Define what people do at work. Job functions support training and capability — they do not control application permissions."
         actions={
           <Button variant="outline" size="sm" asChild>
             <Link href="/platform/settings">Back to settings</Link>
@@ -45,47 +45,24 @@ export default async function JobFunctionsSettingsPage() {
           <CardTitle className="text-base">Active job functions</CardTitle>
         </CardHeader>
         <CardContent>
-          {jobFunctions?.length ? (
-            <ul className="flex flex-col gap-2">
-              {jobFunctions.map((jobFunction) => (
-                <li
-                  key={jobFunction.id}
-                  className="rounded-md border border-border p-3 text-sm"
-                >
-                  <p className="font-medium text-foreground">
-                    {jobFunction.name}
-                  </p>
-                  <p className="text-muted-foreground">{jobFunction.code}</p>
-                  {jobFunction.description ? (
-                    <p className="mt-1 text-muted-foreground">
-                      {jobFunction.description}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No job functions yet.
-            </p>
-          )}
+          <JobFunctionsList
+            jobFunctions={(jobFunctions ?? []).map((jobFunction) => ({
+              id: jobFunction.id,
+              name: jobFunction.name,
+              code: jobFunction.code,
+              description: jobFunction.description,
+            }))}
+            canManage={canManage}
+            onCreate={createJobFunction}
+          />
         </CardContent>
       </Card>
 
-      {canManage ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Create job function</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <JobFunctionCreateForm onCreate={createJobFunction} />
-          </CardContent>
-        </Card>
-      ) : (
+      {!canManage ? (
         <p className="text-sm text-muted-foreground">
           Ask an Organisation Administrator to configure job functions.
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

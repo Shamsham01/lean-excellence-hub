@@ -106,6 +106,15 @@ select ok(
 );
 
 insert into skills_history_ids (key, id)
+select 'root_unit', public.create_organisation_unit(
+  (select id from skills_history_ids where key = 'organisation'),
+  null,
+  'skills-site',
+  'Skills Site',
+  'site'
+);
+
+insert into skills_history_ids (key, id)
 select 'skill', public.create_skill('Problem Solving', 'problem-solving');
 
 insert into skills_history_ids (key, id)
@@ -183,7 +192,7 @@ select ok(
     (select id from skills_history_ids where key = 'membership'),
     (select id from skills_history_ids where key = 'job_function'),
     true,
-    null
+    (select id from skills_history_ids where key = 'root_unit')
   ) is not null,
   'assign membership job function'
 );
@@ -193,7 +202,7 @@ select ok(
     (select id from skills_history_ids where key = 'membership_expired'),
     (select id from skills_history_ids where key = 'job_function'),
     true,
-    null
+    (select id from skills_history_ids where key = 'root_unit')
   ) is not null,
   'assign expired-case membership job function'
 );

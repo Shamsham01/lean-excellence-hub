@@ -109,8 +109,8 @@ function SidebarContent({
   ];
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 flex-col gap-3 p-4">
         <p className="typography-product-identity">Lean Hub</p>
         <div>
           <p className="truncate text-sm font-semibold text-sidebar-foreground">
@@ -127,7 +127,10 @@ function SidebarContent({
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-2" aria-label="Platform">
+      <nav
+        className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-2"
+        aria-label="Platform"
+      >
         {sections.map((section) => {
           const sectionItems = items.filter((i) => i.section === section);
           if (sectionItems.length === 0) return null;
@@ -147,7 +150,7 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className="flex flex-col gap-1 p-2">
+      <div className="flex shrink-0 flex-col gap-1 border-t border-sidebar-border p-2">
         <Separator className="mb-2" />
         <ThemeToggle />
         <form action="/auth/signout" method="post">
@@ -171,7 +174,7 @@ export function PlatformSidebar(props: SidebarNavProps) {
 
   return (
     <>
-      <aside className="hidden w-60 shrink-0 border-r border-sidebar-border bg-sidebar lg:flex lg:flex-col">
+      <aside className="hidden h-dvh w-60 shrink-0 border-r border-sidebar-border bg-sidebar lg:flex lg:flex-col">
         <SidebarContent {...props} pathname={pathname} />
       </aside>
 
@@ -182,11 +185,16 @@ export function PlatformSidebar(props: SidebarNavProps) {
               Menu
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="bg-sidebar p-0">
-            <SheetHeader className="p-4 pb-0">
+          <SheetContent
+            side="left"
+            className="flex h-full max-h-dvh flex-col overflow-hidden bg-sidebar p-0"
+          >
+            <SheetHeader className="shrink-0 p-4 pb-0">
               <SheetTitle>Navigation</SheetTitle>
             </SheetHeader>
-            <SidebarContent {...props} pathname={pathname} />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <SidebarContent {...props} pathname={pathname} />
+            </div>
           </SheetContent>
         </Sheet>
         <span className="truncate text-sm font-semibold">

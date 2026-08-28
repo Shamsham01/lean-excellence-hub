@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { ContextualHelpLabel } from "@/components/help/contextual-help";
+import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
 import { validateOrganisationUnitCode } from "@/modules/organisation-setup/unit-code";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +13,7 @@ type UnitOption = {
   id: string;
   name: string;
   code: string;
+  parent_unit_id?: string | null;
 };
 
 export function UnitCreateForm({
@@ -93,7 +96,11 @@ export function UnitCreateForm({
       data-testid="unit-create-form"
     >
       <div className="flex flex-col gap-2">
-        <Label htmlFor="parent-unit">Parent unit (optional)</Label>
+        <Label htmlFor="parent-unit">
+          <ContextualHelpLabel topic="parent-unit">
+            Parent unit (optional)
+          </ContextualHelpLabel>
+        </Label>
         <select
           id="parent-unit"
           className="border-input h-9 rounded-md border bg-background px-3 text-sm"
@@ -105,7 +112,7 @@ export function UnitCreateForm({
           </option>
           {units.map((unit) => (
             <option key={unit.id} value={unit.id}>
-              {unit.name} ({unit.code})
+              {formatUnitPath(unit.id, units)}
             </option>
           ))}
         </select>
@@ -127,7 +134,11 @@ export function UnitCreateForm({
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="unit-name">Unit name</Label>
+          <Label htmlFor="unit-name">
+            <ContextualHelpLabel topic="organisational-unit">
+              Unit name
+            </ContextualHelpLabel>
+          </Label>
           <Input
             id="unit-name"
             value={name}
@@ -138,7 +149,9 @@ export function UnitCreateForm({
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="unit-type">Unit type</Label>
+        <Label htmlFor="unit-type">
+          <ContextualHelpLabel topic="unit-type">Unit type</ContextualHelpLabel>
+        </Label>
         <Input
           id="unit-type"
           value={unitType}

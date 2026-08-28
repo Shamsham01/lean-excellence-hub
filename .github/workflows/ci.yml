@@ -56,7 +56,18 @@ jobs:
           cache: npm
           node-version: 24
       - run: npm ci
-      - run: npm run db:start
+      - name: Start local Supabase
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if npm run db:start; then
+              exit 0
+            fi
+            echo "db:start attempt ${attempt} failed; retrying..." >&2
+            npm run db:stop || true
+            sleep 10
+          done
+          exit 1
       - run: npm run db:lint
       - run: npm run test:db
       - run: npm run db:types

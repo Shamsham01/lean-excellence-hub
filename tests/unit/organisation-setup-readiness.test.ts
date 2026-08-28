@@ -22,6 +22,7 @@ const basePermissions: SetupPermissionSnapshot = {
   canReadHierarchy: true,
   canReadMemberships: true,
   canManageProjects: true,
+  currentMembershipAdminHref: "/platform/people/test/admin",
 };
 
 function baseQuery(
@@ -53,14 +54,19 @@ function baseQuery(
     trainingCatalogUnavailable: false,
     hasChildUnits: false,
     childUnitsUnavailable: false,
+    currentAdminHasPrimaryAssignment: false,
+    adminAssignmentUnavailable: false,
     ...overrides,
   };
 }
 
 describe("organisation setup readiness", () => {
-  it("marks core ready when identity, owner, and unit exist", () => {
+  it("marks core ready when identity, owner, unit, and assignment exist", () => {
     const snapshot = buildOrganisationSetupSnapshot(
-      baseQuery({ activeUnitCount: 1 }),
+      baseQuery({
+        activeUnitCount: 1,
+        currentAdminHasPrimaryAssignment: true,
+      }),
       basePermissions,
     );
 

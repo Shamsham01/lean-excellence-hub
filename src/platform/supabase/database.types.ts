@@ -5610,6 +5610,62 @@ export type Database = {
           },
         ]
       }
+      organisation_invitation_provisioning: {
+        Row: {
+          created_at: string
+          intended_display_name: string | null
+          intended_job_function_id: string | null
+          intended_organisational_unit_id: string | null
+          invitation_id: string
+          organisation_id: string
+        }
+        Insert: {
+          created_at?: string
+          intended_display_name?: string | null
+          intended_job_function_id?: string | null
+          intended_organisational_unit_id?: string | null
+          invitation_id: string
+          organisation_id: string
+        }
+        Update: {
+          created_at?: string
+          intended_display_name?: string | null
+          intended_job_function_id?: string | null
+          intended_organisational_unit_id?: string | null
+          invitation_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_invitation_provisioning_invitation_fkey"
+            columns: ["organisation_id", "invitation_id"]
+            isOneToOne: true
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "organisation_invitation_provisioning_job_function_fkey"
+            columns: ["organisation_id", "intended_job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "organisation_invitation_provisioning_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_invitation_provisioning_unit_fkey"
+            columns: ["organisation_id", "intended_organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       organisation_invitations: {
         Row: {
           accepted_at: string | null
@@ -11668,8 +11724,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_current_membership_primary_unit: { Args: never; Returns: Json }
+      get_delegatable_access_offers: { Args: never; Returns: Json }
       get_eligible_benefit_validators: {
         Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      get_membership_administration_profile: {
+        Args: { target_membership_id: string }
         Returns: Json
       }
       get_membership_capability_profile_header: {
@@ -11805,6 +11867,21 @@ export type Database = {
           offered_scope_type: string
           offered_scope_unit_id?: string
           target_organisation_id: string
+        }
+        Returns: string
+      }
+      issue_organisation_member_invitation: {
+        Args: {
+          intended_display_name?: string
+          intended_job_function_id?: string
+          intended_organisational_unit_id?: string
+          invitation_canonical_recipient: string
+          invitation_expires_at: string
+          invitation_recipient_type: string
+          invitation_token_digest: string
+          offered_role_version_id: string
+          offered_scope_type: string
+          offered_scope_unit_id?: string
         }
         Returns: string
       }
@@ -12472,6 +12549,10 @@ export type Database = {
           target_monthly_token_ceiling?: number
         }
         Returns: undefined
+      }
+      update_organisation_membership_display_name: {
+        Args: { target_display_name: string; target_membership_id: string }
+        Returns: boolean
       }
       update_problem_solving_case_draft: {
         Args: {
