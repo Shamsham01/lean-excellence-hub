@@ -11653,6 +11653,7 @@ export type Database = {
       }
       get_benefits_overview: { Args: never; Returns: Json }
       get_capability_dashboard: { Args: never; Returns: Json }
+      get_current_membership_primary_unit: { Args: never; Returns: Json }
       get_ci_project_detail: {
         Args: { target_project_id: string }
         Returns: Json
@@ -11670,6 +11671,11 @@ export type Database = {
       }
       get_eligible_benefit_validators: {
         Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      get_delegatable_access_offers: { Args: never; Returns: Json }
+      get_membership_administration_profile: {
+        Args: { target_membership_id: string }
         Returns: Json
       }
       get_membership_capability_profile_header: {
@@ -11805,6 +11811,21 @@ export type Database = {
           offered_scope_type: string
           offered_scope_unit_id?: string
           target_organisation_id: string
+        }
+        Returns: string
+      }
+      issue_organisation_member_invitation: {
+        Args: {
+          invitation_canonical_recipient: string
+          invitation_expires_at: string
+          invitation_recipient_type: string
+          invitation_token_digest: string
+          intended_display_name?: string
+          intended_job_function_id?: string
+          intended_organisational_unit_id?: string
+          offered_role_version_id: string
+          offered_scope_type: string
+          offered_scope_unit_id?: string
         }
         Returns: string
       }
@@ -12463,6 +12484,13 @@ export type Database = {
           target_description?: string
           target_job_function_id: string
           target_name: string
+        }
+        Returns: boolean
+      }
+      update_organisation_membership_display_name: {
+        Args: {
+          target_display_name: string
+          target_membership_id: string
         }
         Returns: boolean
       }

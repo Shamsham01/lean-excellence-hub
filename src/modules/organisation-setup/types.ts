@@ -7,6 +7,7 @@ export type SetupItemId =
   | "organisation_identity"
   | "organisation_administrator"
   | "operational_unit"
+  | "admin_organisational_assignment"
   | "expand_structure"
   | "invite_team"
   | "roles_access"
@@ -72,6 +73,8 @@ export type SetupQueryResult = {
   trainingCatalogUnavailable: boolean;
   hasChildUnits: boolean | null;
   childUnitsUnavailable: boolean;
+  currentAdminHasPrimaryAssignment: boolean | null;
+  adminAssignmentUnavailable: boolean;
 };
 
 export type SetupPermissionSnapshot = {
@@ -86,6 +89,7 @@ export type SetupPermissionSnapshot = {
   canReadHierarchy: boolean;
   canReadMemberships: boolean;
   canManageProjects: boolean;
+  currentMembershipAdminHref: string | null;
 };
 
 export type QuickAction = {

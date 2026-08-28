@@ -44,7 +44,7 @@ export default async function SettingsPage() {
           {
             title: "People and invitations",
             description:
-              "Plan team access. Invitation issuance requires a safe delegation workflow.",
+              "Invite colleagues and manage pending invitations with appropriate access.",
             href: "/platform/settings/people",
             available: true,
           },

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { OrganisationUnitTree } from "@/components/organisation/organisation-unit-tree";
 import { UnitCreateForm } from "@/components/organisation/unit-create-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buildOrganisationUnitTree } from "@/modules/organisation/unit-hierarchy";
 import {
   currentMemberHasOrganisationScopedPermission,
   currentMemberHasPermission,
@@ -30,11 +32,13 @@ export default async function StructureSettingsPage() {
     .eq("status", "active")
     .order("name");
 
+  const tree = buildOrganisationUnitTree(units ?? []);
+
   return (
     <div className="flex flex-col gap-8" data-testid="structure-settings-page">
       <PageHeader
         title="Organisation structure"
-        description="Create units that reflect how your organisation operates."
+        description="Create units that reflect how your organisation operates. Parent and child relationships are shown as a hierarchy."
         actions={
           <Button variant="outline" size="sm" asChild>
             <Link href="/platform/settings">Back to settings</Link>
@@ -47,28 +51,7 @@ export default async function StructureSettingsPage() {
           <CardTitle className="text-base">Active units</CardTitle>
         </CardHeader>
         <CardContent>
-          {units?.length ? (
-            <ul className="flex flex-col gap-2">
-              {units.map((unit) => (
-                <li
-                  key={unit.id}
-                  className="flex flex-col gap-0.5 rounded-md border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{unit.name}</p>
-                    <p className="text-muted-foreground">
-                      {unit.code} · {unit.unit_type}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No organisational units yet. Create your first unit to complete
-              core setup.
-            </p>
-          )}
+          <OrganisationUnitTree nodes={tree} />
         </CardContent>
       </Card>
 
@@ -83,6 +66,7 @@ export default async function StructureSettingsPage() {
                 id: unit.id,
                 name: unit.name,
                 code: unit.code,
+                parent_unit_id: unit.parent_unit_id,
               }))}
               canCreateRoot={canCreateRoot}
               onCreate={createOrganisationUnit}
