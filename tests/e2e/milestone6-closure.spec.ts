@@ -1,3 +1,4 @@
+import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { expect, test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -20,9 +21,7 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/platform/);
-  await expect(
-    page.getByRole("main").getByText(DEMO_ORGANISATION.name),
-  ).toBeVisible();
+  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
 }
 
 test.describe("Milestone 6 closure journeys", () => {
@@ -42,14 +41,19 @@ test.describe("Milestone 6 closure journeys", () => {
     await page.getByTestId("create-schedule-link").click();
     await expect(page.getByTestId("schedule-form")).toBeVisible();
 
-    const scheduleTitle = "E2E Weekly 5S Schedule";
+    const scheduleTitle = `E2E Weekly 5S Schedule ${Date.now()}`;
     await page.getByTestId("schedule-title").fill(scheduleTitle);
     await page.getByTestId("schedule-frequency").selectOption("weekly");
     await page.getByTestId("schedule-submit").click();
 
     await expect(page).toHaveURL(/\/platform\/5s\/standards\//);
     await page.goto("/platform/schedule");
-    await expect(page.getByText(scheduleTitle).first()).toBeVisible();
+    await expect(
+      page
+        .locator('a[href^="/platform/schedule/"]')
+        .filter({ hasText: scheduleTitle })
+        .first(),
+    ).toBeVisible();
   });
 
   test("admin: upload 5S audit evidence through UI", async ({ page }) => {

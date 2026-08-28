@@ -11,7 +11,9 @@ import {
   GraduationCap,
   Home,
   Layers,
+  ListChecks,
   LogOut,
+  Settings,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -44,6 +46,9 @@ const navIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   People: Users,
   Training: GraduationCap,
   Skills: Award,
+  Setup: ListChecks,
+  Settings,
+  "Lean AI": Sparkles,
 };
 
 const sectionLabels: Record<PlatformNavSection, string | null> = {

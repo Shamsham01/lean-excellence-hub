@@ -109,6 +109,20 @@ export const platformNavigation: PlatformNavItem[] = [
   },
 ];
 
+export const setupNavigationItem: PlatformNavItem = {
+  href: "/platform/setup",
+  label: "Setup",
+  permission: "actions.read",
+  section: "main",
+};
+
+export const settingsNavigationItem: PlatformNavItem = {
+  href: "/platform/settings",
+  label: "Settings",
+  permission: "hierarchy.read",
+  section: "platform",
+};
+
 export function filterPlatformNavigation(
   grantedPermissions:
     ReadonlySet<string> | ((permissionKey: string) => boolean),

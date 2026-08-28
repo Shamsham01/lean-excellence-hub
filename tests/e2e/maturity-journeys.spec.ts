@@ -1,3 +1,4 @@
+import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { expect, test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -18,9 +19,7 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/platform/);
-  await expect(
-    page.getByRole("main").getByText(DEMO_ORGANISATION.name),
-  ).toBeVisible();
+  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
 }
 
 async function selectFirstEnabledOption(page: Page, selectId: string) {

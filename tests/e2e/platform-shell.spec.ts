@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import {
   ensurePlatformE2eUser,
   platformE2eCredentials,
@@ -28,8 +29,12 @@ test.describe("authenticated platform shell", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/platform/);
+    await expectPlatformOrganisationName(
+      page,
+      platformE2eCredentials.organisationName,
+    );
     await expect(
-      page.getByRole("main").getByText(platformE2eCredentials.organisationName),
+      page.getByRole("link", { name: "Setup", exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Actions" })).toBeVisible();
   });

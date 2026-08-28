@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import {
   DEMO_ORGANISATION,
   DEMO_USERS,
@@ -24,7 +25,7 @@ test.describe("Apex demo seed", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/platform/);
-    await expect(page.getByText(DEMO_ORGANISATION.name)).toBeVisible();
+    await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
     await expect(page.getByRole("link", { name: "Actions" })).toBeVisible();
   });
 

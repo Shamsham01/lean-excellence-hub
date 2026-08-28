@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
-import { platformNavigation } from "@/modules/platform-shell/navigation";
+import {
+  platformNavigation,
+  settingsNavigationItem,
+  setupNavigationItem,
+} from "@/modules/platform-shell/navigation";
 import {
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
@@ -58,10 +62,24 @@ export async function PlatformShell({
     }
   }
 
+  const navWithSetup = [
+    setupNavigationItem,
+    ...visibleNav.filter((item) => item.href !== "/platform/setup"),
+  ];
+
+  const canAccessSettings = true;
+
+  if (
+    canAccessSettings &&
+    !navWithSetup.some((item) => item.href === "/platform/settings")
+  ) {
+    navWithSetup.push(settingsNavigationItem);
+  }
+
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
       <PlatformSidebar
-        items={visibleNav}
+        items={navWithSetup}
         organisationName={organisationName}
         organisations={organisations}
       />

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
+import { QuickActions } from "@/components/onboarding/quick-actions";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
@@ -13,12 +15,22 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { buildQuickActions } from "@/modules/organisation-setup/readiness";
+import {
+  loadOrganisationSetupSnapshot,
+  loadSetupPermissions,
+} from "@/modules/organisation-setup/queries";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 
 export default async function PlatformHomePage() {
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentOrg = organisations.find((o) => o.selected);
+  const [setupSnapshot, setupPermissions] = await Promise.all([
+    loadOrganisationSetupSnapshot(),
+    loadSetupPermissions(),
+  ]);
+  const quickActions = buildQuickActions(setupPermissions);
 
   const { data: latestResult } = await supabase
     .from("maturity_official_results")
@@ -98,84 +110,101 @@ export default async function PlatformHomePage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title={<TimeGreeting />}
-        description={currentOrg?.organisation_name ?? "Your organisation"}
+        description={
+          currentOrg?.organisation_name ?? setupSnapshot.organisationName
+        }
+        descriptionTestId="platform-org-name"
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Maturity"
-          value={
-            latestResult ? (
-              <ScoreBadge score={Number(latestResult.overall_score)} />
-            ) : (
-              "—"
-            )
-          }
-          hint={
-            latestResult?.published_at
-              ? `Last formal: ${new Date(latestResult.published_at).toLocaleDateString("en-GB")}`
-              : "No official result"
-          }
-        />
-        <MetricCard
-          label="Open actions"
-          value={openActions ?? 0}
-          hint={`${overdueActions ?? 0} overdue`}
-        />
-        <MetricCard
-          label="Assessments"
-          value={recentAssessments?.length ?? 0}
-          hint="Recent activity"
-        />
-        <MetricCard
-          label="5S"
-          value={
-            latestFiveS?.overall_score_percent != null
-              ? `${latestFiveS.overall_score_percent}%`
-              : "—"
-          }
-          hint="Latest completed audit"
-        />
-        <MetricCard
-          label="Gemba walks"
-          value={gembaWalkCount ?? 0}
-          hint="Completed"
-        />
-        <MetricCard
-          label="Capability"
-          value={
-            capabilityObj?.training_compliance_percent != null
-              ? `${capabilityObj.training_compliance_percent}%`
-              : "—"
-          }
-          hint={
-            capabilityObj?.skill_coverage_percent != null
-              ? `Skill coverage ${capabilityObj.skill_coverage_percent}%`
-              : "Training compliance"
-          }
-        />
-        <MetricCard label="Templates" value={templateCount ?? 0} />
-        {canReadSuggestions ? (
+      <CoreSetupBanner
+        core={setupSnapshot.core}
+        nextActionHref={setupSnapshot.nextActionHref}
+        nextActionLabel={setupSnapshot.nextActionLabel}
+        compact={setupSnapshot.core.readyLabel === "ready"}
+      />
+
+      <QuickActions actions={quickActions} />
+
+      <div>
+        <h2 className="mb-4 text-base font-semibold text-foreground">
+          Your Lean system
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            label="Ideas awaiting review"
-            value={(suggestionsOverview?.awaiting_review as number) ?? 0}
-            hint={`${(suggestionsOverview?.submitted_this_month as number) ?? 0} submitted this month`}
+            label="Maturity"
+            value={
+              latestResult ? (
+                <ScoreBadge score={Number(latestResult.overall_score)} />
+              ) : (
+                "—"
+              )
+            }
+            hint={
+              latestResult?.published_at
+                ? `Last formal: ${new Date(latestResult.published_at).toLocaleDateString("en-GB")}`
+                : "No official result"
+            }
           />
-        ) : null}
-        {canReadBenefits ? (
           <MetricCard
-            label="Benefits realising"
-            value={benefitsRealising}
-            hint={`${benefitsAwaitingValidation} awaiting validation`}
+            label="Open actions"
+            value={openActions ?? 0}
+            hint={`${overdueActions ?? 0} overdue`}
           />
-        ) : null}
-        {canReadBenefits ? (
           <MetricCard
-            label="Validated benefits YTD"
-            value={formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
-            hint="Financial portfolio (allocated)"
+            label="Assessments"
+            value={recentAssessments?.length ?? 0}
+            hint="Recent activity"
           />
-        ) : null}
+          <MetricCard
+            label="5S"
+            value={
+              latestFiveS?.overall_score_percent != null
+                ? `${latestFiveS.overall_score_percent}%`
+                : "—"
+            }
+            hint="Latest completed audit"
+          />
+          <MetricCard
+            label="Gemba walks"
+            value={gembaWalkCount ?? 0}
+            hint="Completed"
+          />
+          <MetricCard
+            label="Capability"
+            value={
+              capabilityObj?.training_compliance_percent != null
+                ? `${capabilityObj.training_compliance_percent}%`
+                : "—"
+            }
+            hint={
+              capabilityObj?.skill_coverage_percent != null
+                ? `Skill coverage ${capabilityObj.skill_coverage_percent}%`
+                : "Training compliance"
+            }
+          />
+          <MetricCard label="Templates" value={templateCount ?? 0} />
+          {canReadSuggestions ? (
+            <MetricCard
+              label="Ideas awaiting review"
+              value={(suggestionsOverview?.awaiting_review as number) ?? 0}
+              hint={`${(suggestionsOverview?.submitted_this_month as number) ?? 0} submitted this month`}
+            />
+          ) : null}
+          {canReadBenefits ? (
+            <MetricCard
+              label="Benefits realising"
+              value={benefitsRealising}
+              hint={`${benefitsAwaitingValidation} awaiting validation`}
+            />
+          ) : null}
+          {canReadBenefits ? (
+            <MetricCard
+              label="Validated benefits YTD"
+              value={formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
+              hint="Financial portfolio (allocated)"
+            />
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

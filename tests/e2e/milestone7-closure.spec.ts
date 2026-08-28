@@ -1,3 +1,4 @@
+import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { expect, test, type Page } from "@playwright/test";
 
 import {
@@ -17,9 +18,7 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/platform/);
-  await expect(
-    page.getByRole("main").getByText(DEMO_ORGANISATION.name),
-  ).toBeVisible();
+  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
 }
 
 test.describe("Milestone 7 closure", () => {
@@ -42,10 +41,11 @@ test.describe("Milestone 7 closure", () => {
     await page.getByTestId("open-bulk-completion").click();
     await expect(page.getByTestId("bulk-completion-dialog")).toBeVisible();
 
-    const checkbox = page
-      .locator('[data-testid^="participant-checkbox-"]')
-      .first();
-    await checkbox.click();
+    const participantCheckboxes = page.locator(
+      '[data-testid^="participant-checkbox-"]',
+    );
+    await expect(participantCheckboxes).toHaveCount(1);
+    await participantCheckboxes.first().click();
 
     await page.getByTestId("bulk-completion-review").click();
     const bulkDialog = page.getByTestId("bulk-completion-dialog");

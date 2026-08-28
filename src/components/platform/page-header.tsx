@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 export function PageHeader({
   title,
   description,
+  descriptionTestId,
   actions,
   className,
 }: {
   title: ReactNode;
   description?: string;
+  descriptionTestId?: string;
   actions?: ReactNode;
   className?: string;
 }) {
@@ -23,7 +25,12 @@ export function PageHeader({
       <div className="flex flex-col gap-1.5">
         <h1 className="typography-page-title">{title}</h1>
         {description ? (
-          <p className="typography-page-description max-w-2xl">{description}</p>
+          <p
+            className="typography-page-description max-w-2xl"
+            data-testid={descriptionTestId}
+          >
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? (
