@@ -8174,6 +8174,32 @@ export type Database = {
           },
         ]
       }
+      role_grant_scope_policies: {
+        Row: {
+          organisation_id: string
+          role_id: string
+          scope_type: string
+        }
+        Insert: {
+          organisation_id: string
+          role_id: string
+          scope_type: string
+        }
+        Update: {
+          organisation_id?: string
+          role_id?: string
+          scope_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_grant_scope_policies_role_fkey"
+            columns: ["organisation_id", "role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
