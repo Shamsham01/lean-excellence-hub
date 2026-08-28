@@ -58,7 +58,11 @@ jobs:
       - run: npm ci
       - run: npm run db:start
       - run: npm run db:lint
-      - run: npm run test:db
+      - run: npm run test:db 2>&1 | tee /tmp/test-db.log
+      - if: failure()
+        run: |
+          echo "=== pgTAP failure tail ==="
+          tail -n 200 /tmp/test-db.log || true
       - run: npm run db:types
       - name: Confirm committed database types are current
         run: git diff --exit-code -- src/platform/supabase/database.types.ts
