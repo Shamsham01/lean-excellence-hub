@@ -679,3 +679,39 @@ using (true)
 with check (true);
 
 grant select on public.organisation_invitation_provisioning to authenticated;
+
+drop policy if exists organisation_invitation_provisioning_select
+  on public.organisation_invitation_provisioning;
+
+create policy organisation_invitation_provisioning_select
+on public.organisation_invitation_provisioning
+for select
+to authenticated
+using (
+  organisation_id = private.current_organisation_id()
+  and private.has_scoped_permission(
+    organisation_id,
+    'invitations.manage',
+    null,
+    null
+  )
+);
+
+alter function public.issue_organisation_member_invitation(
+  text, text, bytea, timestamptz, uuid, text, uuid, text, uuid, uuid
+) owner to lean_hub_private_owner;
+
+alter function public.get_delegatable_access_offers() owner to lean_hub_private_owner;
+
+alter function public.get_membership_administration_profile(uuid)
+  owner to lean_hub_private_owner;
+
+alter function public.update_organisation_membership_display_name(uuid, text)
+  owner to lean_hub_private_owner;
+
+alter function public.get_current_membership_primary_unit()
+  owner to lean_hub_private_owner;
+
+alter function private.assign_membership_job_function(
+  uuid, uuid, boolean, uuid, timestamptz, timestamptz, text
+) owner to lean_hub_private_owner;
