@@ -70,6 +70,24 @@ where user_id in (
   '93000000-0000-0000-0000-000000000003'
 );
 
+insert into public.organisation_memberships (
+  organisation_id,
+  user_id,
+  status,
+  activated_at
+)
+values (
+  (select id from hardening_ids where key = 'organisation'),
+  '93000000-0000-0000-0000-000000000002',
+  'active',
+  statement_timestamp()
+);
+
+insert into hardening_ids (key, id)
+select 'subtree_membership', id
+from public.organisation_memberships
+where user_id = '93000000-0000-0000-0000-000000000002';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"93000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"94000000-0000-0000-0000-000000000001","email":"hardening-owner@example.test"}',
@@ -160,24 +178,6 @@ select ok(
   ),
   'subtree delegate role publishes'
 );
-
-insert into public.organisation_memberships (
-  organisation_id,
-  user_id,
-  status,
-  activated_at
-)
-values (
-  (select id from hardening_ids where key = 'organisation'),
-  '93000000-0000-0000-0000-000000000002',
-  'active',
-  statement_timestamp()
-);
-
-insert into hardening_ids (key, id)
-select 'subtree_membership', id
-from public.organisation_memberships
-where user_id = '93000000-0000-0000-0000-000000000002';
 
 insert into hardening_ids (key, id)
 select 'subtree_grant', public.grant_role_version(

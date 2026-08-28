@@ -194,6 +194,12 @@ select is(
   'accepted invitation applies intended display name'
 );
 
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"91000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"92000000-0000-0000-0000-000000000001","email":"remediation-owner@example.test"}',
+  true
+);
+
 select ok(
   exists (
     select 1
@@ -207,12 +213,6 @@ select ok(
       )
   ),
   'accepted invitation applies intended primary job function assignment'
-);
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"91000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"92000000-0000-0000-0000-000000000001","email":"remediation-owner@example.test"}',
-  true
 );
 
 select ok(
