@@ -119,7 +119,7 @@ select 'provision_job_function', public.create_job_function(
 );
 
 insert into hardening_ids (key, id)
-select 'delegate_role_draft', public.create_role_draft(
+select 'delegate_role_draft', public.create_protected_role_draft(
   (select id from hardening_ids where key = 'organisation'),
   'subtree-delegate',
   'Subtree Delegate',

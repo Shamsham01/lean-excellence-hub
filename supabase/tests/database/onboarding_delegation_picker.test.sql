@@ -130,11 +130,11 @@ select 'sibling_unit', public.create_organisation_unit(
 );
 
 insert into picker_ids (key, id)
-select 'delegate_role_draft', public.create_role_draft(
+select 'delegate_role_draft', public.create_protected_role_draft(
   (select id from picker_ids where key = 'organisation'),
   'picker-delegate',
   'Picker Delegate',
-  'Delegatable role for picker tests'
+  'Delegatable protected role for picker tests'
 );
 
 select ok(
