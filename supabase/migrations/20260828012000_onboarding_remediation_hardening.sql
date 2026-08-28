@@ -518,7 +518,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
-  membership_row public.organisation_memberships%rowtype;
+  resolved_membership public.organisation_memberships%rowtype;
   profile_email text;
 begin
   if org_id is null or actor_membership_id is null then
@@ -527,7 +527,7 @@ begin
   end if;
 
   select membership_registry.*
-  into membership_row
+  into resolved_membership
   from public.organisation_memberships membership_registry
   where membership_registry.organisation_id = org_id
     and membership_registry.id = target_membership_id;
@@ -551,17 +551,17 @@ begin
   select auth_user.email
   into profile_email
   from auth.users auth_user
-  where auth_user.id = membership_row.user_id
+  where auth_user.id = resolved_membership.user_id
     and private.has_scoped_permission(org_id, 'memberships.read', null, null);
 
   return (
     select jsonb_build_object(
-      'membership_id', membership_row.id,
+      'membership_id', membership_registry.id,
       'display_name',
-        coalesce(membership_row.display_name, profile_row.display_name),
+        coalesce(membership_registry.display_name, profile_row.display_name),
       'email', profile_email,
-      'status', membership_row.status,
-      'job_title', membership_row.job_title,
+      'status', membership_registry.status,
+      'job_title', membership_registry.job_title,
       'primary_organisational_unit',
         case
           when assignment_row.organisational_unit_id is null then null
@@ -615,12 +615,12 @@ begin
         'is_self', target_membership_id = actor_membership_id
       )
     )
-    from public.organisation_memberships membership_row
+    from public.organisation_memberships membership_registry
     left join public.profiles profile_row
-      on profile_row.user_id = membership_row.user_id
+      on profile_row.user_id = membership_registry.user_id
     left join public.membership_job_function_assignments assignment_row
       on assignment_row.organisation_id = org_id
-     and assignment_row.membership_id = membership_row.id
+     and assignment_row.membership_id = membership_registry.id
      and assignment_row.is_primary = true
      and assignment_row.valid_from <= statement_timestamp()
      and (
@@ -652,12 +652,30 @@ begin
         on scope_unit.organisation_id = grant_row.organisation_id
        and scope_unit.id = grant_row.scope_unit_id
       where grant_row.organisation_id = org_id
-        and grant_row.grantee_membership_id = membership_row.id
+        and grant_row.grantee_membership_id = membership_registry.id
         and grant_row.status = 'active'
         and private.has_scoped_permission(org_id, 'roles.read', null, null)
     ) grants_json on true
-    where membership_row.organisation_id = org_id
-      and membership_row.id = target_membership_id
+    where membership_registry.organisation_id = org_id
+      and membership_registry.id = target_membership_id
   );
 end;
 $$;
+
+alter table public.organisation_invitation_provisioning force row level security;
+
+revoke all on public.organisation_invitation_provisioning
+  from public, anon, authenticated, service_role;
+
+grant select, insert, update, delete
+  on public.organisation_invitation_provisioning
+  to lean_hub_private_owner;
+
+create policy private_owner_all_organisation_invitation_provisioning
+on public.organisation_invitation_provisioning
+for all
+to lean_hub_private_owner
+using (true)
+with check (true);
+
+grant select on public.organisation_invitation_provisioning to authenticated;
