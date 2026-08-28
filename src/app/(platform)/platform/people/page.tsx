@@ -79,7 +79,9 @@ export default async function PeopleDirectoryPage() {
                   </Link>
                   {canManageMemberships ? (
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/platform/people/${person.membership_id}/admin`}>
+                      <Link
+                        href={`/platform/people/${person.membership_id}/admin`}
+                      >
                         Manage
                       </Link>
                     </Button>

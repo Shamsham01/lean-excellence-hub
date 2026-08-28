@@ -22,7 +22,9 @@ for (const width of mobileWidths) {
       await ensureOnboardingE2eOrganisation();
     });
 
-    test("menu drawer scroll reaches platform section items", async ({ page }) => {
+    test("menu drawer scroll reaches platform section items", async ({
+      page,
+    }) => {
       await page.goto("/login");
       await page.getByLabel("Email").fill(onboardingE2eCredentials.email);
       await page.getByLabel("Password").fill(onboardingE2eCredentials.password);

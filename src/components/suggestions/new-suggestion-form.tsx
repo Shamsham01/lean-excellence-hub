@@ -128,7 +128,9 @@ export function NewSuggestionForm({
             <p className="text-foreground">{blockedMessage}</p>
             {primaryUnit.canManageAssignment && primaryUnit.membershipId ? (
               <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href={`/platform/people/${primaryUnit.membershipId}/admin`}>
+                <Link
+                  href={`/platform/people/${primaryUnit.membershipId}/admin`}
+                >
                   Assign my primary work area
                 </Link>
               </Button>

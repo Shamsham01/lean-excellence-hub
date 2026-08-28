@@ -84,3 +84,87 @@ export async function assignMemberJobFunction(input: {
   revalidatePath("/platform/suggestions/new");
   return { ok: true as const };
 }
+
+export async function grantMemberAccess(input: {
+  membershipId: string;
+  roleVersionId: string;
+  scopeType: string;
+  scopeUnitId: string | null;
+}) {
+  const canDelegate = await currentMemberHasPermission("roles.delegate");
+  if (!canDelegate) {
+    return {
+      error: "You do not have permission to delegate application access.",
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: organisation } = await supabase
+    .from("organisations")
+    .select("id")
+    .maybeSingle();
+
+  if (!organisation?.id) {
+    return { error: "Unable to update application access." };
+  }
+
+  const { error } = await supabase.rpc("grant_role_version", {
+    target_organisation_id: organisation.id,
+    target_grantee_membership_id: input.membershipId,
+    target_role_version_id: input.roleVersionId,
+    target_scope_type: input.scopeType,
+    ...(input.scopeUnitId ? { target_scope_unit_id: input.scopeUnitId } : {}),
+  });
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to grant application access. Check the role and scope are within your authority.",
+      ),
+    };
+  }
+
+  revalidatePath(`/platform/people/${input.membershipId}/admin`);
+  return { ok: true as const };
+}
+
+export async function revokeMemberAccess(
+  membershipId: string,
+  grantId: string,
+) {
+  const canDelegate = await currentMemberHasPermission("roles.delegate");
+  if (!canDelegate) {
+    return {
+      error: "You do not have permission to revoke application access.",
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: organisation } = await supabase
+    .from("organisations")
+    .select("id")
+    .maybeSingle();
+
+  if (!organisation?.id) {
+    return { error: "Unable to revoke application access." };
+  }
+
+  const { error } = await supabase.rpc("revoke_access_grant", {
+    target_organisation_id: organisation.id,
+    target_grant_id: grantId,
+    change_reason: "Revoked by administrator",
+  });
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to revoke application access.",
+      ),
+    };
+  }
+
+  revalidatePath(`/platform/people/${membershipId}/admin`);
+  return { ok: true as const };
+}

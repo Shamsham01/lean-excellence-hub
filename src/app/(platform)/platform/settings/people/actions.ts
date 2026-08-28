@@ -48,8 +48,12 @@ export async function inviteColleague(input: {
       ).toISOString(),
       offered_role_version_id: input.roleVersionId,
       offered_scope_type: input.scopeType,
-      ...(input.scopeUnitId ? { offered_scope_unit_id: input.scopeUnitId } : {}),
-      ...(input.displayName ? { intended_display_name: input.displayName } : {}),
+      ...(input.scopeUnitId
+        ? { offered_scope_unit_id: input.scopeUnitId }
+        : {}),
+      ...(input.displayName
+        ? { intended_display_name: input.displayName }
+        : {}),
       ...(input.jobFunctionId
         ? { intended_job_function_id: input.jobFunctionId }
         : {}),

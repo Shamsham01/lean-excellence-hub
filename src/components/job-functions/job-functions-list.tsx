@@ -102,7 +102,10 @@ export function JobFunctionsList({
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <form onSubmit={handleCreate} data-testid="job-function-create-form">
+              <form
+                onSubmit={handleCreate}
+                data-testid="job-function-create-form"
+              >
                 <DialogHeader>
                   <DialogTitle>Add job function</DialogTitle>
                   <DialogDescription>
@@ -132,7 +135,9 @@ export function JobFunctionsList({
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="jf-description">Description (optional)</Label>
+                    <Label htmlFor="jf-description">
+                      Description (optional)
+                    </Label>
                     <Textarea
                       id="jf-description"
                       value={description}
@@ -174,7 +179,9 @@ export function JobFunctionsList({
               data-testid={`job-function-item-${jobFunction.code}`}
             >
               <p className="font-medium text-foreground">{jobFunction.name}</p>
-              <p className="text-xs text-muted-foreground">{jobFunction.code}</p>
+              <p className="text-xs text-muted-foreground">
+                {jobFunction.code}
+              </p>
               {jobFunction.description ? (
                 <p className="mt-1 text-muted-foreground">
                   {jobFunction.description}

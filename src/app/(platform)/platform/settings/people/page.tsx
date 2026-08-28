@@ -14,8 +14,9 @@ import { inviteColleague, revokeInvitation } from "./actions";
 export default async function PeopleSettingsPage() {
   const canManageInvitations =
     await currentMemberHasPermission("invitations.manage");
-  const canManageJobFunctions =
-    await currentMemberHasPermission("job_functions.manage");
+  const canManageJobFunctions = await currentMemberHasPermission(
+    "job_functions.manage",
+  );
 
   const supabase = await createServerSupabaseClient();
 
@@ -53,9 +54,9 @@ export default async function PeopleSettingsPage() {
           .order("name")
       : Promise.resolve({ data: [] }),
     canManageInvitations
-      ? supabase.from("organisation_invitation_grants").select(
-          "invitation_id, scope_type, scope_unit_id, role_version_id",
-        )
+      ? supabase
+          .from("organisation_invitation_grants")
+          .select("invitation_id, scope_type, scope_unit_id, role_version_id")
       : Promise.resolve({ data: [] }),
     canManageInvitations
       ? supabase.from("roles").select("id, display_name")
@@ -68,12 +69,13 @@ export default async function PeopleSettingsPage() {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const offers =
-    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
-      []) as DelegatableAccessOffer[];
+  const offers = ((offersData as { offers?: DelegatableAccessOffer[] } | null)
+    ?.offers ?? []) as DelegatableAccessOffer[];
 
   const roleNameByVersionId = new Map<string, string>();
-  const roleIdToName = new Map((roles ?? []).map((role) => [role.id, role.display_name]));
+  const roleIdToName = new Map(
+    (roles ?? []).map((role) => [role.id, role.display_name]),
+  );
   for (const version of roleVersions ?? []) {
     const roleName = roleIdToName.get(version.role_id);
     if (roleName) {
@@ -91,7 +93,8 @@ export default async function PeopleSettingsPage() {
   >();
   for (const grant of invitationGrants ?? []) {
     grantsByInvitation.set(grant.invitation_id, {
-      roleName: roleNameByVersionId.get(grant.role_version_id) ?? "Application access",
+      roleName:
+        roleNameByVersionId.get(grant.role_version_id) ?? "Application access",
       scopeLabel:
         grant.scope_type === "organisation"
           ? "Entire organisation"

@@ -120,7 +120,8 @@ function buildCoreItems(
           : "not_started",
       canAssess: !data.adminAssignmentUnavailable,
       canPerform: permissions.canManageJobFunctions,
-      href: permissions.currentMembershipAdminHref ?? "/platform/settings/profile",
+      href:
+        permissions.currentMembershipAdminHref ?? "/platform/settings/profile",
       helperMessage: adminHelper(
         permissions.canManageJobFunctions,
         permissions.canManageJobFunctions,

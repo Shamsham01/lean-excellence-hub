@@ -59,22 +59,14 @@ type MemberAdministrationPanelProps = {
   profile: MemberAdministrationProfile;
   units: UnitOption[];
   jobFunctions: JobFunctionOption[];
-  onUpdateDisplayName: (displayName: string) => Promise<{ error?: string; ok?: true }>;
+  onUpdateDisplayName: (
+    displayName: string,
+  ) => Promise<{ error?: string; ok?: true }>;
   onAssignJobFunction: (input: {
     jobFunctionId: string;
     organisationalUnitId: string;
   }) => Promise<{ error?: string; ok?: true }>;
 };
-
-function scopeLabel(grant: AccessGrant) {
-  if (grant.scope_type === "organisation") {
-    return "Entire organisation";
-  }
-  if (grant.scope_unit_name) {
-    return grant.scope_unit_name;
-  }
-  return grant.scope_type;
-}
 
 export function MemberAdministrationPanel({
   profile,
@@ -104,7 +96,9 @@ export function MemberAdministrationPanel({
     const result = await onUpdateDisplayName(displayName.trim());
     setMessage(
       result.error ??
-        (result.ok ? "Display name updated." : "Unable to update display name."),
+        (result.ok
+          ? "Display name updated."
+          : "Unable to update display name."),
     );
     setLoading(false);
   }
@@ -132,7 +126,10 @@ export function MemberAdministrationPanel({
   }
 
   return (
-    <div className="flex flex-col gap-8" data-testid="member-administration-panel">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="member-administration-panel"
+    >
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">Identity</h2>
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
@@ -150,7 +147,10 @@ export function MemberAdministrationPanel({
           </div>
         </dl>
         {canEditMembership ? (
-          <form onSubmit={handleSaveDisplayName} className="flex flex-col gap-3">
+          <form
+            onSubmit={handleSaveDisplayName}
+            className="flex flex-col gap-3"
+          >
             <div className="flex flex-col gap-2">
               <Label htmlFor="member-display-name">Update display name</Label>
               <Input
@@ -159,7 +159,12 @@ export function MemberAdministrationPanel({
                 onChange={(event) => setDisplayName(event.target.value)}
               />
             </div>
-            <Button type="submit" disabled={loading} size="sm" className="self-start">
+            <Button
+              type="submit"
+              disabled={loading}
+              size="sm"
+              className="self-start"
+            >
               Save display name
             </Button>
           </form>
@@ -175,17 +180,24 @@ export function MemberAdministrationPanel({
                 Primary organisation unit
               </ContextualHelpLabel>
             </dt>
-            <dd>{profile.primary_organisational_unit?.name ?? "Not assigned"}</dd>
+            <dd>
+              {profile.primary_organisational_unit?.name ?? "Not assigned"}
+            </dd>
           </div>
           <div>
             <dt className="text-muted-foreground">
-              <ContextualHelpLabel topic="job-function">Job function</ContextualHelpLabel>
+              <ContextualHelpLabel topic="job-function">
+                Job function
+              </ContextualHelpLabel>
             </dt>
             <dd>{profile.job_function?.name ?? "Not assigned"}</dd>
           </div>
         </dl>
         {canAssignJobFunction ? (
-          <form onSubmit={handleAssignJobFunction} className="flex flex-col gap-3">
+          <form
+            onSubmit={handleAssignJobFunction}
+            className="flex flex-col gap-3"
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="member-job-function">Job function</Label>
@@ -204,7 +216,9 @@ export function MemberAdministrationPanel({
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="member-primary-unit">Primary organisation unit</Label>
+                <Label htmlFor="member-primary-unit">
+                  Primary organisation unit
+                </Label>
                 <select
                   id="member-primary-unit"
                   className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
@@ -222,7 +236,12 @@ export function MemberAdministrationPanel({
                 </select>
               </div>
             </div>
-            <Button type="submit" disabled={loading} size="sm" className="self-start">
+            <Button
+              type="submit"
+              disabled={loading}
+              size="sm"
+              className="self-start"
+            >
               Save organisation assignment
             </Button>
           </form>
@@ -243,24 +262,18 @@ export function MemberAdministrationPanel({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Access</h2>
-        {profile.access_grants.length ? (
-          <ul className="flex flex-col gap-2">
-            {profile.access_grants.map((grant) => (
-              <li
-                key={grant.grant_id}
-                className="rounded-md border border-border p-3 text-sm"
-              >
-                <p className="font-medium">{grant.role_display_name}</p>
-                <p className="text-muted-foreground">{scopeLabel(grant)}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No active application access grants.
-          </p>
-        )}
+        <h2 className="text-base font-semibold">Capability</h2>
+        <p className="text-sm text-muted-foreground">
+          Training, skills, assessments, and improvement activity are managed on
+          the{" "}
+          <a
+            href={`/platform/people/${profile.membership_id}`}
+            className="underline"
+          >
+            capability profile
+          </a>
+          .
+        </p>
       </section>
 
       {message ? (

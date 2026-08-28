@@ -14,7 +14,9 @@ type ProgrammeVersionRow = {
 export default async function NewSuggestionPage() {
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
-  const currentMembershipId = organisations.find((o) => o.selected)?.membership_id;
+  const currentMembershipId = organisations.find(
+    (o) => o.selected,
+  )?.membership_id;
 
   const { data: joinedVersions, error: joinedError } = await supabase
     .from("suggestion_programme_versions")
@@ -111,7 +113,9 @@ export default async function NewSuggestionPage() {
           hasPrimaryUnit: primaryUnit?.has_primary_unit === true,
           canManageAssignment: canManageJobFunctions,
           ...(currentMembershipId ? { membershipId: currentMembershipId } : {}),
-          ...(primaryUnit?.unit_name ? { unitName: primaryUnit.unit_name } : {}),
+          ...(primaryUnit?.unit_name
+            ? { unitName: primaryUnit.unit_name }
+            : {}),
         }}
       />
     </div>

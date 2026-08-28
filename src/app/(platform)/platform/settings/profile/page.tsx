@@ -14,7 +14,9 @@ export default async function ProfileSettingsPage() {
   const claims = await supabase.auth.getClaims();
   const userId = claims.data?.claims?.sub;
   const organisations = await listEligibleOrganisations();
-  const currentMembershipId = organisations.find((o) => o.selected)?.membership_id;
+  const currentMembershipId = organisations.find(
+    (o) => o.selected,
+  )?.membership_id;
 
   const [{ data: profile }, { data: adminProfile }] = await Promise.all([
     userId
@@ -38,7 +40,8 @@ export default async function ProfileSettingsPage() {
     permissions?: { can_manage_job_functions?: boolean };
   } | null;
 
-  const canManageOwnAssignment = membership?.permissions?.can_manage_job_functions;
+  const canManageOwnAssignment =
+    membership?.permissions?.can_manage_job_functions;
 
   return (
     <div className="flex flex-col gap-8" data-testid="profile-settings-page">
@@ -80,7 +83,8 @@ export default async function ProfileSettingsPage() {
             <div>
               <dt className="text-muted-foreground">Primary work area</dt>
               <dd>
-                {membership?.primary_organisational_unit?.name ?? "Not assigned"}
+                {membership?.primary_organisational_unit?.name ??
+                  "Not assigned"}
               </dd>
             </div>
             <div className="sm:col-span-2">

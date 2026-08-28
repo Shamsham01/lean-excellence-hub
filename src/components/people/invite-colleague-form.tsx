@@ -57,7 +57,9 @@ export function InviteColleagueForm({
 }: InviteColleagueFormProps) {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [roleVersionId, setRoleVersionId] = useState(offers[0]?.role_version_id ?? "");
+  const [roleVersionId, setRoleVersionId] = useState(
+    offers[0]?.role_version_id ?? "",
+  );
   const [scopeKey, setScopeKey] = useState("");
   const [jobFunctionId, setJobFunctionId] = useState("");
   const [organisationalUnitId, setOrganisationalUnitId] = useState("");
@@ -110,7 +112,9 @@ export function InviteColleagueForm({
       setJobFunctionId("");
       setOrganisationalUnitId("");
       setSuccessUrl(result.invitationUrl ?? null);
-      setMessage("Invitation sent. Share the invitation link with your colleague.");
+      setMessage(
+        "Invitation sent. Share the invitation link with your colleague.",
+      );
     }
 
     setLoading(false);
@@ -257,7 +261,7 @@ export function InviteColleagueForm({
       ) : null}
 
       {successUrl ? (
-        <p className="break-all text-xs text-muted-foreground">
+        <p className="text-xs break-all text-muted-foreground">
           Invitation link: {successUrl}
         </p>
       ) : null}

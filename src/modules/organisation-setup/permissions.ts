@@ -10,7 +10,9 @@ import type { SetupPermissionSnapshot } from "./types";
 
 export async function loadSetupPermissions(): Promise<SetupPermissionSnapshot> {
   const organisations = await listEligibleOrganisations();
-  const currentMembershipId = organisations.find((o) => o.selected)?.membership_id;
+  const currentMembershipId = organisations.find(
+    (o) => o.selected,
+  )?.membership_id;
 
   const [
     canManageHierarchy,
