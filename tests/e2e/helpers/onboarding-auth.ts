@@ -119,7 +119,7 @@ async function resolveOrganisationId(ownerClient: SupabaseClient) {
   }
 
   const organisation = organisations?.find(
-    (entry) =>
+    (entry: { organisation_code: string; organisation_id: string }) =>
       entry.organisation_code === onboardingE2eCredentials.organisationCode,
   );
 
