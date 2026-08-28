@@ -1,1 +1,1 @@
-/workspace/src/platform/supabase/database.types.ts
+PLACEHOLDER
