@@ -1,1 +1,1 @@
-PLACEHOLDER
+__read_file__/workspace/src/platform/supabase/database.types.ts
