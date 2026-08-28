@@ -65,6 +65,7 @@ export function InviteColleagueForm({
   const [organisationalUnitId, setOrganisationalUnitId] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [successUrl, setSuccessUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const selectedOffer = offers.find(
@@ -87,6 +88,7 @@ export function InviteColleagueForm({
     setLoading(true);
     setMessage(null);
     setSuccessUrl(null);
+    setCopied(false);
 
     if (!resolvedScope) {
       setMessage("Select an access scope.");
@@ -113,11 +115,26 @@ export function InviteColleagueForm({
       setOrganisationalUnitId("");
       setSuccessUrl(result.invitationUrl ?? null);
       setMessage(
-        "Invitation sent. Share the invitation link with your colleague.",
+        "Invitation created. Share this secure link with your colleague.",
       );
     }
 
     setLoading(false);
+  }
+
+  async function handleCopyInvitationLink() {
+    if (!successUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(successUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setMessage("Unable to copy the invitation link. Copy it manually below.");
+      setCopied(false);
+    }
   }
 
   if (offers.length === 0) {
@@ -261,9 +278,20 @@ export function InviteColleagueForm({
       ) : null}
 
       {successUrl ? (
-        <p className="text-xs break-all text-muted-foreground">
-          Invitation link: {successUrl}
-        </p>
+        <div className="flex flex-col gap-2">
+          <p className="text-xs break-all text-muted-foreground">
+            Invitation link: {successUrl}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 self-start"
+            data-testid="copy-invitation-link-button"
+            onClick={() => void handleCopyInvitationLink()}
+          >
+            {copied ? "Copied" : "Copy invitation link"}
+          </Button>
+        </div>
       ) : null}
 
       <Button type="submit" disabled={loading} className="min-h-11 self-start">
