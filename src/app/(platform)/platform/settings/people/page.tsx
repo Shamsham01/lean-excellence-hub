@@ -6,7 +6,10 @@ import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  currentMemberHasDelegatableAccess,
+  currentMemberHasPermission,
+} from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import { inviteColleague, revokeInvitation } from "./actions";
@@ -14,6 +17,7 @@ import { inviteColleague, revokeInvitation } from "./actions";
 export default async function PeopleSettingsPage() {
   const canManageInvitations =
     await currentMemberHasPermission("invitations.manage");
+  const canDelegateAccess = await currentMemberHasDelegatableAccess();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
@@ -29,7 +33,7 @@ export default async function PeopleSettingsPage() {
     { data: roles },
     { data: roleVersions },
   ] = await Promise.all([
-    canManageInvitations
+    canDelegateAccess
       ? supabase.rpc("get_delegatable_access_offers")
       : Promise.resolve({ data: null }),
     canManageInvitations
@@ -114,7 +118,7 @@ export default async function PeopleSettingsPage() {
         }
       />
 
-      {canManageInvitations ? (
+      {canManageInvitations && canDelegateAccess ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Invite a colleague</CardTitle>

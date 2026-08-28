@@ -63,3 +63,14 @@ export async function currentMemberHasOrganisationScopedPermission(
 
   return result.data === true;
 }
+
+export async function currentMemberHasDelegatableAccess() {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("get_delegatable_access_offers");
+  if (result.error || !result.data) {
+    return false;
+  }
+
+  const offers = (result.data as { offers?: unknown[] } | null)?.offers ?? [];
+  return offers.length > 0;
+}

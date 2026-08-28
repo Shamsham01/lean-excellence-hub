@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(14);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -182,6 +182,15 @@ select 'subtree_grant', public.grant_role_version(
   (select id from hardening_ids where key = 'child_unit')
 );
 
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id in (
+  '93000000-0000-0000-0000-000000000002',
+  '93000000-0000-0000-0000-000000000003'
+);
+
 select ok(
   (
     select count(*) > 0
@@ -248,6 +257,22 @@ select throws_ok(
   '42501',
   null,
   'direct RPC assignment outside hierarchy.read scope fails'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from hardening_ids where key = 'subtree_membership'),
+    (select id from hardening_ids where key = 'job_function'),
+    true,
+    (select id from hardening_ids where key = 'child_unit')
+  ) is not null,
+  'unit-scoped manager can assign within permitted subtree'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"93000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"94000000-0000-0000-0000-000000000001","email":"hardening-owner@example.test"}',
+  true
 );
 
 select throws_ok(

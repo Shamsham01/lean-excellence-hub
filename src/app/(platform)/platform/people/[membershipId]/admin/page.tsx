@@ -10,7 +10,10 @@ import type { DelegatableAccessOffer } from "@/components/people/invite-colleagu
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  currentMemberHasDelegatableAccess,
+  currentMemberHasPermission,
+} from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import {
@@ -38,10 +41,8 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
   }
 
   const profile = profileData as MemberAdministrationProfile;
-  const canManageJobFunctions = await currentMemberHasPermission(
-    "job_functions.manage",
-  );
-  const canDelegateAccess = await currentMemberHasPermission("roles.delegate");
+  const canManageJobFunctions = profile.permissions.can_manage_job_functions;
+  const canDelegateAccess = await currentMemberHasDelegatableAccess();
 
   const [{ data: units }, { data: jobFunctions }, { data: offersData }] =
     await Promise.all([
