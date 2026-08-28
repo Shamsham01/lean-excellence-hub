@@ -5610,6 +5610,62 @@ export type Database = {
           },
         ]
       }
+      organisation_invitation_provisioning: {
+        Row: {
+          created_at: string
+          intended_display_name: string | null
+          intended_job_function_id: string | null
+          intended_organisational_unit_id: string | null
+          invitation_id: string
+          organisation_id: string
+        }
+        Insert: {
+          created_at?: string
+          intended_display_name?: string | null
+          intended_job_function_id?: string | null
+          intended_organisational_unit_id?: string | null
+          invitation_id: string
+          organisation_id: string
+        }
+        Update: {
+          created_at?: string
+          intended_display_name?: string | null
+          intended_job_function_id?: string | null
+          intended_organisational_unit_id?: string | null
+          invitation_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_invitation_provisioning_invitation_fkey"
+            columns: ["organisation_id", "invitation_id"]
+            isOneToOne: true
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "organisation_invitation_provisioning_job_function_fkey"
+            columns: ["organisation_id", "intended_job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "organisation_invitation_provisioning_unit_fkey"
+            columns: ["organisation_id", "intended_organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "organisation_invitation_provisioning_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_invitations: {
         Row: {
           accepted_at: string | null

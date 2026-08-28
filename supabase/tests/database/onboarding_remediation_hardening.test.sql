@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(13);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -296,6 +296,19 @@ select ok(
     where user_id = '93000000-0000-0000-0000-000000000003'
   ),
   'failed accept does not create membership'
+);
+
+select ok(
+  not exists (
+    select 1
+    from public.access_grants
+    where grantee_membership_id in (
+      select id
+      from public.organisation_memberships
+      where user_id = '93000000-0000-0000-0000-000000000003'
+    )
+  ),
+  'failed accept does not create access grants'
 );
 
 select * from finish();
