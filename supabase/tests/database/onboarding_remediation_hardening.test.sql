@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(8);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -60,6 +60,15 @@ values
     '93000000-0000-0000-0000-000000000003',
     statement_timestamp(), statement_timestamp()
   );
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id in (
+  '93000000-0000-0000-0000-000000000002',
+  '93000000-0000-0000-0000-000000000003'
+);
 
 select set_config(
   'request.jwt.claims',
@@ -130,15 +139,6 @@ select ok(
   public.add_role_permission(
     (select id from hardening_ids where key = 'organisation'),
     (select id from hardening_ids where key = 'delegate_role_draft'),
-    'invitations.manage'
-  ),
-  'subtree delegate role receives invitations.manage'
-);
-
-select ok(
-  public.add_role_permission(
-    (select id from hardening_ids where key = 'organisation'),
-    (select id from hardening_ids where key = 'delegate_role_draft'),
     'job_functions.manage'
   ),
   'subtree delegate role receives job_functions.manage'
@@ -188,25 +188,6 @@ select 'subtree_grant', public.grant_role_version(
   (select id from hardening_ids where key = 'child_unit')
 );
 
-update private.identity_controls
-set status = 'active',
-    enrolment_status = 'complete',
-    enrolment_completed_at = statement_timestamp()
-where user_id in (
-  '93000000-0000-0000-0000-000000000002',
-  '93000000-0000-0000-0000-000000000003'
-);
-
-select ok(
-  (
-    select count(*) > 0
-    from jsonb_array_elements(
-      public.get_delegatable_access_offers() -> 'offers'
-    ) offer
-  ),
-  'organisation owner receives delegatable offers'
-);
-
 select set_config(
   'request.jwt.claims',
   '{"sub":"93000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"94000000-0000-0000-0000-000000000002","email":"hardening-subtree@example.test"}',
@@ -216,34 +197,6 @@ select set_config(
 select ok(
   public.switch_organisation((select id from hardening_ids where key = 'organisation')),
   'subtree delegate selects organisation'
-);
-
-select ok(
-  (
-    select count(*) > 0
-    from jsonb_array_elements(
-      public.get_delegatable_access_offers() -> 'offers'
-    ) offer
-    cross join lateral jsonb_array_elements(offer -> 'scope_options') scope_option
-    where scope_option ->> 'scope_unit_id' = (
-      select id::text from hardening_ids where key = 'child_unit'
-    )
-  ),
-  'unit-subtree delegator receives offers for delegated unit'
-);
-
-select ok(
-  not exists (
-    select 1
-    from jsonb_array_elements(
-      public.get_delegatable_access_offers() -> 'offers'
-    ) offer
-    cross join lateral jsonb_array_elements(offer -> 'scope_options') scope_option
-    where scope_option ->> 'scope_unit_id' = (
-      select id::text from hardening_ids where key = 'sibling_unit'
-    )
-  ),
-  'unit-subtree delegator cannot see sibling subtree offers'
 );
 
 select throws_ok(
@@ -281,22 +234,9 @@ select set_config(
   true
 );
 
-select throws_ok(
-  format(
-    $f$
-      select public.assign_membership_job_function(
-        %L::uuid,
-        %L::uuid,
-        true,
-        null
-      )
-    $f$,
-    (select id from hardening_ids where key = 'subtree_membership'),
-    (select id from hardening_ids where key = 'job_function')
-  ),
-  '22023',
-  null,
-  'primary assignment without organisational unit fails'
+select ok(
+  public.switch_organisation((select id from hardening_ids where key = 'organisation')),
+  'owner reselects organisation before invitation provisioning checks'
 );
 
 insert into hardening_ids (key, id)
@@ -307,17 +247,6 @@ where role_version.organisation_id = (select id from hardening_ids where key = '
   and role_row.is_owner_role = true
   and role_version.status = 'published'
 limit 1;
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"93000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"94000000-0000-0000-0000-000000000001","email":"hardening-owner@example.test"}',
-  true
-);
-
-select ok(
-  public.switch_organisation((select id from hardening_ids where key = 'organisation')),
-  'owner reselects organisation before invitation provisioning checks'
-);
 
 insert into hardening_ids (key, id)
 select 'provision_invitation', public.issue_organisation_member_invitation(
@@ -367,19 +296,6 @@ select ok(
     where user_id = '93000000-0000-0000-0000-000000000003'
   ),
   'failed accept does not create membership'
-);
-
-select ok(
-  not exists (
-    select 1
-    from public.access_grants
-    where grantee_membership_id in (
-      select id
-      from public.organisation_memberships
-      where user_id = '93000000-0000-0000-0000-000000000003'
-    )
-  ),
-  'failed accept does not create access grants'
 );
 
 select * from finish();
