@@ -869,5 +869,3 @@ alter function private.role_version_is_delegatable_at_scope(
 ) owner to lean_hub_private_owner;
 alter function private.apply_invitation_provisioning(uuid, uuid, uuid, uuid)
   owner to lean_hub_private_owner;
-alter function private.accept_organisation_invitation(bytea)
-  owner to lean_hub_private_owner;
