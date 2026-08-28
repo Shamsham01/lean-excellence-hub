@@ -68,6 +68,39 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
 
   const displayName = profile.display_name ?? "Person";
 
+  async function updateDisplayNameAction(displayNameValue: string) {
+    "use server";
+    return updateMemberDisplayName(membershipId, displayNameValue);
+  }
+
+  async function assignJobFunctionAction(input: {
+    jobFunctionId: string;
+    organisationalUnitId: string;
+  }) {
+    "use server";
+    return assignMemberJobFunction({
+      membershipId,
+      ...input,
+    });
+  }
+
+  async function grantAccessAction(input: {
+    roleVersionId: string;
+    scopeType: string;
+    scopeUnitId: string | null;
+  }) {
+    "use server";
+    return grantMemberAccess({
+      membershipId,
+      ...input,
+    });
+  }
+
+  async function revokeAccessAction(grantId: string) {
+    "use server";
+    return revokeMemberAccess(membershipId, grantId);
+  }
+
   return (
     <div className="flex flex-col gap-8" data-testid="member-admin-page">
       <PageHeader
@@ -98,15 +131,8 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
               parent_unit_id: unit.parent_unit_id,
             }))}
             jobFunctions={jobFunctions ?? []}
-            onUpdateDisplayName={(displayNameValue) =>
-              updateMemberDisplayName(membershipId, displayNameValue)
-            }
-            onAssignJobFunction={(input) =>
-              assignMemberJobFunction({
-                membershipId,
-                ...input,
-              })
-            }
+            onUpdateDisplayName={updateDisplayNameAction}
+            onAssignJobFunction={assignJobFunctionAction}
           />
           <section className="flex flex-col gap-3 border-t border-border pt-6">
             <h2 className="text-base font-semibold">Access</h2>
@@ -118,13 +144,8 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
                 profile.permissions.can_delegate_access &&
                 !profile.permissions.is_self
               }
-              onGrant={(input) =>
-                grantMemberAccess({
-                  membershipId,
-                  ...input,
-                })
-              }
-              onRevoke={(grantId) => revokeMemberAccess(membershipId, grantId)}
+              onGrant={grantAccessAction}
+              onRevoke={revokeAccessAction}
             />
           </section>
         </CardContent>
