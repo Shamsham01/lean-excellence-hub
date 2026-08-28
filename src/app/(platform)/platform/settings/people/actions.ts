@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 import {
   createInvitationToken,
@@ -8,6 +9,10 @@ import {
 } from "@/modules/identity/invitations";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  buildInvitationUrl,
+  resolveApplicationOrigin,
+} from "@/platform/application-origin";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export async function inviteColleague(input: {
@@ -75,13 +80,17 @@ export async function inviteColleague(input: {
   revalidatePath("/platform/settings/people");
   revalidatePath("/platform/setup");
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000";
+  const originResult = resolveApplicationOrigin({
+    requestHeaders: await headers(),
+  });
+
+  if (!originResult.ok) {
+    return { error: originResult.error };
+  }
 
   return {
     ok: true as const,
-    invitationUrl: `${origin}/invitations/${token}`,
+    invitationUrl: buildInvitationUrl(originResult.origin, token),
   };
 }
 
