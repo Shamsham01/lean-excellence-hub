@@ -293,6 +293,8 @@ select throws_ok(
   'accept fails when provisioning job function is no longer active'
 );
 
+reset role;
+
 select is(
   (
     select status
