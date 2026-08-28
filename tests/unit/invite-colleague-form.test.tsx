@@ -45,9 +45,12 @@ describe("InviteColleagueForm invitation link UX", () => {
     fireEvent.change(screen.getByLabelText("Colleague email"), {
       target: { value: "colleague@example.test" },
     });
-    fireEvent.change(document.getElementById("invite-scope") as HTMLSelectElement, {
-      target: { value: "organisation::null" },
-    });
+    fireEvent.change(
+      document.getElementById("invite-scope") as HTMLSelectElement,
+      {
+        target: { value: "organisation::null" },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 
     await waitFor(() => {
