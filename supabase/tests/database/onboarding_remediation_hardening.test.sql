@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(16);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -278,9 +278,12 @@ select 'provision_invitation', public.issue_organisation_member_invitation(
   (select id from hardening_ids where key = 'child_unit')
 );
 
-update public.job_functions
-set status = 'inactive'
-where id = (select id from hardening_ids where key = 'provision_job_function');
+select ok(
+  public.deactivate_job_function(
+    (select id from hardening_ids where key = 'provision_job_function')
+  ),
+  'owner deactivates provisioning job function before invitee accept'
+);
 
 select set_config(
   'request.jwt.claims',
