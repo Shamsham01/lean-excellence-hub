@@ -5639,7 +5639,7 @@ export type Database = {
           {
             foreignKeyName: "organisation_invitation_provisioning_invitation_fkey"
             columns: ["organisation_id", "invitation_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "organisation_invitations"
             referencedColumns: ["organisation_id", "id"]
           },

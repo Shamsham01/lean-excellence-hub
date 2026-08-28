@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(13);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -81,14 +81,34 @@ insert into remediation_ids (key, id)
 select 'job_function', public.create_job_function('Team Leader', 'team-leader');
 
 insert into remediation_ids (key, id)
-select 'owner_role_version', role_version.id
-from public.role_versions role_version
-join public.roles role_row
-  on role_row.id = role_version.role_id
-where role_version.organisation_id = (select id from remediation_ids where key = 'organisation')
-  and role_row.is_owner_role = true
-  and role_version.status = 'published'
-limit 1;
+select 'member_role_draft', public.create_role_draft(
+  (select id from remediation_ids where key = 'organisation'),
+  'organisation-member',
+  'Organisation Member',
+  'Delegatable member role for remediation invitation tests'
+);
+
+select ok(
+  public.add_role_permission(
+    (select id from remediation_ids where key = 'organisation'),
+    (select id from remediation_ids where key = 'member_role_draft'),
+    'hierarchy.read'
+  ),
+  'member role receives hierarchy.read'
+);
+
+select ok(
+  public.publish_role_version(
+    (select id from remediation_ids where key = 'organisation'),
+    (select id from remediation_ids where key = 'member_role_draft')
+  ),
+  'member role publishes'
+);
+
+insert into remediation_ids (key, id)
+select 'member_role_version', id
+from remediation_ids
+where key = 'member_role_draft';
 
 select ok(
   (public.get_delegatable_access_offers() -> 'offers') is not null,
@@ -113,7 +133,7 @@ select
     'remediation-invitee@example.test',
     decode(repeat('ab', 32), 'hex'),
     statement_timestamp() + interval '7 days',
-    (select id from remediation_ids where key = 'owner_role_version'),
+    (select id from remediation_ids where key = 'member_role_version'),
     'organisation',
     null,
     'Invitee Display',

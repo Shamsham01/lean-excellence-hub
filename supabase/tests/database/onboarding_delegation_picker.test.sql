@@ -230,9 +230,8 @@ select ok(
   'member without delegate permission selects organisation'
 );
 
-select is(
-  public.get_delegatable_access_offers() -> 'offers',
-  '[]'::jsonb,
+select ok(
+  jsonb_array_length(public.get_delegatable_access_offers() -> 'offers') = 0,
   'member without delegatable scope receives empty offers'
 );
 

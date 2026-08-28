@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(15);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -240,13 +240,29 @@ select ok(
 );
 
 insert into hardening_ids (key, id)
-select 'owner_role_version', role_version.id
-from public.role_versions role_version
-join public.roles role_row on role_row.id = role_version.role_id
-where role_version.organisation_id = (select id from hardening_ids where key = 'organisation')
-  and role_row.is_owner_role = true
-  and role_version.status = 'published'
-limit 1;
+select 'member_role_draft', public.create_role_draft(
+  (select id from hardening_ids where key = 'organisation'),
+  'invited-member',
+  'Invited Member',
+  'Delegatable member role for invitation provisioning tests'
+);
+
+select ok(
+  public.add_role_permission(
+    (select id from hardening_ids where key = 'organisation'),
+    (select id from hardening_ids where key = 'member_role_draft'),
+    'hierarchy.read'
+  ),
+  'invited member role receives hierarchy.read'
+);
+
+select ok(
+  public.publish_role_version(
+    (select id from hardening_ids where key = 'organisation'),
+    (select id from hardening_ids where key = 'member_role_draft')
+  ),
+  'invited member role publishes'
+);
 
 insert into hardening_ids (key, id)
 select 'provision_invitation', public.issue_organisation_member_invitation(
@@ -254,7 +270,7 @@ select 'provision_invitation', public.issue_organisation_member_invitation(
   'hardening-invitee@example.test',
   decode(repeat('cc', 32), 'hex'),
   statement_timestamp() + interval '7 days',
-  (select id from hardening_ids where key = 'owner_role_version'),
+  (select id from hardening_ids where key = 'member_role_draft'),
   'organisation',
   null,
   'Invitee Name',
