@@ -200,19 +200,14 @@ select ok(
 );
 
 select throws_ok(
-  format(
-    $f$
-      select public.assign_membership_job_function(
-        %L::uuid,
-        %L::uuid,
-        true,
-        %L::uuid
-      )
-    $f$,
-    (select id from hardening_ids where key = 'subtree_membership'),
-    (select id from hardening_ids where key = 'job_function'),
-    (select id from hardening_ids where key = 'sibling_unit')
-  ),
+  $$
+    select public.assign_membership_job_function(
+      (select id from hardening_ids where key = 'subtree_membership'),
+      (select id from hardening_ids where key = 'job_function'),
+      true,
+      (select id from hardening_ids where key = 'sibling_unit')
+    )
+  $$,
   '42501',
   null,
   'direct RPC assignment outside hierarchy.read scope fails'

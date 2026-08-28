@@ -50,11 +50,22 @@ values
     statement_timestamp(), statement_timestamp()
   );
 
-update private.identity_controls
+insert into private.identity_controls (
+  user_id,
+  status,
+  enrolment_status,
+  enrolment_completed_at
+)
+values (
+  '91000000-0000-0000-0000-000000000002',
+  'active',
+  'complete',
+  statement_timestamp()
+)
+on conflict (user_id) do update
 set status = 'active',
     enrolment_status = 'complete',
-    enrolment_completed_at = statement_timestamp()
-where user_id = '91000000-0000-0000-0000-000000000002';
+    enrolment_completed_at = statement_timestamp();
 
 select set_config(
   'request.jwt.claims',
