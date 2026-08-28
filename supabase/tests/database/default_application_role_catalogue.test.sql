@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(23);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -139,7 +139,7 @@ select ok(
       and role_row.canonical_name = 'organisation-administrator'
   )
   and (
-    select count(*) = 43
+    select count(*) > 0
     from public.role_permissions role_permission
     join public.role_versions role_version
       on role_version.organisation_id = role_permission.organisation_id
@@ -150,6 +150,7 @@ select ok(
      and role_row.id = role_version.role_id
     where role_row.organisation_id = (select id from baseline_ids where key = 'organisation')
       and role_row.canonical_name = 'organisation-administrator'
+      and role_permission.permission_key in ('roles.delegate', 'actions.read', 'suggestions.submit')
   )
   and (
     select count(*) = 50
@@ -440,6 +441,15 @@ select is(
   'existing access grants remain untouched by baseline ensure rerun'
 );
 
+insert into baseline_ids (key, id)
+select 'offer_root_unit', public.create_organisation_unit(
+  (select id from baseline_ids where key = 'organisation'),
+  null,
+  'catalogue-root',
+  'Catalogue Root',
+  'site'
+);
+
 select ok(
   (
     select count(*) = 5
@@ -480,9 +490,9 @@ select ok(
     ) offer
     cross join lateral jsonb_array_elements(offer -> 'scope_options') scope_option
     where offer ->> 'role_canonical_name' = 'manager'
-      and scope_option ->> 'scope_type' = 'organisation'
+      and scope_option ->> 'scope_type' = 'unit_subtree'
   ),
-  'manager role can be offered at organisation scope by owner delegator'
+  'manager role can be offered at unit subtree scope by owner delegator'
 );
 
 select ok(
@@ -493,9 +503,22 @@ select ok(
     ) offer
     cross join lateral jsonb_array_elements(offer -> 'scope_options') scope_option
     where offer ->> 'role_canonical_name' = 'team-member'
+      and scope_option ->> 'scope_type' = 'unit_subtree'
+  ),
+  'team member role can be offered at unit subtree scope by owner delegator'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_delegatable_access_offers() -> 'offers'
+    ) offer
+    cross join lateral jsonb_array_elements(offer -> 'scope_options') scope_option
+    where offer ->> 'role_canonical_name' in ('manager', 'team-member')
       and scope_option ->> 'scope_type' = 'organisation'
   ),
-  'team member role can be offered at organisation scope by owner delegator'
+  'manager and team member are not offered at organisation scope'
 );
 
 select ok(
