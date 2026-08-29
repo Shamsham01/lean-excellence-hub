@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { authenticateWorkforce } from "@/modules/identity/workforce-login";
-import { requestHasTrustedOrigin } from "@/platform/application-origin";
+import {
+  buildCanonicalRedirectUrl,
+  requestHasTrustedOrigin,
+} from "@/platform/application-origin";
 import { getServerEnvironment } from "@/platform/env";
 
 export async function POST(request: Request) {
@@ -27,5 +30,7 @@ export async function POST(request: Request) {
   );
 
   const target = result.ok ? result.next : "/workforce-login?error=invalid";
-  return NextResponse.redirect(new URL(target, request.url), { status: 303 });
+  return NextResponse.redirect(buildCanonicalRedirectUrl(target, environment), {
+    status: 303,
+  });
 }

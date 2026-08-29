@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   APPLICATION_ORIGIN_CONFIGURATION_ERROR,
+  buildCanonicalRedirectUrl,
   buildInvitationUrl,
+  canonicalApplicationRedirectOrigin,
   deriveApplicationOriginFromHeaders,
   isLocalApplicationOrigin,
   requestHasTrustedOrigin,
@@ -92,6 +94,25 @@ describe("application origin resolution", () => {
 });
 
 describe("application origin helpers", () => {
+  it("builds canonical redirect URLs from APP_ORIGIN", () => {
+    const environment = {
+      APP_ORIGIN: "https://leanexcellencehub.com/",
+    };
+
+    expect(canonicalApplicationRedirectOrigin(environment)).toBe(
+      "https://leanexcellencehub.com",
+    );
+    expect(
+      buildCanonicalRedirectUrl("/update-password", environment).toString(),
+    ).toBe("https://leanexcellencehub.com/update-password");
+    expect(
+      buildCanonicalRedirectUrl(
+        "/workforce-login?error=invalid",
+        environment,
+      ).toString(),
+    ).toBe("https://leanexcellencehub.com/workforce-login?error=invalid");
+  });
+
   it("identifies local application origins", () => {
     expect(isLocalApplicationOrigin("http://localhost:3000")).toBe(true);
     expect(isLocalApplicationOrigin("http://127.0.0.1:3000")).toBe(true);
