@@ -18,6 +18,19 @@ export function normalizeApplicationOrigin(origin: string): string {
   return origin.replace(/\/$/, "");
 }
 
+export function canonicalApplicationRedirectOrigin(
+  environment: Pick<ServerEnvironment, "APP_ORIGIN">,
+): string {
+  return normalizeApplicationOrigin(environment.APP_ORIGIN);
+}
+
+export function buildCanonicalRedirectUrl(
+  path: string,
+  environment: Pick<ServerEnvironment, "APP_ORIGIN">,
+): URL {
+  return new URL(path, canonicalApplicationRedirectOrigin(environment));
+}
+
 export function isLocalApplicationOrigin(origin: string): boolean {
   try {
     return LOCAL_HOSTNAMES.has(new URL(origin).hostname);
