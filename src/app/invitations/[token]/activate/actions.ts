@@ -5,10 +5,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import {
-  invitationPathFromToken,
+  invitationContinuePath,
   INVITATION_TOKEN_PATTERN,
 } from "@/modules/identity/invitation-constants";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
+import { invitationTokenDigest } from "@/modules/identity/invitations";
 import { passwordUpdateSchema } from "@/modules/identity/auth-input";
 import { resolveApplicationOrigin } from "@/platform/application-origin";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -87,15 +88,25 @@ export async function createInvitationAccount(formData: FormData) {
     return { error: originResult.error };
   }
 
-  const invitationPath = invitationPathFromToken(parsed.data.token);
   const supabase = await createServerSupabaseClient();
+  const { data: bindingId, error: bindingError } = await supabase.rpc(
+    "prepare_organisation_invitation_signup_binding",
+    {
+      invitation_token_digest: invitationTokenDigest(parsed.data.token),
+    },
+  );
+
+  if (bindingError || !bindingId) {
+    return { error: "This invitation is no longer available." };
+  }
+
   const { error } = await supabase.auth.signUp({
     email: lifecycle.recipientEmail,
     password: parsed.data.password,
     options: {
       emailRedirectTo: `${originResult.origin}/auth/confirm`,
       data: {
-        invitation_continue: invitationPath,
+        invitation_signup_binding: bindingId,
       },
     },
   });
@@ -104,7 +115,10 @@ export async function createInvitationAccount(formData: FormData) {
     return { error: mapSignupError(error.message) };
   }
 
-  return { ok: true as const };
+  return {
+    ok: true as const,
+    continuePath: invitationContinuePath(bindingId),
+  };
 }
 
 export async function ensureActivationAllowed(token: string) {

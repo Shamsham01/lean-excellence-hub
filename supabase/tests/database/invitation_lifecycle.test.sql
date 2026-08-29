@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(34);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -40,6 +40,12 @@ values
   (
     '95000000-0000-0000-0000-000000000006',
     'expired-invitee@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    '95000000-0000-0000-0000-000000000009',
+    'duplicate-invitee@example.test',
     statement_timestamp(), statement_timestamp(), statement_timestamp(),
     '{"provider":"email","providers":["email"]}', '{}', false, false
   );
@@ -449,25 +455,94 @@ select throws_ok(
 reset role;
 set local role postgres;
 
+insert into lifecycle_ids (key, id)
+select
+  'duplicate_signup_binding',
+  public.prepare_organisation_invitation_signup_binding(
+    decode(repeat('11', 32), 'hex')
+  );
+
 select ok(
   public.hook_require_invitation_for_signup(
     jsonb_build_object(
-      'user', jsonb_build_object('email', 'duplicate-invitee@example.test')
+      'user', jsonb_build_object(
+        'id', '95000000-0000-0000-0000-000000000009',
+        'email', 'duplicate-invitee@example.test',
+        'user_metadata', jsonb_build_object(
+          'invitation_signup_binding',
+          (select id::text from lifecycle_ids where key = 'duplicate_signup_binding')
+        )
+      )
     )
   ) = '{}'::jsonb,
-  'signup hook allows email with pending invitation'
+  'signup hook allows exact invitation binding for recipient'
 );
 
 select ok(
   public.hook_require_invitation_for_signup(
     jsonb_build_object(
-      'user', jsonb_build_object('email', 'orphan@example.test')
+      'user', jsonb_build_object(
+        'email', 'duplicate-invitee@example.test'
+      )
+    )
+  ) ? 'error',
+  'signup hook rejects email-only signup without binding proof'
+);
+
+select ok(
+  public.hook_require_invitation_for_signup(
+    jsonb_build_object(
+      'user', jsonb_build_object(
+        'id', '95000000-0000-0000-0000-000000000004',
+        'email', 'orphan@example.test',
+        'user_metadata', jsonb_build_object(
+          'invitation_signup_binding',
+          (select id::text from lifecycle_ids where key = 'duplicate_signup_binding')
+        )
+      )
+    )
+  ) ? 'error',
+  'signup hook rejects binding proof for a different recipient email'
+);
+
+select ok(
+  public.hook_require_invitation_for_signup(
+    jsonb_build_object(
+      'user', jsonb_build_object(
+        'email', 'orphan@example.test'
+      )
     )
   ) ? 'error',
   'signup hook rejects email without pending invitation'
 );
 
+select ok(
+  (
+    public.resolve_organisation_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'duplicate_signup_binding')
+    ) ->> 'state'
+  ) = 'invalid',
+  'unauthenticated binding resolution stays invalid'
+);
+
 set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000009","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000009","email":"duplicate-invitee@example.test"}',
+  true
+);
+
+select ok(
+  (
+    public.resolve_organisation_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'duplicate_signup_binding')
+    ) ->> 'session_state'
+  ) = 'ready_to_accept',
+  'authenticated recipient resolves signup binding to ready_to_accept'
+);
+
+reset role;
+set local role postgres;
 select set_config(
   'request.jwt.claims',
   '{"sub":"95000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000001","email":"lifecycle-owner@example.test"}',

@@ -257,6 +257,24 @@ export async function loadInvitationLifecycle(
   return mapPreviewPayload(data as Record<string, unknown> | null);
 }
 
+export async function loadInvitationSignupBinding(
+  bindingId: string,
+): Promise<InvitationLifecycleView> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "resolve_organisation_invitation_signup_binding",
+    {
+      target_binding_id: bindingId,
+    },
+  );
+
+  if (error) {
+    return { state: "invalid" };
+  }
+
+  return mapPreviewPayload(data as Record<string, unknown> | null);
+}
+
 export function invitationLoginPath(token: string) {
   return `/login?next=${encodeURIComponent(invitationPathFromToken(token))}`;
 }

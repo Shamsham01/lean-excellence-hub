@@ -4,15 +4,26 @@ import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
+import { invitationContinuePath } from "@/modules/identity/invitation-constants";
 import type { InvitationLifecycleView } from "@/modules/identity/invitation-lifecycle";
 
-type InvitationAcceptanceCardProps = {
-  token: string;
-  lifecycle: InvitationLifecycleView;
-  loginPath: string;
-  activatePath: string;
-  acceptAction: (formData: FormData) => Promise<void>;
-};
+type InvitationAcceptanceCardProps =
+  | {
+      token: string;
+      bindingId?: undefined;
+      lifecycle: InvitationLifecycleView;
+      loginPath: string;
+      activatePath: string;
+      acceptAction: (formData: FormData) => Promise<void>;
+    }
+  | {
+      token?: undefined;
+      bindingId: string;
+      lifecycle: InvitationLifecycleView;
+      loginPath?: undefined;
+      activatePath?: undefined;
+      acceptAction: (formData: FormData) => Promise<void>;
+    };
 
 function InvitationDetails({
   lifecycle,
@@ -67,13 +78,13 @@ function InvitationDetails({
   );
 }
 
-export function InvitationAcceptanceCard({
-  token,
-  lifecycle,
-  loginPath,
-  activatePath,
-  acceptAction,
-}: InvitationAcceptanceCardProps) {
+export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
+  const { lifecycle, acceptAction } = props;
+  const signOutNext =
+    props.bindingId !== undefined
+      ? invitationContinuePath(props.bindingId)
+      : `/invitations/${props.token}`;
+
   if (lifecycle.state === "invalid") {
     return (
       <AuthCard
@@ -160,7 +171,7 @@ export function InvitationAcceptanceCard({
           invitation.
         </p>
         <form action="/auth/signout" method="post">
-          <input type="hidden" name="next" value={`/invitations/${token}`} />
+          <input type="hidden" name="next" value={signOutNext} />
           <Button type="submit" className="w-full">
             Sign out and continue
           </Button>
@@ -215,11 +226,29 @@ export function InvitationAcceptanceCard({
       >
         <InvitationDetails lifecycle={lifecycle} />
         <form action={acceptAction} className="flex flex-col gap-4">
-          <input type="hidden" name="token" value={token} />
+          {props.bindingId !== undefined ? (
+            <input type="hidden" name="bindingId" value={props.bindingId} />
+          ) : (
+            <input type="hidden" name="token" value={props.token} />
+          )}
           <Button type="submit" className="w-full">
             Accept invitation
           </Button>
         </form>
+      </AuthCard>
+    );
+  }
+
+  if (props.bindingId !== undefined) {
+    return (
+      <AuthCard
+        title="Invitation unavailable"
+        description="Sign in with the invited account to continue."
+      >
+        <InvitationDetails lifecycle={lifecycle} />
+        <Button asChild className="w-full">
+          <Link href="/login">Sign in</Link>
+        </Button>
       </AuthCard>
     );
   }
@@ -238,13 +267,13 @@ export function InvitationAcceptanceCard({
       <InvitationDetails lifecycle={lifecycle} />
       <div className="flex flex-col gap-3">
         <Button asChild className="w-full">
-          <Link href={activatePath}>Create my account</Link>
+          <Link href={props.activatePath}>Create my account</Link>
         </Button>
         <div className="text-center text-sm text-muted-foreground">
           Already have an account?
         </div>
         <Button variant="outline" asChild className="w-full">
-          <Link href={loginPath}>Sign in</Link>
+          <Link href={props.loginPath}>Sign in</Link>
         </Button>
       </div>
     </AuthCard>

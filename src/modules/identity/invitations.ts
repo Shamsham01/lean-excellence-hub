@@ -16,6 +16,7 @@ export async function acceptInvitation(token: string) {
   }
 
   const supabase = await createServerSupabaseClient();
+  await supabase.auth.refreshSession();
   const { data, error } = await supabase.rpc("accept_organisation_invitation", {
     invitation_token_digest: invitationTokenDigest(token),
   });

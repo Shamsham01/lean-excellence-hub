@@ -261,3 +261,46 @@ export async function createOnboardingOrgAdminClient(
 
   return client;
 }
+
+export async function prepareInvitationSignupBinding(token: string) {
+  const { url, publishableKey } = getInvitationLifecycleClients();
+  const client = createClient(url, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const digest = invitationTokenDigest(token);
+  const { data, error } = await client.rpc(
+    "prepare_organisation_invitation_signup_binding",
+    {
+      invitation_token_digest: digest,
+    },
+  );
+  if (error || !data) {
+    throw error ?? new Error("Unable to prepare invitation signup binding");
+  }
+  return data as string;
+}
+
+export async function attemptDirectSignupForEmail(input: {
+  email: string;
+  password: string;
+}) {
+  const { url, publishableKey } = getInvitationLifecycleClients();
+  const client = createClient(url, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return client.auth.signUp({
+    email: input.email,
+    password: input.password,
+  });
+}
+
+export async function fetchInvitationSignupBindingForEmail(email: string) {
+  const { admin } = getInvitationLifecycleClients();
+  const users = await admin.auth.admin.listUsers();
+  const user = users.data.users.find((entry) => entry.email === email);
+  const bindingId = user?.user_metadata?.invitation_signup_binding;
+  if (typeof bindingId !== "string") {
+    throw new Error(`No invitation signup binding found for ${email}`);
+  }
+  return bindingId;
+}
