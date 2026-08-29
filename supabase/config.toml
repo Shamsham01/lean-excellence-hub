@@ -297,6 +297,15 @@ max_frequency = "5s"
 enabled = true
 uri = "pg-functions://postgres/public/hook_require_invitation_for_signup"
 
+# Custom auth email delivery via Edge Function + Resend.
+# Enable only when testing locally with:
+#   supabase functions serve send-email --no-verify-jwt
+# and secrets in supabase/functions/.env (see docs/development/custom-auth-email-delivery.md).
+# [auth.hook.send_email]
+# enabled = true
+# uri = "http://host.docker.internal:54321/functions/v1/send-email"
+# secrets = "env(SEND_EMAIL_HOOK_SECRET)"
+
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]
 # enabled = true
@@ -396,6 +405,11 @@ enabled = false
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
+
+# Resend-backed auth email delivery. JWT verification is disabled because Supabase Auth
+# calls this function through the Send Email Hook using Standard Webhooks signatures.
+[functions.send-email]
+verify_jwt = false
 
 [edge_runtime]
 enabled = true
