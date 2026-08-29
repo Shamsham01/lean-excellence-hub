@@ -203,21 +203,33 @@ export type WorkforceProvisionedUserState = {
   unit_name: string | null;
 };
 
-export function lookupCompletedWorkforceInternalLogin(
-  organisationId: string,
+export async function lookupWorkforceInternalLogin(
+  organisationCode: string,
   canonicalAlias: string,
-): string | null {
-  const rows = queryDatabase<{ sealed_internal_login_identifier: string }>(`
-    select sealed_internal_login_identifier
-    from public.workforce_provision_intents
-    where organisation_id = '${organisationId}'
-      and target_canonical_alias = '${canonicalAlias}'
-      and status = 'completed'
-    order by consumed_at desc nulls last
-    limit 1
-  `);
+): Promise<string | null> {
+  const client = createServiceRoleClient();
 
-  return rows[0]?.sealed_internal_login_identifier ?? null;
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    const { data, error } = await client.rpc("resolve_workforce_login", {
+      organisation_code: organisationCode,
+      workforce_alias: canonicalAlias,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const row = (
+      (data ?? []) as Array<{ internal_login_identifier: string }>
+    )[0];
+    if (row?.internal_login_identifier) {
+      return row.internal_login_identifier;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+
+  return null;
 }
 
 export async function lookupWorkforceProvisionedUser(

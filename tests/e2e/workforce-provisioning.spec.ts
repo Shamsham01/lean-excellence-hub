@@ -4,7 +4,7 @@ import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import {
   assertTemporaryPasswordNotPersisted,
   createAuthenticatedClient,
-  lookupCompletedWorkforceInternalLogin,
+  lookupWorkforceInternalLogin,
   lookupWorkforceProvisionedUser,
   memberHasPermission,
   resolveDemoOrganisationId,
@@ -134,8 +134,8 @@ test.describe("M1 workforce provisioning", () => {
     await page.getByRole("button", { name: "Update password" }).click();
     await expect(page).toHaveURL(/\/platform/);
 
-    const internalLogin = lookupCompletedWorkforceInternalLogin(
-      organisationId,
+    const internalLogin = await lookupWorkforceInternalLogin(
+      organisationCode,
       workforceUsername,
     );
     expect(internalLogin).not.toBeNull();
