@@ -49,3 +49,18 @@ test("workforce credential POST rejects a missing same-origin proof", async ({
   });
   expect(response.status()).toBe(403);
 });
+
+test("workforce HTML form submission is not blocked by the origin guard", async ({
+  page,
+}) => {
+  await page.goto("/workforce-login");
+  await page.getByLabel("Organisation code").fill("apex-manufacturing");
+  await page.getByLabel("Workforce ID or username").fill("missing.user");
+  await page.getByLabel("Password").fill("not-a-real-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page).toHaveURL(/\/workforce-login\?error=invalid/);
+  await expect(
+    page.getByText("Unable to sign in with those credentials."),
+  ).toBeVisible();
+});

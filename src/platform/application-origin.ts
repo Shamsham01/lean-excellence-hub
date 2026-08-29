@@ -104,24 +104,49 @@ function localOriginsMatch(actual: string, expected: string): boolean {
   }
 }
 
+function isSameOriginHtmlFormNavigation(
+  request: Pick<Request, "headers">,
+): boolean {
+  const origin = request.headers.get("origin");
+  if (origin !== null && origin !== "null") {
+    return false;
+  }
+
+  if (request.headers.get("referer")) {
+    return false;
+  }
+
+  return (
+    request.headers.get("sec-fetch-site") === "same-origin" &&
+    request.headers.get("sec-fetch-mode") === "navigate" &&
+    request.headers.get("sec-fetch-dest") === "document"
+  );
+}
+
 export function requestHasTrustedOrigin(
   request: Pick<Request, "headers">,
   environment: Pick<ServerEnvironment, "APP_ORIGIN">,
 ): boolean {
   const expectedOrigin = new URL(environment.APP_ORIGIN).origin;
   const origin = request.headers.get("origin");
-  if (origin && localOriginsMatch(origin, expectedOrigin)) {
+  if (
+    origin &&
+    origin !== "null" &&
+    localOriginsMatch(origin, expectedOrigin)
+  ) {
     return true;
   }
 
   const referer = request.headers.get("referer");
-  if (!referer) {
-    return false;
+  if (referer) {
+    try {
+      if (localOriginsMatch(new URL(referer).origin, expectedOrigin)) {
+        return true;
+      }
+    } catch {
+      // Fall through to additional checks.
+    }
   }
 
-  try {
-    return localOriginsMatch(new URL(referer).origin, expectedOrigin);
-  } catch {
-    return false;
-  }
+  return isSameOriginHtmlFormNavigation(request);
 }
