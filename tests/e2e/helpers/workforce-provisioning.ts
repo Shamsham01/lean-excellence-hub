@@ -369,10 +369,27 @@ export async function submitWorkforceLogin(
   },
 ) {
   await page.goto("/workforce-login");
-  await page.getByLabel("Organisation code").fill(input.organisationCode);
-  await page.getByLabel("Workforce ID or username").fill(input.workforceAlias);
-  await page.getByLabel("Password").fill(input.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  const response = await page.request.post("/api/auth/workforce", {
+    form: {
+      organisationCode: input.organisationCode,
+      workforceAlias: input.workforceAlias,
+      password: input.password,
+    },
+    headers: {
+      Origin: "http://127.0.0.1:3000",
+    },
+    maxRedirects: 0,
+  });
+
+  const location = response.headers().location;
+  if (!location) {
+    throw new Error(
+      `Workforce login did not redirect (${response.status()}): ${await response.text()}`,
+    );
+  }
+
+  const redirectPath = new URL(location, "http://127.0.0.1:3000");
+  await page.goto(`${redirectPath.pathname}${redirectPath.search}`);
   await page.waitForLoadState("networkidle");
 }
 
