@@ -79,6 +79,7 @@ jobs:
         run: |
           eval "$(npx supabase status -o env)"
           export E2E_WITH_SUPABASE=1
+          export SUPABASE_DB_URL="$DB_URL"
           export APP_ORIGIN=http://127.0.0.1:3000
           export AUTH_RATE_LIMIT_PEPPER=ci-only-pepper-that-is-at-least-32-characters
           export AI_ENABLED=1
