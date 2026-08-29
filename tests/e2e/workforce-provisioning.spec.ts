@@ -32,13 +32,13 @@ test.describe("M1 workforce provisioning", () => {
   test("admin creates a workforce user and receives one-time credentials", async ({
     page,
   }) => {
-    organisationId = await resolveDemoOrganisationId();
-
     await page.goto("/login");
     await page.getByLabel("Email").fill(workforceProvisioningAdmin.email);
     await page.getByLabel("Password").fill(workforceProvisioningAdmin.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/platform/);
+
+    organisationId = await resolveDemoOrganisationId();
 
     await page.goto("/platform/settings/people/create");
     await expect(page.getByTestId("create-workforce-user-form")).toBeVisible();

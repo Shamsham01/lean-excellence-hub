@@ -131,19 +131,33 @@ export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
 }
 
 export async function resolveDemoOrganisationId(): Promise<string> {
-  const sql =
-    "select id from public.organisations where code = 'apex-manufacturing' limit 1";
+  const client = createPublishableClient();
+  const { error: signInError } = await client.auth.signInWithPassword({
+    email: DEMO_USERS.admin.email,
+    password: DEMO_USERS.admin.password,
+  });
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const rows = queryDatabase<{ id: string }>(sql);
-    if (rows[0]?.id) {
-      return rows[0].id;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  if (signInError) {
+    throw signInError;
   }
 
-  throw new Error("Demo organisation not found.");
+  const { data, error } = await client.rpc("list_my_eligible_organisations");
+  if (error) {
+    throw error;
+  }
+
+  const organisation = (
+    (data ?? []) as Array<{
+      organisation_id: string;
+      organisation_code: string;
+    }>
+  ).find((row) => row.organisation_code === "apex-manufacturing");
+
+  if (!organisation?.organisation_id) {
+    throw new Error("Demo organisation not found.");
+  }
+
+  return organisation.organisation_id;
 }
 
 export type WorkforceProvisionedUserState = {
