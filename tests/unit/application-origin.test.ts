@@ -162,4 +162,135 @@ describe("application origin helpers", () => {
       ),
     ).toBe(false);
   });
+
+  it("accepts same-origin HTML form navigation with Origin null and fetch metadata", () => {
+    const environment = {
+      APP_ORIGIN: "https://leanexcellencehub.com",
+    };
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(true);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects unsafe Origin null and missing fetch-metadata workforce login attempts", () => {
+    const environment = {
+      APP_ORIGIN: "https://leanexcellencehub.com",
+    };
+    const sameOriginNavigation = {
+      "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-dest": "document",
+    } as const;
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "cross-site",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "none",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "document",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "empty",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce"),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            origin: "https://evil.example",
+            ...sameOriginNavigation,
+          },
+        }),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("https://leanexcellencehub.com/api/auth/workforce", {
+          headers: {
+            referer: "https://evil.example/workforce-login",
+            ...sameOriginNavigation,
+          },
+        }),
+        environment,
+      ),
+    ).toBe(false);
+  });
 });
