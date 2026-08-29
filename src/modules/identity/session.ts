@@ -23,12 +23,36 @@ export async function requireClaims() {
   return data.claims;
 }
 
-export async function routeAfterAuthentication() {
+async function readIdentityState(): Promise<IdentityState | null> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("current_identity_state");
-  const identity = (data?.[0] ?? null) as IdentityState | null;
+  if (error || !data?.[0]) {
+    return null;
+  }
 
-  if (error || !identity || identity.identity_status !== "active") {
+  return data[0] as IdentityState;
+}
+
+export async function requirePlatformAccess() {
+  await requireClaims();
+  const identity = await readIdentityState();
+
+  if (!identity || identity.identity_status !== "active") {
+    redirect("/no-access");
+  }
+
+  if (
+    identity.password_change_required ||
+    identity.enrolment_status === "password_change_required"
+  ) {
+    redirect("/update-password");
+  }
+}
+
+export async function routeAfterAuthentication() {
+  const identity = await readIdentityState();
+
+  if (!identity || identity.identity_status !== "active") {
     redirect("/no-access");
   }
 

@@ -1,5 +1,6 @@
 {
   "imports": {
+    "@workforce/password": "./_shared/workforce-provision/temporary-password.ts",
     "resend": "npm:resend@4.8.0",
     "standardwebhooks": "npm:standardwebhooks@1.0.0"
   }

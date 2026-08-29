@@ -1,11 +1,14 @@
-import { buildAuthConfirmUrl, resolveTokenHashForAction } from "./confirm-url";
-import { validateApplicationOrigin } from "./origin";
+import {
+  buildAuthConfirmUrl,
+  resolveTokenHashForAction,
+} from "./confirm-url.ts";
+import { validateApplicationOrigin } from "./origin.ts";
 import {
   renderGenericConfirmEmail,
   renderRecoveryEmail,
   renderSignupConfirmationEmail,
-} from "./templates";
-import type { AuthEmailBuildResult, SendEmailHookPayload } from "./types";
+} from "./templates.ts";
+import type { AuthEmailBuildResult, SendEmailHookPayload } from "./types.ts";
 
 export function buildAuthEmailDelivery(
   payload: SendEmailHookPayload,

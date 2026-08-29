@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { requireClaims } from "@/modules/identity/session";
+import { requirePlatformAccess } from "@/modules/identity/session";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function PlatformLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await requireClaims();
+  await requirePlatformAccess();
   const supabase = await createServerSupabaseClient();
   const orgId = await supabase.rpc("current_organisation_id");
   if (orgId.error || !orgId.data) {
