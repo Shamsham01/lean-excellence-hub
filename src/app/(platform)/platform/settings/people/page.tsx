@@ -12,7 +12,11 @@ import {
 } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-import { inviteColleague, revokeInvitation } from "./actions";
+import {
+  inviteColleague,
+  reissueInvitation,
+  revokeInvitation,
+} from "./actions";
 
 export default async function PeopleSettingsPage() {
   const canManageInvitations =
@@ -179,6 +183,7 @@ export default async function PeopleSettingsPage() {
                   };
                 })}
                 onRevoke={revokeInvitation}
+                onReissue={reissueInvitation}
               />
             )}
           </CardContent>

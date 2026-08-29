@@ -1,10 +1,13 @@
 import Link from "next/link";
 
-import { login } from "./actions";
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isInvitationPath } from "@/modules/identity/invitation-constants";
+import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
+
+import { login } from "./actions";
 
 export default async function LoginPage({
   searchParams,
@@ -12,13 +15,31 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const { error, next } = await searchParams;
+  const invitationToken = isInvitationPath(next)
+    ? (next?.replace(/^\/invitations\//, "").split("?")[0] ?? "")
+    : null;
+  const invitationPreview = invitationToken
+    ? await loadInvitationLifecycle(invitationToken)
+    : null;
 
   return (
     <AuthCard
       title="Sign in"
-      description="Choose how you want to access your organisation."
+      description={
+        invitationPreview?.organisationName
+          ? `Sign in to accept your invitation to ${invitationPreview.organisationName}.`
+          : "Choose how you want to access your organisation."
+      }
       footer={
         <div className="flex flex-col gap-2 text-center text-sm">
+          {invitationToken ? (
+            <Link
+              href={`/invitations/${invitationToken}/activate`}
+              className="text-primary hover:underline"
+            >
+              Create an account from your invitation
+            </Link>
+          ) : null}
           <Link
             href="/workforce-login"
             className="text-primary hover:underline"
@@ -51,6 +72,8 @@ export default async function LoginPage({
             name="email"
             type="email"
             autoComplete="email"
+            defaultValue={invitationPreview?.recipientEmail ?? undefined}
+            readOnly={Boolean(invitationPreview?.recipientEmail)}
             required
           />
         </div>

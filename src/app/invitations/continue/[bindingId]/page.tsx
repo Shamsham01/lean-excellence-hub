@@ -2,15 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { InvitationAcceptanceCard } from "@/components/invitations/invitation-acceptance-card";
-import {
-  invitationActivatePath,
-  invitationLoginPath,
-  loadInvitationLifecycle,
-} from "@/modules/identity/invitation-lifecycle";
-import { INVITATION_TOKEN_PATTERN } from "@/modules/identity/invitation-constants";
-import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { isInvitationSignupBindingId } from "@/modules/identity/invitation-constants";
+import { loadInvitationSignupBinding } from "@/modules/identity/invitation-lifecycle";
 
-import { accept } from "./actions";
+import { acceptBinding } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,33 +15,28 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function InvitationPage({
+export default async function InvitationContinuePage({
   params,
   searchParams,
 }: {
-  params: Promise<{ token: string }>;
+  params: Promise<{ bindingId: string }>;
   searchParams: Promise<{ accept_error?: string }>;
 }) {
-  const [{ token }, { accept_error: acceptError }] = await Promise.all([
+  const [{ bindingId }, { accept_error: acceptError }] = await Promise.all([
     params,
     searchParams,
   ]);
-  if (!INVITATION_TOKEN_PATTERN.test(token)) {
+
+  if (!isInvitationSignupBindingId(bindingId)) {
     redirect("/login");
   }
 
-  const supabase = await createServerSupabaseClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const isAuthenticated = Boolean(userData.user?.id);
-
-  const lifecycle = await loadInvitationLifecycle(token, {
-    authenticated: isAuthenticated,
-  });
+  const lifecycle = await loadInvitationSignupBinding(bindingId);
 
   return (
     <main
       className="flex min-h-dvh items-center justify-center bg-background px-4 py-12"
-      data-testid="invitation-page"
+      data-testid="invitation-continue-page"
     >
       <div className="w-full max-w-md">
         {acceptError && lifecycle.sessionState === "ready_to_accept" ? (
@@ -56,11 +46,9 @@ export default async function InvitationPage({
           </p>
         ) : null}
         <InvitationAcceptanceCard
-          token={token}
+          bindingId={bindingId}
           lifecycle={lifecycle}
-          loginPath={invitationLoginPath(token)}
-          activatePath={invitationActivatePath(token)}
-          acceptAction={accept}
+          acceptAction={acceptBinding}
         />
       </div>
     </main>

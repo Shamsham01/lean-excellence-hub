@@ -5666,6 +5666,50 @@ export type Database = {
           },
         ]
       }
+      organisation_invitation_signup_bindings: {
+        Row: {
+          auth_user_id: string | null
+          canonical_recipient: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invalidated_at: string | null
+          invalidation_reason: string | null
+          invitation_id: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          canonical_recipient: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          invitation_id: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          canonical_recipient?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          invitation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_invitation_signup_bindings_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_invitations: {
         Row: {
           accepted_at: string | null
@@ -10573,6 +10617,10 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: string
       }
+      accept_organisation_invitation_signup_binding: {
+        Args: { target_binding_id: string }
+        Returns: string
+      }
       activate_problem_solving_case: {
         Args: { target_case_id: string; target_method_id: string }
         Returns: boolean
@@ -11871,6 +11919,10 @@ export type Database = {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
       }
+      hook_require_invitation_for_signup: {
+        Args: { event: Json }
+        Returns: Json
+      }
       initiate_attachment_upload: {
         Args: {
           target_byte_size: number
@@ -12028,6 +12080,14 @@ export type Database = {
       move_problem_solving_stage: {
         Args: { target_case_id: string; target_stage_id: string }
         Returns: boolean
+      }
+      prepare_organisation_invitation_signup_binding: {
+        Args: { invitation_token_digest: string }
+        Returns: string
+      }
+      preview_organisation_invitation: {
+        Args: { invitation_token_digest: string }
+        Returns: Json
       }
       provision_organisation: {
         Args: {
@@ -12230,6 +12290,14 @@ export type Database = {
         }
         Returns: string
       }
+      reissue_organisation_member_invitation: {
+        Args: {
+          replacement_expires_at: string
+          replacement_token_digest: string
+          target_invitation_id: string
+        }
+        Returns: string
+      }
       reject_ai_proposal: {
         Args: {
           target_ai_proposal_id: string
@@ -12295,6 +12363,14 @@ export type Database = {
       }
       resolve_benefit_submit_validators: {
         Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      resolve_organisation_invitation_session: {
+        Args: { invitation_token_digest: string }
+        Returns: Json
+      }
+      resolve_organisation_invitation_signup_binding: {
+        Args: { target_binding_id: string }
         Returns: Json
       }
       resolve_workforce_login: {

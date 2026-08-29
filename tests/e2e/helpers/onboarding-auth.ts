@@ -142,6 +142,21 @@ async function ensureOrganisationAdministratorAccess(
     onboardingOrgAdminCredentials,
   );
 
+  const { data: eligibleOrganisations, error: eligibleError } =
+    await adminClient.rpc("list_my_eligible_organisations");
+  if (eligibleError) {
+    throw eligibleError;
+  }
+
+  if (
+    eligibleOrganisations?.some(
+      (entry: { organisation_code: string }) =>
+        entry.organisation_code === onboardingE2eCredentials.organisationCode,
+    )
+  ) {
+    return;
+  }
+
   const invitationDigest = invitationTokenDigest(
     invitationTokenFromSeed(ORG_ADMIN_INVITATION_TOKEN_SEED),
   );
