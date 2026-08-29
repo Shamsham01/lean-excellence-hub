@@ -203,11 +203,11 @@ export type WorkforceProvisionedUserState = {
   unit_name: string | null;
 };
 
-export function lookupWorkforceProvisionedUser(
+export async function lookupWorkforceProvisionedUser(
   organisationId: string,
   canonicalAlias: string,
-): WorkforceProvisionedUserState | null {
-  const rows = queryDatabase<WorkforceProvisionedUserState>(`
+): Promise<WorkforceProvisionedUserState | null> {
+  const sql = `
     select
       membership_registry.id as membership_id,
       membership_registry.user_id,
@@ -252,9 +252,18 @@ export function lookupWorkforceProvisionedUser(
       and workforce_alias.canonical_alias = '${canonicalAlias}'
       and workforce_alias.status = 'active'
     limit 1
-  `);
+  `;
 
-  return rows[0] ?? null;
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    const rows = queryDatabase<WorkforceProvisionedUserState>(sql);
+    if (rows[0]) {
+      return rows[0];
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+
+  return null;
 }
 
 export function assertTemporaryPasswordNotPersisted(

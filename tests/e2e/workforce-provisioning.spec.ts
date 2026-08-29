@@ -133,7 +133,7 @@ test.describe("M1 workforce provisioning", () => {
     await page.getByRole("button", { name: "Update password" }).click();
     await expect(page).toHaveURL(/\/platform/);
 
-    const provisioned = lookupWorkforceProvisionedUser(
+    const provisioned = await lookupWorkforceProvisionedUser(
       organisationId,
       workforceUsername,
     );
