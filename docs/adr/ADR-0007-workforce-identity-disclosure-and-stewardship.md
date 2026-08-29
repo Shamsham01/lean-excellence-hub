@@ -36,11 +36,17 @@ through Supabase Auth is accepted; strong Supabase Auth password throttling
 remains mandatory.
 
 Organisation administrators may initiate one-time enrolment or recovery only
-for an identity stewarded solely by their organisation. They never set or learn
-the password. Shared or multi-organisation identities require platform-managed
-recovery because a credential reset affects every membership.
+for an identity stewarded solely by their organisation. During provisioning or
+an authorised credential reset they may see a **system-generated temporary
+password once**. They must never choose predictable passwords, retrieve an old
+temporary password, or see or recover the employee's permanent password. After
+first login the employee owns their password.
 
-Retiring an alias or membership removes only that organisation path. Global
+Optional notification email is independent of the hidden internal Auth
+identifier for workforce accounts.
+
+Shared or multi-organisation identities require platform-managed recovery
+because a credential reset affects every membership. Global
 disablement or identifier rotation is a controlled platform operation that
 updates Supabase Auth and the mapping atomically where possible, revokes all
 sessions, records the cross-organisation effect, and provides a recoverable

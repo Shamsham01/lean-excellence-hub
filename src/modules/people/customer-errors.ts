@@ -58,5 +58,19 @@ export function toCustomerErrorMessage(
     return "Enter a display name between 1 and 120 characters.";
   }
 
+  if (normalised.includes("workforce alias is unavailable")) {
+    return "That username is already in use or reserved. Choose a different username.";
+  }
+
+  if (normalised.includes("workforce provisioning is not authorised")) {
+    return "You do not have permission to create workforce users with the selected access.";
+  }
+
+  if (
+    normalised.includes("workforce provisioning authority is not contained")
+  ) {
+    return "The selected application role or scope is outside your authority to delegate.";
+  }
+
   return fallback;
 }

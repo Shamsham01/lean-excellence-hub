@@ -84,3 +84,44 @@ export function resolveApplicationOrigin(
 export function buildInvitationUrl(origin: string, token: string): string {
   return `${normalizeApplicationOrigin(origin)}/invitations/${token}`;
 }
+
+function localOriginsMatch(actual: string, expected: string): boolean {
+  if (actual === expected) {
+    return true;
+  }
+
+  try {
+    const actualUrl = new URL(actual);
+    const expectedUrl = new URL(expected);
+    return (
+      LOCAL_HOSTNAMES.has(actualUrl.hostname) &&
+      LOCAL_HOSTNAMES.has(expectedUrl.hostname) &&
+      actualUrl.port === expectedUrl.port &&
+      actualUrl.protocol === expectedUrl.protocol
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function requestHasTrustedOrigin(
+  request: Pick<Request, "headers">,
+  environment: Pick<ServerEnvironment, "APP_ORIGIN">,
+): boolean {
+  const expectedOrigin = new URL(environment.APP_ORIGIN).origin;
+  const origin = request.headers.get("origin");
+  if (origin && localOriginsMatch(origin, expectedOrigin)) {
+    return true;
+  }
+
+  const referer = request.headers.get("referer");
+  if (!referer) {
+    return false;
+  }
+
+  try {
+    return localOriginsMatch(new URL(referer).origin, expectedOrigin);
+  } catch {
+    return false;
+  }
+}

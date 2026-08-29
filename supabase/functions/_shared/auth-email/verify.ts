@@ -1,4 +1,4 @@
-import type { SendEmailHookPayload } from "./types";
+import type { SendEmailHookPayload } from "./types.ts";
 
 export class SendEmailHookVerificationError extends Error {
   readonly status = 401;

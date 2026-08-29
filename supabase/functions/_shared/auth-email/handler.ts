@@ -1,11 +1,14 @@
-import { buildAuthEmailDelivery, formatAuthEmailFrom } from "./build-message";
-import type { SendEmailHookPayload } from "./types";
+import {
+  buildAuthEmailDelivery,
+  formatAuthEmailFrom,
+} from "./build-message.ts";
+import type { SendEmailHookPayload } from "./types.ts";
 import {
   createHookErrorResponse,
   createHookSuccessResponse,
   SendEmailHookVerificationError,
   verifySendEmailHookPayload,
-} from "./verify";
+} from "./verify.ts";
 
 export type SendEmailDependencies = {
   verifyHook: (

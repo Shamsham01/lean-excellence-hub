@@ -5,6 +5,7 @@ import {
   buildInvitationUrl,
   deriveApplicationOriginFromHeaders,
   isLocalApplicationOrigin,
+  requestHasTrustedOrigin,
   resolveApplicationOrigin,
 } from "@/platform/application-origin";
 
@@ -109,5 +110,56 @@ describe("application origin helpers", () => {
     expect(deriveApplicationOriginFromHeaders(requestHeaders)).toBe(
       "https://app.example.com",
     );
+  });
+
+  it("accepts trusted origin and referer proofs for same-origin requests", () => {
+    const environment = {
+      APP_ORIGIN: "http://127.0.0.1:3000",
+    };
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("http://127.0.0.1:3000/api/auth/workforce", {
+          headers: { origin: "http://127.0.0.1:3000" },
+        }),
+        environment,
+      ),
+    ).toBe(true);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("http://127.0.0.1:3000/api/auth/workforce", {
+          headers: {
+            referer: "http://127.0.0.1:3000/workforce-login",
+          },
+        }),
+        environment,
+      ),
+    ).toBe(true);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("http://127.0.0.1:3000/api/auth/workforce", {
+          headers: { origin: "http://localhost:3000" },
+        }),
+        environment,
+      ),
+    ).toBe(true);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("http://127.0.0.1:3000/api/auth/workforce"),
+        environment,
+      ),
+    ).toBe(false);
+
+    expect(
+      requestHasTrustedOrigin(
+        new Request("http://127.0.0.1:3000/api/auth/workforce", {
+          headers: { origin: "https://evil.example" },
+        }),
+        environment,
+      ),
+    ).toBe(false);
   });
 });

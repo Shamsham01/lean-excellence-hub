@@ -1,4 +1,4 @@
-import { validateApplicationOrigin } from "./origin";
+import { validateApplicationOrigin } from "./origin.ts";
 
 const AUTH_CONFIRM_TYPE_BY_ACTION: Record<string, string> = {
   signup: "signup",
