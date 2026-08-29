@@ -72,7 +72,7 @@ export function createPublishableClient() {
 export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
   const normalized = sql.replace(/\s+/g, " ").trim();
   const output = execSync(
-    `npx supabase db query ${JSON.stringify(normalized)}`,
+    `npx supabase db query --local --output-format json ${JSON.stringify(normalized)}`,
     {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
