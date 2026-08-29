@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "resend": "npm:resend@4.8.0",
+    "standardwebhooks": "npm:standardwebhooks@1.0.0"
+  }
+}
