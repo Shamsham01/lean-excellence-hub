@@ -11871,6 +11871,10 @@ export type Database = {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
       }
+      hook_require_invitation_for_signup: {
+        Args: { event: Json }
+        Returns: Json
+      }
       initiate_attachment_upload: {
         Args: {
           target_byte_size: number
@@ -12028,6 +12032,10 @@ export type Database = {
       move_problem_solving_stage: {
         Args: { target_case_id: string; target_stage_id: string }
         Returns: boolean
+      }
+      preview_organisation_invitation: {
+        Args: { invitation_token_digest: string }
+        Returns: Json
       }
       provision_organisation: {
         Args: {
@@ -12230,6 +12238,14 @@ export type Database = {
         }
         Returns: string
       }
+      reissue_organisation_member_invitation: {
+        Args: {
+          replacement_expires_at: string
+          replacement_token_digest: string
+          target_invitation_id: string
+        }
+        Returns: string
+      }
       reject_ai_proposal: {
         Args: {
           target_ai_proposal_id: string
@@ -12295,6 +12311,10 @@ export type Database = {
       }
       resolve_benefit_submit_validators: {
         Args: { target_benefit_id: string }
+        Returns: Json
+      }
+      resolve_organisation_invitation_session: {
+        Args: { invitation_token_digest: string }
         Returns: Json
       }
       resolve_workforce_login: {

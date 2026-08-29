@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { emailPasswordSchema } from "@/modules/identity/auth-input";
+import { safeInvitationContinuation } from "@/modules/identity/invitation-constants";
 import { safeRelativeRedirect } from "@/modules/identity/redirects";
 import { routeAfterAuthentication } from "@/modules/identity/session";
 import { recordAuthenticationSecurityEvent } from "@/platform/supabase/secret";
@@ -44,8 +45,9 @@ export async function login(formData: FormData) {
   if (identity.data?.[0]?.password_change_required) {
     redirect("/update-password");
   }
-  if (/^\/invitations\/[A-Za-z0-9_-]{43}$/.test(next)) {
-    redirect(next);
+  const invitationContinuation = safeInvitationContinuation(next);
+  if (invitationContinuation) {
+    redirect(invitationContinuation);
   }
 
   await routeAfterAuthentication();
