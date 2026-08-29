@@ -1,9 +1,16 @@
 import { execSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Page } from "@playwright/test";
 
 import { DEMO_USERS } from "../../../scripts/demo-seed/constants";
+
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../..",
+);
 
 export const workforceProvisioningAdmin = {
   email: DEMO_USERS.admin.email,
@@ -69,55 +76,74 @@ export function createPublishableClient() {
   });
 }
 
+function extractJsonSegment(
+  output: string,
+  start: number,
+  open: "{" | "[",
+  close: "}" | "]",
+): string {
+  let depth = 0;
+  for (let index = start; index < output.length; index += 1) {
+    const character = output[index];
+    if (character === open) {
+      depth += 1;
+    } else if (character === close) {
+      depth -= 1;
+      if (depth === 0) {
+        return output.slice(start, index + 1);
+      }
+    }
+  }
+
+  throw new Error(`Unexpected database query output: ${output}`);
+}
+
+function parseQueryRows<T extends Record<string, unknown>>(
+  output: string,
+): T[] {
+  const objectStart = output.indexOf("{");
+  if (objectStart >= 0) {
+    const payload = JSON.parse(
+      extractJsonSegment(output, objectStart, "{", "}"),
+    ) as { rows?: T[] };
+    return payload.rows ?? [];
+  }
+
+  const arrayStart = output.indexOf("[");
+  if (arrayStart >= 0) {
+    return JSON.parse(extractJsonSegment(output, arrayStart, "[", "]")) as T[];
+  }
+
+  throw new Error(`Unexpected database query output: ${output}`);
+}
+
 export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
   const normalized = sql.replace(/\s+/g, " ").trim();
   const output = execSync(
     `npx supabase db query --local --output-format json ${JSON.stringify(normalized)}`,
     {
+      cwd: repoRoot,
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "ignore"],
     },
   );
-  const jsonStart = output.indexOf("{");
-  if (jsonStart < 0) {
-    throw new Error(`Unexpected database query output: ${output}`);
-  }
-
-  let depth = 0;
-  let jsonEnd = -1;
-  for (let index = jsonStart; index < output.length; index += 1) {
-    const character = output[index];
-    if (character === "{") {
-      depth += 1;
-    } else if (character === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        jsonEnd = index + 1;
-        break;
-      }
-    }
-  }
-
-  if (jsonEnd < 0) {
-    throw new Error(`Unexpected database query output: ${output}`);
-  }
-
-  const payload = JSON.parse(output.slice(jsonStart, jsonEnd)) as {
-    rows?: T[];
-  };
-  return payload.rows ?? [];
+  return parseQueryRows<T>(output);
 }
 
 export async function resolveDemoOrganisationId(): Promise<string> {
-  const rows = queryDatabase<{ id: string }>(
-    "select id from public.organisations where code = 'apex-manufacturing' limit 1",
-  );
+  const sql =
+    "select id from public.organisations where code = 'apex-manufacturing' limit 1";
 
-  if (!rows[0]?.id) {
-    throw new Error("Demo organisation not found.");
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const rows = queryDatabase<{ id: string }>(sql);
+    if (rows[0]?.id) {
+      return rows[0].id;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
 
-  return rows[0].id;
+  throw new Error("Demo organisation not found.");
 }
 
 export type WorkforceProvisionedUserState = {
