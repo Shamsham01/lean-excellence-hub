@@ -312,7 +312,7 @@ export const DEMO_PROFICIENCY_SCALE = {
 } as const;
 
 export const DEMO_SUGGESTION_PROGRAMME = {
-  name: "Everyday Improvement Ideas",
+  name: "Continuous Improvement Ideas",
   code: "everyday-ideas",
   reviewTargetDays: 7,
 } as const;

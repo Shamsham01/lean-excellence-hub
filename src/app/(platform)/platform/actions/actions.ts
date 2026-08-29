@@ -2,9 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 
+import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export async function createAction(formData: FormData) {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return;
+  }
+
   const title = String(formData.get("title") ?? "").trim();
   if (!title) {
     return;

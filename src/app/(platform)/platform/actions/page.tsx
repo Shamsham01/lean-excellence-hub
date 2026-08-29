@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { createAction } from "@/app/(platform)/platform/actions/actions";
 import { PageHeader } from "@/components/platform/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ActionsPage() {
+  const canRead = await currentMemberHasPermission(ACTIONS_PERMISSIONS.read);
+  if (!canRead) notFound();
+
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
   const supabase = await createServerSupabaseClient();
   const { data: actions } = await supabase
     .from("actions")
@@ -20,7 +30,7 @@ export default async function ActionsPage() {
       .length ?? 0;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="actions-page">
       <PageHeader
         title="Actions"
         description="Improvement actions linked to assessments and operational work."
@@ -41,48 +51,64 @@ export default async function ActionsPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Create action</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createAction} className="flex max-w-lg flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                name="title"
-                required
-                placeholder="Action title"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" rows={3} />
-            </div>
-            <Button type="submit">Create action</Button>
-          </form>
-        </CardContent>
-      </Card>
+      {canCreate ? (
+        <Card data-testid="actions-create-form">
+          <CardHeader>
+            <CardTitle>Create action</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              action={createAction}
+              className="flex max-w-lg flex-col gap-4"
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  required
+                  placeholder="Action title"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea id="description" name="description" rows={3} />
+              </div>
+              <Button type="submit">Create action</Button>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="flex flex-col gap-2">
-        {(actions ?? []).map((action) => (
+        {(actions ?? []).length === 0 ? (
           <div
-            key={action.id}
-            className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+            className="rounded-lg border border-dashed border-border px-4 py-10 text-center"
+            data-testid="actions-empty-state"
           >
-            <div>
-              <p className="font-medium">{action.title}</p>
-              <p className="typography-metadata">
-                {new Date(action.created_at).toLocaleDateString("en-GB")}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Badge variant="outline">{action.status}</Badge>
-              <Badge variant="secondary">{action.priority}</Badge>
-            </div>
+            <p className="text-sm font-medium">
+              No actions are currently available in your scope.
+            </p>
           </div>
-        ))}
+        ) : (
+          (actions ?? []).map((action) => (
+            <div
+              key={action.id}
+              className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+            >
+              <div>
+                <p className="font-medium">{action.title}</p>
+                <p className="typography-metadata">
+                  {new Date(action.created_at).toLocaleDateString("en-GB")}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline">{action.status}</Badge>
+                <Badge variant="secondary">{action.priority}</Badge>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
