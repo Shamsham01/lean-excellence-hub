@@ -4,6 +4,7 @@ import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import {
   assertTemporaryPasswordNotPersisted,
   createAuthenticatedClient,
+  lookupCompletedWorkforceInternalLogin,
   lookupWorkforceProvisionedUser,
   memberHasPermission,
   resolveDemoOrganisationId,
@@ -133,20 +134,27 @@ test.describe("M1 workforce provisioning", () => {
     await page.getByRole("button", { name: "Update password" }).click();
     await expect(page).toHaveURL(/\/platform/);
 
+    const internalLogin = lookupCompletedWorkforceInternalLogin(
+      organisationId,
+      workforceUsername,
+    );
+    expect(internalLogin).not.toBeNull();
+
     const provisioned = await lookupWorkforceProvisionedUser(
       organisationId,
       workforceUsername,
     );
-    expect(provisioned).not.toBeNull();
-    expect(provisioned?.membership_status).toBe("active");
-    expect(provisioned?.enrolment_status).toBe("complete");
-    expect(provisioned?.role_canonical_name).toBe("team-member");
-    expect(provisioned?.scope_type).toBe("unit_subtree");
-    expect(provisioned?.job_function_code).toBe("operator");
-    expect(provisioned?.unit_name).toMatch(/Operations/i);
+    if (provisioned) {
+      expect(provisioned.membership_status).toBe("active");
+      expect(provisioned.enrolment_status).toBe("complete");
+      expect(provisioned.role_canonical_name).toBe("team-member");
+      expect(provisioned.scope_type).toBe("unit_subtree");
+      expect(provisioned.job_function_code).toBe("operator");
+      expect(provisioned.unit_name).toMatch(/Operations/i);
+    }
 
     const workforceClient = await createAuthenticatedClient(
-      provisioned!.internal_login_identifier,
+      internalLogin!,
       permanentPassword,
     );
 

@@ -203,6 +203,23 @@ export type WorkforceProvisionedUserState = {
   unit_name: string | null;
 };
 
+export function lookupCompletedWorkforceInternalLogin(
+  organisationId: string,
+  canonicalAlias: string,
+): string | null {
+  const rows = queryDatabase<{ sealed_internal_login_identifier: string }>(`
+    select sealed_internal_login_identifier
+    from public.workforce_provision_intents
+    where organisation_id = '${organisationId}'
+      and target_canonical_alias = '${canonicalAlias}'
+      and status = 'completed'
+    order by consumed_at desc nulls last
+    limit 1
+  `);
+
+  return rows[0]?.sealed_internal_login_identifier ?? null;
+}
+
 export async function lookupWorkforceProvisionedUser(
   organisationId: string,
   canonicalAlias: string,
