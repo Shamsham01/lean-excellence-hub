@@ -117,10 +117,37 @@ function parseQueryRows<T extends Record<string, unknown>>(
   throw new Error(`Unexpected database query output: ${output}`);
 }
 
+function resolveLocalDatabaseUrl(): string {
+  if (process.env.SUPABASE_DB_URL) {
+    return process.env.SUPABASE_DB_URL;
+  }
+
+  const output = execSync("npx supabase status -o json", {
+    cwd: repoRoot,
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "ignore"],
+  });
+  const objectStart = output.indexOf("{");
+  if (objectStart < 0) {
+    throw new Error("Local database URL is unavailable for E2E.");
+  }
+
+  const status = JSON.parse(
+    extractJsonSegment(output, objectStart, "{", "}"),
+  ) as { DB_URL?: string };
+
+  if (!status.DB_URL) {
+    throw new Error("Local database URL is unavailable for E2E.");
+  }
+
+  return status.DB_URL;
+}
+
 export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
   const normalized = sql.replace(/\s+/g, " ").trim();
+  const dbUrl = resolveLocalDatabaseUrl();
   const output = execSync(
-    `npx supabase db query --local --output-format json ${JSON.stringify(normalized)}`,
+    `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`,
     {
       cwd: repoRoot,
       encoding: "utf-8",
