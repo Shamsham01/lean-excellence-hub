@@ -75,14 +75,36 @@ export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
     `npx supabase db query --local --output-format json ${JSON.stringify(normalized)}`,
     {
       encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "ignore"],
     },
   );
   const jsonStart = output.indexOf("{");
   if (jsonStart < 0) {
     throw new Error(`Unexpected database query output: ${output}`);
   }
-  const payload = JSON.parse(output.slice(jsonStart)) as { rows?: T[] };
+
+  let depth = 0;
+  let jsonEnd = -1;
+  for (let index = jsonStart; index < output.length; index += 1) {
+    const character = output[index];
+    if (character === "{") {
+      depth += 1;
+    } else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        jsonEnd = index + 1;
+        break;
+      }
+    }
+  }
+
+  if (jsonEnd < 0) {
+    throw new Error(`Unexpected database query output: ${output}`);
+  }
+
+  const payload = JSON.parse(output.slice(jsonStart, jsonEnd)) as {
+    rows?: T[];
+  };
   return payload.rows ?? [];
 }
 
