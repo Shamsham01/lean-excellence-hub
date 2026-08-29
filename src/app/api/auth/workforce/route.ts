@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { authenticateWorkforce } from "@/modules/identity/workforce-login";
+import { requestHasTrustedOrigin } from "@/platform/application-origin";
 import { getServerEnvironment } from "@/platform/env";
 
 export async function POST(request: Request) {
   const environment = getServerEnvironment();
-  if (
-    request.headers.get("origin") !== new URL(environment.APP_ORIGIN).origin
-  ) {
+  if (!requestHasTrustedOrigin(request, environment)) {
     return NextResponse.json(
       { error: "Unable to sign in with those credentials." },
       { status: 403 },

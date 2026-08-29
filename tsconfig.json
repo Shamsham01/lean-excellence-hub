@@ -29,5 +29,9 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "supabase/functions/send-email"]
+  "exclude": [
+    "node_modules",
+    "supabase/functions/send-email",
+    "supabase/functions/workforce-provision"
+  ]
 }

@@ -21,6 +21,9 @@ import {
 export default async function PeopleSettingsPage() {
   const canManageInvitations =
     await currentMemberHasPermission("invitations.manage");
+  const canProvisionWorkforce = await currentMemberHasPermission(
+    "workforce.provision",
+  );
   const canDelegateAccess = await currentMemberHasDelegatableAccess();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
@@ -121,6 +124,26 @@ export default async function PeopleSettingsPage() {
           </Button>
         }
       />
+
+      {canProvisionWorkforce && canDelegateAccess ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Create workforce user</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm">
+            <p className="text-muted-foreground">
+              Add an employee with a username and system-generated temporary
+              password for workforce sign-in. This is the primary onboarding
+              path for frontline teams.
+            </p>
+            <Button asChild className="w-fit">
+              <Link href="/platform/settings/people/create">
+                Create employee
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {canManageInvitations && canDelegateAccess ? (
         <Card>
