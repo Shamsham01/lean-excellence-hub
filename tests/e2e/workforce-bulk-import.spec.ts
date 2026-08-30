@@ -189,7 +189,9 @@ test.describe("M2 workforce bulk import", () => {
       { timeout: 120_000 },
     );
 
-    const jobId = await page.getByTestId("workforce-import-job-id").textContent();
+    const jobId = await page
+      .getByTestId("workforce-import-job-id")
+      .textContent();
     expect(jobId).toBeTruthy();
 
     await page.goto("/platform/settings/people");
