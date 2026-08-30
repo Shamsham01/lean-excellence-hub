@@ -235,7 +235,7 @@ export async function runImportBatch(jobId: string): Promise<
 
   let succeeded = 0;
   let failed = 0;
-  let remediation = 0;
+  const remediation = 0;
 
   for (const row of rows) {
     const provision = await invokeWorkforceProvision(
