@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { WorkforceImportHistory } from "@/components/people/workforce-import-history";
 import { WorkforceImportWizard } from "@/components/people/workforce-import-wizard";
@@ -22,35 +22,52 @@ import {
   startImportProvisioning,
   submitImportRows,
   validateImportJob,
-} from "./actions";
+} from "../actions";
 
-export default async function WorkforceImportPage() {
+type WorkforceImportJobPageProps = {
+  params: Promise<{ jobId: string }>;
+};
+
+export default async function WorkforceImportJobPage({
+  params,
+}: WorkforceImportJobPageProps) {
   const canImport = await currentMemberHasPermission("workforce.import");
   if (!canImport) {
     redirect("/platform/settings/people");
   }
 
+  const { jobId } = await params;
   const supabase = await createServerSupabaseClient();
-  const [{ data: organisation }, historyResult] = await Promise.all([
-    supabase.from("organisations").select("code").single(),
-    listRecentImportJobs(),
-  ]);
+  const [snapshotResult, organisationResult, historyResult] = await Promise.all(
+    [
+      getImportJobSnapshot(jobId),
+      supabase.from("organisations").select("code").single(),
+      listRecentImportJobs(),
+    ],
+  );
 
-  const organisationCode = organisation?.code ?? "";
+  if (!snapshotResult || "error" in snapshotResult) {
+    notFound();
+  }
+
+  const organisationCode = organisationResult.data?.code ?? "";
   const history =
     historyResult && "ok" in historyResult && historyResult.ok
       ? historyResult.data
       : [];
 
   return (
-    <div className="flex flex-col gap-8" data-testid="workforce-import-page">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="workforce-import-job-page"
+    >
       <PageHeader
         title="Import workforce"
-        description="Bulk onboard employees from CSV or XLSX with validated mappings and one-time credential export."
+        description="Resume or review a bulk workforce import. Progress is stored securely and can be continued after refresh or sign-out."
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/settings/people/create">Add employee</Link>
+              <Link href="/platform/settings/people/import">New import</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
               <Link href="/platform/settings/people">Back to people</Link>
@@ -61,6 +78,7 @@ export default async function WorkforceImportPage() {
 
       <WorkforceImportWizard
         organisationCode={organisationCode}
+        initialJobId={snapshotResult.data.jobId}
         onCreateJob={createImportJob}
         onSubmitRows={submitImportRows}
         onValidate={validateImportJob}

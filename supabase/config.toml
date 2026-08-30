@@ -414,9 +414,6 @@ verify_jwt = false
 [functions.workforce-provision]
 verify_jwt = false
 
-[functions.workforce-import-batch]
-verify_jwt = false
-
 [functions.workforce-import-export]
 verify_jwt = false
 

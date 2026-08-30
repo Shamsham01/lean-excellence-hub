@@ -1,5 +1,11 @@
 export const WORKFORCE_IMPORT_MAX_ROWS = 1000;
 
+/**
+ * Each claimed row runs M1 Auth user creation plus workforce-provision and
+ * workforce-import-finalize edge calls. A single-row batch keeps each Next.js
+ * server-action request within Netlify/serverless wall-clock limits while the
+ * database claim RPC preserves idempotent resume across interruptions.
+ */
 export const WORKFORCE_IMPORT_BATCH_SIZE = 1;
 
 export const WORKFORCE_IMPORT_CANONICAL_COLUMNS = [

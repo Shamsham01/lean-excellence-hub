@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
   buildCsvTemplate,
   parseWorkforceImportFile,
 } from "@/modules/workforce-import/parse-file";
-import { WORKFORCE_IMPORT_BATCH_SIZE } from "@/modules/workforce-import/constants";
+import { resolveImportWizardHydration } from "@/modules/workforce-import/resume";
 
 type ImportPreviewRow = {
   row_number: number;
@@ -39,6 +40,7 @@ type ValidationRow = {
 
 type WorkforceImportWizardProps = {
   organisationCode: string;
+  initialJobId?: string;
   onCreateJob: (
     filename: string,
   ) => Promise<{ ok: true; data: { jobId: string } } | { error: string }>;
@@ -76,6 +78,18 @@ type WorkforceImportWizardProps = {
   onGetProgress: (
     jobId: string,
   ) => Promise<{ ok: true; data: WorkforceImportProgress } | { error: string }>;
+  onGetJobSnapshot: (jobId: string) => Promise<
+    | {
+        ok: true;
+        data: {
+          jobId: string;
+          originalFilename: string;
+          totalRows: number;
+          progress: WorkforceImportProgress;
+        };
+      }
+    | { error: string }
+  >;
   onExportCredentials: (
     jobId: string,
     organisationCode: string,
@@ -98,6 +112,7 @@ const STEPS = [
 
 export function WorkforceImportWizard({
   organisationCode,
+  initialJobId,
   onCreateJob,
   onSubmitRows,
   onValidate,
@@ -106,13 +121,15 @@ export function WorkforceImportWizard({
   onStartProvisioning,
   onRunBatch,
   onGetProgress,
+  onGetJobSnapshot,
   onExportCredentials,
   onExportErrorReport,
   onRetryFailedRows,
 }: WorkforceImportWizardProps) {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(initialJobId ?? null);
   const [filename, setFilename] = useState<string>("");
   const [rowCount, setRowCount] = useState(0);
   const [summary, setSummary] =
@@ -122,7 +139,8 @@ export function WorkforceImportWizard({
   const [progress, setProgress] = useState<WorkforceImportProgress | null>(
     null,
   );
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(initialJobId));
+  const [hydrated, setHydrated] = useState(false);
   const [credentialsExported, setCredentialsExported] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
 
@@ -132,6 +150,105 @@ export function WorkforceImportWizard({
     }
     return Math.round((progress.provisionedRows / progress.totalRows) * 100);
   }, [progress]);
+
+  useEffect(() => {
+    if (!jobId) {
+      return;
+    }
+    router.refresh();
+  }, [jobId, router]);
+
+  useEffect(() => {
+    if (progress?.remainingRows === 0 && (progress?.provisionedRows ?? 0) > 0) {
+      router.refresh();
+    }
+  }, [progress?.remainingRows, progress?.provisionedRows, router]);
+
+  useEffect(() => {
+    if (!initialJobId || hydrated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function hydrateJob() {
+      if (!initialJobId) {
+        return;
+      }
+
+      setLoading(true);
+      setMessage(null);
+
+      const snapshot = await onGetJobSnapshot(initialJobId);
+      if (cancelled) {
+        return;
+      }
+
+      if ("error" in snapshot) {
+        setMessage(snapshot.error);
+        setLoading(false);
+        setHydrated(true);
+        return;
+      }
+
+      const { data } = snapshot;
+      const hydration = resolveImportWizardHydration(data.progress);
+
+      setJobId(data.jobId);
+      setFilename(data.originalFilename);
+      setRowCount(data.totalRows);
+      setProgress(data.progress);
+      setSummary({
+        totalRows: data.progress.totalRows,
+        validRows: data.progress.validRows,
+        errorRows: data.progress.errorRows,
+        warningRows: data.progress.warningRows,
+        canProvision: data.progress.errorRows === 0,
+      });
+      setCredentialsExported(hydration.credentialsAlreadyExported);
+      setStep(hydration.step);
+
+      if (
+        data.progress.status === "validation_failed" ||
+        data.progress.status === "draft"
+      ) {
+        const rows = await onLoadValidationRows(data.jobId);
+        if (!cancelled && "ok" in rows) {
+          setValidationRows(rows.data);
+        }
+      }
+
+      if (
+        data.progress.status === "validated" ||
+        data.progress.status === "completed" ||
+        data.progress.status === "completed_with_remediation"
+      ) {
+        const preview = await onLoadPreviewRows(data.jobId);
+        if (!cancelled && "ok" in preview) {
+          setPreviewRows(preview.data);
+        }
+      }
+
+      if (hydration.autoStartProvisioning) {
+        setProvisioning(true);
+      }
+
+      setLoading(false);
+      setHydrated(true);
+    }
+
+    void hydrateJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hydrated,
+    initialJobId,
+    onGetJobSnapshot,
+    onLoadPreviewRows,
+    onLoadValidationRows,
+  ]);
 
   async function handleFileSelected(file: File | null) {
     setMessage(null);
@@ -321,6 +438,11 @@ export function WorkforceImportWizard({
 
   return (
     <div className="flex flex-col gap-6" data-testid="workforce-import-wizard">
+      {jobId ? (
+        <span className="sr-only" data-testid="workforce-import-job-id">
+          {jobId}
+        </span>
+      ) : null}
       <div className="flex flex-wrap gap-2 text-sm">
         {STEPS.map((label, index) => (
           <span
@@ -340,6 +462,10 @@ export function WorkforceImportWizard({
         <p className="text-sm text-destructive" data-testid="import-message">
           {message}
         </p>
+      ) : null}
+
+      {loading && initialJobId && !hydrated ? (
+        <p className="text-sm text-muted-foreground">Loading import job...</p>
       ) : null}
 
       {step === 0 ? (
@@ -486,13 +612,15 @@ export function WorkforceImportWizard({
           <CardContent className="flex flex-col gap-4">
             <Progress value={progressPercent} />
             <div className="grid gap-2 text-sm sm:grid-cols-3">
-              <p>Successful: {progress?.provisionedRows ?? 0}</p>
+              <p data-testid="import-provisioned-count">
+                Successful: {progress?.provisionedRows ?? 0}
+              </p>
               <p>Failed: {progress?.failedRows ?? 0}</p>
               <p>Remaining: {progress?.remainingRows ?? 0}</p>
             </div>
             <p className="text-sm text-muted-foreground">
-              Processing in batches of {WORKFORCE_IMPORT_BATCH_SIZE} to avoid
-              platform timeouts.
+              Processing employees securely. You can leave this page and resume
+              later from Recent workforce imports.
             </p>
           </CardContent>
         </Card>
@@ -510,7 +638,9 @@ export function WorkforceImportWizard({
               sign-in.
             </p>
             <div className="grid gap-2 text-sm sm:grid-cols-3">
-              <p>Provisioned: {progress?.provisionedRows ?? 0}</p>
+              <p data-testid="import-provisioned-count">
+                Provisioned: {progress?.provisionedRows ?? 0}
+              </p>
               <p>Failed: {progress?.failedRows ?? 0}</p>
               <p>Remediation: {progress?.remediationRows ?? 0}</p>
             </div>

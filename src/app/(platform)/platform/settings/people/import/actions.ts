@@ -283,6 +283,7 @@ export async function runImportBatch(jobId: string): Promise<
 
   revalidatePath("/platform/settings/people");
   revalidatePath("/platform/settings/people/import");
+  revalidatePath(`/platform/settings/people/import/${jobId}`);
   revalidatePath("/platform/people");
 
   return {
@@ -391,6 +392,46 @@ export async function buildImportErrorReport(
   };
 }
 
+export async function getImportJobSnapshot(jobId: string): Promise<
+  WorkforceImportActionResult<{
+    jobId: string;
+    originalFilename: string;
+    totalRows: number;
+    progress: WorkforceImportProgress;
+  }>
+> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data: job, error: jobError } = await supabase
+    .from("workforce_import_jobs")
+    .select("id, original_filename, total_rows")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (jobError || !job) {
+    return {
+      error: toCustomerErrorMessage(jobError, "Import job was not found."),
+    };
+  }
+
+  const progressResult = await getImportProgress(jobId);
+  if ("error" in progressResult) {
+    return progressResult;
+  }
+
+  return {
+    ok: true,
+    data: {
+      jobId: job.id,
+      originalFilename: job.original_filename,
+      totalRows: job.total_rows,
+      progress: progressResult.data,
+    },
+  };
+}
+
 export async function listRecentImportJobs() {
   const denied = await assertCanImport();
   if (denied) return denied;
@@ -399,7 +440,7 @@ export async function listRecentImportJobs() {
   const { data, error } = await supabase
     .from("workforce_import_jobs")
     .select(
-      "id, original_filename, total_rows, status, provisioned_rows, failed_rows, remediation_rows, created_at, created_by_membership_id",
+      "id, original_filename, total_rows, status, provisioned_rows, failed_rows, remediation_rows, credential_export_status, created_at, created_by_membership_id",
     )
     .order("created_at", { ascending: false })
     .limit(10);

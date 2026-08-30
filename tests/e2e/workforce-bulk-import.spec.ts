@@ -7,6 +7,7 @@ import {
 import {
   assertTemporaryPasswordNotPersisted,
   createServiceRoleClient,
+  lookupWorkforceProvisionedUser,
   resolveDemoOrganisationId,
   submitWorkforceLogin,
 } from "./helpers/workforce-provisioning";
@@ -21,8 +22,10 @@ async function signInAs(
   await page.goto("/login");
   await page.getByLabel("Email").fill(credentials.email);
   await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
+  await Promise.all([
+    page.waitForURL(/\/platform/, { timeout: 30_000 }),
+    page.getByRole("button", { name: "Sign in" }).click(),
+  ]);
 }
 
 test.describe("M2 workforce bulk import", () => {
@@ -148,6 +151,67 @@ test.describe("M2 workforce bulk import", () => {
     await signInAs(page, "manager");
     await page.goto("/platform/settings/people/import");
     await expect(page).toHaveURL(/\/platform\/settings\/people$/);
+  });
+
+  test("interrupted import resumes without duplicating employees", async ({
+    page,
+  }) => {
+    const resumeSuffix = `resume.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+    const resumeCsv = [
+      "first_name,last_name,username,notification_email,job_title,job_function,primary_unit_path,application_role,access_scope_unit_path",
+      ...Array.from({ length: 3 }, (_, index) =>
+        [
+          `Resume${index + 1}`,
+          "User",
+          `resume.${index + 1}.${resumeSuffix}`,
+          "",
+          "Operator",
+          "Operator",
+          "Cornwall Plant > Operations",
+          "Team Member",
+          "Cornwall Plant > Operations",
+        ].join(","),
+      ),
+    ].join("\n");
+
+    await signInAs(page, "admin");
+    await page.goto("/platform/settings/people/import");
+
+    await page.setInputFiles("input[type='file']", {
+      name: `resume-import-${resumeSuffix}.csv`,
+      mimeType: "text/csv",
+      buffer: Buffer.from(resumeCsv),
+    });
+    await page.getByTestId("validate-import").click();
+    await page.getByTestId("start-import-provisioning").click();
+    await expect(page.getByTestId("import-provisioned-count")).toContainText(
+      "Successful: 1",
+      { timeout: 120_000 },
+    );
+
+    const jobId = await page.getByTestId("workforce-import-job-id").textContent();
+    expect(jobId).toBeTruthy();
+
+    await page.goto("/platform/settings/people");
+    await page.goto(`/platform/settings/people/import/${jobId}`);
+    await expect(page.getByTestId("workforce-import-job-page")).toBeVisible();
+
+    await expect(page.getByTestId("download-import-credentials")).toBeVisible({
+      timeout: 240_000,
+    });
+    await expect(page.getByTestId("import-provisioned-count")).toContainText(
+      "Provisioned: 3",
+    );
+
+    const activeOrganisationId = await resolveDemoOrganisationId();
+    for (let index = 1; index <= 3; index += 1) {
+      const alias = `resume.${index}.${resumeSuffix}`;
+      const provisioned = await lookupWorkforceProvisionedUser(
+        activeOrganisationId,
+        alias,
+      );
+      expect(provisioned).not.toBeNull();
+    }
   });
 
   test("credential export cannot be downloaded twice", async ({ page }) => {

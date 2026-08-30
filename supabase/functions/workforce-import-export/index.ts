@@ -1,8 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.8";
 
-import { handleWorkforceImportExportRequest } from "../_shared/workforce-import/batch-handler.ts";
-import { encryptCredential } from "../_shared/workforce-import/credential-crypto.ts";
-import { generateWorkforceTemporaryPassword } from "@workforce/password";
+import { handleWorkforceImportExportRequest } from "../_shared/workforce-import/export-handler.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -29,15 +27,6 @@ const dependencies = {
         persistSession: false,
       },
     }),
-  createAuthAdminClient: () =>
-    createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }),
-  generatePassword: () => generateWorkforceTemporaryPassword(),
-  encryptCredential,
 };
 
 Deno.serve((request) =>

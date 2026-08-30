@@ -3,19 +3,6 @@ import "server-only";
 import { getPublicEnvironment } from "@/platform/env";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-import { WORKFORCE_IMPORT_BATCH_SIZE } from "./constants";
-
-type ImportBatchResponse =
-  | {
-      ok: true;
-      claimed: number;
-      succeeded: number;
-      failed: number;
-      remediation: number;
-      progress: Record<string, unknown>;
-    }
-  | { error: string };
-
 export async function invokeWorkforceImportFinalize(input: {
   importRowId: string;
   outcome: "success";
@@ -80,52 +67,6 @@ export async function invokeWorkforceImportFinalize(
   }
 
   return { ok: true };
-}
-
-export async function invokeWorkforceImportBatch(
-  importJobId: string,
-  batchSize = WORKFORCE_IMPORT_BATCH_SIZE,
-): Promise<ImportBatchResponse> {
-  const supabase = await createServerSupabaseClient();
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
-
-  const accessToken = sessionData.session?.access_token;
-  if (sessionError || !accessToken) {
-    return { error: "Your session has expired. Sign in again and retry." };
-  }
-
-  const publicEnvironment = getPublicEnvironment();
-  const response = await fetch(
-    `${publicEnvironment.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/workforce-import-batch`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ importJobId, batchSize }),
-      cache: "no-store",
-    },
-  );
-
-  let payload: ImportBatchResponse | null = null;
-  try {
-    payload = (await response.json()) as ImportBatchResponse;
-  } catch {
-    return { error: "Unable to process workforce import batch." };
-  }
-
-  if (!response.ok || !payload || "error" in payload) {
-    return {
-      error:
-        payload && "error" in payload
-          ? payload.error
-          : "Unable to process workforce import batch.",
-    };
-  }
-
-  return payload;
 }
 
 export async function invokeWorkforceImportCredentialExport(

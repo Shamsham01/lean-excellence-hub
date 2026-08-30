@@ -4,8 +4,8 @@
 
 M2 adds CSV/XLSX bulk workforce provisioning on top of the M1 sealed-intent
 architecture. Administrators upload a file, validate the complete dataset,
-review resolved mappings, provision in batches, and download a one-time
-credential export.
+review resolved mappings, provision securely from the browser, and download a
+one-time credential export. Imports are resumable from `/platform/settings/people/import/{jobId}`.
 
 Entry point: `/platform/settings/people/import`
 
@@ -47,16 +47,27 @@ Provisioning is blocked until `error_rows = 0`.
 ## Provisioning architecture
 
 1. `start_workforce_import_provisioning`
-2. Repeated `claim_workforce_import_batch` (default 1 row) from Next.js
-3. `workforce-import-batch` Edge Function provisions each row via the existing
-   `workforce-provision` handler
+2. Browser repeatedly calls the Next.js `runImportBatch` server action
+3. Each cycle claims one row via `claim_workforce_import_batch`, provisions it
+   through the existing `workforce-provision` edge function, then finalises the
+   row through `workforce-import-finalize`
 4. Temporary passwords are encrypted with AES-GCM and stored in
    `workforce_import_row_credentials`
 5. Job progress is tracked in `workforce_import_jobs` / `workforce_import_rows`
 
-Batch size **1** keeps each Edge Function request within local and hosted edge
-runtime wall-clock limits while still providing visible progress for large
-imports (1,000 batches for 1,000 rows).
+Batch size **1** keeps each Next.js server-action request within Netlify/serverless
+wall-clock limits while each row still performs Auth user creation plus edge
+finalisation. Database job state is authoritative, so administrators can refresh,
+sign out, or close the browser and resume later from Recent workforce imports.
+
+## Resumability
+
+- Job detail route: `/platform/settings/people/import/{jobId}`
+- Recent imports expose context-appropriate actions such as Resume validation,
+  Continue review, Resume provisioning, and Download credentials
+- Wizard state is reconstructed from persisted job progress on page load
+- Completed rows are not reprovisioned; `claim_workforce_import_batch` only
+  claims `valid`, `warning`, `provisioning`, and retryable `failed` rows
 
 ## Credential security lifecycle
 
@@ -86,9 +97,9 @@ imports (1,000 batches for 1,000 rows).
 
 ### Edge Functions to deploy
 
-- `workforce-import-batch`
 - `workforce-import-export`
-- `workforce-provision` (unchanged contract; reused by batch handler)
+- `workforce-import-finalize`
+- `workforce-provision` (unchanged contract; reused per row)
 
 ### Secrets (Edge Functions only)
 
@@ -117,7 +128,7 @@ supabase secrets set CREDENTIAL_ENCRYPTION_KEY=<64-char-hex>
 
 1. Apply the three forward migrations to hosted Postgres
 2. Set `CREDENTIAL_ENCRYPTION_KEY` in hosted Edge Function secrets
-3. Deploy `workforce-provision`, `workforce-import-batch`, `workforce-import-export`
+3. Deploy `workforce-provision`, `workforce-import-finalize`, `workforce-import-export`
 4. Verify Owner/Admin `workforce.import` permission on a staging organisation
 5. Run a small staged import, export credentials once, confirm invalidation
 6. Monitor `security_audit_events` for `workforce.import_job_created` and
