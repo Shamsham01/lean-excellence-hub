@@ -30,7 +30,27 @@ Administrator only).
 | `job_function` | Yes | Resolved against active job functions by name |
 | `primary_unit_path` | Yes | `Site > Department > Area` using `>` separators |
 | `application_role` | Yes | Published role display name, e.g. `Team Member` |
-| `access_scope_unit_path` | Yes | Organisational path for `unit_subtree` access |
+| `access_scope_unit_path` | Conditional | Required for unit-scoped roles (`Team Member`, `Manager`); leave blank for organisation-wide roles (`Finance Validator`, `Organisation Administrator`) |
+
+### Access scope by role type
+
+Bulk import derives `scope_type` from each role's authoritative grant-scope policy:
+
+| Role scope policy | `access_scope_unit_path` | Resolved scope |
+| --- | --- | --- |
+| `unit_subtree` only | Required — full path, e.g. `Cornwall Plant > Operations` | `unit_subtree` at resolved unit |
+| `organisation` only | Must be blank | `organisation` with no scope unit |
+| Both (custom roles) | Blank → organisation; path → `unit_subtree` | Derived from supplied value |
+
+Examples:
+
+- `Team Member` at `Cornwall Plant > Operations` — provide the same path in `access_scope_unit_path`
+- `Finance Validator` — leave `access_scope_unit_path` blank (organisation-wide role)
+
+Validation errors when scope and role policy disagree:
+
+- Organisation-wide role with a path: *"{Role} is an organisation-wide role. Leave access_scope_unit_path blank."*
+- Unit-scoped role without a path: *"{Role} requires an access scope. Provide the full organisational path."*
 
 ## Validation rules
 
@@ -94,6 +114,7 @@ sign out, or close the browser and resume later from Recent workforce imports.
 1. `20260831010000_workforce_import_permissions.sql`
 2. `20260831010001_workforce_import_schema.sql`
 3. `20260831010002_workforce_import_rpcs.sql`
+4. `20260831120000_workforce_import_organisation_scope_hotfix.sql`
 
 ### Edge Functions to deploy
 
@@ -126,7 +147,7 @@ supabase secrets set CREDENTIAL_ENCRYPTION_KEY=<64-char-hex>
 
 ## Hosted rollout sequence
 
-1. Apply the three forward migrations to hosted Postgres
+1. Apply the four forward migrations to hosted Postgres (including the organisation-scope hotfix)
 2. Set `CREDENTIAL_ENCRYPTION_KEY` in hosted Edge Function secrets
 3. Deploy `workforce-provision`, `workforce-import-finalize`, `workforce-import-export`
 4. Verify Owner/Admin `workforce.import` permission on a staging organisation
