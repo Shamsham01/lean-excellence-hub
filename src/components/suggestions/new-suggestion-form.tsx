@@ -24,12 +24,32 @@ type NewSuggestionFormProps = {
   programmeVersions: ProgrammeVersion[];
   categories: Category[];
   primaryUnit: PrimaryUnitState;
+  canManageProgrammes: boolean;
 };
+
+function buildConfigurationMessage(
+  programmeVersions: ProgrammeVersion[],
+  categories: Category[],
+) {
+  const missingProgramme = programmeVersions.length === 0;
+  const missingCategories = categories.length === 0;
+
+  if (missingProgramme && missingCategories) {
+    return "Suggestion submission is not available yet because your organisation has not configured a suggestion programme or categories.";
+  }
+
+  if (missingProgramme) {
+    return "Suggestion submission is not available yet because your organisation has not configured a suggestion programme.";
+  }
+
+  return "Suggestion submission is not available yet because your organisation has not configured suggestion categories.";
+}
 
 export function NewSuggestionForm({
   programmeVersions,
   categories,
   primaryUnit,
+  canManageProgrammes,
 }: NewSuggestionFormProps) {
   const router = useRouter();
 
@@ -44,15 +64,18 @@ export function NewSuggestionForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit =
-    programmeVersions.length > 0 &&
-    categories.length > 0 &&
-    primaryUnit.hasPrimaryUnit;
+  const hasProgrammeConfiguration =
+    programmeVersions.length > 0 && categories.length > 0;
+  const canSubmit = hasProgrammeConfiguration && primaryUnit.hasPrimaryUnit;
 
   const blockedMessage = !primaryUnit.hasPrimaryUnit
     ? primaryUnit.canManageAssignment && primaryUnit.membershipId
       ? "Your organisation assignment is incomplete. Assign your primary work area before submitting an idea."
       : "Your organisation assignment is incomplete. Ask an administrator to assign your primary work area before submitting an idea."
+    : null;
+
+  const configurationMessage = !hasProgrammeConfiguration
+    ? buildConfigurationMessage(programmeVersions, categories)
     : null;
 
   async function handleSubmit(event: React.FormEvent) {
@@ -120,7 +143,23 @@ export function NewSuggestionForm({
       </CardHeader>
 
       <CardContent>
-        {!canSubmit && programmeVersions.length > 0 && categories.length > 0 ? (
+        {configurationMessage ? (
+          <div
+            className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
+            data-testid="suggestion-configuration-block"
+          >
+            <p className="text-foreground">{configurationMessage}</p>
+            {canManageProgrammes ? (
+              <Button asChild variant="outline" size="sm" className="mt-3">
+                <Link href="/platform/suggestions/programmes">
+                  Configure suggestion programmes
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!canSubmit && hasProgrammeConfiguration ? (
           <div
             className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
             data-testid="suggestion-prerequisite-block"
@@ -136,14 +175,6 @@ export function NewSuggestionForm({
               </Button>
             ) : null}
           </div>
-        ) : null}
-
-        {!programmeVersions.length || !categories.length ? (
-          <p className="mb-4 text-sm text-muted-foreground">
-            No published programmes or categories are available yet. Ask a
-            programme manager to configure suggestion programmes before
-            submitting ideas.
-          </p>
         ) : null}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

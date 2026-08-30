@@ -112,14 +112,14 @@ export const platformNavigation: PlatformNavItem[] = [
 export const setupNavigationItem: PlatformNavItem = {
   href: "/platform/setup",
   label: "Setup",
-  permission: "actions.read",
+  permission: "hierarchy.manage",
   section: "main",
 };
 
 export const settingsNavigationItem: PlatformNavItem = {
   href: "/platform/settings",
   label: "Settings",
-  permission: "hierarchy.read",
+  permission: "people.capability.read",
   section: "platform",
 };
 

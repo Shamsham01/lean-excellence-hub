@@ -1,3 +1,11 @@
+export const ACTIONS_PERMISSIONS = {
+  read: "actions.read",
+  create: "actions.create",
+  update: "actions.update",
+  assign: "actions.assign",
+  complete: "actions.complete",
+} as const;
+
 export const FIVE_S_PERMISSIONS = {
   read: "five_s.read",
   standardsManage: "five_s.standards.manage",

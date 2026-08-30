@@ -18,6 +18,22 @@ type PlatformShellProps = {
   organisations: EligibleOrganisation[];
 };
 
+async function canAccessSetupNavigation() {
+  const setupPermissions = [
+    "hierarchy.manage",
+    "invitations.manage",
+    "memberships.manage",
+  ];
+
+  for (const permission of setupPermissions) {
+    if (await currentMemberHasPermission(permission)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function PlatformShell({
   children,
   organisationName,
@@ -63,11 +79,16 @@ export async function PlatformShell({
   }
 
   const navWithSetup = [
-    setupNavigationItem,
     ...visibleNav.filter((item) => item.href !== "/platform/setup"),
   ];
 
-  const canAccessSettings = true;
+  if (await canAccessSetupNavigation()) {
+    navWithSetup.unshift(setupNavigationItem);
+  }
+
+  const canAccessSettings = await currentMemberHasPermission(
+    settingsNavigationItem.permission,
+  );
 
   if (
     canAccessSettings &&

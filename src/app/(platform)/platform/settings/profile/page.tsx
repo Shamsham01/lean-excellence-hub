@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ProfileAccessGrants } from "@/components/profile/profile-access-grants";
+import type { ProfileAccessGrant } from "@/components/profile/profile-access-grants";
 import { ProfileDisplayNameForm } from "@/components/profile/profile-display-name-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
@@ -36,10 +38,11 @@ export default async function ProfileSettingsPage() {
   const membership = adminProfile as {
     job_function?: { name: string } | null;
     primary_organisational_unit?: { name: string } | null;
-    access_grants?: Array<{ role_display_name: string }>;
+    access_grants?: ProfileAccessGrant[];
     permissions?: { can_manage_job_functions?: boolean };
   } | null;
 
+  const activeGrants = membership?.access_grants ?? [];
   const canManageOwnAssignment =
     membership?.permissions?.can_manage_job_functions;
 
@@ -78,25 +81,18 @@ export default async function ProfileSettingsPage() {
           <dl className="grid gap-3 sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">Job function</dt>
-              <dd>{membership?.job_function?.name ?? "Not assigned"}</dd>
+              <dd data-testid="profile-job-function">
+                {membership?.job_function?.name ?? "Not assigned"}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Primary work area</dt>
-              <dd>
+              <dd data-testid="profile-primary-work-area">
                 {membership?.primary_organisational_unit?.name ??
                   "Not assigned"}
               </dd>
             </div>
-            <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">Application access</dt>
-              <dd>
-                {membership?.access_grants?.length
-                  ? membership.access_grants
-                      .map((grant) => grant.role_display_name)
-                      .join(", ")
-                  : "No active access grants"}
-              </dd>
-            </div>
+            <ProfileAccessGrants grants={activeGrants} />
           </dl>
           <p className="text-muted-foreground">
             Job function, work area, and application access are managed by your

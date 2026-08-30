@@ -148,12 +148,36 @@ export function CasePortfolio({
         </CardHeader>
         <CardContent className="flex flex-col gap-2 pt-4">
           {items.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
-              <p className="text-sm font-medium">No cases match your filters</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Adjust search or filters, or register a new problem solving
-                case.
-              </p>
+            <div
+              className="rounded-lg border border-dashed border-border px-4 py-10 text-center"
+              data-testid="problem-solving-empty-state"
+            >
+              {statusFilter || searchFilter || severityFilter ? (
+                <>
+                  <p className="text-sm font-medium">
+                    No cases match your filters
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Adjust search or filters
+                    {canCreate
+                      ? ", or register a new problem solving case."
+                      : "."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">
+                    {canCreate
+                      ? "No problem-solving cases yet"
+                      : "No problem-solving cases are currently available in your scope"}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {canCreate
+                      ? "Register a new case to start structured root cause analysis."
+                      : "Cases shared within your access scope will appear here when they are available."}
+                  </p>
+                </>
+              )}
               {canCreate ? (
                 <Button size="sm" className="mt-4" asChild>
                   <Link href="/platform/problem-solving/new">New case</Link>

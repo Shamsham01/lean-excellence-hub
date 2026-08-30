@@ -3,7 +3,9 @@ import { NewSuggestionForm } from "@/components/suggestions/new-suggestion-form"
 import { Card, CardContent } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { SUGGESTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { notFound } from "next/navigation";
 
 type ProgrammeVersionRow = {
   id: string;
@@ -12,6 +14,11 @@ type ProgrammeVersionRow = {
 };
 
 export default async function NewSuggestionPage() {
+  const canSubmit = await currentMemberHasPermission(
+    SUGGESTIONS_PERMISSIONS.submit,
+  );
+  if (!canSubmit) notFound();
+
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentMembershipId = organisations.find(
@@ -76,11 +83,16 @@ export default async function NewSuggestionPage() {
     loadError = loadError ?? "Unable to load categories.";
   }
 
-  const [{ data: primaryUnitData }, canManageJobFunctions] = await Promise.all([
+  const [
+    { data: primaryUnitData },
+    canManageJobFunctions,
+    canManageProgrammes,
+  ] = await Promise.all([
     supabase.rpc("get_current_membership_primary_unit"),
     currentMembershipId
       ? currentMemberHasPermission("job_functions.manage")
       : Promise.resolve(false),
+    currentMemberHasPermission(SUGGESTIONS_PERMISSIONS.programmesManage),
   ]);
 
   const primaryUnit = primaryUnitData as {
@@ -109,6 +121,7 @@ export default async function NewSuggestionPage() {
       <NewSuggestionForm
         programmeVersions={programmesForForm}
         categories={categories ?? []}
+        canManageProgrammes={canManageProgrammes}
         primaryUnit={{
           hasPrimaryUnit: primaryUnit?.has_primary_unit === true,
           canManageAssignment: canManageJobFunctions,
