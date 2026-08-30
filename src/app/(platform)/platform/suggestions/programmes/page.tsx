@@ -67,9 +67,9 @@ export default async function SuggestionProgrammesPage() {
       data-testid="suggestion-programmes-page"
     >
       <PageHeader
-        title="Suggestion programmes"
+        title="Suggestions configuration"
 
-        description="Configure programmes, review targets, and categories for frontline ideas."
+        description="Manage improvement programmes and the categories used for suggestion submission."
 
         actions={
           <Button variant="outline" size="sm" asChild>
