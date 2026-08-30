@@ -27,5 +27,6 @@ export function buildCsvTemplate(): string {
     "first_name,last_name,username,notification_email,job_title,job_function,primary_unit_path,application_role,access_scope_unit_path",
     "Anna,Smith,anna.smith,anna@example.com,Production Operator,Operator,Cornwall Plant > Operations,Team Member,Cornwall Plant > Operations",
     "John,Brown,john.brown,,Engineer,Engineer,Cornwall Plant > Engineering,Team Member,Cornwall Plant > Engineering",
+    "Priya,Patel,priya.patel,priya@example.com,Finance Analyst,Operator,Cornwall Plant > Finance,Finance Validator,",
   ].join("\n");
 }
