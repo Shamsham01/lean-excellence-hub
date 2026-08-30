@@ -47,7 +47,7 @@ export default async function SuggestionProgrammesPage() {
 
     .from("suggestion_categories")
 
-    .select("id, name, code, status")
+    .select("id, name, code, description, status, display_order")
 
     .order("display_order");
 

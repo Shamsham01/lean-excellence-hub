@@ -7,10 +7,16 @@ import { SUGGESTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { notFound } from "next/navigation";
 
-type ProgrammeVersionRow = {
-  id: string;
-  programme_id: string;
-  suggestion_programmes: { name: string } | { name: string }[] | null;
+type SubmissionConfiguration = {
+  programmes: Array<{
+    programme_version_id: string;
+    programme_name: string;
+    submission_guidance: string | null;
+  }>;
+  categories: Array<{
+    category_id: string;
+    category_name: string;
+  }>;
 };
 
 export default async function NewSuggestionPage() {
@@ -25,62 +31,27 @@ export default async function NewSuggestionPage() {
     (o) => o.selected,
   )?.membership_id;
 
-  const { data: joinedVersions, error: joinedError } = await supabase
-    .from("suggestion_programme_versions")
-    .select("id, programme_id, suggestion_programmes(name)")
-    .eq("lifecycle", "published");
+  const { data: configurationData, error: configurationError } =
+    await supabase.rpc("get_available_suggestion_submission_configuration");
 
-  let programmesForForm =
-    (joinedVersions as ProgrammeVersionRow[] | null)?.map((row) => {
-      const programme = Array.isArray(row.suggestion_programmes)
-        ? row.suggestion_programmes[0]
-        : row.suggestion_programmes;
+  let loadError: string | null = null;
+  let programmesForForm: Array<{ id: string; programme_name: string }> = [];
+  let categoriesForForm: Array<{ id: string; name: string }> = [];
 
-      return {
-        id: row.id,
-        programme_name: programme?.name ?? "Programme",
-      };
-    }) ?? [];
-
-  let loadError = joinedError ? "Unable to load programmes." : null;
-
-  if (programmesForForm.length === 0) {
-    const { data: programmeVersions, error: versionsError } = await supabase
-      .from("suggestion_programme_versions")
-      .select("id, programme_id")
-      .eq("lifecycle", "published");
-
-    if (versionsError) {
-      loadError = "Unable to load programmes.";
-    } else if (programmeVersions && programmeVersions.length > 0) {
-      const { data: programmes, error: programmesError } = await supabase
-        .from("suggestion_programmes")
-        .select("id, name");
-
-      if (programmesError) {
-        loadError = "Unable to load programmes.";
-      } else {
-        const programmeNameById = new Map(
-          programmes?.map((p) => [p.id, p.name]) ?? [],
-        );
-
-        programmesForForm = programmeVersions.map((row) => ({
-          id: row.id,
-          programme_name:
-            programmeNameById.get(row.programme_id) ?? "Programme",
-        }));
-      }
-    }
-  }
-
-  const { data: categories, error: categoriesError } = await supabase
-    .from("suggestion_categories")
-    .select("id, name")
-    .eq("status", "active")
-    .order("display_order");
-
-  if (categoriesError) {
-    loadError = loadError ?? "Unable to load categories.";
+  if (configurationError) {
+    loadError = "Unable to load suggestion configuration.";
+  } else {
+    const configuration = configurationData as SubmissionConfiguration | null;
+    programmesForForm =
+      configuration?.programmes?.map((programme) => ({
+        id: programme.programme_version_id,
+        programme_name: programme.programme_name,
+      })) ?? [];
+    categoriesForForm =
+      configuration?.categories?.map((category) => ({
+        id: category.category_id,
+        name: category.category_name,
+      })) ?? [];
   }
 
   const [
@@ -120,7 +91,7 @@ export default async function NewSuggestionPage() {
 
       <NewSuggestionForm
         programmeVersions={programmesForForm}
-        categories={categories ?? []}
+        categories={categoriesForForm}
         canManageProgrammes={canManageProgrammes}
         primaryUnit={{
           hasPrimaryUnit: primaryUnit?.has_primary_unit === true,

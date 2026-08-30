@@ -11833,6 +11833,22 @@ export type Database = {
         Args: { target_schedule_definition_id: string }
         Returns: boolean
       }
+      deactivate_suggestion_category: {
+        Args: { target_category_id: string }
+        Returns: boolean
+      }
+      deactivate_suggestion_programme: {
+        Args: { target_programme_id: string }
+        Returns: boolean
+      }
+      delete_suggestion_category: {
+        Args: { target_category_id: string }
+        Returns: boolean
+      }
+      delete_suggestion_programme_draft: {
+        Args: { target_programme_id: string }
+        Returns: boolean
+      }
       derive_schedule_occurrence_status: {
         Args: {
           target_lifecycle_status: string
@@ -11939,6 +11955,10 @@ export type Database = {
         Returns: Json
       }
       get_ai_usage_summary: { Args: never; Returns: Json }
+      get_available_suggestion_submission_configuration: {
+        Args: never
+        Returns: Json
+      }
       get_benefit_detail: { Args: { target_benefit_id: string }; Returns: Json }
       get_benefit_forecast_history: {
         Args: { target_benefit_id: string }
@@ -12385,6 +12405,14 @@ export type Database = {
       }
       publish_training_curriculum_version: {
         Args: { target_curriculum_version_id: string }
+        Returns: boolean
+      }
+      reactivate_suggestion_category: {
+        Args: { target_category_id: string }
+        Returns: boolean
+      }
+      reactivate_suggestion_programme: {
+        Args: { target_programme_id: string }
         Returns: boolean
       }
       record_ai_proposal_accepted: {
@@ -12916,6 +12944,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_suggestion_category: {
+        Args: {
+          target_category_id: string
+          target_description?: string
+          target_display_order?: number
+          target_name?: string
+        }
+        Returns: boolean
+      }
       update_suggestion_draft: {
         Args: {
           target_category_id?: string
@@ -12926,6 +12963,14 @@ export type Database = {
           target_target_unit_id?: string
           target_template_submission_id?: string
           target_title: string
+        }
+        Returns: boolean
+      }
+      update_suggestion_programme: {
+        Args: {
+          target_description?: string
+          target_name: string
+          target_programme_id: string
         }
         Returns: boolean
       }
