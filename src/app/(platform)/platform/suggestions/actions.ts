@@ -282,6 +282,158 @@ export async function createSuggestionCategory(input: {
   return { ok: true, id: data as string };
 }
 
+export async function updateSuggestionProgramme(input: {
+  programmeId: string;
+  name: string;
+  description?: string | null;
+}): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("update_suggestion_programme", {
+    target_programme_id: input.programmeId,
+    target_name: input.name,
+    ...(typeof input.description === "string"
+      ? { target_description: input.description }
+      : {}),
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function deactivateSuggestionProgramme(
+  programmeId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("deactivate_suggestion_programme", {
+    target_programme_id: programmeId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function reactivateSuggestionProgramme(
+  programmeId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("reactivate_suggestion_programme", {
+    target_programme_id: programmeId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function deleteSuggestionProgrammeDraft(
+  programmeId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("delete_suggestion_programme_draft", {
+    target_programme_id: programmeId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function updateSuggestionCategory(input: {
+  categoryId: string;
+  name?: string;
+  description?: string | null;
+  displayOrder?: number;
+}): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("update_suggestion_category", {
+    target_category_id: input.categoryId,
+    ...(input.name !== undefined ? { target_name: input.name } : {}),
+    ...(typeof input.description === "string"
+      ? { target_description: input.description }
+      : {}),
+    ...(input.displayOrder !== undefined
+      ? { target_display_order: input.displayOrder }
+      : {}),
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function deactivateSuggestionCategory(
+  categoryId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("deactivate_suggestion_category", {
+    target_category_id: categoryId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function reactivateSuggestionCategory(
+  categoryId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("reactivate_suggestion_category", {
+    target_category_id: categoryId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
+export async function deleteSuggestionCategory(
+  categoryId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.rpc("delete_suggestion_category", {
+    target_category_id: categoryId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/platform/suggestions/programmes");
+  revalidatePath("/platform/suggestions/new");
+
+  return { ok: true };
+}
+
 export async function initiateSuggestionEvidenceUpload(
   suggestionId: string,
 

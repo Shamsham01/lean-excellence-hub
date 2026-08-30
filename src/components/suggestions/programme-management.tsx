@@ -8,7 +8,15 @@ import {
   createSuggestionCategory,
   createSuggestionProgrammeDraft,
   createSuggestionProgrammeSuccessor,
+  deactivateSuggestionCategory,
+  deactivateSuggestionProgramme,
+  deleteSuggestionCategory,
+  deleteSuggestionProgrammeDraft,
   publishSuggestionProgrammeVersion,
+  reactivateSuggestionCategory,
+  reactivateSuggestionProgramme,
+  updateSuggestionCategory,
+  updateSuggestionProgramme,
   updateSuggestionProgrammeVersion,
 } from "@/app/(platform)/platform/suggestions/actions";
 
@@ -57,7 +65,11 @@ type Category = {
 
   code: string;
 
+  description: string | null;
+
   status: string;
+
+  display_order: number;
 };
 
 type TemplateVersion = {
@@ -88,6 +100,27 @@ function actionErrorMessage(error: unknown): string {
   }
 
   return "Action failed";
+}
+
+function formatProgrammeStatus(status: string) {
+  return status === "deactivated" ? "Deactivated" : "Active";
+}
+
+function formatVersionStatus(lifecycle: string) {
+  switch (lifecycle) {
+    case "draft":
+      return "Draft";
+    case "published":
+      return "Published";
+    case "archived":
+      return "Archived";
+    default:
+      return lifecycle;
+  }
+}
+
+function formatCategoryStatus(status: string) {
+  return status === "deactivated" ? "Deactivated" : "Active";
 }
 
 export function ProgrammeManagement({
@@ -317,16 +350,41 @@ export function ProgrammeManagement({
             (version) => version.lifecycle === "archived",
           );
 
+          const hasPublishedHistory = programmeVersions.some(
+            (version) => version.lifecycle !== "draft",
+          );
+
           return (
             <Card key={programme.id}>
               <CardHeader>
-                <CardTitle className="text-base">{programme.name}</CardTitle>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">
+                      {programme.name}
+                    </CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {programme.code}
+                    </p>
+                  </div>
+                  <span
+                    className="rounded-full border border-border px-2 py-0.5 text-xs font-medium"
+                    data-testid={`programme-status-${programme.id}`}
+                  >
+                    {formatProgrammeStatus(programme.status)}
+                  </span>
+                </div>
               </CardHeader>
 
               <CardContent className="flex flex-col gap-4 text-sm text-muted-foreground">
-                <p>{programme.code}</p>
-
                 {programme.description ? <p>{programme.description}</p> : null}
+
+                <ProgrammeDetailsEditor
+                  programme={programme}
+                  disabled={loading}
+                  onSave={(input) =>
+                    runAction(() => updateSuggestionProgramme(input))
+                  }
+                />
 
                 {draftVersion ? (
                   <DraftVersionEditor
@@ -349,46 +407,113 @@ export function ProgrammeManagement({
                 ) : publishedVersion ? (
                   <div className="flex flex-col gap-2">
                     <p>
-                      Published version {publishedVersion.version_number}
+                      <span className="font-medium text-foreground">
+                        {formatVersionStatus(publishedVersion.lifecycle)}
+                      </span>
+                      {" · "}
+                      Version {publishedVersion.version_number}
                       {publishedVersion.review_target_days
                         ? ` · ${publishedVersion.review_target_days} day review SLA`
                         : ""}
                     </p>
 
-                    <Button
-                      size="sm"
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
 
-                      variant="outline"
+                        variant="outline"
 
-                      className="self-start"
+                        className="self-start"
 
-                      disabled={loading}
+                        disabled={loading}
 
-                      onClick={() =>
-                        runAction(() =>
-                          createSuggestionProgrammeSuccessor(programme.id),
-                        )
-                      }
-                    >
-                      Create successor draft
-                    </Button>
+                        onClick={() =>
+                          runAction(() =>
+                            createSuggestionProgrammeSuccessor(programme.id),
+                          )
+                        }
+                      >
+                        Create successor version
+                      </Button>
+
+                      {programme.status === "active" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                `Deactivate "${programme.name}"? New submissions will no longer use this programme.`,
+                              )
+                            ) {
+                              return;
+                            }
+
+                            runAction(() =>
+                              deactivateSuggestionProgramme(programme.id),
+                            );
+                          }}
+                        >
+                          Deactivate programme
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          onClick={() =>
+                            runAction(() =>
+                              reactivateSuggestionProgramme(programme.id),
+                            )
+                          }
+                        >
+                          Reactivate programme
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ) : null}
 
                 {archivedVersions.length > 0 ? (
                   <div>
                     <p className="font-medium text-foreground">
-                      Archived versions
+                      Previous versions
                     </p>
 
                     <ul className="mt-1 flex flex-col gap-1">
                       {archivedVersions.map((version) => (
                         <li key={version.id}>
-                          Version {version.version_number}
+                          {formatVersionStatus(version.lifecycle)} · Version{" "}
+                          {version.version_number}
                         </li>
                       ))}
                     </ul>
                   </div>
+                ) : null}
+
+                {!hasPublishedHistory ? (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={loading}
+                    className="self-start"
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          `Delete draft programme "${programme.name}"? This cannot be undone.`,
+                        )
+                      ) {
+                        return;
+                      }
+
+                      runAction(() =>
+                        deleteSuggestionProgrammeDraft(programme.id),
+                      );
+                    }}
+                  >
+                    Delete draft programme
+                  </Button>
                 ) : null}
               </CardContent>
             </Card>
@@ -402,15 +527,41 @@ export function ProgrammeManagement({
             <CardTitle className="text-base">Categories</CardTitle>
           </CardHeader>
 
-          <CardContent className="flex flex-col gap-2 text-sm">
+          <CardContent className="flex flex-col gap-4 text-sm">
             {categories.map((category) => (
-              <div key={category.id} className="flex justify-between gap-4">
-                <span>{category.name}</span>
+              <CategoryEditor
+                key={category.id}
+                category={category}
+                disabled={loading}
+                onSave={(input) =>
+                  runAction(() => updateSuggestionCategory(input))
+                }
+                onDeactivate={() => {
+                  if (
+                    !window.confirm(
+                      `Deactivate category "${category.name}"? It will no longer appear for new submissions.`,
+                    )
+                  ) {
+                    return;
+                  }
 
-                <span className="text-muted-foreground capitalize">
-                  {category.status}
-                </span>
-              </div>
+                  runAction(() => deactivateSuggestionCategory(category.id));
+                }}
+                onReactivate={() =>
+                  runAction(() => reactivateSuggestionCategory(category.id))
+                }
+                onDelete={() => {
+                  if (
+                    !window.confirm(
+                      `Delete category "${category.name}"? This is only allowed when no suggestions reference it.`,
+                    )
+                  ) {
+                    return;
+                  }
+
+                  runAction(() => deleteSuggestionCategory(category.id));
+                }}
+              />
             ))}
           </CardContent>
         </Card>
@@ -421,6 +572,239 @@ export function ProgrammeManagement({
       ) : null}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+function ProgrammeDetailsEditor({
+  programme,
+  disabled,
+  onSave,
+}: {
+  programme: Programme;
+  disabled: boolean;
+  onSave: (input: {
+    programmeId: string;
+    name: string;
+    description?: string | null;
+  }) => void;
+}) {
+  const [name, setName] = useState(programme.name);
+  const [description, setDescription] = useState(programme.description ?? "");
+  const [expanded, setExpanded] = useState(false);
+
+  if (!expanded) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="self-start"
+        disabled={disabled}
+        onClick={() => setExpanded(true)}
+      >
+        Edit programme details
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-border p-4">
+      <p className="mb-3 font-medium text-foreground">Programme details</p>
+      <div className="flex flex-col gap-3">
+        <label className="flex flex-col gap-1">
+          <Label htmlFor={`programme-edit-name-${programme.id}`}>Name</Label>
+          <Input
+            id={`programme-edit-name-${programme.id}`}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <Label htmlFor={`programme-edit-description-${programme.id}`}>
+            Description
+          </Label>
+          <Textarea
+            id={`programme-edit-description-${programme.id}`}
+            rows={2}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            disabled={disabled}
+            onClick={() =>
+              onSave({
+                programmeId: programme.id,
+                name,
+                description: description || null,
+              })
+            }
+          >
+            Save programme details
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={disabled}
+            onClick={() => {
+              setName(programme.name);
+              setDescription(programme.description ?? "");
+              setExpanded(false);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoryEditor({
+  category,
+  disabled,
+  onSave,
+  onDeactivate,
+  onReactivate,
+  onDelete,
+}: {
+  category: Category;
+  disabled: boolean;
+  onSave: (input: {
+    categoryId: string;
+    name?: string;
+    description?: string | null;
+    displayOrder?: number;
+  }) => void;
+  onDeactivate: () => void;
+  onReactivate: () => void;
+  onDelete: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [name, setName] = useState(category.name);
+  const [description, setDescription] = useState(category.description ?? "");
+  const [displayOrder, setDisplayOrder] = useState(
+    category.display_order.toString(),
+  );
+
+  return (
+    <div
+      className="rounded-md border border-border p-4"
+      data-testid={`category-row-${category.id}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-medium text-foreground">{category.name}</p>
+          <p className="text-muted-foreground">{category.code}</p>
+        </div>
+        <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium">
+          {formatCategoryStatus(category.status)}
+        </span>
+      </div>
+
+      {expanded ? (
+        <div className="mt-3 flex flex-col gap-3">
+          <label className="flex flex-col gap-1">
+            <Label htmlFor={`category-name-${category.id}`}>Name</Label>
+            <Input
+              id={`category-name-${category.id}`}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <Label htmlFor={`category-description-${category.id}`}>
+              Description
+            </Label>
+            <Textarea
+              id={`category-description-${category.id}`}
+              rows={2}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <Label htmlFor={`category-order-${category.id}`}>
+              Display order
+            </Label>
+            <Input
+              id={`category-order-${category.id}`}
+              type="number"
+              value={displayOrder}
+              onChange={(event) => setDisplayOrder(event.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              disabled={disabled}
+              onClick={() =>
+                onSave({
+                  categoryId: category.id,
+                  name,
+                  description: description || null,
+                  displayOrder: Number(displayOrder),
+                })
+              }
+            >
+              Save category
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={disabled}
+              onClick={() => {
+                setName(category.name);
+                setDescription(category.description ?? "");
+                setDisplayOrder(category.display_order.toString());
+                setExpanded(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled}
+            onClick={() => setExpanded(true)}
+          >
+            Edit
+          </Button>
+          {category.status === "active" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={onDeactivate}
+            >
+              Deactivate
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={onReactivate}
+            >
+              Reactivate
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={disabled}
+            onClick={onDelete}
+          >
+            Delete
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -469,7 +853,8 @@ function DraftVersionEditor({
   return (
     <div className="rounded-md border border-border p-4">
       <p className="mb-3 font-medium text-foreground">
-        Draft version {version.version_number}
+        {formatVersionStatus(version.lifecycle)} version{" "}
+        {version.version_number}
       </p>
 
       <div className="flex flex-col gap-3">
