@@ -83,6 +83,7 @@ function createDependencies(
             error: null,
           }),
       },
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     }),
     createServiceClient: () => ({
       rpc: serviceRpc,

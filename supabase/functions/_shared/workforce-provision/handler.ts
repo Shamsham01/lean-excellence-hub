@@ -18,6 +18,11 @@ export type WorkforceProvisionSuccess = {
   membershipId: string;
 };
 
+type RpcResult = PromiseLike<{
+  data: unknown;
+  error: { message: string; code?: string } | null;
+}>;
+
 export type WorkforceProvisionDependencies = {
   readEnv: (name: string) => string | undefined;
   createUserClient: (accessToken: string) => {
@@ -27,15 +32,10 @@ export type WorkforceProvisionDependencies = {
         error: { message: string } | null;
       }>;
     };
+    rpc: (fn: string, args: Record<string, unknown>) => RpcResult;
   };
   createServiceClient: () => {
-    rpc: (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{
-      data: unknown;
-      error: { message: string; code?: string } | null;
-    }>;
+    rpc: (fn: string, args: Record<string, unknown>) => RpcResult;
   };
   createAuthAdminClient: () => {
     auth: {

@@ -24,6 +24,8 @@ export default async function PeopleSettingsPage() {
   const canProvisionWorkforce = await currentMemberHasPermission(
     "workforce.provision",
   );
+  const canImportWorkforce =
+    await currentMemberHasPermission("workforce.import");
   const canDelegateAccess = await currentMemberHasDelegatableAccess();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
@@ -136,11 +138,23 @@ export default async function PeopleSettingsPage() {
               password for workforce sign-in. This is the primary onboarding
               path for frontline teams.
             </p>
-            <Button asChild className="w-fit">
-              <Link href="/platform/settings/people/create">
-                Create employee
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="w-fit">
+                <Link href="/platform/settings/people/create">
+                  Add employee
+                </Link>
+              </Button>
+              {canImportWorkforce ? (
+                <Button variant="outline" asChild className="w-fit">
+                  <Link
+                    href="/platform/settings/people/import"
+                    data-testid="import-workforce-link"
+                  >
+                    Import workforce
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
       ) : null}

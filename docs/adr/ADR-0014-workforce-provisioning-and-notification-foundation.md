@@ -75,6 +75,17 @@ Public signup without invitation binding remains blocked.
 `workforce.provision` and `workforce.credentials.reset` are granted only to
 Organisation Owner and Organisation Administrator baseline roles.
 
+`workforce.import` (M2) is granted to the same roles for bulk CSV/XLSX import.
+
+### Bulk import credential vault (M2)
+
+Bulk import stores temporary passwords using AES-GCM encryption in
+`workforce_import_row_credentials`. The `CREDENTIAL_ENCRYPTION_KEY` secret
+exists only in Edge Functions. Credential export is one-time; encrypted
+material is deleted after successful export or after the 24-hour TTL.
+
+See [workforce bulk import guide](../guides/workforce-bulk-import.md).
+
 ## Consequences
 
 - Privileged provisioning is isolated in the `workforce-provision` Edge Function
