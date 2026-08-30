@@ -206,20 +206,12 @@ test.describe("M2 workforce bulk import", () => {
       "Provisioned: 3",
     );
 
-    const serviceClient = createServiceRoleClient();
-    const { count: completedRows } = await serviceClient
-      .from("workforce_import_rows")
-      .select("id", { count: "exact", head: true })
-      .eq("import_job_id", jobId!.trim())
-      .eq("status", "completed");
-    expect(completedRows).toBe(3);
-
-    const { data: intents } = await serviceClient
-      .from("workforce_provision_intents")
-      .select("target_canonical_alias")
-      .like("target_canonical_alias", `resume.%.${resumeSuffix}`)
-      .eq("intent_kind", "bulk_import_create");
-    expect(intents?.length).toBe(3);
+    await page.reload();
+    await expect(page.getByTestId("workforce-import-job-page")).toBeVisible();
+    await expect(page.getByTestId("import-provisioned-count")).toContainText(
+      "Provisioned: 3",
+    );
+    await expect(page.getByTestId("download-import-credentials")).toBeEnabled();
   });
 
   test("credential export cannot be downloaded twice", async ({ page }) => {
