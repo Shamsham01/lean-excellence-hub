@@ -96,6 +96,8 @@ test.describe("M2 workforce bulk import", () => {
   test("imported employee can sign in and must change password", async ({
     browser,
   }) => {
+    expect(exportedPassword.length).toBeGreaterThan(8);
+
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -107,8 +109,8 @@ test.describe("M2 workforce bulk import", () => {
 
     await expect(
       page.getByRole("heading", { name: "Set a new password" }),
-    ).toBeVisible();
-    const permanentPassword = `BulkPermanent!${uniqueSuffix.slice(-4)}`;
+    ).toBeVisible({ timeout: 30_000 });
+    const permanentPassword = `BulkPermanent!Ab9_${uniqueSuffix.slice(-8)}`;
     await page.locator("#password").fill(permanentPassword);
     await Promise.all([
       page.waitForURL(/\/platform/, { timeout: 60_000 }),
