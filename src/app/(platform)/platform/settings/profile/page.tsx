@@ -1,20 +1,15 @@
 import Link from "next/link";
 
+import { ProfileAccessGrants } from "@/components/profile/profile-access-grants";
+import type { ProfileAccessGrant } from "@/components/profile/profile-access-grants";
 import { ProfileDisplayNameForm } from "@/components/profile/profile-display-name-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatAccessScopeDisplay } from "@/lib/access-scope";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import { updateProfileDisplayName } from "./actions";
-
-type ProfileAccessGrant = {
-  role_display_name: string;
-  scope_type: string;
-  scope_unit_name?: string | null;
-};
 
 export default async function ProfileSettingsPage() {
   const supabase = await createServerSupabaseClient();
@@ -48,7 +43,6 @@ export default async function ProfileSettingsPage() {
   } | null;
 
   const activeGrants = membership?.access_grants ?? [];
-  const primaryGrant = activeGrants[0];
   const canManageOwnAssignment =
     membership?.permissions?.can_manage_job_functions;
 
@@ -98,20 +92,7 @@ export default async function ProfileSettingsPage() {
                   "Not assigned"}
               </dd>
             </div>
-            <div>
-              <dt className="text-muted-foreground">Application role</dt>
-              <dd data-testid="profile-application-role">
-                {primaryGrant?.role_display_name ?? "No active access grants"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Access scope</dt>
-              <dd data-testid="profile-access-scope">
-                {primaryGrant
-                  ? formatAccessScopeDisplay(primaryGrant)
-                  : "Not assigned"}
-              </dd>
-            </div>
+            <ProfileAccessGrants grants={activeGrants} />
           </dl>
           <p className="text-muted-foreground">
             Job function, work area, and application access are managed by your
