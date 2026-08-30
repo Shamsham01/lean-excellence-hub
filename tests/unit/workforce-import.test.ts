@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCredentialExportCsv, sanitizeCsvCell } from "@/modules/workforce-import/credential-export";
+import {
+  buildCredentialExportCsv,
+  sanitizeCsvCell,
+} from "@/modules/workforce-import/credential-export";
+import {
+  mapWorkforceImportProgressFromDatabase,
+  WORKFORCE_IMPORT_BATCH_SIZE,
+} from "@/modules/workforce-import/constants";
 import { parseCsvContent } from "@/modules/workforce-import/parse-csv";
 import { buildCsvTemplate } from "@/modules/workforce-import/parse-file";
 import { parseXlsxBuffer } from "@/modules/workforce-import/parse-xlsx";
@@ -23,7 +30,9 @@ describe("workforce import parsers", () => {
 
   it("rejects duplicate headers", () => {
     const parsed = parseCsvContent("first_name,first_name\nAnna,Smith");
-    expect(parsed).toEqual({ error: 'Duplicate header "first_name" detected.' });
+    expect(parsed).toEqual({
+      error: 'Duplicate header "first_name" detected.',
+    });
   });
 
   it("rejects unsupported columns", () => {
@@ -87,5 +96,43 @@ describe("credential export", () => {
 describe("template", () => {
   it("includes canonical headers", () => {
     expect(buildCsvTemplate()).toContain("primary_unit_path");
+  });
+});
+
+describe("import progress mapping", () => {
+  it("maps database progress payloads to camelCase", () => {
+    expect(
+      mapWorkforceImportProgressFromDatabase({
+        status: "provisioning",
+        total_rows: 3,
+        valid_rows: 3,
+        error_rows: 0,
+        warning_rows: 0,
+        provisioned_rows: 1,
+        failed_rows: 0,
+        remediation_rows: 0,
+        remaining_rows: 2,
+        credential_export_status: "none",
+        credential_expires_at: null,
+        completed_at: null,
+      }),
+    ).toEqual({
+      status: "provisioning",
+      totalRows: 3,
+      validRows: 3,
+      errorRows: 0,
+      warningRows: 0,
+      provisionedRows: 1,
+      failedRows: 0,
+      remediationRows: 0,
+      remainingRows: 2,
+      credentialExportStatus: "none",
+      credentialExpiresAt: null,
+      completedAt: null,
+    });
+  });
+
+  it("uses a single-row batch size", () => {
+    expect(WORKFORCE_IMPORT_BATCH_SIZE).toBe(1);
   });
 });

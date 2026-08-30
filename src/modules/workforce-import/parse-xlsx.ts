@@ -8,7 +8,9 @@ import {
   type ParsedWorkforceImportFile,
 } from "./headers";
 
-export function parseXlsxBuffer(buffer: ArrayBuffer): ParsedWorkforceImportFile | FileParseError {
+export function parseXlsxBuffer(
+  buffer: ArrayBuffer,
+): ParsedWorkforceImportFile | FileParseError {
   let workbook: XLSX.WorkBook;
   try {
     workbook = XLSX.read(buffer, { type: "array" });
@@ -26,11 +28,14 @@ export function parseXlsxBuffer(buffer: ArrayBuffer): ParsedWorkforceImportFile 
     return { error: "The XLSX worksheet is empty." };
   }
 
-  const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null)[]>(sheet, {
-    header: 1,
-    raw: false,
-    defval: "",
-  });
+  const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null)[]>(
+    sheet,
+    {
+      header: 1,
+      raw: false,
+      defval: "",
+    },
+  );
 
   if (matrix.length === 0) {
     return { error: "The file is empty." };
@@ -44,7 +49,9 @@ export function parseXlsxBuffer(buffer: ArrayBuffer): ParsedWorkforceImportFile 
 
   const rows = [];
   for (let index = 1; index < matrix.length; index += 1) {
-    const values = (matrix[index] ?? []).map((value) => String(value ?? "").trim());
+    const values = (matrix[index] ?? []).map((value) =>
+      String(value ?? "").trim(),
+    );
     if (values.every((value) => value.length === 0)) {
       continue;
     }

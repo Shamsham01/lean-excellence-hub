@@ -70,7 +70,13 @@ export function buildValidationErrorReportCsv(
     fieldErrors: WorkforceImportFieldError[];
   }>,
 ): string {
-  const headers = ["row_number", "employee", "field", "issue", "suggested_resolution"];
+  const headers = [
+    "row_number",
+    "employee",
+    "field",
+    "issue",
+    "suggested_resolution",
+  ];
   const lines = [headers.join(",")];
 
   for (const row of rows) {
@@ -102,7 +108,9 @@ export function mapValidationRowsFromDatabase(
     .filter((row) => row.status === "error" || row.status === "warning")
     .map((row) => ({
       rowNumber: row.row_number,
-      employeeLabel: employeeLabelFromRow(row.input_payload as WorkforceImportRowInput),
+      employeeLabel: employeeLabelFromRow(
+        row.input_payload as WorkforceImportRowInput,
+      ),
       status: row.status,
       fieldErrors: row.field_errors ?? [],
     }));

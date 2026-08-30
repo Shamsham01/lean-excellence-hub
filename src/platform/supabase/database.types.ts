@@ -10659,132 +10659,6 @@ export type Database = {
           },
         ]
       }
-      workforce_provision_intents: {
-        Row: {
-          actor_membership_id: string
-          consumed_at: string | null
-          created_at: string
-          created_auth_user_id: string | null
-          created_membership_id: string | null
-          expires_at: string
-          failure_reason: string | null
-          id: string
-          idempotency_key: string | null
-          intent_kind: string
-          organisation_id: string
-          sealed_internal_login_identifier: string
-          status: string
-          target_alias_type: string
-          target_canonical_alias: string
-          target_display_name: string
-          target_job_function_id: string | null
-          target_job_title: string | null
-          target_notification_email: string | null
-          target_organisational_unit_id: string | null
-          target_role_version_id: string
-          target_scope_type: string
-          target_scope_unit_id: string | null
-          source_import_job_id: string | null
-          source_import_row_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          actor_membership_id: string
-          consumed_at?: string | null
-          created_at?: string
-          created_auth_user_id?: string | null
-          created_membership_id?: string | null
-          expires_at: string
-          failure_reason?: string | null
-          id?: string
-          idempotency_key?: string | null
-          intent_kind: string
-          organisation_id: string
-          sealed_internal_login_identifier: string
-          status?: string
-          target_alias_type?: string
-          target_canonical_alias: string
-          target_display_name: string
-          target_job_function_id?: string | null
-          target_job_title?: string | null
-          target_notification_email?: string | null
-          target_organisational_unit_id?: string | null
-          target_role_version_id: string
-          target_scope_type: string
-          target_scope_unit_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          actor_membership_id?: string
-          consumed_at?: string | null
-          created_at?: string
-          created_auth_user_id?: string | null
-          created_membership_id?: string | null
-          expires_at?: string
-          failure_reason?: string | null
-          id?: string
-          idempotency_key?: string | null
-          intent_kind?: string
-          organisation_id?: string
-          sealed_internal_login_identifier?: string
-          status?: string
-          target_alias_type?: string
-          target_canonical_alias?: string
-          target_display_name?: string
-          target_job_function_id?: string | null
-          target_job_title?: string | null
-          target_notification_email?: string | null
-          target_organisational_unit_id?: string | null
-          target_role_version_id?: string
-          target_scope_type?: string
-          target_scope_unit_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "workforce_provision_intents_actor_fkey"
-            columns: ["organisation_id", "actor_membership_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_memberships"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "workforce_provision_intents_job_function_fkey"
-            columns: ["organisation_id", "target_job_function_id"]
-            isOneToOne: false
-            referencedRelation: "job_functions"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "workforce_provision_intents_organisation_id_fkey"
-            columns: ["organisation_id"]
-            isOneToOne: false
-            referencedRelation: "organisations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workforce_provision_intents_role_version_fkey"
-            columns: ["organisation_id", "target_role_version_id"]
-            isOneToOne: false
-            referencedRelation: "role_versions"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "workforce_provision_intents_scope_unit_fkey"
-            columns: ["organisation_id", "target_scope_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "workforce_provision_intents_unit_fkey"
-            columns: ["organisation_id", "target_organisational_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-        ]
-      }
       workforce_import_jobs: {
         Row: {
           completed_at: string | null
@@ -10849,7 +10723,67 @@ export type Database = {
           validation_completed_at?: string | null
           warning_rows?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workforce_import_jobs_actor_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "workforce_import_jobs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workforce_import_row_credentials: {
+        Row: {
+          created_at: string
+          credential_ciphertext: string
+          credential_nonce: string
+          expires_at: string
+          import_job_id: string
+          import_row_id: string
+          organisation_id: string
+        }
+        Insert: {
+          created_at?: string
+          credential_ciphertext: string
+          credential_nonce: string
+          expires_at: string
+          import_job_id: string
+          import_row_id: string
+          organisation_id: string
+        }
+        Update: {
+          created_at?: string
+          credential_ciphertext?: string
+          credential_nonce?: string
+          expires_at?: string
+          import_job_id?: string
+          import_row_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workforce_import_row_credentials_import_row_id_fkey"
+            columns: ["import_row_id"]
+            isOneToOne: true
+            referencedRelation: "workforce_import_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workforce_import_row_credentials_job_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "workforce_import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workforce_import_rows: {
         Row: {
@@ -10900,7 +10834,173 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workforce_import_rows_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "workforce_import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workforce_import_rows_job_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "workforce_import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workforce_import_rows_membership_fkey"
+            columns: ["organisation_id", "created_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "workforce_import_rows_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workforce_import_rows_provisioning_intent_id_fkey"
+            columns: ["provisioning_intent_id"]
+            isOneToOne: false
+            referencedRelation: "workforce_provision_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workforce_provision_intents: {
+        Row: {
+          actor_membership_id: string
+          consumed_at: string | null
+          created_at: string
+          created_auth_user_id: string | null
+          created_membership_id: string | null
+          expires_at: string
+          failure_reason: string | null
+          id: string
+          idempotency_key: string | null
+          intent_kind: string
+          organisation_id: string
+          sealed_internal_login_identifier: string
+          source_import_job_id: string | null
+          source_import_row_id: string | null
+          status: string
+          target_alias_type: string
+          target_canonical_alias: string
+          target_display_name: string
+          target_job_function_id: string | null
+          target_job_title: string | null
+          target_notification_email: string | null
+          target_organisational_unit_id: string | null
+          target_role_version_id: string
+          target_scope_type: string
+          target_scope_unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actor_membership_id: string
+          consumed_at?: string | null
+          created_at?: string
+          created_auth_user_id?: string | null
+          created_membership_id?: string | null
+          expires_at: string
+          failure_reason?: string | null
+          id?: string
+          idempotency_key?: string | null
+          intent_kind: string
+          organisation_id: string
+          sealed_internal_login_identifier: string
+          source_import_job_id?: string | null
+          source_import_row_id?: string | null
+          status?: string
+          target_alias_type?: string
+          target_canonical_alias: string
+          target_display_name: string
+          target_job_function_id?: string | null
+          target_job_title?: string | null
+          target_notification_email?: string | null
+          target_organisational_unit_id?: string | null
+          target_role_version_id: string
+          target_scope_type: string
+          target_scope_unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actor_membership_id?: string
+          consumed_at?: string | null
+          created_at?: string
+          created_auth_user_id?: string | null
+          created_membership_id?: string | null
+          expires_at?: string
+          failure_reason?: string | null
+          id?: string
+          idempotency_key?: string | null
+          intent_kind?: string
+          organisation_id?: string
+          sealed_internal_login_identifier?: string
+          source_import_job_id?: string | null
+          source_import_row_id?: string | null
+          status?: string
+          target_alias_type?: string
+          target_canonical_alias?: string
+          target_display_name?: string
+          target_job_function_id?: string | null
+          target_job_title?: string | null
+          target_notification_email?: string | null
+          target_organisational_unit_id?: string | null
+          target_role_version_id?: string
+          target_scope_type?: string
+          target_scope_unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workforce_provision_intents_actor_fkey"
+            columns: ["organisation_id", "actor_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "workforce_provision_intents_job_function_fkey"
+            columns: ["organisation_id", "target_job_function_id"]
+            isOneToOne: false
+            referencedRelation: "job_functions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "workforce_provision_intents_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workforce_provision_intents_role_version_fkey"
+            columns: ["organisation_id", "target_role_version_id"]
+            isOneToOne: false
+            referencedRelation: "role_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "workforce_provision_intents_scope_unit_fkey"
+            columns: ["organisation_id", "target_scope_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "workforce_provision_intents_unit_fkey"
+            columns: ["organisation_id", "target_organisational_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
       }
     }
     Views: {
@@ -11274,6 +11374,13 @@ export type Database = {
       cancel_project: {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
+      }
+      claim_workforce_import_batch: {
+        Args: { target_batch_size?: number; target_import_job_id: string }
+        Returns: {
+          import_row_id: string
+          provisioning_intent_id: string
+        }[]
       }
       close_problem_solving_case: {
         Args: {
@@ -11678,20 +11785,6 @@ export type Database = {
         }
         Returns: string
       }
-      create_workforce_import_job: {
-        Args: { target_original_filename: string }
-        Returns: string
-      }
-      claim_workforce_import_batch: {
-        Args: {
-          target_batch_size?: number
-          target_import_job_id: string
-        }
-        Returns: {
-          import_row_id: string
-          provisioning_intent_id: string
-        }[]
-      }
       create_maturity_action: {
         Args: {
           target_assessment_id: string
@@ -11946,6 +12039,10 @@ export type Database = {
           target_trainer_membership_id?: string
           target_trainer_name?: string
         }
+        Returns: string
+      }
+      create_workforce_import_job: {
+        Args: { target_original_filename: string }
         Returns: string
       }
       current_identity_state: {
@@ -12236,17 +12333,18 @@ export type Database = {
         Args: { target_unit_id?: string }
         Returns: Json
       }
-      get_workforce_provision_intent_for_worker: {
-        Args: { expected_caller_user_id: string; target_intent_id: string }
+      get_workforce_import_credential_export_rows: {
+        Args: { target_import_job_id: string }
         Returns: {
-          created_auth_user_id: string
-          intent_id: string
-          organisation_code: string
-          organisation_id: string
-          sealed_internal_login_identifier: string
-          status: string
-          target_canonical_alias: string
-          target_display_name: string
+          credential_ciphertext: string
+          credential_nonce: string
+          first_name: string
+          import_row_id: string
+          job_title: string
+          last_name: string
+          primary_unit_path: string
+          row_number: number
+          username: string
         }[]
       }
       get_workforce_import_job_progress: {
@@ -12267,7 +12365,41 @@ export type Database = {
       }
       get_workforce_import_validation_rows: {
         Args: { target_import_job_id: string }
-        Returns: Database["public"]["Tables"]["workforce_import_rows"]["Row"][]
+        Returns: {
+          created_at: string
+          created_membership_id: string | null
+          error_code: string | null
+          error_message: string | null
+          field_errors: Json | null
+          id: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          provisioning_intent_id: string | null
+          resolved_payload: Json | null
+          row_number: number
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "workforce_import_rows"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_workforce_provision_intent_for_worker: {
+        Args: { expected_caller_user_id: string; target_intent_id: string }
+        Returns: {
+          created_auth_user_id: string
+          intent_id: string
+          organisation_code: string
+          organisation_id: string
+          sealed_internal_login_identifier: string
+          status: string
+          target_canonical_alias: string
+          target_display_name: string
+        }[]
       }
       grant_role_version: {
         Args: {
@@ -12437,6 +12569,10 @@ export type Database = {
           target_suggestion_id: string
         }
         Returns: boolean
+      }
+      mark_workforce_import_credentials_exported: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
       }
       mark_workforce_provision_needs_remediation: {
         Args: { target_failure_reason: string; target_intent_id: string }
@@ -12695,6 +12831,19 @@ export type Database = {
         Args: { target_auth_user_id: string; target_intent_id: string }
         Returns: boolean
       }
+      record_workforce_import_row_failure: {
+        Args: {
+          target_error_code: string
+          target_error_message: string
+          target_import_row_id: string
+          target_needs_remediation?: boolean
+        }
+        Returns: undefined
+      }
+      record_workforce_import_row_success: {
+        Args: { target_import_row_id: string; target_membership_id: string }
+        Returns: undefined
+      }
       reissue_organisation_member_invitation: {
         Args: {
           replacement_expires_at: string
@@ -12794,6 +12943,10 @@ export type Database = {
         Returns: boolean
       }
       resume_project: { Args: { target_project_id: string }; Returns: boolean }
+      retry_workforce_import_failed_rows: {
+        Args: { target_import_job_id: string }
+        Returns: number
+      }
       return_benefit_to_draft: {
         Args: { target_benefit_id: string; target_reason?: string }
         Returns: boolean
@@ -12908,6 +13061,19 @@ export type Database = {
         Returns: string
       }
       start_project: { Args: { target_project_id: string }; Returns: boolean }
+      start_workforce_import_provisioning: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
+      }
+      store_workforce_import_row_credential: {
+        Args: {
+          target_ciphertext: string
+          target_expires_at: string
+          target_import_row_id: string
+          target_nonce: string
+        }
+        Returns: undefined
+      }
       submit_benefit: {
         Args: {
           target_benefit_id: string
@@ -12940,18 +13106,6 @@ export type Database = {
       submit_workforce_import_rows: {
         Args: { target_import_job_id: string; target_rows: Json }
         Returns: undefined
-      }
-      start_workforce_import_provisioning: {
-        Args: { target_import_job_id: string }
-        Returns: undefined
-      }
-      validate_workforce_import_job: {
-        Args: { target_import_job_id: string }
-        Returns: Json
-      }
-      retry_workforce_import_failed_rows: {
-        Args: { target_import_job_id: string }
-        Returns: number
       }
       suspend_or_close_organisation: {
         Args: {
@@ -13218,6 +13372,10 @@ export type Database = {
       validate_benefit_realisation_entry: {
         Args: { target_entry_id: string }
         Returns: boolean
+      }
+      validate_workforce_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: Json
       }
       verify_cause_hypothesis: {
         Args: {

@@ -93,7 +93,7 @@ export default async function WorkforceImportPage() {
                     {job.total_rows} employees
                   </p>
                 </div>
-                <p className="capitalize text-muted-foreground">
+                <p className="text-muted-foreground capitalize">
                   {job.status.replaceAll("_", " ")}
                 </p>
               </div>

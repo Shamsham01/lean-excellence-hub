@@ -41,7 +41,7 @@ declare
   normalized_path text := btrim(target_path);
   segments text[];
   segment text;
-  cleaned text[] := '{}';
+  cleaned text[] := ARRAY[]::text[];
 begin
   if normalized_path = '' then
     return cleaned;
@@ -107,8 +107,8 @@ begin
       else partial_path || ' > ' || segment
     end;
 
-    select count(*), min(unit_row.id)
-    into matched_count, matched_id
+    select count(*)
+    into matched_count
     from public.organisation_units unit_row
     where unit_row.organisation_id = target_organisation_id
       and unit_row.status = 'active'
@@ -136,6 +136,19 @@ begin
       );
       return;
     end if;
+
+    select unit_row.id
+    into matched_id
+    from public.organisation_units unit_row
+    where unit_row.organisation_id = target_organisation_id
+      and unit_row.status = 'active'
+      and unit_row.name = segment
+      and (
+        (current_parent is null and unit_row.parent_unit_id is null)
+        or unit_row.parent_unit_id = current_parent
+      )
+    order by unit_row.id
+    limit 1;
 
     current_parent := matched_id;
   end loop;
@@ -170,8 +183,8 @@ begin
     return;
   end if;
 
-  select count(*), min(job_function_row.id)
-  into matched_count, resolved_job_function_id
+  select count(*)
+  into matched_count
   from public.job_functions job_function_row
   where job_function_row.organisation_id = target_organisation_id
     and job_function_row.status = 'active'
@@ -189,6 +202,15 @@ begin
     resolved_job_function_id := null;
     return;
   end if;
+
+  select job_function_row.id
+  into resolved_job_function_id
+  from public.job_functions job_function_row
+  where job_function_row.organisation_id = target_organisation_id
+    and job_function_row.status = 'active'
+    and lower(job_function_row.name) = lower(btrim(target_name))
+  order by job_function_row.id
+  limit 1;
 
   resolution_status := 'resolved';
 end;
@@ -219,8 +241,8 @@ begin
     return;
   end if;
 
-  select count(*), min(role_version_row.id)
-  into matched_count, resolved_role_version_id
+  select count(*)
+  into matched_count
   from public.role_versions role_version_row
   join public.roles role_row
     on role_row.organisation_id = role_version_row.organisation_id
@@ -246,6 +268,19 @@ begin
     return;
   end if;
 
+  select role_version_row.id
+  into resolved_role_version_id
+  from public.role_versions role_version_row
+  join public.roles role_row
+    on role_row.organisation_id = role_version_row.organisation_id
+   and role_row.id = role_version_row.role_id
+  where role_version_row.organisation_id = target_organisation_id
+    and role_version_row.status = 'published'
+    and role_row.status = 'active'
+    and lower(role_row.display_name) = lower(btrim(target_role_name))
+  order by role_version_row.id
+  limit 1;
+
   resolution_status := 'resolved';
 end;
 $$;
@@ -259,7 +294,7 @@ create or replace function private.validate_workforce_import_row_payload(
   out field_errors jsonb
 )
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $$
@@ -716,7 +751,7 @@ declare
   username text;
   row_status text;
   resolved jsonb;
-  field_errors jsonb;
+  validation_field_errors jsonb;
   valid_count integer := 0;
   error_count integer := 0;
   warning_count integer := 0;
@@ -745,7 +780,7 @@ begin
 
     if username <> '' and seen_usernames ? username then
       row_status := 'error';
-      field_errors := jsonb_build_array(
+      validation_field_errors := jsonb_build_array(
         jsonb_build_object(
           'field', 'username',
           'issue', format('Username ''%s'' is duplicated in this file.', username),
@@ -759,28 +794,28 @@ begin
       end if;
 
       select
-        private.validate_workforce_import_row_payload.row_status,
-        private.validate_workforce_import_row_payload.resolved,
-        private.validate_workforce_import_row_payload.field_errors
-      into row_status, resolved, field_errors
+        validation.row_status,
+        validation.resolved,
+        validation.field_errors
+      into row_status, resolved, validation_field_errors
       from private.validate_workforce_import_row_payload(
         org_id,
         actor_membership_id,
         import_row.input_payload
-      );
+      ) as validation;
     end if;
 
-    update public.workforce_import_rows
+    update public.workforce_import_rows import_row_target
     set status = row_status,
         resolved_payload = resolved,
-        field_errors = field_errors,
+        field_errors = validation_field_errors,
         error_code = case when row_status = 'error' then 'validation_failed' else null end,
         error_message = case
           when row_status = 'error' then 'Row failed validation.'
           else null
         end,
         updated_at = statement_timestamp()
-    where id = import_row.id;
+    where import_row_target.id = import_row.id;
 
     if row_status = 'valid' then
       valid_count := valid_count + 1;
@@ -842,6 +877,19 @@ begin
   if import_row.id is null then
     raise exception 'import row does not exist'
       using errcode = 'P0002';
+  end if;
+
+  if import_row.status = 'provisioning'
+    and import_row.provisioning_intent_id is not null then
+    select intent_row.id
+    into existing_intent_id
+    from public.workforce_provision_intents intent_row
+    where intent_row.id = import_row.provisioning_intent_id
+      and intent_row.status in ('pending', 'auth_created', 'completed');
+
+    if existing_intent_id is not null then
+      return existing_intent_id;
+    end if;
   end if;
 
   if import_row.status not in ('valid', 'warning', 'failed') then
@@ -1022,7 +1070,7 @@ begin
     from public.workforce_import_rows import_row_table
     where import_row_table.import_job_id = target_import_job_id
       and import_row_table.organisation_id = org_id
-      and import_row_table.status in ('valid', 'warning', 'failed')
+      and import_row_table.status in ('valid', 'warning', 'provisioning')
     order by import_row_table.row_number
     for update skip locked
   loop
@@ -1131,6 +1179,10 @@ begin
   if import_row.id is null then
     raise exception 'import row does not exist'
       using errcode = 'P0002';
+  end if;
+
+  if import_row.status in ('failed', 'needs_platform_remediation', 'completed') then
+    return;
   end if;
 
   update public.workforce_import_rows
@@ -1547,11 +1599,11 @@ revoke all on function public.get_workforce_import_validation_rows(uuid) from pu
 revoke all on function public.get_workforce_import_preview_rows(uuid) from public, anon;
 revoke all on function public.retry_workforce_import_failed_rows(uuid) from public, anon;
 
-grant execute on function public.record_workforce_import_row_success(uuid, uuid) to lean_hub_private_owner;
-grant execute on function public.record_workforce_import_row_failure(uuid, text, text, boolean) to lean_hub_private_owner;
-grant execute on function public.store_workforce_import_row_credential(uuid, bytea, bytea, timestamptz) to lean_hub_private_owner;
+grant execute on function public.record_workforce_import_row_success(uuid, uuid) to lean_hub_private_owner, service_role;
+grant execute on function public.record_workforce_import_row_failure(uuid, text, text, boolean) to lean_hub_private_owner, service_role;
+grant execute on function public.store_workforce_import_row_credential(uuid, bytea, bytea, timestamptz) to lean_hub_private_owner, service_role;
 grant execute on function public.mark_workforce_import_credentials_exported(uuid) to authenticated, lean_hub_private_owner;
-grant execute on function public.get_workforce_import_credential_export_rows(uuid) to lean_hub_private_owner;
+grant execute on function public.get_workforce_import_credential_export_rows(uuid) to lean_hub_private_owner, service_role;
 
 revoke all on function public.record_workforce_import_row_success(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.record_workforce_import_row_failure(uuid, text, text, boolean) from public, anon, authenticated;

@@ -5,7 +5,10 @@ function decodeEncryptionKey(rawKey: string): Uint8Array {
   if (/^[0-9a-fA-F]{64}$/.test(trimmed)) {
     const bytes = new Uint8Array(32);
     for (let index = 0; index < 32; index += 1) {
-      bytes[index] = Number.parseInt(trimmed.slice(index * 2, index * 2 + 2), 16);
+      bytes[index] = Number.parseInt(
+        trimmed.slice(index * 2, index * 2 + 2),
+        16,
+      );
     }
     return bytes;
   }
@@ -81,6 +84,36 @@ export async function decryptCredential(
   );
 
   return new TextDecoder().decode(decrypted);
+}
+
+export function postgresByteaToBytes(
+  value: string | Uint8Array | number[],
+): Uint8Array {
+  if (value instanceof Uint8Array) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return new Uint8Array(value);
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith("\\x")) {
+    const hex = trimmed.slice(2);
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
+    }
+    return bytes;
+  }
+
+  return base64ToBytes(trimmed);
+}
+
+export function bytesToPostgresBytea(bytes: Uint8Array): string {
+  return `\\x${Array.from(bytes, (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("")}`;
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {

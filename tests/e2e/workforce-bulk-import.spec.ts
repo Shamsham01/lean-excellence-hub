@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { DEMO_ORGANISATION, DEMO_USERS } from "../../scripts/demo-seed/constants";
+import {
+  DEMO_ORGANISATION,
+  DEMO_USERS,
+} from "../../scripts/demo-seed/constants";
 import {
   assertTemporaryPasswordNotPersisted,
   createServiceRoleClient,
@@ -10,7 +13,10 @@ import {
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
-async function signInAs(page: import("@playwright/test").Page, user: keyof typeof DEMO_USERS) {
+async function signInAs(
+  page: import("@playwright/test").Page,
+  user: keyof typeof DEMO_USERS,
+) {
   const credentials = DEMO_USERS[user];
   await page.goto("/login");
   await page.getByLabel("Email").fill(credentials.email);
@@ -39,7 +45,9 @@ test.describe("M2 workforce bulk import", () => {
   let organisationId = "";
   let exportedPassword = "";
 
-  test("admin can access import workflow and provision employees", async ({ page }) => {
+  test("admin can access import workflow and provision employees", async ({
+    page,
+  }) => {
     await signInAs(page, "admin");
     organisationId = await resolveDemoOrganisationId();
 
@@ -95,16 +103,21 @@ test.describe("M2 workforce bulk import", () => {
       password: exportedPassword,
     });
 
-    await expect(page.getByText(/change your password/i)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Set a new password" }),
+    ).toBeVisible();
     const permanentPassword = `BulkPermanent!${uniqueSuffix.slice(-4)}`;
-    await page.getByLabel(/new password/i).fill(permanentPassword);
-    await page.getByLabel(/confirm password/i).fill(permanentPassword);
-    await page.getByRole("button", { name: /update password/i }).click();
-    await expect(page).toHaveURL(/\/platform/);
+    await page.locator("#password").fill(permanentPassword);
+    await Promise.all([
+      page.waitForURL(/\/platform/, { timeout: 60_000 }),
+      page.getByRole("button", { name: "Update password" }).click(),
+    ]);
     await context.close();
   });
 
-  test("validation rejects invalid file before provisioning", async ({ page }) => {
+  test("validation rejects invalid file before provisioning", async ({
+    page,
+  }) => {
     await signInAs(page, "admin");
     await page.goto("/platform/settings/people/import");
 
@@ -140,6 +153,8 @@ test.describe("M2 workforce bulk import", () => {
   test("credential export cannot be downloaded twice", async ({ page }) => {
     await signInAs(page, "admin");
     await page.goto("/platform/settings/people/import");
-    await expect(page.getByTestId("download-import-credentials")).toHaveCount(0);
+    await expect(page.getByTestId("download-import-credentials")).toHaveCount(
+      0,
+    );
   });
 });

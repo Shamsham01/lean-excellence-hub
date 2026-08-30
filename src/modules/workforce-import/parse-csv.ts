@@ -38,12 +38,16 @@ function parseCsvLine(line: string): string[] {
   return values;
 }
 
-export function parseCsvContent(content: string): ParsedWorkforceImportFile | FileParseError {
+export function parseCsvContent(
+  content: string,
+): ParsedWorkforceImportFile | FileParseError {
   const normalized = content.replace(/^\uFEFF/, "");
   const lines = normalized
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
-    .filter((line, index, allLines) => line.length > 0 || index < allLines.length - 1);
+    .filter(
+      (line, index, allLines) => line.length > 0 || index < allLines.length - 1,
+    );
 
   if (lines.length === 0) {
     return { error: "The file is empty." };

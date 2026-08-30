@@ -10,7 +10,11 @@ import type {
   WorkforceImportProgress,
   WorkforceImportValidationSummary,
 } from "@/modules/workforce-import/constants";
-import { buildCsvTemplate, parseWorkforceImportFile } from "@/modules/workforce-import/parse-file";
+import {
+  buildCsvTemplate,
+  parseWorkforceImportFile,
+} from "@/modules/workforce-import/parse-file";
+import { WORKFORCE_IMPORT_BATCH_SIZE } from "@/modules/workforce-import/constants";
 
 type ImportPreviewRow = {
   row_number: number;
@@ -35,14 +39,18 @@ type ValidationRow = {
 
 type WorkforceImportWizardProps = {
   organisationCode: string;
-  onCreateJob: (filename: string) => Promise<{ ok: true; data: { jobId: string } } | { error: string }>;
+  onCreateJob: (
+    filename: string,
+  ) => Promise<{ ok: true; data: { jobId: string } } | { error: string }>;
   onSubmitRows: (
     jobId: string,
     rows: import("@/modules/workforce-import/constants").WorkforceImportRowInput[],
   ) => Promise<{ ok: true; data: { jobId: string } } | { error: string }>;
   onValidate: (
     jobId: string,
-  ) => Promise<{ ok: true; data: WorkforceImportValidationSummary } | { error: string }>;
+  ) => Promise<
+    { ok: true; data: WorkforceImportValidationSummary } | { error: string }
+  >;
   onLoadValidationRows: (
     jobId: string,
   ) => Promise<{ ok: true; data: ValidationRow[] } | { error: string }>;
@@ -107,12 +115,13 @@ export function WorkforceImportWizard({
   const [jobId, setJobId] = useState<string | null>(null);
   const [filename, setFilename] = useState<string>("");
   const [rowCount, setRowCount] = useState(0);
-  const [summary, setSummary] = useState<WorkforceImportValidationSummary | null>(
-    null,
-  );
+  const [summary, setSummary] =
+    useState<WorkforceImportValidationSummary | null>(null);
   const [validationRows, setValidationRows] = useState<ValidationRow[]>([]);
   const [previewRows, setPreviewRows] = useState<ImportPreviewRow[]>([]);
-  const [progress, setProgress] = useState<WorkforceImportProgress | null>(null);
+  const [progress, setProgress] = useState<WorkforceImportProgress | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [credentialsExported, setCredentialsExported] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
@@ -344,7 +353,11 @@ export function WorkforceImportWizard({
               runs on the complete file before any accounts are created.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" type="button" onClick={downloadTemplate}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={downloadTemplate}
+              >
                 Download CSV template
               </Button>
             </div>
@@ -436,7 +449,10 @@ export function WorkforceImportWizard({
             </p>
             <div className="max-h-96 space-y-3 overflow-y-auto">
               {previewRows.slice(0, 20).map((row) => (
-                <div key={row.row_number} className="rounded-md border p-3 text-sm">
+                <div
+                  key={row.row_number}
+                  className="rounded-md border p-3 text-sm"
+                >
                   <p className="font-medium">{row.display_name}</p>
                   <p>Username: {row.username}</p>
                   <p>Job function: {row.job_function}</p>
@@ -475,7 +491,8 @@ export function WorkforceImportWizard({
               <p>Remaining: {progress?.remainingRows ?? 0}</p>
             </div>
             <p className="text-sm text-muted-foreground">
-              Processing in batches of 25 to avoid platform timeouts.
+              Processing in batches of {WORKFORCE_IMPORT_BATCH_SIZE} to avoid
+              platform timeouts.
             </p>
           </CardContent>
         </Card>
@@ -527,7 +544,9 @@ export function WorkforceImportWizard({
                 progress?.credentialExportStatus === "exported"
               }
             >
-              {credentialsExported ? "Credentials exported" : "Download credentials"}
+              {credentialsExported
+                ? "Credentials exported"
+                : "Download credentials"}
             </Button>
           </CardContent>
         </Card>

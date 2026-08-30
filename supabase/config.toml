@@ -420,6 +420,9 @@ verify_jwt = false
 [functions.workforce-import-export]
 verify_jwt = false
 
+[functions.workforce-import-finalize]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
@@ -431,8 +434,8 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+CREDENTIAL_ENCRYPTION_KEY = "env(CREDENTIAL_ENCRYPTION_KEY)"
 
 [analytics]
 enabled = true

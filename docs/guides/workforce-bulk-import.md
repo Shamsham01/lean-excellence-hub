@@ -47,16 +47,16 @@ Provisioning is blocked until `error_rows = 0`.
 ## Provisioning architecture
 
 1. `start_workforce_import_provisioning`
-2. Repeated `claim_workforce_import_batch` (default 25 rows) from Next.js
+2. Repeated `claim_workforce_import_batch` (default 1 row) from Next.js
 3. `workforce-import-batch` Edge Function provisions each row via the existing
    `workforce-provision` handler
 4. Temporary passwords are encrypted with AES-GCM and stored in
    `workforce_import_row_credentials`
 5. Job progress is tracked in `workforce_import_jobs` / `workforce_import_rows`
 
-Batch size **25** keeps each Edge Function request under typical platform
-timeouts while providing visible progress for large imports (40 batches for
-1,000 rows).
+Batch size **1** keeps each Edge Function request within local and hosted edge
+runtime wall-clock limits while still providing visible progress for large
+imports (1,000 batches for 1,000 rows).
 
 ## Credential security lifecycle
 

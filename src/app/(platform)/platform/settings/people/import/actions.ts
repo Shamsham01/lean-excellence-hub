@@ -9,11 +9,13 @@ import {
   mapValidationRowsFromDatabase,
 } from "@/modules/workforce-import/credential-export";
 import {
-  invokeWorkforceImportBatch,
   invokeWorkforceImportCredentialExport,
+  invokeWorkforceImportFinalize,
 } from "@/modules/workforce-import/client";
+import { invokeWorkforceProvision } from "@/modules/workforce-provision/client";
 import {
   WORKFORCE_IMPORT_BATCH_SIZE,
+  mapWorkforceImportProgressFromDatabase,
   type WorkforceImportProgress,
   type WorkforceImportRowInput,
   type WorkforceImportValidationSummary,
@@ -21,8 +23,7 @@ import {
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export type WorkforceImportActionResult<T> =
-  | { ok: true; data: T }
-  | { error: string };
+  { ok: true; data: T } | { error: string };
 
 async function assertCanImport(): Promise<{ error: string } | null> {
   const canImport = await currentMemberHasPermission("workforce.import");
@@ -45,10 +46,7 @@ export async function createImportJob(
 
   if (error || !data) {
     return {
-      error: toCustomerErrorMessage(
-        error,
-        "Unable to start workforce import.",
-      ),
+      error: toCustomerErrorMessage(error, "Unable to start workforce import."),
     };
   }
 
@@ -70,10 +68,7 @@ export async function submitImportRows(
 
   if (error) {
     return {
-      error: toCustomerErrorMessage(
-        error,
-        "Unable to submit import rows.",
-      ),
+      error: toCustomerErrorMessage(error, "Unable to submit import rows."),
     };
   }
 
@@ -129,7 +124,10 @@ export async function getImportValidationRows(jobId: string) {
 
   if (error) {
     return {
-      error: toCustomerErrorMessage(error, "Unable to load validation results."),
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to load validation results.",
+      ),
     };
   }
 
@@ -200,9 +198,7 @@ export async function startImportProvisioning(
   return { ok: true, data: { jobId } };
 }
 
-export async function runImportBatch(
-  jobId: string,
-): Promise<
+export async function runImportBatch(jobId: string): Promise<
   WorkforceImportActionResult<{
     claimed: number;
     succeeded: number;
@@ -214,15 +210,77 @@ export async function runImportBatch(
   const denied = await assertCanImport();
   if (denied) return denied;
 
-  const result = await invokeWorkforceImportBatch(
-    jobId,
-    WORKFORCE_IMPORT_BATCH_SIZE,
+  const supabase = await createServerSupabaseClient();
+  const { data: claimedRows, error: claimError } = await supabase.rpc(
+    "claim_workforce_import_batch",
+    {
+      target_import_job_id: jobId,
+      target_batch_size: WORKFORCE_IMPORT_BATCH_SIZE,
+    },
   );
-  if ("error" in result) {
-    return { error: result.error };
+
+  if (claimError) {
+    return {
+      error: toCustomerErrorMessage(
+        claimError,
+        "Unable to process workforce import batch.",
+      ),
+    };
   }
 
-  const progress = result.progress as WorkforceImportProgress;
+  const rows = (claimedRows ?? []) as Array<{
+    import_row_id: string;
+    provisioning_intent_id: string;
+  }>;
+
+  let succeeded = 0;
+  let failed = 0;
+  let remediation = 0;
+
+  for (const row of rows) {
+    const provision = await invokeWorkforceProvision(
+      row.provisioning_intent_id,
+    );
+    if ("error" in provision) {
+      const failure = await invokeWorkforceImportFinalize({
+        importRowId: row.import_row_id,
+        outcome: "failure",
+        errorMessage: provision.error,
+      });
+      if ("error" in failure) {
+        return { error: failure.error };
+      }
+      failed += 1;
+      continue;
+    }
+
+    const finalized = await invokeWorkforceImportFinalize({
+      importRowId: row.import_row_id,
+      outcome: "success",
+      membershipId: provision.membershipId,
+      temporaryPassword: provision.temporaryPassword,
+    });
+    if ("error" in finalized) {
+      const failure = await invokeWorkforceImportFinalize({
+        importRowId: row.import_row_id,
+        outcome: "failure",
+        errorMessage: finalized.error,
+      });
+      if ("error" in failure) {
+        return { error: failure.error };
+      }
+      failed += 1;
+      continue;
+    }
+
+    succeeded += 1;
+  }
+
+  const progressResult = await getImportProgress(jobId);
+  if ("error" in progressResult) {
+    return { error: progressResult.error };
+  }
+
   revalidatePath("/platform/settings/people");
   revalidatePath("/platform/settings/people/import");
   revalidatePath("/platform/people");
@@ -230,11 +288,11 @@ export async function runImportBatch(
   return {
     ok: true,
     data: {
-      claimed: result.claimed,
-      succeeded: result.succeeded,
-      failed: result.failed,
-      remediation: result.remediation,
-      progress,
+      claimed: rows.length,
+      succeeded,
+      failed,
+      remediation,
+      progress: progressResult.data,
     },
   };
 }
@@ -274,20 +332,7 @@ export async function getImportProgress(
 
   return {
     ok: true,
-    data: {
-      status: progress.status,
-      totalRows: progress.total_rows,
-      validRows: progress.valid_rows,
-      errorRows: progress.error_rows,
-      warningRows: progress.warning_rows,
-      provisionedRows: progress.provisioned_rows,
-      failedRows: progress.failed_rows,
-      remediationRows: progress.remediation_rows,
-      remainingRows: progress.remaining_rows,
-      credentialExportStatus: progress.credential_export_status,
-      credentialExpiresAt: progress.credential_expires_at,
-      completedAt: progress.completed_at,
-    },
+    data: mapWorkforceImportProgressFromDatabase(progress),
   };
 }
 

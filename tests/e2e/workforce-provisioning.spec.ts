@@ -131,8 +131,10 @@ test.describe("M1 workforce provisioning", () => {
     await expect(page).toHaveURL(/\/update-password/);
 
     await page.locator("#password").fill(permanentPassword);
-    await page.getByRole("button", { name: "Update password" }).click();
-    await expect(page).toHaveURL(/\/platform/);
+    await Promise.all([
+      page.waitForURL(/\/platform/, { timeout: 60_000 }),
+      page.getByRole("button", { name: "Update password" }).click(),
+    ]);
 
     const internalLogin = await lookupWorkforceInternalLogin(
       organisationCode,

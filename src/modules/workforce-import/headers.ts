@@ -75,7 +75,9 @@ export function mapRowValues(
         header as WorkforceImportCanonicalColumn,
       )
     ) {
-      row[header as WorkforceImportCanonicalColumn] = (values[index] ?? "").trim();
+      row[header as WorkforceImportCanonicalColumn] = (
+        values[index] ?? ""
+      ).trim();
     }
   });
 

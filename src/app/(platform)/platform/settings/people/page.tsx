@@ -24,7 +24,8 @@ export default async function PeopleSettingsPage() {
   const canProvisionWorkforce = await currentMemberHasPermission(
     "workforce.provision",
   );
-  const canImportWorkforce = await currentMemberHasPermission("workforce.import");
+  const canImportWorkforce =
+    await currentMemberHasPermission("workforce.import");
   const canDelegateAccess = await currentMemberHasDelegatableAccess();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",

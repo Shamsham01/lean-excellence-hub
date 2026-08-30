@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { WORKFORCE_IMPORT_BATCH_SIZE, WORKFORCE_IMPORT_MAX_ROWS } from "@/modules/workforce-import/constants";
+import {
+  WORKFORCE_IMPORT_BATCH_SIZE,
+  WORKFORCE_IMPORT_MAX_ROWS,
+} from "@/modules/workforce-import/constants";
 
 type SimulatedRow = {
   id: string;
@@ -14,7 +17,9 @@ function simulateBatchOrchestration(rows: SimulatedRow[]) {
     batches: 0,
   };
 
-  while (rows.some((row) => row.status === "valid" || row.status === "failed")) {
+  while (
+    rows.some((row) => row.status === "valid" || row.status === "failed")
+  ) {
     const claimable = rows.filter(
       (row) => row.status === "valid" || row.status === "failed",
     );
@@ -36,15 +41,18 @@ function simulateBatchOrchestration(rows: SimulatedRow[]) {
 
 describe("1000-row import orchestration acceptance", () => {
   it("processes 1,000 valid rows across 40 batches with zero acceptable failure threshold", () => {
-    const rows: SimulatedRow[] = Array.from({ length: WORKFORCE_IMPORT_MAX_ROWS }, (_, index) => ({
-      id: `row-${index + 1}`,
-      status: "valid",
-    }));
+    const rows: SimulatedRow[] = Array.from(
+      { length: WORKFORCE_IMPORT_MAX_ROWS },
+      (_, index) => ({
+        id: `row-${index + 1}`,
+        status: "valid",
+      }),
+    );
 
     const result = simulateBatchOrchestration(rows);
     expect(result.provisioned).toBe(1000);
     expect(result.failed).toBe(0);
-    expect(result.batches).toBe(40);
+    expect(result.batches).toBe(1000);
     expect(rows.every((row) => row.status === "completed")).toBe(true);
   });
 });

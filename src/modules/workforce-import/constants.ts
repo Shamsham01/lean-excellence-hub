@@ -1,6 +1,6 @@
 export const WORKFORCE_IMPORT_MAX_ROWS = 1000;
 
-export const WORKFORCE_IMPORT_BATCH_SIZE = 25;
+export const WORKFORCE_IMPORT_BATCH_SIZE = 1;
 
 export const WORKFORCE_IMPORT_CANONICAL_COLUMNS = [
   "first_name",
@@ -57,3 +57,26 @@ export type WorkforceImportProgress = {
   credentialExpiresAt: string | null;
   completedAt: string | null;
 };
+
+export function mapWorkforceImportProgressFromDatabase(
+  progress: Record<string, unknown>,
+): WorkforceImportProgress {
+  return {
+    status: String(progress.status ?? ""),
+    totalRows: Number(progress.total_rows ?? 0),
+    validRows: Number(progress.valid_rows ?? 0),
+    errorRows: Number(progress.error_rows ?? 0),
+    warningRows: Number(progress.warning_rows ?? 0),
+    provisionedRows: Number(progress.provisioned_rows ?? 0),
+    failedRows: Number(progress.failed_rows ?? 0),
+    remediationRows: Number(progress.remediation_rows ?? 0),
+    remainingRows: Number(progress.remaining_rows ?? 0),
+    credentialExportStatus: String(progress.credential_export_status ?? ""),
+    credentialExpiresAt:
+      typeof progress.credential_expires_at === "string"
+        ? progress.credential_expires_at
+        : null,
+    completedAt:
+      typeof progress.completed_at === "string" ? progress.completed_at : null,
+  };
+}

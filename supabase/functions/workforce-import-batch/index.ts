@@ -40,4 +40,6 @@ const dependencies = {
   encryptCredential,
 };
 
-Deno.serve((request) => handleWorkforceImportBatchRequest(request, dependencies));
+Deno.serve((request) =>
+  handleWorkforceImportBatchRequest(request, dependencies),
+);

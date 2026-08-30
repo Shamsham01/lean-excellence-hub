@@ -20,6 +20,7 @@ export async function invokeWorkforceProvision(intentId: string): Promise<
       username: string;
       displayName: string;
       temporaryPassword: string;
+      membershipId: string;
     }
   | { error: string }
 > {
@@ -57,7 +58,8 @@ export async function invokeWorkforceProvision(intentId: string): Promise<
     !response.ok ||
     !payload ||
     "error" in payload ||
-    !payload.temporaryPassword
+    !payload.temporaryPassword ||
+    !payload.membershipId
   ) {
     return {
       error:
@@ -72,5 +74,6 @@ export async function invokeWorkforceProvision(intentId: string): Promise<
     username: payload.username,
     displayName: payload.displayName,
     temporaryPassword: payload.temporaryPassword,
+    membershipId: payload.membershipId,
   };
 }

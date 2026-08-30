@@ -3,15 +3,18 @@ import { generateWorkforceTemporaryPassword } from "@workforce/password";
 import {
   decryptCredential,
   encryptCredential,
+  bytesToPostgresBytea,
+  postgresByteaToBytes,
 } from "../workforce-import/credential-crypto.ts";
 import {
   handleWorkforceProvisionRequest,
   type WorkforceProvisionDependencies,
 } from "../workforce-provision/handler.ts";
 
-export type WorkforceImportBatchDependencies = WorkforceProvisionDependencies & {
-  encryptCredential: typeof encryptCredential;
-};
+export type WorkforceImportBatchDependencies =
+  WorkforceProvisionDependencies & {
+    encryptCredential: typeof encryptCredential;
+  };
 
 type BatchRequestBody = {
   importJobId?: string;
@@ -41,7 +44,10 @@ async function provisionImportRow(
   accessToken: string,
   importRowId: string,
   intentId: string,
-): Promise<{ ok: true; membershipId: string } | { ok: false; error: string; needsRemediation?: boolean }> {
+): Promise<
+  | { ok: true; membershipId: string }
+  | { ok: false; error: string; needsRemediation?: boolean }
+> {
   const provisionResponse = await handleWorkforceProvisionRequest(
     new Request("http://local/workforce-provision", {
       method: "POST",
@@ -67,7 +73,11 @@ async function provisionImportRow(
     return { ok: false, error: "Unable to complete workforce provisioning." };
   }
 
-  if (!provisionResponse.ok || !payload?.temporaryPassword || !payload.membershipId) {
+  if (
+    !provisionResponse.ok ||
+    !payload?.temporaryPassword ||
+    !payload.membershipId
+  ) {
     return {
       ok: false,
       error: payload?.error ?? "Unable to complete workforce provisioning.",
@@ -87,8 +97,8 @@ async function provisionImportRow(
       "store_workforce_import_row_credential",
       {
         target_import_row_id: importRowId,
-        target_ciphertext: Array.from(encrypted.ciphertext),
-        target_nonce: Array.from(encrypted.nonce),
+        target_ciphertext: bytesToPostgresBytea(encrypted.ciphertext),
+        target_nonce: bytesToPostgresBytea(encrypted.nonce),
         target_expires_at: expiresAt,
       },
     );
@@ -171,30 +181,42 @@ export async function handleWorkforceImportBatchRequest(
   let remediation = 0;
 
   for (const row of rows) {
-    const outcome = await provisionImportRow(
-      dependencies,
-      accessToken,
-      row.import_row_id,
-      row.provisioning_intent_id,
-    );
+    try {
+      const outcome = await provisionImportRow(
+        dependencies,
+        accessToken,
+        row.import_row_id,
+        row.provisioning_intent_id,
+      );
 
-    if (outcome.ok) {
-      succeeded += 1;
-      continue;
-    }
+      if (outcome.ok) {
+        succeeded += 1;
+        continue;
+      }
 
-    const service = dependencies.createServiceClient();
-    const needsRemediation = outcome.needsRemediation === true;
-    await service.rpc("record_workforce_import_row_failure", {
-      target_import_row_id: row.import_row_id,
-      target_error_code: "provision_failed",
-      target_error_message: outcome.error,
-      target_needs_remediation: needsRemediation,
-    });
+      const service = dependencies.createServiceClient();
+      const needsRemediation = outcome.needsRemediation === true;
+      await service.rpc("record_workforce_import_row_failure", {
+        target_import_row_id: row.import_row_id,
+        target_error_code: "provision_failed",
+        target_error_message: outcome.error,
+        target_needs_remediation: needsRemediation,
+      });
 
-    if (needsRemediation) {
-      remediation += 1;
-    } else {
+      if (needsRemediation) {
+        remediation += 1;
+      } else {
+        failed += 1;
+      }
+    } catch {
+      const service = dependencies.createServiceClient();
+      await service.rpc("record_workforce_import_row_failure", {
+        target_import_row_id: row.import_row_id,
+        target_error_code: "provision_failed",
+        target_error_message:
+          "Unable to complete workforce provisioning for this row.",
+        target_needs_remediation: false,
+      });
       failed += 1;
     }
   }
@@ -269,12 +291,12 @@ export async function handleWorkforceImportExportRequest(
     username: string;
     job_title: string | null;
     primary_unit_path: string | null;
-    credential_ciphertext: number[];
-    credential_nonce: number[];
+    credential_ciphertext: string | number[];
+    credential_nonce: string | number[];
   }>) {
     const password = await decryptCredential(
-      new Uint8Array(row.credential_ciphertext),
-      new Uint8Array(row.credential_nonce),
+      postgresByteaToBytes(row.credential_ciphertext),
+      postgresByteaToBytes(row.credential_nonce),
       dependencies.readEnv,
     );
 
@@ -305,7 +327,10 @@ export async function handleWorkforceImportExportRequest(
   );
 
   if (invalidateError) {
-    return jsonResponse({ error: "Unable to finalise credential export." }, 500);
+    return jsonResponse(
+      { error: "Unable to finalise credential export." },
+      500,
+    );
   }
 
   return new Response(`${csvLines.join("\n")}\n`, {
