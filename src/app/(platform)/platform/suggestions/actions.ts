@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { toSuggestionCatalogErrorMessage } from "@/modules/suggestions/customer-errors";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type ActionResult = { error?: string; ok?: true; id?: string };
@@ -426,7 +427,14 @@ export async function deleteSuggestionCategory(
     target_category_id: categoryId,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    return {
+      error: toSuggestionCatalogErrorMessage(
+        error,
+        "Unable to delete this category.",
+      ),
+    };
+  }
 
   revalidatePath("/platform/suggestions/programmes");
   revalidatePath("/platform/suggestions/new");
