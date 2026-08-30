@@ -1,0 +1,369 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  buildValidationErrorReportCsv,
+  mapValidationRowsFromDatabase,
+} from "@/modules/workforce-import/credential-export";
+import {
+  invokeWorkforceImportBatch,
+  invokeWorkforceImportCredentialExport,
+} from "@/modules/workforce-import/client";
+import {
+  WORKFORCE_IMPORT_BATCH_SIZE,
+  type WorkforceImportProgress,
+  type WorkforceImportRowInput,
+  type WorkforceImportValidationSummary,
+} from "@/modules/workforce-import/constants";
+import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+export type WorkforceImportActionResult<T> =
+  | { ok: true; data: T }
+  | { error: string };
+
+async function assertCanImport(): Promise<{ error: string } | null> {
+  const canImport = await currentMemberHasPermission("workforce.import");
+  if (!canImport) {
+    return { error: "You do not have permission to import workforce users." };
+  }
+  return null;
+}
+
+export async function createImportJob(
+  originalFilename: string,
+): Promise<WorkforceImportActionResult<{ jobId: string }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("create_workforce_import_job", {
+    target_original_filename: originalFilename,
+  });
+
+  if (error || !data) {
+    return {
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to start workforce import.",
+      ),
+    };
+  }
+
+  return { ok: true, data: { jobId: data as string } };
+}
+
+export async function submitImportRows(
+  jobId: string,
+  rows: WorkforceImportRowInput[],
+): Promise<WorkforceImportActionResult<{ jobId: string }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("submit_workforce_import_rows", {
+    target_import_job_id: jobId,
+    target_rows: rows,
+  });
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to submit import rows.",
+      ),
+    };
+  }
+
+  return { ok: true, data: { jobId } };
+}
+
+export async function validateImportJob(
+  jobId: string,
+): Promise<WorkforceImportActionResult<WorkforceImportValidationSummary>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("validate_workforce_import_job", {
+    target_import_job_id: jobId,
+  });
+
+  if (error || !data) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to validate import file."),
+    };
+  }
+
+  const summary = data as {
+    total_rows: number;
+    valid_rows: number;
+    error_rows: number;
+    warning_rows: number;
+    can_provision: boolean;
+  };
+
+  return {
+    ok: true,
+    data: {
+      totalRows: summary.total_rows,
+      validRows: summary.valid_rows,
+      errorRows: summary.error_rows,
+      warningRows: summary.warning_rows,
+      canProvision: summary.can_provision,
+    },
+  };
+}
+
+export async function getImportValidationRows(jobId: string) {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "get_workforce_import_validation_rows",
+    { target_import_job_id: jobId },
+  );
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to load validation results."),
+    };
+  }
+
+  return {
+    ok: true as const,
+    data: mapValidationRowsFromDatabase(
+      (data ?? []) as unknown as Array<{
+        row_number: number;
+        status: string;
+        input_payload: WorkforceImportRowInput;
+        field_errors: Array<{
+          field: string;
+          issue: string;
+          suggestion: string;
+        }> | null;
+      }>,
+    ),
+  };
+}
+
+export async function getImportPreviewRows(jobId: string) {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "get_workforce_import_preview_rows",
+    { target_import_job_id: jobId },
+  );
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to load import preview."),
+    };
+  }
+
+  return {
+    ok: true as const,
+    data: (data ?? []) as Array<{
+      row_number: number;
+      display_name: string | null;
+      username: string | null;
+      job_function: string | null;
+      primary_unit_path: string | null;
+      application_role: string | null;
+      access_scope_unit_path: string | null;
+    }>,
+  };
+}
+
+export async function startImportProvisioning(
+  jobId: string,
+): Promise<WorkforceImportActionResult<{ jobId: string }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("start_workforce_import_provisioning", {
+    target_import_job_id: jobId,
+  });
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to start provisioning."),
+    };
+  }
+
+  return { ok: true, data: { jobId } };
+}
+
+export async function runImportBatch(
+  jobId: string,
+): Promise<
+  WorkforceImportActionResult<{
+    claimed: number;
+    succeeded: number;
+    failed: number;
+    remediation: number;
+    progress: WorkforceImportProgress;
+  }>
+> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const result = await invokeWorkforceImportBatch(
+    jobId,
+    WORKFORCE_IMPORT_BATCH_SIZE,
+  );
+  if ("error" in result) {
+    return { error: result.error };
+  }
+
+  const progress = result.progress as WorkforceImportProgress;
+  revalidatePath("/platform/settings/people");
+  revalidatePath("/platform/settings/people/import");
+  revalidatePath("/platform/people");
+
+  return {
+    ok: true,
+    data: {
+      claimed: result.claimed,
+      succeeded: result.succeeded,
+      failed: result.failed,
+      remediation: result.remediation,
+      progress,
+    },
+  };
+}
+
+export async function getImportProgress(
+  jobId: string,
+): Promise<WorkforceImportActionResult<WorkforceImportProgress>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "get_workforce_import_job_progress",
+    { target_import_job_id: jobId },
+  );
+
+  if (error || !data) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to load import progress."),
+    };
+  }
+
+  const progress = data as {
+    status: string;
+    total_rows: number;
+    valid_rows: number;
+    error_rows: number;
+    warning_rows: number;
+    provisioned_rows: number;
+    failed_rows: number;
+    remediation_rows: number;
+    remaining_rows: number;
+    credential_export_status: string;
+    credential_expires_at: string | null;
+    completed_at: string | null;
+  };
+
+  return {
+    ok: true,
+    data: {
+      status: progress.status,
+      totalRows: progress.total_rows,
+      validRows: progress.valid_rows,
+      errorRows: progress.error_rows,
+      warningRows: progress.warning_rows,
+      provisionedRows: progress.provisioned_rows,
+      failedRows: progress.failed_rows,
+      remediationRows: progress.remediation_rows,
+      remainingRows: progress.remaining_rows,
+      credentialExportStatus: progress.credential_export_status,
+      credentialExpiresAt: progress.credential_expires_at,
+      completedAt: progress.completed_at,
+    },
+  };
+}
+
+export async function exportImportCredentials(
+  jobId: string,
+  organisationCode: string,
+): Promise<WorkforceImportActionResult<{ csv: string }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const result = await invokeWorkforceImportCredentialExport(
+    jobId,
+    organisationCode,
+  );
+  if ("error" in result) {
+    return { error: result.error };
+  }
+
+  return { ok: true, data: { csv: result.csv } };
+}
+
+export async function retryFailedImportRows(
+  jobId: string,
+): Promise<WorkforceImportActionResult<{ resetCount: number }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "retry_workforce_import_failed_rows",
+    { target_import_job_id: jobId },
+  );
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to retry failed rows."),
+    };
+  }
+
+  return { ok: true, data: { resetCount: (data as number) ?? 0 } };
+}
+
+export async function buildImportErrorReport(
+  jobId: string,
+): Promise<WorkforceImportActionResult<{ csv: string }>> {
+  const rowsResult = await getImportValidationRows(jobId);
+  if ("error" in rowsResult) {
+    return { error: rowsResult.error };
+  }
+
+  return {
+    ok: true,
+    data: {
+      csv: buildValidationErrorReportCsv(rowsResult.data),
+    },
+  };
+}
+
+export async function listRecentImportJobs() {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("workforce_import_jobs")
+    .select(
+      "id, original_filename, total_rows, status, provisioned_rows, failed_rows, remediation_rows, created_at, created_by_membership_id",
+    )
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to load import history."),
+    };
+  }
+
+  return { ok: true as const, data: data ?? [] };
+}

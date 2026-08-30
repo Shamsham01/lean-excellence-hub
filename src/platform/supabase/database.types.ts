@@ -10684,6 +10684,8 @@ export type Database = {
           target_role_version_id: string
           target_scope_type: string
           target_scope_unit_id: string | null
+          source_import_job_id: string | null
+          source_import_row_id: string | null
           updated_at: string
         }
         Insert: {
@@ -10782,6 +10784,123 @@ export type Database = {
             referencedColumns: ["organisation_id", "id"]
           },
         ]
+      }
+      workforce_import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by_membership_id: string
+          credential_expires_at: string | null
+          credential_export_status: string
+          error_rows: number
+          failed_rows: number
+          id: string
+          organisation_id: string
+          original_filename: string
+          provisioned_rows: number
+          remediation_rows: number
+          started_at: string | null
+          status: string
+          total_rows: number
+          updated_at: string
+          valid_rows: number
+          validation_completed_at: string | null
+          warning_rows: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          credential_expires_at?: string | null
+          credential_export_status?: string
+          error_rows?: number
+          failed_rows?: number
+          id?: string
+          organisation_id: string
+          original_filename: string
+          provisioned_rows?: number
+          remediation_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validation_completed_at?: string | null
+          warning_rows?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          credential_expires_at?: string | null
+          credential_export_status?: string
+          error_rows?: number
+          failed_rows?: number
+          id?: string
+          organisation_id?: string
+          original_filename?: string
+          provisioned_rows?: number
+          remediation_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validation_completed_at?: string | null
+          warning_rows?: number
+        }
+        Relationships: []
+      }
+      workforce_import_rows: {
+        Row: {
+          created_at: string
+          created_membership_id: string | null
+          error_code: string | null
+          error_message: string | null
+          field_errors: Json | null
+          id: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          provisioning_intent_id: string | null
+          resolved_payload: Json | null
+          row_number: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_membership_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          field_errors?: Json | null
+          id?: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          provisioning_intent_id?: string | null
+          resolved_payload?: Json | null
+          row_number: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_membership_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          field_errors?: Json | null
+          id?: string
+          import_job_id?: string
+          input_payload?: Json
+          organisation_id?: string
+          provisioning_intent_id?: string | null
+          resolved_payload?: Json | null
+          row_number?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -11559,6 +11678,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_workforce_import_job: {
+        Args: { target_original_filename: string }
+        Returns: string
+      }
+      claim_workforce_import_batch: {
+        Args: {
+          target_batch_size?: number
+          target_import_job_id: string
+        }
+        Returns: {
+          import_row_id: string
+          provisioning_intent_id: string
+        }[]
+      }
       create_maturity_action: {
         Args: {
           target_assessment_id: string
@@ -12115,6 +12248,26 @@ export type Database = {
           target_canonical_alias: string
           target_display_name: string
         }[]
+      }
+      get_workforce_import_job_progress: {
+        Args: { target_import_job_id: string }
+        Returns: Json
+      }
+      get_workforce_import_preview_rows: {
+        Args: { target_import_job_id: string }
+        Returns: {
+          access_scope_unit_path: string
+          application_role: string
+          display_name: string
+          job_function: string
+          primary_unit_path: string
+          row_number: number
+          username: string
+        }[]
+      }
+      get_workforce_import_validation_rows: {
+        Args: { target_import_job_id: string }
+        Returns: Database["public"]["Tables"]["workforce_import_rows"]["Row"][]
       }
       grant_role_version: {
         Args: {
@@ -12783,6 +12936,22 @@ export type Database = {
       submit_suggestion: {
         Args: { target_suggestion_id: string }
         Returns: boolean
+      }
+      submit_workforce_import_rows: {
+        Args: { target_import_job_id: string; target_rows: Json }
+        Returns: undefined
+      }
+      start_workforce_import_provisioning: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
+      }
+      validate_workforce_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: Json
+      }
+      retry_workforce_import_failed_rows: {
+        Args: { target_import_job_id: string }
+        Returns: number
       }
       suspend_or_close_organisation: {
         Args: {
