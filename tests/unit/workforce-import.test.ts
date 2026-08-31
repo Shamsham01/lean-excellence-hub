@@ -97,6 +97,12 @@ describe("template", () => {
   it("includes canonical headers", () => {
     expect(buildCsvTemplate()).toContain("primary_unit_path");
   });
+
+  it("includes unit-scoped and organisation-scoped examples", () => {
+    const template = buildCsvTemplate();
+    expect(template).toContain("Team Member,Cornwall Plant > Operations");
+    expect(template).toContain("Finance Validator,");
+  });
 });
 
 describe("import progress mapping", () => {
