@@ -11375,6 +11375,31 @@ export type Database = {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
       }
+      claim_domain_events_for_worker: {
+        Args: { batch_size?: number; lease_seconds?: number }
+        Returns: {
+          attempt_count: number
+          event_id: string
+          event_type: string
+          lease_token: string
+          organisation_id: string
+          payload: Json
+          resource_record_id: string
+        }[]
+      }
+      claim_notification_deliveries_for_worker: {
+        Args: { batch_size?: number; lease_seconds?: number }
+        Returns: {
+          attempt_count: number
+          delivery_id: string
+          delivery_key: string
+          lease_token: string
+          notification_kind: string
+          organisation_id: string
+          recipient_membership_id: string
+          source_domain_event_id: string
+        }[]
+      }
       claim_workforce_import_batch: {
         Args: { target_batch_size?: number; target_import_job_id: string }
         Returns: {
@@ -11387,6 +11412,14 @@ export type Database = {
           target_case_id: string
           target_closure_outcome: string
           target_closure_rationale?: string
+        }
+        Returns: boolean
+      }
+      complete_domain_event_for_worker: {
+        Args: {
+          expected_lease_token: string
+          target_event_id: string
+          target_organisation_id: string
         }
         Returns: boolean
       }
@@ -11403,6 +11436,15 @@ export type Database = {
           target_actual_result: string
           target_conclusion: string
           target_hypothesis_test_id: string
+        }
+        Returns: boolean
+      }
+      complete_notification_delivery_for_worker: {
+        Args: {
+          expected_lease_token: string
+          target_delivery_id: string
+          target_organisation_id: string
+          target_provider_message_id?: string
         }
         Returns: boolean
       }
@@ -11806,6 +11848,16 @@ export type Database = {
         Args: { target_model_id: string }
         Returns: string
       }
+      create_notification_delivery_for_worker: {
+        Args: {
+          notification_kind: string
+          recipient_membership_id: string
+          source_domain_event_id: string
+          target_delivery_key: string
+          target_organisation_id: string
+        }
+        Returns: string
+      }
       create_organisation_unit: {
         Args: {
           target_organisation_id: string
@@ -12142,6 +12194,44 @@ export type Database = {
           target_final_output?: string
         }
         Returns: undefined
+      }
+      fail_domain_event_retryable_for_worker: {
+        Args: {
+          error_code: string
+          error_detail?: string
+          expected_lease_token: string
+          target_event_id: string
+          target_organisation_id: string
+        }
+        Returns: boolean
+      }
+      fail_domain_event_terminal_for_worker: {
+        Args: {
+          error_code: string
+          error_detail?: string
+          expected_lease_token: string
+          target_event_id: string
+          target_organisation_id: string
+        }
+        Returns: boolean
+      }
+      fail_notification_delivery_retryable_for_worker: {
+        Args: {
+          error_code: string
+          expected_lease_token: string
+          target_delivery_id: string
+          target_organisation_id: string
+        }
+        Returns: boolean
+      }
+      fail_notification_delivery_terminal_for_worker: {
+        Args: {
+          error_code: string
+          expected_lease_token: string
+          target_delivery_id: string
+          target_organisation_id: string
+        }
+        Returns: boolean
       }
       fail_workforce_provision: {
         Args: { target_failure_reason: string; target_intent_id: string }

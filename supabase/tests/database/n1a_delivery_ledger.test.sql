@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(27);
 
 create temporary table n1a_delivery_ids (
   key text primary key,
@@ -24,6 +24,12 @@ values
   (
     'd1000000-0000-0000-0000-000000000002',
     'n1a-delivery-owner-b@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    'd1000000-0000-0000-0000-000000000003',
+    'n1a-delivery-member-a2@example.test',
     statement_timestamp(), statement_timestamp(), statement_timestamp(),
     '{"provider":"email","providers":["email"]}', '{}', false, false
   );
@@ -63,6 +69,22 @@ from public.organisation_memberships membership_row
 where membership_row.organisation_id = (select id from n1a_delivery_ids where key = 'org_b')
   and membership_row.user_id = 'd1000000-0000-0000-0000-000000000002';
 
+insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
+values (
+  (select id from n1a_delivery_ids where key = 'org_a'),
+  'd1000000-0000-0000-0000-000000000003',
+  'active',
+  statement_timestamp()
+);
+
+insert into n1a_delivery_ids (key, id)
+select
+  'membership_a2',
+  membership_row.id
+from public.organisation_memberships membership_row
+where membership_row.organisation_id = (select id from n1a_delivery_ids where key = 'org_a')
+  and membership_row.user_id = 'd1000000-0000-0000-0000-000000000003';
+
 set local role lean_hub_private_owner;
 
 insert into n1a_delivery_ids (key, id)
@@ -73,6 +95,28 @@ select
     null,
     'DeliverySourceEvent',
     'n1a-delivery-source-event',
+    '{}'::jsonb
+  );
+
+insert into n1a_delivery_ids (key, id)
+select
+  'event_a2',
+  private.enqueue_domain_event(
+    (select id from n1a_delivery_ids where key = 'org_a'),
+    null,
+    'DeliverySourceEvent2',
+    'n1a-delivery-source-event-2',
+    '{}'::jsonb
+  );
+
+insert into n1a_delivery_ids (key, id)
+select
+  'event_b',
+  private.enqueue_domain_event(
+    (select id from n1a_delivery_ids where key = 'org_b'),
+    null,
+    'DeliverySourceEventB',
+    'n1a-delivery-source-event-b',
     '{}'::jsonb
   );
 
@@ -120,6 +164,62 @@ select throws_ok(
     select private.create_notification_delivery(
       (select id from n1a_delivery_ids where key = 'org_a'),
       (select id from n1a_delivery_ids where key = 'event_a'),
+      (select id from n1a_delivery_ids where key = 'membership_a2'),
+      'workforce.welcome',
+      'n1a-delivery-key-001'
+    )
+  $$,
+  '23505',
+  'delivery_key already exists with different immutable identity',
+  'C2: same delivery_key with different recipient is rejected'
+);
+
+select throws_ok(
+  $$
+    select private.create_notification_delivery(
+      (select id from n1a_delivery_ids where key = 'org_a'),
+      (select id from n1a_delivery_ids where key = 'event_a2'),
+      (select id from n1a_delivery_ids where key = 'membership_a'),
+      'workforce.welcome',
+      'n1a-delivery-key-001'
+    )
+  $$,
+  '23505',
+  'delivery_key already exists with different immutable identity',
+  'C3: same delivery_key with different source event is rejected'
+);
+
+select throws_ok(
+  $$
+    select private.create_notification_delivery(
+      (select id from n1a_delivery_ids where key = 'org_a'),
+      (select id from n1a_delivery_ids where key = 'event_a'),
+      (select id from n1a_delivery_ids where key = 'membership_a'),
+      'workforce.reminder',
+      'n1a-delivery-key-001'
+    )
+  $$,
+  '23505',
+  'delivery_key already exists with different immutable identity',
+  'C4: same delivery_key with different notification_kind is rejected'
+);
+
+select ok(
+  private.create_notification_delivery(
+    (select id from n1a_delivery_ids where key = 'org_b'),
+    (select id from n1a_delivery_ids where key = 'event_b'),
+    (select id from n1a_delivery_ids where key = 'membership_b'),
+    'workforce.welcome',
+    'n1a-delivery-key-001'
+  ) is not null,
+  'C5: same delivery_key in another organisation remains independent'
+);
+
+select throws_ok(
+  $$
+    select private.create_notification_delivery(
+      (select id from n1a_delivery_ids where key = 'org_a'),
+      (select id from n1a_delivery_ids where key = 'event_a'),
       (select id from n1a_delivery_ids where key = 'membership_b'),
       'workforce.welcome',
       'n1a-delivery-cross-tenant'
@@ -148,7 +248,11 @@ select throws_ok(
 set local role service_role;
 
 select is(
-  (select count(*)::integer from private.claim_notification_deliveries(10)),
+  (
+    select count(*)::integer
+    from private.claim_notification_deliveries(10) claimed
+    where claimed.organisation_id = (select id from n1a_delivery_ids where key = 'org_a')
+  ),
   1,
   'F: pending delivery is claimable'
 );

@@ -485,6 +485,9 @@ declare
   delivery_id uuid;
   event_org_id uuid;
   membership_org_id uuid;
+  existing_source_domain_event_id uuid;
+  existing_recipient_membership_id uuid;
+  existing_notification_kind text;
 begin
   select outbox_row.organisation_id
   into event_org_id
@@ -534,11 +537,26 @@ begin
   returning id into delivery_id;
 
   if delivery_id is null then
-    select ledger_row.id
-    into delivery_id
+    select
+      ledger_row.id,
+      ledger_row.source_domain_event_id,
+      ledger_row.recipient_membership_id,
+      ledger_row.notification_kind
+    into
+      delivery_id,
+      existing_source_domain_event_id,
+      existing_recipient_membership_id,
+      existing_notification_kind
     from private.notification_delivery_ledger ledger_row
     where ledger_row.organisation_id = target_organisation_id
       and ledger_row.delivery_key = target_delivery_key;
+
+    if existing_source_domain_event_id is distinct from source_domain_event_id
+      or existing_recipient_membership_id is distinct from recipient_membership_id
+      or existing_notification_kind is distinct from notification_kind then
+      raise exception 'delivery_key already exists with different immutable identity'
+        using errcode = '23505';
+    end if;
   end if;
 
   return delivery_id;
@@ -807,4 +825,246 @@ grant execute on function private.complete_notification_delivery(uuid, uuid, uui
 grant execute on function private.fail_notification_delivery_retryable(uuid, uuid, uuid, text)
   to service_role;
 grant execute on function private.fail_notification_delivery_terminal(uuid, uuid, uuid, text)
+  to service_role;
+
+-- Public worker RPC surface for Edge Function workers via PostgREST/Data API.
+-- Private schema remains unexposed; wrappers delegate to private implementation.
+
+create or replace function public.claim_domain_events_for_worker(
+  batch_size integer default 10,
+  lease_seconds integer default null
+)
+returns table (
+  organisation_id uuid,
+  event_id uuid,
+  resource_record_id uuid,
+  event_type text,
+  payload jsonb,
+  lease_token uuid,
+  attempt_count integer
+)
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select
+    claimed.organisation_id,
+    claimed.id,
+    claimed.resource_record_id,
+    claimed.event_type,
+    claimed.payload,
+    claimed.lease_token,
+    claimed.attempt_count
+  from private.claim_domain_events(batch_size, lease_seconds) as claimed
+$$;
+
+create or replace function public.complete_domain_event_for_worker(
+  target_organisation_id uuid,
+  target_event_id uuid,
+  expected_lease_token uuid
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.complete_domain_event(
+    target_organisation_id,
+    target_event_id,
+    expected_lease_token
+  )
+$$;
+
+create or replace function public.fail_domain_event_retryable_for_worker(
+  target_organisation_id uuid,
+  target_event_id uuid,
+  expected_lease_token uuid,
+  error_code text,
+  error_detail text default null
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.fail_domain_event_retryable(
+    target_organisation_id,
+    target_event_id,
+    expected_lease_token,
+    error_code,
+    error_detail
+  )
+$$;
+
+create or replace function public.fail_domain_event_terminal_for_worker(
+  target_organisation_id uuid,
+  target_event_id uuid,
+  expected_lease_token uuid,
+  error_code text,
+  error_detail text default null
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.fail_domain_event_terminal(
+    target_organisation_id,
+    target_event_id,
+    expected_lease_token,
+    error_code,
+    error_detail
+  )
+$$;
+
+create or replace function public.create_notification_delivery_for_worker(
+  target_organisation_id uuid,
+  source_domain_event_id uuid,
+  recipient_membership_id uuid,
+  notification_kind text,
+  target_delivery_key text
+)
+returns uuid
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.create_notification_delivery(
+    target_organisation_id,
+    source_domain_event_id,
+    recipient_membership_id,
+    notification_kind,
+    target_delivery_key
+  )
+$$;
+
+create or replace function public.claim_notification_deliveries_for_worker(
+  batch_size integer default 10,
+  lease_seconds integer default null
+)
+returns table (
+  organisation_id uuid,
+  delivery_id uuid,
+  source_domain_event_id uuid,
+  recipient_membership_id uuid,
+  notification_kind text,
+  delivery_key text,
+  lease_token uuid,
+  attempt_count integer
+)
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select
+    claimed.organisation_id,
+    claimed.id,
+    claimed.source_domain_event_id,
+    claimed.recipient_membership_id,
+    claimed.notification_kind,
+    claimed.delivery_key,
+    claimed.lease_token,
+    claimed.attempt_count
+  from private.claim_notification_deliveries(batch_size, lease_seconds) as claimed
+$$;
+
+create or replace function public.complete_notification_delivery_for_worker(
+  target_organisation_id uuid,
+  target_delivery_id uuid,
+  expected_lease_token uuid,
+  target_provider_message_id text default null
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.complete_notification_delivery(
+    target_organisation_id,
+    target_delivery_id,
+    expected_lease_token,
+    target_provider_message_id
+  )
+$$;
+
+create or replace function public.fail_notification_delivery_retryable_for_worker(
+  target_organisation_id uuid,
+  target_delivery_id uuid,
+  expected_lease_token uuid,
+  error_code text
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.fail_notification_delivery_retryable(
+    target_organisation_id,
+    target_delivery_id,
+    expected_lease_token,
+    error_code
+  )
+$$;
+
+create or replace function public.fail_notification_delivery_terminal_for_worker(
+  target_organisation_id uuid,
+  target_delivery_id uuid,
+  expected_lease_token uuid,
+  error_code text
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.fail_notification_delivery_terminal(
+    target_organisation_id,
+    target_delivery_id,
+    expected_lease_token,
+    error_code
+  )
+$$;
+
+revoke all on function public.claim_domain_events_for_worker(integer, integer)
+  from public, anon, authenticated;
+revoke all on function public.complete_domain_event_for_worker(uuid, uuid, uuid)
+  from public, anon, authenticated;
+revoke all on function public.fail_domain_event_retryable_for_worker(uuid, uuid, uuid, text, text)
+  from public, anon, authenticated;
+revoke all on function public.fail_domain_event_terminal_for_worker(uuid, uuid, uuid, text, text)
+  from public, anon, authenticated;
+revoke all on function public.create_notification_delivery_for_worker(uuid, uuid, uuid, text, text)
+  from public, anon, authenticated;
+revoke all on function public.claim_notification_deliveries_for_worker(integer, integer)
+  from public, anon, authenticated;
+revoke all on function public.complete_notification_delivery_for_worker(uuid, uuid, uuid, text)
+  from public, anon, authenticated;
+revoke all on function public.fail_notification_delivery_retryable_for_worker(uuid, uuid, uuid, text)
+  from public, anon, authenticated;
+revoke all on function public.fail_notification_delivery_terminal_for_worker(uuid, uuid, uuid, text)
+  from public, anon, authenticated;
+
+grant execute on function public.claim_domain_events_for_worker(integer, integer) to service_role;
+grant execute on function public.complete_domain_event_for_worker(uuid, uuid, uuid) to service_role;
+grant execute on function public.fail_domain_event_retryable_for_worker(uuid, uuid, uuid, text, text)
+  to service_role;
+grant execute on function public.fail_domain_event_terminal_for_worker(uuid, uuid, uuid, text, text)
+  to service_role;
+grant execute on function public.create_notification_delivery_for_worker(uuid, uuid, uuid, text, text)
+  to service_role;
+grant execute on function public.claim_notification_deliveries_for_worker(integer, integer) to service_role;
+grant execute on function public.complete_notification_delivery_for_worker(uuid, uuid, uuid, text)
+  to service_role;
+grant execute on function public.fail_notification_delivery_retryable_for_worker(uuid, uuid, uuid, text)
+  to service_role;
+grant execute on function public.fail_notification_delivery_terminal_for_worker(uuid, uuid, uuid, text)
   to service_role;

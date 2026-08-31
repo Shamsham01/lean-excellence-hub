@@ -55,8 +55,10 @@ Outbox terminal state: `failed`. Delivery terminal state: `needs_remediation` (n
 ### Idempotency
 
 - **Outbox:** `(organisation_id, idempotency_key)` unique; `enqueue_domain_event` unchanged for producers.
-- **Delivery ledger:** `(organisation_id, delivery_key)` unique; `create_notification_delivery` returns
-  the existing row on conflict.
+- **Delivery ledger:** `(organisation_id, delivery_key)` unique; `create_notification_delivery` returns the
+  existing row when the immutable identity matches (`source_domain_event_id`, `recipient_membership_id`,
+  `notification_kind`). Reusing the same `delivery_key` with a different immutable identity raises a
+  deterministic error.
 
 `delivery_key` is an immutable, stable key for a single logical notification. N1c will derive
 Resend `Idempotency-Key` from `delivery_key` (provider idempotency is separate from DB uniqueness).
@@ -69,14 +71,29 @@ Resend `Idempotency-Key` from `delivery_key` (provider idempotency is separate f
 - recipient membership exists in the same organisation;
 - cross-tenant linkage raises an exception.
 
-Duplicate `delivery_key` is handled deterministically (existing id returned).
+Duplicate `delivery_key` with matching immutable identity is handled deterministically (existing id returned).
+Conflicting reuse of `delivery_key` is rejected.
 
 ### Security
 
 - Both tables live in `private` with RLS forced; only `lean_hub_private_owner` has DML.
-- Worker RPCs (`claim_*`, `complete_*`, `fail_*`, `create_notification_delivery`) are granted to
-  `service_role` only; revoked from `anon` and `authenticated`.
+- Private worker RPCs remain implementation details in `private`; they are not exposed through the Data API.
+- Public `*_for_worker` wrappers delegate to private implementation, use `SECURITY INVOKER` (caller
+  `service_role` already holds private execute grants), and are granted to `service_role` only
+  (revoked from `anon` and `authenticated`). Private worker RPCs remain `SECURITY DEFINER` with owner
+  `lean_hub_private_owner`.
 - `enqueue_domain_event` remains producer-only (not granted to `service_role`).
+
+### N1b/N1c worker contract
+
+Edge Function workers call **public** service-role-only worker RPCs through the Supabase Data API
+(PostgREST). Each public wrapper delegates to the corresponding `private` implementation and table access.
+Workers must not call `private`-schema RPCs directly through the Data API.
+
+| Worker milestone | Public RPC surface | Private implementation |
+|---|---|---|
+| N1b projection | `claim_domain_events_for_worker`, `complete_domain_event_for_worker`, `fail_domain_event_*_for_worker`, `create_notification_delivery_for_worker` | `private.claim_domain_events`, `private.complete_domain_event`, `private.fail_domain_event_*`, `private.create_notification_delivery` |
+| N1c delivery | `claim_notification_deliveries_for_worker`, `complete_notification_delivery_for_worker`, `fail_notification_delivery_*_for_worker` | `private.claim_notification_deliveries`, `private.complete_notification_delivery`, `private.fail_notification_delivery_*` |
 
 ### N1a non-goals
 
@@ -89,7 +106,7 @@ external side effects. Workers are not implemented in this milestone.
 - In-flight `processing` outbox rows are reset to `pending` during migration.
 - `mark_domain_event_processed` now requires `expected_lease_token` for compatibility with the new
   fencing model.
-- N1b+ can implement projection and delivery workers against these primitives.
+- N1b+ can implement projection and delivery workers against the public `*_for_worker` RPC surface.
 
 ## Related
 
