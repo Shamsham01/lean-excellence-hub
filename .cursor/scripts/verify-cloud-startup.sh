@@ -25,6 +25,8 @@ check() {
 
 log "Running non-interactive startup verification"
 
+export CREDENTIAL_ENCRYPTION_KEY="${CREDENTIAL_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}"
+
 check "start script (first run)" bash .cursor/scripts/cloud-start-docker.sh
 check "docker info" docker info
 check "docker hello-world" docker run --rm hello-world
