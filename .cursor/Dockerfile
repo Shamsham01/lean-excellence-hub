@@ -76,8 +76,6 @@ RUN apt-get update \
     > /etc/sudoers.d/cursor-docker \
   && chmod 440 /etc/sudoers.d/cursor-docker \
   && visudo -c \
-  && runuser -u ubuntu -- sudo -n mkdir -p /tmp/cursor-sudo-check \
-  && rmdir /tmp/cursor-sudo-check \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
