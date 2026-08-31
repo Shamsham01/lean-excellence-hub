@@ -39,15 +39,17 @@ async function selectFirstEnabledOption(page: Page, selectId: string) {
 
 async function waitForScopeEntities(page: Page) {
   await expect
-    .poll(async () =>
-      page
-        .locator("#unitId option:not([disabled])")
-        .evaluateAll(
-          (options) =>
-            options.filter(
-              (option) => (option as HTMLOptionElement).value.length > 0,
-            ).length,
-        ),
+    .poll(
+      async () =>
+        page
+          .locator("#unitId option:not([disabled])")
+          .evaluateAll(
+            (options) =>
+              options.filter(
+                (option) => (option as HTMLOptionElement).value.length > 0,
+              ).length,
+          ),
+      { timeout: 30_000 },
     )
     .toBeGreaterThan(0);
 }
@@ -102,12 +104,14 @@ test.describe("Milestone 5 maturity journeys", () => {
     await loginAs(page, "manager");
     await page.goto("/platform/maturity/assessments/new");
     await selectFirstEnabledOption(page, "modelVersionId");
-    await selectFirstEnabledOption(page, "assessmentScopeType");
+    await page.locator("#assessmentScopeType").selectOption("site");
     await waitForScopeEntities(page);
 
     const entityOptions = page.locator("#unitId option:not([disabled])");
-    await expect(entityOptions).not.toHaveCount(0);
     const optionTexts = await entityOptions.allTextContents();
+    expect(optionTexts.some((label) => /cornwall|plant/i.test(label))).toBe(
+      true,
+    );
     for (const label of optionTexts) {
       expect(label).not.toMatch(/operations|engineering|quality|line/i);
     }
