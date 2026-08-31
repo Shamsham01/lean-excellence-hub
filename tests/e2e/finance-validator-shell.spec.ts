@@ -55,11 +55,13 @@ test.describe("Finance Validator shell hotfix", () => {
     await loginAs(page, "finance");
     await page.goto("/platform/settings");
     await expect(page.getByTestId("settings-page")).toBeVisible();
-    await expect(page.getByText("Your profile")).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Open" }).filter({
-        has: page.getByRole("heading", { name: "People and invitations" }),
-      }),
+      page.getByTestId("settings-hub-card-platform-settings-profile"),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByTestId("settings-hub-card-platform-settings-people")
+        .getByRole("link", { name: "Open" }),
     ).not.toBeVisible();
     await expect(page.getByText("Job functions")).not.toBeVisible();
     await expect(page.getByText("Lean AI")).not.toBeVisible();
