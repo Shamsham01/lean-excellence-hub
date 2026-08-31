@@ -16,19 +16,10 @@ type DbQueryResult = {
   _tag?: string;
 };
 
-function readSupabaseStatus(): SupabaseStatus {
-  const output = execSync("npx supabase status -o json", {
-    encoding: "utf-8",
-    stdio: ["pipe", "pipe", "pipe"],
-  });
-
-  return JSON.parse(output) as SupabaseStatus;
-}
-
 function extractJsonObject(output: string): string {
   const jsonStart = output.indexOf("{");
   if (jsonStart === -1) {
-    throw new Error(`unexpected supabase db query output: ${output}`);
+    throw new Error(`unexpected supabase command output: ${output}`);
   }
 
   let depth = 0;
@@ -75,8 +66,26 @@ function extractJsonObject(output: string): string {
   }
 
   throw new Error(
-    `incomplete JSON object in supabase db query output: ${output}`,
+    `incomplete JSON object in supabase command output: ${output}`,
   );
+}
+
+function parseJsonObject<T>(output: string): T {
+  const trimmed = output.trim();
+  if (!trimmed) {
+    throw new Error("supabase command returned empty output");
+  }
+
+  return JSON.parse(extractJsonObject(trimmed)) as T;
+}
+
+function readSupabaseStatus(): SupabaseStatus {
+  const output = execSync("npx supabase status -o json", {
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+
+  return parseJsonObject<SupabaseStatus>(output);
 }
 
 function parseDbQueryOutput(output: string): DbQueryResult {
@@ -89,7 +98,7 @@ function parseDbQueryOutput(output: string): DbQueryResult {
     return { rows: [] };
   }
 
-  return JSON.parse(extractJsonObject(trimmed)) as DbQueryResult;
+  return parseJsonObject<DbQueryResult>(output);
 }
 
 function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
@@ -249,7 +258,7 @@ async function main() {
 
   const { data: claimedEvents, error: claimError } = await serviceClient.rpc(
     "claim_domain_events_for_worker",
-    { batch_size: 10 },
+    { batch_size: 1000 },
   );
 
   if (claimError) {
