@@ -2,71 +2,85 @@
 import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-function readSupabaseEnv(): Record<string, string> {
-  const output = execSync("npx supabase status -o env", {
+type SupabaseStatus = {
+  API_URL?: string;
+  SERVICE_ROLE_KEY?: string;
+  ANON_KEY?: string;
+};
+
+type DbQueryResult = {
+  rows?: Record<string, unknown>[];
+  error?: { message?: string };
+  _tag?: string;
+};
+
+function readSupabaseStatus(): SupabaseStatus {
+  const output = execSync("npx supabase status -o json", {
     encoding: "utf-8",
     stdio: ["pipe", "pipe", "pipe"],
   });
 
-  const env: Record<string, string> = {};
-  for (const line of output.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      continue;
-    }
+  return JSON.parse(output) as SupabaseStatus;
+}
 
-    const separatorIndex = trimmed.indexOf("=");
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const key = trimmed.slice(0, separatorIndex);
-    let value = trimmed.slice(separatorIndex + 1);
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    env[key] = value;
+function parseDbQueryOutput(output: string): DbQueryResult {
+  const trimmed = output.trim();
+  if (!trimmed) {
+    throw new Error("supabase db query returned empty output");
   }
 
-  return env;
+  if (trimmed.startsWith("{")) {
+    return JSON.parse(trimmed) as DbQueryResult;
+  }
+
+  if (/^(INSERT|UPDATE|DELETE|ALTER|CREATE)\s/i.test(trimmed)) {
+    return { rows: [] };
+  }
+
+  const jsonStart = trimmed.indexOf("{");
+  if (jsonStart === -1) {
+    throw new Error(`unexpected supabase db query output: ${trimmed}`);
+  }
+
+  return JSON.parse(trimmed.slice(jsonStart)) as DbQueryResult;
 }
 
 function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
-  const output = execSync(
-    `npx supabase db query --local --output-format json ${JSON.stringify(sql)}`,
-    {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    },
-  );
+  let output: string;
 
-  const parsed = JSON.parse(output) as {
-    rows?: T[];
-    error?: { message?: string };
-    _tag?: string;
-  };
+  try {
+    output = execSync(
+      `npx supabase db query --local --output-format json ${JSON.stringify(sql)}`,
+      {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    );
+  } catch (error) {
+    const execError = error as {
+      stdout?: string | Buffer;
+      message?: string;
+    };
+    const stdout = execError.stdout?.toString().trim() ?? "";
 
+    if (stdout) {
+      const parsed = parseDbQueryOutput(stdout);
+      if (parsed._tag === "Error" || parsed.error) {
+        throw new Error(parsed.error?.message ?? "supabase db query failed");
+      }
+    }
+
+    throw new Error(stdout || execError.message || "supabase db query failed");
+  }
+
+  const parsed = parseDbQueryOutput(output);
   if (parsed._tag === "Error" || parsed.error) {
     throw new Error(parsed.error?.message ?? "supabase db query failed");
   }
 
-  return parsed.rows ?? [];
-}
-
-function runLocalSql(sql: string): void {
-  execSync(
-    `npx supabase db query --local --output-format json ${JSON.stringify(sql)}`,
-    {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    },
-  );
+  return (parsed.rows ?? []) as T[];
 }
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -75,19 +89,73 @@ function assert(condition: unknown, message: string): asserts condition {
   }
 }
 
+async function ensureAuthUser(
+  admin: SupabaseClient,
+  userId: string,
+  email: string,
+): Promise<void> {
+  const existing = await admin.auth.admin.getUserById(userId);
+  if (!existing.error && existing.data.user) {
+    return;
+  }
+
+  const created = await admin.auth.admin.createUser({
+    id: userId,
+    email,
+    email_confirm: true,
+  });
+
+  if (created.error && created.error.status !== 422) {
+    throw created.error;
+  }
+}
+
+async function resolveOrganisationId(
+  serviceClient: SupabaseClient,
+  ownerUserId: string,
+  organisationCode: string,
+  organisationName: string,
+): Promise<string> {
+  const { data: organisationId, error: provisionError } =
+    await serviceClient.rpc("provision_organisation", {
+      owner_user_id: ownerUserId,
+      organisation_code: organisationCode,
+      organisation_name: organisationName,
+    });
+
+  if (
+    provisionError &&
+    !provisionError.message.includes("duplicate key")
+  ) {
+    throw provisionError;
+  }
+
+  if (typeof organisationId === "string" && organisationId.length > 0) {
+    return organisationId;
+  }
+
+  const existingOrganisationId = runLocalQuery<{ organisation_id: string }>(
+    `select id::text as organisation_id from public.organisations where code = '${organisationCode}' limit 1;`,
+  )[0]?.organisation_id;
+
+  if (existingOrganisationId) {
+    return existingOrganisationId;
+  }
+
+  throw new Error(
+    `organisation id is required for integration test (provision error: ${provisionError?.message ?? "none"})`,
+  );
+}
+
 async function main() {
-  const status = readSupabaseEnv();
-  // Local PostgREST integration must use keys from the running Supabase stack.
-  // CI sets placeholder env vars for app jobs; those are not valid JWTs here.
+  const status = readSupabaseStatus();
+  // CI exports placeholder Supabase env vars. PostgREST must use JWT keys from
+  // the running local stack, not sb_* placeholders from workflow env.
   const url = status.API_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey =
-    status.SERVICE_ROLE_KEY ??
-    status.SECRET_KEY ??
-    process.env.SUPABASE_SECRET_KEY;
+    status.SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
   const anonKey =
-    status.ANON_KEY ??
-    status.PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    status.ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   assert(url, "Supabase API URL is required");
   assert(serviceRoleKey, "Supabase service role key is required");
@@ -98,10 +166,6 @@ async function main() {
   const organisationCode = "n1a-worker-integration";
   const idempotencyKey = `n1a-worker-integration-${randomUUID()}`;
 
-  runLocalSql(
-    `insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous) values ('${ownerUserId}', '${ownerEmail}', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false) on conflict (id) do nothing;`,
-  );
-
   const serviceClient = createClient(url, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -109,19 +173,13 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const existingOrganisationId = runLocalQuery<{ organisation_id: string }>(
-    `select id::text as organisation_id from public.organisations where code = '${organisationCode}' limit 1;`,
-  )[0]?.organisation_id;
+  await ensureAuthUser(serviceClient, ownerUserId, ownerEmail);
 
-  const resolvedOrganisationId =
-    existingOrganisationId ??
-    runLocalQuery<{ organisation_id: string }>(
-      `select private.provision_organisation('${ownerUserId}'::uuid, '${organisationCode}', 'N1a Worker Integration Org')::text as organisation_id;`,
-    )[0]?.organisation_id;
-
-  assert(
-    resolvedOrganisationId,
-    "organisation id is required for integration test",
+  const resolvedOrganisationId = await resolveOrganisationId(
+    serviceClient,
+    ownerUserId,
+    organisationCode,
+    "N1a Worker Integration Org",
   );
 
   const eventRows = runLocalQuery<{ event_id: string }>(
