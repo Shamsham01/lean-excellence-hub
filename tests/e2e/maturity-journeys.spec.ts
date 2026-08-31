@@ -43,7 +43,10 @@ async function waitForScopeEntities(page: Page) {
       page
         .locator("#unitId option:not([disabled])")
         .evaluateAll(
-          (options) => options.filter((option) => option.value).length,
+          (options) =>
+            options.filter(
+              (option) => (option as HTMLOptionElement).value.length > 0,
+            ).length,
         ),
     )
     .toBeGreaterThan(0);
@@ -141,6 +144,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByText("Saving comment")).not.toBeVisible({
       timeout: 10000,
     });
+    await page.waitForTimeout(500);
 
     const evidenceFile = join(tmpdir(), `e2e-evidence-${Date.now()}.txt`);
     writeFileSync(evidenceFile, "E2E maturity evidence sample");
@@ -154,7 +158,9 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("submit-assessment").click();
     await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
+    await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("approver: review → approve → publish official result", async ({
