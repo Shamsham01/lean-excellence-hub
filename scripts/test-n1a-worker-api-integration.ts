@@ -1,21 +1,40 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 
 import { createClient } from "@supabase/supabase-js";
 
-type SupabaseStatus = {
-  API_URL?: string;
-  SERVICE_ROLE_KEY?: string;
-  ANON_KEY?: string;
-};
-
-function readSupabaseStatus(): SupabaseStatus {
-  const output = execSync("npx supabase status -o json", {
+function readSupabaseEnv(): Record<string, string> {
+  const output = execSync("npx supabase status -o env", {
     encoding: "utf-8",
     stdio: ["pipe", "pipe", "pipe"],
   });
 
-  return JSON.parse(output) as SupabaseStatus;
+  const env: Record<string, string> = {};
+  for (const line of output.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex);
+    let value = trimmed.slice(separatorIndex + 1);
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    env[key] = value;
+  }
+
+  return env;
 }
 
 function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
@@ -27,7 +46,16 @@ function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
     },
   );
 
-  const parsed = JSON.parse(output) as { rows?: T[] };
+  const parsed = JSON.parse(output) as {
+    rows?: T[];
+    error?: { message?: string };
+    _tag?: string;
+  };
+
+  if (parsed._tag === "Error" || parsed.error) {
+    throw new Error(parsed.error?.message ?? "supabase db query failed");
+  }
+
   return parsed.rows ?? [];
 }
 
@@ -48,14 +76,18 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 async function main() {
-  const status = readSupabaseStatus();
+  const status = readSupabaseEnv();
   // Local PostgREST integration must use keys from the running Supabase stack.
   // CI sets placeholder env vars for app jobs; those are not valid JWTs here.
   const url = status.API_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey =
-    status.SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+    status.SERVICE_ROLE_KEY ??
+    status.SECRET_KEY ??
+    process.env.SUPABASE_SECRET_KEY;
   const anonKey =
-    status.ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    status.ANON_KEY ??
+    status.PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   assert(url, "Supabase API URL is required");
   assert(serviceRoleKey, "Supabase service role key is required");
@@ -63,6 +95,8 @@ async function main() {
 
   const ownerUserId = "f1000000-0000-0000-0000-000000000099";
   const ownerEmail = "n1a-worker-integration@example.test";
+  const organisationCode = "n1a-worker-integration";
+  const idempotencyKey = `n1a-worker-integration-${randomUUID()}`;
 
   runLocalSql(
     `insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous) values ('${ownerUserId}', '${ownerEmail}', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false) on conflict (id) do nothing;`,
@@ -75,22 +109,15 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: organisationId, error: provisionError } =
-    await serviceClient.rpc("provision_organisation", {
-      owner_user_id: ownerUserId,
-      organisation_code: "n1a-worker-integration",
-      organisation_name: "N1a Worker Integration Org",
-    });
-
-  if (provisionError && !provisionError.message.includes("duplicate key")) {
-    throw provisionError;
-  }
+  const existingOrganisationId = runLocalQuery<{ organisation_id: string }>(
+    `select id::text as organisation_id from public.organisations where code = '${organisationCode}' limit 1;`,
+  )[0]?.organisation_id;
 
   const resolvedOrganisationId =
-    (organisationId as string | null) ??
-    runLocalQuery<{ id: string }>(
-      `select id::text from public.organisations where code = 'n1a-worker-integration' limit 1;`,
-    )[0]?.id;
+    existingOrganisationId ??
+    runLocalQuery<{ organisation_id: string }>(
+      `select private.provision_organisation('${ownerUserId}'::uuid, '${organisationCode}', 'N1a Worker Integration Org')::text as organisation_id;`,
+    )[0]?.organisation_id;
 
   assert(
     resolvedOrganisationId,
@@ -98,11 +125,14 @@ async function main() {
   );
 
   const eventRows = runLocalQuery<{ event_id: string }>(
-    `select private.enqueue_domain_event('${resolvedOrganisationId}'::uuid, null, 'IntegrationWorkerEvent', 'n1a-worker-integration-event', '{"integration":true}'::jsonb)::text as event_id;`,
+    `select private.enqueue_domain_event('${resolvedOrganisationId}'::uuid, null, 'IntegrationWorkerEvent', '${idempotencyKey}', '{"integration":true}'::jsonb)::text as event_id;`,
   );
 
   const eventId = eventRows[0]?.event_id;
-  assert(eventId, "event id is required for integration test");
+  assert(
+    eventId,
+    `event id is required for integration test (enqueue rows: ${JSON.stringify(eventRows)})`,
+  );
 
   const { error: anonClaimError } = await anonClient.rpc(
     "claim_domain_events_for_worker",
