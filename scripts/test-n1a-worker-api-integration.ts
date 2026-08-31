@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
 type SupabaseStatus = {
   API_URL?: string;
@@ -102,11 +105,15 @@ function parseDbQueryOutput(output: string): DbQueryResult {
 }
 
 function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
+  const queryDirectory = mkdtempSync(join(tmpdir(), "n1a-worker-query-"));
+  const queryFile = join(queryDirectory, "query.sql");
+  writeFileSync(queryFile, sql, "utf8");
+
   let output: string;
 
   try {
     output = execSync(
-      `npx supabase db query --local --output-format json ${JSON.stringify(sql)}`,
+      `npx supabase db query --local --output-format json -f ${JSON.stringify(queryFile)}`,
       {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
@@ -127,6 +134,8 @@ function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
     }
 
     throw new Error(stdout || execError.message || "supabase db query failed");
+  } finally {
+    rmSync(queryDirectory, { recursive: true, force: true });
   }
 
   const parsed = parseDbQueryOutput(output);
@@ -137,56 +146,33 @@ function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
   return (parsed.rows ?? []) as T[];
 }
 
+function runLocalSql(sql: string): void {
+  runLocalQuery(sql);
+}
+
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
     throw new Error(message);
   }
 }
 
-async function ensureAuthUser(
-  admin: SupabaseClient,
-  userId: string,
-  email: string,
-): Promise<void> {
-  const existing = await admin.auth.admin.getUserById(userId);
-  if (!existing.error && existing.data.user) {
-    return;
-  }
-
-  const created = await admin.auth.admin.createUser({
-    id: userId,
-    email,
-    email_confirm: true,
-  });
-
-  if (!created.error || created.error.status === 422) {
-    return;
-  }
-
-  runLocalQuery(
-    `insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous) values ('${userId}', '${email}', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false) on conflict (id) do nothing returning id::text as user_id;`,
+function ensureAuthUser(userId: string, email: string): void {
+  runLocalSql(
+    `insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous) values ('${userId}', '${email}', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false) on conflict (id) do nothing;`,
   );
 }
 
-async function resolveOrganisationId(
-  serviceClient: SupabaseClient,
+function resolveOrganisationId(
   ownerUserId: string,
   organisationCode: string,
   organisationName: string,
-): Promise<string> {
-  const { data: organisationId, error: provisionError } =
-    await serviceClient.rpc("provision_organisation", {
-      owner_user_id: ownerUserId,
-      organisation_code: organisationCode,
-      organisation_name: organisationName,
-    });
+): string {
+  const provisionedOrganisationId = runLocalQuery<{ organisation_id: string }>(
+    `select private.provision_organisation('${ownerUserId}'::uuid, '${organisationCode}', '${organisationName}')::text as organisation_id;`,
+  )[0]?.organisation_id;
 
-  if (provisionError && !provisionError.message.includes("duplicate key")) {
-    throw provisionError;
-  }
-
-  if (typeof organisationId === "string" && organisationId.length > 0) {
-    return organisationId;
+  if (provisionedOrganisationId) {
+    return provisionedOrganisationId;
   }
 
   const existingOrganisationId = runLocalQuery<{ organisation_id: string }>(
@@ -197,9 +183,25 @@ async function resolveOrganisationId(
     return existingOrganisationId;
   }
 
-  throw new Error(
-    `organisation id is required for integration test (provision error: ${provisionError?.message ?? "none"})`,
+  throw new Error("organisation id is required for integration test");
+}
+
+function enqueueDomainEvent(
+  organisationId: string,
+  idempotencyKey: string,
+): string {
+  const eventRows = runLocalQuery<{ event_id: string }>(
+    `select private.enqueue_domain_event('${organisationId}'::uuid, null, 'IntegrationWorkerEvent', '${idempotencyKey}', '{"integration":true}'::jsonb)::text as event_id;`,
   );
+
+  const eventId = eventRows[0]?.event_id;
+  if (!eventId) {
+    throw new Error(
+      `event id is required for integration test (enqueue rows: ${JSON.stringify(eventRows)})`,
+    );
+  }
+
+  return eventId;
 }
 
 async function main() {
@@ -228,24 +230,15 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  await ensureAuthUser(serviceClient, ownerUserId, ownerEmail);
+  ensureAuthUser(ownerUserId, ownerEmail);
 
-  const resolvedOrganisationId = await resolveOrganisationId(
-    serviceClient,
+  const resolvedOrganisationId = resolveOrganisationId(
     ownerUserId,
     organisationCode,
     "N1a Worker Integration Org",
   );
 
-  const eventRows = runLocalQuery<{ event_id: string }>(
-    `select private.enqueue_domain_event('${resolvedOrganisationId}'::uuid, null, 'IntegrationWorkerEvent', '${idempotencyKey}', '{"integration":true}'::jsonb)::text as event_id;`,
-  );
-
-  const eventId = eventRows[0]?.event_id;
-  assert(
-    eventId,
-    `event id is required for integration test (enqueue rows: ${JSON.stringify(eventRows)})`,
-  );
+  const eventId = enqueueDomainEvent(resolvedOrganisationId, idempotencyKey);
 
   const { error: anonClaimError } = await anonClient.rpc(
     "claim_domain_events_for_worker",
