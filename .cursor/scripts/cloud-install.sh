@@ -9,4 +9,4 @@ node --version
 npm --version
 
 npm ci
-npx playwright install --with-deps chromium
+npx playwright install chromium

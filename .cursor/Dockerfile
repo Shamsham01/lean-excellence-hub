@@ -26,6 +26,39 @@ RUN apt-get update \
     containerd.io \
     docker-buildx-plugin \
     docker-compose-plugin \
+    xvfb \
+    fonts-noto-color-emoji \
+    fonts-unifont \
+    libfontconfig1 \
+    libfreetype6 \
+    xfonts-cyrillic \
+    xfonts-scalable \
+    fonts-liberation \
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+    fonts-tlwg-loma-otf \
+    fonts-freefont-ttf \
+    libasound2t64 \
+    libatk-bridge2.0-0t64 \
+    libatk1.0-0t64 \
+    libatspi2.0-0t64 \
+    libcairo2 \
+    libcups2t64 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0t64 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libx11-6 \
+    libxcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libxrandr2 \
   && update-alternatives --set iptables /usr/sbin/iptables-legacy \
   && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy \
   && groupadd -f docker \
@@ -39,10 +72,11 @@ RUN apt-get update \
   && printf '%s\n' \
     '# Cursor Cloud: allow ubuntu to bootstrap Docker without an interactive TTY.' \
     'Defaults:ubuntu !requiretty' \
-    'ubuntu ALL=(root) NOPASSWD: /usr/bin/mkdir, /usr/sbin/update-alternatives, /usr/bin/dockerd, /usr/sbin/usermod, /usr/bin/chmod' \
+    'ubuntu ALL=(root) NOPASSWD: /usr/bin/mkdir, /usr/sbin/update-alternatives, /usr/bin/dockerd, /usr/sbin/usermod, /usr/bin/chmod, /bin/chmod' \
     > /etc/sudoers.d/cursor-docker \
   && chmod 440 /etc/sudoers.d/cursor-docker \
   && visudo -c \
+  && su - ubuntu -c 'sudo -n true && sudo -n mkdir -p /tmp/cursor-sudo-check' \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
