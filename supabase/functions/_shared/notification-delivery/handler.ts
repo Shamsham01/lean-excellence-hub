@@ -1,9 +1,15 @@
+import { DeliveryCompletionError } from "./completion-error.ts";
+import { computeProviderPayloadHash } from "./envelope-payload.ts";
 import { classifyProviderError } from "./provider/classify-error.ts";
-import type { OperationalEmailProvider } from "./provider/types.ts";
+import type {
+  OperationalEmailMessage,
+  OperationalEmailProvider,
+} from "./provider/types.ts";
 import { mapRecipientFailureCode } from "./recipient.ts";
 import { renderOperationalNotification } from "./renderer/registry.ts";
 import type {
   ClaimedNotificationDelivery,
+  NotificationProviderEnvelope,
   ProcessedDeliverySummary,
   WorkerRunSummary,
 } from "./types.ts";
@@ -59,7 +65,7 @@ function logDeliveryResult(input: {
   notificationKind: string;
   attemptCount: number;
   result: string;
-  providerResultCategory?: string;
+  providerResultCategory?: string | undefined;
 }) {
   console.info(
     JSON.stringify({
@@ -73,6 +79,18 @@ function logDeliveryResult(input: {
       provider_result_category: input.providerResultCategory ?? null,
     }),
   );
+}
+
+function envelopeToProviderMessage(
+  envelope: NotificationProviderEnvelope,
+): OperationalEmailMessage {
+  return {
+    from: envelope.senderFrom,
+    to: envelope.recipientEmail,
+    subject: envelope.subject,
+    html: envelope.htmlBody,
+    text: envelope.textBody,
+  };
 }
 
 async function markDeliveryTerminal(
@@ -113,12 +131,56 @@ async function markDeliveryRetryable(
   return result.data === true;
 }
 
-export async function processClaimedNotificationDelivery(
+async function resolveProviderMessage(
   client: NotificationDeliveryWorkerClient,
-  provider: OperationalEmailProvider,
-  config: NotificationDeliveryRuntimeConfig,
   delivery: ClaimedNotificationDelivery,
-): Promise<ProcessedDeliverySummary> {
+  config: NotificationDeliveryRuntimeConfig,
+): Promise<
+  | { message: OperationalEmailMessage; error: null }
+  | { message: null; error: ProcessedDeliverySummary }
+> {
+  const existingEnvelope = await client.getProviderEnvelope({
+    organisationId: delivery.organisationId,
+    deliveryId: delivery.deliveryId,
+  });
+
+  if (existingEnvelope.error) {
+    await markDeliveryRetryable(client, delivery, "envelope_lookup_retryable");
+    return {
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_retryable",
+        errorCode: "envelope_lookup_retryable",
+      },
+    };
+  }
+
+  if (existingEnvelope.envelope) {
+    if (existingEnvelope.envelope.deliveryKey !== delivery.deliveryKey) {
+      await markDeliveryTerminal(
+        client,
+        delivery,
+        "provider_envelope_integrity_conflict",
+      );
+      return {
+        message: null,
+        error: {
+          deliveryId: delivery.deliveryId,
+          notificationKind: delivery.notificationKind,
+          outcome: "failed_terminal",
+          errorCode: "provider_envelope_integrity_conflict",
+        },
+      };
+    }
+
+    return {
+      message: envelopeToProviderMessage(existingEnvelope.envelope),
+      error: null,
+    };
+  }
+
   const contextResult = await client.getDeliveryContext({
     organisationId: delivery.organisationId,
     deliveryId: delivery.deliveryId,
@@ -127,38 +189,27 @@ export async function processClaimedNotificationDelivery(
 
   if (contextResult.error) {
     await markDeliveryRetryable(client, delivery, "context_lookup_retryable");
-    logDeliveryResult({
-      deliveryId: delivery.deliveryId,
-      sourceDomainEventId: delivery.sourceDomainEventId,
-      organisationId: delivery.organisationId,
-      notificationKind: delivery.notificationKind,
-      attemptCount: delivery.attemptCount,
-      result: "failed_retryable",
-      providerResultCategory: "context_lookup_retryable",
-    });
     return {
-      deliveryId: delivery.deliveryId,
-      notificationKind: delivery.notificationKind,
-      outcome: "failed_retryable",
-      errorCode: "context_lookup_retryable",
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_retryable",
+        errorCode: "context_lookup_retryable",
+      },
     };
   }
 
   if (!contextResult.context) {
     await markDeliveryTerminal(client, delivery, "invalid_delivery_context");
-    logDeliveryResult({
-      deliveryId: delivery.deliveryId,
-      sourceDomainEventId: delivery.sourceDomainEventId,
-      organisationId: delivery.organisationId,
-      notificationKind: delivery.notificationKind,
-      attemptCount: delivery.attemptCount,
-      result: "invalid_context",
-    });
     return {
-      deliveryId: delivery.deliveryId,
-      notificationKind: delivery.notificationKind,
-      outcome: "invalid_context",
-      errorCode: "invalid_delivery_context",
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "invalid_context",
+        errorCode: "invalid_delivery_context",
+      },
     };
   }
 
@@ -172,104 +223,132 @@ export async function processClaimedNotificationDelivery(
       context.recipientResolutionStatus,
     );
     await markDeliveryTerminal(client, delivery, errorCode);
-    logDeliveryResult({
-      deliveryId: delivery.deliveryId,
-      sourceDomainEventId: delivery.sourceDomainEventId,
-      organisationId: delivery.organisationId,
-      notificationKind: delivery.notificationKind,
-      attemptCount: delivery.attemptCount,
-      result: "failed_terminal",
-      providerResultCategory: errorCode,
-    });
     return {
-      deliveryId: delivery.deliveryId,
-      notificationKind: delivery.notificationKind,
-      outcome: "failed_terminal",
-      errorCode,
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_terminal",
+        errorCode,
+      },
     };
   }
 
   let rendered;
   try {
     rendered = renderOperationalNotification(context, config.appOrigin);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "render_failed";
+  } catch {
     await markDeliveryTerminal(client, delivery, "render_terminal");
-    logDeliveryResult({
-      deliveryId: delivery.deliveryId,
-      sourceDomainEventId: delivery.sourceDomainEventId,
-      organisationId: delivery.organisationId,
-      notificationKind: delivery.notificationKind,
-      attemptCount: delivery.attemptCount,
-      result: "failed_terminal",
-      providerResultCategory: message,
-    });
     return {
-      deliveryId: delivery.deliveryId,
-      notificationKind: delivery.notificationKind,
-      outcome: "failed_terminal",
-      errorCode: "render_terminal",
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_terminal",
+        errorCode: "render_terminal",
+      },
     };
   }
 
-  try {
-    const providerResult = await provider.send(
-      {
-        from: config.operationalEmailFrom,
-        to: context.deliverableEmail,
-        subject: rendered.subject,
-        html: rendered.html,
-        text: rendered.text,
-      },
-      delivery.deliveryKey,
-    );
+  const message: OperationalEmailMessage = {
+    from: config.operationalEmailFrom,
+    to: context.deliverableEmail,
+    subject: rendered.subject,
+    html: rendered.html,
+    text: rendered.text,
+  };
 
-    const completionResult = await client.completeNotificationDelivery({
-      organisationId: delivery.organisationId,
-      deliveryId: delivery.deliveryId,
-      leaseToken: delivery.leaseToken,
-      providerMessageId: providerResult.providerMessageId,
-    });
+  const payloadHash = await computeProviderPayloadHash(message);
+  const storeResult = await client.storeProviderEnvelope({
+    organisationId: delivery.organisationId,
+    deliveryId: delivery.deliveryId,
+    deliveryKey: delivery.deliveryKey,
+    senderFrom: message.from,
+    recipientEmail: message.to,
+    subject: message.subject,
+    htmlBody: message.html,
+    textBody: message.text,
+    payloadHash,
+  });
 
-    if (completionResult.error) {
-      throw completionResult.error;
-    }
+  if (storeResult.error) {
+    const isIntegrityConflict =
+      storeResult.error.code === "23505" ||
+      storeResult.error.message.includes("different payload");
 
-    if (completionResult.data !== true) {
-      logDeliveryResult({
-        deliveryId: delivery.deliveryId,
-        sourceDomainEventId: delivery.sourceDomainEventId,
-        organisationId: delivery.organisationId,
-        notificationKind: delivery.notificationKind,
-        attemptCount: delivery.attemptCount,
-        result: "fencing_loss_after_provider_accept",
-        providerResultCategory: "provider_accepted",
-      });
+    if (isIntegrityConflict) {
+      await markDeliveryTerminal(
+        client,
+        delivery,
+        "provider_envelope_integrity_conflict",
+      );
       return {
-        deliveryId: delivery.deliveryId,
-        notificationKind: delivery.notificationKind,
-        outcome: "fencing_loss_after_provider_accept",
-        providerMessageId: providerResult.providerMessageId,
-        errorCode: "lease_lost_after_provider_accept",
+        message: null,
+        error: {
+          deliveryId: delivery.deliveryId,
+          notificationKind: delivery.notificationKind,
+          outcome: "failed_terminal",
+          errorCode: "provider_envelope_integrity_conflict",
+        },
       };
     }
 
+    await markDeliveryRetryable(client, delivery, "envelope_store_retryable");
+    return {
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_retryable",
+        errorCode: "envelope_store_retryable",
+      },
+    };
+  }
+
+  if (!storeResult.envelope) {
+    await markDeliveryRetryable(client, delivery, "envelope_store_retryable");
+    return {
+      message: null,
+      error: {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_retryable",
+        errorCode: "envelope_store_retryable",
+      },
+    };
+  }
+
+  return {
+    message: envelopeToProviderMessage(storeResult.envelope),
+    error: null,
+  };
+}
+
+export async function processClaimedNotificationDelivery(
+  client: NotificationDeliveryWorkerClient,
+  provider: OperationalEmailProvider,
+  config: NotificationDeliveryRuntimeConfig,
+  delivery: ClaimedNotificationDelivery,
+): Promise<ProcessedDeliverySummary> {
+  const resolved = await resolveProviderMessage(client, delivery, config);
+  if (resolved.error) {
     logDeliveryResult({
       deliveryId: delivery.deliveryId,
       sourceDomainEventId: delivery.sourceDomainEventId,
       organisationId: delivery.organisationId,
       notificationKind: delivery.notificationKind,
       attemptCount: delivery.attemptCount,
-      result: "sent",
-      providerResultCategory: "provider_accepted",
+      result: resolved.error.outcome,
+      providerResultCategory: resolved.error.errorCode,
     });
+    return resolved.error;
+  }
 
-    return {
-      deliveryId: delivery.deliveryId,
-      notificationKind: delivery.notificationKind,
-      outcome: "sent",
-      providerMessageId: providerResult.providerMessageId,
-    };
+  const providerMessage = resolved.message;
+
+  let providerResult;
+  try {
+    providerResult = await provider.send(providerMessage, delivery.deliveryKey);
   } catch (error) {
     const classification = classifyProviderError(error);
     if (classification.retryable) {
@@ -308,6 +387,80 @@ export async function processClaimedNotificationDelivery(
       errorCode: classification.code,
     };
   }
+
+  try {
+    const completionResult = await client.completeNotificationDelivery({
+      organisationId: delivery.organisationId,
+      deliveryId: delivery.deliveryId,
+      leaseToken: delivery.leaseToken,
+      providerMessageId: providerResult.providerMessageId,
+    });
+
+    if (completionResult.error) {
+      throw new DeliveryCompletionError(
+        "completion_db_retryable",
+        completionResult.error.message,
+      );
+    }
+
+    if (completionResult.data !== true) {
+      logDeliveryResult({
+        deliveryId: delivery.deliveryId,
+        sourceDomainEventId: delivery.sourceDomainEventId,
+        organisationId: delivery.organisationId,
+        notificationKind: delivery.notificationKind,
+        attemptCount: delivery.attemptCount,
+        result: "fencing_loss_after_provider_accept",
+        providerResultCategory: "provider_accepted",
+      });
+      return {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "fencing_loss_after_provider_accept",
+        providerMessageId: providerResult.providerMessageId,
+        errorCode: "lease_lost_after_provider_accept",
+      };
+    }
+
+    logDeliveryResult({
+      deliveryId: delivery.deliveryId,
+      sourceDomainEventId: delivery.sourceDomainEventId,
+      organisationId: delivery.organisationId,
+      notificationKind: delivery.notificationKind,
+      attemptCount: delivery.attemptCount,
+      result: "sent",
+      providerResultCategory: "provider_accepted",
+    });
+
+    return {
+      deliveryId: delivery.deliveryId,
+      notificationKind: delivery.notificationKind,
+      outcome: "sent",
+      providerMessageId: providerResult.providerMessageId,
+    };
+  } catch (error) {
+    if (error instanceof DeliveryCompletionError) {
+      await markDeliveryRetryable(client, delivery, error.code);
+      logDeliveryResult({
+        deliveryId: delivery.deliveryId,
+        sourceDomainEventId: delivery.sourceDomainEventId,
+        organisationId: delivery.organisationId,
+        notificationKind: delivery.notificationKind,
+        attemptCount: delivery.attemptCount,
+        result: "completion_failure_after_provider_accept",
+        providerResultCategory: error.code,
+      });
+      return {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "completion_failure_after_provider_accept",
+        providerMessageId: providerResult.providerMessageId,
+        errorCode: error.code,
+      };
+    }
+
+    throw error;
+  }
 }
 
 export async function runNotificationDeliveryWorker(
@@ -327,6 +480,7 @@ export async function runNotificationDeliveryWorker(
     failedTerminal: 0,
     failedRetryable: 0,
     fencingLossAfterProviderAccept: 0,
+    completionFailureAfterProviderAccept: 0,
     invalidContext: 0,
     deliveries: [],
   };
@@ -348,6 +502,10 @@ export async function runNotificationDeliveryWorker(
       summary.failedRetryable += 1;
     } else if (processed.outcome === "fencing_loss_after_provider_accept") {
       summary.fencingLossAfterProviderAccept += 1;
+    } else if (
+      processed.outcome === "completion_failure_after_provider_accept"
+    ) {
+      summary.completionFailureAfterProviderAccept += 1;
     } else {
       summary.invalidContext += 1;
     }

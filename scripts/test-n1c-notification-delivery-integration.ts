@@ -371,6 +371,196 @@ async function main() {
     "provider must receive delivery_key as idempotency key",
   );
 
+  const payloadStabilityEventId =
+    runLocalQuery<{ event_id: string }>(
+      `insert into private.domain_event_outbox (
+         organisation_id,
+         event_type,
+         idempotency_key,
+         payload
+       )
+       values (
+         '${resolvedOrganisationId}'::uuid,
+         'JobFunctionAssigned',
+         '${idempotencyKey}-payload-stability',
+         jsonb_build_object('membership_id', '${membershipId}')
+       )
+       returning id::text as event_id;`,
+      "enqueue payload-stability event",
+    )[0]?.event_id ?? null;
+
+  assert(payloadStabilityEventId, "payload stability event id is required");
+  await runNotificationProjector(projectorClient, 1000);
+
+  const payloadStabilityDelivery =
+    runLocalQuery<{
+      delivery_id: string;
+      delivery_key: string;
+    }>(
+      `select id::text as delivery_id, delivery_key
+       from private.notification_delivery_ledger
+       where organisation_id = '${resolvedOrganisationId}'::uuid
+         and source_domain_event_id = '${payloadStabilityEventId}'::uuid
+       limit 1;`,
+      "read payload-stability delivery",
+    )[0] ?? null;
+
+  assert(payloadStabilityDelivery, "payload stability delivery is required");
+
+  const payloadProvider = createFakeOperationalEmailProvider({
+    messageIdPrefix: "n1c-payload-stability",
+  });
+
+  let payloadCompleteCalls = 0;
+  const payloadClient = createNotificationDeliveryWorkerClient({
+    rpc: async (fn, args) => {
+      if (fn === "complete_notification_delivery_for_worker") {
+        payloadCompleteCalls += 1;
+        if (payloadCompleteCalls === 1) {
+          return { data: false, error: null };
+        }
+      }
+
+      return serviceClient.rpc(
+        fn as keyof Database["public"]["Functions"],
+        args as never,
+      );
+    },
+  });
+
+  const payloadClaimRows = runLocalQuery<{
+    organisation_id: string;
+    delivery_id: string;
+    source_domain_event_id: string;
+    recipient_membership_id: string;
+    notification_kind: string;
+    delivery_key: string;
+    lease_token: string;
+    attempt_count: number;
+  }>(
+    `select *
+     from public.claim_notification_deliveries_for_worker(10);`,
+    "claim payload-stability delivery",
+  ).filter((row) => row.delivery_id === payloadStabilityDelivery.delivery_id);
+
+  assert(payloadClaimRows[0], "payload stability delivery must be claimable");
+
+  const firstPayloadAttempt = await processClaimedNotificationDelivery(
+    payloadClient,
+    payloadProvider,
+    {
+      appOrigin: "http://127.0.0.1:3000",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    },
+    {
+      organisationId: payloadClaimRows[0].organisation_id,
+      deliveryId: payloadClaimRows[0].delivery_id,
+      sourceDomainEventId: payloadClaimRows[0].source_domain_event_id,
+      recipientMembershipId: payloadClaimRows[0].recipient_membership_id,
+      notificationKind: payloadClaimRows[0].notification_kind,
+      deliveryKey: payloadClaimRows[0].delivery_key,
+      leaseToken: payloadClaimRows[0].lease_token,
+      attemptCount: payloadClaimRows[0].attempt_count,
+    },
+  );
+
+  assert(
+    firstPayloadAttempt.outcome === "fencing_loss_after_provider_accept",
+    "payload stability first attempt must accept provider then lose lease",
+  );
+
+  const firstProviderPayload = payloadProvider
+    .getSendsByKey()
+    .get(payloadStabilityDelivery.delivery_key)?.message;
+
+  assert(firstProviderPayload, "first provider payload must be captured");
+
+  runLocalQuery(
+    `update public.organisation_memberships
+     set display_name = 'Mutated Display Name'
+     where id = '${membershipId}'::uuid;`,
+    "mutate membership display name",
+  );
+
+  runLocalQuery(
+    `insert into public.membership_notification_contacts (
+       organisation_id,
+       membership_id,
+       channel_type,
+       contact_address,
+       status,
+       source
+     )
+     values (
+       '${resolvedOrganisationId}'::uuid,
+       '${membershipId}'::uuid,
+       'email',
+       'mutated-contact@example.test',
+       'active',
+       'manual'
+     )
+     on conflict (organisation_id, membership_id, channel_type)
+     do update set contact_address = excluded.contact_address,
+                   status = 'active',
+                   updated_at = statement_timestamp();`,
+    "mutate notification contact",
+  );
+
+  runLocalQuery(
+    `update private.notification_delivery_ledger
+     set status = 'pending',
+         lease_token = null,
+         lease_expires_at = null,
+         processing_started_at = null,
+         available_at = statement_timestamp()
+     where id = '${payloadStabilityDelivery.delivery_id}'::uuid;`,
+    "requeue payload-stability delivery",
+  );
+
+  const payloadRetryRun = await runNotificationDeliveryWorker(
+    deliveryClient,
+    payloadProvider,
+    {
+      appOrigin: "http://127.0.0.1:3000",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    },
+    10,
+  );
+
+  assert(
+    payloadRetryRun.sent >= 1,
+    "payload stability delivery must eventually send",
+  );
+
+  const retryProviderPayload = payloadProvider
+    .getSendsByKey()
+    .get(payloadStabilityDelivery.delivery_key)?.message;
+
+  assert(retryProviderPayload, "retry provider payload must exist");
+  assert(
+    JSON.stringify(retryProviderPayload) ===
+      JSON.stringify(firstProviderPayload),
+    "retry must reuse exact same provider payload after live data mutation",
+  );
+  assert(
+    payloadProvider.getSendsByKey().size === 1,
+    "provider idempotency must keep one logical send for the delivery key",
+  );
+
+  const envelopeRow =
+    runLocalQuery<{ recipient_email: string; subject: string }>(
+      `select recipient_email, subject
+       from private.notification_delivery_provider_envelopes
+       where delivery_id = '${payloadStabilityDelivery.delivery_id}'::uuid;`,
+      "read immutable provider envelope",
+    )[0] ?? null;
+
+  assert(envelopeRow, "provider envelope must exist");
+  assert(
+    envelopeRow.recipient_email !== "mutated-contact@example.test",
+    "stored envelope must not reflect post-send contact mutation",
+  );
+
   const workforceUserId = randomUUID();
   const workforceMembershipId = randomUUID();
   const syntheticEmail = `${randomUUID().replaceAll("-", "")}@workforce.invalid`;

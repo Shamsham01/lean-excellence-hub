@@ -1,6 +1,7 @@
 import type {
   ClaimedNotificationDelivery,
   NotificationDeliveryContext,
+  NotificationProviderEnvelope,
   RecipientResolutionStatus,
 } from "./types.ts";
 
@@ -23,6 +24,27 @@ export type NotificationDeliveryWorkerClient = {
   }) => Promise<
     | { context: NotificationDeliveryContext; error: null }
     | { context: null; error: { message: string; code?: string } | null }
+  >;
+  getProviderEnvelope: (input: {
+    organisationId: string;
+    deliveryId: string;
+  }) => Promise<
+    | { envelope: NotificationProviderEnvelope; error: null }
+    | { envelope: null; error: { message: string; code?: string } | null }
+  >;
+  storeProviderEnvelope: (input: {
+    organisationId: string;
+    deliveryId: string;
+    deliveryKey: string;
+    senderFrom: string;
+    recipientEmail: string;
+    subject: string;
+    htmlBody: string;
+    textBody: string;
+    payloadHash: string;
+  }) => Promise<
+    | { envelope: NotificationProviderEnvelope; error: null }
+    | { envelope: null; error: { message: string; code?: string } | null }
   >;
   completeNotificationDelivery: (input: {
     organisationId: string;
@@ -72,6 +94,32 @@ type ContextRow = {
   context_detail: string | null;
   context_link_path: string | null;
 };
+
+type EnvelopeRow = {
+  organisation_id: string;
+  delivery_id: string;
+  delivery_key: string;
+  sender_from: string;
+  recipient_email: string;
+  subject: string;
+  html_body: string;
+  text_body: string;
+  payload_hash: string;
+};
+
+function mapEnvelopeRow(row: EnvelopeRow): NotificationProviderEnvelope {
+  return {
+    organisationId: row.organisation_id,
+    deliveryId: row.delivery_id,
+    deliveryKey: row.delivery_key,
+    senderFrom: row.sender_from,
+    recipientEmail: row.recipient_email,
+    subject: row.subject,
+    htmlBody: row.html_body,
+    textBody: row.text_body,
+    payloadHash: row.payload_hash,
+  };
+}
 
 export function createNotificationDeliveryWorkerClient(deps: {
   rpc: (fn: string, args: Record<string, unknown>) => RpcResult;
@@ -144,6 +192,58 @@ export function createNotificationDeliveryWorkerClient(deps: {
         },
         error: null,
       };
+    },
+    async getProviderEnvelope(input) {
+      const { data, error } = await deps.rpc(
+        "get_notification_delivery_provider_envelope_for_worker",
+        {
+          target_organisation_id: input.organisationId,
+          target_delivery_id: input.deliveryId,
+        },
+      );
+
+      if (error) {
+        return { envelope: null, error };
+      }
+
+      const rows = (data ?? []) as EnvelopeRow[];
+      const row = rows[0];
+      if (!row) {
+        return { envelope: null, error: null };
+      }
+
+      return { envelope: mapEnvelopeRow(row), error: null };
+    },
+    async storeProviderEnvelope(input) {
+      const { data, error } = await deps.rpc(
+        "store_notification_delivery_provider_envelope_for_worker",
+        {
+          target_organisation_id: input.organisationId,
+          target_delivery_id: input.deliveryId,
+          expected_delivery_key: input.deliveryKey,
+          target_sender_from: input.senderFrom,
+          target_recipient_email: input.recipientEmail,
+          target_subject: input.subject,
+          target_html_body: input.htmlBody,
+          target_text_body: input.textBody,
+          target_payload_hash: input.payloadHash,
+        },
+      );
+
+      if (error) {
+        return { envelope: null, error };
+      }
+
+      const rows = (data ?? []) as EnvelopeRow[];
+      const row = rows[0];
+      if (!row) {
+        return {
+          envelope: null,
+          error: { message: "store_provider_envelope returned no row" },
+        };
+      }
+
+      return { envelope: mapEnvelopeRow(row), error: null };
     },
     completeNotificationDelivery(input) {
       return deps.rpc("complete_notification_delivery_for_worker", {

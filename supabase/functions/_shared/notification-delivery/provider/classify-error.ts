@@ -17,6 +17,23 @@ function readStatusCode(error: unknown): number | undefined {
   return undefined;
 }
 
+function readErrorName(error: unknown): string | undefined {
+  if (error instanceof OperationalEmailProviderError) {
+    return error.providerErrorName;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    typeof error.name === "string"
+  ) {
+    return error.name;
+  }
+
+  return undefined;
+}
+
 function readMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -36,8 +53,23 @@ export function classifyProviderError(error: unknown): {
     };
   }
 
+  const errorName = readErrorName(error);
   const statusCode = readStatusCode(error);
   const message = readMessage(error).toLowerCase();
+
+  if (errorName === "invalid_idempotent_request") {
+    return {
+      retryable: false,
+      code: "provider_idempotency_conflict",
+    };
+  }
+
+  if (errorName === "concurrent_idempotent_requests") {
+    return {
+      retryable: true,
+      code: "provider_idempotency_in_flight",
+    };
+  }
 
   if (message.includes("idempotency") && message.includes("different")) {
     return {

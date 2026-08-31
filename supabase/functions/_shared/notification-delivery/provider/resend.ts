@@ -53,9 +53,11 @@ export function createResendOperationalEmailProvider(
       if (response.error) {
         const statusCode = response.error.statusCode;
         const providerMessage = response.error.message ?? "resend_send_failed";
+        const providerErrorName = response.error.name;
         const classification = classifyProviderError({
           statusCode,
           message: providerMessage,
+          name: providerErrorName,
         });
 
         throw new OperationalEmailProviderError(
@@ -64,6 +66,7 @@ export function createResendOperationalEmailProvider(
           {
             retryable: classification.retryable,
             statusCode,
+            providerErrorName,
           },
         );
       }

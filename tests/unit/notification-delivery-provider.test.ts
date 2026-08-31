@@ -30,6 +30,32 @@ describe("operational email provider", () => {
     expect(provider.getSendCount()).toBe(2);
   });
 
+  it("classifies invalid_idempotent_request as terminal conflict", () => {
+    expect(
+      classifyProviderError({
+        name: "invalid_idempotent_request",
+        statusCode: 409,
+        message: "Idempotent request payload mismatch",
+      }),
+    ).toEqual({
+      retryable: false,
+      code: "provider_idempotency_conflict",
+    });
+  });
+
+  it("classifies concurrent_idempotent_requests as retryable in-flight", () => {
+    expect(
+      classifyProviderError({
+        name: "concurrent_idempotent_requests",
+        statusCode: 409,
+        message: "Another request with the same idempotency key is in-flight",
+      }),
+    ).toEqual({
+      retryable: true,
+      code: "provider_idempotency_in_flight",
+    });
+  });
+
   it("classifies rate limits as retryable", () => {
     expect(
       classifyProviderError({ statusCode: 429, message: "Too many requests" }),

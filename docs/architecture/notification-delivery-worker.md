@@ -74,13 +74,42 @@ Implementation lives in:
 - Provider idempotency key: `delivery.delivery_key`
 - Payload must remain deterministic across retries
 
+### Immutable provider envelope
+
+Before the first provider send attempt, N1c renders operational email content
+and persists an immutable envelope in
+`private.notification_delivery_provider_envelopes`. Retries and lease reclaims
+reuse this frozen envelope instead of re-resolving live membership/contact/context
+data. This guarantees the same `delivery_key` always maps to the same Resend
+payload even when source records change after the first preparation.
+
+Worker RPCs:
+
+- `get_notification_delivery_provider_envelope_for_worker`
+- `store_notification_delivery_provider_envelope_for_worker`
+
+Resend official idempotency error names handled explicitly:
+
+- `invalid_idempotent_request` → terminal `provider_idempotency_conflict`
+- `concurrent_idempotent_requests` → retryable `provider_idempotency_in_flight`
+
+### Resend idempotency retention window
+
+Resend retains idempotency keys for **24 hours**. N1a retry scheduling operates
+well inside this window under normal conditions. If a delivery is provider-accepted
+but the ledger never records `sent`, and recovery takes longer than 24 hours,
+Resend may no longer deduplicate a later resend with the same key. Residual
+duplicate-send risk in that edge case is deferred to a later provider
+reconciliation/webhook milestone (N1d+).
+
 ## Failure classification
 
 | Condition | Worker action |
 | --- | --- |
 | Network timeout, 429, 5xx, in-flight idempotency conflict | `fail_notification_delivery_retryable_for_worker` |
 | Missing deliverable contact, synthetic auth email, invalid email, inactive membership, disabled workforce account, invalid context, render failure, provider auth/config failure, mismatched idempotency payload | `fail_notification_delivery_terminal_for_worker` |
-| Provider accepted but completion RPC returns false (lost/stale lease) | Log fencing-loss result; allow N1a reclaim/retry with same `delivery_key` |
+| Provider accepted but completion RPC returns false (lost/stale lease) | Log `fencing_loss_after_provider_accept`; allow N1a reclaim/retry with same frozen envelope |
+| Provider accepted but completion RPC errors | `completion_failure_after_provider_accept`; retryable `completion_db_retryable` without reclassifying as provider failure |
 
 ## Meaning of `sent`
 

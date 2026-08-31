@@ -41,6 +41,18 @@ export type RenderedOperationalEmail = {
   html: string;
 };
 
+export type NotificationProviderEnvelope = {
+  organisationId: string;
+  deliveryId: string;
+  deliveryKey: string;
+  senderFrom: string;
+  recipientEmail: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+  payloadHash: string;
+};
+
 export type ProcessedDeliverySummary = {
   deliveryId: string;
   notificationKind: string;
@@ -49,6 +61,7 @@ export type ProcessedDeliverySummary = {
     | "failed_terminal"
     | "failed_retryable"
     | "fencing_loss_after_provider_accept"
+    | "completion_failure_after_provider_accept"
     | "invalid_context";
   providerMessageId?: string;
   errorCode?: string;
@@ -60,6 +73,7 @@ export type WorkerRunSummary = {
   failedTerminal: number;
   failedRetryable: number;
   fencingLossAfterProviderAccept: number;
+  completionFailureAfterProviderAccept: number;
   invalidContext: number;
   deliveries: ProcessedDeliverySummary[];
 };

@@ -295,3 +295,309 @@ revoke all on function public.get_notification_delivery_context_for_worker(uuid,
   from public, anon, authenticated;
 grant execute on function public.get_notification_delivery_context_for_worker(uuid, uuid, uuid)
   to service_role;
+
+-- Immutable provider envelope: frozen at first send preparation so retries reuse
+-- the exact same Resend payload even when live membership/contact/context changes.
+
+create table private.notification_delivery_provider_envelopes (
+  organisation_id uuid not null,
+  delivery_id uuid not null,
+  delivery_key text not null,
+  sender_from text not null,
+  recipient_email text not null,
+  subject text not null,
+  html_body text not null,
+  text_body text not null,
+  payload_hash text not null,
+  created_at timestamptz not null default statement_timestamp(),
+  constraint notification_delivery_provider_envelopes_pkey
+    primary key (organisation_id, delivery_id),
+  constraint notification_delivery_provider_envelopes_delivery_fkey
+    foreign key (organisation_id, delivery_id)
+    references private.notification_delivery_ledger(organisation_id, id)
+    on delete restrict,
+  constraint notification_delivery_provider_envelopes_delivery_key_check
+    check (
+      delivery_key = btrim(delivery_key)
+      and char_length(delivery_key) between 1 and 200
+    ),
+  constraint notification_delivery_provider_envelopes_sender_check
+    check (
+      sender_from = btrim(sender_from)
+      and char_length(sender_from) between 3 and 320
+    ),
+  constraint notification_delivery_provider_envelopes_recipient_check
+    check (
+      recipient_email = lower(btrim(recipient_email))
+      and char_length(recipient_email) between 3 and 320
+    ),
+  constraint notification_delivery_provider_envelopes_subject_check
+    check (
+      subject = btrim(subject)
+      and char_length(subject) between 1 and 500
+    ),
+  constraint notification_delivery_provider_envelopes_payload_hash_check
+    check (
+      payload_hash = lower(btrim(payload_hash))
+      and char_length(payload_hash) = 64
+    )
+);
+
+alter table private.notification_delivery_provider_envelopes enable row level security;
+alter table private.notification_delivery_provider_envelopes force row level security;
+
+grant select, insert on private.notification_delivery_provider_envelopes
+  to lean_hub_private_owner;
+
+create policy private_owner_all_notification_delivery_provider_envelopes
+on private.notification_delivery_provider_envelopes
+for all
+to lean_hub_private_owner
+using (true)
+with check (true);
+
+create or replace function private.get_notification_delivery_provider_envelope(
+  target_organisation_id uuid,
+  target_delivery_id uuid
+)
+returns table (
+  organisation_id uuid,
+  delivery_id uuid,
+  delivery_key text,
+  sender_from text,
+  recipient_email text,
+  subject text,
+  html_body text,
+  text_body text,
+  payload_hash text
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    envelope_row.organisation_id,
+    envelope_row.delivery_id,
+    envelope_row.delivery_key,
+    envelope_row.sender_from,
+    envelope_row.recipient_email,
+    envelope_row.subject,
+    envelope_row.html_body,
+    envelope_row.text_body,
+    envelope_row.payload_hash
+  from private.notification_delivery_provider_envelopes envelope_row
+  where envelope_row.organisation_id = target_organisation_id
+    and envelope_row.delivery_id = target_delivery_id
+$$;
+
+create or replace function private.store_notification_delivery_provider_envelope(
+  target_organisation_id uuid,
+  target_delivery_id uuid,
+  expected_delivery_key text,
+  target_sender_from text,
+  target_recipient_email text,
+  target_subject text,
+  target_html_body text,
+  target_text_body text,
+  target_payload_hash text
+)
+returns table (
+  organisation_id uuid,
+  delivery_id uuid,
+  delivery_key text,
+  sender_from text,
+  recipient_email text,
+  subject text,
+  html_body text,
+  text_body text,
+  payload_hash text
+)
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  matched_ledger_row private.notification_delivery_ledger%rowtype;
+  existing_row private.notification_delivery_provider_envelopes%rowtype;
+begin
+  select delivery_ledger.*
+  into matched_ledger_row
+  from private.notification_delivery_ledger delivery_ledger
+  where delivery_ledger.organisation_id = target_organisation_id
+    and delivery_ledger.id = target_delivery_id;
+
+  if matched_ledger_row.id is null then
+    raise exception 'delivery not found'
+      using errcode = 'P0002';
+  end if;
+
+  if matched_ledger_row.delivery_key is distinct from expected_delivery_key then
+    raise exception 'delivery_key does not match ledger row'
+      using errcode = '22023';
+  end if;
+
+  select envelope_row.*
+  into existing_row
+  from private.notification_delivery_provider_envelopes envelope_row
+  where envelope_row.organisation_id = target_organisation_id
+    and envelope_row.delivery_id = target_delivery_id;
+
+  if existing_row.delivery_id is not null then
+    if existing_row.payload_hash is distinct from lower(btrim(target_payload_hash)) then
+      raise exception 'provider envelope already exists with different payload'
+        using errcode = '23505';
+    end if;
+
+    return query
+    select
+      existing_row.organisation_id,
+      existing_row.delivery_id,
+      existing_row.delivery_key,
+      existing_row.sender_from,
+      existing_row.recipient_email,
+      existing_row.subject,
+      existing_row.html_body,
+      existing_row.text_body,
+      existing_row.payload_hash;
+    return;
+  end if;
+
+  insert into private.notification_delivery_provider_envelopes (
+    organisation_id,
+    delivery_id,
+    delivery_key,
+    sender_from,
+    recipient_email,
+    subject,
+    html_body,
+    text_body,
+    payload_hash
+  )
+  values (
+    target_organisation_id,
+    target_delivery_id,
+    expected_delivery_key,
+    btrim(target_sender_from),
+    lower(btrim(target_recipient_email)),
+    btrim(target_subject),
+    target_html_body,
+    target_text_body,
+    lower(btrim(target_payload_hash))
+  );
+
+  return query
+  select
+    envelope_row.organisation_id,
+    envelope_row.delivery_id,
+    envelope_row.delivery_key,
+    envelope_row.sender_from,
+    envelope_row.recipient_email,
+    envelope_row.subject,
+    envelope_row.html_body,
+    envelope_row.text_body,
+    envelope_row.payload_hash
+  from private.notification_delivery_provider_envelopes envelope_row
+  where envelope_row.organisation_id = target_organisation_id
+    and envelope_row.delivery_id = target_delivery_id;
+end;
+$$;
+
+create or replace function public.get_notification_delivery_provider_envelope_for_worker(
+  target_organisation_id uuid,
+  target_delivery_id uuid
+)
+returns table (
+  organisation_id uuid,
+  delivery_id uuid,
+  delivery_key text,
+  sender_from text,
+  recipient_email text,
+  subject text,
+  html_body text,
+  text_body text,
+  payload_hash text
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select *
+  from private.get_notification_delivery_provider_envelope(
+    target_organisation_id,
+    target_delivery_id
+  )
+$$;
+
+create or replace function public.store_notification_delivery_provider_envelope_for_worker(
+  target_organisation_id uuid,
+  target_delivery_id uuid,
+  expected_delivery_key text,
+  target_sender_from text,
+  target_recipient_email text,
+  target_subject text,
+  target_html_body text,
+  target_text_body text,
+  target_payload_hash text
+)
+returns table (
+  organisation_id uuid,
+  delivery_id uuid,
+  delivery_key text,
+  sender_from text,
+  recipient_email text,
+  subject text,
+  html_body text,
+  text_body text,
+  payload_hash text
+)
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select *
+  from private.store_notification_delivery_provider_envelope(
+    target_organisation_id,
+    target_delivery_id,
+    expected_delivery_key,
+    target_sender_from,
+    target_recipient_email,
+    target_subject,
+    target_html_body,
+    target_text_body,
+    target_payload_hash
+  )
+$$;
+
+alter function private.get_notification_delivery_provider_envelope(uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.store_notification_delivery_provider_envelope(
+  uuid, uuid, text, text, text, text, text, text, text
+) owner to lean_hub_private_owner;
+
+revoke all on function private.get_notification_delivery_provider_envelope(uuid, uuid)
+  from public, anon, authenticated;
+revoke all on function private.store_notification_delivery_provider_envelope(
+  uuid, uuid, text, text, text, text, text, text, text
+) from public, anon, authenticated;
+
+grant execute on function private.get_notification_delivery_provider_envelope(uuid, uuid)
+  to service_role;
+grant execute on function private.store_notification_delivery_provider_envelope(
+  uuid, uuid, text, text, text, text, text, text, text
+) to service_role;
+
+revoke all on function public.get_notification_delivery_provider_envelope_for_worker(uuid, uuid)
+  from public, anon, authenticated;
+revoke all on function public.store_notification_delivery_provider_envelope_for_worker(
+  uuid, uuid, text, text, text, text, text, text, text
+) from public, anon, authenticated;
+
+grant execute on function public.get_notification_delivery_provider_envelope_for_worker(uuid, uuid)
+  to service_role;
+grant execute on function public.store_notification_delivery_provider_envelope_for_worker(
+  uuid, uuid, text, text, text, text, text, text, text
+) to service_role;

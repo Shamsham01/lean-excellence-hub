@@ -7,7 +7,10 @@ import {
 } from "../../supabase/functions/_shared/notification-delivery/handler.ts";
 import { createFakeOperationalEmailProvider } from "../../supabase/functions/_shared/notification-delivery/provider/fake.ts";
 import { OperationalEmailProviderError } from "../../supabase/functions/_shared/notification-delivery/provider/types.ts";
-import type { ClaimedNotificationDelivery } from "../../supabase/functions/_shared/notification-delivery/types.ts";
+import type {
+  ClaimedNotificationDelivery,
+  NotificationProviderEnvelope,
+} from "../../supabase/functions/_shared/notification-delivery/types.ts";
 import type { NotificationDeliveryWorkerClient } from "../../supabase/functions/_shared/notification-delivery/worker-client.ts";
 
 const BASE_DELIVERY: ClaimedNotificationDelivery = {
@@ -43,6 +46,8 @@ const DELIVERABLE_CONTEXT = {
 function createMockClient(
   overrides: Partial<NotificationDeliveryWorkerClient> = {},
 ): NotificationDeliveryWorkerClient {
+  const storedEnvelopes = new Map<string, NotificationProviderEnvelope>();
+
   return {
     claimNotificationDeliveries: vi.fn(async () => ({
       deliveries: [BASE_DELIVERY],
@@ -52,6 +57,25 @@ function createMockClient(
       context: DELIVERABLE_CONTEXT,
       error: null,
     })),
+    getProviderEnvelope: vi.fn(async (input) => ({
+      envelope: storedEnvelopes.get(input.deliveryId) ?? null,
+      error: null,
+    })),
+    storeProviderEnvelope: vi.fn(async (input) => {
+      const envelope: NotificationProviderEnvelope = {
+        organisationId: input.organisationId,
+        deliveryId: input.deliveryId,
+        deliveryKey: input.deliveryKey,
+        senderFrom: input.senderFrom,
+        recipientEmail: input.recipientEmail,
+        subject: input.subject,
+        htmlBody: input.htmlBody,
+        textBody: input.textBody,
+        payloadHash: input.payloadHash,
+      };
+      storedEnvelopes.set(input.deliveryId, envelope);
+      return { envelope, error: null };
+    }),
     completeNotificationDelivery: vi.fn(async () => ({
       data: true,
       error: null,
@@ -329,6 +353,63 @@ describe("notification delivery processing", () => {
     expect(provider.getSendCount()).toBe(1);
     expect(client.failNotificationDeliveryRetryable).not.toHaveBeenCalled();
     expect(client.failNotificationDeliveryTerminal).not.toHaveBeenCalled();
+  });
+
+  it("reuses stored provider envelope without re-rendering on retry", async () => {
+    const client = createMockClient();
+    const provider = createFakeOperationalEmailProvider();
+    const config = {
+      appOrigin: "https://hub.example.test",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    };
+
+    await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      BASE_DELIVERY,
+    );
+
+    const firstPayload = provider
+      .getSendsByKey()
+      .get(BASE_DELIVERY.deliveryKey)?.message;
+
+    await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      BASE_DELIVERY,
+    );
+
+    const secondPayload = provider
+      .getSendsByKey()
+      .get(BASE_DELIVERY.deliveryKey)?.message;
+
+    expect(client.getDeliveryContext).toHaveBeenCalledTimes(1);
+    expect(firstPayload).toEqual(secondPayload);
+  });
+
+  it("classifies completion RPC errors separately from provider failures", async () => {
+    const client = createMockClient({
+      completeNotificationDelivery: vi.fn(async () => ({
+        data: null,
+        error: { message: "completion rpc failed" },
+      })),
+    });
+
+    const result = await processClaimedNotificationDelivery(
+      client,
+      createFakeOperationalEmailProvider(),
+      {
+        appOrigin: "https://hub.example.test",
+        operationalEmailFrom: "notifications@example.test",
+      },
+      BASE_DELIVERY,
+    );
+
+    expect(result.outcome).toBe("completion_failure_after_provider_accept");
+    expect(result.errorCode).toBe("completion_db_retryable");
+    expect(client.failNotificationDeliveryRetryable).toHaveBeenCalled();
   });
 
   it("processes partial batch outcomes independently", async () => {
