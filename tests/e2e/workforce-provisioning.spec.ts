@@ -174,10 +174,15 @@ test.describe("M1 workforce provisioning", () => {
       await memberHasPermission(workforceClient, "workforce.provision"),
     ).toBe(false);
 
+    await page.goto("/platform/settings");
+    await expect(page.getByTestId("settings-page")).toBeVisible();
+    await expect(page.getByText("Your profile")).toBeVisible();
+
+    await page.goto("/platform/settings/profile");
+    await expect(page.getByTestId("profile-settings-page")).toBeVisible();
+
     await page.goto("/platform/settings/people");
-    await expect(
-      page.getByText(/Ask an Organisation Administrator to invite colleagues/i),
-    ).toBeVisible();
+    await expect(page.getByTestId("people-settings-page")).not.toBeVisible();
 
     await context.close();
   });

@@ -5,6 +5,7 @@ export type PlatformNavItem = {
   label: string;
   permission: string;
   organisationScopeOnly?: boolean;
+  universalAccess?: boolean;
   section?: PlatformNavSection;
   icon?: string;
 };
@@ -120,6 +121,7 @@ export const settingsNavigationItem: PlatformNavItem = {
   href: "/platform/settings",
   label: "Settings",
   permission: "people.capability.read",
+  universalAccess: true,
   section: "platform",
 };
 

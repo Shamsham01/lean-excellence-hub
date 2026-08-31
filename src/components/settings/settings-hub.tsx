@@ -17,7 +17,11 @@ export function SettingsHub({ cards }: { cards: SettingsHubCard[] }) {
       data-testid="settings-hub"
     >
       {cards.map((card) => (
-        <Card key={card.href} className={card.available ? "" : "opacity-80"}>
+        <Card
+          key={card.href}
+          data-testid={`settings-hub-card${card.href.replaceAll("/", "-")}`}
+          className={card.available ? "" : "opacity-80"}
+        >
           <CardHeader>
             <CardTitle className="text-base">{card.title}</CardTitle>
           </CardHeader>

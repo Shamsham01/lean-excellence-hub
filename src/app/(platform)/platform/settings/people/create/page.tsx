@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { CreateWorkforceUserForm } from "@/components/people/create-workforce-user-form";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
@@ -19,6 +20,10 @@ export default async function CreateWorkforceUserPage() {
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
+
+  if (!canProvision || !canDelegateAccess) {
+    notFound();
+  }
 
   const supabase = await createServerSupabaseClient();
 
