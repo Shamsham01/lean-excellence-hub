@@ -21,11 +21,22 @@ type DbQueryResult = {
   _tag?: string;
 };
 
-function extractJsonObject(output: string): string {
-  const jsonStart = output.indexOf("{");
-  if (jsonStart === -1) {
+function extractJsonValue(output: string): string {
+  const objectStart = output.indexOf("{");
+  const arrayStart = output.indexOf("[");
+
+  if (objectStart === -1 && arrayStart === -1) {
     throw new Error(`unexpected supabase command output: ${output}`);
   }
+
+  const jsonStart =
+    objectStart === -1
+      ? arrayStart
+      : arrayStart === -1
+        ? objectStart
+        : Math.min(objectStart, arrayStart);
+  const opener = output[jsonStart];
+  const closer = opener === "[" ? "]" : "}";
 
   let depth = 0;
   let inString = false;
@@ -57,12 +68,12 @@ function extractJsonObject(output: string): string {
       continue;
     }
 
-    if (character === "{") {
+    if (character === opener) {
       depth += 1;
       continue;
     }
 
-    if (character === "}") {
+    if (character === closer) {
       depth -= 1;
       if (depth === 0) {
         return output.slice(jsonStart, index + 1);
@@ -71,7 +82,7 @@ function extractJsonObject(output: string): string {
   }
 
   throw new Error(
-    `incomplete JSON object in supabase command output: ${output}`,
+    `incomplete JSON value in supabase command output: ${output}`,
   );
 }
 
@@ -81,7 +92,7 @@ function parseJsonObject<T>(output: string): T {
     throw new Error("supabase command returned empty output");
   }
 
-  return JSON.parse(extractJsonObject(trimmed)) as T;
+  return JSON.parse(extractJsonValue(trimmed)) as T;
 }
 
 function readSupabaseStatus(): SupabaseStatus {
@@ -99,15 +110,19 @@ function parseDbQueryOutput(output: string): DbQueryResult {
     throw new Error("supabase db query returned empty output");
   }
 
-  if (trimmed.includes("{")) {
-    return parseJsonObject<DbQueryResult>(output);
-  }
-
   if (/^(INSERT|UPDATE|DELETE|ALTER|CREATE)\s/i.test(trimmed)) {
     return { rows: [] };
   }
 
-  throw new Error(`unexpected supabase db query output: ${output}`);
+  const parsed = parseJsonObject<DbQueryResult | Record<string, unknown>[]>(
+    output,
+  );
+
+  if (Array.isArray(parsed)) {
+    return { rows: parsed };
+  }
+
+  return parsed;
 }
 
 function runLocalQuery<T extends Record<string, unknown>>(
