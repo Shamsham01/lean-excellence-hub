@@ -24,7 +24,9 @@ fi
 for _ in $(seq 1 60); do
   if docker info >/dev/null 2>&1; then
     sudo usermod -aG docker "${USER:-ubuntu}" >/dev/null 2>&1 || true
-    sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+    if [[ -S /var/run/docker.sock ]] && [[ ! -w /var/run/docker.sock ]]; then
+      sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+    fi
     exit 0
   fi
   sleep 1
