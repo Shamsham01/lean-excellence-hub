@@ -10,14 +10,21 @@ import {
   addMaturityQuestion,
   linkCriterionQuestion,
   publishMaturityModel,
+  setFrameworkAssessmentScopes,
 } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  MATURITY_ASSESSMENT_SCOPE_TYPES,
+  scopeTypeLabel,
+  type MaturityAssessmentScopeType,
+} from "@/modules/maturity/semantic-scope";
 
 const STEPS = [
   { id: "details", label: "Details" },
+  { id: "scopes", label: "Assessment scope" },
   { id: "levels", label: "Levels" },
   { id: "pillars", label: "Pillars" },
   { id: "criteria", label: "Criteria" },
@@ -49,6 +56,7 @@ type FrameworkEditorProps = {
   modelDescription: string | null;
   versionId: string;
   versionNumber: number;
+  assessmentScopes: MaturityAssessmentScopeType[];
   levels: LevelRow[];
   pillars: PillarRow[];
   criteria: CriterionRow[];
@@ -61,6 +69,7 @@ export function FrameworkEditor({
   modelDescription,
   versionId,
   versionNumber,
+  assessmentScopes,
   levels,
   pillars,
   criteria,
@@ -70,6 +79,9 @@ export function FrameworkEditor({
   const [step, setStep] = useState<StepId>("details");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selectedScopes, setSelectedScopes] = useState<
+    MaturityAssessmentScopeType[]
+  >(assessmentScopes.length > 0 ? assessmentScopes : ["site"]);
 
   async function run<T>(action: () => Promise<{ error?: string } | T>) {
     setBusy(true);
@@ -139,6 +151,59 @@ export function FrameworkEditor({
               Continue with levels and pillars.
             </p>
           </div>
+        ) : null}
+
+        {step === "scopes" ? (
+          <form
+            className="flex max-w-md flex-col gap-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (selectedScopes.length === 0) {
+                setError("Select at least one assessment scope.");
+                return;
+              }
+              await run(() =>
+                setFrameworkAssessmentScopes(
+                  versionId,
+                  selectedScopes,
+                  modelId,
+                ),
+              );
+            }}
+          >
+            <p className="text-sm text-muted-foreground">
+              Choose which semantic Lean scopes this framework supports. Site is
+              the default Lean maturity assessment scope.
+            </p>
+            <fieldset className="flex flex-col gap-2">
+              <legend className="text-sm font-medium">Allowed scopes</legend>
+              {MATURITY_ASSESSMENT_SCOPE_TYPES.map((scope) => (
+                <label key={scope} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedScopes.includes(scope)}
+                    onChange={(event) => {
+                      setSelectedScopes((current) => {
+                        if (event.target.checked) {
+                          return current.includes(scope)
+                            ? current
+                            : [...current, scope];
+                        }
+                        return current.filter((item) => item !== scope);
+                      });
+                    }}
+                  />
+                  {scopeTypeLabel(scope)}
+                </label>
+              ))}
+            </fieldset>
+            <Button
+              type="submit"
+              disabled={busy || selectedScopes.length === 0}
+            >
+              Save assessment scopes
+            </Button>
+          </form>
         ) : null}
 
         {step === "levels" ? (
@@ -385,6 +450,10 @@ export function FrameworkEditor({
 
         {step === "review" ? (
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="font-medium">Assessment scopes</dt>
+              <dd>{selectedScopes.map(scopeTypeLabel).join(", ")}</dd>
+            </div>
             <div>
               <dt className="font-medium">Levels</dt>
               <dd>{levels.length}</dd>

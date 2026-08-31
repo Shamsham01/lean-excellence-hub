@@ -23,14 +23,30 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
 }
 
 async function selectFirstEnabledOption(page: Page, selectId: string) {
-  const value = await page
-    .locator(`#${selectId} option:not([disabled])`)
+  const select = page.locator(`#${selectId}`);
+  await expect
+    .poll(async () => select.locator("option:not([disabled])").count())
+    .toBeGreaterThan(0);
+  const value = await select
+    .locator("option:not([disabled])")
     .first()
     .getAttribute("value");
   if (!value) {
     throw new Error(`No selectable option found for #${selectId}`);
   }
-  await page.locator(`#${selectId}`).selectOption(value);
+  await select.selectOption(value);
+}
+
+async function waitForScopeEntities(page: Page) {
+  await expect
+    .poll(async () =>
+      page
+        .locator("#unitId option:not([disabled])")
+        .evaluateAll(
+          (options) => options.filter((option) => option.value).length,
+        ),
+    )
+    .toBeGreaterThan(0);
 }
 
 test.describe("Milestone 5 maturity journeys", () => {
@@ -74,10 +90,27 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("framework-step-publish").click();
     await page.getByTestId("publish-framework").click();
-    await expect(page.getByText("Published version")).toBeVisible();
+    await expect(page.getByText("Active version")).toBeVisible();
   });
 
-  test("formal assessor: start → answer → evidence → action → submit", async ({
+  test("MAT1a: start assessment shows eligible site entities only", async ({
+    page,
+  }) => {
+    await loginAs(page, "manager");
+    await page.goto("/platform/maturity/assessments/new");
+    await selectFirstEnabledOption(page, "modelVersionId");
+    await selectFirstEnabledOption(page, "assessmentScopeType");
+    await waitForScopeEntities(page);
+
+    const entityOptions = page.locator("#unitId option:not([disabled])");
+    await expect(entityOptions).not.toHaveCount(0);
+    const optionTexts = await entityOptions.allTextContents();
+    for (const label of optionTexts) {
+      expect(label).not.toMatch(/operations|engineering|quality|line/i);
+    }
+  });
+
+  test("formal assessor: start → answer → comment → evidence → action → submit", async ({
     page,
   }) => {
     await loginAs(page, "manager");
@@ -87,9 +120,12 @@ test.describe("Milestone 5 maturity journeys", () => {
       .first()
       .click();
     await page.getByRole("link", { name: "Start assessment" }).click();
+    await selectFirstEnabledOption(page, "modelVersionId");
+    await page.locator("#assessmentScopeType").selectOption("site");
+    await waitForScopeEntities(page);
     await selectFirstEnabledOption(page, "unitId");
     await page.getByLabel("Assessment type").selectOption("formal");
-    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/assessments\//);
 
     const scoreInput = page.locator('input[type="number"]').first();
@@ -97,6 +133,14 @@ test.describe("Milestone 5 maturity journeys", () => {
     await scoreInput.pressSequentially("4");
     await scoreInput.blur();
     await page.waitForTimeout(500);
+
+    await page
+      .getByTestId("assessor-comment")
+      .fill("Observed consistent Gemba cadence on the shop floor.");
+    await page.getByTestId("assessor-comment").blur();
+    await expect(page.getByText("Saving comment")).not.toBeVisible({
+      timeout: 10000,
+    });
 
     const evidenceFile = join(tmpdir(), `e2e-evidence-${Date.now()}.txt`);
     writeFileSync(evidenceFile, "E2E maturity evidence sample");
@@ -151,9 +195,11 @@ test.describe("Milestone 5 maturity journeys", () => {
       throw new Error("E2E Closure Framework version not found");
     }
     await page.locator("#modelVersionId").selectOption(e2eVersionValue);
+    await page.locator("#assessmentScopeType").selectOption("site");
+    await waitForScopeEntities(page);
     await selectFirstEnabledOption(page, "unitId");
     await page.getByLabel("Assessment type").selectOption("self");
-    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("button", { name: "Start assessment" }).click();
 
     const scoreInput = page.locator('input[type="number"]').first();
     await scoreInput.fill("3");
@@ -162,6 +208,22 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("complete-self-assessment").click();
     await expect(page.getByText("Completed").first()).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
+  });
+
+  test("admin: create successor version keeps historical assessment pinned", async ({
+    page,
+  }) => {
+    await loginAs(page, "admin");
+    await page.goto("/platform/maturity/models");
+    await page
+      .getByRole("link", { name: "E2E Closure Framework" })
+      .first()
+      .click();
+
+    await page.getByTestId("create-successor-version").click();
+    await expect(page.getByText("Draft version 2")).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("unauthorised scope access is denied", async ({ page }) => {

@@ -144,6 +144,22 @@ export default async function AssessmentDetailPage({
     .select("score_level, score")
     .eq("assessment_id", id);
 
+  const { data: levelRows } = await supabase
+    .from("maturity_levels")
+    .select("level_number, name, guidance")
+    .eq("model_version_id", assessment.model_version_id)
+    .order("level_number");
+
+  const { data: noteRows } = await supabase
+    .from("maturity_assessment_criterion_notes")
+    .select("criterion_id, comment_text")
+    .eq("assessment_id", id);
+
+  const criterionNotes: Record<string, string> = {};
+  for (const row of noteRows ?? []) {
+    criterionNotes[row.criterion_id] = row.comment_text;
+  }
+
   const overall = scores?.find((s) => s.score_level === "overall");
 
   const canEdit =
@@ -200,7 +216,9 @@ export default async function AssessmentDetailPage({
         status={assessment.status}
         assessmentType={assessment.assessment_type}
         pillars={pillarData}
+        levels={levelRows ?? []}
         answers={answers}
+        criterionNotes={criterionNotes}
         evidence={evidence}
         canEdit={canEdit}
         actionSlot={

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import {
+  createSuccessorVersion,
+  deactivateFrameworkVersion,
+  deleteDraftVersion,
+} from "../../actions";
 import { PageHeader } from "@/components/platform/page-header";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import {
+  scopeTypeLabel,
+  type MaturityAssessmentScopeType,
+} from "@/modules/maturity/semantic-scope";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function MaturityModelPage({
@@ -40,6 +49,7 @@ export default async function MaturityModelPage({
   const draftVersion = versions?.find((v) => v.status === "draft");
   const publishedVersion = versions?.find((v) => v.status === "published");
 
+  let assessmentScopes: MaturityAssessmentScopeType[] = ["site"];
   let levels: Array<{ level_number: number; name: string }> = [];
   let pillars: Array<{
     id: string;
@@ -55,6 +65,18 @@ export default async function MaturityModelPage({
   }> = [];
   const questions: Array<{ id: string; prompt: string; criterion_id: string }> =
     [];
+
+  const editorVersion = draftVersion ?? publishedVersion;
+
+  if (editorVersion) {
+    const { data: scopeRows } = await supabase
+      .from("maturity_model_version_assessment_scopes")
+      .select("scope_type")
+      .eq("model_version_id", editorVersion.id);
+    assessmentScopes = scopeRows?.map(
+      (row) => row.scope_type as MaturityAssessmentScopeType,
+    ) ?? ["site"];
+  }
 
   if (draftVersion) {
     const { data: levelRows } = await supabase
@@ -102,6 +124,36 @@ export default async function MaturityModelPage({
     }
   }
 
+  let publishedScopes: MaturityAssessmentScopeType[] = ["site"];
+  if (publishedVersion) {
+    const { data: publishedScopeRows } = await supabase
+      .from("maturity_model_version_assessment_scopes")
+      .select("scope_type")
+      .eq("model_version_id", publishedVersion.id);
+    publishedScopes = publishedScopeRows?.map(
+      (row) => row.scope_type as MaturityAssessmentScopeType,
+    ) ?? ["site"];
+  }
+
+  async function createSuccessorAction() {
+    "use server";
+    await createSuccessorVersion(modelId);
+  }
+
+  async function deactivateAction() {
+    "use server";
+    if (publishedVersion) {
+      await deactivateFrameworkVersion(publishedVersion.id, modelId);
+    }
+  }
+
+  async function deleteDraftAction() {
+    "use server";
+    if (draftVersion) {
+      await deleteDraftVersion(draftVersion.id, modelId);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -118,47 +170,91 @@ export default async function MaturityModelPage({
         {versions?.map((v) => (
           <Badge
             key={v.id}
-            variant={v.status === "published" ? "success" : "secondary"}
+            variant={
+              v.status === "published"
+                ? "success"
+                : v.status === "archived"
+                  ? "secondary"
+                  : "outline"
+            }
           >
             v{v.version_number} · {v.status}
           </Badge>
         ))}
       </div>
 
-      {draftVersion && canManage ? (
-        <FrameworkEditor
-          modelId={modelId}
-          modelName={model.display_name}
-          modelDescription={model.description}
-          versionId={draftVersion.id}
-          versionNumber={draftVersion.version_number}
-          levels={levels}
-          pillars={pillars}
-          criteria={criteria}
-          questions={questions}
-        />
-      ) : null}
-
       {publishedVersion ? (
         <Card>
           <CardHeader>
             <CardTitle>
-              Published version {publishedVersion.version_number}
+              Active version {publishedVersion.version_number}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              Use this version to start assessments.
+              Assessment scope: {publishedScopes.map(scopeTypeLabel).join(", ")}
             </p>
-            <Button asChild>
-              <Link
-                href={`/platform/maturity/assessments/new?versionId=${publishedVersion.id}`}
-              >
-                Start assessment
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild>
+                <Link
+                  href={`/platform/maturity/assessments/new?versionId=${publishedVersion.id}`}
+                >
+                  Start assessment
+                </Link>
+              </Button>
+              {canManage ? (
+                <>
+                  <form action={createSuccessorAction}>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      data-testid="create-successor-version"
+                    >
+                      Create new version
+                    </Button>
+                  </form>
+                  <form action={deactivateAction}>
+                    <Button type="submit" variant="outline">
+                      Deactivate
+                    </Button>
+                  </form>
+                </>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
+      ) : null}
+
+      {draftVersion && canManage ? (
+        <>
+          <FrameworkEditor
+            modelId={modelId}
+            modelName={model.display_name}
+            modelDescription={model.description}
+            versionId={draftVersion.id}
+            versionNumber={draftVersion.version_number}
+            assessmentScopes={assessmentScopes}
+            levels={levels}
+            pillars={pillars}
+            criteria={criteria}
+            questions={questions}
+          />
+          <form action={deleteDraftAction}>
+            <Button
+              type="submit"
+              variant="destructive"
+              data-testid="delete-draft-version"
+            >
+              Delete draft version
+            </Button>
+          </form>
+        </>
+      ) : null}
+
+      {!draftVersion && !publishedVersion ? (
+        <p className="text-sm text-muted-foreground">
+          No framework versions are available.
+        </p>
       ) : null}
     </div>
   );
