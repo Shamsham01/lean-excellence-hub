@@ -25,26 +25,71 @@ function readSupabaseStatus(): SupabaseStatus {
   return JSON.parse(output) as SupabaseStatus;
 }
 
+function extractJsonObject(output: string): string {
+  const jsonStart = output.indexOf("{");
+  if (jsonStart === -1) {
+    throw new Error(`unexpected supabase db query output: ${output}`);
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = jsonStart; index < output.length; index += 1) {
+    const character = output[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (character === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (character === '"') {
+        inString = false;
+      }
+
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (character === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return output.slice(jsonStart, index + 1);
+      }
+    }
+  }
+
+  throw new Error(
+    `incomplete JSON object in supabase db query output: ${output}`,
+  );
+}
+
 function parseDbQueryOutput(output: string): DbQueryResult {
   const trimmed = output.trim();
   if (!trimmed) {
     throw new Error("supabase db query returned empty output");
   }
 
-  if (trimmed.startsWith("{")) {
-    return JSON.parse(trimmed) as DbQueryResult;
-  }
-
   if (/^(INSERT|UPDATE|DELETE|ALTER|CREATE)\s/i.test(trimmed)) {
     return { rows: [] };
   }
 
-  const jsonStart = trimmed.indexOf("{");
-  if (jsonStart === -1) {
-    throw new Error(`unexpected supabase db query output: ${trimmed}`);
-  }
-
-  return JSON.parse(trimmed.slice(jsonStart)) as DbQueryResult;
+  return JSON.parse(extractJsonObject(trimmed)) as DbQueryResult;
 }
 
 function runLocalQuery<T extends Record<string, unknown>>(sql: string): T[] {
@@ -105,9 +150,13 @@ async function ensureAuthUser(
     email_confirm: true,
   });
 
-  if (created.error && created.error.status !== 422) {
-    throw created.error;
+  if (!created.error || created.error.status === 422) {
+    return;
   }
+
+  runLocalQuery(
+    `insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous) values ('${userId}', '${email}', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false) on conflict (id) do nothing returning id::text as user_id;`,
+  );
 }
 
 async function resolveOrganisationId(
@@ -123,10 +172,7 @@ async function resolveOrganisationId(
       organisation_name: organisationName,
     });
 
-  if (
-    provisionError &&
-    !provisionError.message.includes("duplicate key")
-  ) {
+  if (provisionError && !provisionError.message.includes("duplicate key")) {
     throw provisionError;
   }
 
