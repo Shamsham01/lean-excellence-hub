@@ -1863,6 +1863,7 @@ async function ensureMaturityDemo(client: SupabaseClient, unitIds: UnitMap) {
       target_model_version_id: version.id,
       target_unit_id: cornwallUnitId,
       target_assessment_type: "formal",
+      target_assessment_scope_type: "site",
     },
   );
 
@@ -1911,6 +1912,7 @@ async function ensureMaturityDemo(client: SupabaseClient, unitIds: UnitMap) {
       target_model_version_id: version.id,
       target_unit_id: cornwallUnitId,
       target_assessment_type: "self",
+      target_assessment_scope_type: "site",
     },
   );
 

@@ -4516,6 +4516,61 @@ export type Database = {
           },
         ]
       }
+      maturity_assessment_criterion_notes: {
+        Row: {
+          assessment_id: string
+          comment_text: string
+          created_at: string
+          created_by_membership_id: string
+          criterion_id: string
+          id: string
+          organisation_id: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          comment_text: string
+          created_at?: string
+          created_by_membership_id: string
+          criterion_id: string
+          id?: string
+          organisation_id: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          comment_text?: string
+          created_at?: string
+          created_by_membership_id?: string
+          criterion_id?: string
+          id?: string
+          organisation_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessment_criterion_notes_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_criterion_notes_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_criterion_notes_criterion_fkey"
+            columns: ["organisation_id", "criterion_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_criteria"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       maturity_assessment_participants: {
         Row: {
           assessment_id: string
@@ -4647,6 +4702,7 @@ export type Database = {
       maturity_assessments: {
         Row: {
           approved_at: string | null
+          assessment_scope_type: string
           assessment_type: string
           cancelled_at: string | null
           completed_at: string | null
@@ -4666,6 +4722,7 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          assessment_scope_type: string
           assessment_type: string
           cancelled_at?: string | null
           completed_at?: string | null
@@ -4685,6 +4742,7 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          assessment_scope_type?: string
           assessment_type?: string
           cancelled_at?: string | null
           completed_at?: string | null
@@ -4945,6 +5003,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "maturity_levels_version_fkey"
+            columns: ["organisation_id", "model_version_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_model_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      maturity_model_version_assessment_scopes: {
+        Row: {
+          created_at: string
+          id: string
+          model_version_id: string
+          organisation_id: string
+          scope_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model_version_id: string
+          organisation_id: string
+          scope_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model_version_id?: string
+          organisation_id?: string
+          scope_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_model_version_assessment_scopes_version_fkey"
             columns: ["organisation_id", "model_version_id"]
             isOneToOne: false
             referencedRelation: "maturity_model_versions"
@@ -12111,6 +12201,10 @@ export type Database = {
         Args: { target_job_function_id: string }
         Returns: boolean
       }
+      deactivate_maturity_model_version: {
+        Args: { target_model_version_id: string }
+        Returns: boolean
+      }
       deactivate_schedule_definition: {
         Args: { target_schedule_definition_id: string }
         Returns: boolean
@@ -12121,6 +12215,10 @@ export type Database = {
       }
       deactivate_suggestion_programme: {
         Args: { target_programme_id: string }
+        Returns: boolean
+      }
+      delete_maturity_model_draft_version: {
+        Args: { target_model_version_id: string }
         Returns: boolean
       }
       delete_suggestion_category: {
@@ -12675,6 +12773,15 @@ export type Database = {
         }
         Returns: string
       }
+      list_maturity_assessment_scope_entities: {
+        Args: { target_model_version_id: string; target_scope_type: string }
+        Returns: {
+          unit_code: string
+          unit_id: string
+          unit_name: string
+          unit_type: string
+        }[]
+      }
       list_my_eligible_organisations: {
         Args: never
         Returns: {
@@ -13119,6 +13226,10 @@ export type Database = {
         Args: { target_countermeasure_id: string; target_rationale?: string }
         Returns: boolean
       }
+      set_maturity_model_version_assessment_scopes: {
+        Args: { target_model_version_id: string; target_scope_types: string[] }
+        Returns: boolean
+      }
       set_membership_status: {
         Args: {
           change_reason: string
@@ -13170,15 +13281,26 @@ export type Database = {
         }
         Returns: string
       }
-      start_maturity_assessment: {
-        Args: {
-          target_assessment_type: string
-          target_lead_assessor_membership_id?: string
-          target_model_version_id: string
-          target_unit_id: string
-        }
-        Returns: string
-      }
+      start_maturity_assessment:
+        | {
+            Args: {
+              target_assessment_scope_type: string
+              target_assessment_type: string
+              target_lead_assessor_membership_id?: string
+              target_model_version_id: string
+              target_unit_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              target_assessment_type: string
+              target_lead_assessor_membership_id?: string
+              target_model_version_id: string
+              target_unit_id: string
+            }
+            Returns: string
+          }
       start_problem_solving_session: {
         Args: {
           target_case_id: string
@@ -13506,6 +13628,14 @@ export type Database = {
           target_number_value?: number
           target_question_id: string
           target_text_value?: string
+        }
+        Returns: string
+      }
+      upsert_maturity_assessment_criterion_note: {
+        Args: {
+          target_assessment_id: string
+          target_comment_text: string
+          target_criterion_id: string
         }
         Returns: string
       }
