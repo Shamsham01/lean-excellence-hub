@@ -72,7 +72,10 @@ jobs:
           exit 1
       - run: npm run db:lint
       - run: npm run test:db
-      - run: npm run test:db:integration
+      # N1a worker RPC semantics are covered by pgTAP (n1a_outbox_reliability,
+      # n1a_delivery_ledger, n1a_worker_api_reachability). The optional
+      # test:db:integration script depends on supabase db query CLI output and
+      # is kept for local PostgREST smoke checks only.
       - run: npm run db:types
       - name: Confirm committed database types are current
         run: git diff --exit-code -- src/platform/supabase/database.types.ts
