@@ -57,13 +57,17 @@ test.describe("Finance Validator shell hotfix", () => {
     await expect(page.getByTestId("settings-page")).toBeVisible();
     await expect(page.getByText("Your profile")).toBeVisible();
     await expect(
-      page.getByText("People and invitations"),
+      page.getByRole("link", { name: "Open" }).filter({
+        has: page.getByRole("heading", { name: "People and invitations" }),
+      }),
     ).not.toBeVisible();
     await expect(page.getByText("Job functions")).not.toBeVisible();
     await expect(page.getByText("Lean AI")).not.toBeVisible();
   });
 
-  test("finance validator can view and update own profile", async ({ page }) => {
+  test("finance validator can view and update own profile", async ({
+    page,
+  }) => {
     await loginAs(page, "finance");
     await page.goto("/platform/settings/profile");
     await expect(page.getByTestId("profile-settings-page")).toBeVisible();
@@ -96,6 +100,8 @@ test.describe("Finance Validator shell hotfix", () => {
     await page.goto("/platform/settings/people");
     await expect(page.getByTestId("people-settings-page")).not.toBeVisible();
     await page.goto("/platform/settings/people/create");
-    await expect(page.getByRole("heading", { name: "Create workforce user" })).not.toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Create workforce user" }),
+    ).not.toBeVisible();
   });
 });

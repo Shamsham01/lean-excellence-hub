@@ -79,8 +79,8 @@ describe("settings hub card access", () => {
     };
 
     expect(cardAvailability(noHierarchyAccess, "Organisation")).toBe(false);
-    expect(
-      cardAvailability(noHierarchyAccess, "Organisation structure"),
-    ).toBe(false);
+    expect(cardAvailability(noHierarchyAccess, "Organisation structure")).toBe(
+      false,
+    );
   });
 });

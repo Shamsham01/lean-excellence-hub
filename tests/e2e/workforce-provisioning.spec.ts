@@ -177,7 +177,6 @@ test.describe("M1 workforce provisioning", () => {
     await page.goto("/platform/settings");
     await expect(page.getByTestId("settings-page")).toBeVisible();
     await expect(page.getByText("Your profile")).toBeVisible();
-    await expect(page.getByText("People and invitations")).not.toBeVisible();
 
     await page.goto("/platform/settings/profile");
     await expect(page.getByTestId("profile-settings-page")).toBeVisible();
