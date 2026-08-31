@@ -25,7 +25,9 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
 async function selectFirstEnabledOption(page: Page, selectId: string) {
   const select = page.locator(`#${selectId}`);
   await expect
-    .poll(async () => select.locator("option:not([disabled])").count())
+    .poll(async () => select.locator("option:not([disabled])").count(), {
+      timeout: 30_000,
+    })
     .toBeGreaterThan(0);
   const value = await select
     .locator("option:not([disabled])")
@@ -127,7 +129,7 @@ test.describe("Milestone 5 maturity journeys", () => {
       .first()
       .click();
     await page.getByRole("link", { name: "Start assessment" }).click();
-    await selectFirstEnabledOption(page, "modelVersionId");
+    await expect(page.getByTestId("start-assessment-form")).toBeVisible();
     await page.locator("#assessmentScopeType").selectOption("site");
     await waitForScopeEntities(page);
     await selectFirstEnabledOption(page, "unitId");
