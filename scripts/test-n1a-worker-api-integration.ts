@@ -349,9 +349,7 @@ async function main() {
     throw claimError;
   }
 
-  const claimed = (claimedEvents ?? []).find(
-    (row) => row.event_id === eventId,
-  );
+  const claimed = (claimedEvents ?? []).find((row) => row.event_id === eventId);
 
   assert(
     claimed,
