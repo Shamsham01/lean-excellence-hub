@@ -5,7 +5,9 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+import type { Database } from "../src/platform/supabase/database.types";
 
 type SupabaseStatus = {
   API_URL?: string;
@@ -169,7 +171,7 @@ function ensureAuthUser(userId: string, email: string): void {
 }
 
 async function resolveOrganisationId(
-  serviceClient: ReturnType<typeof createClient>,
+  serviceClient: SupabaseClient<Database>,
   ownerUserId: string,
   organisationCode: string,
   organisationName: string,
@@ -239,10 +241,10 @@ async function main() {
   const organisationCode = `n1a-worker-${randomUUID().replace(/-/g, "").slice(0, 8)}`;
   const idempotencyKey = `n1a-worker-integration-${randomUUID()}`;
 
-  const serviceClient = createClient(url, serviceRoleKey, {
+  const serviceClient = createClient<Database>(url, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const anonClient = createClient(url, anonKey, {
+  const anonClient = createClient<Database>(url, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
