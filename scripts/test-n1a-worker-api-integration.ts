@@ -49,11 +49,13 @@ function assert(condition: unknown, message: string): asserts condition {
 
 async function main() {
   const status = readSupabaseStatus();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? status.API_URL;
+  // Local PostgREST integration must use keys from the running Supabase stack.
+  // CI sets placeholder env vars for app jobs; those are not valid JWTs here.
+  const url = status.API_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey =
-    process.env.SUPABASE_SECRET_KEY ?? status.SERVICE_ROLE_KEY;
+    status.SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
   const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? status.ANON_KEY;
+    status.ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   assert(url, "Supabase API URL is required");
   assert(serviceRoleKey, "Supabase service role key is required");
