@@ -160,6 +160,12 @@ function ensureAuthUser(userId: string, email: string): void {
   runLocalSql(
     `insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous) values ('${userId}', '${email}', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false) on conflict (id) do nothing;`,
   );
+  runLocalSql(
+    `insert into public.profiles (user_id) values ('${userId}'::uuid) on conflict (user_id) do nothing;`,
+  );
+  runLocalSql(
+    `insert into private.identity_controls (user_id) values ('${userId}'::uuid) on conflict (user_id) do nothing;`,
+  );
 }
 
 function resolveOrganisationId(
@@ -167,12 +173,21 @@ function resolveOrganisationId(
   organisationCode: string,
   organisationName: string,
 ): string {
-  const provisionedOrganisationId = runLocalQuery<{ organisation_id: string }>(
-    `select private.provision_organisation('${ownerUserId}'::uuid, '${organisationCode}', '${organisationName}')::text as organisation_id;`,
-  )[0]?.organisation_id;
+  try {
+    const provisionedOrganisationId = runLocalQuery<{
+      organisation_id: string;
+    }>(
+      `select private.provision_organisation('${ownerUserId}'::uuid, '${organisationCode}', '${organisationName}')::text as organisation_id;`,
+    )[0]?.organisation_id;
 
-  if (provisionedOrganisationId) {
-    return provisionedOrganisationId;
+    if (provisionedOrganisationId) {
+      return provisionedOrganisationId;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("duplicate key")) {
+      throw error;
+    }
   }
 
   const existingOrganisationId = runLocalQuery<{ organisation_id: string }>(
@@ -220,7 +235,7 @@ async function main() {
 
   const ownerUserId = "f1000000-0000-0000-0000-000000000099";
   const ownerEmail = "n1a-worker-integration@example.test";
-  const organisationCode = "n1a-worker-integration";
+  const organisationCode = `n1a-worker-${randomUUID().replace(/-/g, "").slice(0, 8)}`;
   const idempotencyKey = `n1a-worker-integration-${randomUUID()}`;
 
   const serviceClient = createClient(url, serviceRoleKey, {
