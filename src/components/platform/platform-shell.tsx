@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
+import { platformHomeFallbackPermissions } from "@/modules/platform-shell/home-fallback";
 import {
   platformNavigation,
   settingsNavigationItem,
@@ -54,18 +55,7 @@ export async function PlatformShell({
     visibleNav.length === 0 ||
     !visibleNav.some((i) => i.href === "/platform")
   ) {
-    const homePermissions = [
-      "actions.read",
-      "five_s.read",
-      "gemba.read",
-      "schedules.read",
-      "people.capability.read",
-      "training.read",
-      "skills.read",
-      "suggestions.read",
-      "recognition.read",
-    ];
-    for (const permission of homePermissions) {
+    for (const permission of platformHomeFallbackPermissions) {
       if (await currentMemberHasPermission(permission)) {
         visibleNav.unshift({
           href: "/platform",
@@ -86,12 +76,8 @@ export async function PlatformShell({
     navWithSetup.unshift(setupNavigationItem);
   }
 
-  const canAccessSettings = await currentMemberHasPermission(
-    settingsNavigationItem.permission,
-  );
-
   if (
-    canAccessSettings &&
+    settingsNavigationItem.universalAccess &&
     !navWithSetup.some((item) => item.href === "/platform/settings")
   ) {
     navWithSetup.push(settingsNavigationItem);

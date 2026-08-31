@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { InviteColleagueForm } from "@/components/people/invite-colleague-form";
 import { PendingInvitationsList } from "@/components/people/pending-invitations-list";
@@ -30,6 +31,15 @@ export default async function PeopleSettingsPage() {
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
+
+  if (
+    !canManageInvitations &&
+    !canProvisionWorkforce &&
+    !canImportWorkforce &&
+    !canDelegateAccess
+  ) {
+    notFound();
+  }
 
   const supabase = await createServerSupabaseClient();
 

@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function OrganisationSettingsPage() {
+  if (!(await currentMemberHasPermission("hierarchy.read"))) {
+    notFound();
+  }
+
   const supabase = await createServerSupabaseClient();
   const { data: organisation } = await supabase
     .from("organisations")
