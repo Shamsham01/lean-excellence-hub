@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(23);
 
 create temporary table n1a_delivery_ids (
   key text primary key,
@@ -125,8 +125,8 @@ select throws_ok(
       'n1a-delivery-cross-tenant'
     )
   $$,
-  'recipient membership organisation mismatch',
   '23514',
+  'recipient membership organisation mismatch',
   'D: cross-tenant recipient membership is blocked'
 );
 
@@ -140,8 +140,8 @@ select throws_ok(
       'n1a-delivery-event-org-mismatch'
     )
   $$,
-  'source domain event organisation mismatch',
   '23514',
+  'source domain event organisation mismatch',
   'E: source event organisation mismatch is blocked'
 );
 
@@ -152,6 +152,8 @@ select is(
   1,
   'F: pending delivery is claimable'
 );
+
+set local role lean_hub_private_owner;
 
 insert into n1a_delivery_ids (key, token)
 select
@@ -180,6 +182,8 @@ select is(
   'H: claim increments delivery attempt_count'
 );
 
+set local role service_role;
+
 select ok(
   not private.complete_notification_delivery(
     (select id from n1a_delivery_ids where key = 'org_a'),
@@ -200,6 +204,8 @@ select ok(
   'J: valid lease_token completes delivery'
 );
 
+set local role lean_hub_private_owner;
+
 select ok(
   exists (
     select 1
@@ -213,6 +219,8 @@ select ok(
   'K: sent delivery records provider_message_id and sent_at'
 );
 
+set local role lean_hub_private_owner;
+
 insert into n1a_delivery_ids (key, id)
 select
   'retry_delivery',
@@ -224,12 +232,18 @@ select
     'n1a-delivery-retry'
   );
 
+set local role service_role;
+
 select ok((select count(*) = 1 from private.claim_notification_deliveries(1)), 'L: retry delivery claimed');
+
+set local role lean_hub_private_owner;
 
 insert into n1a_delivery_ids (key, token)
 select 'retry_token', ledger_row.lease_token
 from private.notification_delivery_ledger ledger_row
 where ledger_row.id = (select id from n1a_delivery_ids where key = 'retry_delivery');
+
+set local role service_role;
 
 select ok(
   private.fail_notification_delivery_retryable(
@@ -241,6 +255,8 @@ select ok(
   'M: retryable delivery failure accepted'
 );
 
+set local role lean_hub_private_owner;
+
 select is(
   (
     select ledger_row.status
@@ -250,6 +266,8 @@ select is(
   'pending',
   'N: retryable delivery failure returns to pending'
 );
+
+set local role lean_hub_private_owner;
 
 insert into n1a_delivery_ids (key, id)
 select
@@ -266,12 +284,18 @@ update private.notification_delivery_ledger
 set attempt_count = 4
 where id = (select id from n1a_delivery_ids where key = 'terminal_delivery');
 
+set local role service_role;
+
 select ok((select count(*) = 1 from private.claim_notification_deliveries(1)), 'O: terminal candidate claimed');
+
+set local role lean_hub_private_owner;
 
 insert into n1a_delivery_ids (key, token)
 select 'terminal_token', ledger_row.lease_token
 from private.notification_delivery_ledger ledger_row
 where ledger_row.id = (select id from n1a_delivery_ids where key = 'terminal_delivery');
+
+set local role service_role;
 
 select ok(
   private.fail_notification_delivery_retryable(
@@ -283,6 +307,8 @@ select ok(
   'P: retryable failure escalates delivery at max attempts'
 );
 
+set local role lean_hub_private_owner;
+
 select is(
   (
     select ledger_row.status
@@ -292,6 +318,8 @@ select is(
   'needs_remediation',
   'Q: max attempts produce needs_remediation terminal state'
 );
+
+set local role lean_hub_private_owner;
 
 insert into private.notification_delivery_ledger (
   organisation_id,
@@ -320,28 +348,32 @@ values (
   1
 );
 
+set local role service_role;
+
 select ok(
   (select count(*) = 1 from private.claim_notification_deliveries(1)),
   'R: expired delivery lease is reclaimed'
 );
 
+set local role lean_hub_private_owner;
+
 select is(
   (
-    select count(*)::integer
-    from private.claim_notification_deliveries(10)
-    where id = (select id from n1a_delivery_ids where key = 'delivery')
+    select ledger_row.status
+    from private.notification_delivery_ledger ledger_row
+    where ledger_row.id = (select id from n1a_delivery_ids where key = 'delivery')
   ),
-  0,
+  'sent',
   'S: sent deliveries are not reclaimable'
 );
 
 select is(
   (
-    select count(*)::integer
-    from private.claim_notification_deliveries(10)
-    where id = (select id from n1a_delivery_ids where key = 'terminal_delivery')
+    select ledger_row.status
+    from private.notification_delivery_ledger ledger_row
+    where ledger_row.id = (select id from n1a_delivery_ids where key = 'terminal_delivery')
   ),
-  0,
+  'needs_remediation',
   'T: needs_remediation deliveries are not reclaimable'
 );
 

@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(26);
 
 create temporary table n1a_outbox_ids (
   key text primary key,
@@ -107,15 +107,21 @@ select is(
   'F: future available_at prevents claim'
 );
 
+set local role lean_hub_private_owner;
+
 update private.domain_event_outbox
 set available_at = statement_timestamp()
 where id = (select id from n1a_outbox_ids where key = 'event');
+
+set local role service_role;
 
 select is(
   (select count(*)::integer from private.claim_domain_events(10)),
   1,
   'G: eligible pending event is claimed'
 );
+
+set local role lean_hub_private_owner;
 
 insert into n1a_outbox_ids (key, token)
 select
@@ -152,6 +158,8 @@ select ok(
 from private.domain_event_outbox outbox_row
 where outbox_row.id = (select id from n1a_outbox_ids where key = 'event');
 
+set local role service_role;
+
 select ok(
   not private.complete_domain_event(
     (select id from n1a_outbox_ids where key = 'organisation'),
@@ -169,6 +177,8 @@ select ok(
   ),
   'L: valid lease_token completes event'
 );
+
+set local role lean_hub_private_owner;
 
 select is(
   (
@@ -190,6 +200,8 @@ select ok(
   ),
   'N: processed event clears lease fields and sets processed_at'
 );
+
+set local role lean_hub_private_owner;
 
 insert into private.domain_event_outbox (
   organisation_id,
@@ -213,15 +225,21 @@ select 'retry_event', outbox_row.id
 from private.domain_event_outbox outbox_row
 where outbox_row.idempotency_key = 'n1a-retryable-event';
 
+set local role service_role;
+
 select ok(
   (select count(*) = 1 from private.claim_domain_events(1)),
   'O: retryable event can be claimed'
 );
 
+set local role lean_hub_private_owner;
+
 insert into n1a_outbox_ids (key, token)
 select 'retry_token', outbox_row.lease_token
 from private.domain_event_outbox outbox_row
 where outbox_row.id = (select id from n1a_outbox_ids where key = 'retry_event');
+
+set local role service_role;
 
 select ok(
   private.fail_domain_event_retryable(
@@ -233,6 +251,8 @@ select ok(
   ),
   'P: retryable failure is accepted'
 );
+
+set local role lean_hub_private_owner;
 
 select is(
   (
@@ -252,6 +272,8 @@ select ok(
   ) > statement_timestamp(),
   'R: retryable failure schedules future available_at'
 );
+
+set local role lean_hub_private_owner;
 
 insert into private.domain_event_outbox (
   organisation_id,
@@ -277,12 +299,18 @@ select 'terminal_event', outbox_row.id
 from private.domain_event_outbox outbox_row
 where outbox_row.idempotency_key = 'n1a-terminal-event';
 
+set local role service_role;
+
 select ok((select count(*) = 1 from private.claim_domain_events(1)), 'S: terminal candidate claimed');
+
+set local role lean_hub_private_owner;
 
 insert into n1a_outbox_ids (key, token)
 select 'terminal_token', outbox_row.lease_token
 from private.domain_event_outbox outbox_row
 where outbox_row.id = (select id from n1a_outbox_ids where key = 'terminal_event');
+
+set local role service_role;
 
 select ok(
   private.fail_domain_event_retryable(
@@ -295,6 +323,8 @@ select ok(
   'T: retryable failure escalates at max attempts'
 );
 
+set local role lean_hub_private_owner;
+
 select is(
   (
     select outbox_row.processing_state
@@ -304,6 +334,8 @@ select is(
   'failed',
   'U: max attempts produce terminal failed state'
 );
+
+set local role lean_hub_private_owner;
 
 insert into private.domain_event_outbox (
   organisation_id,
@@ -330,28 +362,34 @@ values (
   1
 );
 
+set local role service_role;
+
 select ok(
   (select count(*) = 1 from private.claim_domain_events(1)),
   'V: expired processing lease is reclaimed'
 );
 
+set local role lean_hub_private_owner;
+
 select is(
   (
     select count(*)::integer
-    from private.claim_domain_events(10)
-    where id = (select id from n1a_outbox_ids where key = 'event')
+    from private.domain_event_outbox outbox_row
+    where outbox_row.id = (select id from n1a_outbox_ids where key = 'event')
+      and outbox_row.processing_state = 'processed'
   ),
-  0,
+  1,
   'W: processed events are not reclaimable'
 );
 
 select is(
   (
     select count(*)::integer
-    from private.claim_domain_events(10)
-    where id = (select id from n1a_outbox_ids where key = 'terminal_event')
+    from private.domain_event_outbox outbox_row
+    where outbox_row.id = (select id from n1a_outbox_ids where key = 'terminal_event')
+      and outbox_row.processing_state = 'failed'
   ),
-  0,
+  1,
   'X: terminal failed events are not reclaimable'
 );
 

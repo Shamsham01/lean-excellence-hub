@@ -473,7 +473,7 @@ create or replace function private.create_notification_delivery(
   source_domain_event_id uuid,
   recipient_membership_id uuid,
   notification_kind text,
-  delivery_key text
+  target_delivery_key text
 )
 returns uuid
 language plpgsql
@@ -528,7 +528,7 @@ begin
     source_domain_event_id,
     recipient_membership_id,
     notification_kind,
-    delivery_key
+    target_delivery_key
   )
   on conflict (organisation_id, delivery_key) do nothing
   returning id into delivery_id;
@@ -538,7 +538,7 @@ begin
     into delivery_id
     from private.notification_delivery_ledger ledger_row
     where ledger_row.organisation_id = target_organisation_id
-      and ledger_row.delivery_key = delivery_key;
+      and ledger_row.delivery_key = target_delivery_key;
   end if;
 
   return delivery_id;
@@ -605,7 +605,7 @@ create or replace function private.complete_notification_delivery(
   target_organisation_id uuid,
   target_delivery_id uuid,
   expected_lease_token uuid,
-  provider_message_id text default null
+  target_provider_message_id text default null
 )
 returns boolean
 language plpgsql
@@ -621,7 +621,7 @@ begin
   update private.notification_delivery_ledger ledger_row
   set status = 'sent',
       sent_at = statement_timestamp(),
-      provider_message_id = provider_message_id,
+      provider_message_id = target_provider_message_id,
       processing_started_at = null,
       lease_expires_at = null,
       lease_token = null,
