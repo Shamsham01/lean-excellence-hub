@@ -168,26 +168,25 @@ function ensureAuthUser(userId: string, email: string): void {
   );
 }
 
-function resolveOrganisationId(
+async function resolveOrganisationId(
+  serviceClient: ReturnType<typeof createClient>,
   ownerUserId: string,
   organisationCode: string,
   organisationName: string,
-): string {
-  try {
-    const provisionedOrganisationId = runLocalQuery<{
-      organisation_id: string;
-    }>(
-      `select private.provision_organisation('${ownerUserId}'::uuid, '${organisationCode}', '${organisationName}')::text as organisation_id;`,
-    )[0]?.organisation_id;
+): Promise<string> {
+  const { data: organisationId, error: provisionError } =
+    await serviceClient.rpc("provision_organisation", {
+      owner_user_id: ownerUserId,
+      organisation_code: organisationCode,
+      organisation_name: organisationName,
+    });
 
-    if (provisionedOrganisationId) {
-      return provisionedOrganisationId;
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("duplicate key")) {
-      throw error;
-    }
+  if (provisionError && !provisionError.message.includes("duplicate key")) {
+    throw provisionError;
+  }
+
+  if (typeof organisationId === "string" && organisationId.length > 0) {
+    return organisationId;
   }
 
   const existingOrganisationId = runLocalQuery<{ organisation_id: string }>(
@@ -198,7 +197,9 @@ function resolveOrganisationId(
     return existingOrganisationId;
   }
 
-  throw new Error("organisation id is required for integration test");
+  throw new Error(
+    `organisation id is required for integration test (provision error: ${provisionError?.message ?? "none"})`,
+  );
 }
 
 function enqueueDomainEvent(
@@ -247,7 +248,16 @@ async function main() {
 
   ensureAuthUser(ownerUserId, ownerEmail);
 
-  const resolvedOrganisationId = resolveOrganisationId(
+  const { error: enrolmentError } = await serviceClient.rpc(
+    "finalise_identity_enrolment",
+    { target_user_id: ownerUserId },
+  );
+  if (enrolmentError && !enrolmentError.message.includes("duplicate key")) {
+    throw enrolmentError;
+  }
+
+  const resolvedOrganisationId = await resolveOrganisationId(
+    serviceClient,
     ownerUserId,
     organisationCode,
     "N1a Worker Integration Org",
