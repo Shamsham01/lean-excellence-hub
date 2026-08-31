@@ -297,8 +297,12 @@ async function main() {
   assert(eventId, "event id is required");
 
   const workerClient = createNotificationProjectorWorkerClient({
-    rpc: (fn, args) => serviceClient.rpc(fn, args),
-    from: (table) => serviceClient.from(table),
+    rpc: (fn, args) =>
+      serviceClient.rpc(
+        fn as keyof Database["public"]["Functions"],
+        args as never,
+      ),
+    lookupRecognitionRecipients: async () => [],
   });
 
   const firstRun = await runNotificationProjector(workerClient, 1000);

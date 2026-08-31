@@ -147,14 +147,19 @@ select ok(
   'C: service_role can claim projection source event through worker RPC'
 );
 
-select ok(
+insert into n1b_projection_ids (key, id)
+select
+  'delivery_a',
   public.create_notification_delivery_for_worker(
     (select id from n1b_projection_ids where key = 'org_a'),
     (select id from n1b_projection_ids where key = 'event_a'),
     (select id from n1b_projection_ids where key = 'membership_a'),
     'workforce.job_function_assigned',
     'workforce.job_function_assigned:' || (select id::text from n1b_projection_ids where key = 'event_a') || ':' || (select id::text from n1b_projection_ids where key = 'membership_a')
-  ) is not null,
+  );
+
+select ok(
+  (select id from n1b_projection_ids where key = 'delivery_a') is not null,
   'D: service_role can create deterministic projection delivery'
 );
 
@@ -166,12 +171,7 @@ select is(
     'workforce.job_function_assigned',
     'workforce.job_function_assigned:' || (select id::text from n1b_projection_ids where key = 'event_a') || ':' || (select id::text from n1b_projection_ids where key = 'membership_a')
   ),
-  (
-    select ledger_row.id
-    from private.notification_delivery_ledger ledger_row
-    where ledger_row.organisation_id = (select id from n1b_projection_ids where key = 'org_a')
-      and ledger_row.delivery_key = 'workforce.job_function_assigned:' || (select id::text from n1b_projection_ids where key = 'event_a') || ':' || (select id::text from n1b_projection_ids where key = 'membership_a')
-  ),
+  (select id from n1b_projection_ids where key = 'delivery_a'),
   'E: duplicate projection delivery key is idempotent'
 );
 

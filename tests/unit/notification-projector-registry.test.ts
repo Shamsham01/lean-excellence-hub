@@ -46,7 +46,9 @@ describe("notification projector registry", () => {
     }
 
     expect(outcome.intents).toHaveLength(1);
-    expect(outcome.intents[0]?.notificationKind).toBe(JOB_FUNCTION_ASSIGNED_KIND);
+    expect(outcome.intents[0]?.notificationKind).toBe(
+      JOB_FUNCTION_ASSIGNED_KIND,
+    );
     expect(outcome.intents[0]?.recipientMembershipId).toBe(
       "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     );
@@ -88,8 +90,14 @@ describe("notification projector registry", () => {
     }
 
     expect(outcome.intents).toHaveLength(2);
-    expect(outcome.intents.every((intent) => intent.notificationKind === RECOGNITION_AWARDED_KIND)).toBe(true);
-    expect(new Set(outcome.intents.map((intent) => intent.deliveryKey)).size).toBe(2);
+    expect(
+      outcome.intents.every(
+        (intent) => intent.notificationKind === RECOGNITION_AWARDED_KIND,
+      ),
+    ).toBe(true);
+    expect(
+      new Set(outcome.intents.map((intent) => intent.deliveryKey)).size,
+    ).toBe(2);
   });
 
   it("finds projectors by event type", () => {

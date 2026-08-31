@@ -249,8 +249,11 @@ describe("notification projector handler", () => {
   });
 
   it("surfaces terminal projector validation failures", () => {
-    expect(() =>
-      new TerminalProjectionError("invalid_payload", "missing membership"),
-    ).toMatchObject({ code: "invalid_payload" });
+    const error = new TerminalProjectionError(
+      "invalid_payload",
+      "missing membership",
+    );
+    expect(error.code).toBe("invalid_payload");
+    expect(error.message).toBe("missing membership");
   });
 });

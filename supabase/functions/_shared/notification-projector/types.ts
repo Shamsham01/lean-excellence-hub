@@ -15,8 +15,7 @@ export type ProjectionIntent = {
 };
 
 export type ProjectorOutcome =
-  | { kind: "project"; intents: ProjectionIntent[] }
-  | { kind: "noop" };
+  { kind: "project"; intents: ProjectionIntent[] } | { kind: "noop" };
 
 export type ProjectorContext = {
   lookupRecognitionRecipients: (

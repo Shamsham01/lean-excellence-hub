@@ -32,14 +32,16 @@ export function classifyWorkerRpcError(error: {
 }): "terminal" | "retryable" {
   const normalizedMessage = error.message.toLowerCase();
 
-  if (error.code === "23503" || error.code === "23514" || error.code === "23505") {
+  if (
+    error.code === "23503" ||
+    error.code === "23514" ||
+    error.code === "23505"
+  ) {
     return "terminal";
   }
 
   if (
-    TERMINAL_RPC_PATTERNS.some((pattern) =>
-      normalizedMessage.includes(pattern),
-    )
+    TERMINAL_RPC_PATTERNS.some((pattern) => normalizedMessage.includes(pattern))
   ) {
     return "terminal";
   }

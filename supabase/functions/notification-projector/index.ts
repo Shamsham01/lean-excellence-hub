@@ -19,7 +19,19 @@ Deno.serve((request) =>
 
       return createNotificationProjectorWorkerClient({
         rpc: (fn, args) => serviceClient.rpc(fn, args),
-        from: (table) => serviceClient.from(table),
+        lookupRecognitionRecipients: async (organisationId, awardId) => {
+          const { data, error } = await serviceClient
+            .from("recognition_recipients")
+            .select("membership_id")
+            .eq("organisation_id", organisationId)
+            .eq("recognition_award_id", awardId);
+
+          if (error) {
+            throw error;
+          }
+
+          return (data ?? []).map((row) => row.membership_id);
+        },
       });
     },
   }),

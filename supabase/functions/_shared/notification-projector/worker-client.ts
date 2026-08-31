@@ -8,7 +8,10 @@ type RpcResult = PromiseLike<{
 export type NotificationProjectorWorkerClient = {
   claimDomainEvents: (
     batchSize: number,
-  ) => Promise<{ events: ClaimedDomainEvent[]; error: null } | { events: []; error: { message: string; code?: string } }>;
+  ) => Promise<
+    | { events: ClaimedDomainEvent[]; error: null }
+    | { events: []; error: { message: string; code?: string } }
+  >;
   createNotificationDelivery: (input: {
     organisationId: string;
     sourceDomainEventId: string;
@@ -53,24 +56,10 @@ type ClaimRow = {
 
 export function createNotificationProjectorWorkerClient(deps: {
   rpc: (fn: string, args: Record<string, unknown>) => RpcResult;
-  from: (
-    table: string,
-  ) => {
-    select: (columns: string) => {
-      eq: (
-        column: string,
-        value: string,
-      ) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => Promise<{
-          data: Array<{ membership_id: string }> | null;
-          error: { message: string; code?: string } | null;
-        }>;
-      };
-    };
-  };
+  lookupRecognitionRecipients: (
+    organisationId: string,
+    awardId: string,
+  ) => Promise<string[]>;
 }): NotificationProjectorWorkerClient {
   return {
     async claimDomainEvents(batchSize) {
@@ -131,17 +120,7 @@ export function createNotificationProjectorWorkerClient(deps: {
       });
     },
     async lookupRecognitionRecipients(organisationId, awardId) {
-      const { data, error } = await deps
-        .from("recognition_recipients")
-        .select("membership_id")
-        .eq("organisation_id", organisationId)
-        .eq("recognition_award_id", awardId);
-
-      if (error) {
-        throw error;
-      }
-
-      return (data ?? []).map((row) => row.membership_id);
+      return deps.lookupRecognitionRecipients(organisationId, awardId);
     },
   };
 }

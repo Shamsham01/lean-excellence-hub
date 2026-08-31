@@ -16,10 +16,7 @@ export async function projectRecognitionAwarded(
   event: ClaimedDomainEvent,
   context: ProjectorContext,
 ): Promise<ProjectorOutcome> {
-  if (
-    !event.resourceRecordId ||
-    !UUID_PATTERN.test(event.resourceRecordId)
-  ) {
+  if (!event.resourceRecordId || !UUID_PATTERN.test(event.resourceRecordId)) {
     throw new TerminalProjectionError(
       "invalid_payload",
       "RecognitionAwarded requires resource_record_id award UUID",

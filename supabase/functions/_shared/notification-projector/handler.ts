@@ -143,7 +143,9 @@ export async function processClaimedDomainEvent(
           client,
           event,
           failure,
-          failure === "terminal" ? "delivery_create_terminal" : "delivery_create_retryable",
+          failure === "terminal"
+            ? "delivery_create_terminal"
+            : "delivery_create_retryable",
           deliveryResult.error.message,
         );
 
