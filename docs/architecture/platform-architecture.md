@@ -72,6 +72,9 @@ exception.
 - Responsive, touch-first, draft-safe interfaces prepare for later PWA/offline queues; offline synchronisation is deferred.
 - Notifications, webhooks, analytics, and cache refresh consume later outbox
   events; neither the outbox nor consumers are Milestone 3 scope.
+- N1a introduced the private outbox and delivery ledger. N1b adds the
+  `notification-projector` worker that projects supported domain events into
+  delivery ledger rows. See [notification projection worker](notification-projection-worker.md).
 - Reporting snapshots are deliberate and limited to wording/context that must remain historically true.
 
 ## 16-question architectural decision rule
