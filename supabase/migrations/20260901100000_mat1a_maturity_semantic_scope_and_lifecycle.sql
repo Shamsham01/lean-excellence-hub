@@ -1847,7 +1847,57 @@ begin
 end;
 $$;
 
-drop function if exists public.start_maturity_assessment(uuid, uuid, text, uuid);
+-- Rollout compatibility: pre-MAT1a callers used the 4-argument public RPC
+-- (model_version_id, unit_id, assessment_type, lead_assessor?). It must not
+-- implement parallel semantics. Resolve the unit's semantic scope and delegate
+-- to the canonical 5-argument private.start_maturity_assessment.
+create or replace function public.start_maturity_assessment(
+  target_model_version_id uuid,
+  target_unit_id uuid,
+  target_assessment_type text,
+  target_lead_assessor_membership_id uuid default null
+)
+returns uuid
+language plpgsql
+volatile
+security invoker
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  resolved_scope text;
+begin
+  select private.normalise_organisation_unit_semantic_scope(
+    organisation_unit.unit_type
+  )
+  into resolved_scope
+  from public.organisation_units organisation_unit
+  where organisation_unit.organisation_id = org_id
+    and organisation_unit.id = target_unit_id
+    and organisation_unit.status = 'active';
+
+  if resolved_scope is null then
+    raise exception 'selected unit is not a supported MAT1a assessment scope'
+      using errcode = '55000';
+  end if;
+
+  if resolved_scope not in ('site', 'department', 'area') then
+    raise exception 'assessment scope type is not enabled for new assessments'
+      using errcode = '55000';
+  end if;
+
+  return private.start_maturity_assessment(
+    target_model_version_id,
+    target_unit_id,
+    target_assessment_type,
+    resolved_scope,
+    target_lead_assessor_membership_id
+  );
+end;
+$$;
+
+-- Remove the unrestricted private 4-arg implementation; public rollout wrapper delegates
+-- to the canonical 5-arg private API instead.
 drop function if exists private.start_maturity_assessment(uuid, uuid, text, uuid);
 
 -- RLS for new tables.
@@ -2073,6 +2123,9 @@ grant execute on function public.deactivate_maturity_model_version(uuid) to auth
 grant execute on function public.delete_maturity_model_draft_version(uuid) to authenticated;
 grant execute on function public.upsert_maturity_assessment_criterion_note(uuid, uuid, text) to authenticated;
 grant execute on function public.start_maturity_assessment(
+  uuid, uuid, text, uuid
+) to authenticated;
+grant execute on function public.start_maturity_assessment(
   uuid, uuid, text, text, uuid
 ) to authenticated;
 grant execute on function public.update_maturity_model_version_metadata(uuid, text, text) to authenticated;
@@ -2094,6 +2147,7 @@ revoke all on function public.list_maturity_assessment_scope_entities(uuid, text
 revoke all on function public.deactivate_maturity_model_version(uuid) from public, anon;
 revoke all on function public.delete_maturity_model_draft_version(uuid) from public, anon;
 revoke all on function public.upsert_maturity_assessment_criterion_note(uuid, uuid, text) from public, anon;
+revoke all on function public.start_maturity_assessment(uuid, uuid, text, uuid) from public, anon;
 revoke all on function public.start_maturity_assessment(uuid, uuid, text, text, uuid) from public, anon;
 revoke all on function public.update_maturity_model_version_metadata(uuid, text, text) from public, anon;
 revoke all on function public.update_maturity_level(uuid, integer, text, text, text, text) from public, anon;

@@ -1,6 +1,6 @@
 begin;
 
-select plan(27);
+select plan(28);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -50,7 +50,7 @@ select ok(
 );
 
 select ok(
-  not exists (
+  exists (
     select 1
     from pg_proc procedure_row
     join pg_namespace namespace_row on namespace_row.oid = procedure_row.pronamespace
@@ -59,7 +59,33 @@ select ok(
       and pg_get_function_identity_arguments(procedure_row.oid)
         = 'target_model_version_id uuid, target_unit_id uuid, target_assessment_type text, target_lead_assessor_membership_id uuid'
   ),
-  'legacy four-argument start_maturity_assessment overload is removed'
+  'rollout compatibility four-argument public start_maturity_assessment overload exists'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_proc procedure_row
+    join pg_namespace namespace_row on namespace_row.oid = procedure_row.pronamespace
+    where namespace_row.nspname = 'public'
+      and procedure_row.proname = 'start_maturity_assessment'
+      and pg_get_function_identity_arguments(procedure_row.oid)
+        = 'target_model_version_id uuid, target_unit_id uuid, target_assessment_type text, target_assessment_scope_type text, target_lead_assessor_membership_id uuid'
+  ),
+  'canonical five-argument public start_maturity_assessment overload exists'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_proc procedure_row
+    join pg_namespace namespace_row on namespace_row.oid = procedure_row.pronamespace
+    where namespace_row.nspname = 'private'
+      and procedure_row.proname = 'start_maturity_assessment'
+      and pg_get_function_identity_arguments(procedure_row.oid)
+        = 'target_model_version_id uuid, target_unit_id uuid, target_assessment_type text, target_lead_assessor_membership_id uuid'
+  ),
+  'unrestricted private four-argument start_maturity_assessment overload is removed'
 );
 
 insert into mat1a_hardening_ids (key, id)
@@ -221,17 +247,6 @@ select throws_ok(
   '55000',
   null,
   'site-only framework rejects department scope on scope-aware RPC'
-);
-
-select throws_ok(
-  format(
-    'select public.start_maturity_assessment(%L::uuid, %L::uuid, ''formal'')',
-    (select id from mat1a_hardening_ids where key = 'model_version'),
-    (select id from mat1a_hardening_ids where key = 'line_unit')
-  ),
-  '42883',
-  null,
-  'legacy four-argument start_maturity_assessment signature cannot bypass semantic scopes'
 );
 
 reset role;
