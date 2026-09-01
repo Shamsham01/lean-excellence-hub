@@ -13287,16 +13287,26 @@ export type Database = {
         }
         Returns: string
       }
-      start_maturity_assessment: {
-        Args: {
-          target_assessment_scope_type: string
-          target_assessment_type: string
-          target_lead_assessor_membership_id?: string
-          target_model_version_id: string
-          target_unit_id: string
-        }
-        Returns: string
-      }
+      start_maturity_assessment:
+        | {
+            Args: {
+              target_assessment_scope_type: string
+              target_assessment_type: string
+              target_lead_assessor_membership_id?: string
+              target_model_version_id: string
+              target_unit_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              target_assessment_type: string
+              target_lead_assessor_membership_id?: string
+              target_model_version_id: string
+              target_unit_id: string
+            }
+            Returns: string
+          }
       start_problem_solving_session: {
         Args: {
           target_case_id: string
