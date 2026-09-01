@@ -151,7 +151,8 @@ insert into maturity_tenant_ids (key, id)
 select 'assessment_b', public.start_maturity_assessment(
   (select id from maturity_tenant_ids where key = 'model_version_b'),
   (select id from maturity_tenant_ids where key = 'unit_b'),
-  'formal'
+  'formal',
+  'site'
 );
 
 select lives_ok(
@@ -228,7 +229,7 @@ select is(
 
 select throws_ok(
   format(
-    'select public.start_maturity_assessment(%L::uuid, %L::uuid, ''formal'')',
+    'select public.start_maturity_assessment(%L::uuid, %L::uuid, ''formal'', ''site'')',
     (select id from maturity_tenant_ids where key = 'model_version_b'),
     (select id from maturity_tenant_ids where key = 'unit_b')
   ),

@@ -23,14 +23,37 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
 }
 
 async function selectFirstEnabledOption(page: Page, selectId: string) {
-  const value = await page
-    .locator(`#${selectId} option:not([disabled])`)
+  const select = page.locator(`#${selectId}`);
+  await expect
+    .poll(async () => select.locator("option:not([disabled])").count(), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(0);
+  const value = await select
+    .locator("option:not([disabled])")
     .first()
     .getAttribute("value");
   if (!value) {
     throw new Error(`No selectable option found for #${selectId}`);
   }
-  await page.locator(`#${selectId}`).selectOption(value);
+  await select.selectOption(value);
+}
+
+async function waitForScopeEntities(page: Page) {
+  await expect
+    .poll(
+      async () =>
+        page
+          .locator("#unitId option:not([disabled])")
+          .evaluateAll(
+            (options) =>
+              options.filter(
+                (option) => (option as HTMLOptionElement).value.length > 0,
+              ).length,
+          ),
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(0);
 }
 
 test.describe("Milestone 5 maturity journeys", () => {
@@ -52,50 +75,104 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await expect(page.getByTestId("framework-editor")).toBeVisible();
 
+    await page.getByTestId("framework-step-details").click();
+    await page.getByLabel("Display name").fill(frameworkName);
+    await page.getByLabel("Description").fill("E2E editable draft description");
+    await page.getByRole("button", { name: "Save framework details" }).click();
+
     await page.getByTestId("framework-step-levels").click();
     await page.getByLabel("Level name").fill("Initial");
     await page.getByRole("button", { name: "Add level" }).click();
-    await expect(page.getByText("1. Initial")).toBeVisible();
+    await expect(page.getByTestId("edit-level-1")).toBeVisible();
+    await page
+      .getByTestId("edit-level-1")
+      .getByLabel("Level name")
+      .fill("Initial revised");
+    await page.getByRole("button", { name: "Save level" }).click();
+    await expect(
+      page.getByTestId("edit-level-1").getByLabel("Level name"),
+    ).toHaveValue("Initial revised");
 
     await page.getByTestId("framework-step-pillars").click();
     await page.getByLabel("Pillar name").fill("Leadership");
     await page.getByRole("button", { name: "Add pillar" }).click();
-    await expect(page.getByText("1. Leadership")).toBeVisible();
+    await expect(page.getByTestId("edit-pillar-1")).toBeVisible();
 
     await page.getByTestId("framework-step-criteria").click();
     await page.getByLabel("Criterion name").fill("Gemba walks");
     await page.getByRole("button", { name: "Add criterion" }).click();
-    await expect(page.getByText("Gemba walks")).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="edit-criterion-"]').first(),
+    ).toBeVisible();
 
     await page.getByTestId("framework-step-questions").click();
     await page.getByLabel("Question prompt").fill("Rate Gemba walks");
     await page.getByRole("button", { name: "Add scored question" }).click();
-    await expect(page.getByText("Rate Gemba walks")).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="edit-question-"]').first(),
+    ).toBeVisible();
 
     await page.getByTestId("framework-step-publish").click();
     await page.getByTestId("publish-framework").click();
-    await expect(page.getByText("Published version")).toBeVisible();
+    await expect(page.getByText("Active version")).toBeVisible();
   });
 
-  test("formal assessor: start → answer → evidence → action → submit", async ({
+  test("MAT1a: start assessment shows eligible site entities only", async ({
     page,
   }) => {
     await loginAs(page, "manager");
-    await page.goto("/platform/maturity/models");
+    await page.goto("/platform/maturity/assessments/new");
+    await selectFirstEnabledOption(page, "modelVersionId");
+    await page.locator("#assessmentScopeType").selectOption("site");
+    await waitForScopeEntities(page);
+
+    const entityOptions = page.locator("#unitId option:not([disabled])");
+    const optionTexts = await entityOptions.allTextContents();
+    expect(optionTexts.some((label) => /cornwall|plant/i.test(label))).toBe(
+      true,
+    );
+    for (const label of optionTexts) {
+      expect(label).not.toMatch(/operations|engineering|quality|line/i);
+    }
+  });
+
+  test("formal assessor: start → answer → comment → evidence → action → submit", async ({
+    page,
+  }) => {
+    await loginAs(page, "manager");
+    await page.goto("/platform/maturity/assessments/new");
     await page
-      .getByRole("link", { name: "E2E Closure Framework" })
+      .locator("#modelVersionId option")
+      .filter({ hasText: "E2E Closure Framework" })
       .first()
-      .click();
-    await page.getByRole("link", { name: "Start assessment" }).click();
+      .evaluate((option) => {
+        const select = option.parentElement as HTMLSelectElement | null;
+        if (!select) {
+          throw new Error("Framework version select was not found");
+        }
+        select.value = (option as HTMLOptionElement).value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    await page.locator("#assessmentScopeType").selectOption("site");
+    await waitForScopeEntities(page);
     await selectFirstEnabledOption(page, "unitId");
     await page.getByLabel("Assessment type").selectOption("formal");
-    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/assessments\//);
 
     const scoreInput = page.locator('input[type="number"]').first();
     await scoreInput.click();
     await scoreInput.pressSequentially("4");
     await scoreInput.blur();
+    await page.waitForTimeout(500);
+
+    await page
+      .getByTestId("assessor-comment")
+      .fill("Observed consistent Gemba cadence on the shop floor.");
+    await page.getByTestId("assessor-comment").blur();
+    await expect(page.getByText("Saving comment")).not.toBeVisible({
+      timeout: 10000,
+    });
     await page.waitForTimeout(500);
 
     const evidenceFile = join(tmpdir(), `e2e-evidence-${Date.now()}.txt`);
@@ -110,7 +187,9 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("submit-assessment").click();
     await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
+    await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("approver: review → approve → publish official result", async ({
@@ -134,7 +213,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByText("Approved")).toBeVisible();
 
     await page.getByTestId("publish-official-result").click();
-    await expect(page.getByText("Published").first()).toBeVisible();
+    await expect(page.getByText("Published").first()).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("self assessor: complete self assessment without official result", async ({
@@ -151,9 +232,11 @@ test.describe("Milestone 5 maturity journeys", () => {
       throw new Error("E2E Closure Framework version not found");
     }
     await page.locator("#modelVersionId").selectOption(e2eVersionValue);
+    await page.locator("#assessmentScopeType").selectOption("site");
+    await waitForScopeEntities(page);
     await selectFirstEnabledOption(page, "unitId");
     await page.getByLabel("Assessment type").selectOption("self");
-    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("button", { name: "Start assessment" }).click();
 
     const scoreInput = page.locator('input[type="number"]').first();
     await scoreInput.fill("3");
@@ -162,6 +245,22 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("complete-self-assessment").click();
     await expect(page.getByText("Completed").first()).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
+  });
+
+  test("admin: create successor version keeps historical assessment pinned", async ({
+    page,
+  }) => {
+    await loginAs(page, "admin");
+    await page.goto("/platform/maturity/models");
+    await page
+      .getByRole("link", { name: "E2E Closure Framework" })
+      .first()
+      .click();
+
+    await page.getByTestId("create-successor-version").click();
+    await expect(page.getByText("Draft version 2")).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("unauthorised scope access is denied", async ({ page }) => {

@@ -126,7 +126,8 @@ insert into maturity_ids (key, id)
 select 'assessment', public.start_maturity_assessment(
   (select id from maturity_ids where key = 'model_version'),
   (select id from maturity_ids where key = 'unit'),
-  'self'
+  'self',
+  'site'
 );
 
 select ok(

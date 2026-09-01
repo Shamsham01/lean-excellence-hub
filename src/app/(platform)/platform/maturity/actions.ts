@@ -49,12 +49,14 @@ export async function startAssessment(formData: FormData) {
   const modelVersionId = String(formData.get("modelVersionId"));
   const unitId = String(formData.get("unitId"));
   const assessmentType = String(formData.get("assessmentType"));
+  const assessmentScopeType = String(formData.get("assessmentScopeType"));
 
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("start_maturity_assessment", {
     target_model_version_id: modelVersionId,
     target_unit_id: unitId,
     target_assessment_type: assessmentType,
+    target_assessment_scope_type: assessmentScopeType,
   });
 
   if (error) {
@@ -63,6 +65,80 @@ export async function startAssessment(formData: FormData) {
 
   revalidatePath("/platform/maturity/assessments");
   return { assessmentId: data as string };
+}
+
+export async function setFrameworkAssessmentScopes(
+  versionId: string,
+  scopeTypes: string[],
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc(
+    "set_maturity_model_version_assessment_scopes",
+    {
+      target_model_version_id: versionId,
+      target_scope_types: scopeTypes,
+    },
+  );
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function createSuccessorVersion(modelId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "create_maturity_model_successor_version",
+    { target_model_id: modelId },
+  );
+  if (error) return { error: error.message };
+  revalidatePath(`/platform/maturity/models/${modelId}`);
+  revalidatePath("/platform/maturity/models");
+  return { versionId: data as string };
+}
+
+export async function deactivateFrameworkVersion(
+  versionId: string,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("deactivate_maturity_model_version", {
+    target_model_version_id: versionId,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  revalidatePath("/platform/maturity/models");
+  return { ok: true };
+}
+
+export async function deleteDraftVersion(versionId: string, modelId?: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("delete_maturity_model_draft_version", {
+    target_model_version_id: versionId,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  revalidatePath("/platform/maturity/models");
+  return { ok: true };
+}
+
+export async function saveCriterionNote(
+  assessmentId: string,
+  criterionId: string,
+  commentText: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc(
+    "upsert_maturity_assessment_criterion_note",
+    {
+      target_assessment_id: assessmentId,
+      target_criterion_id: criterionId,
+      target_comment_text: commentText,
+    },
+  );
+  if (error) return { error: error.message };
+  revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
+  return { ok: true };
 }
 
 export async function saveAssessmentAnswer(
@@ -156,6 +232,138 @@ export async function beginAssessorReview(assessmentId: string) {
   });
   if (error) return { error: error.message };
   revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
+  return { ok: true };
+}
+
+export async function updateMaturityModelMetadata(
+  versionId: string,
+  displayName: string,
+  description: string | null,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_model_version_id: string;
+    target_display_name: string;
+    target_description?: string;
+  } = {
+    target_model_version_id: versionId,
+    target_display_name: displayName,
+  };
+  if (description) {
+    rpcArgs.target_description = description;
+  }
+  const { error } = await supabase.rpc(
+    "update_maturity_model_version_metadata",
+    rpcArgs,
+  );
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  revalidatePath("/platform/maturity/models");
+  return { ok: true };
+}
+
+export async function updateMaturityLevel(
+  levelId: string,
+  levelNumber: number,
+  name: string,
+  colorToken: string,
+  description: string | null,
+  guidance: string | null,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_level_id: string;
+    target_level_number: number;
+    target_name: string;
+    target_color_token: string;
+    target_description?: string;
+    target_guidance?: string;
+  } = {
+    target_level_id: levelId,
+    target_level_number: levelNumber,
+    target_name: name,
+    target_color_token: colorToken,
+  };
+  if (description) rpcArgs.target_description = description;
+  if (guidance) rpcArgs.target_guidance = guidance;
+  const { error } = await supabase.rpc("update_maturity_level", rpcArgs);
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function updateMaturityPillar(
+  pillarId: string,
+  name: string,
+  position: number,
+  description: string | null,
+  guidance: string | null,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_pillar_id: string;
+    target_name: string;
+    target_position: number;
+    target_description?: string;
+    target_guidance?: string;
+  } = {
+    target_pillar_id: pillarId,
+    target_name: name,
+    target_position: position,
+  };
+  if (description) rpcArgs.target_description = description;
+  if (guidance) rpcArgs.target_guidance = guidance;
+  const { error } = await supabase.rpc("update_maturity_pillar", rpcArgs);
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function updateMaturityCriterion(
+  criterionId: string,
+  name: string,
+  position: number,
+  description: string | null,
+  guidance: string | null,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_criterion_id: string;
+    target_name: string;
+    target_position: number;
+    target_description?: string;
+    target_guidance?: string;
+  } = {
+    target_criterion_id: criterionId,
+    target_name: name,
+    target_position: position,
+  };
+  if (description) rpcArgs.target_description = description;
+  if (guidance) rpcArgs.target_guidance = guidance;
+  const { error } = await supabase.rpc("update_maturity_criterion", rpcArgs);
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function updateMaturityQuestion(
+  questionId: string,
+  prompt: string,
+  position: number,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("update_maturity_question", {
+    target_question_id: questionId,
+    target_prompt: prompt,
+    target_position: position,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
   return { ok: true };
 }
 

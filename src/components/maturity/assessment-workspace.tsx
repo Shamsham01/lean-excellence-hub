@@ -2,7 +2,10 @@
 
 import { useState, type ReactNode } from "react";
 
-import { saveAssessmentAnswer } from "@/app/(platform)/platform/maturity/actions";
+import {
+  saveAssessmentAnswer,
+  saveCriterionNote,
+} from "@/app/(platform)/platform/maturity/actions";
 import { EvidenceUploader } from "@/components/maturity/evidence-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,11 +48,18 @@ type EvidenceItem = {
   criterion_id: string;
 };
 
+type LevelGuidance = {
+  level_number: number;
+  name: string;
+  guidance: string | null;
+};
+
 type AssessmentWorkspaceProps = {
   assessmentId: string;
   status: string;
   assessmentType: string;
   pillars: Pillar[];
+  levels: LevelGuidance[];
   answers: Record<
     string,
     {
@@ -58,6 +68,7 @@ type AssessmentWorkspaceProps = {
       is_not_applicable?: boolean;
     }
   >;
+  criterionNotes: Record<string, string>;
   evidence: EvidenceItem[];
   canEdit: boolean;
   actionSlot?: ReactNode;
@@ -68,7 +79,9 @@ export function AssessmentWorkspace({
   status,
   assessmentType,
   pillars,
+  levels,
   answers,
+  criterionNotes,
   evidence,
   canEdit,
   actionSlot,
@@ -89,6 +102,18 @@ export function AssessmentWorkspace({
   }
 
   const { pillar, criterion } = current;
+  const primaryScore = criterion.questions
+    .map((question) => answers[question.id]?.number_value)
+    .find((value) => value != null);
+  const matchedLevel =
+    primaryScore != null
+      ? levels.find((level) => level.level_number === Math.round(primaryScore))
+      : null;
+  const nextLevel = matchedLevel
+    ? levels.find(
+        (level) => level.level_number === matchedLevel.level_number + 1,
+      )
+    : null;
 
   return (
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[12rem_1fr_16rem] lg:gap-8">
@@ -139,6 +164,13 @@ export function AssessmentWorkspace({
           ) : null}
         </div>
 
+        <CriterionNoteField
+          assessmentId={assessmentId}
+          criterionId={criterion.id}
+          initialComment={criterionNotes[criterion.id] ?? ""}
+          canEdit={canEdit}
+        />
+
         <div className="flex flex-col gap-6">
           {criterion.questions.map((question) => {
             const answer = answers[question.id];
@@ -187,7 +219,67 @@ export function AssessmentWorkspace({
           {criterion.guidance ??
             "Review the criterion and provide evidence where required."}
         </p>
+        {matchedLevel ? (
+          <div className="mt-4 space-y-2">
+            <p className="font-medium">
+              Expected at {matchedLevel.name} (level {matchedLevel.level_number}
+              )
+            </p>
+            <p className="text-muted-foreground">
+              {matchedLevel.guidance ?? "No level descriptor configured."}
+            </p>
+            {nextLevel ? (
+              <p className="text-muted-foreground">
+                Next level ({nextLevel.name}):{" "}
+                {nextLevel.guidance ??
+                  "Configure guidance in the framework editor."}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </aside>
+    </div>
+  );
+}
+
+function CriterionNoteField({
+  assessmentId,
+  criterionId,
+  initialComment,
+  canEdit,
+}: {
+  assessmentId: string;
+  criterionId: string;
+  initialComment: string;
+  canEdit: boolean;
+}) {
+  const [comment, setComment] = useState(initialComment);
+  const [saving, setSaving] = useState(false);
+
+  async function saveComment() {
+    if (!canEdit || !comment.trim()) return;
+    setSaving(true);
+    await saveCriterionNote(assessmentId, criterionId, comment.trim());
+    setSaving(false);
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <Label htmlFor={`criterion-note-${criterionId}`}>Assessor comment</Label>
+      <Textarea
+        id={`criterion-note-${criterionId}`}
+        className="mt-2"
+        rows={3}
+        disabled={!canEdit}
+        value={comment}
+        onChange={(event) => setComment(event.target.value)}
+        onBlur={() => void saveComment()}
+        data-testid="assessor-comment"
+        placeholder="Capture narrative evidence, context, or observations."
+      />
+      {saving ? (
+        <p className="typography-caption mt-2">Saving comment…</p>
+      ) : null}
     </div>
   );
 }

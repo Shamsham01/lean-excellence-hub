@@ -128,7 +128,8 @@ insert into snapshot_ids (key, id)
 select 'assessment', public.start_maturity_assessment(
   (select id from snapshot_ids where key = 'model_version'),
   (select id from snapshot_ids where key = 'unit'),
-  'formal'
+  'formal',
+  'site'
 );
 
 select lives_ok(
