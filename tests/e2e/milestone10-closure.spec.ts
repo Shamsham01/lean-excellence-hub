@@ -276,6 +276,10 @@ test.describe("Milestone 10 closure", () => {
     await loginAs(page, "manager");
     await page.goto("/platform/suggestions");
     await page
+      .getByTestId("suggestion-portfolio-search")
+      .fill("Pre-stage changeover tooling");
+    await page.getByTestId("suggestion-portfolio-apply").click();
+    await page
       .getByRole("link", { name: /Pre-stage changeover tooling/i })
       .click();
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();

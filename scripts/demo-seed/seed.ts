@@ -2637,6 +2637,96 @@ async function ensureM9Demo(
   console.log("M9 demo: suggestions and recognition seeded.");
 }
 
+async function ensureS3aSuggestionPortfolioFixtures(
+  signedInAdmin: SupabaseClient,
+  apiUrl: string,
+  publishableKey: string,
+) {
+  const { count, error: countError } = await signedInAdmin
+    .from("improvement_suggestions")
+    .select("id", { count: "exact", head: true })
+    .ilike("title", "S3a portfolio seed %");
+
+  if (countError) {
+    throw countError;
+  }
+
+  const existingCount = count ?? 0;
+  const targetCount = 28;
+
+  if (existingCount >= targetCount) {
+    console.log("S3a suggestion portfolio fixtures already seeded.");
+    return;
+  }
+
+  const { data: programmeVersion, error: programmeVersionError } =
+    await signedInAdmin
+      .from("suggestion_programme_versions")
+      .select("id")
+      .eq("lifecycle", "published")
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  const { data: categories, error: categoriesError } = await signedInAdmin
+    .from("suggestion_categories")
+    .select("id")
+    .eq("status", "active");
+
+  if (programmeVersionError) {
+    throw programmeVersionError;
+  }
+  if (categoriesError) {
+    throw categoriesError;
+  }
+  if (!programmeVersion || !categories?.length) {
+    throw new Error("S3a portfolio fixtures require M9 suggestion catalogue.");
+  }
+
+  const operatorClient = await signInUser(apiUrl, publishableKey, "operator");
+  await switchOrganisation(
+    operatorClient,
+    (await resolveOrganisationId(operatorClient)) as string,
+  );
+
+  const categoryIds = categories.map((category) => category.id);
+  const startIndex = existingCount + 1;
+
+  for (let index = startIndex; index <= targetCount; index += 1) {
+    const categoryId = categoryIds[(index - 1) % categoryIds.length];
+    const title = `S3a portfolio seed ${String(index).padStart(2, "0")}`;
+
+    const { data: draftId, error: draftError } = await operatorClient.rpc(
+      "create_suggestion_draft",
+      {
+        target_programme_version_id: programmeVersion.id,
+        target_category_id: categoryId,
+        target_title: title,
+        target_problem_or_opportunity: `Operational problem ${index} for S3a pagination fixtures.`,
+        target_proposed_idea: `Proposed improvement ${index} for portfolio scalability testing.`,
+        target_expected_benefit_summary: "Faster portfolio scanning.",
+      },
+    );
+    if (draftError) {
+      throw draftError;
+    }
+
+    const { error: submitError } = await operatorClient.rpc(
+      "submit_suggestion",
+      {
+        target_suggestion_id: draftId as string,
+      },
+    );
+    if (submitError) {
+      throw submitError;
+    }
+  }
+
+  console.log(
+    `S3a demo: ${targetCount - existingCount} portfolio suggestions seeded.`,
+  );
+}
+
 async function ensureM8Demo(
   signedInAdmin: SupabaseClient,
   unitIds: UnitMap,
@@ -2814,6 +2904,11 @@ async function main() {
     adminClient,
     admin,
     unitIds,
+    env.apiUrl,
+    env.publishableKey,
+  );
+  await ensureS3aSuggestionPortfolioFixtures(
+    adminClient,
     env.apiUrl,
     env.publishableKey,
   );

@@ -1,17 +1,36 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  countAllVisibleSuggestions,
+  fetchSuggestionPortfolio,
+  loadSuggestionPortfolioFilterOptions,
+} from "@/lib/suggestions/fetch-suggestion-portfolio";
+import { parseSuggestionPortfolioSearchParams } from "@/lib/suggestions/suggestion-portfolio-query";
 import {
   pipelineStatuses,
   suggestionStatusLabel,
 } from "@/lib/suggestions/status";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function SuggestionsOverviewPage() {
+export default async function SuggestionsOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const canView = await currentMemberHasPermission("suggestions.read");
+  if (!canView) {
+    notFound();
+  }
+
+  const params = await searchParams;
+  const filters = parseSuggestionPortfolioSearchParams(params);
   const supabase = await createServerSupabaseClient();
   const canSubmit = await currentMemberHasPermission("suggestions.submit");
   const canReview = await currentMemberHasPermission("suggestions.review");
@@ -19,18 +38,16 @@ export default async function SuggestionsOverviewPage() {
     "suggestions.programmes.manage",
   );
 
-  const { data: overview } = await supabase.rpc("get_suggestions_overview");
-  const { data: list } = await supabase.rpc("get_suggestions_list", {
-    target_page: 1,
-    target_page_size: 10,
-  });
+  const [{ data: overview }, portfolio, filterOptions, hasAnySuggestions] =
+    await Promise.all([
+      supabase.rpc("get_suggestions_overview"),
+      fetchSuggestionPortfolio(supabase, filters),
+      loadSuggestionPortfolioFilterOptions(supabase),
+      countAllVisibleSuggestions(supabase),
+    ]);
 
   const overviewObj = (overview as Record<string, unknown>) ?? {};
   const pipeline = (overviewObj.pipeline as Record<string, number>) ?? {};
-  const items =
-    ((list as { items?: unknown[] })?.items as Array<
-      Record<string, unknown>
-    >) ?? [];
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
@@ -104,30 +121,15 @@ export default async function SuggestionsOverviewPage() {
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent suggestions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {items.map((item) => (
-            <Link
-              key={item.id as string}
-              href={`/platform/suggestions/${item.id as string}`}
-              className="flex items-center justify-between rounded-md px-2 py-2 text-sm hover:bg-surface"
-            >
-              <span>
-                {item.suggestion_number
-                  ? `${item.suggestion_number as string} · `
-                  : ""}
-                {item.title as string}
-              </span>
-              <span className="text-muted-foreground">
-                {suggestionStatusLabel(item.status as string)}
-              </span>
-            </Link>
-          ))}
-        </CardContent>
-      </Card>
+      <SuggestionPortfolio
+        items={portfolio.items}
+        totalCount={portfolio.total_count}
+        page={portfolio.page}
+        pageSize={portfolio.page_size}
+        filters={filters}
+        filterOptions={filterOptions}
+        hasAnySuggestions={hasAnySuggestions > 0}
+      />
     </div>
   );
 }
