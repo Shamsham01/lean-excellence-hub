@@ -101,12 +101,16 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-criteria").click();
     await page.getByLabel("Criterion name").fill("Gemba walks");
     await page.getByRole("button", { name: "Add criterion" }).click();
-    await expect(page.locator('[data-testid^="edit-criterion-"]').first()).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="edit-criterion-"]').first(),
+    ).toBeVisible();
 
     await page.getByTestId("framework-step-questions").click();
     await page.getByLabel("Question prompt").fill("Rate Gemba walks");
     await page.getByRole("button", { name: "Add scored question" }).click();
-    await expect(page.locator('[data-testid^="edit-question-"]').first()).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="edit-question-"]').first(),
+    ).toBeVisible();
 
     await page.getByTestId("framework-step-publish").click();
     await page.getByTestId("publish-framework").click();
