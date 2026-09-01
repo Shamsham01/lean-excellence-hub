@@ -63,8 +63,16 @@ test.describe("Finance Validator shell hotfix", () => {
         .getByTestId("settings-hub-card-platform-settings-people")
         .getByRole("link", { name: "Open" }),
     ).not.toBeVisible();
-    await expect(page.getByText("Job functions")).not.toBeVisible();
-    await expect(page.getByText("Lean AI")).not.toBeVisible();
+    await expect(
+      page
+        .getByTestId("settings-hub-card-platform-settings-job-functions")
+        .getByRole("link", { name: "Open" }),
+    ).not.toBeVisible();
+    await expect(
+      page
+        .getByTestId("settings-hub-card-platform-settings-ai")
+        .getByRole("link", { name: "Open" }),
+    ).not.toBeVisible();
   });
 
   test("finance validator can view and update own profile", async ({
