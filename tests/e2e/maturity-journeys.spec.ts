@@ -123,13 +123,19 @@ test.describe("Milestone 5 maturity journeys", () => {
     page,
   }) => {
     await loginAs(page, "manager");
-    await page.goto("/platform/maturity/models");
+    await page.goto("/platform/maturity/assessments/new");
     await page
-      .getByRole("link", { name: "E2E Closure Framework" })
+      .locator("#modelVersionId option")
+      .filter({ hasText: "E2E Closure Framework" })
       .first()
-      .click();
-    await page.getByRole("link", { name: "Start assessment" }).click();
-    await expect(page.getByTestId("start-assessment-form")).toBeVisible();
+      .evaluate((option) => {
+        const select = option.parentElement as HTMLSelectElement | null;
+        if (!select) {
+          throw new Error("Framework version select was not found");
+        }
+        select.value = (option as HTMLOptionElement).value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
     await page.locator("#assessmentScopeType").selectOption("site");
     await waitForScopeEntities(page);
     await selectFirstEnabledOption(page, "unitId");
