@@ -26,6 +26,7 @@
     "test:db": "supabase test db --local supabase/tests/database",
     "test:db:integration": "node --import tsx scripts/test-n1a-worker-api-integration.ts",
     "test:db:integration:n1b": "node --import tsx scripts/test-n1b-notification-projector-integration.ts",
+    "test:db:integration:n1c": "node --import tsx scripts/test-n1c-notification-delivery-integration.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:status": "supabase status",

@@ -12355,6 +12355,44 @@ export type Database = {
         Args: { target_membership_id: string }
         Returns: Json
       }
+      get_notification_delivery_context_for_worker: {
+        Args: {
+          target_delivery_id: string
+          target_organisation_id: string
+          target_source_domain_event_id: string
+        }
+        Returns: {
+          context_detail: string
+          context_link_path: string
+          context_title: string
+          deliverable_email: string
+          delivery_id: string
+          event_payload: Json
+          event_type: string
+          notification_kind: string
+          organisation_id: string
+          organisation_name: string
+          recipient_display_name: string
+          recipient_membership_id: string
+          recipient_resolution_status: string
+          resource_record_id: string
+          source_domain_event_id: string
+        }[]
+      }
+      get_notification_delivery_provider_envelope_for_worker: {
+        Args: { target_delivery_id: string; target_organisation_id: string }
+        Returns: {
+          delivery_id: string
+          delivery_key: string
+          html_body: string
+          organisation_id: string
+          payload_hash: string
+          recipient_email: string
+          sender_from: string
+          subject: string
+          text_body: string
+        }[]
+      }
       get_people_directory: {
         Args: {
           target_page?: number
@@ -13154,6 +13192,30 @@ export type Database = {
       start_workforce_import_provisioning: {
         Args: { target_import_job_id: string }
         Returns: undefined
+      }
+      store_notification_delivery_provider_envelope_for_worker: {
+        Args: {
+          expected_delivery_key: string
+          target_delivery_id: string
+          target_html_body: string
+          target_organisation_id: string
+          target_payload_hash: string
+          target_recipient_email: string
+          target_sender_from: string
+          target_subject: string
+          target_text_body: string
+        }
+        Returns: {
+          delivery_id: string
+          delivery_key: string
+          html_body: string
+          organisation_id: string
+          payload_hash: string
+          recipient_email: string
+          sender_from: string
+          subject: string
+          text_body: string
+        }[]
       }
       store_workforce_import_row_credential: {
         Args: {
