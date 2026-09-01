@@ -17,7 +17,7 @@ export function PlatformSidebarHeader({
       <div className="min-w-0">
         <p
           className="truncate text-sm font-semibold text-sidebar-foreground"
-          data-testid="platform-org-name"
+          data-testid="platform-sidebar-org-name"
         >
           {organisationName}
         </p>
