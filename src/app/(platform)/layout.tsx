@@ -27,6 +27,7 @@ export default async function PlatformLayout({
     <PlatformShell
       organisationName={current.organisation_name}
       organisations={organisations}
+      membershipId={current.membership_id}
     >
       {children}
     </PlatformShell>
