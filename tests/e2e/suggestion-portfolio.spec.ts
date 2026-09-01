@@ -23,6 +23,17 @@ async function applyPortfolioFilters(page: Page) {
   await page.getByTestId("suggestion-portfolio-apply").click();
 }
 
+async function getPortfolioTotalCount(page: Page): Promise<number> {
+  const pagination = page.getByTestId("suggestion-portfolio-pagination");
+  await expect(pagination).toBeVisible();
+  const text = await pagination.textContent();
+  const match = text?.match(/of\s+(\d+)/i);
+  if (!match?.[1]) {
+    throw new Error(`Expected pagination total in "${text ?? ""}"`);
+  }
+  return Number.parseInt(match[1], 10);
+}
+
 test.describe("S3a suggestions portfolio", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(120_000);
@@ -173,6 +184,73 @@ test.describe("S3a suggestions portfolio", () => {
     ).toBeVisible();
     await expect(
       page.getByTestId("suggestion-portfolio-pagination"),
+    ).toBeVisible();
+  });
+
+  test("reserved-character search survives real PostgREST filtering", async ({
+    page,
+  }) => {
+    await loginAs(page, "manager");
+    await page.goto("/platform/suggestions");
+    const fullPortfolioCount = await getPortfolioTotalCount(page);
+
+    await page
+      .getByTestId("suggestion-portfolio-search")
+      .fill('S3a search probe "quote"');
+    await applyPortfolioFilters(page);
+    await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: 'S3a search probe "quote"' }).first(),
+    ).toBeVisible();
+
+    await page.getByTestId("suggestion-portfolio-search").fill('"');
+    await applyPortfolioFilters(page);
+    await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: 'S3a search probe "quote"' }).first(),
+    ).toBeVisible();
+
+    await page
+      .getByTestId("suggestion-portfolio-search")
+      .fill("S3a search probe 100%done");
+    await applyPortfolioFilters(page);
+    await expect(
+      page.getByRole("link", { name: "S3a search probe 100%done" }).first(),
+    ).toBeVisible();
+
+    await page.goto("/platform/suggestions?q=%25");
+    await expect(page).toHaveURL(/q=%25/);
+    await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
+    const percentMatchCount = await getPortfolioTotalCount(page);
+    expect(percentMatchCount).toBeLessThan(fullPortfolioCount);
+    expect(percentMatchCount).toBeLessThanOrEqual(2);
+    await expect(
+      page.getByRole("link", { name: "S3a search probe 100%done" }).first(),
+    ).toBeVisible();
+
+    await page
+      .getByTestId("suggestion-portfolio-search")
+      .fill("S3a search probe under_score");
+    await applyPortfolioFilters(page);
+    await expect(
+      page.getByRole("link", { name: "S3a search probe under_score" }).first(),
+    ).toBeVisible();
+
+    await page.goto("/platform/suggestions?q=_");
+    await expect(page).toHaveURL(/q=_/);
+    const underscoreMatchCount = await getPortfolioTotalCount(page);
+    expect(underscoreMatchCount).toBeLessThan(fullPortfolioCount);
+    expect(underscoreMatchCount).toBeLessThanOrEqual(2);
+
+    await page
+      .getByTestId("suggestion-portfolio-search")
+      .fill(String.raw`S3a search probe back\slash`);
+    await applyPortfolioFilters(page);
+    await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
+    await expect(
+      page
+        .getByRole("link", { name: String.raw`S3a search probe back\slash` })
+        .first(),
     ).toBeVisible();
   });
 });

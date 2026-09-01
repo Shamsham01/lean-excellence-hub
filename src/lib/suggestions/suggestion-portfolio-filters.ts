@@ -91,7 +91,7 @@ export function escapeIlikePattern(value: string): string {
 }
 
 export function quotePostgrestFilterValue(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
 export function buildSearchOrFilter(search: string): string {

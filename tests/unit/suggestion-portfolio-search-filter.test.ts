@@ -1,58 +1,76 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSearchOrFilter } from "@/lib/suggestions/suggestion-portfolio-filters";
+import {
+  buildSearchOrFilter,
+  escapeIlikePattern,
+  quotePostgrestFilterValue,
+} from "@/lib/suggestions/suggestion-portfolio-filters";
 
-function splitPostgrestOrConditions(filter: string): string[] {
-  const conditions: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (const character of filter) {
-    if (character === '"') {
-      inQuotes = !inQuotes;
-      current += character;
-      continue;
-    }
-
-    if (character === "," && !inQuotes) {
-      conditions.push(current);
-      current = "";
-      continue;
-    }
-
-    current += character;
-  }
-
-  if (current.length > 0) {
-    conditions.push(current);
-  }
-
-  return conditions;
-}
-
-describe("suggestion portfolio search filter", () => {
-  it.each([
-    ['"', 'needle"value'],
-    [",", "needle,value"],
-    ["(", "needle(value"],
-    [")", "needle)value"],
-  ] as const)("keeps %s inside quoted ilike patterns", (character, search) => {
-    const filter = buildSearchOrFilter(search);
-    const conditions = splitPostgrestOrConditions(filter);
-
-    expect(conditions).toHaveLength(2);
-    expect(conditions[0]).toMatch(/^title\.ilike\.".+"/);
-    expect(conditions[1]).toMatch(/^suggestion_number\.ilike\.".+"/);
-    expect(filter).toContain(search.replace(/"/g, '""'));
+describe("quotePostgrestFilterValue", () => {
+  it("escapes quotes with PostgREST backslash grammar", () => {
+    expect(quotePostgrestFilterValue('say "hi"')).toBe('"say \\"hi\\""');
   });
 
-  it("escapes ilike wildcards without dropping the search term", () => {
+  it("escapes backslashes before quotes", () => {
+    expect(quotePostgrestFilterValue(String.raw`path\to`)).toBe(
+      String.raw`"path\\to"`,
+    );
+    expect(quotePostgrestFilterValue(String.raw`say \"hi`)).toBe(
+      String.raw`"say \\\"hi"`,
+    );
+  });
+
+  it("wraps reserved filter values in double quotes", () => {
+    expect(quotePostgrestFilterValue("needle,value")).toBe('"needle,value"');
+    expect(quotePostgrestFilterValue("needle(value)")).toBe('"needle(value)"');
+  });
+});
+
+describe("escapeIlikePattern", () => {
+  it("escapes PostgreSQL ILIKE wildcards and backslashes", () => {
+    expect(escapeIlikePattern("100%_\\done")).toBe(String.raw`100\%\_\\done`);
+  });
+});
+
+describe("buildSearchOrFilter", () => {
+  it.each([
+    ['"', '%needle"value%'],
+    [",", "%needle,value%"],
+    ["(", "%needle(value%"],
+    [")", "%needle)value%"],
+  ] as const)(
+    "keeps %s inside a single quoted ilike pattern per branch",
+    (_character, expectedPattern) => {
+      const search = `needle${_character}value`;
+      const filter = buildSearchOrFilter(search);
+      const quotedPattern = quotePostgrestFilterValue(expectedPattern);
+
+      expect(filter).toBe(
+        `title.ilike.${quotedPattern},suggestion_number.ilike.${quotedPattern}`,
+      );
+    },
+  );
+
+  it("escapes ilike wildcards and PostgREST backslashes in the final filter", () => {
     const filter = buildSearchOrFilter("100%_\\done");
-    expect(filter).toContain(String.raw`100\%\_\\done`);
+    const quotedPattern = quotePostgrestFilterValue(
+      String.raw`%100\%\_\\done%`,
+    );
+
+    expect(filter).toBe(
+      `title.ilike.${quotedPattern},suggestion_number.ilike.${quotedPattern}`,
+    );
   });
 
   it("does not emit bare commas that would add extra or branches", () => {
     const filter = buildSearchOrFilter("a,b(c)d");
-    expect(splitPostgrestOrConditions(filter)).toHaveLength(2);
+    const pattern = quotePostgrestFilterValue("%a,b(c)d%");
+
+    expect(filter).toBe(
+      `title.ilike.${pattern},suggestion_number.ilike.${pattern}`,
+    );
+    expect(filter.startsWith("title.ilike.")).toBe(true);
+    expect(filter.endsWith(pattern)).toBe(true);
+    expect(filter).toContain(`,suggestion_number.ilike.${pattern}`);
   });
 });
