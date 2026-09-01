@@ -1644,9 +1644,7 @@ declare
   level_row record;
   pillar_row record;
 begin
-  if org_id is null
-    or actor_membership_id is null
-    or not private.has_scoped_permission(org_id, 'maturity.results.publish', null, null) then
+  if org_id is null or actor_membership_id is null then
     raise exception 'official maturity result publication is not authorised'
       using errcode = '42501';
   end if;
@@ -1668,6 +1666,11 @@ begin
   if not found then
     raise exception 'maturity assessment is not publishable'
       using errcode = '55000';
+  end if;
+
+  if not private.has_scoped_permission(org_id, 'maturity.results.publish', null, target_unit_id) then
+    raise exception 'official maturity result publication is not authorised'
+      using errcode = '42501';
   end if;
 
   select score_row.score

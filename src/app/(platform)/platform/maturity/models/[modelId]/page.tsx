@@ -260,8 +260,8 @@ export default async function MaturityModelPage({
         <Card data-testid="archived-framework-recovery">
           <CardHeader>
             <CardTitle>
-              Framework inactive — version {latestArchivedVersion.version_number}{" "}
-              archived
+              Framework inactive — version{" "}
+              {latestArchivedVersion.version_number} archived
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">

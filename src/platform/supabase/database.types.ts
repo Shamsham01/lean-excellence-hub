@@ -5047,6 +5047,8 @@ export type Database = {
           archived_at: string | null
           created_at: string
           created_by_membership_id: string
+          description: string | null
+          display_name: string
           id: string
           model_id: string
           organisation_id: string
@@ -5061,6 +5063,8 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by_membership_id: string
+          description?: string | null
+          display_name: string
           id?: string
           model_id: string
           organisation_id: string
@@ -5075,6 +5079,8 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by_membership_id?: string
+          description?: string | null
+          display_name?: string
           id?: string
           model_id?: string
           organisation_id?: string
@@ -13281,26 +13287,16 @@ export type Database = {
         }
         Returns: string
       }
-      start_maturity_assessment:
-        | {
-            Args: {
-              target_assessment_scope_type: string
-              target_assessment_type: string
-              target_lead_assessor_membership_id?: string
-              target_model_version_id: string
-              target_unit_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              target_assessment_type: string
-              target_lead_assessor_membership_id?: string
-              target_model_version_id: string
-              target_unit_id: string
-            }
-            Returns: string
-          }
+      start_maturity_assessment: {
+        Args: {
+          target_assessment_scope_type: string
+          target_assessment_type: string
+          target_lead_assessor_membership_id?: string
+          target_model_version_id: string
+          target_unit_id: string
+        }
+        Returns: string
+      }
       start_problem_solving_session: {
         Args: {
           target_case_id: string
@@ -13491,6 +13487,57 @@ export type Database = {
           target_description?: string
           target_job_function_id: string
           target_name: string
+        }
+        Returns: boolean
+      }
+      update_maturity_criterion: {
+        Args: {
+          target_criterion_id: string
+          target_description?: string
+          target_expected_evidence?: string
+          target_guidance?: string
+          target_name: string
+          target_position: number
+          target_weight?: number
+        }
+        Returns: boolean
+      }
+      update_maturity_level: {
+        Args: {
+          target_color_token: string
+          target_description?: string
+          target_guidance?: string
+          target_level_id: string
+          target_level_number: number
+          target_name: string
+        }
+        Returns: boolean
+      }
+      update_maturity_model_version_metadata: {
+        Args: {
+          target_description?: string
+          target_display_name: string
+          target_model_version_id: string
+        }
+        Returns: boolean
+      }
+      update_maturity_pillar: {
+        Args: {
+          target_description?: string
+          target_guidance?: string
+          target_name: string
+          target_pillar_id: string
+          target_position: number
+          target_weight?: number
+        }
+        Returns: boolean
+      }
+      update_maturity_question: {
+        Args: {
+          target_help_text?: string
+          target_position: number
+          target_prompt: string
+          target_question_id: string
         }
         Returns: boolean
       }

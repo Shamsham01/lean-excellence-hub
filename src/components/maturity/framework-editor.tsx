@@ -479,7 +479,12 @@ export function FrameworkEditor({
                 const position = Number(form.criterionPosition.value);
                 if (!criterionName || !pillarId) return;
                 await run(() =>
-                  addMaturityCriterion(pillarId, criterionName, position, modelId),
+                  addMaturityCriterion(
+                    pillarId,
+                    criterionName,
+                    position,
+                    modelId,
+                  ),
                 );
                 form.reset();
               }}

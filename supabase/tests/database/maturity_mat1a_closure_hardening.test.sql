@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(27);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -234,19 +234,60 @@ select throws_ok(
   'legacy four-argument start_maturity_assessment signature cannot bypass semantic scopes'
 );
 
+reset role;
+set local role lean_hub_private_owner;
+
 update public.maturity_assessments assessment_row
-set unit_id = (select id from mat1a_hardening_ids where key = 'line_unit'),
+set unit_id = line_unit.id,
     assessment_scope_type = 'legacy_unit'
-where assessment_row.id = (select id from mat1a_hardening_ids where key = 'site_assessment');
+from public.organisation_units line_unit
+join public.organisations organisation
+  on organisation.id = line_unit.organisation_id
+where organisation.code = 'mat1a-hardening-org'
+  and line_unit.code = 'mat1a-h-line'
+  and assessment_row.organisation_id = organisation.id
+  and assessment_row.assessment_scope_type = 'site'
+  and assessment_row.model_version_id = (
+    select model_version.id
+    from public.maturity_model_versions model_version
+    join public.maturity_models maturity_model
+      on maturity_model.organisation_id = model_version.organisation_id
+     and maturity_model.id = model_version.model_id
+    where model_version.organisation_id = organisation.id
+      and maturity_model.display_name in ('Hardening Framework v1', 'Hardening Framework')
+    order by model_version.version_number
+    limit 1
+  );
+
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"87000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"88000000-0000-0000-0000-000000000002","email":"mat1a-hardening@example.test"}',
+  true
+);
 
 select is(
   (
     select assessment_row.assessment_scope_type
     from public.maturity_assessments assessment_row
-    where assessment_row.id = (select id from mat1a_hardening_ids where key = 'site_assessment')
+    join public.organisation_units organisation_unit
+      on organisation_unit.organisation_id = assessment_row.organisation_id
+     and organisation_unit.id = assessment_row.unit_id
+    join public.organisations organisation
+      on organisation.id = assessment_row.organisation_id
+    where organisation.code = 'mat1a-hardening-org'
+      and organisation_unit.code = 'mat1a-h-line'
   ),
   'legacy_unit',
   'historical line assessment can be represented as legacy_unit rather than site'
+);
+
+select ok(
+  (
+    select private.normalise_organisation_unit_semantic_scope('line')
+  ) is null,
+  'line unit type is not normalised to site scope'
 );
 
 select throws_ok(

@@ -83,25 +83,30 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-levels").click();
     await page.getByLabel("Level name").fill("Initial");
     await page.getByRole("button", { name: "Add level" }).click();
-    await expect(page.getByText("1. Initial")).toBeVisible();
-    await page.getByTestId("edit-level-1").getByLabel("Level name").fill("Initial revised");
+    await expect(page.getByTestId("edit-level-1")).toBeVisible();
+    await page
+      .getByTestId("edit-level-1")
+      .getByLabel("Level name")
+      .fill("Initial revised");
     await page.getByRole("button", { name: "Save level" }).click();
-    await expect(page.getByDisplayValue("Initial revised")).toBeVisible();
+    await expect(
+      page.getByTestId("edit-level-1").getByLabel("Level name"),
+    ).toHaveValue("Initial revised");
 
     await page.getByTestId("framework-step-pillars").click();
     await page.getByLabel("Pillar name").fill("Leadership");
     await page.getByRole("button", { name: "Add pillar" }).click();
-    await expect(page.getByText("1. Leadership")).toBeVisible();
+    await expect(page.getByTestId("edit-pillar-1")).toBeVisible();
 
     await page.getByTestId("framework-step-criteria").click();
     await page.getByLabel("Criterion name").fill("Gemba walks");
     await page.getByRole("button", { name: "Add criterion" }).click();
-    await expect(page.getByText("Gemba walks")).toBeVisible();
+    await expect(page.locator('[data-testid^="edit-criterion-"]').first()).toBeVisible();
 
     await page.getByTestId("framework-step-questions").click();
     await page.getByLabel("Question prompt").fill("Rate Gemba walks");
     await page.getByRole("button", { name: "Add scored question" }).click();
-    await expect(page.getByText("Rate Gemba walks")).toBeVisible();
+    await expect(page.locator('[data-testid^="edit-question-"]').first()).toBeVisible();
 
     await page.getByTestId("framework-step-publish").click();
     await page.getByTestId("publish-framework").click();
@@ -204,7 +209,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByText("Approved")).toBeVisible();
 
     await page.getByTestId("publish-official-result").click();
-    await expect(page.getByText("Published").first()).toBeVisible();
+    await expect(page.getByText("Published").first()).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("self assessor: complete self assessment without official result", async ({

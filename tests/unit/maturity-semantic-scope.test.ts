@@ -29,7 +29,11 @@ describe("maturity semantic scope", () => {
   });
 
   it("excludes organisation from selectable framework scopes", () => {
-    expect(MATURITY_FRAMEWORK_SCOPE_TYPES).toEqual(["site", "department", "area"]);
+    expect(MATURITY_FRAMEWORK_SCOPE_TYPES).toEqual([
+      "site",
+      "department",
+      "area",
+    ]);
     expect(MATURITY_ASSESSMENT_SCOPE_TYPES).not.toContain("organisation");
   });
 
