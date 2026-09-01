@@ -15,7 +15,7 @@ create table public.maturity_model_version_assessment_scopes (
     references public.maturity_model_versions(organisation_id, id)
     on delete restrict,
   constraint maturity_model_version_assessment_scopes_scope_type_check
-    check (scope_type in ('site', 'organisation', 'department', 'area'))
+    check (scope_type in ('site', 'department', 'area'))
 );
 
 create index maturity_model_version_assessment_scopes_version_idx
@@ -28,7 +28,13 @@ alter table public.maturity_assessments
   add constraint maturity_assessments_scope_type_check
     check (
       assessment_scope_type is null
-      or assessment_scope_type in ('site', 'organisation', 'department', 'area')
+      or assessment_scope_type in (
+        'site',
+        'organisation',
+        'department',
+        'area',
+        'legacy_unit'
+      )
     );
 
 create table public.maturity_assessment_criterion_notes (
@@ -129,11 +135,33 @@ where organisation_unit.organisation_id = assessment_row.organisation_id
   and assessment_row.assessment_scope_type is null;
 
 update public.maturity_assessments
-set assessment_scope_type = 'site'
+set assessment_scope_type = 'legacy_unit'
 where assessment_scope_type is null;
 
 alter table public.maturity_assessments
   alter column assessment_scope_type set not null;
+
+alter table public.maturity_model_versions
+  add column display_name text,
+  add column description text;
+
+update public.maturity_model_versions model_version
+set
+  display_name = maturity_model.display_name,
+  description = maturity_model.description
+from public.maturity_models maturity_model
+where maturity_model.organisation_id = model_version.organisation_id
+  and maturity_model.id = model_version.model_id;
+
+alter table public.maturity_model_versions
+  alter column display_name set not null;
+
+alter table public.maturity_model_versions
+  add constraint maturity_model_versions_display_name_check
+    check (
+      display_name = btrim(display_name)
+      and char_length(display_name) between 1 and 160
+    );
 
 create or replace function private.organisation_unit_matches_semantic_scope(
   target_organisation_id uuid,
@@ -219,7 +247,7 @@ begin
 
   foreach scope_type in array target_scope_types
   loop
-    if scope_type not in ('site', 'organisation', 'department', 'area') then
+    if scope_type not in ('site', 'department', 'area') then
       raise exception 'invalid assessment scope type'
         using errcode = '22023';
     end if;
@@ -286,7 +314,7 @@ begin
       using errcode = '42501';
   end if;
 
-  if target_scope_type not in ('site', 'organisation', 'department', 'area') then
+  if target_scope_type not in ('site', 'department', 'area') then
     raise exception 'invalid assessment scope type'
       using errcode = '22023';
   end if;
@@ -387,6 +415,8 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   target_model_id uuid;
   target_template_version_id uuid;
+  template_id uuid;
+  remaining_version_count integer;
 begin
   if org_id is null
     or actor_membership_id is null
@@ -476,6 +506,47 @@ begin
     'succeeded',
     jsonb_build_object('model_version_id', target_model_version_id)
   );
+
+  select count(*)
+  into remaining_version_count
+  from public.maturity_model_versions model_version
+  where model_version.organisation_id = org_id
+    and model_version.model_id = target_model_id;
+
+  if remaining_version_count = 0
+    and not exists (
+      select 1
+      from public.maturity_assessments assessment_row
+      join public.maturity_model_versions model_version
+        on model_version.organisation_id = assessment_row.organisation_id
+       and model_version.id = assessment_row.model_version_id
+      where model_version.organisation_id = org_id
+        and model_version.model_id = target_model_id
+    ) then
+    select maturity_model.template_id
+    into template_id
+    from public.maturity_models maturity_model
+    where maturity_model.organisation_id = org_id
+      and maturity_model.id = target_model_id;
+
+    delete from public.maturity_models maturity_model
+    where maturity_model.organisation_id = org_id
+      and maturity_model.id = target_model_id;
+
+    if template_id is not null then
+      delete from public.templates template_row
+      where template_row.organisation_id = org_id
+        and template_row.id = template_id;
+    end if;
+
+    perform private.append_business_audit(
+      org_id,
+      'maturity.model.deleted',
+      target_model_id,
+      'succeeded',
+      jsonb_build_object('reason', 'last_unused_draft_removed')
+    );
+  end if;
 
   return true;
 end;
@@ -648,6 +719,8 @@ begin
     template_version_id,
     version_number,
     status,
+    display_name,
+    description,
     created_by_membership_id
   )
   values (
@@ -656,6 +729,8 @@ begin
     new_template_version_id,
     1,
     'draft',
+    target_display_name,
+    target_description,
     actor_membership_id
   )
   returning id into new_model_version_id;
@@ -852,7 +927,7 @@ begin
       using errcode = '22023';
   end if;
 
-  if target_assessment_scope_type not in ('site', 'organisation', 'department', 'area') then
+  if target_assessment_scope_type not in ('site', 'department', 'area') then
     raise exception 'invalid assessment scope type'
       using errcode = '22023';
   end if;
@@ -1041,7 +1116,18 @@ begin
   limit 1;
 
   if source_version_id is null then
-    raise exception 'maturity model has no published version'
+    select model_version.id, model_version.version_number
+    into source_version_id, source_version_number
+    from public.maturity_model_versions model_version
+    where model_version.organisation_id = org_id
+      and model_version.model_id = target_model_id
+      and model_version.status = 'archived'
+    order by model_version.version_number desc
+    limit 1;
+  end if;
+
+  if source_version_id is null then
+    raise exception 'maturity model has no version to successor from'
       using errcode = '55000';
   end if;
 
@@ -1065,6 +1151,8 @@ begin
     version_number,
     status,
     weighting_enabled,
+    display_name,
+    description,
     created_by_membership_id
   )
   select
@@ -1074,6 +1162,8 @@ begin
     source_version_number + 1,
     'draft',
     source_version.weighting_enabled,
+    source_version.display_name,
+    source_version.description,
     actor_membership_id
   from public.maturity_model_versions source_version
   where source_version.organisation_id = org_id
@@ -1261,6 +1351,502 @@ begin
 end;
 $$;
 
+create or replace function private.update_maturity_model_version_metadata(
+  target_model_version_id uuid,
+  target_display_name text,
+  target_description text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  target_model_id uuid;
+  target_template_id uuid;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity model metadata update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select model_version.model_id, maturity_model.template_id
+  into target_model_id, target_template_id
+  from public.maturity_model_versions model_version
+  join public.maturity_models maturity_model
+    on maturity_model.organisation_id = model_version.organisation_id
+   and maturity_model.id = model_version.model_id
+  where model_version.organisation_id = org_id
+    and model_version.id = target_model_version_id
+    and model_version.status = 'draft'
+  for update;
+
+  if target_model_id is null then
+    raise exception 'maturity model version is not editable'
+      using errcode = '55000';
+  end if;
+
+  if btrim(coalesce(target_display_name, '')) = '' then
+    raise exception 'framework display name is required'
+      using errcode = '22023';
+  end if;
+
+  update public.maturity_model_versions
+  set display_name = btrim(target_display_name),
+      description = target_description
+  where organisation_id = org_id
+    and id = target_model_version_id;
+
+  update public.maturity_models
+  set display_name = btrim(target_display_name),
+      description = target_description
+  where organisation_id = org_id
+    and id = target_model_id;
+
+  update public.templates
+  set display_name = btrim(target_display_name),
+      description = target_description
+  where organisation_id = org_id
+    and id = target_template_id;
+
+  return true;
+end;
+$$;
+
+create or replace function private.update_maturity_level(
+  target_level_id uuid,
+  target_level_number integer,
+  target_name text,
+  target_color_token text,
+  target_description text default null,
+  target_guidance text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity level update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.maturity_levels level_row
+  set level_number = target_level_number,
+      name = target_name,
+      color_token = target_color_token,
+      description = target_description,
+      guidance = target_guidance
+  from public.maturity_model_versions model_version
+  where level_row.organisation_id = org_id
+    and level_row.id = target_level_id
+    and model_version.organisation_id = level_row.organisation_id
+    and model_version.id = level_row.model_version_id
+    and model_version.status = 'draft';
+
+  if not found then
+    raise exception 'maturity level is not editable'
+      using errcode = '55000';
+  end if;
+
+  return true;
+end;
+$$;
+
+create or replace function private.update_maturity_pillar(
+  target_pillar_id uuid,
+  target_name text,
+  target_position integer,
+  target_description text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  target_section_id uuid;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity pillar update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.maturity_pillars pillar_row
+  set name = target_name,
+      position = target_position,
+      description = target_description,
+      guidance = target_guidance,
+      weight = target_weight
+  from public.maturity_model_versions model_version
+  where pillar_row.organisation_id = org_id
+    and pillar_row.id = target_pillar_id
+    and model_version.organisation_id = pillar_row.organisation_id
+    and model_version.id = pillar_row.model_version_id
+    and model_version.status = 'draft'
+  returning pillar_row.section_id into target_section_id;
+
+  if target_section_id is null then
+    raise exception 'maturity pillar is not editable'
+      using errcode = '55000';
+  end if;
+
+  update public.template_sections section_row
+  set title = target_name,
+      position = target_position
+  where section_row.organisation_id = org_id
+    and section_row.id = target_section_id;
+
+  return true;
+end;
+$$;
+
+create or replace function private.update_maturity_criterion(
+  target_criterion_id uuid,
+  target_name text,
+  target_position integer,
+  target_description text default null,
+  target_expected_evidence text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity criterion update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.maturity_criteria criterion_row
+  set name = target_name,
+      position = target_position,
+      description = target_description,
+      expected_evidence = target_expected_evidence,
+      guidance = target_guidance,
+      weight = target_weight
+  from public.maturity_pillars pillar_row
+  join public.maturity_model_versions model_version
+    on model_version.organisation_id = pillar_row.organisation_id
+   and model_version.id = pillar_row.model_version_id
+   and model_version.status = 'draft'
+  where criterion_row.organisation_id = org_id
+    and criterion_row.id = target_criterion_id
+    and pillar_row.organisation_id = criterion_row.organisation_id
+    and pillar_row.id = criterion_row.pillar_id;
+
+  if not found then
+    raise exception 'maturity criterion is not editable'
+      using errcode = '55000';
+  end if;
+
+  return true;
+end;
+$$;
+
+create or replace function private.update_maturity_question(
+  target_question_id uuid,
+  target_prompt text,
+  target_position integer,
+  target_help_text text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity question update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.template_questions question_row
+  set prompt = target_prompt,
+      position = target_position,
+      help_text = target_help_text
+  from public.template_versions template_version
+  join public.maturity_model_versions model_version
+    on model_version.organisation_id = template_version.organisation_id
+   and model_version.template_version_id = template_version.id
+   and model_version.status = 'draft'
+  where question_row.organisation_id = org_id
+    and question_row.id = target_question_id
+    and template_version.organisation_id = question_row.organisation_id
+    and template_version.id = question_row.template_version_id;
+
+  if not found then
+    raise exception 'maturity question is not editable'
+      using errcode = '55000';
+  end if;
+
+  return true;
+end;
+$$;
+
+create or replace function private.publish_official_maturity_result(
+  target_assessment_id uuid
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  current_status text;
+  target_model_version_id uuid;
+  target_submission_id uuid;
+  target_unit_id uuid;
+  assessment_type text;
+  overall_score numeric;
+  model_name text;
+  model_version_number integer;
+  unit_name text;
+  unit_code text;
+  official_result_id uuid;
+  level_row record;
+  pillar_row record;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.results.publish', null, null) then
+    raise exception 'official maturity result publication is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select
+    assessment_row.status,
+    assessment_row.model_version_id,
+    assessment_row.submission_id,
+    assessment_row.unit_id,
+    assessment_row.assessment_type
+  into current_status, target_model_version_id, target_submission_id, target_unit_id, assessment_type
+  from public.maturity_assessments assessment_row
+  where assessment_row.organisation_id = org_id
+    and assessment_row.id = target_assessment_id
+    and assessment_row.assessment_type = 'formal'
+    and assessment_row.status = 'approved'
+  for update;
+
+  if not found then
+    raise exception 'maturity assessment is not publishable'
+      using errcode = '55000';
+  end if;
+
+  select score_row.score
+  into overall_score
+  from public.maturity_assessment_scores score_row
+  where score_row.organisation_id = org_id
+    and score_row.assessment_id = target_assessment_id
+    and score_row.score_level = 'overall';
+
+  if overall_score is null then
+    raise exception 'maturity assessment has no overall score'
+      using errcode = '55000';
+  end if;
+
+  select
+    coalesce(model_version.display_name, maturity_model.display_name),
+    model_version.version_number
+  into model_name, model_version_number
+  from public.maturity_model_versions model_version
+  join public.maturity_models maturity_model
+    on maturity_model.organisation_id = model_version.organisation_id
+   and maturity_model.id = model_version.model_id
+  where model_version.organisation_id = org_id
+    and model_version.id = target_model_version_id;
+
+  select organisation_unit.name, organisation_unit.code
+  into unit_name, unit_code
+  from public.organisation_units organisation_unit
+  where organisation_unit.organisation_id = org_id
+    and organisation_unit.id = target_unit_id;
+
+  insert into public.maturity_official_results (
+    organisation_id,
+    assessment_id,
+    model_version_id,
+    overall_score,
+    published_by_membership_id,
+    published_at,
+    model_name_snapshot,
+    model_version_number_snapshot,
+    unit_id_snapshot,
+    unit_name_snapshot,
+    unit_code_snapshot,
+    assessment_type_snapshot
+  )
+  values (
+    org_id,
+    target_assessment_id,
+    target_model_version_id,
+    overall_score,
+    actor_membership_id,
+    statement_timestamp(),
+    model_name,
+    model_version_number,
+    target_unit_id,
+    unit_name,
+    unit_code,
+    assessment_type
+  )
+  returning id into official_result_id;
+
+  for level_row in
+    select
+      level_item.level_number,
+      level_item.name,
+      level_item.description,
+      level_item.color_token,
+      level_item.guidance
+    from public.maturity_levels level_item
+    where level_item.organisation_id = org_id
+      and level_item.model_version_id = target_model_version_id
+    order by level_item.level_number
+  loop
+    insert into public.maturity_official_result_levels (
+      organisation_id,
+      official_result_id,
+      level_number,
+      name,
+      description,
+      color_token,
+      guidance
+    )
+    values (
+      org_id,
+      official_result_id,
+      level_row.level_number,
+      level_row.name,
+      level_row.description,
+      level_row.color_token,
+      level_row.guidance
+    );
+  end loop;
+
+  for pillar_row in
+    select
+      pillar_item.id as pillar_id,
+      pillar_item.name as pillar_name,
+      pillar_item.position as pillar_position,
+      score_item.score
+    from public.maturity_pillars pillar_item
+    join public.maturity_assessment_scores score_item
+      on score_item.organisation_id = pillar_item.organisation_id
+     and score_item.assessment_id = target_assessment_id
+     and score_item.score_level = 'pillar'
+     and score_item.entity_id = pillar_item.id
+    where pillar_item.organisation_id = org_id
+      and pillar_item.model_version_id = target_model_version_id
+    order by pillar_item.position
+  loop
+    insert into public.maturity_official_result_pillars (
+      organisation_id,
+      official_result_id,
+      pillar_id,
+      pillar_name,
+      pillar_position,
+      score
+    )
+    values (
+      org_id,
+      official_result_id,
+      pillar_row.pillar_id,
+      pillar_row.pillar_name,
+      pillar_row.pillar_position,
+      pillar_row.score
+    );
+  end loop;
+
+  update public.maturity_assessments
+  set status = 'published',
+      published_at = statement_timestamp(),
+      updated_at = statement_timestamp()
+  where organisation_id = org_id
+    and id = target_assessment_id;
+
+  update public.template_submissions submission_row
+  set status = 'completed',
+      completed_at = statement_timestamp(),
+      updated_at = statement_timestamp()
+  where submission_row.organisation_id = org_id
+    and submission_row.id = target_submission_id
+    and submission_row.status = 'draft';
+
+  perform private.append_maturity_assessment_transition(
+    org_id,
+    target_assessment_id,
+    current_status,
+    'published',
+    actor_membership_id
+  );
+
+  perform private.append_business_audit(
+    org_id,
+    'maturity.result.published',
+    target_assessment_id,
+    'succeeded',
+    jsonb_build_object(
+      'assessment_id', target_assessment_id,
+      'official_result_id', official_result_id
+    )
+  );
+
+  perform private.enqueue_domain_event(
+    org_id,
+    target_assessment_id,
+    'OfficialMaturityResultPublished',
+    official_result_id::text,
+    jsonb_build_object(
+      'assessment_id', target_assessment_id,
+      'official_result_id', official_result_id
+    )
+  );
+
+  return official_result_id;
+end;
+$$;
+
+drop function if exists public.start_maturity_assessment(uuid, uuid, text, uuid);
+drop function if exists private.start_maturity_assessment(uuid, uuid, text, uuid);
+
 -- RLS for new tables.
 alter table public.maturity_model_version_assessment_scopes enable row level security;
 alter table public.maturity_model_version_assessment_scopes force row level security;
@@ -1381,17 +1967,136 @@ as $$
   )
 $$;
 
+create or replace function public.update_maturity_model_version_metadata(
+  target_model_version_id uuid,
+  target_display_name text,
+  target_description text default null
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $$
+  select private.update_maturity_model_version_metadata(
+    target_model_version_id,
+    target_display_name,
+    target_description
+  )
+$$;
+
+create or replace function public.update_maturity_level(
+  target_level_id uuid,
+  target_level_number integer,
+  target_name text,
+  target_color_token text,
+  target_description text default null,
+  target_guidance text default null
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $$
+  select private.update_maturity_level(
+    target_level_id,
+    target_level_number,
+    target_name,
+    target_color_token,
+    target_description,
+    target_guidance
+  )
+$$;
+
+create or replace function public.update_maturity_pillar(
+  target_pillar_id uuid,
+  target_name text,
+  target_position integer,
+  target_description text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $$
+  select private.update_maturity_pillar(
+    target_pillar_id,
+    target_name,
+    target_position,
+    target_description,
+    target_guidance,
+    target_weight
+  )
+$$;
+
+create or replace function public.update_maturity_criterion(
+  target_criterion_id uuid,
+  target_name text,
+  target_position integer,
+  target_description text default null,
+  target_expected_evidence text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $$
+  select private.update_maturity_criterion(
+    target_criterion_id,
+    target_name,
+    target_position,
+    target_description,
+    target_expected_evidence,
+    target_guidance,
+    target_weight
+  )
+$$;
+
+create or replace function public.update_maturity_question(
+  target_question_id uuid,
+  target_prompt text,
+  target_position integer,
+  target_help_text text default null
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $$
+  select private.update_maturity_question(
+    target_question_id,
+    target_prompt,
+    target_position,
+    target_help_text
+  )
+$$;
+
 grant execute on function public.set_maturity_model_version_assessment_scopes(uuid, text[]) to authenticated;
 grant execute on function public.list_maturity_assessment_scope_entities(uuid, text) to authenticated;
 grant execute on function public.deactivate_maturity_model_version(uuid) to authenticated;
 grant execute on function public.delete_maturity_model_draft_version(uuid) to authenticated;
 grant execute on function public.upsert_maturity_assessment_criterion_note(uuid, uuid, text) to authenticated;
+grant execute on function public.start_maturity_assessment(
+  uuid, uuid, text, text, uuid
+) to authenticated;
+grant execute on function public.update_maturity_model_version_metadata(uuid, text, text) to authenticated;
+grant execute on function public.update_maturity_level(
+  uuid, integer, text, text, text, text
+) to authenticated;
+grant execute on function public.update_maturity_pillar(
+  uuid, text, integer, text, text, numeric
+) to authenticated;
+grant execute on function public.update_maturity_criterion(
+  uuid, text, integer, text, text, text, numeric
+) to authenticated;
+grant execute on function public.update_maturity_question(
+  uuid, text, integer, text
+) to authenticated;
 
 revoke all on function public.set_maturity_model_version_assessment_scopes(uuid, text[]) from public, anon;
 revoke all on function public.list_maturity_assessment_scope_entities(uuid, text) from public, anon;
 revoke all on function public.deactivate_maturity_model_version(uuid) from public, anon;
 revoke all on function public.delete_maturity_model_draft_version(uuid) from public, anon;
 revoke all on function public.upsert_maturity_assessment_criterion_note(uuid, uuid, text) from public, anon;
+revoke all on function public.start_maturity_assessment(uuid, uuid, text, text, uuid) from public, anon;
+revoke all on function public.update_maturity_model_version_metadata(uuid, text, text) from public, anon;
+revoke all on function public.update_maturity_level(uuid, integer, text, text, text, text) from public, anon;
+revoke all on function public.update_maturity_pillar(uuid, text, integer, text, text, numeric) from public, anon;
+revoke all on function public.update_maturity_criterion(uuid, text, integer, text, text, text, numeric) from public, anon;
+revoke all on function public.update_maturity_question(uuid, text, integer, text) from public, anon;
 
 alter function private.normalise_organisation_unit_semantic_scope(text)
   owner to lean_hub_private_owner;
@@ -1408,4 +2113,16 @@ alter function private.deactivate_maturity_model_version(uuid)
 alter function private.delete_maturity_model_draft_version(uuid)
   owner to lean_hub_private_owner;
 alter function private.upsert_maturity_assessment_criterion_note(uuid, uuid, text)
+  owner to lean_hub_private_owner;
+alter function private.update_maturity_model_version_metadata(uuid, text, text)
+  owner to lean_hub_private_owner;
+alter function private.update_maturity_level(uuid, integer, text, text, text, text)
+  owner to lean_hub_private_owner;
+alter function private.update_maturity_pillar(uuid, text, integer, text, text, numeric)
+  owner to lean_hub_private_owner;
+alter function private.update_maturity_criterion(uuid, text, integer, text, text, text, numeric)
+  owner to lean_hub_private_owner;
+alter function private.update_maturity_question(uuid, text, integer, text)
+  owner to lean_hub_private_owner;
+alter function private.publish_official_maturity_result(uuid)
   owner to lean_hub_private_owner;

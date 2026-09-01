@@ -48,25 +48,55 @@ export default async function MaturityModelPage({
 
   const draftVersion = versions?.find((v) => v.status === "draft");
   const publishedVersion = versions?.find((v) => v.status === "published");
+  const latestArchivedVersion = versions?.find((v) => v.status === "archived");
 
   let assessmentScopes: MaturityAssessmentScopeType[] = ["site"];
-  let levels: Array<{ level_number: number; name: string }> = [];
+  let levels: Array<{
+    id: string;
+    level_number: number;
+    name: string;
+    color_token: string;
+    description: string | null;
+    guidance: string | null;
+  }> = [];
   let pillars: Array<{
     id: string;
     name: string;
     position: number;
     section_id: string;
+    description: string | null;
+    guidance: string | null;
   }> = [];
   const criteria: Array<{
     id: string;
     name: string;
     pillar_id: string;
     position: number;
+    description: string | null;
+    guidance: string | null;
   }> = [];
-  const questions: Array<{ id: string; prompt: string; criterion_id: string }> =
-    [];
+  const questions: Array<{
+    id: string;
+    prompt: string;
+    criterion_id: string;
+    position: number;
+  }> = [];
 
   const editorVersion = draftVersion ?? publishedVersion;
+  let versionDisplayName = model.display_name;
+  let versionDescription = model.description;
+
+  if (draftVersion) {
+    const { data: draftMeta } = await supabase
+      .from("maturity_model_versions")
+      .select("display_name, description")
+      .eq("id", draftVersion.id)
+      .maybeSingle();
+    if (draftMeta?.display_name) {
+      versionDisplayName = draftMeta.display_name;
+      versionDescription = draftMeta.description;
+    }
+  }
 
   if (editorVersion) {
     const { data: scopeRows } = await supabase
@@ -81,14 +111,14 @@ export default async function MaturityModelPage({
   if (draftVersion) {
     const { data: levelRows } = await supabase
       .from("maturity_levels")
-      .select("level_number, name")
+      .select("id, level_number, name, color_token, description, guidance")
       .eq("model_version_id", draftVersion.id)
       .order("level_number");
     levels = levelRows ?? [];
 
     const { data: pillarRows } = await supabase
       .from("maturity_pillars")
-      .select("id, name, position, section_id")
+      .select("id, name, position, section_id, description, guidance")
       .eq("model_version_id", draftVersion.id)
       .order("position");
     pillars = pillarRows ?? [];
@@ -96,7 +126,7 @@ export default async function MaturityModelPage({
     for (const pillar of pillars) {
       const { data: criterionRows } = await supabase
         .from("maturity_criteria")
-        .select("id, name, pillar_id, position")
+        .select("id, name, pillar_id, position, description, guidance")
         .eq("pillar_id", pillar.id)
         .order("position");
       for (const criterion of criterionRows ?? []) {
@@ -109,7 +139,7 @@ export default async function MaturityModelPage({
         for (const link of links ?? []) {
           const { data: q } = await supabase
             .from("template_questions")
-            .select("id, prompt")
+            .select("id, prompt, position")
             .eq("id", link.question_id)
             .maybeSingle();
           if (q) {
@@ -117,6 +147,7 @@ export default async function MaturityModelPage({
               id: q.id,
               prompt: q.prompt,
               criterion_id: criterion.id,
+              position: q.position,
             });
           }
         }
@@ -225,12 +256,38 @@ export default async function MaturityModelPage({
         </Card>
       ) : null}
 
+      {!publishedVersion && latestArchivedVersion && canManage ? (
+        <Card data-testid="archived-framework-recovery">
+          <CardHeader>
+            <CardTitle>
+              Framework inactive — version {latestArchivedVersion.version_number}{" "}
+              archived
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Create a new draft from the latest archived version to continue
+              configuring and publishing this framework.
+            </p>
+            <form action={createSuccessorAction}>
+              <Button
+                type="submit"
+                variant="outline"
+                data-testid="create-successor-from-archived"
+              >
+                Create new version from archived
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {draftVersion && canManage ? (
         <>
           <FrameworkEditor
             modelId={modelId}
-            modelName={model.display_name}
-            modelDescription={model.description}
+            modelName={versionDisplayName}
+            modelDescription={versionDescription}
             versionId={draftVersion.id}
             versionNumber={draftVersion.version_number}
             assessmentScopes={assessmentScopes}

@@ -11,6 +11,11 @@ import {
   linkCriterionQuestion,
   publishMaturityModel,
   setFrameworkAssessmentScopes,
+  updateMaturityCriterion,
+  updateMaturityLevel,
+  updateMaturityModelMetadata,
+  updateMaturityPillar,
+  updateMaturityQuestion,
 } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,20 +40,36 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-type LevelRow = { level_number: number; name: string };
+type LevelRow = {
+  id: string;
+  level_number: number;
+  name: string;
+  color_token: string;
+  description: string | null;
+  guidance: string | null;
+};
 type PillarRow = {
   id: string;
   name: string;
   position: number;
   section_id: string;
+  description: string | null;
+  guidance: string | null;
 };
 type CriterionRow = {
   id: string;
   name: string;
   pillar_id: string;
   position: number;
+  description: string | null;
+  guidance: string | null;
 };
-type QuestionRow = { id: string; prompt: string; criterion_id: string };
+type QuestionRow = {
+  id: string;
+  prompt: string;
+  criterion_id: string;
+  position: number;
+};
 
 type FrameworkEditorProps = {
   modelId: string;
@@ -79,6 +100,8 @@ export function FrameworkEditor({
   const [step, setStep] = useState<StepId>("details");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [name, setName] = useState(modelName);
+  const [description, setDescription] = useState(modelDescription ?? "");
   const [selectedScopes, setSelectedScopes] = useState<
     MaturityAssessmentScopeType[]
   >(assessmentScopes.length > 0 ? assessmentScopes : ["site"]);
@@ -138,19 +161,47 @@ export function FrameworkEditor({
         ) : null}
 
         {step === "details" ? (
-          <div className="flex flex-col gap-2 text-sm">
-            <p>
-              <span className="font-medium">Name:</span> {modelName}
-            </p>
-            <p>
-              <span className="font-medium">Description:</span>{" "}
-              {modelDescription ?? "—"}
-            </p>
-            <p className="text-muted-foreground">
-              Create the framework draft from the models list to set the name.
-              Continue with levels and pillars.
-            </p>
-          </div>
+          <form
+            className="flex max-w-md flex-col gap-3"
+            data-testid="framework-details-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const trimmedName = name.trim();
+              if (!trimmedName) {
+                setError("Name is required");
+                return;
+              }
+              await run(() =>
+                updateMaturityModelMetadata(
+                  versionId,
+                  trimmedName,
+                  description.trim() || null,
+                  modelId,
+                ),
+              );
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="frameworkName">Display name</Label>
+              <Input
+                id="frameworkName"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="frameworkDescription">Description</Label>
+              <Input
+                id="frameworkDescription"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={busy}>
+              Save framework details
+            </Button>
+          </form>
         ) : null}
 
         {step === "scopes" ? (
@@ -207,249 +258,441 @@ export function FrameworkEditor({
         ) : null}
 
         {step === "levels" ? (
-          <form
-            className="flex max-w-md flex-col gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const levelNumber = Number(form.levelNumber.value);
-              const name = form.levelName.value.trim();
-              const color = form.levelColor.value.trim() || "maturity-1";
-              if (!name) return;
-              await run(() =>
-                addMaturityLevel(versionId, levelNumber, name, color, modelId),
-              );
-              form.reset();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="levelNumber">Level number</Label>
-              <Input
-                id="levelNumber"
-                name="levelNumber"
-                type="number"
-                min={1}
-                required
-                defaultValue={levels.length + 1}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="levelName">Level name</Label>
-              <Input
-                id="levelName"
-                name="levelName"
-                required
-                placeholder="Initial"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="levelColor">Color token</Label>
-              <Input
-                id="levelColor"
-                name="levelColor"
-                placeholder="maturity-1"
-              />
-            </div>
-            <Button type="submit" disabled={busy}>
-              Add level
-            </Button>
-            <ul className="text-sm">
-              {levels.map((l) => (
-                <li key={l.level_number}>
-                  {l.level_number}. {l.name}
-                </li>
+          <div className="flex flex-col gap-6">
+            <form
+              className="flex max-w-md flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const levelNumber = Number(form.levelNumber.value);
+                const levelName = form.levelName.value.trim();
+                const color = form.levelColor.value.trim() || "maturity-1";
+                if (!levelName) return;
+                await run(() =>
+                  addMaturityLevel(
+                    versionId,
+                    levelNumber,
+                    levelName,
+                    color,
+                    modelId,
+                  ),
+                );
+                form.reset();
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="levelNumber">Level number</Label>
+                <Input
+                  id="levelNumber"
+                  name="levelNumber"
+                  type="number"
+                  min={1}
+                  required
+                  defaultValue={levels.length + 1}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="levelName">Level name</Label>
+                <Input
+                  id="levelName"
+                  name="levelName"
+                  required
+                  placeholder="Initial"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="levelColor">Color token</Label>
+                <Input
+                  id="levelColor"
+                  name="levelColor"
+                  placeholder="maturity-1"
+                />
+              </div>
+              <Button type="submit" disabled={busy}>
+                Add level
+              </Button>
+            </form>
+            <div className="flex flex-col gap-3">
+              {levels.map((level) => (
+                <form
+                  key={level.id}
+                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+                  data-testid={`edit-level-${level.level_number}`}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    await run(() =>
+                      updateMaturityLevel(
+                        level.id,
+                        Number(form.levelNumber.value),
+                        form.levelName.value.trim(),
+                        form.levelColor.value.trim() || "maturity-1",
+                        form.levelDescription.value.trim() || null,
+                        form.levelGuidance.value.trim() || null,
+                        modelId,
+                      ),
+                    );
+                  }}
+                >
+                  <Input
+                    name="levelNumber"
+                    type="number"
+                    min={1}
+                    defaultValue={level.level_number}
+                    aria-label="Level number"
+                  />
+                  <Input
+                    name="levelName"
+                    defaultValue={level.name}
+                    aria-label="Level name"
+                  />
+                  <Input
+                    name="levelColor"
+                    defaultValue={level.color_token}
+                    aria-label="Color token"
+                  />
+                  <Input
+                    name="levelDescription"
+                    defaultValue={level.description ?? ""}
+                    placeholder="Description"
+                    aria-label="Level description"
+                  />
+                  <Input
+                    name="levelGuidance"
+                    defaultValue={level.guidance ?? ""}
+                    placeholder="Guidance"
+                    className="sm:col-span-2"
+                    aria-label="Level guidance"
+                  />
+                  <Button type="submit" size="sm" disabled={busy}>
+                    Save level
+                  </Button>
+                </form>
               ))}
-            </ul>
-          </form>
+            </div>
+          </div>
         ) : null}
 
         {step === "pillars" ? (
-          <form
-            className="flex max-w-md flex-col gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const name = form.pillarName.value.trim();
-              const position = Number(form.pillarPosition.value);
-              if (!name) return;
-              await run(() =>
-                addMaturityPillar(versionId, name, position, modelId),
-              );
-              form.reset();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="pillarName">Pillar name</Label>
-              <Input
-                id="pillarName"
-                name="pillarName"
-                required
-                placeholder="Leadership"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="pillarPosition">Position</Label>
-              <Input
-                id="pillarPosition"
-                name="pillarPosition"
-                type="number"
-                min={1}
-                required
-                defaultValue={pillars.length + 1}
-              />
-            </div>
-            <Button type="submit" disabled={busy}>
-              Add pillar
-            </Button>
-            <ul className="text-sm">
-              {pillars.map((p) => (
-                <li key={p.id}>
-                  {p.position}. {p.name}
-                </li>
+          <div className="flex flex-col gap-6">
+            <form
+              className="flex max-w-md flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const pillarName = form.pillarName.value.trim();
+                const position = Number(form.pillarPosition.value);
+                if (!pillarName) return;
+                await run(() =>
+                  addMaturityPillar(versionId, pillarName, position, modelId),
+                );
+                form.reset();
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pillarName">Pillar name</Label>
+                <Input
+                  id="pillarName"
+                  name="pillarName"
+                  required
+                  placeholder="Leadership"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pillarPosition">Position</Label>
+                <Input
+                  id="pillarPosition"
+                  name="pillarPosition"
+                  type="number"
+                  min={1}
+                  required
+                  defaultValue={pillars.length + 1}
+                />
+              </div>
+              <Button type="submit" disabled={busy}>
+                Add pillar
+              </Button>
+            </form>
+            <div className="flex flex-col gap-3">
+              {pillars.map((pillar) => (
+                <form
+                  key={pillar.id}
+                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+                  data-testid={`edit-pillar-${pillar.position}`}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    await run(() =>
+                      updateMaturityPillar(
+                        pillar.id,
+                        form.pillarName.value.trim(),
+                        Number(form.pillarPosition.value),
+                        form.pillarDescription.value.trim() || null,
+                        form.pillarGuidance.value.trim() || null,
+                        modelId,
+                      ),
+                    );
+                  }}
+                >
+                  <Input
+                    name="pillarName"
+                    defaultValue={pillar.name}
+                    aria-label="Pillar name"
+                  />
+                  <Input
+                    name="pillarPosition"
+                    type="number"
+                    min={1}
+                    defaultValue={pillar.position}
+                    aria-label="Pillar position"
+                  />
+                  <Input
+                    name="pillarDescription"
+                    defaultValue={pillar.description ?? ""}
+                    placeholder="Description"
+                    aria-label="Pillar description"
+                  />
+                  <Input
+                    name="pillarGuidance"
+                    defaultValue={pillar.guidance ?? ""}
+                    placeholder="Guidance"
+                    aria-label="Pillar guidance"
+                  />
+                  <Button type="submit" size="sm" disabled={busy}>
+                    Save pillar
+                  </Button>
+                </form>
               ))}
-            </ul>
-          </form>
+            </div>
+          </div>
         ) : null}
 
         {step === "criteria" ? (
-          <form
-            className="flex max-w-md flex-col gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const pillarId = form.pillarId.value;
-              const name = form.criterionName.value.trim();
-              const position = Number(form.criterionPosition.value);
-              if (!name || !pillarId) return;
-              await run(() =>
-                addMaturityCriterion(pillarId, name, position, modelId),
-              );
-              form.reset();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="pillarId">Pillar</Label>
-              <select
-                id="pillarId"
-                name="pillarId"
-                required
-                className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-              >
-                {pillars.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="criterionName">Criterion name</Label>
-              <Input id="criterionName" name="criterionName" required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="criterionPosition">Position</Label>
-              <Input
-                id="criterionPosition"
-                name="criterionPosition"
-                type="number"
-                min={1}
-                required
-                defaultValue={1}
-              />
-            </div>
-            <Button type="submit" disabled={busy || pillars.length === 0}>
-              Add criterion
-            </Button>
-            <ul className="text-sm">
-              {criteria.map((c) => (
-                <li key={c.id}>{c.name}</li>
+          <div className="flex flex-col gap-6">
+            <form
+              className="flex max-w-md flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const pillarId = form.pillarId.value;
+                const criterionName = form.criterionName.value.trim();
+                const position = Number(form.criterionPosition.value);
+                if (!criterionName || !pillarId) return;
+                await run(() =>
+                  addMaturityCriterion(pillarId, criterionName, position, modelId),
+                );
+                form.reset();
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pillarId">Pillar</Label>
+                <select
+                  id="pillarId"
+                  name="pillarId"
+                  required
+                  className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                >
+                  {pillars.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="criterionName">Criterion name</Label>
+                <Input id="criterionName" name="criterionName" required />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="criterionPosition">Position</Label>
+                <Input
+                  id="criterionPosition"
+                  name="criterionPosition"
+                  type="number"
+                  min={1}
+                  required
+                  defaultValue={1}
+                />
+              </div>
+              <Button type="submit" disabled={busy || pillars.length === 0}>
+                Add criterion
+              </Button>
+            </form>
+            <div className="flex flex-col gap-3">
+              {criteria.map((criterion) => (
+                <form
+                  key={criterion.id}
+                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+                  data-testid={`edit-criterion-${criterion.id}`}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    await run(() =>
+                      updateMaturityCriterion(
+                        criterion.id,
+                        form.criterionName.value.trim(),
+                        Number(form.criterionPosition.value),
+                        form.criterionDescription.value.trim() || null,
+                        form.criterionGuidance.value.trim() || null,
+                        modelId,
+                      ),
+                    );
+                  }}
+                >
+                  <Input
+                    name="criterionName"
+                    defaultValue={criterion.name}
+                    aria-label="Criterion name"
+                  />
+                  <Input
+                    name="criterionPosition"
+                    type="number"
+                    min={1}
+                    defaultValue={criterion.position}
+                    aria-label="Criterion position"
+                  />
+                  <Input
+                    name="criterionDescription"
+                    defaultValue={criterion.description ?? ""}
+                    placeholder="Description"
+                    aria-label="Criterion description"
+                  />
+                  <Input
+                    name="criterionGuidance"
+                    defaultValue={criterion.guidance ?? ""}
+                    placeholder="Guidance"
+                    aria-label="Criterion guidance"
+                  />
+                  <Button type="submit" size="sm" disabled={busy}>
+                    Save criterion
+                  </Button>
+                </form>
               ))}
-            </ul>
-          </form>
+            </div>
+          </div>
         ) : null}
 
         {step === "questions" ? (
-          <form
-            className="flex max-w-md flex-col gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const criterionId = form.criterionId.value;
-              const prompt = form.questionPrompt.value.trim();
-              const position = Number(form.questionPosition.value);
-              const pillar = pillars.find((p) =>
-                criteria.some(
-                  (c) => c.id === criterionId && c.pillar_id === p.id,
-                ),
-              );
-              const criterion = criteria.find((c) => c.id === criterionId);
-              if (!prompt || !criterion || !pillar) return;
-              const ok = await run(async () => {
-                const q = await addMaturityQuestion(
-                  versionId,
-                  pillar.section_id,
-                  prompt,
-                  position,
-                  modelId,
+          <div className="flex flex-col gap-6">
+            <form
+              className="flex max-w-md flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const criterionId = form.criterionId.value;
+                const prompt = form.questionPrompt.value.trim();
+                const position = Number(form.questionPosition.value);
+                const pillar = pillars.find((p) =>
+                  criteria.some(
+                    (c) => c.id === criterionId && c.pillar_id === p.id,
+                  ),
                 );
-                if (q.error || !q.questionId) return q;
-                return linkCriterionQuestion(
-                  criterionId,
-                  q.questionId,
-                  modelId,
-                );
-              });
-              if (ok) form.reset();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="criterionId">Criterion</Label>
-              <select
-                id="criterionId"
-                name="criterionId"
-                required
-                className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-              >
-                {criteria.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="questionPrompt">Question prompt</Label>
-              <Input
-                id="questionPrompt"
-                name="questionPrompt"
-                required
-                placeholder="Rate this criterion"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="questionPosition">Position</Label>
-              <Input
-                id="questionPosition"
-                name="questionPosition"
-                type="number"
-                min={1}
-                required
-                defaultValue={1}
-              />
-            </div>
-            <Button type="submit" disabled={busy || criteria.length === 0}>
-              Add scored question
-            </Button>
-            <ul className="text-sm">
-              {questions.map((q) => (
-                <li key={q.id}>{q.prompt}</li>
+                const criterion = criteria.find((c) => c.id === criterionId);
+                if (!prompt || !criterion || !pillar) return;
+                const ok = await run(async () => {
+                  const q = await addMaturityQuestion(
+                    versionId,
+                    pillar.section_id,
+                    prompt,
+                    position,
+                    modelId,
+                  );
+                  if (q.error || !q.questionId) return q;
+                  return linkCriterionQuestion(
+                    criterionId,
+                    q.questionId,
+                    modelId,
+                  );
+                });
+                if (ok) form.reset();
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="criterionId">Criterion</Label>
+                <select
+                  id="criterionId"
+                  name="criterionId"
+                  required
+                  className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                >
+                  {criteria.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="questionPrompt">Question prompt</Label>
+                <Input
+                  id="questionPrompt"
+                  name="questionPrompt"
+                  required
+                  placeholder="Rate this criterion"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="questionPosition">Position</Label>
+                <Input
+                  id="questionPosition"
+                  name="questionPosition"
+                  type="number"
+                  min={1}
+                  required
+                  defaultValue={1}
+                />
+              </div>
+              <Button type="submit" disabled={busy || criteria.length === 0}>
+                Add scored question
+              </Button>
+            </form>
+            <div className="flex flex-col gap-3">
+              {questions.map((question) => (
+                <form
+                  key={question.id}
+                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+                  data-testid={`edit-question-${question.id}`}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    await run(() =>
+                      updateMaturityQuestion(
+                        question.id,
+                        form.questionPrompt.value.trim(),
+                        Number(form.questionPosition.value),
+                        modelId,
+                      ),
+                    );
+                  }}
+                >
+                  <Input
+                    name="questionPrompt"
+                    defaultValue={question.prompt}
+                    className="sm:col-span-2"
+                    aria-label="Question prompt"
+                  />
+                  <Input
+                    name="questionPosition"
+                    type="number"
+                    min={1}
+                    defaultValue={question.position}
+                    aria-label="Question position"
+                  />
+                  <Button type="submit" size="sm" disabled={busy}>
+                    Save question
+                  </Button>
+                </form>
               ))}
-            </ul>
-          </form>
+            </div>
+          </div>
         ) : null}
 
         {step === "review" ? (
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="font-medium">Display name</dt>
+              <dd>{name}</dd>
+            </div>
             <div>
               <dt className="font-medium">Assessment scopes</dt>
               <dd>{selectedScopes.map(scopeTypeLabel).join(", ")}</dd>

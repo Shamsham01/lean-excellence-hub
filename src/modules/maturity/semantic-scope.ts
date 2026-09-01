@@ -1,12 +1,24 @@
-export const MATURITY_ASSESSMENT_SCOPE_TYPES = [
+export const MATURITY_FRAMEWORK_SCOPE_TYPES = [
   "site",
-  "organisation",
   "department",
   "area",
 ] as const;
 
-export type MaturityAssessmentScopeType =
-  (typeof MATURITY_ASSESSMENT_SCOPE_TYPES)[number];
+export type MaturityFrameworkScopeType =
+  (typeof MATURITY_FRAMEWORK_SCOPE_TYPES)[number];
+
+/** Selectable scopes for new assessments and framework configuration. */
+export const MATURITY_ASSESSMENT_SCOPE_TYPES = MATURITY_FRAMEWORK_SCOPE_TYPES;
+
+export type MaturityAssessmentScopeType = MaturityFrameworkScopeType;
+
+export const MATURITY_HISTORICAL_ASSESSMENT_SCOPE_TYPES = [
+  "organisation",
+  "legacy_unit",
+] as const;
+
+export type MaturityHistoricalAssessmentScopeType =
+  (typeof MATURITY_HISTORICAL_ASSESSMENT_SCOPE_TYPES)[number];
 
 const SITE_UNIT_TYPES = new Set([
   "site",
@@ -34,22 +46,33 @@ export function normaliseUnitTypeToSemanticScope(
 ): MaturityAssessmentScopeType | null {
   const normalised = unitType.trim().toLowerCase();
   if (SITE_UNIT_TYPES.has(normalised)) return "site";
-  if (ORGANISATION_UNIT_TYPES.has(normalised)) return "organisation";
   if (DEPARTMENT_UNIT_TYPES.has(normalised)) return "department";
   if (AREA_UNIT_TYPES.has(normalised)) return "area";
   return null;
 }
 
-export function scopeTypeLabel(scopeType: MaturityAssessmentScopeType): string {
+export function isHistoricalAssessmentScopeType(
+  scopeType: string,
+): scopeType is MaturityHistoricalAssessmentScopeType {
+  return (
+    scopeType === "organisation" ||
+    scopeType === "legacy_unit" ||
+    ORGANISATION_UNIT_TYPES.has(scopeType)
+  );
+}
+
+export function scopeTypeLabel(scopeType: string): string {
   switch (scopeType) {
     case "site":
       return "Site";
     case "organisation":
-      return "Organisation";
+      return "Organisation (historical)";
     case "department":
       return "Department";
     case "area":
       return "Area";
+    case "legacy_unit":
+      return "Legacy unit (historical)";
     default:
       return scopeType;
   }

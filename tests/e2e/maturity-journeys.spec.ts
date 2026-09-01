@@ -75,10 +75,18 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await expect(page.getByTestId("framework-editor")).toBeVisible();
 
+    await page.getByTestId("framework-step-details").click();
+    await page.getByLabel("Display name").fill(frameworkName);
+    await page.getByLabel("Description").fill("E2E editable draft description");
+    await page.getByRole("button", { name: "Save framework details" }).click();
+
     await page.getByTestId("framework-step-levels").click();
     await page.getByLabel("Level name").fill("Initial");
     await page.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByText("1. Initial")).toBeVisible();
+    await page.getByTestId("edit-level-1").getByLabel("Level name").fill("Initial revised");
+    await page.getByRole("button", { name: "Save level" }).click();
+    await expect(page.getByDisplayValue("Initial revised")).toBeVisible();
 
     await page.getByTestId("framework-step-pillars").click();
     await page.getByLabel("Pillar name").fill("Leadership");

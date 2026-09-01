@@ -13,7 +13,7 @@ export default async function NewAssessmentPage({
 
   const { data: versionRows } = await supabase
     .from("maturity_model_versions")
-    .select("id, version_number, model_id, maturity_models(display_name)")
+    .select("id, version_number, model_id, display_name, description")
     .eq("status", "published")
     .order("version_number", { ascending: false });
 
@@ -37,9 +37,7 @@ export default async function NewAssessmentPage({
     versionRows?.map((v) => ({
       id: v.id,
       version_number: v.version_number,
-      display_name:
-        (v.maturity_models as { display_name: string } | null)?.display_name ??
-        "Framework",
+      display_name: v.display_name ?? "Framework",
       scope_types: scopesByVersion.get(v.id) ?? ["site"],
     })) ?? [];
 
