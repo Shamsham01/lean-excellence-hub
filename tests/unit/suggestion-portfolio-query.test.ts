@@ -15,7 +15,7 @@ describe("suggestion portfolio query helpers", () => {
       status: null,
       programme: null,
       category: null,
-      area: null,
+      originUnit: null,
       sort: DEFAULT_SORT,
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
@@ -33,12 +33,12 @@ describe("suggestion portfolio query helpers", () => {
       parseSuggestionPortfolioSearchParams({
         programme: "not-a-uuid",
         category: "123",
-        area: "also-invalid",
+        unit: "also-invalid",
       }),
     ).toMatchObject({
       programme: null,
       category: null,
-      area: null,
+      originUnit: null,
     });
   });
 
@@ -92,7 +92,7 @@ describe("suggestion portfolio query helpers", () => {
       status: "submitted",
       programme: "11111111-1111-4111-8111-111111111111",
       category: "22222222-2222-4222-8222-222222222222",
-      area: "33333333-3333-4333-8333-333333333333",
+      unit: "33333333-3333-4333-8333-333333333333",
       sort: "oldest",
       page: "2",
       pageSize: "50",
@@ -105,7 +105,7 @@ describe("suggestion portfolio query helpers", () => {
       "11111111-1111-4111-8111-111111111111",
     );
     expect(params.get("category")).toBe("22222222-2222-4222-8222-222222222222");
-    expect(params.get("area")).toBe("33333333-3333-4333-8333-333333333333");
+    expect(params.get("unit")).toBe("33333333-3333-4333-8333-333333333333");
     expect(params.get("sort")).toBe("oldest");
     expect(params.get("page")).toBe("2");
     expect(params.get("pageSize")).toBe("50");
@@ -117,7 +117,7 @@ describe("suggestion portfolio query helpers", () => {
       status: null,
       programme: null,
       category: null,
-      area: null,
+      originUnit: null,
       sort: DEFAULT_SORT,
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,

@@ -42,7 +42,11 @@ export default async function SuggestionsOverviewPage({
     await Promise.all([
       supabase.rpc("get_suggestions_overview"),
       fetchSuggestionPortfolio(supabase, filters),
-      loadSuggestionPortfolioFilterOptions(supabase),
+      loadSuggestionPortfolioFilterOptions(supabase, {
+        programme: filters.programme,
+        category: filters.category,
+        originUnit: filters.originUnit,
+      }),
       countAllVisibleSuggestions(supabase),
     ]);
 

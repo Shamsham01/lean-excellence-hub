@@ -32,7 +32,7 @@ export type SuggestionPortfolioCategoryOption = {
   status: string;
 };
 
-export type SuggestionPortfolioAreaOption = {
+export type SuggestionPortfolioOriginUnitOption = {
   id: string;
   name: string;
   code: string;
@@ -41,5 +41,5 @@ export type SuggestionPortfolioAreaOption = {
 export type SuggestionPortfolioFilterOptions = {
   programmes: SuggestionPortfolioProgrammeOption[];
   categories: SuggestionPortfolioCategoryOption[];
-  areas: SuggestionPortfolioAreaOption[];
+  originUnits: SuggestionPortfolioOriginUnitOption[];
 };

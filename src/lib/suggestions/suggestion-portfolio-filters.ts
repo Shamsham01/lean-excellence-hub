@@ -93,3 +93,8 @@ export function escapeIlikePattern(value: string): string {
 export function quotePostgrestFilterValue(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
+
+export function buildSearchOrFilter(search: string): string {
+  const pattern = quotePostgrestFilterValue(`%${escapeIlikePattern(search)}%`);
+  return `title.ilike.${pattern},suggestion_number.ilike.${pattern}`;
+}

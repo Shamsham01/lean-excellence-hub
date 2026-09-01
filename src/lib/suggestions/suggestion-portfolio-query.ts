@@ -19,7 +19,7 @@ export type SuggestionPortfolioFilters = {
   status: string | null;
   programme: string | null;
   category: string | null;
-  area: string | null;
+  originUnit: string | null;
   sort: SuggestionPortfolioSort;
   page: number;
   pageSize: number;
@@ -46,7 +46,7 @@ export function parseSuggestionPortfolioSearchParams(
     status: normalizeStatusFilter(readParam(params, "status")),
     programme: normalizeUuidFilter(readParam(params, "programme")),
     category: normalizeUuidFilter(readParam(params, "category")),
-    area: normalizeUuidFilter(readParam(params, "area")),
+    originUnit: normalizeUuidFilter(readParam(params, "unit")),
     sort: normalizeSortFilter(readParam(params, "sort")),
     page: normalizePage(readParam(params, "page")),
     pageSize: normalizePageSize(
@@ -74,8 +74,8 @@ export function buildSuggestionPortfolioSearchParams(
   if (filters.category) {
     params.set("category", filters.category);
   }
-  if (filters.area) {
-    params.set("area", filters.area);
+  if (filters.originUnit) {
+    params.set("unit", filters.originUnit);
   }
   if (filters.sort && filters.sort !== DEFAULT_SORT) {
     params.set("sort", filters.sort);
@@ -105,7 +105,7 @@ export function hasActiveSuggestionPortfolioFilters(
     filters.status ||
     filters.programme ||
     filters.category ||
-    filters.area ||
+    filters.originUnit ||
     filters.sort !== DEFAULT_SORT ||
     filters.page > 1 ||
     filters.pageSize !== DEFAULT_PAGE_SIZE,

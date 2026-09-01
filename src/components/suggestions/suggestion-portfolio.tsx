@@ -241,7 +241,7 @@ export function SuggestionPortfolio({
       status: formData.get("status")?.toString() || null,
       programme: formData.get("programme")?.toString() || null,
       category: formData.get("category")?.toString() || null,
-      area: formData.get("area")?.toString() || null,
+      originUnit: formData.get("unit")?.toString() || null,
       sort: (formData.get("sort")?.toString() ||
         filters.sort) as SuggestionPortfolioFilters["sort"],
       pageSize: ALLOWED_PAGE_SIZES.includes(
@@ -347,17 +347,17 @@ export function SuggestionPortfolio({
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Area</span>
+            <span className="text-muted-foreground">Origin unit</span>
             <select
-              name="area"
-              defaultValue={filters.area ?? ""}
+              name="unit"
+              defaultValue={filters.originUnit ?? ""}
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              data-testid="suggestion-portfolio-area"
+              data-testid="suggestion-portfolio-origin-unit"
             >
-              <option value="">All areas</option>
-              {filterOptions.areas.map((area) => (
-                <option key={area.id} value={area.id}>
-                  {area.name}
+              <option value="">All origin units</option>
+              {filterOptions.originUnits.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
                 </option>
               ))}
             </select>
@@ -445,7 +445,7 @@ export function SuggestionPortfolio({
                       Programme / Category
                     </th>
                     <th scope="col" className="px-3 py-2 font-medium">
-                      Area
+                      Origin unit
                     </th>
                     <th scope="col" className="px-3 py-2 font-medium">
                       Status
