@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import {
   createSuccessorVersion,
@@ -180,9 +180,16 @@ export default async function MaturityModelPage({
 
   async function deleteDraftAction() {
     "use server";
-    if (draftVersion) {
-      await deleteDraftVersion(draftVersion.id, modelId);
+    if (!draftVersion) {
+      return;
     }
+
+    const result = await deleteDraftVersion(draftVersion.id, modelId);
+    if (result?.error) {
+      return;
+    }
+
+    redirect("/platform/maturity/models");
   }
 
   return (
