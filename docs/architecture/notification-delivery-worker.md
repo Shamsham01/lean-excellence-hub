@@ -26,10 +26,15 @@ webhooks, preferences, or notification UI.
 ## Security boundary
 
 - The worker runs with Supabase `service_role` inside the Edge Function only.
-- HTTP callers must present `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`.
+- HTTP callers must present `apikey: <sb_secret_...>` using a value from
+  `SUPABASE_SECRET_KEYS`.
+- Legacy `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` remains supported
+  temporarily when that secret is configured.
+- `verify_jwt = false` is intentional; authentication happens inside the Edge
+  Function.
+- Secret keys must never reach browser or Next.js client code.
 - The worker uses only the public `*_for_worker` RPC surface from ADR-0016 plus
   the N1c context wrapper.
-- `service_role` is never exposed to Next.js or browser clients.
 - Resend credentials remain Edge Function secrets only.
 
 ## Recipient resolution policy
@@ -121,7 +126,8 @@ delivery, open, click, or bounce status.
 Automatically supplied by Supabase:
 
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_KEYS` (JSON object of backend `sb_secret_...` keys)
+- `SUPABASE_SERVICE_ROLE_KEY` (legacy fallback only)
 
 Manually configured Edge Function secrets:
 
@@ -142,10 +148,15 @@ N1c is safely callable but not scheduled. A later slice should invoke:
 
 ```bash
 curl -X POST "$SUPABASE_URL/functions/v1/notification-delivery" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "apikey: $SUPABASE_SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{"batch_size":10}'
 ```
+
+`$SUPABASE_SECRET_KEY` must be one of the values configured in
+`SUPABASE_SECRET_KEYS` for the deployed Edge Function. The legacy bearer-token
+invocation using `SUPABASE_SERVICE_ROLE_KEY` remains temporarily supported for
+compatibility.
 
 ## Future webhook/bounce handoff
 
