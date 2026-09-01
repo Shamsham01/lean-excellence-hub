@@ -2,10 +2,12 @@ import type { ReactNode } from "react";
 
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { platformHomeFallbackPermissions } from "@/modules/platform-shell/home-fallback";
+import { loadPlatformShellMember } from "@/modules/platform-shell/member-context";
 import {
   platformNavigation,
   settingsNavigationItem,
   setupNavigationItem,
+  type PlatformNavItem,
 } from "@/modules/platform-shell/navigation";
 import {
   currentMemberHasPermission,
@@ -17,6 +19,7 @@ type PlatformShellProps = {
   children: ReactNode;
   organisationName: string;
   organisations: EligibleOrganisation[];
+  membershipId: string;
 };
 
 async function canAccessSetupNavigation() {
@@ -35,12 +38,9 @@ async function canAccessSetupNavigation() {
   return false;
 }
 
-export async function PlatformShell({
-  children,
-  organisationName,
-  organisations,
-}: PlatformShellProps) {
-  const visibleNav = [];
+async function buildVisibleNavigation() {
+  const visibleNav: PlatformNavItem[] = [];
+
   for (const item of platformNavigation) {
     const canAccess = item.organisationScopeOnly
       ? await currentMemberHasScopedPermission(item.permission)
@@ -50,10 +50,9 @@ export async function PlatformShell({
     }
   }
 
-  // Home requires maturity.read; fallback if only actions.read
   if (
     visibleNav.length === 0 ||
-    !visibleNav.some((i) => i.href === "/platform")
+    !visibleNav.some((item) => item.href === "/platform")
   ) {
     for (const permission of platformHomeFallbackPermissions) {
       if (await currentMemberHasPermission(permission)) {
@@ -61,27 +60,39 @@ export async function PlatformShell({
           href: "/platform",
           label: "Home",
           permission,
-          section: "main" as const,
+          icon: "home",
+          section: "main",
         });
         break;
       }
     }
   }
 
-  const navWithSetup = [
-    ...visibleNav.filter((item) => item.href !== "/platform/setup"),
-  ];
+  const navWithSetup = visibleNav.filter(
+    (item) => item.href !== "/platform/setup",
+  );
 
   if (await canAccessSetupNavigation()) {
     navWithSetup.unshift(setupNavigationItem);
   }
 
-  if (
-    settingsNavigationItem.universalAccess &&
-    !navWithSetup.some((item) => item.href === "/platform/settings")
-  ) {
-    navWithSetup.push(settingsNavigationItem);
-  }
+  return navWithSetup;
+}
+
+export async function PlatformShell({
+  children,
+  organisationName,
+  organisations,
+  membershipId,
+}: PlatformShellProps) {
+  const [navWithSetup, member] = await Promise.all([
+    buildVisibleNavigation(),
+    loadPlatformShellMember(membershipId),
+  ]);
+
+  const showSettings =
+    settingsNavigationItem.universalAccess === true &&
+    !navWithSetup.some((item) => item.href === settingsNavigationItem.href);
 
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
@@ -89,9 +100,11 @@ export async function PlatformShell({
         items={navWithSetup}
         organisationName={organisationName}
         organisations={organisations}
+        member={member}
+        showSettings={showSettings}
       />
-      <main className="flex-1 overflow-x-hidden">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+        <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </div>
       </main>

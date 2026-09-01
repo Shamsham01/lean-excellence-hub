@@ -1,13 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
+import { ensureOnboardingE2eOrganisation } from "./helpers/onboarding-auth";
+import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import {
-  ensureOnboardingE2eOrganisation,
-  onboardingE2eCredentials,
-} from "./helpers/onboarding-auth";
+  DEMO_ORGANISATION,
+  DEMO_USERS,
+} from "../../scripts/demo-seed/constants";
 import { platformNavigation } from "@/modules/platform-shell/navigation";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const mobileWidths = [390, 430];
+
+async function loginAsDemoAdmin(page: Page) {
+  const credentials = DEMO_USERS.admin;
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(credentials.email);
+  await page.getByLabel("Password").fill(credentials.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/platform/);
+  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
+}
 
 for (const width of mobileWidths) {
   test.describe(`mobile navigation at ${width}px`, () => {
@@ -22,16 +35,10 @@ for (const width of mobileWidths) {
       await ensureOnboardingE2eOrganisation();
     });
 
-    test("menu drawer scroll reaches platform section items", async ({
-      page,
-    }) => {
-      await page.goto("/login");
-      await page.getByLabel("Email").fill(onboardingE2eCredentials.email);
-      await page.getByLabel("Password").fill(onboardingE2eCredentials.password);
-      await page.getByRole("button", { name: "Sign in" }).click();
-      await expect(page).toHaveURL(/\/platform/);
+    test("menu drawer scroll reaches footer utilities", async ({ page }) => {
+      await loginAsDemoAdmin(page);
 
-      await page.getByRole("button", { name: "Menu" }).click();
+      await page.getByRole("button", { name: "Open navigation menu" }).click();
 
       const nav = page.getByRole("navigation", { name: "Platform" });
       await expect(nav).toBeVisible();
@@ -42,27 +49,29 @@ for (const width of mobileWidths) {
     });
 
     test("navigation contains all platform sections", async ({ page }) => {
-      await page.goto("/login");
-      await page.getByLabel("Email").fill(onboardingE2eCredentials.email);
-      await page.getByLabel("Password").fill(onboardingE2eCredentials.password);
-      await page.getByRole("button", { name: "Sign in" }).click();
-      await expect(page).toHaveURL(/\/platform/);
+      await loginAsDemoAdmin(page);
 
-      await page.getByRole("button", { name: "Menu" }).click();
+      await page.getByRole("button", { name: "Open navigation menu" }).click();
+
+      const nav = page.getByRole("navigation", { name: "Platform" });
 
       for (const section of [
-        "Improvement system",
+        "Improvement",
         "People & capability",
-        "Platform",
+        "Operations",
       ]) {
-        await expect(page.getByText(section, { exact: true })).toBeVisible();
+        await expect(nav.getByText(section, { exact: true })).toBeVisible();
       }
 
       for (const item of platformNavigation) {
-        const link = page.getByRole("link", { name: item.label, exact: true });
+        const link = nav.getByRole("link", { name: item.label, exact: true });
         await link.scrollIntoViewIfNeeded();
         await expect(link).toBeVisible();
       }
+
+      await expect(
+        page.getByRole("link", { name: "Settings", exact: true }),
+      ).toBeVisible();
     });
   });
 }
