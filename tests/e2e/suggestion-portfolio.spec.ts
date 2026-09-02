@@ -122,7 +122,9 @@ test.describe("S3a suggestions portfolio", () => {
     await page.getByTestId("suggestion-portfolio-clear-filters").click();
     await expect(page).toHaveURL("/platform/suggestions");
     const totalCount = await getPortfolioTotalCount(page);
-    expect(totalCount).toBeGreaterThanOrEqual(DEMO_SUGGESTION_PORTFOLIO_MIN_COUNT);
+    expect(totalCount).toBeGreaterThanOrEqual(
+      DEMO_SUGGESTION_PORTFOLIO_MIN_COUNT,
+    );
   });
 
   test("pagination preserves filters and supports next page", async ({
