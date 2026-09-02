@@ -106,16 +106,12 @@ select 'suggestion', public.create_suggestion_draft(
 
 select ok(public.submit_suggestion((select id from needs_info_ids where key = 'suggestion')), 'suggestion submits');
 select ok(
+  public.claim_suggestion_for_review((select id from needs_info_ids where key = 'suggestion')) is not null,
+  'reviewer claim succeeds'
+);
+select ok(
   public.begin_suggestion_review((select id from needs_info_ids where key = 'suggestion')),
   'review begins'
-);
-
-select ok(
-  public.assign_suggestion_reviewer(
-    (select id from needs_info_ids where key = 'suggestion'),
-    (select id from needs_info_ids where key = 'owner_membership')
-  ) is not null,
-  'reviewer assignment created'
 );
 
 select ok(

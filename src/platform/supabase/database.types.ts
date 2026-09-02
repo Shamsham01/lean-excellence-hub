@@ -4224,6 +4224,8 @@ export type Database = {
           origin_unit_code_snapshot: string | null
           origin_unit_id: string
           origin_unit_name_snapshot: string | null
+          parked_at: string | null
+          parked_rationale: string | null
           problem_or_opportunity: string
           programme_code_snapshot: string | null
           programme_name_snapshot: string | null
@@ -4260,6 +4262,8 @@ export type Database = {
           origin_unit_code_snapshot?: string | null
           origin_unit_id: string
           origin_unit_name_snapshot?: string | null
+          parked_at?: string | null
+          parked_rationale?: string | null
           problem_or_opportunity: string
           programme_code_snapshot?: string | null
           programme_name_snapshot?: string | null
@@ -4296,6 +4300,8 @@ export type Database = {
           origin_unit_code_snapshot?: string | null
           origin_unit_id?: string
           origin_unit_name_snapshot?: string | null
+          parked_at?: string | null
+          parked_rationale?: string | null
           problem_or_opportunity?: string
           programme_code_snapshot?: string | null
           programme_name_snapshot?: string | null
@@ -9600,6 +9606,7 @@ export type Database = {
         Row: {
           assigned_at: string
           assigned_by_membership_id: string
+          assignment_kind: string
           completed_at: string | null
           id: string
           organisation_id: string
@@ -9610,6 +9617,7 @@ export type Database = {
         Insert: {
           assigned_at?: string
           assigned_by_membership_id: string
+          assignment_kind?: string
           completed_at?: string | null
           id?: string
           organisation_id: string
@@ -9620,6 +9628,7 @@ export type Database = {
         Update: {
           assigned_at?: string
           assigned_by_membership_id?: string
+          assignment_kind?: string
           completed_at?: string | null
           id?: string
           organisation_id?: string
@@ -11367,6 +11376,16 @@ export type Database = {
         Returns: boolean
       }
       approve_project: { Args: { target_project_id: string }; Returns: boolean }
+      approve_suggestion: {
+        Args: {
+          target_effort_level: string
+          target_impact_level: string
+          target_implementation_recommendation?: string
+          target_rationale: string
+          target_suggestion_id: string
+        }
+        Returns: string
+      }
       archive_benefit_category: {
         Args: { target_category_id: string }
         Returns: boolean
@@ -11495,6 +11514,10 @@ export type Database = {
           recipient_membership_id: string
           source_domain_event_id: string
         }[]
+      }
+      claim_suggestion_for_review: {
+        Args: { target_suggestion_id: string }
+        Returns: string
       }
       claim_workforce_import_batch: {
         Args: { target_batch_size?: number; target_import_job_id: string }
@@ -12223,6 +12246,15 @@ export type Database = {
         Args: { target_programme_id: string }
         Returns: boolean
       }
+      decline_suggestion: {
+        Args: {
+          target_effort_level: string
+          target_impact_level: string
+          target_rationale: string
+          target_suggestion_id: string
+        }
+        Returns: string
+      }
       delete_maturity_model_draft_version: {
         Args: { target_model_version_id: string }
         Returns: boolean
@@ -12834,6 +12866,15 @@ export type Database = {
       move_problem_solving_stage: {
         Args: { target_case_id: string; target_stage_id: string }
         Returns: boolean
+      }
+      park_suggestion: {
+        Args: {
+          target_effort_level?: string
+          target_impact_level?: string
+          target_rationale: string
+          target_suggestion_id: string
+        }
+        Returns: string
       }
       preauthorize_workforce_provision: {
         Args: {
