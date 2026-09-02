@@ -551,11 +551,23 @@ export async function submitCreateWorkforceUserAndAwaitCredentials(
     );
   }
 
-  if (input?.organisationId && input.canonicalAlias) {
-    await waitForWorkforceProvisionIntentCompleted(
-      input.organisationId,
+  if (input?.canonicalAlias) {
+    const organisationCode =
+      (await page.getByTestId("organisation-code").textContent())?.trim() ?? "";
+    if (!organisationCode) {
+      throw new Error(
+        `Provisioned organisation code was not rendered. ${await readProvisioningFormDiagnostics(page)}`,
+      );
+    }
+
+    const internalLogin = await lookupWorkforceInternalLogin(
+      organisationCode,
       input.canonicalAlias,
-      { timeoutMs: 30_000 },
     );
+    if (!internalLogin) {
+      throw new Error(
+        `Workforce login was not provisioned for alias ${input.canonicalAlias}. ${await readProvisioningFormDiagnostics(page)}`,
+      );
+    }
   }
 }

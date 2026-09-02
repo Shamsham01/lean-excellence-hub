@@ -57,7 +57,6 @@ test.describe("M1 workforce provisioning", () => {
     }
     await page.locator("#organisationalUnitId").selectOption(unitOptionValue);
     await submitCreateWorkforceUserAndAwaitCredentials(page, {
-      organisationId,
       canonicalAlias: workforceUsername,
     });
     await expect(page.getByTestId("organisation-code")).toHaveText(
