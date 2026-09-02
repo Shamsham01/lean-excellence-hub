@@ -1,6 +1,11 @@
 import { expect, type Page } from "@playwright/test";
 
-import { queryDatabase } from "./workforce-provisioning";
+import { mapWorkforceImportProgressFromDatabase } from "@/modules/workforce-import/constants";
+
+import {
+  createDemoAdminSession,
+  queryDatabase,
+} from "./workforce-provisioning";
 
 export const WORKFORCE_IMPORT_TERMINAL_STATUSES = [
   "completed",
@@ -65,9 +70,45 @@ export async function readImportWizardDiagnostics(page: Page): Promise<string> {
   ].join("; ");
 }
 
-export async function queryWorkforceImportJobProgress(
+function mapRpcProgress(
+  jobId: string,
+  progress: Record<string, unknown>,
+): WorkforceImportJobProgress {
+  const mapped = mapWorkforceImportProgressFromDatabase(progress);
+  return {
+    jobId,
+    status: mapped.status,
+    totalRows: mapped.totalRows,
+    provisionedRows: mapped.provisionedRows,
+    failedRows: mapped.failedRows,
+    remediationRows: mapped.remediationRows,
+    credentialExportStatus: mapped.credentialExportStatus,
+    remainingRows: mapped.remainingRows,
+    completedAt: mapped.completedAt,
+  };
+}
+
+async function queryWorkforceImportJobProgressViaRpc(
   jobId: string,
 ): Promise<WorkforceImportJobProgress | null> {
+  const { client } = await createDemoAdminSession();
+  const { data, error } = await client.rpc(
+    "get_workforce_import_job_progress",
+    {
+      target_import_job_id: jobId,
+    },
+  );
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapRpcProgress(jobId, data as Record<string, unknown>);
+}
+
+function queryWorkforceImportJobProgressViaSql(
+  jobId: string,
+): WorkforceImportJobProgress | null {
   const rows = queryDatabase<{
     id: string;
     status: string;
@@ -115,6 +156,17 @@ export async function queryWorkforceImportJobProgress(
     remainingRows: Number(job.remaining_rows ?? 0),
     completedAt: job.completed_at,
   };
+}
+
+export async function queryWorkforceImportJobProgress(
+  jobId: string,
+): Promise<WorkforceImportJobProgress | null> {
+  const rpcProgress = await queryWorkforceImportJobProgressViaRpc(jobId);
+  if (rpcProgress) {
+    return rpcProgress;
+  }
+
+  return queryWorkforceImportJobProgressViaSql(jobId);
 }
 
 function isTerminalImportProgress(
@@ -199,32 +251,33 @@ export async function awaitImportCredentialsDownloadReady(
   jobId: string,
   options?: { timeoutMs?: number },
 ): Promise<WorkforceImportJobProgress> {
-  const progress = await waitForWorkforceImportTerminalState(jobId, options);
+  const timeoutMs = options?.timeoutMs ?? 240_000;
+  const deadline = Date.now() + timeoutMs;
+  let latest: WorkforceImportJobProgress | null = null;
 
-  if (progress.provisionedRows === 0) {
-    throw new Error(
-      `Import reached terminal state without provisioned rows. ${formatImportProgressDiagnostics(progress)}`,
-    );
+  while (Date.now() < deadline) {
+    latest = await queryWorkforceImportJobProgress(jobId);
+
+    const downloadVisible = await page
+      .getByTestId("download-import-credentials")
+      .isVisible()
+      .catch(() => false);
+
+    if (
+      latest &&
+      isTerminalImportProgress(latest) &&
+      latest.provisionedRows > 0 &&
+      (latest.credentialExportStatus === "available" ||
+        latest.credentialExportStatus === "exported") &&
+      downloadVisible
+    ) {
+      return latest;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  if (
-    progress.credentialExportStatus !== "available" &&
-    progress.credentialExportStatus !== "exported"
-  ) {
-    throw new Error(
-      `Credential export is not available (status=${progress.credentialExportStatus}). ${formatImportProgressDiagnostics(progress)}`,
-    );
-  }
-
-  try {
-    await expect(page.getByTestId("download-import-credentials")).toBeVisible({
-      timeout: 30_000,
-    });
-  } catch (error) {
-    throw new Error(
-      `${error instanceof Error ? error.message : String(error)} (${formatImportProgressDiagnostics(progress)}; ${await readImportWizardDiagnostics(page)})`,
-    );
-  }
-
-  return progress;
+  throw new Error(
+    `Import credentials were not ready within ${timeoutMs}ms. ${formatImportProgressDiagnostics(latest)}; ${await readImportWizardDiagnostics(page)}`,
+  );
 }

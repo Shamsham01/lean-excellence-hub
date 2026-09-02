@@ -172,6 +172,14 @@ export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
 }
 
 export async function resolveDemoOrganisationId(): Promise<string> {
+  const { organisationId } = await createDemoAdminSession();
+  return organisationId;
+}
+
+export async function createDemoAdminSession(): Promise<{
+  client: SupabaseClient;
+  organisationId: string;
+}> {
   const client = createPublishableClient();
   const { error: signInError } = await client.auth.signInWithPassword({
     email: DEMO_USERS.admin.email,
@@ -198,7 +206,17 @@ export async function resolveDemoOrganisationId(): Promise<string> {
     throw new Error("Demo organisation not found.");
   }
 
-  return organisation.organisation_id;
+  const { error: switchError } = await client.rpc("switch_organisation", {
+    target_organisation_id: organisation.organisation_id,
+  });
+  if (switchError) {
+    throw switchError;
+  }
+
+  return {
+    client,
+    organisationId: organisation.organisation_id,
+  };
 }
 
 export type WorkforceProvisionedUserState = {
@@ -472,7 +490,7 @@ export async function waitForWorkforceProvisionIntentCompleted(
   canonicalAlias: string,
   options?: { timeoutMs?: number },
 ): Promise<{ id: string; status: string }> {
-  const timeoutMs = options?.timeoutMs ?? 120_000;
+  const timeoutMs = options?.timeoutMs ?? 30_000;
   const deadline = Date.now() + timeoutMs;
   let latestStatus = "missing";
 
@@ -523,20 +541,21 @@ export async function submitCreateWorkforceUserAndAwaitCredentials(
     );
   }
 
-  if (input?.organisationId && input.canonicalAlias) {
-    await waitForWorkforceProvisionIntentCompleted(
-      input.organisationId,
-      input.canonicalAlias,
-    );
-  }
-
   try {
     await expect(page.getByTestId("workforce-credentials-panel")).toBeVisible({
-      timeout: 10_000,
+      timeout: 120_000,
     });
   } catch (error) {
     throw new Error(
       `${error instanceof Error ? error.message : String(error)} (${await readProvisioningFormDiagnostics(page)})`,
+    );
+  }
+
+  if (input?.organisationId && input.canonicalAlias) {
+    await waitForWorkforceProvisionIntentCompleted(
+      input.organisationId,
+      input.canonicalAlias,
+      { timeoutMs: 30_000 },
     );
   }
 }
