@@ -1,31 +1,21 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import {
   assertTemporaryPasswordNotPersisted,
   createServiceRoleClient,
   resolveDemoOrganisationId,
+  signInAsDemoUser,
   submitWorkforceLogin,
 } from "./helpers/workforce-provisioning";
+import {
+  awaitImportCredentialsDownloadReady,
+  readWorkforceImportJobId,
+  waitForImportProvisioningCheckpoint,
+  waitForWorkforceImportTerminalState,
+} from "./helpers/workforce-import";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function signInAs(
-  page: import("@playwright/test").Page,
-  user: keyof typeof DEMO_USERS,
-) {
-  const credentials = DEMO_USERS[user];
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await Promise.all([
-    page.waitForURL(/\/platform/, { timeout: 30_000 }),
-    page.getByRole("button", { name: "Sign in" }).click(),
-  ]);
-}
 
 test.describe("M2 workforce bulk import", () => {
   test.describe.configure({ mode: "serial" });
@@ -50,7 +40,7 @@ test.describe("M2 workforce bulk import", () => {
   test("admin can access import workflow and provision employees", async ({
     page,
   }) => {
-    await signInAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     organisationId = await resolveDemoOrganisationId();
 
     await page.goto("/platform/settings/people");
@@ -66,9 +56,8 @@ test.describe("M2 workforce bulk import", () => {
     await page.getByTestId("validate-import").click();
     await expect(page.getByTestId("start-import-provisioning")).toBeVisible();
     await page.getByTestId("start-import-provisioning").click();
-    await expect(page.getByTestId("download-import-credentials")).toBeVisible({
-      timeout: 240_000,
-    });
+    const jobId = await readWorkforceImportJobId(page);
+    await awaitImportCredentialsDownloadReady(page, jobId);
 
     const downloadPromise = page.waitForEvent("download");
     await page.getByTestId("download-import-credentials").click();
@@ -122,7 +111,7 @@ test.describe("M2 workforce bulk import", () => {
   test("validation rejects invalid file before provisioning", async ({
     page,
   }) => {
-    await signInAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/settings/people/import");
 
     const invalidCsv = [
@@ -149,7 +138,7 @@ test.describe("M2 workforce bulk import", () => {
   });
 
   test("manager cannot access bulk import", async ({ page }) => {
-    await signInAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/settings/people/import");
     await expect(page).toHaveURL(/\/platform\/settings\/people$/);
   });
@@ -175,7 +164,7 @@ test.describe("M2 workforce bulk import", () => {
       ),
     ].join("\n");
 
-    await signInAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/settings/people/import");
 
     await page.setInputFiles("input[type='file']", {
@@ -185,23 +174,16 @@ test.describe("M2 workforce bulk import", () => {
     });
     await page.getByTestId("validate-import").click();
     await page.getByTestId("start-import-provisioning").click();
-    await expect(page.getByTestId("import-provisioned-count")).toContainText(
-      "Successful: 1",
-      { timeout: 120_000 },
-    );
-
-    const jobId = await page
-      .getByTestId("workforce-import-job-id")
-      .textContent();
-    expect(jobId).toBeTruthy();
+    const jobId = await readWorkforceImportJobId(page);
+    await waitForImportProvisioningCheckpoint(jobId, 1);
 
     await page.goto("/platform/settings/people");
     await page.goto(`/platform/settings/people/import/${jobId}`);
     await expect(page.getByTestId("workforce-import-job-page")).toBeVisible();
 
-    await expect(page.getByTestId("download-import-credentials")).toBeVisible({
-      timeout: 240_000,
-    });
+    const terminalProgress = await waitForWorkforceImportTerminalState(jobId);
+    expect(terminalProgress.provisionedRows).toBe(3);
+    await awaitImportCredentialsDownloadReady(page, jobId);
     await expect(page.getByTestId("import-provisioned-count")).toContainText(
       "Provisioned: 3",
     );
@@ -215,7 +197,7 @@ test.describe("M2 workforce bulk import", () => {
   });
 
   test("credential export cannot be downloaded twice", async ({ page }) => {
-    await signInAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/settings/people/import");
     await expect(page.getByTestId("download-import-credentials")).toHaveCount(
       0,

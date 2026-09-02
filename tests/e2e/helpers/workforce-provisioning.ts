@@ -3,9 +3,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { DEMO_USERS } from "../../../scripts/demo-seed/constants";
+
+export async function signInAsDemoUser(
+  page: Page,
+  user: keyof typeof DEMO_USERS,
+) {
+  const credentials = DEMO_USERS[user];
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(credentials.email);
+  await page.getByLabel("Password").fill(credentials.password);
+  await Promise.all([
+    page.waitForURL(/\/platform/, { timeout: 30_000 }),
+    page.getByRole("button", { name: "Sign in" }).click(),
+  ]);
+}
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -158,6 +172,14 @@ export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
 }
 
 export async function resolveDemoOrganisationId(): Promise<string> {
+  const { organisationId } = await createDemoAdminSession();
+  return organisationId;
+}
+
+export async function createDemoAdminSession(): Promise<{
+  client: SupabaseClient;
+  organisationId: string;
+}> {
   const client = createPublishableClient();
   const { error: signInError } = await client.auth.signInWithPassword({
     email: DEMO_USERS.admin.email,
@@ -184,7 +206,17 @@ export async function resolveDemoOrganisationId(): Promise<string> {
     throw new Error("Demo organisation not found.");
   }
 
-  return organisation.organisation_id;
+  const { error: switchError } = await client.rpc("switch_organisation", {
+    target_organisation_id: organisation.organisation_id,
+  });
+  if (switchError) {
+    throw switchError;
+  }
+
+  return {
+    client,
+    organisationId: organisation.organisation_id,
+  };
 }
 
 export type WorkforceProvisionedUserState = {
@@ -404,4 +436,100 @@ export async function memberHasPermission(
     throw error;
   }
   return data === true;
+}
+
+const CREATE_WORKFORCE_USER_PATH = "/platform/settings/people/create";
+
+function isCreateWorkforceUserServerAction(
+  response: import("@playwright/test").Response,
+): boolean {
+  const request = response.request();
+  return (
+    request.method() === "POST" &&
+    response.url().includes(CREATE_WORKFORCE_USER_PATH)
+  );
+}
+
+export async function readProvisioningFormDiagnostics(
+  page: Page,
+): Promise<string> {
+  const submitButton = page.getByTestId("submit-create-workforce-user");
+  const submitVisible = (await submitButton.count()) > 0;
+  const submitText = submitVisible
+    ? ((await submitButton.textContent()) ?? "").trim()
+    : "absent";
+  const submitDisabled = submitVisible
+    ? await submitButton.isDisabled()
+    : false;
+  const credentialsVisible = await page
+    .getByTestId("workforce-credentials-panel")
+    .isVisible()
+    .catch(() => false);
+  const formVisible = await page
+    .getByTestId("create-workforce-user-form")
+    .isVisible()
+    .catch(() => false);
+  const alertCount = await page.getByRole("alert").count();
+  const alertText =
+    alertCount > 0
+      ? ((await page.getByRole("alert").first().textContent()) ?? "").trim()
+      : "none";
+
+  return [
+    `url=${page.url()}`,
+    `formVisible=${formVisible}`,
+    `credentialsPanelVisible=${credentialsVisible}`,
+    `submitText="${submitText}"`,
+    `submitDisabled=${submitDisabled}`,
+    `formAlert="${alertText}"`,
+  ].join("; ");
+}
+
+export async function submitCreateWorkforceUserAndAwaitCredentials(
+  page: Page,
+  input?: { canonicalAlias?: string },
+): Promise<void> {
+  const actionResponsePromise = page.waitForResponse(
+    isCreateWorkforceUserServerAction,
+    { timeout: 120_000 },
+  );
+
+  await page.getByTestId("submit-create-workforce-user").click();
+
+  const actionResponse = await actionResponsePromise;
+  if (!actionResponse.ok()) {
+    throw new Error(
+      `Create workforce user server action failed with HTTP ${actionResponse.status()}. ${await readProvisioningFormDiagnostics(page)}`,
+    );
+  }
+
+  try {
+    await expect(page.getByTestId("workforce-credentials-panel")).toBeVisible({
+      timeout: 120_000,
+    });
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)} (${await readProvisioningFormDiagnostics(page)})`,
+    );
+  }
+
+  if (input?.canonicalAlias) {
+    const organisationCode =
+      (await page.getByTestId("organisation-code").textContent())?.trim() ?? "";
+    if (!organisationCode) {
+      throw new Error(
+        `Provisioned organisation code was not rendered. ${await readProvisioningFormDiagnostics(page)}`,
+      );
+    }
+
+    const internalLogin = await lookupWorkforceInternalLogin(
+      organisationCode,
+      input.canonicalAlias,
+    );
+    if (!internalLogin) {
+      throw new Error(
+        `Workforce login was not provisioned for alias ${input.canonicalAlias}. ${await readProvisioningFormDiagnostics(page)}`,
+      );
+    }
+  }
 }
