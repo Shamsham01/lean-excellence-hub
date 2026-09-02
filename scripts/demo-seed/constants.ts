@@ -345,8 +345,8 @@ export const S2B2_WORKFLOW_FIXTURE_TITLES = {
   staleClaim: "S2b2 workflow stale claim target",
 } as const;
 
-/** Total suggestions after full demo seed (M9 + S3a + S2b2 fixtures). */
-export const DEMO_SUGGESTION_PORTFOLIO_TOTAL_COUNT = 40;
+/** Minimum suggestions after demo seed (M9 + S3a + S2b2 fixtures). */
+export const DEMO_SUGGESTION_PORTFOLIO_MIN_COUNT = 40;
 
 export const DEMO_RECOGNITION_TYPES = [
   { code: "great-idea", name: "Great Idea" },
