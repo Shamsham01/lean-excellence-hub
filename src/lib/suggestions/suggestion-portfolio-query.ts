@@ -14,12 +14,15 @@ export const DEFAULT_SORT = "newest" as const;
 export type SuggestionPortfolioSort =
   "newest" | "oldest" | "updated" | "title_asc";
 
+export type SuggestionPortfolioReviewerFilter = "all" | "mine" | "unassigned";
+
 export type SuggestionPortfolioFilters = {
   q: string | null;
   status: string | null;
   programme: string | null;
   category: string | null;
   originUnit: string | null;
+  reviewer: SuggestionPortfolioReviewerFilter;
   sort: SuggestionPortfolioSort;
   page: number;
   pageSize: number;
@@ -38,6 +41,19 @@ function readParam(
   return Array.isArray(value) ? value[0] : value;
 }
 
+function normalizeReviewerFilter(
+  value: string | null | undefined,
+): SuggestionPortfolioReviewerFilter {
+  switch (value) {
+    case "mine":
+    case "unassigned":
+      return value;
+    case "all":
+    default:
+      return "all";
+  }
+}
+
 export function parseSuggestionPortfolioSearchParams(
   params: RawSuggestionPortfolioSearchParams,
 ): SuggestionPortfolioFilters {
@@ -47,6 +63,7 @@ export function parseSuggestionPortfolioSearchParams(
     programme: normalizeUuidFilter(readParam(params, "programme")),
     category: normalizeUuidFilter(readParam(params, "category")),
     originUnit: normalizeUuidFilter(readParam(params, "unit")),
+    reviewer: normalizeReviewerFilter(readParam(params, "reviewer")),
     sort: normalizeSortFilter(readParam(params, "sort")),
     page: normalizePage(readParam(params, "page")),
     pageSize: normalizePageSize(
@@ -77,6 +94,9 @@ export function buildSuggestionPortfolioSearchParams(
   if (filters.originUnit) {
     params.set("unit", filters.originUnit);
   }
+  if (filters.reviewer && filters.reviewer !== "all") {
+    params.set("reviewer", filters.reviewer);
+  }
   if (filters.sort && filters.sort !== DEFAULT_SORT) {
     params.set("sort", filters.sort);
   }
@@ -106,6 +126,7 @@ export function hasActiveSuggestionPortfolioFilters(
     filters.programme ||
     filters.category ||
     filters.originUnit ||
+    (filters.reviewer && filters.reviewer !== "all") ||
     filters.sort !== DEFAULT_SORT ||
     filters.page > 1 ||
     filters.pageSize !== DEFAULT_PAGE_SIZE,

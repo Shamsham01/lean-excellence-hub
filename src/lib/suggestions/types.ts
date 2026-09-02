@@ -9,6 +9,13 @@ export type SuggestionPortfolioItem = {
   submitted_at: string | null;
   created_at: string;
   updated_at: string;
+  active_reviewer_member_id: string | null;
+  active_reviewer_display_name: string | null;
+  active_reviewer_assignment_kind: string | null;
+  active_reviewer_assigned_at: string | null;
+  is_active_reviewer: boolean;
+  can_review: boolean;
+  can_manage_review: boolean;
 };
 
 export type SuggestionPortfolioListResult = {

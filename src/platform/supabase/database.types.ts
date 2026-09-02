@@ -12582,6 +12582,20 @@ export type Database = {
         Args: { target_suggestion_id: string }
         Returns: Json
       }
+      get_suggestion_portfolio: {
+        Args: {
+          target_category?: string
+          target_origin_unit?: string
+          target_page?: number
+          target_page_size?: number
+          target_programme?: string
+          target_q?: string
+          target_reviewer?: string
+          target_sort?: string
+          target_status?: string
+        }
+        Returns: Json
+      }
       get_suggestion_review_queue: { Args: never; Returns: Json }
       get_suggestions_list: {
         Args: {
