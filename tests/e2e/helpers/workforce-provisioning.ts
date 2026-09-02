@@ -485,47 +485,9 @@ export async function readProvisioningFormDiagnostics(
   ].join("; ");
 }
 
-export async function waitForWorkforceProvisionIntentCompleted(
-  organisationId: string,
-  canonicalAlias: string,
-  options?: { timeoutMs?: number },
-): Promise<{ id: string; status: string }> {
-  const timeoutMs = options?.timeoutMs ?? 30_000;
-  const deadline = Date.now() + timeoutMs;
-  let latestStatus = "missing";
-
-  while (Date.now() < deadline) {
-    const rows = queryDatabase<{ id: string; status: string }>(`
-      select id, status
-      from public.workforce_provision_intents
-      where organisation_id = '${organisationId}'
-        and target_canonical_alias = '${canonicalAlias}'
-      order by created_at desc
-      limit 1
-    `);
-
-    if (rows[0]?.status === "completed") {
-      return rows[0];
-    }
-
-    if (rows[0]?.status === "failed") {
-      throw new Error(
-        `Workforce provision intent failed for alias ${canonicalAlias}.`,
-      );
-    }
-
-    latestStatus = rows[0]?.status ?? "missing";
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-
-  throw new Error(
-    `Workforce provision intent did not complete within ${timeoutMs}ms (latestStatus=${latestStatus}).`,
-  );
-}
-
 export async function submitCreateWorkforceUserAndAwaitCredentials(
   page: Page,
-  input?: { organisationId?: string; canonicalAlias?: string },
+  input?: { canonicalAlias?: string },
 ): Promise<void> {
   const actionResponsePromise = page.waitForResponse(
     isCreateWorkforceUserServerAction,

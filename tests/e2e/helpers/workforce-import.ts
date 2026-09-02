@@ -2,10 +2,7 @@ import { type Page } from "@playwright/test";
 
 import { mapWorkforceImportProgressFromDatabase } from "@/modules/workforce-import/constants";
 
-import {
-  createDemoAdminSession,
-  queryDatabase,
-} from "./workforce-provisioning";
+import { createDemoAdminSession } from "./workforce-provisioning";
 
 export const WORKFORCE_IMPORT_TERMINAL_STATUSES = [
   "completed",
@@ -88,7 +85,7 @@ function mapRpcProgress(
   };
 }
 
-async function queryWorkforceImportJobProgressViaRpc(
+export async function queryWorkforceImportJobProgress(
   jobId: string,
 ): Promise<WorkforceImportJobProgress | null> {
   const { client } = await createDemoAdminSession();
@@ -99,74 +96,17 @@ async function queryWorkforceImportJobProgressViaRpc(
     },
   );
 
-  if (error || !data) {
+  if (error) {
+    throw new Error(
+      `get_workforce_import_job_progress RPC failed for jobId=${jobId} (code=${error.code ?? "unknown"}): ${error.message}`,
+    );
+  }
+
+  if (!data) {
     return null;
   }
 
   return mapRpcProgress(jobId, data as Record<string, unknown>);
-}
-
-function queryWorkforceImportJobProgressViaSql(
-  jobId: string,
-): WorkforceImportJobProgress | null {
-  const rows = queryDatabase<{
-    id: string;
-    status: string;
-    total_rows: number;
-    provisioned_rows: number;
-    failed_rows: number;
-    remediation_rows: number;
-    credential_export_status: string;
-    completed_at: string | null;
-    remaining_rows: string;
-  }>(`
-    select
-      import_job.id,
-      import_job.status,
-      import_job.total_rows,
-      import_job.provisioned_rows,
-      import_job.failed_rows,
-      import_job.remediation_rows,
-      import_job.credential_export_status,
-      import_job.completed_at,
-      (
-        select count(*)::text
-        from public.workforce_import_rows import_row
-        where import_row.import_job_id = import_job.id
-          and import_row.status in ('valid', 'warning', 'provisioning', 'failed')
-      ) as remaining_rows
-    from public.workforce_import_jobs import_job
-    where import_job.id = '${jobId}'
-    limit 1
-  `);
-
-  const job = rows[0];
-  if (!job) {
-    return null;
-  }
-
-  return {
-    jobId: job.id,
-    status: job.status,
-    totalRows: job.total_rows,
-    provisionedRows: job.provisioned_rows,
-    failedRows: job.failed_rows,
-    remediationRows: job.remediation_rows,
-    credentialExportStatus: job.credential_export_status,
-    remainingRows: Number(job.remaining_rows ?? 0),
-    completedAt: job.completed_at,
-  };
-}
-
-export async function queryWorkforceImportJobProgress(
-  jobId: string,
-): Promise<WorkforceImportJobProgress | null> {
-  const rpcProgress = await queryWorkforceImportJobProgressViaRpc(jobId);
-  if (rpcProgress) {
-    return rpcProgress;
-  }
-
-  return queryWorkforceImportJobProgressViaSql(jobId);
 }
 
 function isTerminalImportProgress(
