@@ -215,7 +215,7 @@ select 'sibling_action', public.create_problem_solving_action(
 
 reset role;
 
-set local role lean_hub_private_owner;
+set local role postgres;
 
 update public.actions
 set status = 'completed',
@@ -540,7 +540,7 @@ select 'self_visible_action', public.create_action(
 
 reset role;
 
-set local role lean_hub_private_owner;
+set local role postgres;
 
 insert into public.problem_solving_action_context (
   organisation_id,
@@ -597,11 +597,15 @@ select is(
 );
 
 select is(
-  jsonb_array_length(
-    public.get_problem_solving_detail((select id from vis1b_ids where key = 'case')) -> 'actions'
+  (
+    select count(*)::integer
+    from jsonb_array_elements(
+      public.get_problem_solving_detail((select id from vis1b_ids where key = 'case')) -> 'actions'
+    ) action_row
+    where action_row ->> 'status' in ('open', 'in_progress')
   ),
   pg_temp.vis1b_open_action_count((select id from vis1b_ids where key = 'case')),
-  'owner list open_action_count matches detail readable open action cardinality'
+  'owner list open_action_count matches detail readable open/in_progress action cardinality'
 );
 
 -- Scenario A: parent and child both readable
@@ -640,11 +644,15 @@ select is(
 );
 
 select is(
-  jsonb_array_length(
-    public.get_problem_solving_detail((select id from vis1b_ids where key = 'case')) -> 'actions'
+  (
+    select count(*)::integer
+    from jsonb_array_elements(
+      public.get_problem_solving_detail((select id from vis1b_ids where key = 'case')) -> 'actions'
+    ) action_row
+    where action_row ->> 'status' in ('open', 'in_progress')
   ),
   pg_temp.vis1b_open_action_count((select id from vis1b_ids where key = 'case')),
-  'ps-only list count matches detail readable action cardinality'
+  'ps-only list count matches detail readable open/in_progress action cardinality'
 );
 
 -- Scenario C: mixed linked actions on one case
