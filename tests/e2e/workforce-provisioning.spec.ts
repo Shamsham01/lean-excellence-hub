@@ -8,8 +8,9 @@ import {
   lookupWorkforceProvisionedUser,
   memberHasPermission,
   resolveDemoOrganisationId,
+  signInAsDemoUser,
+  submitCreateWorkforceUserAndAwaitCredentials,
   submitWorkforceLogin,
-  workforceProvisioningAdmin,
 } from "./helpers/workforce-provisioning";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -33,11 +34,7 @@ test.describe("M1 workforce provisioning", () => {
   test("admin creates a workforce user and receives one-time credentials", async ({
     page,
   }) => {
-    await page.goto("/login");
-    await page.getByLabel("Email").fill(workforceProvisioningAdmin.email);
-    await page.getByLabel("Password").fill(workforceProvisioningAdmin.password);
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/platform/);
+    await signInAsDemoUser(page, "admin");
 
     organisationId = await resolveDemoOrganisationId();
 
@@ -59,9 +56,10 @@ test.describe("M1 workforce provisioning", () => {
       );
     }
     await page.locator("#organisationalUnitId").selectOption(unitOptionValue);
-    await page.getByTestId("submit-create-workforce-user").click();
-
-    await expect(page.getByTestId("workforce-credentials-panel")).toBeVisible();
+    await submitCreateWorkforceUserAndAwaitCredentials(page, {
+      organisationId,
+      canonicalAlias: workforceUsername,
+    });
     await expect(page.getByTestId("organisation-code")).toHaveText(
       DEMO_ORGANISATION.code,
     );

@@ -3,9 +3,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { DEMO_USERS } from "../../../scripts/demo-seed/constants";
+
+export async function signInAsDemoUser(
+  page: Page,
+  user: keyof typeof DEMO_USERS,
+) {
+  const credentials = DEMO_USERS[user];
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(credentials.email);
+  await page.getByLabel("Password").fill(credentials.password);
+  await Promise.all([
+    page.waitForURL(/\/platform/, { timeout: 30_000 }),
+    page.getByRole("button", { name: "Sign in" }).click(),
+  ]);
+}
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -404,4 +418,125 @@ export async function memberHasPermission(
     throw error;
   }
   return data === true;
+}
+
+const CREATE_WORKFORCE_USER_PATH = "/platform/settings/people/create";
+
+function isCreateWorkforceUserServerAction(
+  response: import("@playwright/test").Response,
+): boolean {
+  const request = response.request();
+  return (
+    request.method() === "POST" &&
+    response.url().includes(CREATE_WORKFORCE_USER_PATH)
+  );
+}
+
+export async function readProvisioningFormDiagnostics(
+  page: Page,
+): Promise<string> {
+  const submitButton = page.getByTestId("submit-create-workforce-user");
+  const submitVisible = (await submitButton.count()) > 0;
+  const submitText = submitVisible
+    ? ((await submitButton.textContent()) ?? "").trim()
+    : "absent";
+  const submitDisabled = submitVisible
+    ? await submitButton.isDisabled()
+    : false;
+  const credentialsVisible = await page
+    .getByTestId("workforce-credentials-panel")
+    .isVisible()
+    .catch(() => false);
+  const formVisible = await page
+    .getByTestId("create-workforce-user-form")
+    .isVisible()
+    .catch(() => false);
+  const alertCount = await page.getByRole("alert").count();
+  const alertText =
+    alertCount > 0
+      ? ((await page.getByRole("alert").first().textContent()) ?? "").trim()
+      : "none";
+
+  return [
+    `url=${page.url()}`,
+    `formVisible=${formVisible}`,
+    `credentialsPanelVisible=${credentialsVisible}`,
+    `submitText="${submitText}"`,
+    `submitDisabled=${submitDisabled}`,
+    `formAlert="${alertText}"`,
+  ].join("; ");
+}
+
+export async function waitForWorkforceProvisionIntentCompleted(
+  organisationId: string,
+  canonicalAlias: string,
+  options?: { timeoutMs?: number },
+): Promise<{ id: string; status: string }> {
+  const timeoutMs = options?.timeoutMs ?? 120_000;
+  const deadline = Date.now() + timeoutMs;
+  let latestStatus = "missing";
+
+  while (Date.now() < deadline) {
+    const rows = queryDatabase<{ id: string; status: string }>(`
+      select id, status
+      from public.workforce_provision_intents
+      where organisation_id = '${organisationId}'
+        and target_canonical_alias = '${canonicalAlias}'
+      order by created_at desc
+      limit 1
+    `);
+
+    if (rows[0]?.status === "completed") {
+      return rows[0];
+    }
+
+    if (rows[0]?.status === "failed") {
+      throw new Error(
+        `Workforce provision intent failed for alias ${canonicalAlias}.`,
+      );
+    }
+
+    latestStatus = rows[0]?.status ?? "missing";
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(
+    `Workforce provision intent did not complete within ${timeoutMs}ms (latestStatus=${latestStatus}).`,
+  );
+}
+
+export async function submitCreateWorkforceUserAndAwaitCredentials(
+  page: Page,
+  input?: { organisationId?: string; canonicalAlias?: string },
+): Promise<void> {
+  const actionResponsePromise = page.waitForResponse(
+    isCreateWorkforceUserServerAction,
+    { timeout: 120_000 },
+  );
+
+  await page.getByTestId("submit-create-workforce-user").click();
+
+  const actionResponse = await actionResponsePromise;
+  if (!actionResponse.ok()) {
+    throw new Error(
+      `Create workforce user server action failed with HTTP ${actionResponse.status()}. ${await readProvisioningFormDiagnostics(page)}`,
+    );
+  }
+
+  if (input?.organisationId && input.canonicalAlias) {
+    await waitForWorkforceProvisionIntentCompleted(
+      input.organisationId,
+      input.canonicalAlias,
+    );
+  }
+
+  try {
+    await expect(page.getByTestId("workforce-credentials-panel")).toBeVisible({
+      timeout: 10_000,
+    });
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)} (${await readProvisioningFormDiagnostics(page)})`,
+    );
+  }
 }
