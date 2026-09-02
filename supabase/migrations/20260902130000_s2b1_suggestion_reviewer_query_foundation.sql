@@ -227,7 +227,12 @@ begin
         case normalized_sort
           when 'title_asc' then portfolio_row.title
         end asc nulls last,
-        portfolio_row.id asc
+        case
+          when normalized_sort in ('oldest', 'title_asc') then portfolio_row.id
+        end asc nulls last,
+        case
+          when normalized_sort in ('newest', 'updated') then portfolio_row.id
+        end desc nulls last
     ),
     '[]'::jsonb
   )
@@ -332,7 +337,12 @@ begin
       case normalized_sort
         when 'title_asc' then suggestion_row.title
       end asc nulls last,
-      suggestion_row.id asc
+      case
+        when normalized_sort in ('oldest', 'title_asc') then suggestion_row.id
+      end asc nulls last,
+      case
+        when normalized_sort in ('newest', 'updated') then suggestion_row.id
+      end desc nulls last
     limit normalized_page_size
     offset offset_val
   ) portfolio_row;

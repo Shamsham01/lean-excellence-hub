@@ -1,6 +1,6 @@
 begin;
 
-select plan(70);
+select plan(81);
 
 -- ---------------------------------------------------------------------------
 -- Users and organisations
@@ -1115,6 +1115,236 @@ select ok(
     limit 1
   ) is not null,
   'V title_asc sort returns deterministic first row'
+);
+
+-- Deterministic secondary ordering when primary sort values tie
+insert into s2b1_ids (key, id)
+select 'tie_newest_a', public.create_suggestion_draft(
+  (select id from s2b1_ids where key = 'programme_version'),
+  (select id from s2b1_ids where key = 'category'),
+  'TIE-NEWEST-A',
+  'Problem text',
+  'Idea text',
+  'Benefit text'
+);
+
+insert into s2b1_ids (key, id)
+select 'tie_newest_b', public.create_suggestion_draft(
+  (select id from s2b1_ids where key = 'programme_version'),
+  (select id from s2b1_ids where key = 'category'),
+  'TIE-NEWEST-B',
+  'Problem text',
+  'Idea text',
+  'Benefit text'
+);
+
+select ok(
+  public.submit_suggestion((select id from s2b1_ids where key = 'tie_newest_a')),
+  'tie-newest suggestion A submits'
+);
+
+select ok(
+  public.submit_suggestion((select id from s2b1_ids where key = 'tie_newest_b')),
+  'tie-newest suggestion B submits'
+);
+
+reset role;
+
+update public.improvement_suggestions suggestion_row
+set created_at = timestamptz '2020-06-01 12:00:00+00',
+    updated_at = timestamptz '2020-06-01 12:00:00+00'
+where suggestion_row.id in (
+  (select id from s2b1_ids where key = 'tie_newest_a'),
+  (select id from s2b1_ids where key = 'tie_newest_b')
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"d3000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"d3100000-0000-0000-0000-000000000001","email":"s2b1-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select is(
+  (
+    select item_row ->> 'id'
+    from jsonb_array_elements(
+      public.get_suggestion_portfolio(
+        'TIE-NEWEST', null, null, null, null, 'newest', 1, 25, 'all'
+      ) -> 'items'
+    ) with ordinality as ordered_items(item_row, item_order)
+    where item_order = 1
+  ),
+  greatest(
+    (select id from s2b1_ids where key = 'tie_newest_a'),
+    (select id from s2b1_ids where key = 'tie_newest_b')
+  )::text,
+  'newest tie-break uses id DESC when created_at matches'
+);
+
+select is(
+  (
+    select item_row ->> 'id'
+    from jsonb_array_elements(
+      public.get_suggestion_portfolio(
+        'TIE-NEWEST', null, null, null, null, 'updated', 1, 25, 'all'
+      ) -> 'items'
+    ) with ordinality as ordered_items(item_row, item_order)
+    where item_order = 1
+  ),
+  greatest(
+    (select id from s2b1_ids where key = 'tie_newest_a'),
+    (select id from s2b1_ids where key = 'tie_newest_b')
+  )::text,
+  'updated tie-break uses id DESC when updated_at matches'
+);
+
+select is(
+  (
+    select item_row ->> 'id'
+    from jsonb_array_elements(
+      public.get_suggestion_portfolio(
+        'TIE-NEWEST', null, null, null, null, 'oldest', 1, 25, 'all'
+      ) -> 'items'
+    ) with ordinality as ordered_items(item_row, item_order)
+    where item_order = 1
+  ),
+  least(
+    (select id from s2b1_ids where key = 'tie_newest_a'),
+    (select id from s2b1_ids where key = 'tie_newest_b')
+  )::text,
+  'oldest tie-break uses id ASC when created_at matches'
+);
+
+insert into s2b1_ids (key, id)
+select 'tie_title_a', public.create_suggestion_draft(
+  (select id from s2b1_ids where key = 'programme_version'),
+  (select id from s2b1_ids where key = 'category'),
+  'TIE-TITLE-SHARED',
+  'Problem text',
+  'Idea text',
+  'Benefit text'
+);
+
+insert into s2b1_ids (key, id)
+select 'tie_title_b', public.create_suggestion_draft(
+  (select id from s2b1_ids where key = 'programme_version'),
+  (select id from s2b1_ids where key = 'category'),
+  'TIE-TITLE-SHARED',
+  'Problem text',
+  'Idea text',
+  'Benefit text'
+);
+
+select ok(
+  public.submit_suggestion((select id from s2b1_ids where key = 'tie_title_a')),
+  'tie-title suggestion A submits'
+);
+
+select ok(
+  public.submit_suggestion((select id from s2b1_ids where key = 'tie_title_b')),
+  'tie-title suggestion B submits'
+);
+
+select is(
+  (
+    select item_row ->> 'id'
+    from jsonb_array_elements(
+      public.get_suggestion_portfolio(
+        'TIE-TITLE-SHARED', null, null, null, null, 'title_asc', 1, 25, 'all'
+      ) -> 'items'
+    ) with ordinality as ordered_items(item_row, item_order)
+    where item_order = 1
+  ),
+  least(
+    (select id from s2b1_ids where key = 'tie_title_a'),
+    (select id from s2b1_ids where key = 'tie_title_b')
+  )::text,
+  'title_asc tie-break uses id ASC when title matches'
+);
+
+insert into s2b1_ids (key, id)
+select
+  'tie_page_' || series_n::text,
+  public.create_suggestion_draft(
+    (select id from s2b1_ids where key = 'programme_version'),
+    (select id from s2b1_ids where key = 'category'),
+    'TIE-PAGE-' || lpad(series_n::text, 2, '0'),
+    'Problem text',
+    'Idea text',
+    'Benefit text'
+  )
+from generate_series(1, 26) as series_n;
+
+select ok(
+  (
+    select count(*)::integer
+    from generate_series(1, 26) as series_n
+    where public.submit_suggestion(
+      (select id from s2b1_ids where key = 'tie_page_' || series_n::text)
+    )
+  ) = 26,
+  'tie-page suggestions submit'
+);
+
+reset role;
+
+update public.improvement_suggestions suggestion_row
+set created_at = timestamptz '2020-07-01 12:00:00+00',
+    updated_at = timestamptz '2020-07-01 12:00:00+00'
+where suggestion_row.title like 'TIE-PAGE-%';
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"d3000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"d3100000-0000-0000-0000-000000000001","email":"s2b1-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select is(
+  (
+    select count(*)::integer
+    from (
+      select item_row ->> 'id' as suggestion_id
+      from jsonb_array_elements(
+        public.get_suggestion_portfolio(
+          'TIE-PAGE', null, null, null, null, 'newest', 1, 25, 'all'
+        ) -> 'items'
+      ) page_one(item_row)
+      intersect
+      select item_row ->> 'id' as suggestion_id
+      from jsonb_array_elements(
+        public.get_suggestion_portfolio(
+          'TIE-PAGE', null, null, null, null, 'newest', 2, 25, 'all'
+        ) -> 'items'
+      ) page_two(item_row)
+    ) overlap_ids
+  ),
+  0,
+  'tied newest pagination has no duplicate rows across pages'
+);
+
+select is(
+  (
+    select count(distinct suggestion_id)::integer
+    from (
+      select item_row ->> 'id' as suggestion_id
+      from jsonb_array_elements(
+        public.get_suggestion_portfolio(
+          'TIE-PAGE', null, null, null, null, 'newest', 1, 25, 'all'
+        ) -> 'items'
+      ) page_one(item_row)
+      union all
+      select item_row ->> 'id' as suggestion_id
+      from jsonb_array_elements(
+        public.get_suggestion_portfolio(
+          'TIE-PAGE', null, null, null, null, 'newest', 2, 25, 'all'
+        ) -> 'items'
+      ) page_two(item_row)
+    ) combined_pages
+  ),
+  26,
+  'tied newest pagination returns all tied rows across pages'
 );
 
 select * from finish();
