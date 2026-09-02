@@ -20,6 +20,7 @@ import {
   suggestionStatusBadgeVariant,
   suggestionStatusLabel,
 } from "@/lib/suggestions/status";
+import { formatPortfolioReviewerLabel } from "@/lib/suggestions/reviewer-labels";
 import type {
   SuggestionPortfolioFilterOptions,
   SuggestionPortfolioItem,
@@ -33,6 +34,7 @@ type SuggestionPortfolioProps = {
   filters: SuggestionPortfolioFilters;
   filterOptions: SuggestionPortfolioFilterOptions;
   hasAnySuggestions: boolean;
+  showReviewerWorkflow?: boolean;
 };
 
 function formatSubmittedDate(value: string | null): string {
@@ -122,12 +124,22 @@ function PaginationControls({
   );
 }
 
-function PortfolioTableRow({ item }: { item: SuggestionPortfolioItem }) {
+function PortfolioTableRow({
+  item,
+  showReviewerWorkflow,
+}: {
+  item: SuggestionPortfolioItem;
+  showReviewerWorkflow: boolean;
+}) {
   const reference = formatSuggestionReference(
     item.suggestion_number,
     item.status,
   );
   const detailHref = `/platform/suggestions/${item.id}`;
+  const reviewerLabel = formatPortfolioReviewerLabel(item);
+  const showReviewAction =
+    showReviewerWorkflow &&
+    (item.can_review || item.can_manage_review || item.is_active_reviewer);
 
   return (
     <tr
@@ -153,6 +165,14 @@ function PortfolioTableRow({ item }: { item: SuggestionPortfolioItem }) {
       <td className="px-3 py-2 align-top text-sm text-muted-foreground">
         {item.origin_unit_name_snapshot ?? "—"}
       </td>
+      {showReviewerWorkflow ? (
+        <td
+          className="px-3 py-2 align-top text-sm text-muted-foreground"
+          data-testid={`suggestion-portfolio-reviewer-${item.id}`}
+        >
+          {reviewerLabel ?? "—"}
+        </td>
+      ) : null}
       <td className="px-3 py-2 align-top text-sm">
         <Badge variant={suggestionStatusBadgeVariant(item.status)}>
           {suggestionStatusLabel(item.status)}
@@ -161,16 +181,41 @@ function PortfolioTableRow({ item }: { item: SuggestionPortfolioItem }) {
       <td className="px-3 py-2 align-top text-sm text-muted-foreground tabular-nums">
         {formatSubmittedDate(item.submitted_at)}
       </td>
+      {showReviewerWorkflow ? (
+        <td className="px-3 py-2 align-top text-sm">
+          {showReviewAction ? (
+            <Link
+              href={`/platform/suggestions/review?suggestionId=${item.id}`}
+              className="font-medium text-primary hover:underline"
+              data-testid={`suggestion-portfolio-review-link-${item.id}`}
+            >
+              Review
+            </Link>
+          ) : (
+            "—"
+          )}
+        </td>
+      ) : null}
     </tr>
   );
 }
 
-function PortfolioMobileCard({ item }: { item: SuggestionPortfolioItem }) {
+function PortfolioMobileCard({
+  item,
+  showReviewerWorkflow,
+}: {
+  item: SuggestionPortfolioItem;
+  showReviewerWorkflow: boolean;
+}) {
   const reference = formatSuggestionReference(
     item.suggestion_number,
     item.status,
   );
   const detailHref = `/platform/suggestions/${item.id}`;
+  const reviewerLabel = formatPortfolioReviewerLabel(item);
+  const showReviewAction =
+    showReviewerWorkflow &&
+    (item.can_review || item.can_manage_review || item.is_active_reviewer);
 
   return (
     <div
@@ -196,14 +241,32 @@ function PortfolioMobileCard({ item }: { item: SuggestionPortfolioItem }) {
           <p className="mt-1 text-sm text-muted-foreground">
             {item.origin_unit_name_snapshot ?? "—"}
           </p>
+          {showReviewerWorkflow && reviewerLabel ? (
+            <p
+              className="mt-1 text-sm text-muted-foreground"
+              data-testid={`suggestion-portfolio-mobile-reviewer-${item.id}`}
+            >
+              {reviewerLabel}
+            </p>
+          ) : null}
         </div>
         <Badge variant={suggestionStatusBadgeVariant(item.status)}>
           {suggestionStatusLabel(item.status)}
         </Badge>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground tabular-nums">
-        Submitted {formatSubmittedDate(item.submitted_at)}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span className="tabular-nums">
+          Submitted {formatSubmittedDate(item.submitted_at)}
+        </span>
+        {showReviewAction ? (
+          <Link
+            href={`/platform/suggestions/review?suggestionId=${item.id}`}
+            className="font-medium text-primary hover:underline"
+          >
+            Review
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -216,6 +279,7 @@ export function SuggestionPortfolio({
   filters,
   filterOptions,
   hasAnySuggestions,
+  showReviewerWorkflow = false,
 }: SuggestionPortfolioProps) {
   const router = useRouter();
   const filtersActive = hasActiveSuggestionPortfolioFilters(filters);
@@ -242,6 +306,9 @@ export function SuggestionPortfolio({
       programme: formData.get("programme")?.toString() || null,
       category: formData.get("category")?.toString() || null,
       originUnit: formData.get("unit")?.toString() || null,
+      reviewer: (formData.get("reviewer")?.toString() ||
+        filters.reviewer ||
+        "all") as SuggestionPortfolioFilters["reviewer"],
       sort: (formData.get("sort")?.toString() ||
         filters.sort) as SuggestionPortfolioFilters["sort"],
       pageSize: ALLOWED_PAGE_SIZES.includes(
@@ -363,6 +430,22 @@ export function SuggestionPortfolio({
             </select>
           </label>
 
+          {showReviewerWorkflow ? (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">Reviewer</span>
+              <select
+                name="reviewer"
+                defaultValue={filters.reviewer}
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                data-testid="suggestion-portfolio-reviewer"
+              >
+                <option value="all">All</option>
+                <option value="mine">Assigned to me</option>
+                <option value="unassigned">Unassigned</option>
+              </select>
+            </label>
+          ) : null}
+
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground">Sort</span>
             <select
@@ -447,17 +530,31 @@ export function SuggestionPortfolio({
                     <th scope="col" className="px-3 py-2 font-medium">
                       Origin unit
                     </th>
+                    {showReviewerWorkflow ? (
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        Reviewer
+                      </th>
+                    ) : null}
                     <th scope="col" className="px-3 py-2 font-medium">
                       Status
                     </th>
                     <th scope="col" className="px-3 py-2 font-medium">
                       Submitted
                     </th>
+                    {showReviewerWorkflow ? (
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        Review
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <PortfolioTableRow key={item.id} item={item} />
+                    <PortfolioTableRow
+                      key={item.id}
+                      item={item}
+                      showReviewerWorkflow={showReviewerWorkflow}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -465,7 +562,11 @@ export function SuggestionPortfolio({
 
             <div className="flex flex-col gap-3 md:hidden">
               {items.map((item) => (
-                <PortfolioMobileCard key={item.id} item={item} />
+                <PortfolioMobileCard
+                  key={item.id}
+                  item={item}
+                  showReviewerWorkflow={showReviewerWorkflow}
+                />
               ))}
             </div>
 

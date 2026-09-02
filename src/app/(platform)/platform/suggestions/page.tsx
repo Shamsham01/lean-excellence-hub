@@ -37,6 +37,8 @@ export default async function SuggestionsOverviewPage({
   const canManageProgrammes = await currentMemberHasPermission(
     "suggestions.programmes.manage",
   );
+  const canManageReview =
+    await currentMemberHasPermission("suggestions.manage");
 
   const [{ data: overview }, portfolio, filterOptions, hasAnySuggestions] =
     await Promise.all([
@@ -114,12 +116,14 @@ export default async function SuggestionsOverviewPage({
         </CardContent>
       </Card>
 
-      {canReview ? (
+      {canReview || canManageReview ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Review queue</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/suggestions/review">Open queue</Link>
+              <Link href="/platform/suggestions/review?queue=mine">
+                Open queue
+              </Link>
             </Button>
           </CardHeader>
         </Card>
@@ -133,6 +137,7 @@ export default async function SuggestionsOverviewPage({
         filters={filters}
         filterOptions={filterOptions}
         hasAnySuggestions={hasAnySuggestions > 0}
+        showReviewerWorkflow={canReview || canManageReview}
       />
     </div>
   );
