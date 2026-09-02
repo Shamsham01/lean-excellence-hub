@@ -12596,6 +12596,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_suggestion_review_context: {
+        Args: { target_suggestion_id: string }
+        Returns: Json
+      }
       get_suggestion_review_queue: { Args: never; Returns: Json }
       get_suggestions_list: {
         Args: {
