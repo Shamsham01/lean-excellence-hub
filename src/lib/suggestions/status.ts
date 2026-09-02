@@ -7,6 +7,7 @@ export const SUGGESTION_STATUSES = [
   "implemented",
   "rejected",
   "withdrawn",
+  "parked",
 ] as const;
 
 export type SuggestionStatus = (typeof SUGGESTION_STATUSES)[number];
@@ -20,6 +21,7 @@ const STATUS_LABELS: Record<SuggestionStatus, string> = {
   implemented: "Implemented",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
+  parked: "Parked",
 };
 
 const STATUS_BADGE_VARIANTS: Record<
@@ -34,6 +36,7 @@ const STATUS_BADGE_VARIANTS: Record<
   implemented: "default",
   rejected: "destructive",
   withdrawn: "secondary",
+  parked: "outline",
 };
 
 export function suggestionStatusLabel(status: string): string {
@@ -72,6 +75,7 @@ export function portfolioFilterStatuses(): SuggestionStatus[] {
     "implemented",
     "rejected",
     "withdrawn",
+    "parked",
   ];
 }
 
