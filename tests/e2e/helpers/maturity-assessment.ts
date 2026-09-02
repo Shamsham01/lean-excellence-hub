@@ -10,24 +10,18 @@ type ScopeEntityRow = {
   unit_type: string;
 };
 
-function isScopeEntitiesRpcResponse(
-  url: string,
-  method: string,
-): boolean {
+function isScopeEntitiesRpcResponse(url: string, method: string): boolean {
   return url.includes(SCOPE_ENTITIES_RPC_PATH) && method === "POST";
 }
 
 async function readScopeEntityDiagnostics(page: Page): Promise<string> {
   const frameworkValue = await page.locator("#modelVersionId").inputValue();
   const scopeValue = await page.locator("#assessmentScopeType").inputValue();
-  const scopeDisabled = await page
-    .locator("#assessmentScopeType")
-    .isDisabled();
+  const scopeDisabled = await page.locator("#assessmentScopeType").isDisabled();
   const entitySelect = page.getByTestId("scope-entity-select");
   const entityDisabled = await entitySelect.isDisabled();
   const placeholder =
-    (await entitySelect.locator("option").first().textContent())?.trim() ??
-    "";
+    (await entitySelect.locator("option").first().textContent())?.trim() ?? "";
   const alertCount = await page.getByRole("alert").count();
   const alertText =
     alertCount > 0
@@ -50,10 +44,7 @@ async function waitForScopeEntitiesRpc(
 ): Promise<ScopeEntityRow[]> {
   const response = await page.waitForResponse(
     (candidate) =>
-      isScopeEntitiesRpcResponse(
-        candidate.url(),
-        candidate.request().method(),
-      ),
+      isScopeEntitiesRpcResponse(candidate.url(), candidate.request().method()),
     { timeout },
   );
 
