@@ -1,14 +1,7 @@
 import "server-only";
 
 import { loadSuggestionPortfolioFilterOptions } from "@/lib/suggestions/suggestion-portfolio-filter-options";
-import {
-  buildSearchOrFilter,
-  normalizePage,
-} from "@/lib/suggestions/suggestion-portfolio-filters";
-import {
-  getSuggestionPortfolioSortColumns,
-  type SuggestionPortfolioFilters,
-} from "@/lib/suggestions/suggestion-portfolio-query";
+import type { SuggestionPortfolioFilters } from "@/lib/suggestions/suggestion-portfolio-query";
 import type {
   SuggestionPortfolioItem,
   SuggestionPortfolioListResult,
@@ -19,88 +12,61 @@ type ServerSupabaseClient = Awaited<
   ReturnType<typeof createServerSupabaseClient>
 >;
 
-const PORTFOLIO_SELECT =
-  "id,suggestion_number,title,status,category_name_snapshot,programme_name_snapshot,origin_unit_name_snapshot,submitted_at,created_at,updated_at";
-
-type PortfolioQuery = ReturnType<
-  ReturnType<ServerSupabaseClient["from"]>["select"]
->;
-
-function applyPortfolioFilters(
-  query: PortfolioQuery,
-  filters: SuggestionPortfolioFilters,
-): PortfolioQuery {
-  let nextQuery = query;
-
-  if (filters.status) {
-    nextQuery = nextQuery.eq("status", filters.status);
-  }
-
-  if (filters.category) {
-    nextQuery = nextQuery.eq("category_id", filters.category);
-  }
-
-  if (filters.programme) {
-    nextQuery = nextQuery.eq("programme_version_id", filters.programme);
-  }
-
-  if (filters.originUnit) {
-    nextQuery = nextQuery.eq("origin_unit_id", filters.originUnit);
-  }
-
-  if (filters.q) {
-    nextQuery = nextQuery.or(buildSearchOrFilter(filters.q));
-  }
-
-  return nextQuery;
-}
-
 export { loadSuggestionPortfolioFilterOptions };
 
 export async function fetchSuggestionPortfolio(
   supabase: ServerSupabaseClient,
   filters: SuggestionPortfolioFilters,
 ): Promise<SuggestionPortfolioListResult> {
-  const sortColumns = getSuggestionPortfolioSortColumns(filters.sort);
+  const rpcArgs: {
+    target_q?: string;
+    target_status?: string;
+    target_programme?: string;
+    target_category?: string;
+    target_origin_unit?: string;
+    target_sort: string;
+    target_page: number;
+    target_page_size: number;
+    target_reviewer: string;
+  } = {
+    target_sort: filters.sort,
+    target_page: filters.page,
+    target_page_size: filters.pageSize,
+    target_reviewer: filters.reviewer,
+  };
 
-  const countQuery = applyPortfolioFilters(
-    supabase.from("improvement_suggestions").select("id", {
-      count: "exact",
-      head: true,
-    }),
-    filters,
-  );
-
-  const { count: totalCount = 0, error: countError } = await countQuery;
-
-  if (countError) {
-    throw new Error("Unable to load suggestions portfolio.");
+  if (filters.q) {
+    rpcArgs.target_q = filters.q;
+  }
+  if (filters.status) {
+    rpcArgs.target_status = filters.status;
+  }
+  if (filters.programme) {
+    rpcArgs.target_programme = filters.programme;
+  }
+  if (filters.category) {
+    rpcArgs.target_category = filters.category;
+  }
+  if (filters.originUnit) {
+    rpcArgs.target_origin_unit = filters.originUnit;
   }
 
-  const safeTotalCount = totalCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(safeTotalCount / filters.pageSize));
-  const page = Math.min(normalizePage(filters.page), totalPages);
-  const offset = (page - 1) * filters.pageSize;
-
-  const dataQuery = applyPortfolioFilters(
-    supabase.from("improvement_suggestions").select(PORTFOLIO_SELECT),
-    filters,
+  const { data, error } = await supabase.rpc(
+    "get_suggestion_portfolio",
+    rpcArgs,
   );
-
-  const { data, error } = await dataQuery
-    .order(sortColumns.primary, { ascending: sortColumns.ascending })
-    .order("id", { ascending: sortColumns.ascending })
-    .range(offset, offset + filters.pageSize - 1);
 
   if (error) {
     throw new Error("Unable to load suggestions portfolio.");
   }
 
+  const result = (data ?? {}) as SuggestionPortfolioListResult;
+
   return {
-    items: (data ?? []) as SuggestionPortfolioItem[],
-    total_count: safeTotalCount,
-    page,
-    page_size: filters.pageSize,
+    items: (result.items ?? []) as SuggestionPortfolioItem[],
+    total_count: result.total_count ?? 0,
+    page: result.page ?? 1,
+    page_size: result.page_size ?? filters.pageSize,
   };
 }
 

@@ -5,7 +5,9 @@ import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_SORT,
   buildSuggestionPortfolioSearchParams,
+  hasActiveSuggestionPortfolioFilters,
   parseSuggestionPortfolioSearchParams,
+  suggestionPortfolioHref,
 } from "@/lib/suggestions/suggestion-portfolio-query";
 
 describe("suggestion portfolio query helpers", () => {
@@ -16,6 +18,7 @@ describe("suggestion portfolio query helpers", () => {
       programme: null,
       category: null,
       originUnit: null,
+      reviewer: "all",
       sort: DEFAULT_SORT,
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
@@ -111,18 +114,75 @@ describe("suggestion portfolio query helpers", () => {
     expect(params.get("pageSize")).toBe("50");
   });
 
-  it("omits default sort, page, and page size from generated query strings", () => {
+  it("omits default sort, page, page size, and reviewer from generated query strings", () => {
     const params = buildSuggestionPortfolioSearchParams({
       q: null,
       status: null,
       programme: null,
       category: null,
       originUnit: null,
+      reviewer: "all",
       sort: DEFAULT_SORT,
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
     });
 
     expect(params.toString()).toBe("");
+  });
+
+  it("normalizes reviewer filter values", () => {
+    expect(
+      parseSuggestionPortfolioSearchParams({ reviewer: "mine" }).reviewer,
+    ).toBe("mine");
+    expect(
+      parseSuggestionPortfolioSearchParams({ reviewer: "unassigned" }).reviewer,
+    ).toBe("unassigned");
+    expect(
+      parseSuggestionPortfolioSearchParams({ reviewer: "all" }).reviewer,
+    ).toBe("all");
+    expect(
+      parseSuggestionPortfolioSearchParams({ reviewer: "bogus" }).reviewer,
+    ).toBe("all");
+  });
+
+  it("preserves reviewer filter in generated query strings", () => {
+    const mineParams = buildSuggestionPortfolioSearchParams({
+      reviewer: "mine",
+    });
+    expect(mineParams.get("reviewer")).toBe("mine");
+
+    const unassignedParams = buildSuggestionPortfolioSearchParams({
+      reviewer: "unassigned",
+    });
+    expect(unassignedParams.get("reviewer")).toBe("unassigned");
+  });
+
+  it("treats reviewer mine and unassigned as active filters", () => {
+    expect(
+      hasActiveSuggestionPortfolioFilters({
+        ...parseSuggestionPortfolioSearchParams({}),
+        reviewer: "mine",
+      }),
+    ).toBe(true);
+    expect(
+      hasActiveSuggestionPortfolioFilters({
+        ...parseSuggestionPortfolioSearchParams({}),
+        reviewer: "unassigned",
+      }),
+    ).toBe(true);
+    expect(
+      hasActiveSuggestionPortfolioFilters(
+        parseSuggestionPortfolioSearchParams({}),
+      ),
+    ).toBe(false);
+  });
+
+  it("preserves reviewer filter in pagination hrefs", () => {
+    expect(
+      suggestionPortfolioHref({
+        reviewer: "mine",
+        page: 2,
+      }),
+    ).toBe("/platform/suggestions?reviewer=mine&page=2");
   });
 });
