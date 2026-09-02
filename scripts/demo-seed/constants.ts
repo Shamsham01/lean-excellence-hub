@@ -195,6 +195,16 @@ export const DEMO_ROLES = {
     ],
     invitationTokenSeed: "apex-demo-operator-invitation-v1",
   },
+  suggestionsReviewer: {
+    canonicalName: "suggestions-reviewer",
+    displayName: "Suggestions Reviewer",
+    description:
+      "Organisation-scoped reviewer for S2b2 workflow end-to-end fixtures.",
+    scopeType: "organisation" as const,
+    scopeUnitKey: null,
+    permissions: ["suggestions.read", "suggestions.review"],
+    invitationTokenSeed: "apex-demo-suggestions-reviewer-invitation-v1",
+  },
 } as const;
 
 export const DEMO_PLATFORM_SAMPLES = {
@@ -325,6 +335,18 @@ export const DEMO_SUGGESTION_CATEGORIES = [
   { code: "people", name: "People" },
   { code: "waste", name: "Waste" },
 ] as const;
+
+export const S2B2_WORKFLOW_FIXTURE_TITLES = {
+  claim: "S2b2 workflow claim target",
+  decline: "S2b2 workflow decline target",
+  assign: "S2b2 workflow assign target",
+  reassign: "S2b2 workflow reassign target",
+  parked: "S2b2 workflow parked target",
+  staleClaim: "S2b2 workflow stale claim target",
+} as const;
+
+/** Total suggestions after full demo seed (M9 + S3a + S2b2 fixtures). */
+export const DEMO_SUGGESTION_PORTFOLIO_TOTAL_COUNT = 40;
 
 export const DEMO_RECOGNITION_TYPES = [
   { code: "great-idea", name: "Great Idea" },
