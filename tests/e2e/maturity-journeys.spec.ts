@@ -1,4 +1,9 @@
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
+import {
+  selectAssessmentScopeAndWaitForEntities,
+  selectFirstScopeEntity,
+  selectFrameworkVersion,
+} from "./helpers/maturity-assessment";
 import { expect, test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -10,6 +15,7 @@ import {
 } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
+const CORNWALL_PLANT_LABEL = /Cornwall Plant/i;
 
 async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   const credentials = DEMO_USERS[user];
@@ -20,40 +26,6 @@ async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/platform/);
   await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
-
-async function selectFirstEnabledOption(page: Page, selectId: string) {
-  const select = page.locator(`#${selectId}`);
-  await expect
-    .poll(async () => select.locator("option:not([disabled])").count(), {
-      timeout: 30_000,
-    })
-    .toBeGreaterThan(0);
-  const value = await select
-    .locator("option:not([disabled])")
-    .first()
-    .getAttribute("value");
-  if (!value) {
-    throw new Error(`No selectable option found for #${selectId}`);
-  }
-  await select.selectOption(value);
-}
-
-async function waitForScopeEntities(page: Page) {
-  await expect
-    .poll(
-      async () =>
-        page
-          .locator("#unitId option:not([disabled])")
-          .evaluateAll(
-            (options) =>
-              options.filter(
-                (option) => (option as HTMLOptionElement).value.length > 0,
-              ).length,
-          ),
-      { timeout: 30_000 },
-    )
-    .toBeGreaterThan(0);
 }
 
 test.describe("Milestone 5 maturity journeys", () => {
@@ -122,9 +94,10 @@ test.describe("Milestone 5 maturity journeys", () => {
   }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/maturity/assessments/new");
-    await selectFirstEnabledOption(page, "modelVersionId");
-    await page.locator("#assessmentScopeType").selectOption("site");
-    await waitForScopeEntities(page);
+    await selectFrameworkVersion(page);
+    await selectAssessmentScopeAndWaitForEntities(page, "site", {
+      expectedEntityName: CORNWALL_PLANT_LABEL,
+    });
 
     const entityOptions = page.locator("#unitId option:not([disabled])");
     const optionTexts = await entityOptions.allTextContents();
@@ -141,21 +114,11 @@ test.describe("Milestone 5 maturity journeys", () => {
   }) => {
     await loginAs(page, "manager");
     await page.goto("/platform/maturity/assessments/new");
-    await page
-      .locator("#modelVersionId option")
-      .filter({ hasText: "E2E Closure Framework" })
-      .first()
-      .evaluate((option) => {
-        const select = option.parentElement as HTMLSelectElement | null;
-        if (!select) {
-          throw new Error("Framework version select was not found");
-        }
-        select.value = (option as HTMLOptionElement).value;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-    await page.locator("#assessmentScopeType").selectOption("site");
-    await waitForScopeEntities(page);
-    await selectFirstEnabledOption(page, "unitId");
+    await selectFrameworkVersion(page, { label: /E2E Closure Framework/ });
+    await selectAssessmentScopeAndWaitForEntities(page, "site", {
+      expectedEntityName: CORNWALL_PLANT_LABEL,
+    });
+    await selectFirstScopeEntity(page);
     await page.getByLabel("Assessment type").selectOption("formal");
     await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/assessments\//);
@@ -223,18 +186,11 @@ test.describe("Milestone 5 maturity journeys", () => {
   }) => {
     await loginAs(page, "operator");
     await page.goto("/platform/maturity/assessments/new");
-    const e2eVersionValue = await page
-      .locator("#modelVersionId option")
-      .filter({ hasText: "E2E Closure Framework" })
-      .first()
-      .getAttribute("value");
-    if (!e2eVersionValue) {
-      throw new Error("E2E Closure Framework version not found");
-    }
-    await page.locator("#modelVersionId").selectOption(e2eVersionValue);
-    await page.locator("#assessmentScopeType").selectOption("site");
-    await waitForScopeEntities(page);
-    await selectFirstEnabledOption(page, "unitId");
+    await selectFrameworkVersion(page, { label: /E2E Closure Framework/ });
+    await selectAssessmentScopeAndWaitForEntities(page, "site", {
+      expectedEntityName: CORNWALL_PLANT_LABEL,
+    });
+    await selectFirstScopeEntity(page);
     await page.getByLabel("Assessment type").selectOption("self");
     await page.getByRole("button", { name: "Start assessment" }).click();
 
