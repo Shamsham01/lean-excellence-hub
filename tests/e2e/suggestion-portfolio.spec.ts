@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   DEMO_ORGANISATION,
+  DEMO_SUGGESTION_PORTFOLIO_MIN_COUNT,
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 
@@ -120,9 +121,10 @@ test.describe("S3a suggestions portfolio", () => {
     );
     await page.getByTestId("suggestion-portfolio-clear-filters").click();
     await expect(page).toHaveURL("/platform/suggestions");
-    await expect(
-      page.getByTestId("suggestion-portfolio-pagination"),
-    ).toContainText(/of 3\d/);
+    const totalCount = await getPortfolioTotalCount(page);
+    expect(totalCount).toBeGreaterThanOrEqual(
+      DEMO_SUGGESTION_PORTFOLIO_MIN_COUNT,
+    );
   });
 
   test("pagination preserves filters and supports next page", async ({

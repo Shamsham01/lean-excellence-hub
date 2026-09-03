@@ -50,3 +50,47 @@ export type SuggestionPortfolioFilterOptions = {
   categories: SuggestionPortfolioCategoryOption[];
   originUnits: SuggestionPortfolioOriginUnitOption[];
 };
+
+export type SuggestionReviewContextSuggestion = {
+  id: string;
+  suggestion_number: string | null;
+  title: string;
+  status: string;
+  problem_or_opportunity: string | null;
+  proposed_idea: string | null;
+  category_name: string | null;
+  programme_name: string | null;
+  origin_unit_name: string | null;
+  submitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  parked_at: string | null;
+  parked_rationale: string | null;
+};
+
+export type SuggestionReviewContextReviewer = {
+  member_id: string;
+  display_name: string | null;
+  assignment_kind: string | null;
+  assigned_at: string | null;
+};
+
+export type SuggestionReviewContextPermissions = {
+  is_active_reviewer: boolean;
+  can_claim: boolean;
+  can_assign: boolean;
+  can_begin_review: boolean;
+  can_record_review: boolean;
+};
+
+export type SuggestionEligibleReviewer = {
+  member_id: string;
+  display_name: string | null;
+};
+
+export type SuggestionReviewContext = {
+  suggestion: SuggestionReviewContextSuggestion;
+  reviewer: SuggestionReviewContextReviewer | null;
+  permissions: SuggestionReviewContextPermissions;
+  eligible_reviewers: SuggestionEligibleReviewer[];
+};

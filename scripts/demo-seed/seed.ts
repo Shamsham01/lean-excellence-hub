@@ -23,6 +23,7 @@ import {
   DEMO_SKILLS,
   DEMO_SUGGESTION_CATEGORIES,
   DEMO_SUGGESTION_PROGRAMME,
+  S2B2_WORKFLOW_FIXTURE_TITLES,
   DEMO_TRAINING_COURSES,
   DEMO_TRAINING_SESSION,
   DEMO_UNITS,
@@ -2829,6 +2830,145 @@ async function ensureS3aSearchProbeFixtures(
   );
 }
 
+async function ensureS2b2ReviewerWorkflowFixtures(
+  signedInAdmin: SupabaseClient,
+  organisationId: string,
+  unitIds: UnitMap,
+  apiUrl: string,
+  publishableKey: string,
+) {
+  const fixtureTitles = Object.values(S2B2_WORKFLOW_FIXTURE_TITLES);
+  const { count, error: countError } = await signedInAdmin
+    .from("improvement_suggestions")
+    .select("id", { count: "exact", head: true })
+    .in("title", fixtureTitles);
+
+  if (countError) {
+    throw countError;
+  }
+
+  if ((count ?? 0) >= fixtureTitles.length) {
+    console.log("S2b2 reviewer workflow fixtures already seeded.");
+    return;
+  }
+
+  const reviewerRoleVersionId = await ensurePublishedRole(
+    signedInAdmin,
+    organisationId,
+    "suggestionsReviewer",
+  );
+
+  const { data: financeMembership } = await signedInAdmin
+    .from("organisation_memberships")
+    .select("id")
+    .eq("user_id", DEMO_USERS.finance.id)
+    .maybeSingle();
+
+  if (!financeMembership?.id) {
+    throw new Error("S2b2 fixtures require finance membership.");
+  }
+
+  const { count: financeReviewerGrantCount } = await signedInAdmin
+    .from("access_grants")
+    .select("id", { count: "exact", head: true })
+    .eq("grantee_membership_id", financeMembership.id)
+    .eq("role_version_id", reviewerRoleVersionId)
+    .eq("status", "active");
+
+  if ((financeReviewerGrantCount ?? 0) === 0) {
+    const operationsUnitId = unitIds.operations;
+    if (!operationsUnitId) {
+      throw new Error("S2b2 fixtures require operations unit.");
+    }
+
+    const { error: grantError } = await signedInAdmin.rpc(
+      "grant_role_version",
+      {
+        target_organisation_id: organisationId,
+        target_grantee_membership_id: financeMembership.id,
+        target_role_version_id: reviewerRoleVersionId,
+        target_scope_type: "organisation",
+        target_scope_unit_id: null,
+      },
+    );
+
+    if (grantError) {
+      throw grantError;
+    }
+  }
+
+  const { data: programmeVersion, error: programmeVersionError } =
+    await signedInAdmin
+      .from("suggestion_programme_versions")
+      .select("id")
+      .eq("lifecycle", "published")
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  const { data: categories, error: categoriesError } = await signedInAdmin
+    .from("suggestion_categories")
+    .select("id")
+    .eq("status", "active");
+
+  if (programmeVersionError) {
+    throw programmeVersionError;
+  }
+  if (categoriesError) {
+    throw categoriesError;
+  }
+  if (!programmeVersion || !categories?.length) {
+    throw new Error("S2b2 fixtures require M9 suggestion catalogue.");
+  }
+
+  const operatorClient = await signInUser(apiUrl, publishableKey, "operator");
+  await switchOrganisation(
+    operatorClient,
+    (await resolveOrganisationId(operatorClient)) as string,
+  );
+
+  const categoryId = categories[0]!.id;
+
+  for (const title of fixtureTitles) {
+    const { data: existing } = await signedInAdmin
+      .from("improvement_suggestions")
+      .select("id")
+      .eq("title", title)
+      .maybeSingle();
+
+    if (existing?.id) {
+      continue;
+    }
+
+    const { data: draftId, error: draftError } = await operatorClient.rpc(
+      "create_suggestion_draft",
+      {
+        target_programme_version_id: programmeVersion.id,
+        target_category_id: categoryId,
+        target_title: title,
+        target_problem_or_opportunity: "S2b2 reviewer workflow fixture.",
+        target_proposed_idea: "Validate explicit reviewer workflow UI.",
+        target_expected_benefit_summary: "Reliable reviewer E2E coverage.",
+      },
+    );
+    if (draftError) {
+      throw draftError;
+    }
+
+    const { error: submitError } = await operatorClient.rpc(
+      "submit_suggestion",
+      {
+        target_suggestion_id: draftId as string,
+      },
+    );
+    if (submitError) {
+      throw submitError;
+    }
+  }
+
+  console.log("S2b2 demo: reviewer workflow fixtures seeded.");
+}
+
 async function ensureM8Demo(
   signedInAdmin: SupabaseClient,
   unitIds: UnitMap,
@@ -3016,6 +3156,13 @@ async function main() {
   );
   await ensureS3aSearchProbeFixtures(
     adminClient,
+    env.apiUrl,
+    env.publishableKey,
+  );
+  await ensureS2b2ReviewerWorkflowFixtures(
+    adminClient,
+    organisationId,
+    unitIds,
     env.apiUrl,
     env.publishableKey,
   );
