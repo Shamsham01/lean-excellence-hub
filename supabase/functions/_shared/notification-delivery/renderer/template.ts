@@ -1,13 +1,35 @@
 import { escapeHtml } from "../html-escape.ts";
 
+type BrandedOperationalEmailSection = {
+  heading: string;
+  body: string;
+};
+
 type BrandedOperationalEmailContent = {
   eyebrow: string;
   title: string;
   intro: string;
   ctaLabel: string;
   ctaUrl: string;
+  sections?: BrandedOperationalEmailSection[];
   footer?: string;
 };
+
+function renderSections(sections: BrandedOperationalEmailSection[]): string {
+  return sections
+    .map((section) => {
+      const heading = escapeHtml(section.heading);
+      const body = escapeHtml(section.body);
+
+      return `<tr>
+              <td style="font-size:14px;line-height:1.6;color:#3f3f46;padding-bottom:16px;">
+                <strong>${heading}</strong><br />
+                ${body}
+              </td>
+            </tr>`;
+    })
+    .join("");
+}
 
 export function renderBrandedOperationalEmail(
   content: BrandedOperationalEmailContent,
@@ -18,6 +40,7 @@ export function renderBrandedOperationalEmail(
   const ctaLabel = escapeHtml(content.ctaLabel);
   const ctaUrl = escapeHtml(content.ctaUrl);
   const footer = content.footer ? escapeHtml(content.footer) : "";
+  const sections = content.sections ? renderSections(content.sections) : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -41,6 +64,7 @@ export function renderBrandedOperationalEmail(
                 ${intro}
               </td>
             </tr>
+            ${sections}
             <tr>
               <td style="padding-bottom:24px;">
                 <a href="${ctaUrl}" style="display:inline-block;background-color:#18181b;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;padding:12px 20px;border-radius:8px;">

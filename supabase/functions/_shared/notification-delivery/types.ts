@@ -34,6 +34,7 @@ export type NotificationDeliveryContext = {
   contextTitle: string | null;
   contextDetail: string | null;
   contextLinkPath: string | null;
+  contextEmployeeMessage: string | null;
 };
 
 export type RenderedOperationalEmail = {

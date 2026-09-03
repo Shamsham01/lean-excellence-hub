@@ -17,6 +17,8 @@ import { SuggestionEvidenceBlock } from "@/components/suggestions/suggestion-evi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   classificationSummary,
@@ -62,6 +64,10 @@ export function SuggestionDetail({
   canUploadEvidence,
 }: SuggestionDetailProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const [implementationSummary, setImplementationSummary] = useState(
+    "Improvement completed on the floor.",
+  );
+  const [employeeOutcome, setEmployeeOutcome] = useState("");
   const status = detail.status as string;
   const id = detail.id as string;
 
@@ -81,9 +87,15 @@ export function SuggestionDetail({
   }
 
   async function handleImplemented() {
+    if (!employeeOutcome.trim()) {
+      setMessage("Employee-facing outcome is required.");
+      return;
+    }
+
     const result = await markSuggestionImplemented(
       id,
-      "Improvement completed on the floor.",
+      implementationSummary.trim(),
+      employeeOutcome.trim(),
     );
     setMessage(result.error ? result.error : "Marked implemented");
   }
@@ -254,27 +266,76 @@ export function SuggestionDetail({
                   </p>
                 </div>
               ) : null}
+              {detail.employee_outcome ? (
+                <div>
+                  <p className="font-medium">Outcome shared with proposer</p>
+                  <p className="mt-1 leading-relaxed text-muted-foreground">
+                    {detail.employee_outcome as string}
+                  </p>
+                </div>
+              ) : null}
               {canManage && ["accepted", "implementing"].includes(status) ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAction()}
-                  >
-                    Create action
-                  </Button>
-                  {canCreateProject ? (
+                <div className="flex flex-col gap-4">
+                  <label className="flex flex-col gap-1">
+                    <Label htmlFor="implementation-summary">
+                      Internal implementation summary
+                    </Label>
+                    <Textarea
+                      id="implementation-summary"
+                      rows={2}
+                      value={implementationSummary}
+                      onChange={(event) =>
+                        setImplementationSummary(event.target.value)
+                      }
+                      data-testid="implementation-summary"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <Label htmlFor="employee-outcome">
+                      Outcome for employee
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      This message will be shared with the person who submitted
+                      the suggestion and may be included in their completion
+                      email.
+                    </p>
+                    <Textarea
+                      id="employee-outcome"
+                      required
+                      rows={3}
+                      value={employeeOutcome}
+                      onChange={(event) =>
+                        setEmployeeOutcome(event.target.value)
+                      }
+                      data-testid="employee-outcome"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleProject()}
+                      onClick={() => handleAction()}
                     >
-                      Create project
+                      Create action
                     </Button>
-                  ) : null}
-                  <Button size="sm" onClick={() => handleImplemented()}>
-                    Mark implemented
-                  </Button>
+                    {canCreateProject ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleProject()}
+                      >
+                        Create project
+                      </Button>
+                    ) : null}
+                    <Button
+                      size="sm"
+                      onClick={() => handleImplemented()}
+                      disabled={!employeeOutcome.trim()}
+                      data-testid="mark-implemented-button"
+                    >
+                      Mark implemented
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <p className="text-muted-foreground">

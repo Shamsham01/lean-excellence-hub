@@ -37,9 +37,11 @@ describe("notification projector registry", () => {
       "SuggestionReviewerAssigned",
       "SuggestionReviewerReassigned",
       "SuggestionReviewStarted",
+      "SuggestionMoreInformationRequested",
       "SuggestionAccepted",
       "SuggestionRejected",
       "SuggestionParked",
+      "SuggestionImplemented",
     ]);
   });
 

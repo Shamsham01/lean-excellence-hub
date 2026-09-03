@@ -4213,6 +4213,7 @@ export type Database = {
           category_id: string
           category_name_snapshot: string | null
           created_at: string
+          employee_outcome: string | null
           expected_benefit_summary: string | null
           id: string
           implementation_outcome: string | null
@@ -4251,6 +4252,7 @@ export type Database = {
           category_id: string
           category_name_snapshot?: string | null
           created_at?: string
+          employee_outcome?: string | null
           expected_benefit_summary?: string | null
           id: string
           implementation_outcome?: string | null
@@ -4289,6 +4291,7 @@ export type Database = {
           category_id?: string
           category_name_snapshot?: string | null
           created_at?: string
+          employee_outcome?: string | null
           expected_benefit_summary?: string | null
           id?: string
           implementation_outcome?: string | null
@@ -9665,6 +9668,7 @@ export type Database = {
           created_at: string
           decision: string
           effort_level: string
+          employee_feedback: string | null
           id: string
           impact_level: string
           implementation_recommendation: string | null
@@ -9678,6 +9682,7 @@ export type Database = {
           created_at?: string
           decision: string
           effort_level: string
+          employee_feedback?: string | null
           id?: string
           impact_level: string
           implementation_recommendation?: string | null
@@ -9691,6 +9696,7 @@ export type Database = {
           created_at?: string
           decision?: string
           effort_level?: string
+          employee_feedback?: string | null
           id?: string
           impact_level?: string
           implementation_recommendation?: string | null
@@ -11379,6 +11385,7 @@ export type Database = {
       approve_suggestion: {
         Args: {
           target_effort_level: string
+          target_employee_feedback: string
           target_impact_level: string
           target_implementation_recommendation?: string
           target_rationale: string
@@ -12249,6 +12256,7 @@ export type Database = {
       decline_suggestion: {
         Args: {
           target_effort_level: string
+          target_employee_feedback?: string
           target_impact_level: string
           target_rationale: string
           target_suggestion_id: string
@@ -12499,6 +12507,7 @@ export type Database = {
         }
         Returns: {
           context_detail: string
+          context_employee_message: string
           context_link_path: string
           context_title: string
           deliverable_email: string
@@ -12858,6 +12867,7 @@ export type Database = {
       }
       mark_suggestion_implemented: {
         Args: {
+          target_employee_outcome?: string
           target_follow_up_note?: string
           target_implementation_outcome?: string
           target_implementation_summary: string
@@ -12892,6 +12902,7 @@ export type Database = {
       park_suggestion: {
         Args: {
           target_effort_level?: string
+          target_employee_feedback?: string
           target_impact_level?: string
           target_rationale: string
           target_suggestion_id: string
@@ -13101,6 +13112,7 @@ export type Database = {
         Args: {
           target_decision: string
           target_effort_level: string
+          target_employee_feedback?: string
           target_impact_level: string
           target_implementation_recommendation?: string
           target_rationale: string

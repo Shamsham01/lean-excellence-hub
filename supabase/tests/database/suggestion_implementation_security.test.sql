@@ -127,7 +127,9 @@ select ok(
     'accept',
     'medium',
     'low',
-    'Accepted for implementation'
+    'Accepted for implementation',
+    null,
+    'Your suggestion is approved and can move into implementation.'
   ) is not null,
   'accepted review decision recorded'
 );

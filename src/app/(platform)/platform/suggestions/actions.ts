@@ -92,6 +92,7 @@ export async function approveSuggestion(
   impactLevel: string,
   effortLevel: string,
   rationale: string,
+  employeeFeedback: string,
   implementationRecommendation?: string,
 ): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
@@ -101,6 +102,7 @@ export async function approveSuggestion(
     target_impact_level: impactLevel,
     target_effort_level: effortLevel,
     target_rationale: rationale,
+    target_employee_feedback: employeeFeedback,
     ...(implementationRecommendation
       ? { target_implementation_recommendation: implementationRecommendation }
       : {}),
@@ -118,6 +120,7 @@ export async function declineSuggestion(
   impactLevel: string,
   effortLevel: string,
   rationale: string,
+  employeeFeedback: string,
 ): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
 
@@ -126,6 +129,7 @@ export async function declineSuggestion(
     target_impact_level: impactLevel,
     target_effort_level: effortLevel,
     target_rationale: rationale,
+    target_employee_feedback: employeeFeedback,
   });
 
   if (error) return reviewActionError(error);
@@ -138,6 +142,7 @@ export async function declineSuggestion(
 export async function parkSuggestion(
   suggestionId: string,
   rationale: string,
+  employeeFeedback: string,
   impactLevel = "medium",
   effortLevel = "medium",
 ): Promise<ActionResult> {
@@ -146,6 +151,7 @@ export async function parkSuggestion(
   const { error } = await supabase.rpc("park_suggestion", {
     target_suggestion_id: suggestionId,
     target_rationale: rationale,
+    target_employee_feedback: employeeFeedback,
     target_impact_level: impactLevel,
     target_effort_level: effortLevel,
   });
@@ -168,6 +174,8 @@ export async function recordSuggestionReview(
 
   rationale: string,
 
+  employeeFeedback: string,
+
   implementationRecommendation?: string,
 ): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
@@ -182,6 +190,8 @@ export async function recordSuggestionReview(
     target_effort_level: effortLevel,
 
     target_rationale: rationale,
+
+    target_employee_feedback: employeeFeedback,
 
     ...(implementationRecommendation
       ? { target_implementation_recommendation: implementationRecommendation }
@@ -242,6 +252,8 @@ export async function markSuggestionImplemented(
 
   summary: string,
 
+  employeeOutcome: string,
+
   outcome = "implemented_as_proposed",
 ): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
@@ -250,6 +262,8 @@ export async function markSuggestionImplemented(
     target_suggestion_id: suggestionId,
 
     target_implementation_summary: summary,
+
+    target_employee_outcome: employeeOutcome,
 
     target_implementation_outcome: outcome,
   });

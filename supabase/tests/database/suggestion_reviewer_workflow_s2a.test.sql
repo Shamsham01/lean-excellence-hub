@@ -508,11 +508,12 @@ select set_config(
 
 select throws_ok(
   format(
-    'select public.approve_suggestion(%L::uuid, %L, %L, %L)',
+    'select public.approve_suggestion(%L::uuid, %L, %L, %L, %L)',
     (select id from s2a_ids where key = 'suggestion'),
     'medium',
     'low',
-    'Superseded reviewer attempted approval'
+    'Superseded reviewer attempted approval',
+    'Please revise the proposal before approval.'
   ),
   '42501',
   'review recording is not authorised',
@@ -529,6 +530,9 @@ select set_config(
 select ok(
   public.park_suggestion(
     (select id from s2a_ids where key = 'suggestion'),
+    'Internal: waiting for additional operational data',
+    'medium',
+    'medium',
     'Waiting for additional operational data'
   ) is not null,
   'active reviewer can park with rationale'
@@ -578,7 +582,8 @@ select ok(
     (select id from s2a_ids where key = 'suggestion'),
     'medium',
     'low',
-    'Declined after resumed review'
+    'Declined after resumed review',
+    'This suggestion is not feasible in the current cycle.'
   ) is not null,
   'active reviewer can decline'
 );
@@ -648,7 +653,8 @@ select ok(
     (select id from s2a_ids where key = 'approve_suggestion'),
     'high',
     'medium',
-    'Approved for implementation'
+    'Approved for implementation',
+    'Great idea — proceed to implementation.'
   ) is not null,
   'active reviewer can approve'
 );
@@ -769,11 +775,12 @@ select ok(
 
 select throws_ok(
   format(
-    'select public.approve_suggestion(%L::uuid, %L, %L, %L)',
+    'select public.approve_suggestion(%L::uuid, %L, %L, %L, %L)',
     (select id from s2a_ids where key = 'approve_suggestion'),
     'high',
     'low',
-    'Invalid transition from accepted'
+    'Invalid transition from accepted',
+    'This should not be approved again.'
   ),
   '55000',
   'suggestion is not under review',

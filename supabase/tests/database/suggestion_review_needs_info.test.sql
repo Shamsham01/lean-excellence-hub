@@ -120,6 +120,8 @@ select ok(
     'needs_more_information',
     'low',
     'low',
+    'Internal: need clarification on scope',
+    null,
     'Need clarification on scope'
   ) is not null,
   'needs_more_information review is recorded'

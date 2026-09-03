@@ -560,6 +560,9 @@ select ok(
 select ok(
   public.park_suggestion(
     (select id from s2b2_ids where key = 'parked_suggestion'),
+    'Internal: waiting for more evidence',
+    'medium',
+    'medium',
     'Waiting for more evidence'
   ) is not null,
   'reviewer parks suggestion'
@@ -573,6 +576,9 @@ select ok(
 select ok(
   public.park_suggestion(
     (select id from s2b2_ids where key = 'resumed_suggestion'),
+    'Internal: paused pending supplier quote',
+    'medium',
+    'medium',
     'Paused pending supplier quote'
   ) is not null,
   'reviewer parks resumed suggestion'

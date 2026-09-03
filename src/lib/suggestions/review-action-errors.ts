@@ -29,8 +29,14 @@ export function mapSuggestionReviewActionError(error: unknown): string {
   }
 
   if (code === "22023" || /22023/.test(raw)) {
+    if (/employee feedback/i.test(raw)) {
+      return "Feedback for the employee is required for this action.";
+    }
+    if (/employee outcome/i.test(raw)) {
+      return "An employee-facing outcome is required to complete this suggestion.";
+    }
     if (/rationale/i.test(raw)) {
-      return "A rationale is required for this action.";
+      return "Internal reviewer notes are required for this action.";
     }
     return "Please check the review details and try again.";
   }

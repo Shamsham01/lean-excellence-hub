@@ -4,8 +4,9 @@ import {
   SKILL_PROFICIENCY_VALIDATED_KIND,
   SUGGESTION_APPROVED_KIND,
   SUGGESTION_DECLINED_KIND,
+  SUGGESTION_IMPLEMENTED_KIND,
+  SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
   SUGGESTION_PARKED_KIND,
-  SUGGESTION_REVIEW_STARTED_KIND,
   SUGGESTION_REVIEWER_ASSIGNED_KIND,
   SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
@@ -14,8 +15,9 @@ import {
   renderSkillProficiencyValidatedEmail,
   renderSuggestionApprovedEmail,
   renderSuggestionDeclinedEmail,
+  renderSuggestionImplementedEmail,
+  renderSuggestionMoreInformationRequiredEmail,
   renderSuggestionParkedEmail,
-  renderSuggestionReviewStartedEmail,
   renderSuggestionReviewerAssignedEmail,
   renderSuggestionReviewerReassignedEmail,
   renderTrainingCompletedEmail,
@@ -38,10 +40,12 @@ const RENDERERS: Record<string, NotificationRenderer> = {
   [SUGGESTION_REVIEWER_ASSIGNED_KIND]: renderSuggestionReviewerAssignedEmail,
   [SUGGESTION_REVIEWER_REASSIGNED_KIND]:
     renderSuggestionReviewerReassignedEmail,
-  [SUGGESTION_REVIEW_STARTED_KIND]: renderSuggestionReviewStartedEmail,
+  [SUGGESTION_MORE_INFORMATION_REQUIRED_KIND]:
+    renderSuggestionMoreInformationRequiredEmail,
   [SUGGESTION_APPROVED_KIND]: renderSuggestionApprovedEmail,
   [SUGGESTION_DECLINED_KIND]: renderSuggestionDeclinedEmail,
   [SUGGESTION_PARKED_KIND]: renderSuggestionParkedEmail,
+  [SUGGESTION_IMPLEMENTED_KIND]: renderSuggestionImplementedEmail,
 };
 
 export function renderOperationalNotification(
