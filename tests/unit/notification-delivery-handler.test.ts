@@ -41,6 +41,7 @@ const DELIVERABLE_CONTEXT = {
   contextTitle: "Production Operator",
   contextDetail: "Primary assignment",
   contextLinkPath: "/platform/people",
+  contextEmployeeMessage: null,
 };
 
 function createMockClient(
@@ -572,9 +573,9 @@ describe("notification delivery processing", () => {
     };
     const suggestionDelivery = {
       ...BASE_DELIVERY,
-      notificationKind: "suggestions.review_started",
+      notificationKind: "suggestions.approved",
       deliveryKey:
-        "suggestions.review_started:33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444",
+        "suggestions.approved:33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444",
     };
 
     await processClaimedNotificationDelivery(

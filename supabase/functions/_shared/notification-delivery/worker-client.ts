@@ -93,6 +93,7 @@ type ContextRow = {
   context_title: string | null;
   context_detail: string | null;
   context_link_path: string | null;
+  context_employee_message: string | null;
 };
 
 type EnvelopeRow = {
@@ -189,6 +190,7 @@ export function createNotificationDeliveryWorkerClient(deps: {
           contextTitle: row.context_title,
           contextDetail: row.context_detail,
           contextLinkPath: row.context_link_path,
+          contextEmployeeMessage: row.context_employee_message,
         },
         error: null,
       };

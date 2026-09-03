@@ -122,6 +122,9 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     );
     await page
       .getByTestId("review-rationale")
+      .fill("Internal: waiting for supplier quote.");
+    await page
+      .getByTestId("review-employee-feedback")
       .fill("Waiting for supplier quote.");
     await page.getByTestId("review-park-button").click();
     await expect(
@@ -165,6 +168,9 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     );
     await page
       .getByTestId("review-rationale")
+      .fill("Internal: clear operational benefit.");
+    await page
+      .getByTestId("review-employee-feedback")
       .fill("Clear operational benefit.");
     await page.getByTestId("review-approve-button").click();
     await expect(
@@ -183,7 +189,10 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.decline);
     await page.getByTestId("review-claim-button").click();
     await page.getByTestId("review-begin-button").click();
-    await page.getByTestId("review-rationale").fill("Not viable at this time.");
+    await page.getByTestId("review-rationale").fill("Internal: not viable.");
+    await page
+      .getByTestId("review-employee-feedback")
+      .fill("Not viable at this time.");
     await page.getByTestId("review-decline-button").click();
     await expect(
       reviewWorkspace(page).getByText("Rejected", { exact: true }),
@@ -300,6 +309,9 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await page.getByTestId("review-begin-button").click();
     await page
       .getByTestId("review-rationale")
+      .fill("Internal: need additional evidence.");
+    await page
+      .getByTestId("review-employee-feedback")
       .fill("Need additional evidence.");
     await page.getByTestId("review-park-button").click();
     await page.goto("/platform/suggestions/review?queue=mine");

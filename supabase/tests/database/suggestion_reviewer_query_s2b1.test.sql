@@ -471,6 +471,9 @@ select ok(
 select ok(
   public.park_suggestion(
     (select id from s2b1_ids where key = 'parked_suggestion'),
+    'Internal: waiting for more evidence',
+    'medium',
+    'medium',
     'Waiting for more evidence'
   ) is not null,
   'reviewer parks suggestion'
@@ -944,7 +947,8 @@ select ok(
     (select id from s2b1_ids where key = 'visibility_suggestion'),
     'medium',
     'medium',
-    'Approved and assignment ended'
+    'Approved and assignment ended',
+    'Approved — thank you for the improvement idea.'
   ) is not null,
   'reviewer approves visibility suggestion'
 );

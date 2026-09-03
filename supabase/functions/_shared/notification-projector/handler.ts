@@ -10,6 +10,7 @@ import type {
   WorkerRunSummary,
 } from "./types.ts";
 import type { NotificationProjectorWorkerClient } from "./worker-client.ts";
+import { authenticateNotificationWorkerRequest } from "../worker-auth.ts";
 
 const DEFAULT_BATCH_SIZE = 10;
 const MAX_BATCH_SIZE = 1000;
@@ -21,15 +22,6 @@ function jsonResponse(body: unknown, status = 200): Response {
       "Content-Type": "application/json",
     },
   });
-}
-
-function readBearerToken(request: Request): string | null {
-  const header = request.headers.get("Authorization");
-  if (!header?.startsWith("Bearer ")) {
-    return null;
-  }
-  const token = header.slice("Bearer ".length).trim();
-  return token.length > 0 ? token : null;
 }
 
 function parseBatchSize(body: Record<string, unknown> | null): number {
@@ -281,14 +273,12 @@ export async function handleNotificationProjectorRequest(
     return jsonResponse({ error: "Method not allowed." }, 405);
   }
 
-  const serviceRoleKey = dependencies.readEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!serviceRoleKey) {
-    return jsonResponse({ error: "Worker is not configured." }, 500);
-  }
-
-  const bearerToken = readBearerToken(request);
-  if (!bearerToken || bearerToken !== serviceRoleKey) {
-    return jsonResponse({ error: "Unauthorized." }, 401);
+  const authResult = authenticateNotificationWorkerRequest(
+    request,
+    dependencies.readEnv,
+  );
+  if (!authResult.ok) {
+    return jsonResponse({ error: authResult.error }, authResult.status);
   }
 
   let body: Record<string, unknown> | null = null;

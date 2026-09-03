@@ -11,6 +11,7 @@ import {
   claimSuggestionForReview,
   declineSuggestion,
   parkSuggestion,
+  recordSuggestionReview,
 } from "@/app/(platform)/platform/suggestions/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const [impact, setImpact] = useState<(typeof LEVELS)[number]>("medium");
   const [effort, setEffort] = useState<(typeof LEVELS)[number]>("medium");
   const [rationale, setRationale] = useState("");
+  const [employeeFeedback, setEmployeeFeedback] = useState("");
   const [implementationRecommendation, setImplementationRecommendation] =
     useState("");
   const [selectedReviewerId, setSelectedReviewerId] = useState(
@@ -352,7 +354,10 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
             </div>
 
             <label className="flex flex-col gap-1">
-              <Label htmlFor="review-rationale">Rationale</Label>
+              <Label htmlFor="review-rationale">Internal reviewer notes</Label>
+              <p className="text-xs text-muted-foreground">
+                Visible to authorised reviewers and managers only.
+              </p>
               <Textarea
                 id="review-rationale"
                 required
@@ -360,6 +365,24 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 value={rationale}
                 onChange={(event) => setRationale(event.target.value)}
                 data-testid="review-rationale"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <Label htmlFor="review-employee-feedback">
+                Feedback for employee
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                This message will be shared with the person who submitted the
+                suggestion and may be included in their email notification.
+              </p>
+              <Textarea
+                id="review-employee-feedback"
+                required
+                rows={3}
+                value={employeeFeedback}
+                onChange={(event) => setEmployeeFeedback(event.target.value)}
+                data-testid="review-employee-feedback"
               />
             </label>
 
@@ -382,7 +405,11 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               <Button
                 type="button"
                 className="min-h-11 w-full sm:w-auto"
-                disabled={loadingAction !== null || !rationale.trim()}
+                disabled={
+                  loadingAction !== null ||
+                  !rationale.trim() ||
+                  !employeeFeedback.trim()
+                }
                 data-testid="review-approve-button"
                 onClick={() =>
                   runAction("approve", () =>
@@ -391,6 +418,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                       impact,
                       effort,
                       rationale.trim(),
+                      employeeFeedback.trim(),
                       implementationRecommendation.trim() || undefined,
                     ),
                   )
@@ -402,7 +430,11 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 type="button"
                 variant="outline"
                 className="min-h-11 w-full sm:w-auto"
-                disabled={loadingAction !== null || !rationale.trim()}
+                disabled={
+                  loadingAction !== null ||
+                  !rationale.trim() ||
+                  !employeeFeedback.trim()
+                }
                 data-testid="review-decline-button"
                 onClick={() =>
                   runAction("decline", () =>
@@ -411,6 +443,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                       impact,
                       effort,
                       rationale.trim(),
+                      employeeFeedback.trim(),
                     ),
                   )
                 }
@@ -421,13 +454,18 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 type="button"
                 variant="secondary"
                 className="min-h-11 w-full sm:w-auto"
-                disabled={loadingAction !== null || !rationale.trim()}
+                disabled={
+                  loadingAction !== null ||
+                  !rationale.trim() ||
+                  !employeeFeedback.trim()
+                }
                 data-testid="review-park-button"
                 onClick={() =>
                   runAction("park", () =>
                     parkSuggestion(
                       suggestion.id,
                       rationale.trim(),
+                      employeeFeedback.trim(),
                       impact,
                       effort,
                     ),
@@ -435,6 +473,33 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 }
               >
                 {loadingAction === "park" ? "Parking…" : "Park"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full sm:w-auto"
+                disabled={
+                  loadingAction !== null ||
+                  !rationale.trim() ||
+                  !employeeFeedback.trim()
+                }
+                data-testid="review-needs-info-button"
+                onClick={() =>
+                  runAction("needs-info", () =>
+                    recordSuggestionReview(
+                      suggestion.id,
+                      "needs_more_information",
+                      impact,
+                      effort,
+                      rationale.trim(),
+                      employeeFeedback.trim(),
+                    ),
+                  )
+                }
+              >
+                {loadingAction === "needs-info"
+                  ? "Requesting…"
+                  : "Request more information"}
               </Button>
             </div>
           </form>

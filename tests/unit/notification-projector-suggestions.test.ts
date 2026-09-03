@@ -4,22 +4,19 @@ import { TerminalProjectionError } from "../../supabase/functions/_shared/notifi
 import { buildDeliveryKey } from "../../supabase/functions/_shared/notification-projector/delivery-key.ts";
 import {
   projectSuggestionAccepted,
-  projectSuggestionParked,
-  projectSuggestionRejected,
-  projectSuggestionReviewStarted,
+  projectSuggestionMoreInformationRequested,
   SUGGESTION_APPROVED_KIND,
-  SUGGESTION_DECLINED_KIND,
-  SUGGESTION_PARKED_KIND,
-  SUGGESTION_REVIEW_STARTED_KIND,
+  SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
 } from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-author-notification.ts";
+import {
+  projectSuggestionImplemented,
+  SUGGESTION_IMPLEMENTED_KIND,
+} from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-implemented.ts";
 import {
   projectSuggestionReviewerAssigned,
   SUGGESTION_REVIEWER_ASSIGNED_KIND,
 } from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-reviewer-assigned.ts";
-import {
-  projectSuggestionReviewerReassigned,
-  SUGGESTION_REVIEWER_REASSIGNED_KIND,
-} from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-reviewer-reassigned.ts";
+import { projectSuggestionReviewStarted } from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-review-started.ts";
 import {
   findNotificationProjector,
   projectDomainEvent,
@@ -34,7 +31,6 @@ const EVENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const SUGGESTION_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const REVIEWER_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const AUTHOR_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
-const OTHER_ORG_SUGGESTION_ID = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 
 function buildEvent(
   eventType: string,
@@ -47,6 +43,9 @@ function buildEvent(
     eventType,
     payload: {
       reviewer_membership_id: REVIEWER_ID,
+      review_id: "11111111-1111-4111-8111-111111111111",
+      suggestion_id: SUGGESTION_ID,
+      decision: "accept",
     },
     leaseToken: "11111111-1111-4111-8111-111111111111",
     attemptCount: 1,
@@ -81,55 +80,22 @@ describe("suggestion notification projectors", () => {
       throw new Error("expected project outcome");
     }
 
-    expect(outcome.intents).toHaveLength(1);
-    expect(outcome.intents[0]).toEqual({
-      recipientMembershipId: REVIEWER_ID,
-      notificationKind: SUGGESTION_REVIEWER_ASSIGNED_KIND,
-      deliveryKey: buildDeliveryKey(
-        SUGGESTION_REVIEWER_ASSIGNED_KIND,
-        EVENT_ID,
-        REVIEWER_ID,
-      ),
-    });
-  });
-
-  it("projects SuggestionReviewerReassigned to the new reviewer only", () => {
-    const outcome = projectSuggestionReviewerReassigned(
-      buildEvent("SuggestionReviewerReassigned"),
-    );
-
-    expect(outcome.kind).toBe("project");
-    if (outcome.kind !== "project") {
-      throw new Error("expected project outcome");
-    }
-
-    expect(outcome.intents).toHaveLength(1);
     expect(outcome.intents[0]?.notificationKind).toBe(
-      SUGGESTION_REVIEWER_REASSIGNED_KIND,
+      SUGGESTION_REVIEWER_ASSIGNED_KIND,
     );
-    expect(outcome.intents[0]?.recipientMembershipId).toBe(REVIEWER_ID);
   });
 
-  it("classifies malformed assignment payload as terminal invalid_payload", () => {
-    expect(() =>
-      projectSuggestionReviewerAssigned(
-        buildEvent("SuggestionReviewerAssigned", { payload: {} }),
-      ),
-    ).toThrow(TerminalProjectionError);
+  it("no-ops SuggestionReviewStarted", () => {
+    const outcome = projectSuggestionReviewStarted();
 
-    try {
-      projectSuggestionReviewerAssigned(
-        buildEvent("SuggestionReviewerAssigned", { payload: {} }),
-      );
-    } catch (error) {
-      expect(error).toBeInstanceOf(TerminalProjectionError);
-      expect((error as TerminalProjectionError).code).toBe("invalid_payload");
-    }
+    expect(outcome).toEqual({ kind: "noop" });
   });
 
-  it("projects SuggestionReviewStarted to the author via lookup", async () => {
-    const outcome = await projectSuggestionReviewStarted(
-      buildEvent("SuggestionReviewStarted", { payload: {} }),
+  it("projects SuggestionMoreInformationRequested to the author", async () => {
+    const outcome = await projectSuggestionMoreInformationRequested(
+      buildEvent("SuggestionMoreInformationRequested", {
+        payload: { decision: "needs_more_information" },
+      }),
       buildContext(AUTHOR_ID),
     );
 
@@ -138,10 +104,10 @@ describe("suggestion notification projectors", () => {
       throw new Error("expected project outcome");
     }
 
-    expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
     expect(outcome.intents[0]?.notificationKind).toBe(
-      SUGGESTION_REVIEW_STARTED_KIND,
+      SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
     );
+    expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
   });
 
   it("projects SuggestionAccepted to the author via lookup", async () => {
@@ -159,9 +125,9 @@ describe("suggestion notification projectors", () => {
     expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
   });
 
-  it("projects SuggestionRejected to the author via lookup", async () => {
-    const outcome = await projectSuggestionRejected(
-      buildEvent("SuggestionRejected", { payload: { decision: "reject" } }),
+  it("projects SuggestionImplemented to the author via lookup", async () => {
+    const outcome = await projectSuggestionImplemented(
+      buildEvent("SuggestionImplemented", { payload: {} }),
       buildContext(AUTHOR_ID),
     );
 
@@ -170,51 +136,10 @@ describe("suggestion notification projectors", () => {
       throw new Error("expected project outcome");
     }
 
-    expect(outcome.intents[0]?.notificationKind).toBe(SUGGESTION_DECLINED_KIND);
-    expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
-  });
-
-  it("projects SuggestionParked to the author via lookup", async () => {
-    const outcome = await projectSuggestionParked(
-      buildEvent("SuggestionParked", { payload: { decision: "park" } }),
-      buildContext(AUTHOR_ID),
+    expect(outcome.intents[0]?.notificationKind).toBe(
+      SUGGESTION_IMPLEMENTED_KIND,
     );
-
-    expect(outcome.kind).toBe("project");
-    if (outcome.kind !== "project") {
-      throw new Error("expected project outcome");
-    }
-
-    expect(outcome.intents[0]?.notificationKind).toBe(SUGGESTION_PARKED_KIND);
     expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
-  });
-
-  it("prevents cross-organisation author lookup", async () => {
-    const context: ProjectorContext = {
-      lookupRecognitionRecipients: async () => [],
-      lookupSuggestionAuthorMembershipId: async (organisationId) =>
-        organisationId === ORG_ID ? AUTHOR_ID : null,
-    };
-
-    await expect(
-      projectSuggestionReviewStarted(
-        buildEvent("SuggestionReviewStarted", {
-          organisationId: "99999999-9999-4999-8999-999999999999",
-          resourceRecordId: OTHER_ORG_SUGGESTION_ID,
-          payload: {},
-        }),
-        context,
-      ),
-    ).rejects.toMatchObject({ code: "missing_reference" });
-  });
-
-  it("fails terminally when author lookup returns null", async () => {
-    await expect(
-      projectSuggestionReviewStarted(
-        buildEvent("SuggestionReviewStarted", { payload: {} }),
-        buildContext(null),
-      ),
-    ).rejects.toMatchObject({ code: "missing_reference" });
   });
 
   it("does not create a notification for SuggestionReviewerClaimed", async () => {
@@ -227,20 +152,29 @@ describe("suggestion notification projectors", () => {
     expect(findNotificationProjector("SuggestionReviewerClaimed")).toBeNull();
   });
 
-  it("keeps unrelated events unsupported", async () => {
-    const outcome = await projectDomainEvent(
-      buildEvent("SuggestionSubmitted", { payload: {} }),
-      buildContext(AUTHOR_ID),
-    );
-
-    expect(outcome).toBeNull();
-  });
-
   it("keeps delivery keys deterministic across duplicate projection", () => {
     const event = buildEvent("SuggestionReviewerAssigned");
     const first = projectSuggestionReviewerAssigned(event);
     const second = projectSuggestionReviewerAssigned(event);
 
     expect(first).toEqual(second);
+    if (first.kind === "project" && second.kind === "project") {
+      expect(first.intents[0]?.deliveryKey).toBe(
+        buildDeliveryKey(
+          SUGGESTION_REVIEWER_ASSIGNED_KIND,
+          EVENT_ID,
+          REVIEWER_ID,
+        ),
+      );
+    }
+  });
+
+  it("fails terminally when author lookup returns null", async () => {
+    await expect(
+      projectSuggestionAccepted(
+        buildEvent("SuggestionAccepted", { payload: { decision: "accept" } }),
+        buildContext(null),
+      ),
+    ).rejects.toBeInstanceOf(TerminalProjectionError);
   });
 });

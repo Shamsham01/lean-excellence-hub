@@ -120,7 +120,9 @@ select 'review_id', public.record_suggestion_review(
   'accept',
   'medium',
   'low',
-  'Accepted in atomic transaction'
+  'Accepted in atomic transaction',
+  null,
+  'Approved — thank you for the improvement idea.'
 );
 
 select is(

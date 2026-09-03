@@ -8,8 +8,9 @@ import {
   SKILL_PROFICIENCY_VALIDATED_KIND,
   SUGGESTION_APPROVED_KIND,
   SUGGESTION_DECLINED_KIND,
+  SUGGESTION_IMPLEMENTED_KIND,
+  SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
   SUGGESTION_PARKED_KIND,
-  SUGGESTION_REVIEW_STARTED_KIND,
   SUGGESTION_REVIEWER_ASSIGNED_KIND,
   SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
@@ -38,6 +39,7 @@ function buildContext(
     contextTitle: "Sample title",
     contextDetail: "Sample detail",
     contextLinkPath: "/platform",
+    contextEmployeeMessage: null,
     ...overrides,
   };
 }
@@ -50,13 +52,19 @@ describe("notification renderers", () => {
     RECOGNITION_AWARDED_KIND,
     SUGGESTION_REVIEWER_ASSIGNED_KIND,
     SUGGESTION_REVIEWER_REASSIGNED_KIND,
-    SUGGESTION_REVIEW_STARTED_KIND,
+    SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
     SUGGESTION_APPROVED_KIND,
     SUGGESTION_DECLINED_KIND,
     SUGGESTION_PARKED_KIND,
+    SUGGESTION_IMPLEMENTED_KIND,
   ])("renders subject, text, and html for %s", (notificationKind) => {
     const rendered = renderOperationalNotification(
-      buildContext(notificationKind),
+      buildContext(notificationKind, {
+        contextEmployeeMessage:
+          notificationKind === SUGGESTION_IMPLEMENTED_KIND
+            ? "The improvement is live."
+            : "Thanks for the suggestion — please update the scope.",
+      }),
       APP_ORIGIN,
     );
 
@@ -129,11 +137,29 @@ describe("notification renderers", () => {
     expect(rendered.html).not.toContain("<Improvement>");
   });
 
+  it("includes employee-facing feedback in approved emails", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_APPROVED_KIND, {
+        contextTitle: "Forklift path",
+        contextEmployeeMessage: "Great idea — proceed with implementation.",
+        eventPayload: { rationale: "secret reviewer note" },
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.text).toContain(
+      "Great idea — proceed with implementation.",
+    );
+    expect(rendered.text).not.toContain("secret reviewer note");
+    expect(rendered.html).toContain("Feedback from reviewer");
+  });
+
   it("escapes hostile suggestion titles in suggestion emails", () => {
     const rendered = renderOperationalNotification(
       buildContext(SUGGESTION_APPROVED_KIND, {
         contextTitle: "<script>alert(1)</script>",
         contextLinkPath: "/platform/suggestions",
+        contextEmployeeMessage: "Approved.",
       }),
       APP_ORIGIN,
     );
@@ -143,16 +169,18 @@ describe("notification renderers", () => {
     expect(rendered.text).not.toContain("<script>");
   });
 
-  it("does not include parked rationale in parked notification copy", () => {
+  it("does not include internal rationale in parked notification copy", () => {
     const rendered = renderOperationalNotification(
       buildContext(SUGGESTION_PARKED_KIND, {
         contextTitle: "Parked idea",
         contextDetail: "Your suggestion was parked for further consideration",
+        contextEmployeeMessage: "We will revisit this next quarter.",
         eventPayload: { decision: "park", rationale: "secret reviewer note" },
       }),
       APP_ORIGIN,
     );
 
+    expect(rendered.text).toContain("We will revisit this next quarter.");
     expect(rendered.text).not.toContain("secret reviewer note");
     expect(rendered.html).not.toContain("secret reviewer note");
   });

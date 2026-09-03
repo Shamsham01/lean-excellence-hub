@@ -2613,6 +2613,8 @@ async function ensureM9Demo(
   await managerClient.rpc("mark_suggestion_implemented", {
     target_suggestion_id: implementedId as string,
     target_implementation_summary: "Trolley pre-staged before each changeover.",
+    target_employee_outcome:
+      "Changeover prep now includes a pre-staged trolley for every run.",
   });
 
   const { data: greatIdeaType, error: typeError } = await signedInAdmin

@@ -320,11 +320,10 @@ select ok(
       (select id from s2c_ids where key = 'review_started_event')
     ) context_row
     where context_row.recipient_resolution_status = 'deliverable'
-      and context_row.context_detail = 'Your suggestion is now under review'
-      and context_row.context_link_path =
-        '/platform/suggestions/' || (select id::text from s2c_ids where key = 'suggestion')
+      and context_row.context_detail is null
+      and context_row.context_link_path is null
   ),
-  'E: author review-start notification resolves to canonical author'
+  'E: review_started delivery is not enriched as author email notification'
 );
 
 select set_config(
@@ -637,9 +636,9 @@ select
   'disabled_delivery',
   private.create_notification_delivery(
     (select id from s2c_ids where key = 'organisation'),
-    (select id from s2c_ids where key = 'review_started_event'),
+    (select id from s2c_ids where key = 'assigned_event'),
     (select id from s2c_ids where key = 'disabled_membership'),
-    'suggestions.review_started',
+    'suggestions.reviewer_assigned',
     's2c-disabled-delivery-key'
   );
 
@@ -665,9 +664,9 @@ select
   'invalid_contact_delivery',
   private.create_notification_delivery(
     (select id from s2c_ids where key = 'organisation'),
-    (select id from s2c_ids where key = 'review_started_event'),
+    (select id from s2c_ids where key = 'assigned_event'),
     (select id from s2c_ids where key = 'owner_membership'),
-    'suggestions.review_started',
+    'suggestions.reviewer_assigned',
     's2c-invalid-contact-delivery-key'
   );
 
@@ -708,9 +707,9 @@ select
   'synthetic_delivery',
   private.create_notification_delivery(
     (select id from s2c_ids where key = 'organisation'),
-    (select id from s2c_ids where key = 'review_started_event'),
+    (select id from s2c_ids where key = 'assigned_event'),
     (select id from s2c_ids where key = 'synthetic_membership'),
-    'suggestions.review_started',
+    'suggestions.reviewer_assigned',
     's2c-synthetic-delivery-key'
   );
 
@@ -723,7 +722,7 @@ select is(
     from public.get_notification_delivery_context_for_worker(
       (select id from s2c_ids where key = 'organisation'),
       (select id from s2c_ids where key = 'disabled_delivery'),
-      (select id from s2c_ids where key = 'review_started_event')
+      (select id from s2c_ids where key = 'assigned_event')
     ) context_row
   ),
   'disabled_workforce_account',
@@ -736,7 +735,7 @@ select is(
     from public.get_notification_delivery_context_for_worker(
       (select id from s2c_ids where key = 'organisation'),
       (select id from s2c_ids where key = 'invalid_contact_delivery'),
-      (select id from s2c_ids where key = 'review_started_event')
+      (select id from s2c_ids where key = 'assigned_event')
     ) context_row
   ),
   'invalid_email',
@@ -749,7 +748,7 @@ select is(
     from public.get_notification_delivery_context_for_worker(
       (select id from s2c_ids where key = 'organisation'),
       (select id from s2c_ids where key = 'synthetic_delivery'),
-      (select id from s2c_ids where key = 'review_started_event')
+      (select id from s2c_ids where key = 'assigned_event')
     ) context_row
   ),
   'synthetic_auth_email',

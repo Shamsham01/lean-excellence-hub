@@ -8,14 +8,22 @@ import {
 } from "./projectors/recognition-awarded.ts";
 import {
   SUGGESTION_ACCEPTED_EVENT,
+  SUGGESTION_MORE_INFORMATION_REQUESTED_EVENT,
   SUGGESTION_PARKED_EVENT,
   SUGGESTION_REJECTED_EVENT,
-  SUGGESTION_REVIEW_STARTED_EVENT,
   projectSuggestionAccepted,
+  projectSuggestionMoreInformationRequested,
   projectSuggestionParked,
   projectSuggestionRejected,
-  projectSuggestionReviewStarted,
 } from "./projectors/suggestion-author-notification.ts";
+import {
+  SUGGESTION_IMPLEMENTED_EVENT,
+  projectSuggestionImplemented,
+} from "./projectors/suggestion-implemented.ts";
+import {
+  SUGGESTION_REVIEW_STARTED_EVENT,
+  projectSuggestionReviewStarted,
+} from "./projectors/suggestion-review-started.ts";
 import {
   SUGGESTION_REVIEWER_ASSIGNED_EVENT,
   projectSuggestionReviewerAssigned,
@@ -76,6 +84,10 @@ export const NOTIFICATION_EVENT_PROJECTORS: DomainEventProjector[] = [
     project: projectSuggestionReviewStarted,
   },
   {
+    eventType: SUGGESTION_MORE_INFORMATION_REQUESTED_EVENT,
+    project: projectSuggestionMoreInformationRequested,
+  },
+  {
     eventType: SUGGESTION_ACCEPTED_EVENT,
     project: projectSuggestionAccepted,
   },
@@ -86,6 +98,10 @@ export const NOTIFICATION_EVENT_PROJECTORS: DomainEventProjector[] = [
   {
     eventType: SUGGESTION_PARKED_EVENT,
     project: projectSuggestionParked,
+  },
+  {
+    eventType: SUGGESTION_IMPLEMENTED_EVENT,
+    project: projectSuggestionImplemented,
   },
 ];
 

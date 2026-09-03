@@ -7,8 +7,10 @@ import type {
   ProjectorOutcome,
 } from "../types.ts";
 
-export const SUGGESTION_REVIEW_STARTED_EVENT = "SuggestionReviewStarted";
-export const SUGGESTION_REVIEW_STARTED_KIND = "suggestions.review_started";
+export const SUGGESTION_MORE_INFORMATION_REQUESTED_EVENT =
+  "SuggestionMoreInformationRequested";
+export const SUGGESTION_MORE_INFORMATION_REQUIRED_KIND =
+  "suggestions.more_information_required";
 
 export const SUGGESTION_ACCEPTED_EVENT = "SuggestionAccepted";
 export const SUGGESTION_APPROVED_KIND = "suggestions.approved";
@@ -45,14 +47,14 @@ async function projectSuggestionAuthorNotification(
   };
 }
 
-export function projectSuggestionReviewStarted(
+export function projectSuggestionMoreInformationRequested(
   event: ClaimedDomainEvent,
   context: ProjectorContext,
 ): Promise<ProjectorOutcome> {
   return projectSuggestionAuthorNotification(
     event,
     context,
-    SUGGESTION_REVIEW_STARTED_KIND,
+    SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
   );
 }
 
