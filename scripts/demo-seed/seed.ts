@@ -410,7 +410,10 @@ async function ensureM9RecognitionAward(
   if (typeError || !greatIdeaType) {
     throw typeError ?? new Error("M9 recognition demo great-idea type missing");
   }
-  if (!implementedSuggestion || implementedSuggestion.status !== "implemented") {
+  if (
+    !implementedSuggestion ||
+    implementedSuggestion.status !== "implemented"
+  ) {
     throw new Error(
       "M9 recognition demo requires implemented suggestion 'Pre-stage changeover tooling'.",
     );
