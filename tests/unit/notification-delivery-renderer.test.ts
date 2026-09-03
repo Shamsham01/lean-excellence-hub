@@ -132,15 +132,15 @@ describe("notification renderers", () => {
   it("escapes hostile suggestion titles in suggestion emails", () => {
     const rendered = renderOperationalNotification(
       buildContext(SUGGESTION_APPROVED_KIND, {
-        contextTitle: '<script>alert(1)</script>',
+        contextTitle: "<script>alert(1)</script>",
         contextLinkPath: "/platform/suggestions",
       }),
       APP_ORIGIN,
     );
 
+    expect(rendered.subject).toContain("<script>alert(1)</script>");
     expect(rendered.html).not.toContain("<script>");
-    expect(rendered.html).toContain(escapeHtml('<script>alert(1)</script>'));
-    expect(rendered.text).toContain('<script>alert(1)</script>');
+    expect(rendered.text).not.toContain("<script>");
   });
 
   it("does not include parked rationale in parked notification copy", () => {

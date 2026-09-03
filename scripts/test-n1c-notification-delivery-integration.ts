@@ -304,6 +304,7 @@ async function main() {
         args as never,
       ),
     lookupRecognitionRecipients: async () => [],
+    lookupSuggestionAuthorMembershipId: async () => null,
   });
 
   const projectionRun = await runNotificationProjector(projectorClient, 1000);

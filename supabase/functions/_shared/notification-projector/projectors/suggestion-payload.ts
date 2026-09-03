@@ -4,9 +4,7 @@ import type { ClaimedDomainEvent } from "../types.ts";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function readSuggestionIdFromEvent(
-  event: ClaimedDomainEvent,
-): string {
+export function readSuggestionIdFromEvent(event: ClaimedDomainEvent): string {
   if (!event.resourceRecordId || !UUID_PATTERN.test(event.resourceRecordId)) {
     throw new TerminalProjectionError(
       "invalid_payload",

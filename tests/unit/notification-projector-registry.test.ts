@@ -68,7 +68,7 @@ describe("notification projector registry", () => {
       },
       {
         lookupRecognitionRecipients: async () => [],
-        lookupSuggestionAuthorMembershipId: async () => [],
+        lookupSuggestionAuthorMembershipId: async () => null,
       },
     );
 

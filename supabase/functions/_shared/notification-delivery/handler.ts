@@ -168,7 +168,9 @@ async function resolveProviderMessage(
       };
     }
 
-    if (requiresDeliveryTimeAuthorizationRevalidation(delivery.notificationKind)) {
+    if (
+      requiresDeliveryTimeAuthorizationRevalidation(delivery.notificationKind)
+    ) {
       const contextResult = await client.getDeliveryContext({
         organisationId: delivery.organisationId,
         deliveryId: delivery.deliveryId,
@@ -176,7 +178,11 @@ async function resolveProviderMessage(
       });
 
       if (contextResult.error) {
-        await markDeliveryRetryable(client, delivery, "context_lookup_retryable");
+        await markDeliveryRetryable(
+          client,
+          delivery,
+          "context_lookup_retryable",
+        );
         return {
           message: null,
           error: {
@@ -214,11 +220,7 @@ async function resolveProviderMessage(
         contextResult.context.deliverableEmail !==
         existingEnvelope.envelope.recipientEmail
       ) {
-        await markDeliveryTerminal(
-          client,
-          delivery,
-          "recipient_email_changed",
-        );
+        await markDeliveryTerminal(client, delivery, "recipient_email_changed");
         return {
           message: null,
           error: {

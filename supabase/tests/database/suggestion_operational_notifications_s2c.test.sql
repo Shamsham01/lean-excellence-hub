@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(29);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -152,12 +152,68 @@ insert into s2c_ids (key, id)
 select 'reviewer_membership', inserted_membership.id
 from inserted_membership;
 
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = 'e2000000-0000-0000-0000-000000000002';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"e2000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2100000-0000-0000-0000-000000000001","email":"s2c-owner@example.test"}',
   true
 );
 set local role authenticated;
+
+insert into s2c_ids (key, id)
+select 'reviewer_role', public.create_role_draft(
+  (select id from s2c_ids where key = 'organisation'),
+  's2c-reviewer-only',
+  'S2c Reviewer Only',
+  'Review suggestions within subtree only'
+);
+
+select ok(
+  public.add_role_permission(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'reviewer_role'),
+    'suggestions.review'
+  ),
+  'reviewer role receives suggestions.review'
+);
+
+select ok(
+  public.publish_role_version(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'reviewer_role')
+  ),
+  'reviewer role publishes'
+);
+
+insert into s2c_ids (key, id)
+select 'reviewer_grant', public.grant_role_version(
+  (select id from s2c_ids where key = 'organisation'),
+  (select id from s2c_ids where key = 'reviewer_membership'),
+  (select id from s2c_ids where key = 'reviewer_role'),
+  'unit_subtree',
+  (select id from s2c_ids where key = 'unit_root')
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from s2c_ids where key = 'reviewer_membership'),
+    (select id from s2c_ids where key = 'job_function'),
+    true,
+    (select id from s2c_ids where key = 'unit_root')
+  ) is not null,
+  'reviewer primary job assignment'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e2000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2100000-0000-0000-0000-000000000001","email":"s2c-owner@example.test"}',
+  true
+);
 
 select ok(
   public.switch_organisation((select id from s2c_ids where key = 'organisation')),
@@ -439,7 +495,9 @@ select is(
 set local role lean_hub_private_owner;
 
 update public.organisation_memberships membership_row
-set status = 'inactive'
+set status = 'inactive',
+    inactivated_at = statement_timestamp(),
+    status_reason = 'test inactivation'
 where membership_row.id = (select id from s2c_ids where key = 'reviewer_membership');
 
 insert into s2c_ids (key, id)
@@ -480,7 +538,7 @@ insert into public.organisation_memberships (
 )
 values (
   (select id from s2c_ids where key = 'organisation'),
-  'e2000000-0000-0000-0000-000000000004',
+  'e2000000-0000-0000-0000-000000000003',
   'Disabled Workforce',
   'active',
   statement_timestamp()
@@ -492,15 +550,15 @@ insert into private.workforce_accounts (
   status
 )
 values (
-  'e2000000-0000-0000-0000-000000000004',
-  'disabled-workforce',
+  'e2000000-0000-0000-0000-000000000003',
+  'disabled-workforce@workforce.invalid',
   'disabled'
 );
 
 insert into s2c_ids (key, id)
 select 'disabled_membership', membership_row.id
 from public.organisation_memberships membership_row
-where membership_row.user_id = 'e2000000-0000-0000-0000-000000000004'
+where membership_row.user_id = 'e2000000-0000-0000-0000-000000000003'
   and membership_row.organisation_id = (select id from s2c_ids where key = 'organisation');
 
 insert into s2c_ids (key, id)
@@ -524,9 +582,9 @@ insert into public.membership_notification_contacts (
 )
 values (
   (select id from s2c_ids where key = 'organisation'),
-  (select id from s2c_ids where key = 'disabled_membership'),
+  (select id from s2c_ids where key = 'owner_membership'),
   'email',
-  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@workforce.invalid',
+  'not-an-email',
   'active',
   'manual'
 );
@@ -537,9 +595,52 @@ select
   private.create_notification_delivery(
     (select id from s2c_ids where key = 'organisation'),
     (select id from s2c_ids where key = 'review_started_event'),
-    (select id from s2c_ids where key = 'disabled_membership'),
+    (select id from s2c_ids where key = 'owner_membership'),
     'suggestions.review_started',
     's2c-invalid-contact-delivery-key'
+  );
+
+insert into public.organisation_memberships (
+  organisation_id,
+  user_id,
+  display_name,
+  status,
+  activated_at
+)
+values (
+  (select id from s2c_ids where key = 'organisation'),
+  'e2000000-0000-0000-0000-000000000004',
+  'Synthetic Workforce',
+  'active',
+  statement_timestamp()
+);
+
+insert into private.workforce_accounts (
+  user_id,
+  internal_login_identifier,
+  status
+)
+values (
+  'e2000000-0000-0000-0000-000000000004',
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@workforce.invalid',
+  'active'
+);
+
+insert into s2c_ids (key, id)
+select 'synthetic_membership', membership_row.id
+from public.organisation_memberships membership_row
+where membership_row.user_id = 'e2000000-0000-0000-0000-000000000004'
+  and membership_row.organisation_id = (select id from s2c_ids where key = 'organisation');
+
+insert into s2c_ids (key, id)
+select
+  'synthetic_delivery',
+  private.create_notification_delivery(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'review_started_event'),
+    (select id from s2c_ids where key = 'synthetic_membership'),
+    'suggestions.review_started',
+    's2c-synthetic-delivery-key'
   );
 
 reset role;
@@ -568,7 +669,20 @@ select is(
     ) context_row
   ),
   'invalid_email',
-  'M/N: invalid contact remains blocked'
+  'N: invalid contact remains blocked'
+);
+
+select is(
+  (
+    select context_row.recipient_resolution_status
+    from public.get_notification_delivery_context_for_worker(
+      (select id from s2c_ids where key = 'organisation'),
+      (select id from s2c_ids where key = 'synthetic_delivery'),
+      (select id from s2c_ids where key = 'review_started_event')
+    ) context_row
+  ),
+  'synthetic_auth_email',
+  'M: workforce.invalid remains blocked'
 );
 
 select ok(
@@ -592,7 +706,7 @@ select ok(
 );
 
 select is(
-  private.lookup_suggestion_author_membership_id(
+  public.lookup_suggestion_author_membership_id_for_worker(
     (select id from s2c_ids where key = 'organisation'),
     (select id from s2c_ids where key = 'suggestion')
   ),
@@ -619,6 +733,9 @@ select ok(
   ),
   'Q: refactored can_read_improvement_suggestion remains true for owner scope reader'
 );
+
+reset role;
+set local role lean_hub_private_owner;
 
 select ok(
   private.membership_can_read_improvement_suggestion(

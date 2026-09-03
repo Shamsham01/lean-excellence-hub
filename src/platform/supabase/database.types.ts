@@ -12848,6 +12848,10 @@ export type Database = {
           selected: boolean
         }[]
       }
+      lookup_suggestion_author_membership_id_for_worker: {
+        Args: { target_organisation_id: string; target_suggestion_id: string }
+        Returns: string
+      }
       mark_benefit_realised: {
         Args: { target_benefit_id: string; target_reason?: string }
         Returns: boolean

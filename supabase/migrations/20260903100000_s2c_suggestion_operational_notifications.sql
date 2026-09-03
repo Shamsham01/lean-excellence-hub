@@ -456,7 +456,7 @@ revoke all on function private.lookup_suggestion_author_membership_id(uuid, uuid
 grant execute on function private.membership_can_read_improvement_suggestion(uuid, uuid, uuid)
   to postgres;
 grant execute on function private.lookup_suggestion_author_membership_id(uuid, uuid)
-  to postgres;
+  to postgres, service_role;
 
 revoke all on function public.lookup_suggestion_author_membership_id_for_worker(uuid, uuid)
   from public, anon, authenticated;

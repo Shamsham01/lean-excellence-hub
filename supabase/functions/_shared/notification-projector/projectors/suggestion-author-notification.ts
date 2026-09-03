@@ -25,11 +25,10 @@ async function projectSuggestionAuthorNotification(
   notificationKind: string,
 ): Promise<ProjectorOutcome> {
   const suggestionId = readSuggestionIdFromEvent(event);
-  const authorMembershipId =
-    await context.lookupSuggestionAuthorMembershipId(
-      event.organisationId,
-      suggestionId,
-    );
+  const authorMembershipId = await context.lookupSuggestionAuthorMembershipId(
+    event.organisationId,
+    suggestionId,
+  );
 
   if (!authorMembershipId) {
     throw new TerminalProjectionError(

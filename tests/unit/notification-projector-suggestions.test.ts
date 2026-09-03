@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { TerminalProjectionError } from "../../supabase/functions/_shared/notification-projector/errors.ts";
 import { buildDeliveryKey } from "../../supabase/functions/_shared/notification-projector/delivery-key.ts";
@@ -54,16 +54,14 @@ function buildEvent(
   };
 }
 
-function buildContext(
-  authorMembershipId: string | null,
-): ProjectorContext {
+function buildContext(authorMembershipId: string | null): ProjectorContext {
   return {
     lookupRecognitionRecipients: async () => [],
-    lookupSuggestionAuthorMembershipId: async (organisationId, suggestionId) => {
-      if (
-        organisationId !== ORG_ID ||
-        suggestionId !== SUGGESTION_ID
-      ) {
+    lookupSuggestionAuthorMembershipId: async (
+      organisationId,
+      suggestionId,
+    ) => {
+      if (organisationId !== ORG_ID || suggestionId !== SUGGESTION_ID) {
         return null;
       }
 
@@ -152,6 +150,11 @@ describe("suggestion notification projectors", () => {
       buildContext(AUTHOR_ID),
     );
 
+    expect(outcome.kind).toBe("project");
+    if (outcome.kind !== "project") {
+      throw new Error("expected project outcome");
+    }
+
     expect(outcome.intents[0]?.notificationKind).toBe(SUGGESTION_APPROVED_KIND);
     expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
   });
@@ -162,6 +165,11 @@ describe("suggestion notification projectors", () => {
       buildContext(AUTHOR_ID),
     );
 
+    expect(outcome.kind).toBe("project");
+    if (outcome.kind !== "project") {
+      throw new Error("expected project outcome");
+    }
+
     expect(outcome.intents[0]?.notificationKind).toBe(SUGGESTION_DECLINED_KIND);
     expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);
   });
@@ -171,6 +179,11 @@ describe("suggestion notification projectors", () => {
       buildEvent("SuggestionParked", { payload: { decision: "park" } }),
       buildContext(AUTHOR_ID),
     );
+
+    expect(outcome.kind).toBe("project");
+    if (outcome.kind !== "project") {
+      throw new Error("expected project outcome");
+    }
 
     expect(outcome.intents[0]?.notificationKind).toBe(SUGGESTION_PARKED_KIND);
     expect(outcome.intents[0]?.recipientMembershipId).toBe(AUTHOR_ID);

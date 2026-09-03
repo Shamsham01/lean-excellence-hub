@@ -36,7 +36,8 @@ const RENDERERS: Record<string, NotificationRenderer> = {
   [SKILL_PROFICIENCY_VALIDATED_KIND]: renderSkillProficiencyValidatedEmail,
   [RECOGNITION_AWARDED_KIND]: renderRecognitionAwardedEmail,
   [SUGGESTION_REVIEWER_ASSIGNED_KIND]: renderSuggestionReviewerAssignedEmail,
-  [SUGGESTION_REVIEWER_REASSIGNED_KIND]: renderSuggestionReviewerReassignedEmail,
+  [SUGGESTION_REVIEWER_REASSIGNED_KIND]:
+    renderSuggestionReviewerReassignedEmail,
   [SUGGESTION_REVIEW_STARTED_KIND]: renderSuggestionReviewStartedEmail,
   [SUGGESTION_APPROVED_KIND]: renderSuggestionApprovedEmail,
   [SUGGESTION_DECLINED_KIND]: renderSuggestionDeclinedEmail,
