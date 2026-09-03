@@ -57,6 +57,30 @@ async function expectRpc(
   return data;
 }
 
+async function assertSuggestionStatus(
+  client: SupabaseClient,
+  title: string,
+  expectedStatus: string,
+): Promise<void> {
+  const { data: suggestion, error } = await client
+    .from("improvement_suggestions")
+    .select("status")
+    .eq("title", title)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+  if (!suggestion) {
+    throw new Error(`Suggestion "${title}" was not found after seeding.`);
+  }
+  if (suggestion.status !== expectedStatus) {
+    throw new Error(
+      `Suggestion "${title}" expected status "${expectedStatus}" but got "${suggestion.status}".`,
+    );
+  }
+}
+
 async function isM8DemoComplete(
   managerClient: SupabaseClient,
 ): Promise<boolean> {
@@ -367,7 +391,7 @@ async function ensureM9RecognitionAward(
 
   const { data: implementedSuggestion } = await managerClient
     .from("improvement_suggestions")
-    .select("id")
+    .select("id, status")
     .eq("title", "Pre-stage changeover tooling")
     .maybeSingle();
 
@@ -386,8 +410,10 @@ async function ensureM9RecognitionAward(
   if (typeError || !greatIdeaType) {
     throw typeError ?? new Error("M9 recognition demo great-idea type missing");
   }
-  if (!implementedSuggestion) {
-    throw new Error("M9 recognition demo implemented suggestion missing");
+  if (!implementedSuggestion || implementedSuggestion.status !== "implemented") {
+    throw new Error(
+      "M9 recognition demo requires implemented suggestion 'Pre-stage changeover tooling'.",
+    );
   }
 
   await expectRpc(managerClient, "award_recognition", {
@@ -2556,7 +2582,8 @@ async function ensureM9Demo(
     .eq("user_id", DEMO_USERS.operator.id)
     .single();
 
-  const { data: draftSubmitted } = await operatorClient.rpc(
+  const draftSubmitted = (await expectRpc(
+    operatorClient,
     "create_suggestion_draft",
     {
       target_programme_version_id: programmeVersion.id,
@@ -2569,15 +2596,16 @@ async function ensureM9Demo(
       target_expected_benefit_summary:
         "Fewer customer complaints on appearance.",
     },
-  );
-  await operatorClient.rpc("submit_suggestion", {
-    target_suggestion_id: draftSubmitted as string,
+  )) as string;
+  await expectRpc(operatorClient, "submit_suggestion", {
+    target_suggestion_id: draftSubmitted,
   });
-  await managerClient.rpc("begin_suggestion_review", {
-    target_suggestion_id: draftSubmitted as string,
+  await expectRpc(managerClient, "begin_suggestion_review", {
+    target_suggestion_id: draftSubmitted,
   });
 
-  const { data: implementedId } = await operatorClient.rpc(
+  const implementedId = (await expectRpc(
+    operatorClient,
     "create_suggestion_draft",
     {
       target_programme_version_id: programmeVersion.id,
@@ -2588,34 +2616,42 @@ async function ensureM9Demo(
       target_proposed_idea: "Prepare tooling trolley before shutdown.",
       target_expected_benefit_summary: "Shorter changeover time.",
     },
-  );
-  await operatorClient.rpc("submit_suggestion", {
-    target_suggestion_id: implementedId as string,
+  )) as string;
+  await expectRpc(operatorClient, "submit_suggestion", {
+    target_suggestion_id: implementedId,
   });
-  await managerClient.rpc("begin_suggestion_review", {
-    target_suggestion_id: implementedId as string,
+  await expectRpc(managerClient, "begin_suggestion_review", {
+    target_suggestion_id: implementedId,
   });
-  await managerClient.rpc("record_suggestion_review", {
-    target_suggestion_id: implementedId as string,
+  await expectRpc(managerClient, "record_suggestion_review", {
+    target_suggestion_id: implementedId,
     target_decision: "accept",
     target_impact_level: "medium",
     target_effort_level: "low",
     target_rationale: "Quick win with clear benefit.",
+    target_employee_feedback:
+      "Approved as a quick win. The tooling trolley will be standardised before each changeover.",
   });
-  await managerClient.rpc("begin_suggestion_implementation", {
-    target_suggestion_id: implementedId as string,
+  await expectRpc(managerClient, "begin_suggestion_implementation", {
+    target_suggestion_id: implementedId,
   });
-  await managerClient.rpc("create_suggestion_action", {
-    target_suggestion_id: implementedId as string,
+  await expectRpc(managerClient, "create_suggestion_action", {
+    target_suggestion_id: implementedId,
     target_title: "Create standard pre-stage trolley",
     target_description: "Standardise tooling trolley layout before changeover.",
   });
-  await managerClient.rpc("mark_suggestion_implemented", {
-    target_suggestion_id: implementedId as string,
+  await expectRpc(managerClient, "mark_suggestion_implemented", {
+    target_suggestion_id: implementedId,
     target_implementation_summary: "Trolley pre-staged before each changeover.",
     target_employee_outcome:
       "Changeover prep now includes a pre-staged trolley for every run.",
   });
+
+  await assertSuggestionStatus(
+    managerClient,
+    "Pre-stage changeover tooling",
+    "implemented",
+  );
 
   const { data: greatIdeaType, error: typeError } = await signedInAdmin
     .from("recognition_types")
