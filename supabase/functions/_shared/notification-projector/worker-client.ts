@@ -42,6 +42,10 @@ export type NotificationProjectorWorkerClient = {
     organisationId: string,
     awardId: string,
   ) => Promise<string[]>;
+  lookupSuggestionAuthorMembershipId: (
+    organisationId: string,
+    suggestionId: string,
+  ) => Promise<string | null>;
 };
 
 type ClaimRow = {
@@ -60,6 +64,10 @@ export function createNotificationProjectorWorkerClient(deps: {
     organisationId: string,
     awardId: string,
   ) => Promise<string[]>;
+  lookupSuggestionAuthorMembershipId: (
+    organisationId: string,
+    suggestionId: string,
+  ) => Promise<string | null>;
 }): NotificationProjectorWorkerClient {
   return {
     async claimDomainEvents(batchSize) {
@@ -121,6 +129,12 @@ export function createNotificationProjectorWorkerClient(deps: {
     },
     async lookupRecognitionRecipients(organisationId, awardId) {
       return deps.lookupRecognitionRecipients(organisationId, awardId);
+    },
+    async lookupSuggestionAuthorMembershipId(organisationId, suggestionId) {
+      return deps.lookupSuggestionAuthorMembershipId(
+        organisationId,
+        suggestionId,
+      );
     },
   };
 }

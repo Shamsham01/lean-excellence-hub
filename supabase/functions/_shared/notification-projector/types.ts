@@ -22,6 +22,10 @@ export type ProjectorContext = {
     organisationId: string,
     awardId: string,
   ) => Promise<string[]>;
+  lookupSuggestionAuthorMembershipId: (
+    organisationId: string,
+    suggestionId: string,
+  ) => Promise<string | null>;
 };
 
 export type ProcessedEventSummary = {

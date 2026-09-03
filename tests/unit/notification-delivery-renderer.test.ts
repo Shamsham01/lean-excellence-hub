@@ -6,6 +6,12 @@ import {
   JOB_FUNCTION_ASSIGNED_KIND,
   RECOGNITION_AWARDED_KIND,
   SKILL_PROFICIENCY_VALIDATED_KIND,
+  SUGGESTION_APPROVED_KIND,
+  SUGGESTION_DECLINED_KIND,
+  SUGGESTION_PARKED_KIND,
+  SUGGESTION_REVIEW_STARTED_KIND,
+  SUGGESTION_REVIEWER_ASSIGNED_KIND,
+  SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
 } from "../../supabase/functions/_shared/notification-delivery/renderer/renderers.ts";
 import type { NotificationDeliveryContext } from "../../supabase/functions/_shared/notification-delivery/types.ts";
@@ -42,6 +48,12 @@ describe("notification renderers", () => {
     TRAINING_COMPLETED_KIND,
     SKILL_PROFICIENCY_VALIDATED_KIND,
     RECOGNITION_AWARDED_KIND,
+    SUGGESTION_REVIEWER_ASSIGNED_KIND,
+    SUGGESTION_REVIEWER_REASSIGNED_KIND,
+    SUGGESTION_REVIEW_STARTED_KIND,
+    SUGGESTION_APPROVED_KIND,
+    SUGGESTION_DECLINED_KIND,
+    SUGGESTION_PARKED_KIND,
   ])("renders subject, text, and html for %s", (notificationKind) => {
     const rendered = renderOperationalNotification(
       buildContext(notificationKind),
@@ -94,5 +106,54 @@ describe("notification renderers", () => {
     );
 
     expect(rendered.text).toContain(`${APP_ORIGIN}/platform/skills/matrix`);
+  });
+
+  it("renders reviewer assignment deep links and CTA labels", () => {
+    const suggestionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_REVIEWER_ASSIGNED_KIND, {
+        contextTitle: "A & B <Improvement>",
+        contextLinkPath: `/platform/suggestions/review?queue=mine&suggestionId=${suggestionId}`,
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.subject).toBe(
+      "Suggestion assigned for review: A & B <Improvement>",
+    );
+    expect(rendered.text).toContain("Review suggestion:");
+    expect(rendered.text).toContain(
+      `/platform/suggestions/review?queue=mine&suggestionId=${suggestionId}`,
+    );
+    expect(rendered.html).toContain("Review suggestion");
+    expect(rendered.html).not.toContain("<Improvement>");
+  });
+
+  it("escapes hostile suggestion titles in suggestion emails", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_APPROVED_KIND, {
+        contextTitle: '<script>alert(1)</script>',
+        contextLinkPath: "/platform/suggestions",
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.html).not.toContain("<script>");
+    expect(rendered.html).toContain(escapeHtml('<script>alert(1)</script>'));
+    expect(rendered.text).toContain('<script>alert(1)</script>');
+  });
+
+  it("does not include parked rationale in parked notification copy", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_PARKED_KIND, {
+        contextTitle: "Parked idea",
+        contextDetail: "Your suggestion was parked for further consideration",
+        eventPayload: { decision: "park", rationale: "secret reviewer note" },
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.text).not.toContain("secret reviewer note");
+    expect(rendered.html).not.toContain("secret reviewer note");
   });
 });

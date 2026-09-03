@@ -51,4 +51,10 @@ describe("recipient resolution", () => {
       "synthetic_auth_email",
     );
   });
+
+  it("maps not_authorized to terminal failure code", () => {
+    expect(mapRecipientFailureCode("not_authorized")).toBe(
+      "recipient_no_longer_authorized",
+    );
+  });
 });

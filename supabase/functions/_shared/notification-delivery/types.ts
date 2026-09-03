@@ -15,7 +15,8 @@ export type RecipientResolutionStatus =
   | "disabled_workforce_account"
   | "no_contact"
   | "synthetic_auth_email"
-  | "invalid_email";
+  | "invalid_email"
+  | "not_authorized";
 
 export type NotificationDeliveryContext = {
   organisationId: string;

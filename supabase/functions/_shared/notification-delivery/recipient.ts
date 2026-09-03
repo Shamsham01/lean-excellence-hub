@@ -34,6 +34,8 @@ export function mapRecipientFailureCode(
       return "synthetic_auth_email";
     case "invalid_email":
       return "invalid_recipient_email";
+    case "not_authorized":
+      return "recipient_no_longer_authorized";
     case "no_contact":
     default:
       return "missing_recipient_contact";
