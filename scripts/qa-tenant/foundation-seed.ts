@@ -11,6 +11,8 @@ import {
   switchOrganisation,
 } from "./shared/organisation";
 import { ensureAuthUser, signInUser, type QaUserKey } from "./shared/auth";
+import { syncAllCookieWorksRolePermissions } from "./sync-role-permissions";
+import { loadLocalSupabaseEnv } from "./local-env";
 
 export async function seedCookieWorksFoundation(options: {
   admin: SupabaseClient;
@@ -122,6 +124,9 @@ export async function seedCookieWorksFoundation(options: {
   );
 
   await ensureDisplayNames(options.apiUrl, options.publishableKey);
+
+  const env = loadLocalSupabaseEnv("qa:cookie:seed");
+  syncAllCookieWorksRolePermissions(env.databaseUrl);
 
   return { organisationId, unitIds };
 }
