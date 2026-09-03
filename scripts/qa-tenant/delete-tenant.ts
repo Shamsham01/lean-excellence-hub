@@ -76,6 +76,94 @@ begin
   where template_version.organisation_id = target_org_id
     and template_version.status = 'published';
 
+  update public.maturity_model_versions maturity_version
+  set status = 'archived'
+  where maturity_version.organisation_id = target_org_id
+    and maturity_version.status = 'published';
+
+  alter table public.maturity_evidence_links
+    disable trigger maturity_evidence_links_guard_immutable;
+  alter table public.maturity_action_context
+    disable trigger maturity_action_context_guard_immutable;
+  alter table public.maturity_assessment_criterion_notes
+    disable trigger maturity_assessment_criterion_notes_guard_immutable;
+  alter table public.maturity_official_results
+    disable trigger maturity_official_results_prevent_delete;
+  alter table public.maturity_official_result_pillars
+    disable trigger maturity_official_result_pillars_prevent_delete;
+  alter table public.maturity_official_result_levels
+    disable trigger maturity_official_result_levels_prevent_delete;
+
+  delete from public.maturity_evidence_links
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_action_context
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_assessment_scores
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_assessment_criterion_notes
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_official_result_pillars
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_official_result_levels
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_official_results
+  where organisation_id = target_org_id;
+
+  alter table public.maturity_assessment_transitions
+    disable trigger maturity_assessment_transitions_prevent_delete;
+
+  delete from public.maturity_assessment_transitions
+  where organisation_id = target_org_id;
+
+  alter table public.maturity_assessment_transitions
+    enable trigger maturity_assessment_transitions_prevent_delete;
+
+  delete from public.maturity_assessment_participants
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_assessments
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_criterion_questions
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_criteria
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_pillars
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_levels
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_model_version_assessment_scopes
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_model_versions
+  where organisation_id = target_org_id;
+
+  delete from public.maturity_models
+  where organisation_id = target_org_id;
+
+  alter table public.maturity_evidence_links
+    enable trigger maturity_evidence_links_guard_immutable;
+  alter table public.maturity_action_context
+    enable trigger maturity_action_context_guard_immutable;
+  alter table public.maturity_assessment_criterion_notes
+    enable trigger maturity_assessment_criterion_notes_guard_immutable;
+  alter table public.maturity_official_results
+    enable trigger maturity_official_results_prevent_delete;
+  alter table public.maturity_official_result_pillars
+    enable trigger maturity_official_result_pillars_prevent_delete;
+  alter table public.maturity_official_result_levels
+    enable trigger maturity_official_result_levels_prevent_delete;
+
   select array_agg(c.table_name order by c.table_name)
   into tables
   from information_schema.columns c
@@ -123,7 +211,8 @@ begin
             or SQLERRM like '%completed submission is immutable%'
             or SQLERRM like '%completed 5S audit is immutable%'
             or SQLERRM like '%completed project is immutable%'
-            or SQLERRM like '%completed Gemba walk is immutable%' then
+            or SQLERRM like '%completed Gemba walk is immutable%'
+            or SQLERRM like '%maturity assessment context is immutable%' then
             null;
           else
             raise exception 'CookieWorks purge failed on public.%: %', table_name, SQLERRM
