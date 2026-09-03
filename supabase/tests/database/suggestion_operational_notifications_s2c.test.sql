@@ -1,6 +1,6 @@
 begin;
 
-select plan(29);
+select plan(34);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -295,7 +295,7 @@ select ok(
         '/platform/suggestions/review?queue=mine&suggestionId='
         || (select id::text from s2c_ids where key = 'suggestion')
   ),
-  'A/D: current reviewer receives assignment context in same organisation'
+  'A: current reviewer with active assignment and review capability is deliverable'
 );
 
 select is(
@@ -325,6 +325,77 @@ select ok(
         '/platform/suggestions/' || (select id::text from s2c_ids where key = 'suggestion')
   ),
   'E: author review-start notification resolves to canonical author'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e2000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2100000-0000-0000-0000-000000000001","email":"s2c-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from s2c_ids where key = 'organisation')),
+  'owner selects organisation before reviewer grant revocation'
+);
+
+select ok(
+  public.revoke_access_grant(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'reviewer_grant'),
+    'S2c capability revocation hardening test'
+  ),
+  'B: reviewer scoped review grant is revoked while assignment remains active'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+select ok(
+  private.is_active_suggestion_reviewer(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'suggestion'),
+    (select id from s2c_ids where key = 'reviewer_membership')
+  ),
+  'C: active reviewer assignment remains after grant revocation'
+);
+
+select ok(
+  not private.membership_can_read_improvement_suggestion(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'suggestion'),
+    (select id from s2c_ids where key = 'reviewer_membership')
+  ),
+  'D: canonical membership read access is lost after grant revocation'
+);
+
+reset role;
+set local role service_role;
+
+select is(
+  (
+    select context_row.recipient_resolution_status
+    from public.get_notification_delivery_context_for_worker(
+      (select id from s2c_ids where key = 'organisation'),
+      (select id from s2c_ids where key = 'assigned_delivery'),
+      (select id from s2c_ids where key = 'assigned_event')
+    ) context_row
+  ),
+  'not_authorized',
+  'E: reviewer assignment delivery becomes not_authorized after capability loss'
+);
+
+select is(
+  (
+    select context_row.deliverable_email
+    from public.get_notification_delivery_context_for_worker(
+      (select id from s2c_ids where key = 'organisation'),
+      (select id from s2c_ids where key = 'assigned_delivery'),
+      (select id from s2c_ids where key = 'assigned_event')
+    ) context_row
+  ),
+  null,
+  'E: reviewer assignment delivery clears deliverable email after capability loss'
 );
 
 select set_config(

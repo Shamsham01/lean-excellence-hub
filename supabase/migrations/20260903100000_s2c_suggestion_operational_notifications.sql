@@ -395,6 +395,11 @@ begin
             event_row.resource_record_id,
             delivery_row.recipient_membership_id
           )
+          or not private.membership_can_read_improvement_suggestion(
+            target_organisation_id,
+            event_row.resource_record_id,
+            delivery_row.recipient_membership_id
+          )
         ) then
         resolution_status := 'not_authorized';
         resolved_email := null;
