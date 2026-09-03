@@ -1,12 +1,24 @@
 import {
   JOB_FUNCTION_ASSIGNED_KIND,
   RECOGNITION_AWARDED_KIND,
-  SKILL_PROFICIENCY_VALIDATED_KIND,
-  TRAINING_COMPLETED_KIND,
   renderJobFunctionAssignedEmail,
   renderRecognitionAwardedEmail,
   renderSkillProficiencyValidatedEmail,
+  renderSuggestionApprovedEmail,
+  renderSuggestionDeclinedEmail,
+  renderSuggestionParkedEmail,
+  renderSuggestionReviewStartedEmail,
+  renderSuggestionReviewerAssignedEmail,
+  renderSuggestionReviewerReassignedEmail,
   renderTrainingCompletedEmail,
+  SKILL_PROFICIENCY_VALIDATED_KIND,
+  SUGGESTION_APPROVED_KIND,
+  SUGGESTION_DECLINED_KIND,
+  SUGGESTION_PARKED_KIND,
+  SUGGESTION_REVIEW_STARTED_KIND,
+  SUGGESTION_REVIEWER_ASSIGNED_KIND,
+  SUGGESTION_REVIEWER_REASSIGNED_KIND,
+  TRAINING_COMPLETED_KIND,
 } from "./renderers.ts";
 import type {
   NotificationDeliveryContext,
@@ -23,6 +35,13 @@ const RENDERERS: Record<string, NotificationRenderer> = {
   [TRAINING_COMPLETED_KIND]: renderTrainingCompletedEmail,
   [SKILL_PROFICIENCY_VALIDATED_KIND]: renderSkillProficiencyValidatedEmail,
   [RECOGNITION_AWARDED_KIND]: renderRecognitionAwardedEmail,
+  [SUGGESTION_REVIEWER_ASSIGNED_KIND]: renderSuggestionReviewerAssignedEmail,
+  [SUGGESTION_REVIEWER_REASSIGNED_KIND]:
+    renderSuggestionReviewerReassignedEmail,
+  [SUGGESTION_REVIEW_STARTED_KIND]: renderSuggestionReviewStartedEmail,
+  [SUGGESTION_APPROVED_KIND]: renderSuggestionApprovedEmail,
+  [SUGGESTION_DECLINED_KIND]: renderSuggestionDeclinedEmail,
+  [SUGGESTION_PARKED_KIND]: renderSuggestionParkedEmail,
 };
 
 export function renderOperationalNotification(

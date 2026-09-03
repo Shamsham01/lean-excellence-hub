@@ -34,6 +34,12 @@ describe("notification projector registry", () => {
       "TrainingCompleted",
       "SkillProficiencyValidated",
       "RecognitionAwarded",
+      "SuggestionReviewerAssigned",
+      "SuggestionReviewerReassigned",
+      "SuggestionReviewStarted",
+      "SuggestionAccepted",
+      "SuggestionRejected",
+      "SuggestionParked",
     ]);
   });
 
@@ -62,6 +68,7 @@ describe("notification projector registry", () => {
       },
       {
         lookupRecognitionRecipients: async () => [],
+        lookupSuggestionAuthorMembershipId: async () => null,
       },
     );
 

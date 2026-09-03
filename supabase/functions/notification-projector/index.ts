@@ -32,6 +32,23 @@ Deno.serve((request) =>
 
           return (data ?? []).map((row) => row.membership_id);
         },
+        lookupSuggestionAuthorMembershipId: async (
+          organisationId,
+          suggestionId,
+        ) => {
+          const { data, error } = await serviceClient
+            .from("improvement_suggestions")
+            .select("author_membership_id")
+            .eq("organisation_id", organisationId)
+            .eq("id", suggestionId)
+            .maybeSingle();
+
+          if (error) {
+            throw error;
+          }
+
+          return data?.author_membership_id ?? null;
+        },
       });
     },
   }),

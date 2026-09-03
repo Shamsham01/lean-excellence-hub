@@ -6,6 +6,12 @@ import {
   JOB_FUNCTION_ASSIGNED_KIND,
   RECOGNITION_AWARDED_KIND,
   SKILL_PROFICIENCY_VALIDATED_KIND,
+  SUGGESTION_APPROVED_KIND,
+  SUGGESTION_DECLINED_KIND,
+  SUGGESTION_PARKED_KIND,
+  SUGGESTION_REVIEW_STARTED_KIND,
+  SUGGESTION_REVIEWER_ASSIGNED_KIND,
+  SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
 } from "../../supabase/functions/_shared/notification-delivery/renderer/renderers.ts";
 import type { NotificationDeliveryContext } from "../../supabase/functions/_shared/notification-delivery/types.ts";
@@ -42,6 +48,12 @@ describe("notification renderers", () => {
     TRAINING_COMPLETED_KIND,
     SKILL_PROFICIENCY_VALIDATED_KIND,
     RECOGNITION_AWARDED_KIND,
+    SUGGESTION_REVIEWER_ASSIGNED_KIND,
+    SUGGESTION_REVIEWER_REASSIGNED_KIND,
+    SUGGESTION_REVIEW_STARTED_KIND,
+    SUGGESTION_APPROVED_KIND,
+    SUGGESTION_DECLINED_KIND,
+    SUGGESTION_PARKED_KIND,
   ])("renders subject, text, and html for %s", (notificationKind) => {
     const rendered = renderOperationalNotification(
       buildContext(notificationKind),
@@ -94,5 +106,40 @@ describe("notification renderers", () => {
     );
 
     expect(rendered.text).toContain(`${APP_ORIGIN}/platform/skills/matrix`);
+  });
+
+  it("renders reviewer deep links for suggestion assignment notifications", () => {
+    const suggestionId = "99999999-9999-4999-8999-999999999999";
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_REVIEWER_ASSIGNED_KIND, {
+        contextTitle: "Reduce changeover time",
+        contextLinkPath: `/platform/suggestions/review?queue=mine&suggestionId=${suggestionId}`,
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.subject).toContain("Reduce changeover time");
+    expect(rendered.text).toContain(
+      `${APP_ORIGIN}/platform/suggestions/review?queue=mine&suggestionId=${suggestionId}`,
+    );
+  });
+
+  it("escapes hostile suggestion titles in html output", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_APPROVED_KIND, {
+        contextTitle: 'A & B <Improvement>',
+        recipientDisplayName: '<script>alert(1)</script>',
+        organisationName: 'Acme <img src=x onerror="alert(1)">',
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.subject).toContain('A & B <Improvement>');
+    expect(rendered.html).not.toContain("<script>");
+    expect(rendered.html).toContain(
+      escapeHtml('<script>alert(1)</script>'),
+    );
+    expect(rendered.html).not.toContain("<img src=x");
+    expect(rendered.text).toContain('<script>alert(1)</script>');
   });
 });

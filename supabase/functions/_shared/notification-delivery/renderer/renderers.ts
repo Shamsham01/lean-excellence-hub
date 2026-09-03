@@ -13,6 +13,15 @@ export const SKILL_PROFICIENCY_VALIDATED_KIND =
   "workforce.skill_proficiency_validated";
 export const RECOGNITION_AWARDED_KIND = "recognition.awarded";
 
+export const SUGGESTION_REVIEWER_ASSIGNED_KIND =
+  "suggestions.reviewer_assigned";
+export const SUGGESTION_REVIEWER_REASSIGNED_KIND =
+  "suggestions.reviewer_reassigned";
+export const SUGGESTION_REVIEW_STARTED_KIND = "suggestions.review_started";
+export const SUGGESTION_APPROVED_KIND = "suggestions.approved";
+export const SUGGESTION_DECLINED_KIND = "suggestions.declined";
+export const SUGGESTION_PARKED_KIND = "suggestions.parked";
+
 export function renderJobFunctionAssignedEmail(
   context: NotificationDeliveryContext,
   appOrigin: string,
@@ -132,4 +141,112 @@ export function renderRecognitionAwardedEmail(
         "You received this operational notification from Lean Excellence Hub.",
     }),
   };
+}
+
+function renderSuggestionEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+  input: {
+    subjectPrefix: string;
+    title: string;
+    body: string;
+    ctaLabel: string;
+  },
+): RenderedOperationalEmail {
+  const suggestionTitle = context.contextTitle ?? "Suggestion";
+  const ctaUrl = buildOperationalCtaUrl(appOrigin, context.contextLinkPath);
+  const subject = `${input.subjectPrefix}: ${suggestionTitle}`;
+  const intro =
+    `Hello ${context.recipientDisplayName},\n\n` +
+    `${input.body} in ${context.organisationName}.`;
+
+  return {
+    subject,
+    text: `${intro}\n\n${input.ctaLabel}: ${ctaUrl}`,
+    html: renderBrandedOperationalEmail({
+      eyebrow: context.organisationName,
+      title: input.title,
+      intro:
+        `Hello ${context.recipientDisplayName}, ${input.body} in ` +
+        `${context.organisationName}.`,
+      ctaLabel: input.ctaLabel,
+      ctaUrl,
+      footer:
+        "You received this operational notification from Lean Excellence Hub.",
+    }),
+  };
+}
+
+export function renderSuggestionReviewerAssignedEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionEmail(context, appOrigin, {
+    subjectPrefix: "Suggestion assigned for review",
+    title: "Suggestion assigned for review",
+    body:
+      "A suggestion has been assigned to you for review. Open Lean Excellence Hub to review the idea and record the next step",
+    ctaLabel: "Review suggestion",
+  });
+}
+
+export function renderSuggestionReviewerReassignedEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionEmail(context, appOrigin, {
+    subjectPrefix: "Suggestion reassigned to you",
+    title: "Suggestion reassigned to you",
+    body:
+      "A suggestion has been reassigned to you for review. Open Lean Excellence Hub to review the idea and record the next step",
+    ctaLabel: "Review suggestion",
+  });
+}
+
+export function renderSuggestionReviewStartedEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionEmail(context, appOrigin, {
+    subjectPrefix: "Your suggestion is under review",
+    title: "Your suggestion is under review",
+    body: "Your suggestion is now under review",
+    ctaLabel: "View suggestion",
+  });
+}
+
+export function renderSuggestionApprovedEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionEmail(context, appOrigin, {
+    subjectPrefix: "Suggestion approved",
+    title: "Suggestion approved",
+    body: "Your suggestion was approved",
+    ctaLabel: "View suggestion",
+  });
+}
+
+export function renderSuggestionDeclinedEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionEmail(context, appOrigin, {
+    subjectPrefix: "Suggestion declined",
+    title: "Suggestion declined",
+    body: "Your suggestion was declined",
+    ctaLabel: "View suggestion",
+  });
+}
+
+export function renderSuggestionParkedEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionEmail(context, appOrigin, {
+    subjectPrefix: "Suggestion update",
+    title: "Suggestion parked for further consideration",
+    body: "Your suggestion has been parked for further consideration",
+    ctaLabel: "View suggestion",
+  });
 }

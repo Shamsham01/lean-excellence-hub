@@ -8,6 +8,7 @@ import type {
 } from "./provider/types.ts";
 import { mapRecipientFailureCode } from "./recipient.ts";
 import { renderOperationalNotification } from "./renderer/registry.ts";
+import { isSuggestionsNotificationKind } from "./suggestion-kinds.ts";
 import type {
   ClaimedNotificationDelivery,
   NotificationProviderEnvelope,
@@ -123,6 +124,72 @@ async function markDeliveryRetryable(
   return result.data === true;
 }
 
+async function revalidateSuggestionsEnvelopeRecipient(
+  client: NotificationDeliveryWorkerClient,
+  delivery: ClaimedNotificationDelivery,
+  envelope: NotificationProviderEnvelope,
+): Promise<ProcessedDeliverySummary | null> {
+  const contextResult = await client.getDeliveryContext({
+    organisationId: delivery.organisationId,
+    deliveryId: delivery.deliveryId,
+    sourceDomainEventId: delivery.sourceDomainEventId,
+  });
+
+  if (contextResult.error) {
+    await markDeliveryRetryable(client, delivery, "context_lookup_retryable");
+    return {
+      deliveryId: delivery.deliveryId,
+      notificationKind: delivery.notificationKind,
+      outcome: "failed_retryable",
+      errorCode: "context_lookup_retryable",
+    };
+  }
+
+  if (!contextResult.context) {
+    await markDeliveryTerminal(client, delivery, "invalid_delivery_context");
+    return {
+      deliveryId: delivery.deliveryId,
+      notificationKind: delivery.notificationKind,
+      outcome: "invalid_context",
+      errorCode: "invalid_delivery_context",
+    };
+  }
+
+  const context = contextResult.context;
+
+  if (
+    context.recipientResolutionStatus !== "deliverable" ||
+    !context.deliverableEmail
+  ) {
+    const errorCode = mapRecipientFailureCode(
+      context.recipientResolutionStatus,
+    );
+    await markDeliveryTerminal(client, delivery, errorCode);
+    return {
+      deliveryId: delivery.deliveryId,
+      notificationKind: delivery.notificationKind,
+      outcome: "failed_terminal",
+      errorCode,
+    };
+  }
+
+  if (context.deliverableEmail !== envelope.recipientEmail) {
+    await markDeliveryTerminal(
+      client,
+      delivery,
+      "recipient_no_longer_authorized",
+    );
+    return {
+      deliveryId: delivery.deliveryId,
+      notificationKind: delivery.notificationKind,
+      outcome: "failed_terminal",
+      errorCode: "recipient_no_longer_authorized",
+    };
+  }
+
+  return null;
+}
+
 async function resolveProviderMessage(
   client: NotificationDeliveryWorkerClient,
   delivery: ClaimedNotificationDelivery,
@@ -165,6 +232,20 @@ async function resolveProviderMessage(
           errorCode: "provider_envelope_integrity_conflict",
         },
       };
+    }
+
+    if (isSuggestionsNotificationKind(delivery.notificationKind)) {
+      const revalidationError = await revalidateSuggestionsEnvelopeRecipient(
+        client,
+        delivery,
+        existingEnvelope.envelope,
+      );
+      if (revalidationError) {
+        return {
+          message: null,
+          error: revalidationError,
+        };
+      }
     }
 
     return {
