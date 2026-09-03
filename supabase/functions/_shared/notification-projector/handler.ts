@@ -105,6 +105,8 @@ export async function processClaimedDomainEvent(
     const projection = await projectDomainEvent(event, {
       lookupRecognitionRecipients: (organisationId, awardId) =>
         client.lookupRecognitionRecipients(organisationId, awardId),
+      lookupSuggestionAuthorMembershipId: (organisationId, suggestionId) =>
+        client.lookupSuggestionAuthorMembershipId(organisationId, suggestionId),
     });
 
     if (!projection) {

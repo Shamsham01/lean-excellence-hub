@@ -34,6 +34,12 @@ describe("notification projector registry", () => {
       "TrainingCompleted",
       "SkillProficiencyValidated",
       "RecognitionAwarded",
+      "SuggestionReviewerAssigned",
+      "SuggestionReviewerReassigned",
+      "SuggestionReviewStarted",
+      "SuggestionAccepted",
+      "SuggestionRejected",
+      "SuggestionParked",
     ]);
   });
 
@@ -62,6 +68,7 @@ describe("notification projector registry", () => {
       },
       {
         lookupRecognitionRecipients: async () => [],
+        lookupSuggestionAuthorMembershipId: async () => null,
       },
     );
 
@@ -81,6 +88,7 @@ describe("notification projector registry", () => {
           "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
           "ffffffff-ffff-4fff-8fff-ffffffffffff",
         ],
+        lookupSuggestionAuthorMembershipId: async () => null,
       },
     );
 

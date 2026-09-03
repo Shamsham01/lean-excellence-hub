@@ -7,6 +7,24 @@ import {
   projectRecognitionAwarded,
 } from "./projectors/recognition-awarded.ts";
 import {
+  SUGGESTION_ACCEPTED_EVENT,
+  SUGGESTION_PARKED_EVENT,
+  SUGGESTION_REJECTED_EVENT,
+  SUGGESTION_REVIEW_STARTED_EVENT,
+  projectSuggestionAccepted,
+  projectSuggestionParked,
+  projectSuggestionRejected,
+  projectSuggestionReviewStarted,
+} from "./projectors/suggestion-author-notification.ts";
+import {
+  SUGGESTION_REVIEWER_ASSIGNED_EVENT,
+  projectSuggestionReviewerAssigned,
+} from "./projectors/suggestion-reviewer-assigned.ts";
+import {
+  SUGGESTION_REVIEWER_REASSIGNED_EVENT,
+  projectSuggestionReviewerReassigned,
+} from "./projectors/suggestion-reviewer-reassigned.ts";
+import {
   SKILL_PROFICIENCY_VALIDATED_EVENT,
   projectSkillProficiencyValidated,
 } from "./projectors/skill-proficiency-validated.ts";
@@ -44,6 +62,30 @@ export const NOTIFICATION_EVENT_PROJECTORS: DomainEventProjector[] = [
   {
     eventType: RECOGNITION_AWARDED_EVENT,
     project: projectRecognitionAwarded,
+  },
+  {
+    eventType: SUGGESTION_REVIEWER_ASSIGNED_EVENT,
+    project: projectSuggestionReviewerAssigned,
+  },
+  {
+    eventType: SUGGESTION_REVIEWER_REASSIGNED_EVENT,
+    project: projectSuggestionReviewerReassigned,
+  },
+  {
+    eventType: SUGGESTION_REVIEW_STARTED_EVENT,
+    project: projectSuggestionReviewStarted,
+  },
+  {
+    eventType: SUGGESTION_ACCEPTED_EVENT,
+    project: projectSuggestionAccepted,
+  },
+  {
+    eventType: SUGGESTION_REJECTED_EVENT,
+    project: projectSuggestionRejected,
+  },
+  {
+    eventType: SUGGESTION_PARKED_EVENT,
+    project: projectSuggestionParked,
   },
 ];
 

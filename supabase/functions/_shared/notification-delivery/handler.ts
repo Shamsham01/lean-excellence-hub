@@ -8,6 +8,7 @@ import type {
 } from "./provider/types.ts";
 import { mapRecipientFailureCode } from "./recipient.ts";
 import { renderOperationalNotification } from "./renderer/registry.ts";
+import { requiresDeliveryTimeAuthorizationRevalidation } from "./suggestion-kinds.ts";
 import type {
   ClaimedNotificationDelivery,
   NotificationProviderEnvelope,
@@ -165,6 +166,71 @@ async function resolveProviderMessage(
           errorCode: "provider_envelope_integrity_conflict",
         },
       };
+    }
+
+    if (
+      requiresDeliveryTimeAuthorizationRevalidation(delivery.notificationKind)
+    ) {
+      const contextResult = await client.getDeliveryContext({
+        organisationId: delivery.organisationId,
+        deliveryId: delivery.deliveryId,
+        sourceDomainEventId: delivery.sourceDomainEventId,
+      });
+
+      if (contextResult.error) {
+        await markDeliveryRetryable(
+          client,
+          delivery,
+          "context_lookup_retryable",
+        );
+        return {
+          message: null,
+          error: {
+            deliveryId: delivery.deliveryId,
+            notificationKind: delivery.notificationKind,
+            outcome: "failed_retryable",
+            errorCode: "context_lookup_retryable",
+          },
+        };
+      }
+
+      if (
+        !contextResult.context ||
+        contextResult.context.recipientResolutionStatus !== "deliverable" ||
+        !contextResult.context.deliverableEmail
+      ) {
+        const errorCode = contextResult.context
+          ? mapRecipientFailureCode(
+              contextResult.context.recipientResolutionStatus,
+            )
+          : "invalid_delivery_context";
+        await markDeliveryTerminal(client, delivery, errorCode);
+        return {
+          message: null,
+          error: {
+            deliveryId: delivery.deliveryId,
+            notificationKind: delivery.notificationKind,
+            outcome: "failed_terminal",
+            errorCode,
+          },
+        };
+      }
+
+      if (
+        contextResult.context.deliverableEmail !==
+        existingEnvelope.envelope.recipientEmail
+      ) {
+        await markDeliveryTerminal(client, delivery, "recipient_email_changed");
+        return {
+          message: null,
+          error: {
+            deliveryId: delivery.deliveryId,
+            notificationKind: delivery.notificationKind,
+            outcome: "failed_terminal",
+            errorCode: "recipient_email_changed",
+          },
+        };
+      }
     }
 
     return {

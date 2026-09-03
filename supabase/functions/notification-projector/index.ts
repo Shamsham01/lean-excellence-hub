@@ -32,6 +32,24 @@ Deno.serve((request) =>
 
           return (data ?? []).map((row) => row.membership_id);
         },
+        lookupSuggestionAuthorMembershipId: async (
+          organisationId,
+          suggestionId,
+        ) => {
+          const { data, error } = await serviceClient.rpc(
+            "lookup_suggestion_author_membership_id_for_worker",
+            {
+              target_organisation_id: organisationId,
+              target_suggestion_id: suggestionId,
+            },
+          );
+
+          if (error) {
+            throw error;
+          }
+
+          return typeof data === "string" ? data : null;
+        },
       });
     },
   }),

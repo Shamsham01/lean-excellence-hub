@@ -48,6 +48,7 @@ function createMockClient(
     failDomainEventRetryable: vi.fn(async () => ({ data: true, error: null })),
     failDomainEventTerminal: vi.fn(async () => ({ data: true, error: null })),
     lookupRecognitionRecipients: vi.fn(async () => []),
+    lookupSuggestionAuthorMembershipId: vi.fn(async () => null),
     ...overrides,
   };
 }

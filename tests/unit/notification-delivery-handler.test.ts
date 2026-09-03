@@ -389,6 +389,281 @@ describe("notification delivery processing", () => {
     expect(firstPayload).toEqual(secondPayload);
   });
 
+  it("revalidates authorization before reusing stored envelope after reviewer reassignment", async () => {
+    const provider = createFakeOperationalEmailProvider();
+    const config = {
+      appOrigin: "https://hub.example.test",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    };
+    const suggestionDelivery = {
+      ...BASE_DELIVERY,
+      notificationKind: "suggestions.reviewer_assigned",
+      deliveryKey:
+        "suggestions.reviewer_assigned:33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444",
+    };
+    const storedEnvelopes = new Map<string, NotificationProviderEnvelope>();
+    let contextCallCount = 0;
+
+    const client = createMockClient({
+      getDeliveryContext: vi.fn(async () => {
+        contextCallCount += 1;
+        if (contextCallCount === 1) {
+          return {
+            context: {
+              ...DELIVERABLE_CONTEXT,
+              notificationKind: suggestionDelivery.notificationKind,
+              deliverableEmail: "alex@example.test",
+            },
+            error: null,
+          };
+        }
+
+        return {
+          context: {
+            ...DELIVERABLE_CONTEXT,
+            notificationKind: suggestionDelivery.notificationKind,
+            recipientResolutionStatus: "not_authorized" as const,
+            deliverableEmail: null,
+          },
+          error: null,
+        };
+      }),
+      getProviderEnvelope: vi.fn(async (input) => ({
+        envelope: storedEnvelopes.get(input.deliveryId) ?? null,
+        error: null,
+      })),
+      storeProviderEnvelope: vi.fn(async (input) => {
+        const envelope: NotificationProviderEnvelope = {
+          organisationId: input.organisationId,
+          deliveryId: input.deliveryId,
+          deliveryKey: input.deliveryKey,
+          senderFrom: input.senderFrom,
+          recipientEmail: input.recipientEmail,
+          subject: input.subject,
+          htmlBody: input.htmlBody,
+          textBody: input.textBody,
+          payloadHash: input.payloadHash,
+        };
+        storedEnvelopes.set(input.deliveryId, envelope);
+        return { envelope, error: null };
+      }),
+    });
+
+    const firstAttempt = await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+    expect(firstAttempt.outcome).toBe("sent");
+    expect(provider.getSendCount()).toBe(1);
+
+    const secondAttempt = await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+
+    expect(secondAttempt.outcome).toBe("failed_terminal");
+    expect(secondAttempt.errorCode).toBe("recipient_no_longer_authorized");
+    expect(provider.getSendCount()).toBe(1);
+    expect(client.failNotificationDeliveryTerminal).toHaveBeenCalled();
+  });
+
+  it("revalidates authorization before reusing stored envelope after reviewer capability revocation", async () => {
+    const provider = createFakeOperationalEmailProvider({
+      failWith: new OperationalEmailProviderError(
+        "provider_rate_limited",
+        "rate limited",
+        { retryable: true, statusCode: 429 },
+      ),
+    });
+    const config = {
+      appOrigin: "https://hub.example.test",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    };
+    const suggestionDelivery = {
+      ...BASE_DELIVERY,
+      notificationKind: "suggestions.reviewer_assigned",
+      deliveryKey:
+        "suggestions.reviewer_assigned:33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444",
+    };
+    const storedEnvelopes = new Map<string, NotificationProviderEnvelope>();
+    let contextCallCount = 0;
+
+    const client = createMockClient({
+      getDeliveryContext: vi.fn(async () => {
+        contextCallCount += 1;
+        if (contextCallCount === 1) {
+          return {
+            context: {
+              ...DELIVERABLE_CONTEXT,
+              notificationKind: suggestionDelivery.notificationKind,
+              deliverableEmail: "alex@example.test",
+            },
+            error: null,
+          };
+        }
+
+        return {
+          context: {
+            ...DELIVERABLE_CONTEXT,
+            notificationKind: suggestionDelivery.notificationKind,
+            recipientResolutionStatus: "not_authorized" as const,
+            deliverableEmail: null,
+          },
+          error: null,
+        };
+      }),
+      getProviderEnvelope: vi.fn(async (input) => ({
+        envelope: storedEnvelopes.get(input.deliveryId) ?? null,
+        error: null,
+      })),
+      storeProviderEnvelope: vi.fn(async (input) => {
+        const envelope: NotificationProviderEnvelope = {
+          organisationId: input.organisationId,
+          deliveryId: input.deliveryId,
+          deliveryKey: input.deliveryKey,
+          senderFrom: input.senderFrom,
+          recipientEmail: input.recipientEmail,
+          subject: input.subject,
+          htmlBody: input.htmlBody,
+          textBody: input.textBody,
+          payloadHash: input.payloadHash,
+        };
+        storedEnvelopes.set(input.deliveryId, envelope);
+        return { envelope, error: null };
+      }),
+    });
+
+    const firstAttempt = await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+    expect(firstAttempt.outcome).toBe("failed_retryable");
+    expect(firstAttempt.errorCode).toBe("provider_rate_limited");
+    expect(provider.getSendCount()).toBe(1);
+    expect(storedEnvelopes.has(suggestionDelivery.deliveryId)).toBe(true);
+    expect(client.failNotificationDeliveryRetryable).toHaveBeenCalled();
+
+    const secondAttempt = await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+
+    expect(secondAttempt.outcome).toBe("failed_terminal");
+    expect(secondAttempt.errorCode).toBe("recipient_no_longer_authorized");
+    expect(provider.getSendCount()).toBe(1);
+    expect(client.getDeliveryContext).toHaveBeenCalledTimes(2);
+    expect(client.failNotificationDeliveryTerminal).toHaveBeenCalled();
+  });
+
+  it("reuses stored envelope for suggestion notifications when authorization still holds", async () => {
+    const client = createMockClient();
+    const provider = createFakeOperationalEmailProvider();
+    const config = {
+      appOrigin: "https://hub.example.test",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    };
+    const suggestionDelivery = {
+      ...BASE_DELIVERY,
+      notificationKind: "suggestions.review_started",
+      deliveryKey:
+        "suggestions.review_started:33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444",
+    };
+
+    await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+    await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+
+    expect(client.getDeliveryContext).toHaveBeenCalledTimes(2);
+    expect(provider.getSendCount()).toBe(2);
+  });
+
+  it("terminal-fails when stored envelope recipient email no longer matches", async () => {
+    const provider = createFakeOperationalEmailProvider();
+    const config = {
+      appOrigin: "https://hub.example.test",
+      operationalEmailFrom: "Lean Excellence Hub <notifications@example.test>",
+    };
+    const suggestionDelivery = {
+      ...BASE_DELIVERY,
+      notificationKind: "suggestions.approved",
+      deliveryKey:
+        "suggestions.approved:33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444",
+    };
+    const storedEnvelopes = new Map<string, NotificationProviderEnvelope>();
+    let contextCallCount = 0;
+
+    const client = createMockClient({
+      getDeliveryContext: vi.fn(async () => {
+        contextCallCount += 1;
+        return {
+          context: {
+            ...DELIVERABLE_CONTEXT,
+            notificationKind: suggestionDelivery.notificationKind,
+            deliverableEmail:
+              contextCallCount === 1
+                ? "alex@example.test"
+                : "changed@example.test",
+          },
+          error: null,
+        };
+      }),
+      getProviderEnvelope: vi.fn(async (input) => ({
+        envelope: storedEnvelopes.get(input.deliveryId) ?? null,
+        error: null,
+      })),
+      storeProviderEnvelope: vi.fn(async (input) => {
+        const envelope: NotificationProviderEnvelope = {
+          organisationId: input.organisationId,
+          deliveryId: input.deliveryId,
+          deliveryKey: input.deliveryKey,
+          senderFrom: input.senderFrom,
+          recipientEmail: input.recipientEmail,
+          subject: input.subject,
+          htmlBody: input.htmlBody,
+          textBody: input.textBody,
+          payloadHash: input.payloadHash,
+        };
+        storedEnvelopes.set(input.deliveryId, envelope);
+        return { envelope, error: null };
+      }),
+    });
+
+    await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+
+    const secondAttempt = await processClaimedNotificationDelivery(
+      client,
+      provider,
+      config,
+      suggestionDelivery,
+    );
+
+    expect(secondAttempt.outcome).toBe("failed_terminal");
+    expect(secondAttempt.errorCode).toBe("recipient_email_changed");
+    expect(provider.getSendCount()).toBe(1);
+  });
+
   it("classifies completion RPC errors separately from provider failures", async () => {
     const client = createMockClient({
       completeNotificationDelivery: vi.fn(async () => ({
