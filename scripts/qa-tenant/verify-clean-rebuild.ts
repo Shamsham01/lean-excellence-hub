@@ -63,10 +63,7 @@ function runStep(
 }
 
 function assertDatabaseTypesCurrent() {
-  const typesPath = join(
-    repoRoot,
-    "src/platform/supabase/database.types.ts",
-  );
+  const typesPath = join(repoRoot, "src/platform/supabase/database.types.ts");
   const before = readFileSync(typesPath, "utf8");
   runNpmScript("db:types");
   const after = readFileSync(typesPath, "utf8");
@@ -185,12 +182,16 @@ function main() {
   );
 
   results.push(
-    runStep("Apex demo seed", "LEANHUB_ALLOW_DEMO_SEED=1 npm run db:seed-demo", () => {
-      runNpmScript("db:seed-demo", {
-        ...process.env,
-        LEANHUB_ALLOW_DEMO_SEED: "1",
-      });
-    }),
+    runStep(
+      "Apex demo seed",
+      "LEANHUB_ALLOW_DEMO_SEED=1 npm run db:seed-demo",
+      () => {
+        runNpmScript("db:seed-demo", {
+          ...process.env,
+          LEANHUB_ALLOW_DEMO_SEED: "1",
+        });
+      },
+    ),
   );
 
   results.push(

@@ -211,9 +211,7 @@ export async function purgeCookieWorksTenantModules(
   executePurgeCookieWorksModuleDataSql(databaseUrl);
   await purgeCookieWorksStorageObjects({
     databaseUrl,
-    ...(options?.storageAdmin
-      ? { storageAdmin: options.storageAdmin }
-      : {}),
+    ...(options?.storageAdmin ? { storageAdmin: options.storageAdmin } : {}),
   });
 
   const verification = verifyCookieWorksTenant(databaseUrl);
