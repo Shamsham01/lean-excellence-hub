@@ -306,12 +306,16 @@ test.describe("Invitation lifecycle", () => {
     await expect(page).toHaveURL(/\/login\?next=/);
     await expect(page.getByLabel("Email")).toHaveValue(email);
     await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(
-      new RegExp(`${escapeRegExp(invitationPath)}$`),
-    );
-    await page.getByRole("button", { name: "Accept invitation" }).click();
-    await expect(page).toHaveURL(/\/platform/);
+    await Promise.all([
+      page.waitForURL(new RegExp(`${escapeRegExp(invitationPath)}$`), {
+        timeout: 30_000,
+      }),
+      page.getByRole("button", { name: "Sign in" }).click(),
+    ]);
+    await Promise.all([
+      page.waitForURL(/\/platform/, { timeout: 30_000 }),
+      page.getByRole("button", { name: "Accept invitation" }).click(),
+    ]);
   });
 
   test("scenario 3: wrong signed-in account is blocked", async ({ page }) => {

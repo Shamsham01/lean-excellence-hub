@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { isInvitationPath } from "@/modules/identity/invitation-constants";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
 
-import { login } from "./actions";
-
 export default async function LoginPage({
   searchParams,
 }: {
@@ -63,7 +61,11 @@ export default async function LoginPage({
           Unable to sign in with those credentials.
         </p>
       ) : null}
-      <form action={login} className="flex flex-col gap-4">
+      <form
+        action="/api/auth/login"
+        method="post"
+        className="flex flex-col gap-4"
+      >
         {next ? <input type="hidden" name="next" value={next} /> : null}
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>

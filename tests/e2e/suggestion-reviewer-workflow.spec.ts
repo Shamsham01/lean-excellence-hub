@@ -1,27 +1,12 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { expect, test, type Page } from "@playwright/test";
 
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-  S2B2_WORKFLOW_FIXTURE_TITLES,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { S2B2_WORKFLOW_FIXTURE_TITLES } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 function reviewWorkspace(page: Page) {
   return page.getByTestId("suggestion-review-workspace");
-}
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
 }
 
 async function openReviewQueueForTitle(
@@ -86,7 +71,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("reviewer claims an unassigned submitted suggestion", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.claim);
     await page.getByTestId("review-claim-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
@@ -99,7 +84,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("reviewer begins review explicitly", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(
       page,
       S2B2_WORKFLOW_FIXTURE_TITLES.claim,
@@ -114,7 +99,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("reviewer parks with rationale and keeps assignment", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(
       page,
       S2B2_WORKFLOW_FIXTURE_TITLES.claim,
@@ -143,7 +128,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("reviewer resumes parked review and keeps historical context", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(
       page,
       S2B2_WORKFLOW_FIXTURE_TITLES.claim,
@@ -160,7 +145,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("reviewer approves and leaves my reviews queue", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(
       page,
       S2B2_WORKFLOW_FIXTURE_TITLES.claim,
@@ -185,7 +170,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("reviewer declines a separate fixture", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.decline);
     await page.getByTestId("review-claim-button").click();
     await page.getByTestId("review-begin-button").click();
@@ -203,8 +188,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     const managerA = await browser.newPage();
     const managerB = await browser.newPage();
 
-    await loginAs(managerA, "manager");
-    await loginAs(managerB, "manager");
+    await signInAsDemoUser(managerA, "manager");
+    await signInAsDemoUser(managerB, "manager");
 
     const reviewPath = await reviewUrlForPortfolioTitle(
       managerA,
@@ -235,7 +220,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("manager assigns an unassigned suggestion", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.assign);
     await page.getByTestId("review-assign-select").selectOption({
       label: "Apex Finance",
@@ -250,7 +235,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("manager reassigns an assigned suggestion", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewWorkspaceFromPortfolio(
       page,
       S2B2_WORKFLOW_FIXTURE_TITLES.reassign,
@@ -274,7 +259,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("read-only user does not see reviewer workflow leakage", async ({
     page,
   }) => {
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/suggestions");
     await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
     await expect(
@@ -288,7 +273,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("portfolio reviewer filter persists in URL", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/suggestions");
     await page
       .getByTestId("suggestion-portfolio-reviewer")
@@ -303,7 +288,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   });
 
   test("parked assignment appears in my reviews queue", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.parked);
     await page.getByTestId("review-claim-button").click();
     await page.getByTestId("review-begin-button").click();
@@ -326,7 +311,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
 
   test("mobile review queue remains usable", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/suggestions/review?queue=unassigned");
     await expect(page.getByTestId("review-queue-tabs")).toBeVisible();
     await expect(page.getByTestId("review-queue-list")).toBeVisible();

@@ -1,11 +1,7 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { expect, test, type Page } from "@playwright/test";
 
-import {
-  DEMO_ORGANISATION,
-  DEMO_PROBLEM_SOLVING_CASE,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -16,17 +12,6 @@ const viewports = [
   { width: 1024, height: 768 },
   { width: 1440, height: 900 },
 ] as const;
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Email sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/, { timeout: 15_000 });
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 function createCaseWizard(page: Page) {
   return page.getByTestId("create-problem-solving-wizard");
@@ -55,7 +40,7 @@ test.describe("Milestone 11 closure", () => {
   test("manager opens problem solving portfolio with seeded case", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
     await expect(
       page.getByTestId("problem-solving-portfolio-page"),
@@ -67,7 +52,7 @@ test.describe("Milestone 11 closure", () => {
   test("manager completes authenticated problem solving lifecycle on a live case", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving/new");
 
     await page.getByTestId("create-case-title").fill(liveCaseTitle);
@@ -267,7 +252,7 @@ test.describe("Milestone 11 closure", () => {
     ).replace("hypothesis-item-", "");
 
     const liveCaseUrl = page.url();
-    await loginAs(page, "psContributor");
+    await signInAsDemoUser(page, "psContributor");
     await page.goto(liveCaseUrl);
     await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
     await page.getByTestId("tab-cause-analysis").click();
@@ -277,7 +262,7 @@ test.describe("Milestone 11 closure", () => {
       page.getByTestId("problem-solving-close-button"),
     ).not.toBeVisible();
 
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto(liveCaseUrl);
     await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
 
@@ -417,7 +402,7 @@ test.describe("Milestone 11 closure", () => {
   test("seeded closed case shows verified cause and effectiveness history", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
@@ -459,11 +444,11 @@ test.describe("Milestone 11 closure", () => {
   test("operator without problem_solving.view cannot access portfolio or case routes", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openLiveCase(page);
     const caseUrl = page.url();
 
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/problem-solving");
     await expect(
       page.getByTestId("problem-solving-portfolio-page"),
@@ -478,7 +463,7 @@ test.describe("Milestone 11 closure", () => {
   test("operator cannot open problem solving create route", async ({
     page,
   }) => {
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/problem-solving/new");
     await expect(
       page.getByTestId("create-problem-solving-page"),
@@ -488,7 +473,7 @@ test.describe("Milestone 11 closure", () => {
   test("seeded case source links do not expose source resource titles in overview", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
@@ -509,7 +494,7 @@ test.describe("Milestone 11 closure", () => {
   for (const viewport of viewports) {
     test(`responsive smoke at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
-      await loginAs(page, "manager");
+      await signInAsDemoUser(page, "manager");
       await page.goto("/platform/problem-solving");
       await expect(
         page.getByTestId("problem-solving-portfolio-page"),
