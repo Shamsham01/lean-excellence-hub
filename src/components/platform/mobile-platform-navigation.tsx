@@ -50,22 +50,20 @@ export function MobilePlatformNavigation({
         </SheetTrigger>
         <SheetContent
           side="left"
-          className="flex h-full max-h-dvh w-[min(100%,16rem)] flex-col overflow-hidden bg-sidebar p-0"
+          className="flex h-dvh max-h-dvh min-h-0 w-[min(100%,16rem)] flex-col gap-0 overflow-hidden bg-sidebar p-0 pb-[env(safe-area-inset-bottom,0px)]"
           aria-describedby={undefined}
         >
           <SheetTitle className="sr-only">Platform navigation</SheetTitle>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <PlatformSidebarHeader
-              organisationName={organisationName}
-              organisations={organisations}
-            />
-            <PlatformNavigation items={items} onNavigate={closeDrawer} />
-            <PlatformSidebarFooter
-              member={member}
-              showSettings={showSettings}
-              onNavigate={closeDrawer}
-            />
-          </div>
+          <PlatformSidebarHeader
+            organisationName={organisationName}
+            organisations={organisations}
+          />
+          <PlatformNavigation items={items} onNavigate={closeDrawer} />
+          <PlatformSidebarFooter
+            member={member}
+            showSettings={showSettings}
+            onNavigate={closeDrawer}
+          />
         </SheetContent>
       </Sheet>
       <span

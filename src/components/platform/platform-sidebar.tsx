@@ -22,7 +22,7 @@ function DesktopSidebar({
   showSettings,
 }: PlatformSidebarProps) {
   return (
-    <aside className="hidden h-dvh w-56 shrink-0 border-r border-sidebar-border bg-sidebar lg:flex lg:flex-col">
+    <aside className="hidden h-dvh min-h-0 w-56 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar lg:flex">
       <PlatformSidebarHeader
         organisationName={organisationName}
         organisations={organisations}
