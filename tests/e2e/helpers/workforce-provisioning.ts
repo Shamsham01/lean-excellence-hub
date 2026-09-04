@@ -12,7 +12,9 @@ export async function signInAsDemoUser(
   page: Page,
   user: keyof typeof DEMO_USERS,
 ) {
-  return signInAsDemoUserFromDemoAuth(page, user, { assertOrganisation: false });
+  return signInAsDemoUserFromDemoAuth(page, user, {
+    assertOrganisation: false,
+  });
 }
 
 const repoRoot = path.resolve(
