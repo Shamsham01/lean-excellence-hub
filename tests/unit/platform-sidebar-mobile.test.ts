@@ -27,7 +27,23 @@ describe("platform sidebar layout", () => {
     expect(header).toContain("shrink-0");
     expect(footer).toContain("shrink-0");
     expect(sidebar).toContain("h-dvh");
+    expect(sidebar).toContain("min-h-0");
     expect(sidebar).toContain("w-56");
+  });
+
+  it("constrains the mobile drawer to the dynamic viewport with a scrollable nav region", () => {
+    const mobile = readComponent(
+      "src/components/platform/mobile-platform-navigation.tsx",
+    );
+
+    expect(mobile).toContain("h-dvh");
+    expect(mobile).toContain("max-h-dvh");
+    expect(mobile).toContain("min-h-0");
+    expect(mobile).toContain("overflow-hidden");
+    expect(mobile).toContain("PlatformSidebarHeader");
+    expect(mobile).toContain("PlatformNavigation");
+    expect(mobile).toContain("PlatformSidebarFooter");
+    expect(mobile).not.toMatch(/flex min-h-0 flex-1 flex-col overflow-hidden/);
   });
 
   it("uses a single navigation configuration module", () => {
