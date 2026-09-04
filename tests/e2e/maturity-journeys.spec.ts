@@ -180,6 +180,7 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     const scoreInput = page.locator('input[type="number"]').first();
     await scoreInput.fill("3");
+    await scoreInput.blur();
     await expect(page.getByText("Saving")).not.toBeVisible({ timeout: 10000 });
 
     await page.getByTestId("complete-self-assessment").click();
