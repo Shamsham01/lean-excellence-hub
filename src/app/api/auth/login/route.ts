@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { emailPasswordSchema } from "@/modules/identity/auth-input";
@@ -7,9 +6,9 @@ import {
   buildCanonicalRedirectUrl,
   requestHasTrustedOrigin,
 } from "@/platform/application-origin";
-import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
+import { getServerEnvironment } from "@/platform/env";
 import { recordAuthenticationSecurityEvent } from "@/platform/supabase/secret";
-import type { Database } from "@/platform/supabase/database.types";
+import { createRouteHandlerSupabaseClient } from "@/platform/supabase/route-handler";
 
 export async function POST(request: NextRequest) {
   const environment = getServerEnvironment();
@@ -32,27 +31,7 @@ export async function POST(request: NextRequest) {
     { status: 303 },
   );
 
-  const publicEnvironment = getPublicEnvironment();
-  const supabase = createServerClient<Database>(
-    publicEnvironment.NEXT_PUBLIC_SUPABASE_URL,
-    publicEnvironment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet, headers) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
-          });
-          Object.entries(headers).forEach(([name, value]) => {
-            response.headers.set(name, value);
-          });
-        },
-      },
-    },
-  );
+  const supabase = createRouteHandlerSupabaseClient(request, response);
 
   if (!parsed.success) {
     await recordAuthenticationSecurityEvent(

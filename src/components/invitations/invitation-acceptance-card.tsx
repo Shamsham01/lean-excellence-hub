@@ -14,7 +14,7 @@ type InvitationAcceptanceCardProps =
       lifecycle: InvitationLifecycleView;
       loginPath: string;
       activatePath: string;
-      acceptAction: (formData: FormData) => Promise<void>;
+      acceptEndpoint: string;
     }
   | {
       token?: undefined;
@@ -22,7 +22,7 @@ type InvitationAcceptanceCardProps =
       lifecycle: InvitationLifecycleView;
       loginPath?: undefined;
       activatePath?: undefined;
-      acceptAction: (formData: FormData) => Promise<void>;
+      acceptEndpoint: string;
     };
 
 function InvitationDetails({
@@ -79,7 +79,7 @@ function InvitationDetails({
 }
 
 export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
-  const { lifecycle, acceptAction } = props;
+  const { lifecycle, acceptEndpoint } = props;
   const signOutNext =
     props.bindingId !== undefined
       ? invitationContinuePath(props.bindingId)
@@ -225,7 +225,11 @@ export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
         }
       >
         <InvitationDetails lifecycle={lifecycle} />
-        <form action={acceptAction} className="flex flex-col gap-4">
+        <form
+          action={acceptEndpoint}
+          method="post"
+          className="flex flex-col gap-4"
+        >
           {props.bindingId !== undefined ? (
             <input type="hidden" name="bindingId" value={props.bindingId} />
           ) : (
