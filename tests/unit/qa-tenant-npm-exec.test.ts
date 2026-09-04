@@ -6,33 +6,56 @@ import {
 } from "../../scripts/qa-tenant/npm-exec";
 
 describe("resolveNpmRunInvocation", () => {
-  it("prefers npm_execpath via the current Node executable", () => {
+  it("prefers npm_execpath via the current Node executable on Windows", () => {
     const invocation = resolveNpmRunInvocation("db:reset", {
       env: {
         npm_execpath: "/path/to/npm-cli.js",
         NODE_ENV: "test",
       },
-      execPath: "/usr/bin/node",
+      execPath: "C:\\Program Files\\nodejs\\node.exe",
       platform: "win32",
     });
 
     expect(invocation).toEqual({
-      executable: "/usr/bin/node",
+      executable: "C:\\Program Files\\nodejs\\node.exe",
       args: ["/path/to/npm-cli.js", "run", "db:reset"],
     });
+    expect(invocation.executable).not.toBe("npm.cmd");
+    expect(invocation.args[0]).toBe("/path/to/npm-cli.js");
   });
 
-  it("does not rely on bare npm resolution on Windows", () => {
+  it("uses cmd.exe to run npm.cmd when npm_execpath is absent on Windows", () => {
     const invocation = resolveNpmRunInvocation("test", {
+      env: {
+        NODE_ENV: "test",
+        ComSpec: "C:\\Windows\\System32\\cmd.exe",
+      },
+      platform: "win32",
+    });
+
+    expect(invocation).toEqual({
+      executable: "C:\\Windows\\System32\\cmd.exe",
+      args: ["/d", "/s", "/c", "npm.cmd", "run", "test"],
+    });
+    expect(invocation.executable).not.toBe("npm.cmd");
+    expect(invocation.args).not.toContain("npm");
+  });
+
+  it("defaults to cmd.exe when ComSpec is absent on Windows", () => {
+    const invocation = resolveNpmRunInvocation("build", {
       env: { NODE_ENV: "test" },
       platform: "win32",
     });
 
-    expect(invocation).toEqual({
-      executable: "npm.cmd",
-      args: ["run", "test"],
-    });
-    expect(invocation.executable).not.toBe("npm");
+    expect(invocation.executable).toBe("cmd.exe");
+    expect(invocation.args).toEqual([
+      "/d",
+      "/s",
+      "/c",
+      "npm.cmd",
+      "run",
+      "build",
+    ]);
   });
 
   it("keeps a Unix npm fallback when npm_execpath is absent", () => {
@@ -67,6 +90,31 @@ describe("resolveNpmRunExecCall", () => {
       args: ["/fake/npm-cli.js", "run", "db:seed-demo"],
       options: {
         cwd: "/repo",
+        encoding: "utf8",
+        env,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    });
+  });
+
+  it("propagates cwd and env overrides through the Windows cmd.exe fallback", () => {
+    const env = {
+      NODE_ENV: "test",
+      ComSpec: "C:\\Windows\\System32\\cmd.exe",
+      LEANHUB_ALLOW_QA_TENANT: "1",
+    } as NodeJS.ProcessEnv;
+
+    const call = resolveNpmRunExecCall("qa:cookie:seed", {
+      cwd: "D:\\repo",
+      env,
+      platform: "win32",
+    });
+
+    expect(call).toEqual({
+      executable: "C:\\Windows\\System32\\cmd.exe",
+      args: ["/d", "/s", "/c", "npm.cmd", "run", "qa:cookie:seed"],
+      options: {
+        cwd: "D:\\repo",
         encoding: "utf8",
         env,
         stdio: ["ignore", "pipe", "pipe"],

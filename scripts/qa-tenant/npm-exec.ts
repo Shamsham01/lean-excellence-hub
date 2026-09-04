@@ -36,8 +36,8 @@ export function resolveNpmRunInvocation(
 
   if (platform === "win32") {
     return {
-      executable: "npm.cmd",
-      args: ["run", script],
+      executable: env.ComSpec ?? "cmd.exe",
+      args: ["/d", "/s", "/c", "npm.cmd", "run", script],
     };
   }
 
