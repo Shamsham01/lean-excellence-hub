@@ -84,7 +84,7 @@ type ContextRow = {
   source_domain_event_id: string;
   notification_kind: string;
   recipient_membership_id: string;
-  recipient_display_name: string;
+  recipient_display_name: string | null;
   recipient_resolution_status: RecipientResolutionStatus;
   deliverable_email: string | null;
   event_type: string;

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { escapeHtml } from "../../supabase/functions/_shared/notification-delivery/html-escape.ts";
 import { renderOperationalNotification } from "../../supabase/functions/_shared/notification-delivery/renderer/registry.ts";
 import {
+  formatRecipientGreeting,
   JOB_FUNCTION_ASSIGNED_KIND,
   RECOGNITION_AWARDED_KIND,
   SKILL_PROFICIENCY_VALIDATED_KIND,
@@ -183,5 +184,58 @@ describe("notification renderers", () => {
     expect(rendered.text).toContain("We will revisit this next quarter.");
     expect(rendered.text).not.toContain("secret reviewer note");
     expect(rendered.html).not.toContain("secret reviewer note");
+  });
+
+  it("formats named recipient greetings across notification kinds", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_APPROVED_KIND, {
+        recipientDisplayName: "Przem Admin Test",
+        contextEmployeeMessage: "Approved.",
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.text).toContain("Hello Przem Admin Test,");
+    expect(rendered.html).toContain("Hello Przem Admin Test,");
+    expect(rendered.text).not.toContain("Hello Team member");
+  });
+
+  it("formats neutral greetings when recipient display name is absent", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_APPROVED_KIND, {
+        recipientDisplayName: null,
+        contextEmployeeMessage: "Approved.",
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.text).toContain(
+      "Hello,\n\nYour suggestion has been approved",
+    );
+    expect(rendered.html).toContain("Hello, your suggestion has been approved");
+    expect(rendered.text).not.toContain("Hello Team member");
+    expect(rendered.html).not.toContain("Hello Team member");
+  });
+
+  it("formats neutral greetings for blank recipient display names", () => {
+    expect(formatRecipientGreeting("   ")).toBe("Hello");
+    expect(formatRecipientGreeting(null)).toBe("Hello");
+    expect(formatRecipientGreeting("Alex Operator")).toBe(
+      "Hello Alex Operator",
+    );
+  });
+
+  it("keeps suggestion implemented employee outcome content intact", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_IMPLEMENTED_KIND, {
+        recipientDisplayName: "Przem Admin Test",
+        contextEmployeeMessage: "The improvement is live.",
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.text).toContain("Hello Przem Admin Test,");
+    expect(rendered.text).toContain("The improvement is live.");
+    expect(rendered.text).not.toContain("internal implementation summary");
   });
 });

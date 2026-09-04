@@ -25,7 +25,7 @@ export type NotificationDeliveryContext = {
   sourceDomainEventId: string;
   notificationKind: string;
   recipientMembershipId: string;
-  recipientDisplayName: string;
+  recipientDisplayName: string | null;
   recipientResolutionStatus: RecipientResolutionStatus;
   deliverableEmail: string | null;
   eventType: string;

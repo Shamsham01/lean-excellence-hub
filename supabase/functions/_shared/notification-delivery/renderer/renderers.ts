@@ -7,6 +7,13 @@ import {
   renderBrandedOperationalEmail,
 } from "./template.ts";
 
+export function formatRecipientGreeting(
+  recipientDisplayName: string | null | undefined,
+): string {
+  const trimmedName = recipientDisplayName?.trim();
+  return trimmedName ? `Hello ${trimmedName}` : "Hello";
+}
+
 export const JOB_FUNCTION_ASSIGNED_KIND = "workforce.job_function_assigned";
 export const TRAINING_COMPLETED_KIND = "workforce.training_completed";
 export const SKILL_PROFICIENCY_VALIDATED_KIND =
@@ -35,7 +42,7 @@ export function renderJobFunctionAssignedEmail(
 
   const subject = `Job function update: ${jobFunctionName}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `${detail} for ${jobFunctionName} in ${context.organisationName}.\n\n` +
     `Open Lean Excellence Hub to review your workforce profile.`;
 
@@ -46,7 +53,7 @@ export function renderJobFunctionAssignedEmail(
       eyebrow: context.organisationName,
       title: "Job function assignment updated",
       intro:
-        `Hello ${context.recipientDisplayName}, ${detail.toLowerCase()} for ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, ${detail.toLowerCase()} for ` +
         `${jobFunctionName} in ${context.organisationName}.`,
       ctaLabel: "View workforce profile",
       ctaUrl,
@@ -65,7 +72,7 @@ export function renderTrainingCompletedEmail(
 
   const subject = `Training completed: ${courseName}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `Your completion of ${courseName} has been recorded in ${context.organisationName}.`;
 
   return {
@@ -75,7 +82,7 @@ export function renderTrainingCompletedEmail(
       eyebrow: context.organisationName,
       title: "Training completion recorded",
       intro:
-        `Hello ${context.recipientDisplayName}, your completion of ${courseName} ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, your completion of ${courseName} ` +
         `has been recorded in ${context.organisationName}.`,
       ctaLabel: "View training",
       ctaUrl,
@@ -94,7 +101,7 @@ export function renderSkillProficiencyValidatedEmail(
 
   const subject = `Skill validated: ${skillName}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `Your proficiency in ${skillName} has been validated in ${context.organisationName}.`;
 
   return {
@@ -104,7 +111,7 @@ export function renderSkillProficiencyValidatedEmail(
       eyebrow: context.organisationName,
       title: "Skill proficiency validated",
       intro:
-        `Hello ${context.recipientDisplayName}, your proficiency in ${skillName} ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, your proficiency in ${skillName} ` +
         `has been validated in ${context.organisationName}.`,
       ctaLabel: "View skills",
       ctaUrl,
@@ -124,7 +131,7 @@ export function renderRecognitionAwardedEmail(
 
   const subject = `Recognition awarded: ${awardTitle}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `You have been recognised in ${context.organisationName}.\n\n` +
     `${awardTitle}\n${awardMessage}`;
 
@@ -135,7 +142,7 @@ export function renderRecognitionAwardedEmail(
       eyebrow: context.organisationName,
       title: "You received recognition",
       intro:
-        `Hello ${context.recipientDisplayName}, you have been recognised in ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, you have been recognised in ` +
         `${context.organisationName}. ${awardTitle}: ${awardMessage}`,
       ctaLabel: "View recognition",
       ctaUrl,
@@ -155,7 +162,7 @@ function renderSuggestionReviewerEmail(
   const ctaUrl = buildOperationalCtaUrl(appOrigin, context.contextLinkPath);
   const subject = `${subjectPrefix}: ${suggestionTitle}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `${bodyIntro} in ${context.organisationName}.\n\n` +
     `Open Lean Excellence Hub to review the idea and record the next step.`;
 
@@ -166,7 +173,7 @@ function renderSuggestionReviewerEmail(
       eyebrow: context.organisationName,
       title: subjectPrefix,
       intro:
-        `Hello ${context.recipientDisplayName}, ${bodyIntro.toLowerCase()} ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, ${bodyIntro.toLowerCase()} ` +
         `in ${context.organisationName}.`,
       ctaLabel: "Review suggestion",
       ctaUrl,
@@ -216,7 +223,7 @@ function renderSuggestionAuthorDecisionEmail(
   const ctaUrl = buildOperationalCtaUrl(appOrigin, context.contextLinkPath);
   const subject = `${options.subjectPrefix}: ${suggestionTitle}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `${options.bodyDetail} in ${context.organisationName}.`;
   const feedbackBlock =
     employeeMessage.length > 0
@@ -231,7 +238,7 @@ function renderSuggestionAuthorDecisionEmail(
       eyebrow: context.organisationName,
       title: options.heading,
       intro:
-        `Hello ${context.recipientDisplayName}, ${options.bodyDetail.toLowerCase()} ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, ${options.bodyDetail.toLowerCase()} ` +
         `in ${context.organisationName}.`,
       ...(employeeMessage
         ? {
@@ -307,7 +314,7 @@ export function renderSuggestionImplementedEmail(
   const ctaUrl = buildOperationalCtaUrl(appOrigin, context.contextLinkPath);
   const subject = `Suggestion implemented: ${suggestionTitle}`;
   const intro =
-    `Hello ${context.recipientDisplayName},\n\n` +
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
     `Your suggestion has been implemented in ${context.organisationName}.`;
   const outcomeBlock =
     employeeOutcome.length > 0 ? `\n\nOutcome\n${employeeOutcome}` : "";
@@ -320,7 +327,7 @@ export function renderSuggestionImplementedEmail(
       eyebrow: context.organisationName,
       title: "Your suggestion has been implemented",
       intro:
-        `Hello ${context.recipientDisplayName}, your suggestion has been implemented ` +
+        `${formatRecipientGreeting(context.recipientDisplayName)}, your suggestion has been implemented ` +
         `in ${context.organisationName}.`,
       ...(employeeOutcome
         ? { sections: [{ heading: "Outcome", body: employeeOutcome }] }
