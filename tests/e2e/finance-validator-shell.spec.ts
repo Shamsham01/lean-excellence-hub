@@ -1,23 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 test.describe("Finance Validator shell hotfix", () => {
   test.describe.configure({ mode: "serial" });
@@ -31,7 +16,7 @@ test.describe("Finance Validator shell hotfix", () => {
   test("finance validator sees Home, Benefits, and Settings", async ({
     page,
   }) => {
-    await loginAs(page, "finance");
+    await signInAsDemoUser(page, "finance");
     await expect(
       page.getByRole("link", { name: "Home", exact: true }),
     ).toBeVisible();
@@ -52,7 +37,7 @@ test.describe("Finance Validator shell hotfix", () => {
   test("finance validator settings hub exposes profile and hides people administration", async ({
     page,
   }) => {
-    await loginAs(page, "finance");
+    await signInAsDemoUser(page, "finance");
     await page.goto("/platform/settings");
     await expect(page.getByTestId("settings-page")).toBeVisible();
     await expect(
@@ -78,7 +63,7 @@ test.describe("Finance Validator shell hotfix", () => {
   test("finance validator can view and update own profile", async ({
     page,
   }) => {
-    await loginAs(page, "finance");
+    await signInAsDemoUser(page, "finance");
     await page.goto("/platform/settings/profile");
     await expect(page.getByTestId("profile-settings-page")).toBeVisible();
     await expect(page.getByTestId("profile-application-role")).toHaveText(
@@ -106,7 +91,7 @@ test.describe("Finance Validator shell hotfix", () => {
   test("finance validator cannot access people administration routes", async ({
     page,
   }) => {
-    await loginAs(page, "finance");
+    await signInAsDemoUser(page, "finance");
     await page.goto("/platform/settings/people");
     await expect(page.getByTestId("people-settings-page")).not.toBeVisible();
     await page.goto("/platform/settings/people/create");

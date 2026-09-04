@@ -1,23 +1,9 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { expect, test, type Page } from "@playwright/test";
 
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { DEMO_USERS } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 async function expectMemberAdminPage(page: Page, memberDisplayName: string) {
   await expect(page).toHaveURL(/\/platform\/people\/[^/]+\/admin$/);
@@ -45,7 +31,7 @@ test.describe("Member administration", () => {
   test("admin: people directory manage opens member administration page", async ({
     page,
   }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/people");
     await expect(page.getByTestId("people-directory-page")).toBeVisible();
 
@@ -63,7 +49,7 @@ test.describe("Member administration", () => {
   test("admin: profile settings administration link opens member admin page", async ({
     page,
   }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/settings/profile");
     await expect(page.getByTestId("profile-settings-page")).toBeVisible();
 

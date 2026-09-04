@@ -1,24 +1,12 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
+import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
-  DEMO_ORGANISATION,
   DEMO_TRAINING_COURSES,
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 test.describe("Milestone 7 training journeys", () => {
   test.describe.configure({ mode: "serial" });
@@ -32,7 +20,7 @@ test.describe("Milestone 7 training journeys", () => {
   test("admin: training overview and matrix show demo courses", async ({
     page,
   }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/training");
 
     await expect(page.getByRole("heading", { name: "Training" })).toBeVisible();
@@ -47,7 +35,7 @@ test.describe("Milestone 7 training journeys", () => {
   });
 
   test("admin: people directory and capability profile", async ({ page }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/people");
     await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
 
@@ -72,7 +60,7 @@ test.describe("Milestone 7 skills journeys", () => {
   );
 
   test("manager: skills matrix loads", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/skills/matrix");
     await expect(
       page.getByRole("heading", { name: "Skills matrix" }),

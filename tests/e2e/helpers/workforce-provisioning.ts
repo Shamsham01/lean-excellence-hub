@@ -6,19 +6,13 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
 
 import { DEMO_USERS } from "../../../scripts/demo-seed/constants";
+import { signInAsDemoUser as signInAsDemoUserFromDemoAuth } from "./demo-auth";
 
 export async function signInAsDemoUser(
   page: Page,
   user: keyof typeof DEMO_USERS,
 ) {
-  const credentials = DEMO_USERS[user];
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await Promise.all([
-    page.waitForURL(/\/platform/, { timeout: 30_000 }),
-    page.getByRole("button", { name: "Sign in" }).click(),
-  ]);
+  return signInAsDemoUserFromDemoAuth(page, user, { assertOrganisation: false });
 }
 
 const repoRoot = path.resolve(
