@@ -7,10 +7,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   assertDatabaseTypesCurrent,
-  assertWorkingTreeClean,
   DATABASE_TYPES_RELATIVE_PATH,
   type GitDiffRunner,
 } from "../../scripts/qa-tenant/database-types-verify";
+import { assertWorkingTreeClean } from "../../scripts/qa-tenant/working-tree-verify";
 
 function createTypesFixtureRepo(content = "export type Foo = 1;\n") {
   const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-mock-"));

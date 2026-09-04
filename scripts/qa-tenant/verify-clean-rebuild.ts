@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 
-import {
-  assertDatabaseTypesCurrent,
-  assertWorkingTreeClean,
-  snapshotWorkingTreeStatus,
-} from "./database-types-verify";
+import { assertDatabaseTypesCurrent } from "./database-types-verify";
 import { QA_ORGANISATION_CODE, QA_USERS } from "./constants";
 import {
   collectCookieWorksInventory,
@@ -16,6 +12,13 @@ import {
   formatVerificationSummary,
 } from "./verification";
 import { runNpmScript as executeNpmScript } from "./npm-exec";
+import {
+  assertWorkingTreeClean,
+  NEXT_ENV_RELATIVE_PATH,
+  readTrackedFileBytes,
+  restoreNextEnvIfOnlyTypegenImportDrift,
+  snapshotWorkingTreeStatus,
+} from "./working-tree-verify";
 
 type StepResult = {
   name: string;
@@ -136,6 +139,10 @@ function main() {
   loadLocalSupabaseEnv("qa:verify:clean-rebuild");
 
   const preStatus = snapshotWorkingTreeStatus(repoRoot);
+  const preNextEnvBytes = readTrackedFileBytes(
+    repoRoot,
+    NEXT_ENV_RELATIVE_PATH,
+  );
   if (preStatus.length > 0) {
     process.stdout.write(
       "Warning: working tree was not clean before verification:\n",
@@ -248,6 +255,7 @@ function main() {
       "git status --short (must be empty when started clean)",
       () => {
         if (preStatus.length === 0) {
+          restoreNextEnvIfOnlyTypegenImportDrift(repoRoot, preNextEnvBytes);
           assertWorkingTreeClean(repoRoot);
         } else {
           process.stdout.write(

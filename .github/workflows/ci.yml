@@ -112,7 +112,7 @@ jobs:
       - run: npm ci
       - name: Run cross-platform QA harness unit tests
         shell: pwsh
-        run: npm test -- tests/unit/qa-tenant-npm-exec.test.ts tests/unit/qa-tenant-db-cli.test.ts tests/unit/qa-tenant-db-query-result.test.ts tests/unit/qa-tenant-database-types-verify.test.ts tests/unit/qa-tenant-inventory.test.ts tests/unit/qa-tenant-guards.test.ts tests/unit/qa-tenant-constants.test.ts
+        run: npm test -- tests/unit/qa-tenant-npm-exec.test.ts tests/unit/qa-tenant-db-cli.test.ts tests/unit/qa-tenant-db-query-result.test.ts tests/unit/qa-tenant-database-types-verify.test.ts tests/unit/qa-tenant-inventory.test.ts tests/unit/qa-tenant-working-tree-verify.test.ts tests/unit/qa-tenant-guards.test.ts tests/unit/qa-tenant-constants.test.ts
       - name: Verify Supabase CLI resolves via npm exec on Windows
         shell: pwsh
         run: npm exec -- supabase --version

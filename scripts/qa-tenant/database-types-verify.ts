@@ -16,13 +16,10 @@ export type GitDiffRunner = (
   filePath: string,
 ) => GitDiffResult;
 
-export type GitStatusRunner = (repoRoot: string) => string;
-
 export type AssertDatabaseTypesCurrentOptions = {
   repoRoot: string;
   runDbTypes: () => void;
   runGitDiff?: GitDiffRunner;
-  runGitStatus?: GitStatusRunner;
 };
 
 function defaultGitDiff(repoRoot: string, filePath: string): GitDiffResult {
@@ -51,14 +48,6 @@ function defaultGitDiff(repoRoot: string, filePath: string): GitDiffResult {
       stderr: execError.stderr ?? "",
     };
   }
-}
-
-function defaultGitStatus(repoRoot: string): string {
-  return execFileSync("git", ["status", "--short"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
 }
 
 /**
@@ -113,23 +102,4 @@ export function assertDatabaseTypesCurrent(
   }
 
   restoreIfOnlyEolDrift(options.repoRoot, relativePath, originalBytes);
-}
-
-export function assertWorkingTreeClean(
-  repoRoot: string,
-  runGitStatus: GitStatusRunner = defaultGitStatus,
-): void {
-  const status = runGitStatus(repoRoot).trim();
-  if (status.length > 0) {
-    throw new Error(
-      `Working tree is not clean after verification. git status --short:\n${status}`,
-    );
-  }
-}
-
-export function snapshotWorkingTreeStatus(
-  repoRoot: string,
-  runGitStatus: GitStatusRunner = defaultGitStatus,
-): string {
-  return runGitStatus(repoRoot).trim();
 }
