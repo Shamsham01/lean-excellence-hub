@@ -87,3 +87,91 @@ export function runNpmScript(
 
   return execFileSync(executable, args, execOptions);
 }
+
+/**
+ * Resolves how to invoke `npm exec -- <command> ...args` in a cross-platform way.
+ *
+ * When npm_execpath is available, invoke npm through the current Node executable
+ * to avoid Windows ENOENT on bare "npx".
+ */
+export function resolveNpmExecInvocation(
+  command: string,
+  commandArgs: string[],
+  options: RunNpmScriptOptions = {},
+): NpmRunInvocation {
+  const env = options.env ?? process.env;
+  const execPath = options.execPath ?? process.execPath;
+  const platform = options.platform ?? process.platform;
+
+  const npmExecPath = env.npm_execpath;
+  if (npmExecPath) {
+    return {
+      executable: execPath,
+      args: [npmExecPath, "exec", "--", command, ...commandArgs],
+    };
+  }
+
+  if (platform === "win32") {
+    return {
+      executable: env.ComSpec ?? "cmd.exe",
+      args: [
+        "/d",
+        "/s",
+        "/c",
+        "npm.cmd",
+        "exec",
+        "--",
+        command,
+        ...commandArgs,
+      ],
+    };
+  }
+
+  return {
+    executable: "npm",
+    args: ["exec", "--", command, ...commandArgs],
+  };
+}
+
+export type NpmExecExecCall = NpmRunInvocation & {
+  options: {
+    cwd: string;
+    encoding: "utf8";
+    env: NodeJS.ProcessEnv;
+    stdio: ["ignore", "pipe", "pipe"];
+  };
+};
+
+export function resolveNpmExecExecCall(
+  command: string,
+  commandArgs: string[],
+  options: RunNpmScriptOptions = {},
+): NpmExecExecCall {
+  const cwd = options.cwd ?? process.cwd();
+  const env = options.env ?? process.env;
+  const invocation = resolveNpmExecInvocation(command, commandArgs, options);
+
+  return {
+    ...invocation,
+    options: {
+      cwd,
+      encoding: "utf8",
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  };
+}
+
+export function runNpmExec(
+  command: string,
+  commandArgs: string[],
+  options: RunNpmScriptOptions = {},
+): string {
+  const {
+    executable,
+    args,
+    options: execOptions,
+  } = resolveNpmExecExecCall(command, commandArgs, options);
+
+  return execFileSync(executable, args, execOptions);
+}

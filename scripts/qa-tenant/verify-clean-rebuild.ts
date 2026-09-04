@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
+import { assertDatabaseTypesCurrent } from "./database-types-verify";
 import { QA_ORGANISATION_CODE, QA_USERS } from "./constants";
 import {
   collectCookieWorksInventory,
@@ -54,19 +53,6 @@ function runStep(
     const message = error instanceof Error ? error.message : String(error);
     process.stdout.write(`    FAIL: ${message}\n`);
     return { name, command, status: "FAIL", detail: message };
-  }
-}
-
-function assertDatabaseTypesCurrent() {
-  const typesPath = join(repoRoot, "src/platform/supabase/database.types.ts");
-  const before = readFileSync(typesPath, "utf8");
-  runNpmScript("db:types");
-  const after = readFileSync(typesPath, "utf8");
-
-  if (before !== after) {
-    throw new Error(
-      "Committed database.types.ts is stale after db:reset. Run `npm run db:types` and commit the result.",
-    );
   }
 }
 
@@ -163,9 +149,12 @@ function main() {
   results.push(
     runStep(
       "Generated type verification",
-      "npm run db:types && git diff --exit-code database.types.ts",
+      "npm run db:types && git diff --exit-code --ignore-space-at-eol database.types.ts",
       () => {
-        assertDatabaseTypesCurrent();
+        assertDatabaseTypesCurrent({
+          repoRoot,
+          runDbTypes: () => runNpmScript("db:types"),
+        });
       },
     ),
   );

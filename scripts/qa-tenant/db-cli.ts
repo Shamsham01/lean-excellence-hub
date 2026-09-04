@@ -3,6 +3,8 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { resolveNpmExecExecCall } from "./npm-exec";
+
 export type SupabaseDbQueryOptions = {
   databaseUrl?: string;
   local?: boolean;
@@ -67,13 +69,20 @@ export function runSupabaseDbQuery(options: SupabaseDbQueryOptions): string {
       delete queryOptions.sql;
     }
 
-    const args = buildSupabaseDbQueryArgs(queryOptions);
+    const supabaseArgs = buildSupabaseDbQueryArgs(queryOptions);
+    const command = supabaseArgs[0];
+    if (!command) {
+      throw new Error("Supabase DB query args must include a command.");
+    }
+    const commandArgs = supabaseArgs.slice(1);
+    const {
+      executable,
+      args,
+      options: execOptions,
+    } = resolveNpmExecExecCall(command, commandArgs);
 
     try {
-      return execFileSync("npx", args, {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      return execFileSync(executable, args, execOptions);
     } catch (error) {
       const execError = error as Error & { stdout?: string; stderr?: string };
       const stdout = execError.stdout ?? "";
