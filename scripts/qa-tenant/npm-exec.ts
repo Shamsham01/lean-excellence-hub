@@ -79,10 +79,11 @@ export function runNpmScript(
   script: string,
   options: RunNpmScriptOptions = {},
 ): string {
-  const { executable, args, options: execOptions } = resolveNpmRunExecCall(
-    script,
-    options,
-  );
+  const {
+    executable,
+    args,
+    options: execOptions,
+  } = resolveNpmRunExecCall(script, options);
 
   return execFileSync(executable, args, execOptions);
 }
