@@ -192,6 +192,7 @@ export function CreateBenefitWizard({
       }
 
       router.push(`/platform/benefits/${result.id}`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Benefit creation failed");
     } finally {
