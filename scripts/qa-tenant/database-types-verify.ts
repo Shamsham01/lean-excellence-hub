@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const DATABASE_TYPES_RELATIVE_PATH =
@@ -15,10 +16,13 @@ export type GitDiffRunner = (
   filePath: string,
 ) => GitDiffResult;
 
+export type GitStatusRunner = (repoRoot: string) => string;
+
 export type AssertDatabaseTypesCurrentOptions = {
   repoRoot: string;
   runDbTypes: () => void;
   runGitDiff?: GitDiffRunner;
+  runGitStatus?: GitStatusRunner;
 };
 
 function defaultGitDiff(repoRoot: string, filePath: string): GitDiffResult {
@@ -49,11 +53,62 @@ function defaultGitDiff(repoRoot: string, filePath: string): GitDiffResult {
   }
 }
 
+function defaultGitStatus(repoRoot: string): string {
+  return execFileSync("git", ["status", "--short"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
+/**
+ * When db:types rewrites only line endings, restore the committed bytes so a
+ * clean working tree stays clean after verification.
+ */
+function restoreIfOnlyEolDrift(
+  repoRoot: string,
+  relativePath: string,
+  originalBytes: Buffer,
+): void {
+  const absolutePath = join(repoRoot, relativePath);
+
+  let substantiveDiff: GitDiffResult;
+  try {
+    execFileSync(
+      "git",
+      ["diff", "--exit-code", "--", relativePath],
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+    return;
+  } catch (error) {
+    const execError = error as Error & {
+      status?: number;
+      stdout?: string;
+      stderr?: string;
+    };
+    substantiveDiff = {
+      exitCode: execError.status ?? 1,
+      stdout: execError.stdout ?? "",
+      stderr: execError.stderr ?? "",
+    };
+  }
+
+  const eolAwareDiff = defaultGitDiff(repoRoot, relativePath);
+  if (eolAwareDiff.exitCode === 0) {
+    writeFileSync(absolutePath, originalBytes);
+  }
+}
+
 export function assertDatabaseTypesCurrent(
   options: AssertDatabaseTypesCurrentOptions,
 ): void {
   const runGitDiff = options.runGitDiff ?? defaultGitDiff;
   const typesPath = join(options.repoRoot, DATABASE_TYPES_RELATIVE_PATH);
+  const relativePath = DATABASE_TYPES_RELATIVE_PATH;
 
   const preGenerationDiff = runGitDiff(options.repoRoot, typesPath);
   if (preGenerationDiff.exitCode !== 0) {
@@ -61,6 +116,8 @@ export function assertDatabaseTypesCurrent(
       "database.types.ts has uncommitted changes before db:types. Commit or revert local edits before running clean-rebuild verification.",
     );
   }
+
+  const originalBytes = readFileSync(typesPath);
 
   options.runDbTypes();
 
@@ -70,4 +127,25 @@ export function assertDatabaseTypesCurrent(
       "Generated database.types.ts differs from HEAD after db:types (schema/type drift). Run `npm run db:types` and commit the result.",
     );
   }
+
+  restoreIfOnlyEolDrift(options.repoRoot, relativePath, originalBytes);
+}
+
+export function assertWorkingTreeClean(
+  repoRoot: string,
+  runGitStatus: GitStatusRunner = defaultGitStatus,
+): void {
+  const status = runGitStatus(repoRoot).trim();
+  if (status.length > 0) {
+    throw new Error(
+      `Working tree is not clean after verification. git status --short:\n${status}`,
+    );
+  }
+}
+
+export function snapshotWorkingTreeStatus(
+  repoRoot: string,
+  runGitStatus: GitStatusRunner = defaultGitStatus,
+): string {
+  return runGitStatus(repoRoot).trim();
 }

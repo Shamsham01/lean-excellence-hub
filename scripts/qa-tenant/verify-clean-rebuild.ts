@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-import { assertDatabaseTypesCurrent } from "./database-types-verify";
+import {
+  assertDatabaseTypesCurrent,
+  assertWorkingTreeClean,
+  snapshotWorkingTreeStatus,
+} from "./database-types-verify";
 import { QA_ORGANISATION_CODE, QA_USERS } from "./constants";
 import {
   collectCookieWorksInventory,
@@ -59,6 +63,12 @@ function runStep(
 function assertCookieWorksFoundationState(databaseUrl: string) {
   const inventory = collectCookieWorksInventory(databaseUrl);
   const report = formatInventoryReport(inventory);
+
+  if (!inventory.organisation) {
+    throw new Error(
+      "CookieWorks inventory returned no organisation; foundation seed may have failed.",
+    );
+  }
 
   if (!report.includes("users (QA personas): 7")) {
     throw new Error("CookieWorks inventory expected 7 QA personas.");
@@ -124,6 +134,14 @@ function main() {
   const results: StepResult[] = [];
 
   loadLocalSupabaseEnv("qa:verify:clean-rebuild");
+
+  const preStatus = snapshotWorkingTreeStatus(repoRoot);
+  if (preStatus.length > 0) {
+    process.stdout.write(
+      "Warning: working tree was not clean before verification:\n",
+    );
+    process.stdout.write(`${preStatus}\n\n`);
+  }
 
   if (!skipReset) {
     results.push(
@@ -223,6 +241,22 @@ function main() {
       }),
     );
   }
+
+  results.push(
+    runStep(
+      "Working tree cleanliness",
+      "git status --short (must be empty when started clean)",
+      () => {
+        if (preStatus.length === 0) {
+          assertWorkingTreeClean(repoRoot);
+        } else {
+          process.stdout.write(
+            "    Skipped: working tree was not clean before verification.\n",
+          );
+        }
+      },
+    ),
+  );
 
   printSummary(results);
 }

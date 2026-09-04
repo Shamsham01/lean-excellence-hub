@@ -3,6 +3,10 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import {
+  parseSupabaseDbQueryRows,
+  type ParseDbQueryRowsOptions,
+} from "./db-query-result";
 import { resolveNpmExecExecCall } from "./npm-exec";
 
 export type SupabaseDbQueryOptions = {
@@ -25,7 +29,7 @@ export class SupabaseDbQueryError extends Error {
   }
 }
 
-function buildSupabaseDbQueryArgs(options: SupabaseDbQueryOptions) {
+export function buildSupabaseDbQueryArgs(options: SupabaseDbQueryOptions) {
   const args = ["supabase", "db", "query"];
 
   if (options.local) {
@@ -38,7 +42,11 @@ function buildSupabaseDbQueryArgs(options: SupabaseDbQueryOptions) {
     );
   }
 
-  if (options.outputFormat) {
+  if (options.outputFormat === "json") {
+    // Deterministic machine-readable contract: disable agent auto-detection so
+    // Cursor/CI and physical Windows PowerShell receive the same JSON array shape.
+    args.push("--output-format", "json", "--agent", "no");
+  } else if (options.outputFormat) {
     args.push("--output-format", options.outputFormat);
   }
 
@@ -118,11 +126,14 @@ function parseSupabaseCliError(stdout: string, stderr: string): string {
   return combined || "Supabase DB query failed.";
 }
 
-export function runSupabaseDbQueryJson<T>(options: SupabaseDbQueryOptions): T {
+export function runSupabaseDbQueryJson<T extends Record<string, unknown>>(
+  options: SupabaseDbQueryOptions,
+  parseOptions?: ParseDbQueryRowsOptions,
+): T[] {
   const output = runSupabaseDbQuery({
     ...options,
     outputFormat: options.outputFormat ?? "json",
   });
 
-  return JSON.parse(output) as T;
+  return parseSupabaseDbQueryRows<T>(output, parseOptions);
 }
