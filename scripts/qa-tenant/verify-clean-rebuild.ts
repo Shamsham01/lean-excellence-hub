@@ -6,7 +6,7 @@ import {
   collectCookieWorksInventory,
   formatInventoryReport,
 } from "./inventory";
-import { loadLocalSupabaseEnv } from "./local-env";
+import { loadLocalSupabaseEnv, buildLocalVerificationEnv } from "./local-env";
 import {
   assertCookieWorksFoundationOnlyVerified,
   formatVerificationSummary,
@@ -136,7 +136,7 @@ function main() {
   const { skipReset, skipBuild, skipE2e } = parseArgs(process.argv.slice(2));
   const results: StepResult[] = [];
 
-  loadLocalSupabaseEnv("qa:verify:clean-rebuild");
+  const verificationEnv = buildLocalVerificationEnv("qa:verify:clean-rebuild");
 
   const preStatus = snapshotWorkingTreeStatus(repoRoot);
   const preNextEnvBytes = readTrackedFileBytes(
@@ -236,7 +236,7 @@ function main() {
   if (!skipE2e) {
     results.push(
       runStep("Smoke E2E", "npm run test:e2e:smoke", () => {
-        runNpmScript("test:e2e:smoke");
+        runNpmScript("test:e2e:smoke", verificationEnv);
       }),
     );
   }
@@ -244,7 +244,7 @@ function main() {
   if (!skipBuild) {
     results.push(
       runStep("Production build", "npm run build", () => {
-        runNpmScript("build");
+        runNpmScript("build", verificationEnv);
       }),
     );
   }
