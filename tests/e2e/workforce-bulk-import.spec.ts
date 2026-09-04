@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   assertTemporaryPasswordNotPersisted,
   createServiceRoleClient,
   resolveDemoOrganisationId,
-  signInAsDemoUser,
   submitWorkforceLogin,
 } from "./helpers/workforce-provisioning";
 import {
@@ -40,7 +40,7 @@ test.describe("M2 workforce bulk import", () => {
   test("admin can access import workflow and provision employees", async ({
     page,
   }) => {
-    await signInAsDemoUser(page, "admin");
+    await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     organisationId = await resolveDemoOrganisationId();
 
     await page.goto("/platform/settings/people");
@@ -111,7 +111,7 @@ test.describe("M2 workforce bulk import", () => {
   test("validation rejects invalid file before provisioning", async ({
     page,
   }) => {
-    await signInAsDemoUser(page, "admin");
+    await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     await page.goto("/platform/settings/people/import");
 
     const invalidCsv = [
@@ -138,7 +138,7 @@ test.describe("M2 workforce bulk import", () => {
   });
 
   test("manager cannot access bulk import", async ({ page }) => {
-    await signInAsDemoUser(page, "manager");
+    await signInAsDemoUser(page, "manager", { assertOrganisation: false });
     await page.goto("/platform/settings/people/import");
     await expect(page).toHaveURL(/\/platform\/settings\/people$/);
   });
@@ -164,7 +164,7 @@ test.describe("M2 workforce bulk import", () => {
       ),
     ].join("\n");
 
-    await signInAsDemoUser(page, "admin");
+    await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     await page.goto("/platform/settings/people/import");
 
     await page.setInputFiles("input[type='file']", {
@@ -197,7 +197,7 @@ test.describe("M2 workforce bulk import", () => {
   });
 
   test("credential export cannot be downloaded twice", async ({ page }) => {
-    await signInAsDemoUser(page, "admin");
+    await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     await page.goto("/platform/settings/people/import");
     await expect(page.getByTestId("download-import-credentials")).toHaveCount(
       0,

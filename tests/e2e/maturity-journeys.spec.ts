@@ -1,32 +1,16 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import {
   selectAssessmentScopeAndWaitForEntities,
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
-import { expect, test, type Page } from "@playwright/test";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { expect, test } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
-
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const CORNWALL_PLANT_LABEL = /Cornwall Plant/i;
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 test.describe("Milestone 5 maturity journeys", () => {
   test.describe.configure({ mode: "serial" });
@@ -38,7 +22,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   );
 
   test("admin: framework draft → edit → publish", async ({ page }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/maturity/models");
 
     const frameworkName = "E2E Closure Framework";
@@ -92,7 +76,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   test("MAT1a: start assessment shows eligible site entities only", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/maturity/assessments/new");
     await selectFrameworkVersion(page);
     await selectAssessmentScopeAndWaitForEntities(page, "site", {
@@ -112,7 +96,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   test("formal assessor: start → answer → comment → evidence → action → submit", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/maturity/assessments/new");
     await selectFrameworkVersion(page, { label: /E2E Closure Framework/ });
     await selectAssessmentScopeAndWaitForEntities(page, "site", {
@@ -158,7 +142,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   test("approver: review → approve → publish official result", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/maturity/assessments");
 
     await page
@@ -184,7 +168,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   test("self assessor: complete self assessment without official result", async ({
     page,
   }) => {
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/maturity/assessments/new");
     await selectFrameworkVersion(page, { label: /E2E Closure Framework/ });
     await selectAssessmentScopeAndWaitForEntities(page, "site", {
@@ -206,7 +190,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   test("admin: create successor version keeps historical assessment pinned", async ({
     page,
   }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/maturity/models");
     await page
       .getByRole("link", { name: "E2E Closure Framework" })
@@ -220,7 +204,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   });
 
   test("unauthorised scope access is denied", async ({ page }) => {
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/maturity/models");
 
     await expect(
@@ -231,7 +215,7 @@ test.describe("Milestone 5 maturity journeys", () => {
 
   test("tablet assessment viewport", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/maturity/assessments");
 
     const assessmentLink = page

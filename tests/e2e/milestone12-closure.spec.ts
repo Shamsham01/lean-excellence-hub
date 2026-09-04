@@ -1,9 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import {
-  DEMO_PROBLEM_SOLVING_CASE,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -15,16 +13,6 @@ const CURRENT_CONDITION_STATEMENT =
   "Hot-running defect rate is 2.4x the cold-start baseline.";
 const aiCurrentConditionCaseTitle = `M12 AI Current Condition ${Date.now().toString(36)}`;
 
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Email sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/, { timeout: 15_000 });
-}
-
 test.describe("Milestone 12 closure", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(180_000);
@@ -34,7 +22,7 @@ test.describe("Milestone 12 closure", () => {
   );
 
   test("manager opens Lean AI on seeded case", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
@@ -46,7 +34,7 @@ test.describe("Milestone 12 closure", () => {
   test("challenge mode distinguishes assumptions using fake provider", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
@@ -63,7 +51,7 @@ test.describe("Milestone 12 closure", () => {
   });
 
   test("operator cannot access Lean AI settings", async ({ page }) => {
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/settings/ai");
     await expect(page.getByTestId("ai-settings-page")).toHaveCount(0);
   });
@@ -117,7 +105,7 @@ test.describe("Milestone 12 closure", () => {
   test("accepts a valid hypothesis proposal from fake provider", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openLeanAiPanel(page);
     await page
       .getByTestId("lean-ai-input")
@@ -144,7 +132,7 @@ test.describe("Milestone 12 closure", () => {
   test("accepts a valid containment proposal from fake provider", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await openLeanAiPanel(page);
     await page
       .getByTestId("lean-ai-input")
@@ -171,7 +159,7 @@ test.describe("Milestone 12 closure", () => {
   test("accepts a valid current condition proposal from fake provider", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await createActiveCaseAndOpenLeanAi(page);
     await page
       .getByTestId("lean-ai-input")
@@ -203,7 +191,7 @@ test.describe("Milestone 12 closure", () => {
   test("does not surface invalid current condition proposals for acceptance", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await createActiveCaseAndOpenLeanAi(page);
     await page
       .getByTestId("lean-ai-input")

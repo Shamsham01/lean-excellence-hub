@@ -1,10 +1,5 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
-import { expect, test, type Page } from "@playwright/test";
-
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { expect, test } from "@playwright/test";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -14,18 +9,6 @@ const viewports = [
   { width: 1024, height: 768 },
   { width: 1440, height: 900 },
 ] as const;
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
-
 test.describe("Milestone 10 closure", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(120_000);
@@ -37,7 +20,7 @@ test.describe("Milestone 10 closure", () => {
   test("manager opens benefits portfolio with seeded stories", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await expect(page.getByTestId("benefits-portfolio-page")).toBeVisible();
     await expect(page.getByTestId("benefit-portfolio")).toBeVisible();
@@ -53,7 +36,7 @@ test.describe("Milestone 10 closure", () => {
   });
 
   test("manager creates a financial benefit draft", async ({ page }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits/new");
     await expect(page.getByTestId("create-benefit-page")).toBeVisible();
     await expect(page.getByTestId("create-benefit-wizard")).toBeVisible();
@@ -93,7 +76,7 @@ test.describe("Milestone 10 closure", () => {
   test("manager submits forecast and benefit for validation", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await page
       .getByRole("link", { name: new RegExp(`E2E Benefit ${uniqueSuffix}`) })
@@ -126,7 +109,7 @@ test.describe("Milestone 10 closure", () => {
   test("manager records CI approval while finance approval remains pending", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await page
       .getByRole("link", { name: new RegExp(`E2E Benefit ${uniqueSuffix}`) })
@@ -147,7 +130,7 @@ test.describe("Milestone 10 closure", () => {
   test("finance validator approves from validation queue without project access", async ({
     page,
   }) => {
-    await loginAs(page, "finance");
+    await signInAsDemoUser(page, "finance");
     await page.goto("/platform/benefits/validation");
     await expect(
       page.getByTestId("benefit-validation-queue-page"),
@@ -183,7 +166,7 @@ test.describe("Milestone 10 closure", () => {
   test("manager views realising benefit with validated actuals", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await page.getByRole("link", { name: /Changeover Time Savings/i }).click();
     await expect(page.getByTestId("benefit-workspace")).toBeVisible();
@@ -200,7 +183,7 @@ test.describe("Milestone 10 closure", () => {
   test("manager views non-financial realised benefit measure history", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await page
       .getByRole("link", { name: /Visual Standards Quality Improvement/i })
@@ -219,7 +202,7 @@ test.describe("Milestone 10 closure", () => {
   });
 
   test("operator cannot open benefit management routes", async ({ page }) => {
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
     await page.goto("/platform/benefits/new");
     await expect(page.getByTestId("create-benefit-page")).not.toBeVisible();
 
@@ -232,7 +215,7 @@ test.describe("Milestone 10 closure", () => {
   test("forecast history remains visible on seeded benefit", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await page
       .getByRole("link", { name: /Packaging Waste Reduction Savings/i })
@@ -250,7 +233,7 @@ test.describe("Milestone 10 closure", () => {
   test("realisation history keeps validated entries visible", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits");
     await page
       .getByRole("link", { name: /Packaging Waste Reduction Savings/i })
@@ -276,7 +259,7 @@ test.describe("Milestone 10 closure", () => {
   test("manager opens suggestion benefits integration for implemented suggestion", async ({
     page,
   }) => {
-    await loginAs(page, "manager");
+    await signInAsDemoUser(page, "manager");
     await page.goto("/platform/suggestions");
     await page
       .getByTestId("suggestion-portfolio-search")
@@ -294,7 +277,7 @@ test.describe("Milestone 10 closure", () => {
   for (const viewport of viewports) {
     test(`responsive smoke at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
-      await loginAs(page, "manager");
+      await signInAsDemoUser(page, "manager");
       await page.goto("/platform/benefits");
       await expect(page.getByTestId("benefits-portfolio-page")).toBeVisible();
 
