@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -13,6 +12,7 @@ import {
   assertCookieWorksFoundationOnlyVerified,
   formatVerificationSummary,
 } from "./verification";
+import { runNpmScript as executeNpmScript } from "./npm-exec";
 
 type StepResult = {
   name: string;
@@ -35,12 +35,7 @@ function runNpmScript(
   script: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  return execFileSync("npm", ["run", script], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  return executeNpmScript(script, { cwd: repoRoot, env });
 }
 
 function runStep(
