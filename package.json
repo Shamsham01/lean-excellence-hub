@@ -34,6 +34,12 @@
     "db:lint": "supabase db lint --local --level warning --fail-on error",
     "db:types": "supabase gen types typescript --local --schema public > src/platform/supabase/database.types.ts",
     "db:seed-demo": "node --import tsx scripts/demo-seed/seed.ts",
+    "qa:cookie:seed": "node --import tsx scripts/qa-tenant/seed.ts",
+    "qa:cookie:reset": "node --import tsx scripts/qa-tenant/reset.ts",
+    "qa:cookie:inventory": "node --import tsx scripts/qa-tenant/inventory-cli.ts",
+    "qa:cookie:hosted-reset": "node --import tsx scripts/qa-tenant/hosted-reset.ts",
+    "qa:cookie:hosted-seed": "node --import tsx scripts/qa-tenant/hosted-seed.ts",
+    "qa:verify:clean-rebuild": "node --import tsx scripts/qa-tenant/verify-clean-rebuild.ts",
     "eval:ai:fake": "node --import tsx scripts/eval-ai-fake.ts",
     "eval:ai:live": "node --env-file=.env.local --import tsx scripts/eval-ai-live.ts",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
