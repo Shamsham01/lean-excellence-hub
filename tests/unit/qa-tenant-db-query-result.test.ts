@@ -13,15 +13,16 @@ describe("parseSupabaseDbQueryRows", () => {
 
   const agentYesEnvelope = JSON.stringify({
     boundary: "abc123",
-    rows: [{ inventory: { organisation: { code: "cookieworks-manufacturing" } } }],
+    rows: [
+      { inventory: { organisation: { code: "cookieworks-manufacturing" } } },
+    ],
     warning: "untrusted data",
   });
 
   it("parses --agent=no array shape (QA contract)", () => {
-    const rows = parseSupabaseDbQueryRows<{ inventory: { organisation: { code: string } } }>(
-      agentNoArray,
-      { minRows: 1, maxRows: 1 },
-    );
+    const rows = parseSupabaseDbQueryRows<{
+      inventory: { organisation: { code: string } };
+    }>(agentNoArray, { minRows: 1, maxRows: 1 });
 
     expect(rows).toHaveLength(1);
     expect(rows[0]?.inventory.organisation.code).toBe(
@@ -30,10 +31,9 @@ describe("parseSupabaseDbQueryRows", () => {
   });
 
   it("parses --agent=yes envelope shape (documented fallback)", () => {
-    const rows = parseSupabaseDbQueryRows<{ inventory: { organisation: { code: string } } }>(
-      agentYesEnvelope,
-      { minRows: 1 },
-    );
+    const rows = parseSupabaseDbQueryRows<{
+      inventory: { organisation: { code: string } };
+    }>(agentYesEnvelope, { minRows: 1 });
 
     expect(rows).toHaveLength(1);
     expect(rows[0]?.inventory.organisation.code).toBe(
@@ -42,7 +42,9 @@ describe("parseSupabaseDbQueryRows", () => {
   });
 
   it("fails on empty stdout", () => {
-    expect(() => parseSupabaseDbQueryRows("")).toThrow(SupabaseDbQueryParseError);
+    expect(() => parseSupabaseDbQueryRows("")).toThrow(
+      SupabaseDbQueryParseError,
+    );
     expect(() => parseSupabaseDbQueryRows("   ")).toThrow(
       "DB query returned empty stdout.",
     );
@@ -66,9 +68,9 @@ describe("parseSupabaseDbQueryRows", () => {
   });
 
   it("fails on zero rows when minRows=1", () => {
-    expect(() =>
-      parseSupabaseDbQueryRows("[]", { minRows: 1 }),
-    ).toThrow("DB query returned 0 row(s)");
+    expect(() => parseSupabaseDbQueryRows("[]", { minRows: 1 })).toThrow(
+      "DB query returned 0 row(s)",
+    );
   });
 
   it("fails when row count exceeds maxRows", () => {
@@ -80,7 +82,9 @@ describe("parseSupabaseDbQueryRows", () => {
 
 describe("extractDbQueryColumn", () => {
   it("extracts a named column from the first row", () => {
-    const stdout = JSON.stringify([{ inventory: { counts: { memberships: 7 } } }]);
+    const stdout = JSON.stringify([
+      { inventory: { counts: { memberships: 7 } } },
+    ]);
     const inventory = extractDbQueryColumn<{ counts: { memberships: number } }>(
       stdout,
       "inventory",

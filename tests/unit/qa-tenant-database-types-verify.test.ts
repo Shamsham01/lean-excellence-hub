@@ -137,9 +137,7 @@ describe("Windows path joining", () => {
 
 describe("assertWorkingTreeClean", () => {
   it("passes when git status is empty", () => {
-    expect(() =>
-      assertWorkingTreeClean("/repo", () => ""),
-    ).not.toThrow();
+    expect(() => assertWorkingTreeClean("/repo", () => "")).not.toThrow();
   });
 
   it("fails when git status shows modifications", () => {

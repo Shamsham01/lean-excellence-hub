@@ -72,34 +72,18 @@ function restoreIfOnlyEolDrift(
 ): void {
   const absolutePath = join(repoRoot, relativePath);
 
-  let substantiveDiff: GitDiffResult;
   try {
-    execFileSync(
-      "git",
-      ["diff", "--exit-code", "--", relativePath],
-      {
-        cwd: repoRoot,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    execFileSync("git", ["diff", "--exit-code", "--", relativePath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     return;
-  } catch (error) {
-    const execError = error as Error & {
-      status?: number;
-      stdout?: string;
-      stderr?: string;
-    };
-    substantiveDiff = {
-      exitCode: execError.status ?? 1,
-      stdout: execError.stdout ?? "",
-      stderr: execError.stderr ?? "",
-    };
-  }
-
-  const eolAwareDiff = defaultGitDiff(repoRoot, relativePath);
-  if (eolAwareDiff.exitCode === 0) {
-    writeFileSync(absolutePath, originalBytes);
+  } catch {
+    const eolAwareDiff = defaultGitDiff(repoRoot, relativePath);
+    if (eolAwareDiff.exitCode === 0) {
+      writeFileSync(absolutePath, originalBytes);
+    }
   }
 }
 

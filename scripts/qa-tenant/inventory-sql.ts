@@ -104,7 +104,11 @@ export function collectCookieWorksInventoryViaSql(databaseUrl: string) {
   const row = rows[0];
   if (!row?.inventory) {
     throw new SupabaseDbQueryParseError(
-      `Inventory SQL first row is missing inventory column; row keys: [${Object.keys(row ?? {}).sort().join(", ")}].`,
+      `Inventory SQL first row is missing inventory column; row keys: [${Object.keys(
+        row ?? {},
+      )
+        .sort()
+        .join(", ")}].`,
       0,
     );
   }

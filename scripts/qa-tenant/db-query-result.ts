@@ -121,7 +121,11 @@ export function extractDbQueryColumn<T>(
   const row = rows[0];
   if (!row || !(columnName in row)) {
     throw new SupabaseDbQueryParseError(
-      `DB query first row is missing column "${columnName}"; row keys: [${Object.keys(row ?? {}).sort().join(", ")}].`,
+      `DB query first row is missing column "${columnName}"; row keys: [${Object.keys(
+        row ?? {},
+      )
+        .sort()
+        .join(", ")}].`,
       stdout.length,
     );
   }
