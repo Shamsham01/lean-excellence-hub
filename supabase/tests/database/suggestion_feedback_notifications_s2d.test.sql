@@ -184,7 +184,7 @@ select
   );
 
 reset role;
-set local role lean_hub_private_owner;
+set local role service_role;
 
 select ok(
   (

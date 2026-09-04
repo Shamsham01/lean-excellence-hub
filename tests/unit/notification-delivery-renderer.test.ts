@@ -209,7 +209,9 @@ describe("notification renderers", () => {
       APP_ORIGIN,
     );
 
-    expect(rendered.text).toContain("Hello, your suggestion has been approved");
+    expect(rendered.text).toContain(
+      "Hello,\n\nYour suggestion has been approved",
+    );
     expect(rendered.html).toContain("Hello, your suggestion has been approved");
     expect(rendered.text).not.toContain("Hello Team member");
     expect(rendered.html).not.toContain("Hello Team member");
@@ -218,7 +220,9 @@ describe("notification renderers", () => {
   it("formats neutral greetings for blank recipient display names", () => {
     expect(formatRecipientGreeting("   ")).toBe("Hello");
     expect(formatRecipientGreeting(null)).toBe("Hello");
-    expect(formatRecipientGreeting("Alex Operator")).toBe("Hello Alex Operator");
+    expect(formatRecipientGreeting("Alex Operator")).toBe(
+      "Hello Alex Operator",
+    );
   });
 
   it("keeps suggestion implemented employee outcome content intact", () => {
