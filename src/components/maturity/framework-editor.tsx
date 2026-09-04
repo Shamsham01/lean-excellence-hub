@@ -644,7 +644,7 @@ export function FrameworkEditor({
                   type="number"
                   min={1}
                   required
-                  defaultValue={1}
+                  defaultValue={questions.length + 1}
                 />
               </div>
               <Button type="submit" disabled={busy || criteria.length === 0}>
