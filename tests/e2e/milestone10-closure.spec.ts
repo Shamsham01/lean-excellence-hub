@@ -80,7 +80,10 @@ test.describe("Milestone 10 closure", () => {
       .getByLabel("Standalone initiative (no source link required)")
       .check();
     await page.getByRole("button", { name: "Continue" }).click();
-    await page.getByRole("button", { name: "Create benefit draft" }).click();
+    await Promise.all([
+      page.waitForURL(/\/platform\/benefits\/[0-9a-f-]{36}/),
+      page.getByRole("button", { name: "Create benefit draft" }).click(),
+    ]);
 
     await expect(page.getByTestId("benefit-detail-page")).toBeVisible();
     await expect(page.getByTestId("benefit-workspace")).toBeVisible();
