@@ -92,6 +92,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       const firstInventory = collectCookieWorksInventory(env.databaseUrl);
@@ -102,6 +103,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       const secondInventory = collectCookieWorksInventory(env.databaseUrl);
@@ -125,6 +127,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       await ensureIsolationCanaryTenant(admin);
@@ -177,6 +180,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       const postReset = assertCookieWorksResetVerified(env.databaseUrl);
@@ -217,6 +221,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       const adminClient = await signInUser(
@@ -251,6 +256,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
       assertCookieWorksResetVerified(env.databaseUrl);
 
@@ -258,6 +264,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
       const refreshedAdminClient = await signInUser(
         env.apiUrl,
@@ -290,6 +297,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       const secondReset = assertCookieWorksResetVerified(env.databaseUrl);
@@ -316,6 +324,7 @@ describe.skipIf(!hasLocalSupabase)(
         admin,
         apiUrl: env.apiUrl,
         publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
       });
 
       const { assertCookieWorksOrganisationContract } =

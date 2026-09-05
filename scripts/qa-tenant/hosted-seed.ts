@@ -57,6 +57,7 @@ export async function runHostedCookieWorksSeed(options?: {
     admin,
     apiUrl: credentials.apiUrl,
     publishableKey: credentials.publishableKey,
+    databaseUrl: credentials.databaseUrl,
   });
 
   const inventory = collectCookieWorksInventory(credentials.databaseUrl);
