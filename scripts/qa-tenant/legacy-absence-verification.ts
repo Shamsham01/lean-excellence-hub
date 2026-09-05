@@ -9,7 +9,7 @@ import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
 import {
   buildAppendOnlyTenantRowCountSql,
   collectAppendOnlyInventoryFailures,
-  CUSTOM_APPEND_ONLY_DELETE_TABLES,
+  MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES,
 } from "./tenant-retirement-policy";
 import {
   buildTenantPrivateInfrastructureCountSql,
@@ -142,7 +142,7 @@ export function assertLegacyHostedDemoFullyAbsent(
     ...((appendOnlyRows[0]?.tables ?? []) as Array<{ table: string }>).map(
       (entry) => entry.table,
     ),
-    ...CUSTOM_APPEND_ONLY_DELETE_TABLES.map((policy) => policy.table),
+    ...MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES.map((policy) => policy.table),
   ]);
   const infrastructureTables = new Set<string>(PURGE_INFRASTRUCTURE_TABLES);
 
@@ -162,8 +162,9 @@ export function assertLegacyHostedDemoFullyAbsent(
       (appendOnlyInventoryRows[0]?.rows ?? []) as Array<{
         table: string;
         count: number;
+        lifecycle_stage?: "module" | "foundation";
       }>,
-      "full-tenant-removal",
+      "full-absence",
     ),
   );
 

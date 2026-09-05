@@ -53,7 +53,11 @@ export type LegacyReplacementPlanDetails = {
   privateInfrastructure: LegacyPrivateInfrastructureCounts | null;
   storageObjectCount: number;
   moduleRowTotal: number;
-  appendOnlyInventory: Array<{ table: string; count: number }>;
+  appendOnlyInventory: Array<{
+    table: string;
+    count: number;
+    lifecycleStage?: "module" | "foundation";
+  }>;
   inventoryReport: string;
 };
 
@@ -167,7 +171,11 @@ function collectLegacyFoundationCounts(
 function collectLegacyAppendOnlyInventory(
   databaseUrl: string,
   organisationId: string,
-): Array<{ table: string; count: number }> {
+): Array<{
+  table: string;
+  count: number;
+  lifecycleStage?: "module" | "foundation";
+}> {
   const discoveredRows = runSupabaseDbQueryJson<{
     tables: Array<{ table: string; trigger: string }>;
   }>({
@@ -186,14 +194,22 @@ function collectLegacyAppendOnlyInventory(
   ].sort();
 
   const countRows = runSupabaseDbQueryJson<{
-    rows: Array<{ table: string; count: number }>;
+    rows: Array<{
+      table: string;
+      count: number;
+      lifecycle_stage?: "module" | "foundation";
+    }>;
   }>({
     databaseUrl,
     outputFormat: "json",
     sql: buildAppendOnlyTenantRowCountSql(organisationId, tableNames),
   });
 
-  return (countRows[0]?.rows ?? []) as Array<{ table: string; count: number }>;
+  return (countRows[0]?.rows ?? []).map((row) => ({
+    table: row.table,
+    count: row.count,
+    ...(row.lifecycle_stage ? { lifecycleStage: row.lifecycle_stage } : {}),
+  }));
 }
 
 function collectLegacyPrivateInfrastructureCounts(
@@ -356,7 +372,11 @@ export function formatLegacyReplacementPlanDetails(
   );
   lines.push("");
   lines.push("Append-only / immutable tenant-owned rows");
-  lines.push(...formatAppendOnlyInventoryLines(details.appendOnlyInventory));
+  lines.push(
+    ...formatAppendOnlyInventoryLines(details.appendOnlyInventory, {
+      includeLifecycleStage: true,
+    }),
+  );
   lines.push("");
   lines.push(details.inventoryReport);
   lines.push("");

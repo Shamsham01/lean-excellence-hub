@@ -113,14 +113,18 @@ not started yet.
 
 **Approved append-only / immutable tenant-retirement policy (QA2d):**
 
-| Class | Behaviour |
-| --- | --- |
-| A. ordinary tenant-deletable | Generic multi-pass `DELETE` loop |
-| B. controlled-retirement-delete | Narrow trigger disable → tenant-scoped `DELETE` → re-enable (full tenant removal only) |
-| C. append-only-module-retained | Excluded from generic loop and CookieWorks verification |
-| D. foundation-foundation-stage | Deleted in foundation stage (`security_audit_events`, `business_audit_events`) |
-| E. infrastructure-explicit | Template/resource registry handled explicitly |
-| F. immutable-explicit-unlock | Maturity subgraph unlocked in purge SQL |
+| Class | Lifecycle stage | Behaviour |
+| --- | --- | --- |
+| A. ordinary tenant-deletable | module | Generic multi-pass `DELETE` loop |
+| B. controlled-retirement-delete | module | Narrow trigger disable → tenant-scoped `DELETE` → re-enable (full tenant removal module purge only) |
+| C. append-only-module-retained | module | Excluded from generic loop and CookieWorks verification |
+| D. foundation-foundation-stage | foundation | Preserved through module purge; deleted only in foundation/organisation deletion |
+| E. infrastructure-explicit | module | Template/resource registry handled explicitly |
+| F. immutable-explicit-unlock | module | Maturity subgraph unlocked in purge SQL |
+
+Foundation-stage audit ledgers (`security_audit_events`, `business_audit_events`) MUST
+survive module purge even during `full-tenant-removal`. They are removed only in the
+later foundation deletion transaction.
 
 Custom append-only tables (not using `prevent_update_or_delete`) with controlled
 retirement deletion: `ai_usage_events`, `benefit_overlap_allocation_history`.

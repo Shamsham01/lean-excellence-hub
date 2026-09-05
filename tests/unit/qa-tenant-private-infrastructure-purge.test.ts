@@ -58,7 +58,7 @@ describe("tenant private infrastructure purge SQL", () => {
       "disable trigger ai_usage_events_append_only",
     );
     const genericLoopIndex = modulePurgeSql.indexOf(
-      "foreach table_name in array deletable_tables loop",
+      "foreach purge_table_name in array deletable_tables loop",
     );
 
     expect(controlledDeleteIndex).toBeGreaterThanOrEqual(0);
