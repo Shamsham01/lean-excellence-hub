@@ -1,4 +1,10 @@
 import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
+import {
+  buildTenantPrivateInfrastructureCountSql,
+  EMPTY_PRIVATE_INFRASTRUCTURE_COUNTS,
+  formatPrivateInfrastructureCountLines,
+  type TenantPrivateInfrastructureCounts,
+} from "./private-infrastructure-purge";
 import { runSupabaseDbQueryJson } from "./db-cli";
 import {
   collectTenantInventory,
@@ -30,12 +36,8 @@ export type LegacyFoundationCounts = {
   invitations: number;
 };
 
-export type LegacyPrivateInfrastructureCounts = {
-  notification_delivery_provider_envelopes: number;
-  notification_delivery_ledger: number;
-  domain_event_outbox: number;
-  session_organisation_contexts: number;
-};
+export type LegacyPrivateInfrastructureCounts =
+  TenantPrivateInfrastructureCounts;
 
 export type LegacyReplacementPlanDetails = {
   legacyOrganisation: LegacyHostedDemoOrganisation | null;
@@ -162,23 +164,10 @@ function collectLegacyPrivateInfrastructureCounts(
   const rows = runSupabaseDbQueryJson<LegacyPrivateInfrastructureCounts>({
     databaseUrl,
     outputFormat: "json",
-    sql: `
-      select
-        (select count(*)::int from private.notification_delivery_provider_envelopes where organisation_id = '${organisationId}'::uuid) as notification_delivery_provider_envelopes,
-        (select count(*)::int from private.notification_delivery_ledger where organisation_id = '${organisationId}'::uuid) as notification_delivery_ledger,
-        (select count(*)::int from private.domain_event_outbox where organisation_id = '${organisationId}'::uuid) as domain_event_outbox,
-        (select count(*)::int from private.session_organisation_contexts where organisation_id = '${organisationId}'::uuid) as session_organisation_contexts;
-    `,
+    sql: buildTenantPrivateInfrastructureCountSql(organisationId),
   });
 
-  return (
-    rows[0] ?? {
-      notification_delivery_provider_envelopes: 0,
-      notification_delivery_ledger: 0,
-      domain_event_outbox: 0,
-      session_organisation_contexts: 0,
-    }
-  );
+  return rows[0] ?? { ...EMPTY_PRIVATE_INFRASTRUCTURE_COUNTS };
 }
 
 export function collectLegacyReplacementPlanDetails(
@@ -306,16 +295,7 @@ export function formatLegacyReplacementPlanDetails(
     lines.push("  - n/a");
   } else {
     lines.push(
-      `  - private.notification_delivery_provider_envelopes: ${details.privateInfrastructure.notification_delivery_provider_envelopes}`,
-    );
-    lines.push(
-      `  - private.notification_delivery_ledger: ${details.privateInfrastructure.notification_delivery_ledger}`,
-    );
-    lines.push(
-      `  - private.domain_event_outbox: ${details.privateInfrastructure.domain_event_outbox}`,
-    );
-    lines.push(
-      `  - private.session_organisation_contexts: ${details.privateInfrastructure.session_organisation_contexts}`,
+      ...formatPrivateInfrastructureCountLines(details.privateInfrastructure),
     );
   }
   lines.push("");

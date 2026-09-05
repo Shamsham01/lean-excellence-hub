@@ -6,6 +6,11 @@ import {
 } from "./deletion-graph";
 import { runSupabaseDbQueryJson } from "./db-cli";
 import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
+import {
+  buildTenantPrivateInfrastructureCountSql,
+  collectPrivateInfrastructureAbsenceFailures,
+  type TenantPrivateInfrastructureCounts,
+} from "./private-infrastructure-purge";
 
 function quoteIdentifier(identifier: string) {
   return `"${identifier.replaceAll('"', '""')}"`;
@@ -181,48 +186,42 @@ export function assertLegacyHostedDemoFullyAbsent(
     }
   }
 
-  const privateRows = runSupabaseDbQueryJson<{
-    notification_delivery_provider_envelopes: number;
-    notification_delivery_ledger: number;
-    domain_event_outbox: number;
-    session_organisation_contexts: number;
-    storage_objects: number;
-  }>({
+  const privateRows = runSupabaseDbQueryJson<TenantPrivateInfrastructureCounts>(
+    {
+      databaseUrl,
+      outputFormat: "json",
+      sql: buildTenantPrivateInfrastructureCountSql(legacyOrgId),
+    },
+  );
+
+  const privateCounts = privateRows[0];
+  failures.push(
+    ...collectPrivateInfrastructureAbsenceFailures(
+      privateCounts ?? {
+        notification_delivery_provider_envelopes: 0,
+        notification_delivery_ledger: 0,
+        domain_event_outbox: 0,
+        notification_projector_pre_cutover_skips: 0,
+        session_organisation_contexts: 0,
+      },
+    ),
+  );
+
+  const storageRows = runSupabaseDbQueryJson<{ storage_objects: number }>({
     databaseUrl,
     outputFormat: "json",
     sql: `
       select
-        (select count(*)::int from private.notification_delivery_provider_envelopes where organisation_id = '${legacyOrgId}'::uuid) as notification_delivery_provider_envelopes,
-        (select count(*)::int from private.notification_delivery_ledger where organisation_id = '${legacyOrgId}'::uuid) as notification_delivery_ledger,
-        (select count(*)::int from private.domain_event_outbox where organisation_id = '${legacyOrgId}'::uuid) as domain_event_outbox,
-        (select count(*)::int from private.session_organisation_contexts where organisation_id = '${legacyOrgId}'::uuid) as session_organisation_contexts,
-        (select count(*)::int from storage.objects where bucket_id = 'organisation-evidence' and name like '${legacyOrgId}/%') as storage_objects;
+        (select count(*)::int
+         from storage.objects
+         where bucket_id = 'organisation-evidence'
+           and name like '${legacyOrgId}/%') as storage_objects;
     `,
   });
 
-  const privateCounts = privateRows[0];
-  if ((privateCounts?.notification_delivery_provider_envelopes ?? 0) > 0) {
-    failures.push(
-      `private.notification_delivery_provider_envelopes=${privateCounts?.notification_delivery_provider_envelopes}`,
-    );
-  }
-  if ((privateCounts?.notification_delivery_ledger ?? 0) > 0) {
-    failures.push(
-      `private.notification_delivery_ledger=${privateCounts?.notification_delivery_ledger}`,
-    );
-  }
-  if ((privateCounts?.domain_event_outbox ?? 0) > 0) {
-    failures.push(
-      `private.domain_event_outbox=${privateCounts?.domain_event_outbox}`,
-    );
-  }
-  if ((privateCounts?.session_organisation_contexts ?? 0) > 0) {
-    failures.push(
-      `private.session_organisation_contexts=${privateCounts?.session_organisation_contexts}`,
-    );
-  }
-  if ((privateCounts?.storage_objects ?? 0) > 0) {
-    failures.push(`storage.objects=${privateCounts?.storage_objects}`);
+  const storageObjectCount = storageRows[0]?.storage_objects ?? 0;
+  if (storageObjectCount > 0) {
+    failures.push(`storage.objects=${storageObjectCount}`);
   }
 
   if (failures.length > 0) {

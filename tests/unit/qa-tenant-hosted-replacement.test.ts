@@ -68,6 +68,7 @@ const planDetailsFixture = {
     notification_delivery_provider_envelopes: 1,
     notification_delivery_ledger: 2,
     domain_event_outbox: 3,
+    notification_projector_pre_cutover_skips: 4,
     session_organisation_contexts: 0,
   },
   storageObjectCount: 3,
@@ -196,6 +197,9 @@ describe("hosted tenant replacement plan", () => {
     expect(report).toContain(LEGACY_HOSTED_DEMO_ORGANISATION.code);
     expect(report).toContain("legacy-1@lean-excellence.local");
     expect(report).toContain("private.domain_event_outbox: 3");
+    expect(report).toContain(
+      "private.notification_projector_pre_cutover_skips: 4",
+    );
     expect(report).toContain("Dry-run only. No hosted data was modified.");
     expect(report).toContain(QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN);
     expect(plan.cookieWorksPresent).toBe(false);
