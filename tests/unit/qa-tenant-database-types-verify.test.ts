@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, win32 } from "node:path";
+import { join, posix, win32 } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -128,8 +128,7 @@ describe("Windows path joining", () => {
   });
 
   it("uses platform-aware path for database.types.ts on POSIX", () => {
-    const repoRoot = "/repo";
-    const expectedPath = join(repoRoot, DATABASE_TYPES_RELATIVE_PATH);
+    const expectedPath = posix.join("/repo", DATABASE_TYPES_RELATIVE_PATH);
 
     expect(expectedPath).toBe("/repo/src/platform/supabase/database.types.ts");
   });
