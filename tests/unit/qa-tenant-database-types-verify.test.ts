@@ -200,7 +200,7 @@ describe("assertDatabaseTypesCurrent", () => {
       }
     });
 
-    const runGitDiff = vi.fn<GitDiffRunner>((root, filePath) => {
+    const runGitDiff = vi.fn<GitDiffRunner>((_root, _filePath) => {
       return {
         exitCode: 0,
         stdout: "",
