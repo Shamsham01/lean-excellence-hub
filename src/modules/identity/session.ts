@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
 
-import {
-  listEligibleOrganisations,
-  switchOrganisation,
-} from "@/modules/organisations/context";
+import type { EligibleOrganisation } from "@/modules/organisations/context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import type { Database } from "@/platform/supabase/database.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type IdentityState = {
   enrolment_status: string;
   identity_status: string;
   password_change_required: boolean;
 };
+
+type SessionSupabaseClient = SupabaseClient<Database>;
 
 export async function requireClaims() {
   const supabase = await createServerSupabaseClient();
@@ -23,8 +24,9 @@ export async function requireClaims() {
   return data.claims;
 }
 
-async function readIdentityState(): Promise<IdentityState | null> {
-  const supabase = await createServerSupabaseClient();
+async function readIdentityState(
+  supabase: SessionSupabaseClient,
+): Promise<IdentityState | null> {
   const { data, error } = await supabase.rpc("current_identity_state");
   if (error || !data?.[0]) {
     return null;
@@ -33,9 +35,45 @@ async function readIdentityState(): Promise<IdentityState | null> {
   return data[0] as IdentityState;
 }
 
+export async function resolvePostAuthenticationRedirectPath(
+  supabase: SessionSupabaseClient,
+): Promise<string> {
+  const identity = await readIdentityState(supabase);
+
+  if (!identity || identity.identity_status !== "active") {
+    return "/no-access";
+  }
+
+  if (identity.password_change_required) {
+    return "/update-password";
+  }
+
+  const { data, error } = await supabase.rpc("list_my_eligible_organisations");
+  if (error) {
+    throw new Error("Unable to load organisation access.");
+  }
+
+  const organisations = (data ?? []) as EligibleOrganisation[];
+  if (organisations.length === 0) {
+    return "/no-access";
+  }
+  if (organisations.length === 1) {
+    const switched = await supabase.rpc("switch_organisation", {
+      target_organisation_id: organisations[0]!.organisation_id,
+    });
+    if (switched.error || switched.data !== true) {
+      throw new Error("Organisation selection was not authorised.");
+    }
+    return "/platform";
+  }
+
+  return "/select-organisation";
+}
+
 export async function requirePlatformAccess() {
   await requireClaims();
-  const identity = await readIdentityState();
+  const supabase = await createServerSupabaseClient();
+  const identity = await readIdentityState(supabase);
 
   if (!identity || identity.identity_status !== "active") {
     redirect("/no-access");
@@ -50,24 +88,6 @@ export async function requirePlatformAccess() {
 }
 
 export async function routeAfterAuthentication() {
-  const identity = await readIdentityState();
-
-  if (!identity || identity.identity_status !== "active") {
-    redirect("/no-access");
-  }
-
-  if (identity.password_change_required) {
-    redirect("/update-password");
-  }
-
-  const organisations = await listEligibleOrganisations();
-  if (organisations.length === 0) {
-    redirect("/no-access");
-  }
-  if (organisations.length === 1) {
-    await switchOrganisation(organisations[0]!.organisation_id);
-    redirect("/platform");
-  }
-
-  redirect("/select-organisation");
+  const supabase = await createServerSupabaseClient();
+  redirect(await resolvePostAuthenticationRedirectPath(supabase));
 }

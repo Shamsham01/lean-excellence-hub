@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(9);
 
 insert into auth.users (
   id,
@@ -184,6 +184,28 @@ set local role authenticated;
 insert into template_ids (key, id)
 select 'submission', public.create_template_submission(
   (select id from template_ids where key = 'template_version')
+);
+
+select lives_ok(
+  format(
+    'select public.upsert_template_answer(%L::uuid, %L::uuid, false, %L)',
+    (select id from template_ids where key = 'submission'),
+    (select id from template_ids where key = 'question'),
+    'draft answer'
+  ),
+  'draft submission answer can be upserted'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.template_answers answer_row
+    where answer_row.organisation_id = (select id from template_ids where key = 'organisation')
+      and answer_row.submission_id = (select id from template_ids where key = 'submission')
+      and answer_row.question_id = (select id from template_ids where key = 'question')
+      and answer_row.text_value = 'draft answer'
+  ),
+  'authenticated user can read upserted template answers via RLS'
 );
 
 select ok(

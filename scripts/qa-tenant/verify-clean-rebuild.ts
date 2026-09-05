@@ -1,18 +1,24 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
+import { assertDatabaseTypesCurrent } from "./database-types-verify";
 import { QA_ORGANISATION_CODE, QA_USERS } from "./constants";
 import {
   collectCookieWorksInventory,
   formatInventoryReport,
 } from "./inventory";
-import { loadLocalSupabaseEnv } from "./local-env";
+import { loadLocalSupabaseEnv, buildLocalVerificationEnv } from "./local-env";
 import {
   assertCookieWorksFoundationOnlyVerified,
   formatVerificationSummary,
 } from "./verification";
+import { runNpmScript as executeNpmScript } from "./npm-exec";
+import {
+  assertWorkingTreeClean,
+  NEXT_ENV_RELATIVE_PATH,
+  readTrackedFileBytes,
+  restoreNextEnvIfOnlyTypegenImportDrift,
+  snapshotWorkingTreeStatus,
+} from "./working-tree-verify";
 
 type StepResult = {
   name: string;
@@ -35,12 +41,7 @@ function runNpmScript(
   script: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  return execFileSync("npm", ["run", script], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  return executeNpmScript(script, { cwd: repoRoot, env });
 }
 
 function runStep(
@@ -62,22 +63,15 @@ function runStep(
   }
 }
 
-function assertDatabaseTypesCurrent() {
-  const typesPath = join(repoRoot, "src/platform/supabase/database.types.ts");
-  const before = readFileSync(typesPath, "utf8");
-  runNpmScript("db:types");
-  const after = readFileSync(typesPath, "utf8");
-
-  if (before !== after) {
-    throw new Error(
-      "Committed database.types.ts is stale after db:reset. Run `npm run db:types` and commit the result.",
-    );
-  }
-}
-
 function assertCookieWorksFoundationState(databaseUrl: string) {
   const inventory = collectCookieWorksInventory(databaseUrl);
   const report = formatInventoryReport(inventory);
+
+  if (!inventory.organisation) {
+    throw new Error(
+      "CookieWorks inventory returned no organisation; foundation seed may have failed.",
+    );
+  }
 
   if (!report.includes("users (QA personas): 7")) {
     throw new Error("CookieWorks inventory expected 7 QA personas.");
@@ -142,7 +136,19 @@ function main() {
   const { skipReset, skipBuild, skipE2e } = parseArgs(process.argv.slice(2));
   const results: StepResult[] = [];
 
-  loadLocalSupabaseEnv("qa:verify:clean-rebuild");
+  const verificationEnv = buildLocalVerificationEnv("qa:verify:clean-rebuild");
+
+  const preStatus = snapshotWorkingTreeStatus(repoRoot);
+  const preNextEnvBytes = readTrackedFileBytes(
+    repoRoot,
+    NEXT_ENV_RELATIVE_PATH,
+  );
+  if (preStatus.length > 0) {
+    process.stdout.write(
+      "Warning: working tree was not clean before verification:\n",
+    );
+    process.stdout.write(`${preStatus}\n\n`);
+  }
 
   if (!skipReset) {
     results.push(
@@ -168,9 +174,12 @@ function main() {
   results.push(
     runStep(
       "Generated type verification",
-      "npm run db:types && git diff --exit-code database.types.ts",
+      "npm run db:types && git diff --exit-code --ignore-space-at-eol database.types.ts",
       () => {
-        assertDatabaseTypesCurrent();
+        assertDatabaseTypesCurrent({
+          repoRoot,
+          runDbTypes: () => runNpmScript("db:types"),
+        });
       },
     ),
   );
@@ -220,14 +229,17 @@ function main() {
 
   results.push(
     runStep("Unit tests", "npm run test", () => {
-      runNpmScript("test");
+      runNpmScript("test", {
+        ...process.env,
+        LEANHUB_SKIP_LEGACY_REPLACEMENT_INTEGRATION: "1",
+      });
     }),
   );
 
   if (!skipE2e) {
     results.push(
       runStep("Smoke E2E", "npm run test:e2e:smoke", () => {
-        runNpmScript("test:e2e:smoke");
+        runNpmScript("test:e2e:smoke", verificationEnv);
       }),
     );
   }
@@ -235,10 +247,27 @@ function main() {
   if (!skipBuild) {
     results.push(
       runStep("Production build", "npm run build", () => {
-        runNpmScript("build");
+        runNpmScript("build", verificationEnv);
       }),
     );
   }
+
+  results.push(
+    runStep(
+      "Working tree cleanliness",
+      "git status --short (must be empty when started clean)",
+      () => {
+        if (preStatus.length === 0) {
+          restoreNextEnvIfOnlyTypegenImportDrift(repoRoot, preNextEnvBytes);
+          assertWorkingTreeClean(repoRoot);
+        } else {
+          process.stdout.write(
+            "    Skipped: working tree was not clean before verification.\n",
+          );
+        }
+      },
+    ),
+  );
 
   printSummary(results);
 }

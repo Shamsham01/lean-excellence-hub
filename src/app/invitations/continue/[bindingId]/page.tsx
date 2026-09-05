@@ -5,8 +5,6 @@ import { InvitationAcceptanceCard } from "@/components/invitations/invitation-ac
 import { isInvitationSignupBindingId } from "@/modules/identity/invitation-constants";
 import { loadInvitationSignupBinding } from "@/modules/identity/invitation-lifecycle";
 
-import { acceptBinding } from "./actions";
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -48,7 +46,7 @@ export default async function InvitationContinuePage({
         <InvitationAcceptanceCard
           bindingId={bindingId}
           lifecycle={lifecycle}
-          acceptAction={acceptBinding}
+          acceptEndpoint="/api/auth/invitations/accept-binding"
         />
       </div>
     </main>

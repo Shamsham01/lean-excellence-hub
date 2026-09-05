@@ -6,10 +6,6 @@ import { COOKIEWORKS_STORAGE_BUCKET } from "./deletion-graph";
 import { runSupabaseDbQueryJson } from "./db-cli";
 import { loadLocalSupabaseEnv } from "./local-env";
 
-type JsonEnvelope<T> = {
-  rows?: T[];
-};
-
 function resolveStorageAdmin(storageAdmin?: SupabaseClient) {
   if (storageAdmin) {
     return storageAdmin;
@@ -22,7 +18,7 @@ function resolveStorageAdmin(storageAdmin?: SupabaseClient) {
 }
 
 function listCookieWorksStorageObjectPaths(databaseUrl: string) {
-  const envelope = runSupabaseDbQueryJson<JsonEnvelope<{ name: string }>>({
+  const rows = runSupabaseDbQueryJson<{ name: string }>({
     databaseUrl,
     outputFormat: "json",
     sql: `
@@ -38,11 +34,11 @@ function listCookieWorksStorageObjectPaths(databaseUrl: string) {
     `,
   });
 
-  return (envelope.rows ?? []).map((row) => row.name).filter(Boolean);
+  return rows.map((row) => row.name).filter(Boolean);
 }
 
 export function countCookieWorksStorageObjects(databaseUrl: string) {
-  const envelope = runSupabaseDbQueryJson<JsonEnvelope<{ count: number }>>({
+  const rows = runSupabaseDbQueryJson<{ count: number }>({
     databaseUrl,
     outputFormat: "json",
     sql: `
@@ -58,7 +54,7 @@ export function countCookieWorksStorageObjects(databaseUrl: string) {
     `,
   });
 
-  return envelope.rows?.[0]?.count ?? 0;
+  return rows[0]?.count ?? 0;
 }
 
 export async function purgeCookieWorksStorageObjects(options: {

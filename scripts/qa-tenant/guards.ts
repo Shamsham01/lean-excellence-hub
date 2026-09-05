@@ -5,6 +5,12 @@ import {
   QA_HOSTED_RESET_CONFIRM_TOKEN,
   QA_ORGANISATION_CODE,
 } from "./constants";
+import {
+  HOSTED_PRELAUNCH_PROJECT_REF,
+  LEGACY_HOSTED_DEMO_ORGANISATION,
+  QA_HOSTED_RECOVERY_CONFIRM_TOKEN,
+  QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN,
+} from "./legacy-hosted-demo";
 
 const LOCAL_SUPABASE_URL_PATTERN =
   /^https?:\/\/(127\.0\.0\.1|localhost):54321\b/;
@@ -76,6 +82,25 @@ export function parseHostedResetArgs(argv: string[]) {
   return {
     mode: destructive ? ("destructive" as const) : ("dry-run" as const),
     destructive,
+  };
+}
+
+export function parseHostedReplacementArgs(argv: string[]) {
+  const destructive = argv.includes("--destructive");
+  const preserveExistingCookieWorks = argv.includes(
+    "--preserve-existing-cookieworks",
+  );
+
+  if (preserveExistingCookieWorks && !destructive) {
+    throw new Error(
+      "Recovery flag --preserve-existing-cookieworks requires --destructive.",
+    );
+  }
+
+  return {
+    mode: destructive ? ("destructive" as const) : ("dry-run" as const),
+    destructive,
+    preserveExistingCookieWorks,
   };
 }
 
@@ -259,4 +284,69 @@ export function resolveHostedCredentials() {
     databaseUrl,
     publishableKey,
   };
+}
+
+export function assertHostedReplacementAllowed(options: {
+  apiUrl: string;
+  expectedProjectRef: string;
+  mode: HostedResetMode;
+  preserveExistingCookieWorks?: boolean;
+}) {
+  if (process.env.NEXT_RUNTIME) {
+    throw new Error(
+      "Hosted QA tenant replacement cannot run from Next.js application runtime.",
+    );
+  }
+
+  if (!/\.supabase\.co\b/i.test(options.apiUrl)) {
+    throw new Error(
+      `Hosted QA tenant replacement requires a hosted Supabase API URL (*.supabase.co). Received: ${options.apiUrl}`,
+    );
+  }
+
+  const actualProjectRef = extractSupabaseProjectRef(options.apiUrl);
+  if (!actualProjectRef) {
+    throw new Error(
+      `Unable to resolve Supabase project reference from API URL: ${options.apiUrl}`,
+    );
+  }
+
+  if (actualProjectRef !== options.expectedProjectRef) {
+    throw new Error(
+      `Hosted QA tenant replacement refused: expected project ref ${options.expectedProjectRef}, actual ${actualProjectRef}.`,
+    );
+  }
+
+  if (options.expectedProjectRef !== HOSTED_PRELAUNCH_PROJECT_REF) {
+    throw new Error(
+      `Hosted QA tenant replacement refused: project ref must be exactly ${HOSTED_PRELAUNCH_PROJECT_REF}.`,
+    );
+  }
+
+  if (options.mode === "destructive") {
+    const confirmToken = process.env.LEANHUB_QA_RESET_CONFIRM;
+    const expectedToken = options.preserveExistingCookieWorks
+      ? QA_HOSTED_RECOVERY_CONFIRM_TOKEN
+      : QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN;
+
+    if (confirmToken !== expectedToken) {
+      throw new Error(
+        options.preserveExistingCookieWorks
+          ? `Destructive hosted QA tenant recovery requires LEANHUB_QA_RESET_CONFIRM=${QA_HOSTED_RECOVERY_CONFIRM_TOKEN}.`
+          : `Destructive hosted QA tenant replacement requires LEANHUB_QA_RESET_CONFIRM=${QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN}.`,
+      );
+    }
+  }
+}
+
+export function assertLegacyHostedDemoTargetContract() {
+  if (
+    LEGACY_HOSTED_DEMO_ORGANISATION.code !== "lean-excellence-demo" ||
+    LEGACY_HOSTED_DEMO_ORGANISATION.id !==
+      "402811bb-aa05-4128-b7e5-a1e3b359b92e"
+  ) {
+    throw new Error(
+      "Legacy hosted demo contract constants are malformed in repository.",
+    );
+  }
 }

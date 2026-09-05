@@ -176,7 +176,7 @@ export function AssessmentWorkspace({
             const answer = answers[question.id];
             return (
               <QuestionField
-                key={question.id}
+                key={`${question.id}:${answer?.number_value ?? ""}:${answer?.text_value ?? ""}:${answer?.is_not_applicable ?? false}`}
                 assessmentId={assessmentId}
                 criterionId={criterion.id}
                 question={question}
@@ -304,6 +304,10 @@ function QuestionField({
   canEdit: boolean;
 }) {
   const [saving, setSaving] = useState(false);
+  const [numberValue, setNumberValue] = useState(
+    answer?.number_value != null ? String(answer.number_value) : "",
+  );
+  const [textValue, setTextValue] = useState(answer?.text_value ?? "");
 
   async function save(payload: {
     textValue?: string | null;
@@ -329,19 +333,23 @@ function QuestionField({
           type="number"
           className="mt-3 max-w-[8rem]"
           disabled={!canEdit}
-          value={answer?.number_value ?? ""}
-          onChange={(e) =>
-            save({
-              numberValue: e.target.value ? Number(e.target.value) : null,
-            })
-          }
+          value={numberValue}
+          onChange={(event) => setNumberValue(event.target.value)}
+          onBlur={() => {
+            void save({
+              numberValue: numberValue ? Number(numberValue) : null,
+            });
+          }}
         />
       ) : question.question_type === "long_text" ? (
         <Textarea
           className="mt-3"
           disabled={!canEdit}
-          value={answer?.text_value ?? ""}
-          onChange={(e) => save({ textValue: e.target.value })}
+          value={textValue}
+          onChange={(event) => setTextValue(event.target.value)}
+          onBlur={() => {
+            void save({ textValue });
+          }}
         />
       ) : question.question_type === "yes_no" ? (
         <div className="mt-3 flex gap-2">
@@ -368,8 +376,11 @@ function QuestionField({
         <Input
           className="mt-3"
           disabled={!canEdit}
-          value={answer?.text_value ?? ""}
-          onChange={(e) => save({ textValue: e.target.value })}
+          value={textValue}
+          onChange={(event) => setTextValue(event.target.value)}
+          onBlur={() => {
+            void save({ textValue });
+          }}
         />
       )}
 

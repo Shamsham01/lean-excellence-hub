@@ -57,6 +57,7 @@ export async function runHostedCookieWorksSeed(options?: {
     admin,
     apiUrl: credentials.apiUrl,
     publishableKey: credentials.publishableKey,
+    databaseUrl: credentials.databaseUrl,
   });
 
   const inventory = collectCookieWorksInventory(credentials.databaseUrl);
@@ -77,12 +78,3 @@ export async function runHostedCookieWorksSeed(options?: {
 
   return { organisationId, inventory, verification };
 }
-
-async function main() {
-  await runHostedCookieWorksSeed();
-}
-
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});

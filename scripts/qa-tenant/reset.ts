@@ -27,6 +27,7 @@ async function main() {
     admin,
     apiUrl: env.apiUrl,
     publishableKey: env.publishableKey,
+    databaseUrl: env.databaseUrl,
   });
 
   const inventory = collectCookieWorksInventory(env.databaseUrl);

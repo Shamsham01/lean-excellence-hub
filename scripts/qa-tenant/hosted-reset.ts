@@ -83,6 +83,7 @@ async function main() {
     admin,
     apiUrl: credentials.apiUrl,
     publishableKey: credentials.publishableKey,
+    databaseUrl: credentials.databaseUrl,
   });
 
   const postInventory = collectCookieWorksInventory(credentials.databaseUrl);

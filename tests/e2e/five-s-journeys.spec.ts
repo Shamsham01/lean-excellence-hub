@@ -1,24 +1,9 @@
-import { expectPlatformOrganisationName } from "./helpers/platform-home";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import {
-  DEMO_FIVE_S_STANDARD,
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import { DEMO_FIVE_S_STANDARD } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 test.describe("Milestone 6 5S journeys", () => {
   test.describe.configure({ mode: "serial" });
@@ -30,7 +15,7 @@ test.describe("Milestone 6 5S journeys", () => {
   );
 
   test("admin: overview, standards, and audit workspace", async ({ page }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/5s");
 
     await expect(
@@ -53,7 +38,7 @@ test.describe("Milestone 6 5S journeys", () => {
   });
 
   test("admin: audit history shows completed demo audit", async ({ page }) => {
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/5s/history");
     await expect(
       page.getByRole("heading", { name: "5S history" }),

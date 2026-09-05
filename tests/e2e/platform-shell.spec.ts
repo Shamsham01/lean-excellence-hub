@@ -1,14 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
+import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   ensurePlatformE2eUser,
   platformE2eCredentials,
 } from "./helpers/platform-auth";
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -19,17 +16,6 @@ const mobileViewports = [
   { name: "844x390", width: 844, height: 390 },
   { name: "768x1024", width: 768, height: 1024 },
 ] as const;
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 async function loginPlatformE2e(page: Page) {
   await page.goto("/login");
@@ -122,7 +108,7 @@ test.describe("authenticated platform shell", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
 
     const nav = page.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
@@ -143,7 +129,7 @@ test.describe("authenticated platform shell", () => {
         width: viewport.width,
         height: viewport.height,
       });
-      await loginAs(page, "admin");
+      await signInAsDemoUser(page, "admin");
 
       const nav = await openMobileDrawer(page);
       const drawer = page.getByRole("dialog");
@@ -162,7 +148,7 @@ test.describe("authenticated platform shell", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
 
     const nav = await openMobileDrawer(page);
     const recognitionLink = nav.getByRole("link", {
@@ -182,7 +168,7 @@ test.describe("authenticated platform shell", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
 
     const nav = await openMobileDrawer(page);
     await page.keyboard.press("Escape");

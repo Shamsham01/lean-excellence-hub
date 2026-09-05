@@ -11,11 +11,13 @@ import {
   switchOrganisation,
 } from "./shared/organisation";
 import { ensureAuthUser, signInUser, type QaUserKey } from "./shared/auth";
+import { syncAllCookieWorksRolePermissions } from "./sync-role-permissions";
 
 export async function seedCookieWorksFoundation(options: {
   admin: SupabaseClient;
   apiUrl: string;
   publishableKey: string;
+  databaseUrl: string;
 }) {
   for (const userKey of Object.keys(QA_USERS) as QaUserKey[]) {
     await ensureAuthUser(options.admin, userKey);
@@ -122,6 +124,8 @@ export async function seedCookieWorksFoundation(options: {
   );
 
   await ensureDisplayNames(options.apiUrl, options.publishableKey);
+
+  syncAllCookieWorksRolePermissions(options.databaseUrl);
 
   return { organisationId, unitIds };
 }

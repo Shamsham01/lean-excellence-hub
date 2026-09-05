@@ -1,4 +1,12 @@
-import { QA_ORGANISATION, QA_ORGANISATION_CODE } from "./constants";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import {
+  QA_ORGANISATION,
+  QA_ORGANISATION_CODE,
+  QA_UNITS,
+  QA_USER_IDS,
+  QA_USERS,
+} from "./constants";
 import {
   buildOrganisationScopeCte,
   foundationTableSqlList,
@@ -20,10 +28,6 @@ export type CookieWorksVerificationResult = {
   indirectCounts: TenantVerificationRow[];
   failures: string[];
   isFoundationOnly: boolean;
-};
-
-type JsonEnvelope<T> = {
-  rows?: T[];
 };
 
 function listModuleTablesSql() {
@@ -110,35 +114,28 @@ select jsonb_build_object(
 }
 
 function discoverTableLists(databaseUrl: string) {
-  const moduleEnvelope = runSupabaseDbQueryJson<
-    JsonEnvelope<{ tables: string[] }>
-  >({
+  const moduleRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
     sql: listModuleTablesSql(),
   });
 
-  const foundationEnvelope = runSupabaseDbQueryJson<
-    JsonEnvelope<{ tables: string[] }>
-  >({
+  const foundationRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
     sql: listFoundationTablesSql(),
   });
 
-  const appendOnlyEnvelope = runSupabaseDbQueryJson<
-    JsonEnvelope<{ tables: string[] }>
-  >({
+  const appendOnlyRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
     sql: listAppendOnlyDeleteTablesSql(),
   });
 
-  const moduleTables = (moduleEnvelope.rows?.[0]?.tables ?? []) as string[];
-  const foundationTables = (foundationEnvelope.rows?.[0]?.tables ??
-    []) as string[];
+  const moduleTables = (moduleRows[0]?.tables ?? []) as string[];
+  const foundationTables = (foundationRows[0]?.tables ?? []) as string[];
   const appendOnlyTables = new Set(
-    (appendOnlyEnvelope.rows?.[0]?.tables ?? []) as string[],
+    (appendOnlyRows[0]?.tables ?? []) as string[],
   );
 
   return { moduleTables, foundationTables, appendOnlyTables };
@@ -212,24 +209,25 @@ export function verifyCookieWorksTenant(databaseUrl: string) {
     );
   }
 
-  const envelope = runSupabaseDbQueryJson<
-    JsonEnvelope<{
-      verification: {
-        organisation: CookieWorksVerificationResult["organisation"];
-        rows: Array<{
-          resource: string;
-          count: number | string;
-          category: "module" | "foundation" | "indirect";
-        }>;
-      };
-    }>
-  >({
-    databaseUrl,
-    outputFormat: "json",
-    sql: buildVerificationSql(moduleTables, foundationTables),
-  });
+  const rows = runSupabaseDbQueryJson<{
+    verification: {
+      organisation: CookieWorksVerificationResult["organisation"];
+      rows: Array<{
+        resource: string;
+        count: number | string;
+        category: "module" | "foundation" | "indirect";
+      }>;
+    };
+  }>(
+    {
+      databaseUrl,
+      outputFormat: "json",
+      sql: buildVerificationSql(moduleTables, foundationTables),
+    },
+    { minRows: 1, maxRows: 1 },
+  );
 
-  const verification = envelope.rows?.[0]?.verification;
+  const verification = rows[0]?.verification;
   if (!verification) {
     throw new Error("CookieWorks verification query returned no payload.");
   }
@@ -238,9 +236,11 @@ export function verifyCookieWorksTenant(databaseUrl: string) {
 }
 
 export function assertCookieWorksOrganisationContract(databaseUrl: string) {
-  const envelope = runSupabaseDbQueryJson<
-    JsonEnvelope<{ id: string; code: string; name: string }>
-  >({
+  const rows = runSupabaseDbQueryJson<{
+    id: string;
+    code: string;
+    name: string;
+  }>({
     databaseUrl,
     outputFormat: "json",
     sql: `
@@ -249,8 +249,6 @@ export function assertCookieWorksOrganisationContract(databaseUrl: string) {
       where code = '${QA_ORGANISATION_CODE}';
     `,
   });
-
-  const rows = envelope.rows ?? [];
   if (rows.length !== 1) {
     throw new Error(
       `CookieWorks organisation contract failed: expected exactly one organisation with code ${QA_ORGANISATION_CODE}, found ${rows.length}.`,
@@ -357,7 +355,7 @@ export function countOrganisationModuleRows(
   organisationCode: string,
   tableName: string,
 ) {
-  const envelope = runSupabaseDbQueryJson<JsonEnvelope<{ count: number }>>({
+  const rows = runSupabaseDbQueryJson<{ count: number }>({
     databaseUrl,
     outputFormat: "json",
     sql: `
@@ -369,5 +367,81 @@ export function countOrganisationModuleRows(
     `,
   });
 
-  return envelope.rows?.[0]?.count ?? 0;
+  return rows[0]?.count ?? 0;
+}
+
+export const HOSTED_REPLACEMENT_VERIFIED_MARKER =
+  "HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED";
+
+export const HOSTED_LEGACY_RECOVERY_VERIFIED_MARKER =
+  "HOSTED LEGACY DEMO REMOVED — EXISTING COOKIEWORKS PRESERVED AND VERIFIED";
+
+export async function assertCookieWorksCompleteFoundationVerified(
+  databaseUrl: string,
+  authAdmin?: SupabaseClient,
+) {
+  const organisation = assertCookieWorksOrganisationContract(databaseUrl);
+  const verification = assertCookieWorksFoundationOnlyVerified(databaseUrl);
+
+  const counts = runSupabaseDbQueryJson<{
+    memberships: number;
+    units: number;
+    role_grants: number;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: `
+      select
+        (select count(*)::int from public.organisation_memberships where organisation_id = '${organisation.id}'::uuid) as memberships,
+        (select count(*)::int from public.organisation_units where organisation_id = '${organisation.id}'::uuid) as units,
+        (select count(*)::int from public.access_grants where organisation_id = '${organisation.id}'::uuid and status = 'active') as role_grants;
+    `,
+  });
+
+  const membershipCount = counts[0]?.memberships ?? 0;
+  const unitCount = counts[0]?.units ?? 0;
+  const roleGrantCount = counts[0]?.role_grants ?? 0;
+  const expectedPersonas = Object.keys(QA_USERS).length;
+
+  if (membershipCount !== expectedPersonas) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${expectedPersonas} memberships, found ${membershipCount}.`,
+    );
+  }
+
+  if (unitCount !== QA_UNITS.length) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${QA_UNITS.length} organisational units, found ${unitCount}.`,
+    );
+  }
+
+  if (roleGrantCount !== expectedPersonas) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${expectedPersonas} active role grants, found ${roleGrantCount}.`,
+    );
+  }
+
+  if (authAdmin) {
+    const missingAuthUsers: string[] = [];
+    for (const userId of QA_USER_IDS) {
+      const existing = await authAdmin.auth.admin.getUserById(userId);
+      if (!existing.data.user) {
+        missingAuthUsers.push(userId);
+      }
+    }
+
+    if (missingAuthUsers.length > 0) {
+      throw new Error(
+        `CookieWorks foundation verification failed: missing auth identities ${missingAuthUsers.join(", ")}.`,
+      );
+    }
+  }
+
+  return {
+    organisation,
+    verification,
+    membershipCount,
+    unitCount,
+    roleGrantCount,
+  };
 }

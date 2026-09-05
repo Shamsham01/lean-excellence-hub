@@ -10,8 +10,6 @@ import {
 import { INVITATION_TOKEN_PATTERN } from "@/modules/identity/invitation-constants";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-import { accept } from "./actions";
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -60,7 +58,7 @@ export default async function InvitationPage({
           lifecycle={lifecycle}
           loginPath={invitationLoginPath(token)}
           activatePath={invitationActivatePath(token)}
-          acceptAction={accept}
+          acceptEndpoint="/api/auth/invitations/accept"
         />
       </div>
     </main>

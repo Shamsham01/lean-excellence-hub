@@ -1,27 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
+import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   ensurePlatformE2eUser,
   platformE2eCredentials,
 } from "./helpers/platform-auth";
-import {
-  DEMO_ORGANISATION,
-  DEMO_USERS,
-} from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function loginAs(page: Page, user: keyof typeof DEMO_USERS) {
-  const credentials = DEMO_USERS[user];
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-  await expectPlatformOrganisationName(page, DEMO_ORGANISATION.name);
-}
 
 async function loginPlatformE2e(page: Page) {
   await page.goto("/login");
@@ -95,7 +81,7 @@ test.describe("UX1 platform shell", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 500 });
-    await loginAs(page, "admin");
+    await signInAsDemoUser(page, "admin");
 
     const nav = page.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
@@ -146,7 +132,7 @@ test.describe("UX1 platform shell", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await loginAs(page, "operator");
+    await signInAsDemoUser(page, "operator");
 
     await expect(
       page.getByRole("link", { name: "Setup", exact: true }),
@@ -160,7 +146,7 @@ test.describe("UX1 platform shell", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await loginAs(page, "finance");
+    await signInAsDemoUser(page, "finance");
 
     await expect(
       page.getByRole("link", { name: "Benefits", exact: true }),
