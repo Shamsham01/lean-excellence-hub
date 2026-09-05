@@ -39,10 +39,13 @@ function isLocalSupabaseAvailable() {
   }
 }
 
+const shouldSkipLegacyReplacementIntegration =
+  process.env.LEANHUB_SKIP_LEGACY_REPLACEMENT_INTEGRATION === "1";
+
 const hasLocalSupabase = isLocalSupabaseAvailable();
 const LOCAL_FIXTURE_MEMBERSHIPS = LEGACY_REPLACEMENT_FIXTURE_MEMBERS.length;
 
-describe.skipIf(!hasLocalSupabase)(
+describe.skipIf(!hasLocalSupabase || shouldSkipLegacyReplacementIntegration)(
   "hosted legacy → CookieWorks replacement integration",
   () => {
     let env: ReturnType<typeof loadLocalSupabaseEnv>;

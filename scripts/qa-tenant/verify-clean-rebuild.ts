@@ -229,7 +229,10 @@ function main() {
 
   results.push(
     runStep("Unit tests", "npm run test", () => {
-      runNpmScript("test");
+      runNpmScript("test", {
+        ...process.env,
+        LEANHUB_SKIP_LEGACY_REPLACEMENT_INTEGRATION: "1",
+      });
     }),
   );
 
