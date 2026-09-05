@@ -17,6 +17,7 @@ async function main() {
     admin,
     apiUrl: env.apiUrl,
     publishableKey: env.publishableKey,
+    databaseUrl: env.databaseUrl,
   });
 
   console.log("CookieWorks QA foundation seed complete.");

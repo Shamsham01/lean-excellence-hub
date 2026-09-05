@@ -13,6 +13,7 @@ manual acceptance testing through the real LEH UI.
 | `npm run qa:cookie:reset` | Deletes CookieWorks tenant data locally, then re-seeds foundation | Yes (CookieWorks only) |
 | `npm run qa:cookie:hosted-reset` | Maintainer CLI for hosted inventory / reset | Dry-run by default |
 | `npm run qa:cookie:hosted-seed` | Seeds CookieWorks foundation on hosted QA only | No (foundation reconcile only) |
+| `npm run qa:cookie:hosted-replacement` | Maintainer CLI for hosted legacy demo → CookieWorks replacement | Dry-run by default |
 
 Local commands use the same local-only guards as demo seed (local Supabase URL, no linked
 project, not `NODE_ENV=production`). Hosted reset adds stronger maintainer safeguards.
@@ -164,6 +165,38 @@ npm run qa:verify:clean-rebuild
 
 See `docs/qa/hosted-qa-rebuild-runbook.md` for the full hosted rebuild
 procedure (maintainer-only; not executed by automation).
+
+### Hosted pre-launch tenant replacement (QA2)
+
+Use when the disposable hosted pre-launch project still contains the legacy
+**Lean Excellence Demo** tenant and must be replaced in-place (no database
+reset). See `docs/qa/hosted-tenant-replacement-runbook.md`.
+
+```bash
+# Dry-run legacy inspection and replacement plan
+LEANHUB_QA_RESET_SUPABASE_URL="https://zsadfvjtknbbfomlmttv.supabase.co" \
+LEANHUB_QA_RESET_SERVICE_ROLE_KEY="<service-role-key>" \
+LEANHUB_QA_RESET_DATABASE_URL="postgresql://..." \
+LEANHUB_QA_RESET_PROJECT_REF="zsadfvjtknbbfomlmttv" \
+LEANHUB_QA_RESET_PUBLISHABLE_KEY="<publishable-key>" \
+npm run qa:cookie:hosted-replacement
+
+# Destructive replacement (explicit confirmation required)
+LEANHUB_QA_RESET_CONFIRM=DELETE_LEGACY_DEMO_AND_SEED_COOKIEWORKS \
+...credentials... \
+npm run qa:cookie:hosted-replacement -- --destructive
+```
+
+QA2 safeguards:
+
+1. **Dry-run by default** — without `--destructive`, only prints the plan/inventory.
+2. **Exact hosted project ref** — `LEANHUB_QA_RESET_PROJECT_REF` must be exactly `zsadfvjtknbbfomlmttv`.
+3. **Exact legacy tenant contract** — organisation code, UUID, name, and membership count are validated before destructive execution.
+4. **Explicit confirmation** — destructive mode requires `LEANHUB_QA_RESET_CONFIRM=DELETE_LEGACY_DEMO_AND_SEED_COOKIEWORKS`.
+5. **CookieWorks absence precondition** — destructive replacement refuses to run if CookieWorks already exists.
+6. **Legacy-only auth deletion** — auth users are deleted only when they have no memberships outside the legacy tenant.
+7. **No committed secrets** — credentials are supplied at runtime only.
+8. **CLI only** — no application routes, Edge Functions, or RPCs expose replacement capability.
 
 ## Manual smoke testing
 

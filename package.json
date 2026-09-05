@@ -39,6 +39,7 @@
     "qa:cookie:inventory": "node --import tsx scripts/qa-tenant/inventory-cli.ts",
     "qa:cookie:hosted-reset": "node --import tsx scripts/qa-tenant/hosted-reset.ts",
     "qa:cookie:hosted-seed": "node --import tsx scripts/qa-tenant/hosted-seed.ts",
+    "qa:cookie:hosted-replacement": "node --import tsx scripts/qa-tenant/hosted-replacement.ts",
     "qa:verify:clean-rebuild": "node --import tsx scripts/qa-tenant/verify-clean-rebuild.ts",
     "eval:ai:fake": "node --import tsx scripts/eval-ai-fake.ts",
     "eval:ai:live": "node --env-file=.env.local --import tsx scripts/eval-ai-live.ts",
