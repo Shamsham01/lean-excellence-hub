@@ -68,6 +68,17 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
     });
   });
 
+  test.afterAll(() => {
+    execSync("npm run qa:cookie:reset", {
+      cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
+      env: {
+        ...process.env,
+        LEANHUB_ALLOW_QA_TENANT: "1",
+      },
+      stdio: "pipe",
+    });
+  });
+
   test("MAT0-01: maturity empty state for admin", async ({ page }) => {
     const assertConsole = trackConsoleErrors(page);
     await loginAsCookieWorksPersona(page, "admin");
