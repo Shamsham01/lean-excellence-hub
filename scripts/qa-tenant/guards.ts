@@ -8,6 +8,7 @@ import {
 import {
   HOSTED_PRELAUNCH_PROJECT_REF,
   LEGACY_HOSTED_DEMO_ORGANISATION,
+  QA_HOSTED_RECOVERY_CONFIRM_TOKEN,
   QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN,
 } from "./legacy-hosted-demo";
 
@@ -81,6 +82,25 @@ export function parseHostedResetArgs(argv: string[]) {
   return {
     mode: destructive ? ("destructive" as const) : ("dry-run" as const),
     destructive,
+  };
+}
+
+export function parseHostedReplacementArgs(argv: string[]) {
+  const destructive = argv.includes("--destructive");
+  const preserveExistingCookieWorks = argv.includes(
+    "--preserve-existing-cookieworks",
+  );
+
+  if (preserveExistingCookieWorks && !destructive) {
+    throw new Error(
+      "Recovery flag --preserve-existing-cookieworks requires --destructive.",
+    );
+  }
+
+  return {
+    mode: destructive ? ("destructive" as const) : ("dry-run" as const),
+    destructive,
+    preserveExistingCookieWorks,
   };
 }
 
@@ -270,6 +290,7 @@ export function assertHostedReplacementAllowed(options: {
   apiUrl: string;
   expectedProjectRef: string;
   mode: HostedResetMode;
+  preserveExistingCookieWorks?: boolean;
 }) {
   if (process.env.NEXT_RUNTIME) {
     throw new Error(
@@ -303,12 +324,16 @@ export function assertHostedReplacementAllowed(options: {
   }
 
   if (options.mode === "destructive") {
-    if (
-      process.env.LEANHUB_QA_RESET_CONFIRM !==
-      QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN
-    ) {
+    const confirmToken = process.env.LEANHUB_QA_RESET_CONFIRM;
+    const expectedToken = options.preserveExistingCookieWorks
+      ? QA_HOSTED_RECOVERY_CONFIRM_TOKEN
+      : QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN;
+
+    if (confirmToken !== expectedToken) {
       throw new Error(
-        `Destructive hosted QA tenant replacement requires LEANHUB_QA_RESET_CONFIRM=${QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN}.`,
+        options.preserveExistingCookieWorks
+          ? `Destructive hosted QA tenant recovery requires LEANHUB_QA_RESET_CONFIRM=${QA_HOSTED_RECOVERY_CONFIRM_TOKEN}.`
+          : `Destructive hosted QA tenant replacement requires LEANHUB_QA_RESET_CONFIRM=${QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN}.`,
       );
     }
   }

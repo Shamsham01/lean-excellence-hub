@@ -8,6 +8,21 @@ QA tenant **without** resetting the Supabase project.
 must not execute destructive hosted steps. A human maintainer performs the
 hosted replacement.
 
+## Incident note (QA2b): dry-run import side effect
+
+During the first real hosted QA2 dry-run, `npm run qa:cookie:hosted-replacement`
+printed `Mode: dry-run` but unexpectedly executed the CookieWorks hosted seed
+before the replacement logic reached its early return.
+
+**Root cause:** `hosted-replacement.ts` imported `runHostedCookieWorksSeed` from
+`hosted-seed.ts`, and `hosted-seed.ts` unconditionally called `main()` at module
+evaluation time. Importing the seed module therefore executed the hosted seed
+before dry-run inspection completed.
+
+**Fix (QA2b):** hosted QA library modules are import-safe. CLI entrypoints live in
+dedicated `*-cli.ts` files (`hosted-seed-cli.ts`, `hosted-replacement-cli.ts`).
+Importing library modules performs zero writes.
+
 ## Target hosted project
 
 | Field | Value |
@@ -54,6 +69,11 @@ LEANHUB_QA_RESET_PUBLISHABLE_KEY="<publishable-key>" \
 npm run qa:cookie:hosted-replacement
 ```
 
+Dry-run is **read-only**. It may query the database, inspect Auth, inspect Storage
+metadata, calculate the plan, and verify contracts. It must **not** seed CookieWorks,
+delete anything, create Auth users, create organisation rows, create invitations,
+mutate roles/grants, write audit events, or modify storage.
+
 Dry-run output must show:
 
 - Legacy organisation UUID, code, name, and membership count (**8** expected)
@@ -66,10 +86,23 @@ Dry-run output must show:
   `domain_event_outbox`, `session_organisation_contexts`
 - Storage: `organisation-evidence` object count for the legacy tenant prefix
 - Modules: section/module counts and total tenant-owned module row count
-- CookieWorks presence (must be **no** before destructive run)
+- CookieWorks presence
 - Cross-organisation conflicts (must be **none** before destructive run)
 
-Dry-run is read-only. No secrets, passwords, or tokens are printed.
+When both legacy demo and CookieWorks already exist (recovery state), dry-run also
+shows:
+
+- `Legacy organisation: VERIFIED`
+- `Legacy auth isolation: VERIFIED`
+- `CookieWorks already present: YES`
+- `CookieWorks foundation-only contract: VERIFIED`
+- `CookieWorks organisation UUID: ...`
+- `Auth identity overlap: NONE`
+- `Ordinary destructive replacement: REFUSED because CookieWorks exists`
+- `Recovery path available: --preserve-existing-cookieworks`
+- `No hosted data modified`
+
+No secrets, passwords, or tokens are printed.
 
 ## 2. Destructive replacement (maintainer only)
 
@@ -109,6 +142,48 @@ The command performs, in order:
 12. Verify CookieWorks foundation-only state and print
     `HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED`
 
+**Confirmation token (ordinary replacement):** `DELETE_LEGACY_DEMO_AND_SEED_COOKIEWORKS`
+
+## 2b. Recovery: preserve existing CookieWorks (QA2b incident)
+
+Use this path **only** when:
+
+- Legacy demo (`lean-excellence-demo`) is still present
+- CookieWorks (`cookieworks-manufacturing`) already exists and passes the
+  **complete** foundation-only verifier (7 personas, 7 memberships, 10 units,
+  7 active role grants, zero module rows, zero storage objects)
+- Legacy and CookieWorks auth identities do **not** overlap
+
+This path deletes **only** the legacy demo tenant. It does **not** re-seed
+CookieWorks.
+
+**Execution**
+
+```bash
+LEANHUB_QA_RESET_CONFIRM=DELETE_LEGACY_DEMO_PRESERVE_VERIFIED_COOKIEWORKS \
+LEANHUB_QA_RESET_SUPABASE_URL="https://zsadfvjtknbbfomlmttv.supabase.co" \
+LEANHUB_QA_RESET_SERVICE_ROLE_KEY="<service-role-key>" \
+LEANHUB_QA_RESET_DATABASE_URL="postgresql://..." \
+LEANHUB_QA_RESET_PROJECT_REF="zsadfvjtknbbfomlmttv" \
+LEANHUB_QA_RESET_PUBLISHABLE_KEY="<publishable-key>" \
+npm run qa:cookie:hosted-replacement -- --destructive --preserve-existing-cookieworks
+```
+
+**Confirmation token (recovery):** `DELETE_LEGACY_DEMO_PRESERVE_VERIFIED_COOKIEWORKS`
+
+Recovery refuses dirty/partial states before any mutation, including:
+
+- CookieWorks missing, partially seeded, wrong name/code, wrong counts
+- CookieWorks contains module data or storage objects
+- Legacy contract differs from pinned constants
+- Legacy membership count differs from **8**
+- Cross-org legacy identity exists
+- Auth identity overlap between legacy and CookieWorks
+- Wrong project ref or confirmation token
+
+On success, prints:
+`HOSTED LEGACY DEMO REMOVED — EXISTING COOKIEWORKS PRESERVED AND VERIFIED`
+
 ## Partial failure recovery
 
 Database, Storage, and Auth operations are not one atomic transaction. If a
@@ -124,6 +199,7 @@ step fails, **do not** print the success marker or assume a clean final state.
 Before any retry:
 
 - Re-run dry-run and confirm contract, cross-org isolation, and CookieWorks absence
+  (or foundation-only state for recovery path)
 - Never rediscover auth user IDs after membership rows have been deleted — reuse the
   captured ID list from the failed attempt's logs when safe to do so
 
@@ -159,7 +235,7 @@ Expect:
 | Organisational units | **10** |
 | Active role grants | **7** |
 | All module counts | **0** |
-| Verification marker | `HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED` |
+| Verification marker | `HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED` (ordinary) or `HOSTED LEGACY DEMO REMOVED — EXISTING COOKIEWORKS PRESERVED AND VERIFIED` (recovery) |
 | Legacy organisation | **Absent** |
 | `organisation-evidence` storage objects | **0** |
 
@@ -171,11 +247,12 @@ smoke testing from **ORG-01** in `docs/qa/SMOKE_TEST_PLAYBOOK.md`.
 - [ ] Project ref confirmed: `zsadfvjtknbbfomlmttv`
 - [ ] Dry-run legacy inventory reviewed
 - [ ] Legacy UUID/code/name/membership contract verified
-- [ ] CookieWorks not already present before destructive run
-- [ ] Destructive command executed with `DELETE_LEGACY_DEMO_AND_SEED_COOKIEWORKS`
+- [ ] CookieWorks not already present before ordinary destructive run (or recovery preconditions verified)
+- [ ] Correct confirmation token used for chosen path
+- [ ] Destructive command executed with appropriate flags
 - [ ] Legacy organisation absent
 - [ ] Legacy storage prefix absent
-- [ ] CookieWorks foundation seeded
+- [ ] CookieWorks foundation present and foundation-only
 - [ ] `FOUNDATION-ONLY VERIFIED` confirmed
 - [ ] Hosted login verified (ORG-01)
 

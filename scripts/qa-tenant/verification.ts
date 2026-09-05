@@ -373,6 +373,9 @@ export function countOrganisationModuleRows(
 export const HOSTED_REPLACEMENT_VERIFIED_MARKER =
   "HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED";
 
+export const HOSTED_LEGACY_RECOVERY_VERIFIED_MARKER =
+  "HOSTED LEGACY DEMO REMOVED — EXISTING COOKIEWORKS PRESERVED AND VERIFIED";
+
 export async function assertCookieWorksCompleteFoundationVerified(
   databaseUrl: string,
   authAdmin?: SupabaseClient,
