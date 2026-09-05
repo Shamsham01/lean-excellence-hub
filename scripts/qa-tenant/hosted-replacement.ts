@@ -4,10 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { QA_ORGANISATION, QA_ORGANISATION_CODE } from "./constants";
 import {
   assertLegacyHostedDemoAbsent,
-  assertLegacyHostedDemoContract,
+  captureLegacyDeletionContext,
   deleteLegacyHostedDemoTenant,
-  listLegacyHostedDemoAuthUserIds,
-  listLegacyHostedDemoDeletableAuthUserIds,
   resolveLegacyHostedDemoOrganisation,
 } from "./delete-legacy-hosted-demo";
 import {
@@ -22,14 +20,14 @@ import {
   QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN,
 } from "./legacy-hosted-demo";
 import {
-  collectTenantInventory,
-  countTenantModuleRows,
-  formatTenantInventoryReport,
-} from "./tenant-inventory";
-import { countTenantStorageObjects } from "./tenant-storage-cleanup";
+  collectLegacyReplacementPlanDetails,
+  formatLegacyReplacementPlanDetails,
+} from "./legacy-replacement-plan";
+import { collectTenantInventory } from "./tenant-inventory";
 import {
-  assertCookieWorksFoundationOnlyVerified,
+  assertCookieWorksCompleteFoundationVerified,
   formatVerificationSummary,
+  HOSTED_REPLACEMENT_VERIFIED_MARKER,
 } from "./verification";
 
 export type HostedReplacementMode = "dry-run" | "destructive";
@@ -38,11 +36,10 @@ export type HostedReplacementPlan = {
   mode: HostedReplacementMode;
   projectRef: string;
   legacyOrganisation: ReturnType<typeof resolveLegacyHostedDemoOrganisation>;
-  legacyInventory: ReturnType<typeof collectTenantInventory>;
-  legacyStorageObjectCount: number;
   legacyAuthUserIds: string[];
   legacyDeletableAuthUserIds: string[];
   cookieWorksPresent: boolean;
+  planDetails: ReturnType<typeof collectLegacyReplacementPlanDetails>;
 };
 
 export function buildHostedReplacementPlan(options: {
@@ -53,31 +50,29 @@ export function buildHostedReplacementPlan(options: {
   const legacyOrganisation = resolveLegacyHostedDemoOrganisation(
     options.databaseUrl,
   );
-  const legacyInventory = collectTenantInventory(
-    options.databaseUrl,
-    LEGACY_HOSTED_DEMO_ORGANISATION.code,
-  );
   const cookieWorksInventory = collectTenantInventory(
     options.databaseUrl,
     QA_ORGANISATION_CODE,
+  );
+  const planDetails = collectLegacyReplacementPlanDetails(
+    options.databaseUrl,
+    legacyOrganisation,
   );
 
   return {
     mode: options.mode,
     projectRef: options.projectRef,
     legacyOrganisation,
-    legacyInventory,
-    legacyStorageObjectCount: countTenantStorageObjects(
-      options.databaseUrl,
-      LEGACY_HOSTED_DEMO_ORGANISATION.code,
-    ),
     legacyAuthUserIds: legacyOrganisation
-      ? listLegacyHostedDemoAuthUserIds(options.databaseUrl)
+      ? planDetails.members.map((member) => member.user_id)
       : [],
     legacyDeletableAuthUserIds: legacyOrganisation
-      ? listLegacyHostedDemoDeletableAuthUserIds(options.databaseUrl)
+      ? planDetails.members
+          .filter((member) => member.legacy_only)
+          .map((member) => member.user_id)
       : [],
     cookieWorksPresent: cookieWorksInventory.organisation !== null,
+    planDetails,
   };
 }
 
@@ -95,48 +90,24 @@ export function formatHostedReplacementPlan(plan: HostedReplacementPlan) {
     `Target replacement organisation: ${QA_ORGANISATION.name} (${QA_ORGANISATION_CODE})`,
   );
   lines.push("");
-
-  if (!plan.legacyOrganisation) {
-    lines.push("Legacy organisation: not found");
-  } else {
-    lines.push("Legacy organisation resolved");
-    lines.push(`  - name: ${plan.legacyOrganisation.name}`);
-    lines.push(`  - code: ${plan.legacyOrganisation.code}`);
-    lines.push(`  - uuid: ${plan.legacyOrganisation.id}`);
-    lines.push(
-      `  - storage objects (organisation-evidence): ${plan.legacyStorageObjectCount}`,
-    );
-    lines.push(
-      `  - auth identities (memberships): ${plan.legacyAuthUserIds.length}`,
-    );
-    lines.push(
-      `  - auth identities safe to delete: ${plan.legacyDeletableAuthUserIds.length}`,
-    );
-    lines.push(
-      `  - module/business row total: ${countTenantModuleRows(plan.legacyInventory)}`,
-    );
-    lines.push("");
-    lines.push(
-      formatTenantInventoryReport(
-        plan.legacyInventory,
-        "Legacy hosted demo inventory",
-      ),
-    );
-  }
-
-  lines.push("");
   lines.push(
-    `CookieWorks organisation currently present: ${plan.cookieWorksPresent ? "yes" : "no"}`,
+    formatLegacyReplacementPlanDetails(plan.planDetails, {
+      cookieWorksPresent: plan.cookieWorksPresent,
+      legacyAuthUserIds: plan.legacyAuthUserIds,
+      legacyDeletableAuthUserIds: plan.legacyDeletableAuthUserIds,
+    }),
   );
   lines.push("");
   lines.push("Destructive execution order:");
   lines.push("  1. Validate legacy organisation contract (id, code, name)");
-  lines.push("  2. Purge legacy tenant module/business data");
-  lines.push("  3. Delete legacy tenant storage objects");
-  lines.push("  4. Delete legacy foundation records and organisation row");
-  lines.push("  5. Delete legacy-only auth identities");
-  lines.push("  6. Seed CookieWorks foundation");
-  lines.push("  7. Verify legacy absent and CookieWorks foundation-only");
+  lines.push("  2. Capture legacy auth user IDs before any mutation");
+  lines.push("  3. Abort if any legacy member belongs to another organisation");
+  lines.push("  4. Purge legacy tenant module/business data");
+  lines.push("  5. Delete legacy tenant storage objects");
+  lines.push("  6. Delete legacy foundation records and organisation row");
+  lines.push("  7. Delete captured legacy-only auth identities");
+  lines.push("  8. Seed CookieWorks foundation");
+  lines.push("  9. Verify legacy absence and CookieWorks foundation-only");
 
   if (plan.mode === "dry-run") {
     lines.push("");
@@ -183,13 +154,14 @@ export async function runHostedTenantReplacement(options?: {
   if (mode === "dry-run") {
     if (plan.legacyOrganisation) {
       try {
-        assertLegacyHostedDemoContract(credentials.databaseUrl);
+        captureLegacyDeletionContext(credentials.databaseUrl);
         console.log("");
         console.log("Legacy organisation contract: VERIFIED");
+        console.log("Legacy auth isolation: VERIFIED");
       } catch (error) {
         console.log("");
         console.log(
-          `Legacy organisation contract: FAILED (${error instanceof Error ? error.message : error})`,
+          `Legacy organisation contract / isolation: FAILED (${error instanceof Error ? error.message : error})`,
         );
       }
     }
@@ -197,9 +169,17 @@ export async function runHostedTenantReplacement(options?: {
     return { plan, verification: null };
   }
 
-  const admin = createClient(credentials.apiUrl, credentials.serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  if (!credentials.databaseUrl) {
+    throw new Error(
+      "Hosted tenant replacement requires LEANHUB_QA_RESET_DATABASE_URL before destructive execution.",
+    );
+  }
+
+  if (!credentials.publishableKey) {
+    throw new Error(
+      "Hosted tenant replacement requires LEANHUB_QA_RESET_PUBLISHABLE_KEY before destructive execution.",
+    );
+  }
 
   if (plan.cookieWorksPresent) {
     throw new Error(
@@ -207,10 +187,17 @@ export async function runHostedTenantReplacement(options?: {
     );
   }
 
-  await deleteLegacyTenant({
+  const deletionContext = captureLegacyDeletionContext(credentials.databaseUrl);
+
+  const admin = createClient(credentials.apiUrl, credentials.serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const deletionResult = await deleteLegacyTenant({
     databaseUrl: credentials.databaseUrl,
     storageAdmin: admin,
     authAdmin: admin,
+    deletionContext,
   });
 
   assertLegacyHostedDemoAbsent(credentials.databaseUrl);
@@ -225,21 +212,27 @@ export async function runHostedTenantReplacement(options?: {
     },
   });
 
-  const verification = assertCookieWorksFoundationOnlyVerified(
+  const verification = await assertCookieWorksCompleteFoundationVerified(
     credentials.databaseUrl,
+    admin,
   );
 
   console.log("");
-  console.log(formatVerificationSummary(verification));
+  console.log(formatVerificationSummary(verification.verification));
   console.log("");
-  console.log("Hosted pre-launch tenant replacement complete.");
-  console.log(`Legacy organisation absent: ${LEGACY_HOSTED_DEMO_ORGANISATION.code}`);
+  console.log(HOSTED_REPLACEMENT_VERIFIED_MARKER);
+  console.log(
+    `Legacy organisation absent: ${LEGACY_HOSTED_DEMO_ORGANISATION.code}`,
+  );
   console.log(
     `CookieWorks organisation present: ${QA_ORGANISATION.name} (${QA_ORGANISATION_CODE})`,
   );
   console.log(`CookieWorks organisation ID: ${seedResult.organisationId}`);
+  console.log(
+    `Deleted legacy auth identities: ${deletionResult.deletedAuthUserIds.join(", ") || "none"}`,
+  );
 
-  return { plan, verification, seedResult };
+  return { plan, verification, seedResult, deletionResult };
 }
 
 async function main() {

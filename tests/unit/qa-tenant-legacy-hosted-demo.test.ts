@@ -29,7 +29,9 @@ describe("legacy hosted demo constants", () => {
     expect(QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN).toBe(
       "DELETE_LEGACY_DEMO_AND_SEED_COOKIEWORKS",
     );
-    expect(QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN).not.toBe("DELETE_COOKIEWORKS_ONLY");
+    expect(QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN).not.toBe(
+      "DELETE_COOKIEWORKS_ONLY",
+    );
   });
 
   it("keeps legacy and CookieWorks organisation codes distinct", () => {

@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { purgeAuthUserIdentityPrerequisites } from "./auth-identity-cleanup";
+import {
+  assertLegacyAuthUsersAbsent,
+  assertLegacyHostedDemoFullyAbsent,
+} from "./legacy-absence-verification";
 import { executePurgeTenantModuleDataSql } from "./delete-tenant";
 import { runSupabaseDbQuery, runSupabaseDbQueryJson } from "./db-cli";
 import {
@@ -18,51 +23,159 @@ export type LegacyHostedDemoOrganisation = {
   name: string;
 };
 
-export function resolveLegacyHostedDemoOrganisation(databaseUrl: string) {
+export type LegacyOrganisationResolution =
+  | { status: "exact"; organisation: LegacyHostedDemoOrganisation }
+  | { status: "missing" }
+  | {
+      status: "uuid_collision";
+      organisation: LegacyHostedDemoOrganisation;
+      expectedCode: string;
+    }
+  | {
+      status: "code_collision";
+      organisation: LegacyHostedDemoOrganisation;
+      expectedId: string;
+    }
+  | {
+      status: "contract_mismatch";
+      organisation: LegacyHostedDemoOrganisation;
+      mismatches: string[];
+    };
+
+export type LegacyDeletionContext = {
+  organisation: LegacyHostedDemoOrganisation;
+  membershipCount: number;
+  legacyAuthUserIds: string[];
+  deletableAuthUserIds: string[];
+};
+
+function queryOrganisationById(databaseUrl: string) {
   const rows = runSupabaseDbQueryJson<LegacyHostedDemoOrganisation>({
     databaseUrl,
     outputFormat: "json",
     sql: `
       select id, code, name
       from public.organisations
-      where code = '${escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code)}'
-         or id = '${LEGACY_HOSTED_DEMO_ORGANISATION.id}'::uuid;
+      where id = '${LEGACY_HOSTED_DEMO_ORGANISATION.id}'::uuid;
     `,
   });
 
   return rows[0] ?? null;
 }
 
+function queryOrganisationByCode(databaseUrl: string) {
+  const rows = runSupabaseDbQueryJson<LegacyHostedDemoOrganisation>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: `
+      select id, code, name
+      from public.organisations
+      where code = '${escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code)}';
+    `,
+  });
+
+  return rows[0] ?? null;
+}
+
+export function resolveLegacyHostedDemoOrganisation(
+  databaseUrl: string,
+): LegacyHostedDemoOrganisation | null {
+  const resolution = resolveLegacyHostedDemoOrganisationStrict(databaseUrl);
+  return resolution.status === "exact" ? resolution.organisation : null;
+}
+
+export function resolveLegacyHostedDemoOrganisationStrict(
+  databaseUrl: string,
+): LegacyOrganisationResolution {
+  const byId = queryOrganisationById(databaseUrl);
+  const byCode = queryOrganisationByCode(databaseUrl);
+
+  if (!byId && !byCode) {
+    return { status: "missing" };
+  }
+
+  if (byId && !byCode) {
+    return {
+      status: "uuid_collision",
+      organisation: byId,
+      expectedCode: LEGACY_HOSTED_DEMO_ORGANISATION.code,
+    };
+  }
+
+  if (!byId && byCode) {
+    return {
+      status: "code_collision",
+      organisation: byCode,
+      expectedId: LEGACY_HOSTED_DEMO_ORGANISATION.id,
+    };
+  }
+
+  const organisation = byId!;
+  const mismatches: string[] = [];
+
+  if (organisation.id !== LEGACY_HOSTED_DEMO_ORGANISATION.id) {
+    mismatches.push(
+      `id expected ${LEGACY_HOSTED_DEMO_ORGANISATION.id}, found ${organisation.id}`,
+    );
+  }
+  if (organisation.code !== LEGACY_HOSTED_DEMO_ORGANISATION.code) {
+    mismatches.push(
+      `code expected ${LEGACY_HOSTED_DEMO_ORGANISATION.code}, found ${organisation.code}`,
+    );
+  }
+  if (organisation.name !== LEGACY_HOSTED_DEMO_ORGANISATION.name) {
+    mismatches.push(
+      `name expected ${LEGACY_HOSTED_DEMO_ORGANISATION.name}, found ${organisation.name}`,
+    );
+  }
+  if (byCode && byCode.id !== organisation.id) {
+    mismatches.push(
+      `id/code lookup mismatch: id row ${organisation.id}, code row ${byCode.id}`,
+    );
+  }
+
+  if (mismatches.length > 0) {
+    return {
+      status: "contract_mismatch",
+      organisation,
+      mismatches,
+    };
+  }
+
+  return { status: "exact", organisation };
+}
+
 export function assertLegacyHostedDemoContract(
   databaseUrl: string,
   options?: { expectedMemberships?: number },
 ) {
-  const organisation = resolveLegacyHostedDemoOrganisation(databaseUrl);
+  const resolution = resolveLegacyHostedDemoOrganisationStrict(databaseUrl);
 
-  if (!organisation) {
+  if (resolution.status === "missing") {
     throw new Error(
       `Legacy hosted demo organisation ${LEGACY_HOSTED_DEMO_ORGANISATION.code} was not found.`,
     );
   }
 
-  if (organisation.id !== LEGACY_HOSTED_DEMO_ORGANISATION.id) {
+  if (resolution.status === "uuid_collision") {
     throw new Error(
-      `Legacy hosted demo UUID mismatch: expected ${LEGACY_HOSTED_DEMO_ORGANISATION.id}, found ${organisation.id}.`,
+      `Legacy hosted demo UUID collision: found organisation ${resolution.organisation.code} (${resolution.organisation.id}) but expected code ${resolution.expectedCode}.`,
     );
   }
 
-  if (organisation.code !== LEGACY_HOSTED_DEMO_ORGANISATION.code) {
+  if (resolution.status === "code_collision") {
     throw new Error(
-      `Legacy hosted demo code mismatch: expected ${LEGACY_HOSTED_DEMO_ORGANISATION.code}, found ${organisation.code}.`,
+      `Legacy hosted demo code collision: found organisation ${resolution.organisation.name} (${resolution.organisation.id}) but expected UUID ${resolution.expectedId}.`,
     );
   }
 
-  if (organisation.name !== LEGACY_HOSTED_DEMO_ORGANISATION.name) {
+  if (resolution.status === "contract_mismatch") {
     throw new Error(
-      `Legacy hosted demo name mismatch: expected ${LEGACY_HOSTED_DEMO_ORGANISATION.name}, found ${organisation.name}.`,
+      `Legacy hosted demo contract mismatch: ${resolution.mismatches.join("; ")}.`,
     );
   }
 
+  const organisation = resolution.organisation;
   const membershipRows = runSupabaseDbQueryJson<{ count: number }>({
     databaseUrl,
     outputFormat: "json",
@@ -123,6 +236,87 @@ export function listLegacyHostedDemoDeletableAuthUserIds(databaseUrl: string) {
   });
 
   return rows.map((row) => row.user_id).filter(Boolean);
+}
+
+export function listLegacyHostedDemoCrossOrganisationConflicts(
+  databaseUrl: string,
+) {
+  const rows = runSupabaseDbQueryJson<{
+    user_id: string;
+    organisation_id: string;
+    organisation_code: string;
+    organisation_name: string;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: `
+      select
+        membership.user_id,
+        other_org.id as organisation_id,
+        other_org.code as organisation_code,
+        other_org.name as organisation_name
+      from public.organisation_memberships membership
+      join public.organisation_memberships other_membership
+        on other_membership.user_id = membership.user_id
+      join public.organisations other_org
+        on other_org.id = other_membership.organisation_id
+      where membership.organisation_id = '${LEGACY_HOSTED_DEMO_ORGANISATION.id}'::uuid
+        and other_membership.organisation_id <> '${LEGACY_HOSTED_DEMO_ORGANISATION.id}'::uuid
+      order by membership.user_id, other_org.code;
+    `,
+  });
+
+  return rows;
+}
+
+export function assertLegacyAuthUsersIsolated(databaseUrl: string) {
+  const legacyAuthUserIds = listLegacyHostedDemoAuthUserIds(databaseUrl);
+  const deletableAuthUserIds =
+    listLegacyHostedDemoDeletableAuthUserIds(databaseUrl);
+
+  const legacySet = new Set(legacyAuthUserIds);
+  const deletableSet = new Set(deletableAuthUserIds);
+
+  if (
+    legacyAuthUserIds.length !== deletableAuthUserIds.length ||
+    legacyAuthUserIds.some((userId) => !deletableSet.has(userId)) ||
+    deletableAuthUserIds.some((userId) => !legacySet.has(userId))
+  ) {
+    const conflicts =
+      listLegacyHostedDemoCrossOrganisationConflicts(databaseUrl);
+    const conflictLines = conflicts.map(
+      (conflict) =>
+        `user ${conflict.user_id} also belongs to ${conflict.organisation_name} (${conflict.organisation_code}, ${conflict.organisation_id})`,
+    );
+
+    throw new Error(
+      `Legacy hosted demo auth isolation failed: legacyAuthUserIds=[${legacyAuthUserIds.join(", ")}], deletableAuthUserIds=[${deletableAuthUserIds.join(", ")}]. ${conflictLines.join("; ")}`,
+    );
+  }
+
+  return {
+    legacyAuthUserIds,
+    deletableAuthUserIds,
+  };
+}
+
+export function captureLegacyDeletionContext(
+  databaseUrl: string,
+  options?: { expectedMemberships?: number },
+): LegacyDeletionContext {
+  const { organisation, membershipCount } = assertLegacyHostedDemoContract(
+    databaseUrl,
+    options,
+  );
+  const { legacyAuthUserIds, deletableAuthUserIds } =
+    assertLegacyAuthUsersIsolated(databaseUrl);
+
+  return {
+    organisation,
+    membershipCount,
+    legacyAuthUserIds: [...legacyAuthUserIds],
+    deletableAuthUserIds: [...deletableAuthUserIds],
+  };
 }
 
 function buildDeleteLegacyOrganisationSql() {
@@ -277,7 +471,9 @@ $$;
 `;
 }
 
-export function executeDeleteLegacyHostedDemoOrganisationSql(databaseUrl: string) {
+export function executeDeleteLegacyHostedDemoOrganisationSql(
+  databaseUrl: string,
+) {
   runSupabaseDbQuery({
     databaseUrl,
     sql: buildDeleteLegacyOrganisationSql(),
@@ -286,9 +482,12 @@ export function executeDeleteLegacyHostedDemoOrganisationSql(databaseUrl: string
 
 export async function deleteLegacyHostedDemoAuthUsers(
   admin: SupabaseClient,
-  databaseUrl: string,
+  userIds: readonly string[],
+  options?: { databaseUrl?: string },
 ) {
-  const userIds = listLegacyHostedDemoDeletableAuthUserIds(databaseUrl);
+  if (options?.databaseUrl) {
+    purgeAuthUserIdentityPrerequisites(options.databaseUrl, userIds);
+  }
 
   for (const userId of userIds) {
     const deleted = await admin.auth.admin.deleteUser(userId);
@@ -297,46 +496,28 @@ export async function deleteLegacyHostedDemoAuthUsers(
     }
   }
 
-  return userIds;
+  return [...userIds];
 }
 
 export function assertLegacyHostedDemoAbsent(databaseUrl: string) {
-  const organisation = resolveLegacyHostedDemoOrganisation(databaseUrl);
-  if (organisation) {
-    throw new Error(
-      `Legacy hosted demo organisation still present: ${organisation.code} (${organisation.id}).`,
-    );
-  }
-
-  const storageCount = runSupabaseDbQueryJson<{ count: number }>({
-    databaseUrl,
-    outputFormat: "json",
-    sql: `
-      select count(*)::int as count
-      from storage.objects object_row
-      where object_row.bucket_id = 'organisation-evidence'
-        and object_row.name like '${LEGACY_HOSTED_DEMO_ORGANISATION.id}/%';
-    `,
-  });
-
-  const remainingStorage = storageCount[0]?.count ?? 0;
-  if (remainingStorage > 0) {
-    throw new Error(
-      `Legacy hosted demo storage objects still present: ${remainingStorage}.`,
-    );
-  }
+  assertLegacyHostedDemoFullyAbsent(databaseUrl);
 }
 
 export async function deleteLegacyHostedDemoTenant(options: {
   databaseUrl: string;
   storageAdmin: SupabaseClient;
   authAdmin: SupabaseClient;
+  deletionContext?: LegacyDeletionContext;
+  expectedMemberships?: number;
 }) {
-  assertLegacyHostedDemoContract(options.databaseUrl);
-
-  const deletableAuthUserIds = listLegacyHostedDemoDeletableAuthUserIds(
-    options.databaseUrl,
-  );
+  const deletionContext =
+    options.deletionContext ??
+    captureLegacyDeletionContext(
+      options.databaseUrl,
+      options.expectedMemberships === undefined
+        ? undefined
+        : { expectedMemberships: options.expectedMemberships },
+    );
 
   executePurgeTenantModuleDataSql(
     options.databaseUrl,
@@ -351,14 +532,23 @@ export async function deleteLegacyHostedDemoTenant(options: {
 
   executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
 
+  assertLegacyHostedDemoFullyAbsent(options.databaseUrl, {
+    legacyOrganisationId: deletionContext.organisation.id,
+  });
+
   await deleteLegacyHostedDemoAuthUsers(
     options.authAdmin,
-    options.databaseUrl,
+    deletionContext.deletableAuthUserIds,
+    { databaseUrl: options.databaseUrl },
   );
 
-  assertLegacyHostedDemoAbsent(options.databaseUrl);
+  await assertLegacyAuthUsersAbsent(
+    options.authAdmin,
+    deletionContext.deletableAuthUserIds,
+  );
 
   return {
-    deletedAuthUserIds: deletableAuthUserIds,
+    deletedAuthUserIds: deletionContext.deletableAuthUserIds,
+    deletionContext,
   };
 }

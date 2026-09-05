@@ -31,6 +31,47 @@ const hostedCredentials = {
     "postgresql://postgres:postgres@db.zsadfvjtknbbfomlmttv.supabase.co:5432/postgres",
 };
 
+const planDetailsFixture = {
+  legacyOrganisation: LEGACY_HOSTED_DEMO_ORGANISATION,
+  membershipCount: 8,
+  members: [
+    {
+      user_id: "user-1",
+      email: "legacy-1@lean-excellence.local",
+      display_name: "Legacy Member 1",
+      membership_count: 1,
+      legacy_only: true,
+      conflicting_organisations: [],
+    },
+    {
+      user_id: "user-2",
+      email: "legacy-2@lean-excellence.local",
+      display_name: "Legacy Member 2",
+      membership_count: 1,
+      legacy_only: true,
+      conflicting_organisations: [],
+    },
+  ],
+  foundation: {
+    organisational_units: 4,
+    roles: 5,
+    role_versions: 5,
+    role_grants: 7,
+    memberships: 8,
+    invitations: 0,
+  },
+  privateInfrastructure: {
+    notification_delivery_provider_envelopes: 1,
+    notification_delivery_ledger: 2,
+    domain_event_outbox: 3,
+    session_organisation_contexts: 0,
+  },
+  storageObjectCount: 3,
+  moduleRowTotal: 12,
+  inventoryReport:
+    "Legacy hosted demo inventory\nOrganisation: Lean Excellence Demo",
+};
+
 describe("hosted tenant replacement guards", () => {
   it("allows dry-run for the hosted pre-launch project ref", () => {
     expect(() =>
@@ -71,52 +112,30 @@ describe("hosted tenant replacement guards", () => {
 
 describe("hosted tenant replacement plan", () => {
   it("formats a dry-run plan with legacy inventory and execution order", async () => {
-    const deleteLegacy = await import(
-      "../../scripts/qa-tenant/delete-legacy-hosted-demo"
-    );
-    const tenantInventory = await import(
-      "../../scripts/qa-tenant/tenant-inventory"
-    );
-    const tenantStorage = await import(
-      "../../scripts/qa-tenant/tenant-storage-cleanup"
-    );
+    const deleteLegacyModule =
+      await import("../../scripts/qa-tenant/delete-legacy-hosted-demo");
+    const planModule =
+      await import("../../scripts/qa-tenant/legacy-replacement-plan");
+    const tenantInventoryModule =
+      await import("../../scripts/qa-tenant/tenant-inventory");
 
-    vi.spyOn(deleteLegacy, "resolveLegacyHostedDemoOrganisation").mockReturnValue(
-      LEGACY_HOSTED_DEMO_ORGANISATION,
-    );
-    vi.spyOn(tenantInventory, "collectTenantInventory").mockImplementation(
-      (databaseUrl, organisationCode) => {
-        if (organisationCode === LEGACY_HOSTED_DEMO_ORGANISATION.code) {
-          return {
-            organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
-            sections: [
-              {
-                title: "Foundation",
-                items: [{ label: "memberships", count: 8 }],
-              },
-              {
-                title: "Maturity",
-                items: [{ label: "frameworks", count: 2 }],
-              },
-            ],
-          };
-        }
-
-        return {
-          organisation: null,
-          sections: [],
-        };
-      },
-    );
-    vi.spyOn(tenantStorage, "countTenantStorageObjects").mockReturnValue(3);
     vi.spyOn(
-      deleteLegacy,
-      "listLegacyHostedDemoAuthUserIds",
-    ).mockReturnValue(["user-1", "user-2"]);
+      deleteLegacyModule,
+      "resolveLegacyHostedDemoOrganisation",
+    ).mockReturnValue(LEGACY_HOSTED_DEMO_ORGANISATION);
+    vi.spyOn(planModule, "collectLegacyReplacementPlanDetails").mockReturnValue(
+      planDetailsFixture,
+    );
     vi.spyOn(
-      deleteLegacy,
-      "listLegacyHostedDemoDeletableAuthUserIds",
-    ).mockReturnValue(["user-1", "user-2"]);
+      tenantInventoryModule,
+      "collectTenantInventory",
+    ).mockImplementation((_databaseUrl, organisationCode) => ({
+      organisation:
+        organisationCode === "cookieworks-manufacturing"
+          ? null
+          : LEGACY_HOSTED_DEMO_ORGANISATION,
+      sections: [],
+    }));
 
     const plan = buildHostedReplacementPlan({
       databaseUrl: hostedCredentials.databaseUrl,
@@ -128,7 +147,8 @@ describe("hosted tenant replacement plan", () => {
 
     expect(report).toContain("Hosted pre-launch tenant replacement plan (QA2)");
     expect(report).toContain(LEGACY_HOSTED_DEMO_ORGANISATION.code);
-    expect(report).toContain("auth identities safe to delete: 2");
+    expect(report).toContain("legacy-1@lean-excellence.local");
+    expect(report).toContain("private.domain_event_outbox: 3");
     expect(report).toContain("Dry-run only. No hosted data was modified.");
     expect(report).toContain(QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN);
     expect(plan.cookieWorksPresent).toBe(false);
@@ -137,34 +157,32 @@ describe("hosted tenant replacement plan", () => {
 
 describe("hosted tenant replacement runner", () => {
   it("runs dry-run without modifying hosted data", async () => {
-    const deleteLegacy = await import(
-      "../../scripts/qa-tenant/delete-legacy-hosted-demo"
-    );
-    const tenantInventory = await import(
-      "../../scripts/qa-tenant/tenant-inventory"
-    );
-    const tenantStorage = await import(
-      "../../scripts/qa-tenant/tenant-storage-cleanup"
-    );
+    const deleteLegacyModule =
+      await import("../../scripts/qa-tenant/delete-legacy-hosted-demo");
+    const planModule =
+      await import("../../scripts/qa-tenant/legacy-replacement-plan");
+    const tenantInventoryModule =
+      await import("../../scripts/qa-tenant/tenant-inventory");
 
-    vi.spyOn(deleteLegacy, "resolveLegacyHostedDemoOrganisation").mockReturnValue(
-      LEGACY_HOSTED_DEMO_ORGANISATION,
+    vi.spyOn(
+      deleteLegacyModule,
+      "resolveLegacyHostedDemoOrganisation",
+    ).mockReturnValue(LEGACY_HOSTED_DEMO_ORGANISATION);
+    vi.spyOn(planModule, "collectLegacyReplacementPlanDetails").mockReturnValue(
+      planDetailsFixture,
     );
-    vi.spyOn(tenantInventory, "collectTenantInventory").mockReturnValue({
+    vi.spyOn(tenantInventoryModule, "collectTenantInventory").mockReturnValue({
       organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
       sections: [],
     });
-    vi.spyOn(tenantStorage, "countTenantStorageObjects").mockReturnValue(0);
-    vi.spyOn(deleteLegacy, "listLegacyHostedDemoAuthUserIds").mockReturnValue(
-      [],
-    );
     vi.spyOn(
-      deleteLegacy,
-      "listLegacyHostedDemoDeletableAuthUserIds",
-    ).mockReturnValue([]);
-    vi.spyOn(deleteLegacy, "assertLegacyHostedDemoContract").mockReturnValue({
+      deleteLegacyModule,
+      "captureLegacyDeletionContext",
+    ).mockReturnValue({
       organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
       membershipCount: 8,
+      legacyAuthUserIds: ["user-1", "user-2"],
+      deletableAuthUserIds: ["user-1", "user-2"],
     });
 
     const deleteLegacyTenant = vi.fn();
@@ -185,51 +203,54 @@ describe("hosted tenant replacement runner", () => {
   it("executes destructive replacement then seeds CookieWorks foundation", async () => {
     process.env.LEANHUB_QA_RESET_CONFIRM = QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN;
 
-    const deleteLegacy = await import(
-      "../../scripts/qa-tenant/delete-legacy-hosted-demo"
-    );
-    const tenantInventory = await import(
-      "../../scripts/qa-tenant/tenant-inventory"
-    );
-    const tenantStorage = await import(
-      "../../scripts/qa-tenant/tenant-storage-cleanup"
-    );
-    const verificationModule = await import(
-      "../../scripts/qa-tenant/verification"
-    );
+    const deleteLegacyModule =
+      await import("../../scripts/qa-tenant/delete-legacy-hosted-demo");
+    const planModule =
+      await import("../../scripts/qa-tenant/legacy-replacement-plan");
+    const tenantInventoryModule =
+      await import("../../scripts/qa-tenant/tenant-inventory");
+    const verificationModule =
+      await import("../../scripts/qa-tenant/verification");
 
-    vi.spyOn(deleteLegacy, "resolveLegacyHostedDemoOrganisation").mockReturnValue(
-      LEGACY_HOSTED_DEMO_ORGANISATION,
-    );
-    vi.spyOn(tenantInventory, "collectTenantInventory").mockImplementation(
-      (_databaseUrl, organisationCode) => {
-        if (organisationCode === "cookieworks-manufacturing") {
-          return {
-            organisation: null,
-            sections: [],
-          };
-        }
-
-        return {
-          organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
-          sections: [],
-        };
-      },
-    );
-    vi.spyOn(tenantStorage, "countTenantStorageObjects").mockReturnValue(0);
-    vi.spyOn(deleteLegacy, "listLegacyHostedDemoAuthUserIds").mockReturnValue(
-      [],
+    vi.spyOn(
+      deleteLegacyModule,
+      "resolveLegacyHostedDemoOrganisation",
+    ).mockReturnValue(LEGACY_HOSTED_DEMO_ORGANISATION);
+    vi.spyOn(planModule, "collectLegacyReplacementPlanDetails").mockReturnValue(
+      planDetailsFixture,
     );
     vi.spyOn(
-      deleteLegacy,
-      "listLegacyHostedDemoDeletableAuthUserIds",
-    ).mockReturnValue([]);
-    vi.spyOn(deleteLegacy, "assertLegacyHostedDemoAbsent").mockImplementation(
-      () => undefined,
-    );
+      tenantInventoryModule,
+      "collectTenantInventory",
+    ).mockImplementation((_databaseUrl, organisationCode) => ({
+      organisation:
+        organisationCode === "cookieworks-manufacturing"
+          ? null
+          : LEGACY_HOSTED_DEMO_ORGANISATION,
+      sections: [],
+    }));
+    vi.spyOn(
+      deleteLegacyModule,
+      "captureLegacyDeletionContext",
+    ).mockReturnValue({
+      organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
+      membershipCount: 8,
+      legacyAuthUserIds: ["user-1"],
+      deletableAuthUserIds: ["user-1"],
+    });
+    vi.spyOn(
+      deleteLegacyModule,
+      "assertLegacyHostedDemoAbsent",
+    ).mockImplementation(() => undefined);
 
     const deleteLegacyTenant = vi.fn().mockResolvedValue({
       deletedAuthUserIds: ["user-1"],
+      deletionContext: {
+        organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
+        membershipCount: 8,
+        legacyAuthUserIds: ["user-1"],
+        deletableAuthUserIds: ["user-1"],
+      },
     });
     const seedCookieWorks = vi.fn().mockResolvedValue({
       organisationId: "cookieworks-org-id",
@@ -238,18 +259,28 @@ describe("hosted tenant replacement runner", () => {
     });
     vi.spyOn(
       verificationModule,
-      "assertCookieWorksFoundationOnlyVerified",
-    ).mockReturnValue({
+      "assertCookieWorksCompleteFoundationVerified",
+    ).mockResolvedValue({
       organisation: {
         id: "cookieworks-org-id",
         code: "cookieworks-manufacturing",
         name: "CookieWorks Manufacturing",
       },
-      foundationCounts: [],
-      moduleTableCounts: [],
-      indirectCounts: [],
-      failures: [],
-      isFoundationOnly: true,
+      verification: {
+        organisation: {
+          id: "cookieworks-org-id",
+          code: "cookieworks-manufacturing",
+          name: "CookieWorks Manufacturing",
+        },
+        foundationCounts: [],
+        moduleTableCounts: [],
+        indirectCounts: [],
+        failures: [],
+        isFoundationOnly: true,
+      },
+      membershipCount: 7,
+      unitCount: 10,
+      roleGrantCount: 7,
     });
     vi.spyOn(verificationModule, "formatVerificationSummary").mockReturnValue(
       "FOUNDATION-ONLY VERIFIED",
@@ -264,52 +295,40 @@ describe("hosted tenant replacement runner", () => {
 
     expect(deleteLegacyTenant).toHaveBeenCalledTimes(1);
     expect(seedCookieWorks).toHaveBeenCalledTimes(1);
-    expect(result.verification?.isFoundationOnly).toBe(true);
+    expect(result.verification?.verification.isFoundationOnly).toBe(true);
   });
 
   it("refuses destructive replacement when CookieWorks already exists", async () => {
     process.env.LEANHUB_QA_RESET_CONFIRM = QA_HOSTED_REPLACEMENT_CONFIRM_TOKEN;
 
-    const deleteLegacy = await import(
-      "../../scripts/qa-tenant/delete-legacy-hosted-demo"
-    );
-    const tenantInventory = await import(
-      "../../scripts/qa-tenant/tenant-inventory"
-    );
-    const tenantStorage = await import(
-      "../../scripts/qa-tenant/tenant-storage-cleanup"
-    );
+    const deleteLegacyModule =
+      await import("../../scripts/qa-tenant/delete-legacy-hosted-demo");
+    const planModule =
+      await import("../../scripts/qa-tenant/legacy-replacement-plan");
+    const tenantInventoryModule =
+      await import("../../scripts/qa-tenant/tenant-inventory");
 
-    vi.spyOn(deleteLegacy, "resolveLegacyHostedDemoOrganisation").mockReturnValue(
-      LEGACY_HOSTED_DEMO_ORGANISATION,
+    vi.spyOn(
+      deleteLegacyModule,
+      "resolveLegacyHostedDemoOrganisation",
+    ).mockReturnValue(LEGACY_HOSTED_DEMO_ORGANISATION);
+    vi.spyOn(planModule, "collectLegacyReplacementPlanDetails").mockReturnValue(
+      planDetailsFixture,
     );
-    vi.spyOn(tenantInventory, "collectTenantInventory").mockImplementation(
-      (_databaseUrl, organisationCode) => {
-        if (organisationCode === "cookieworks-manufacturing") {
-          return {
-            organisation: {
+    vi.spyOn(
+      tenantInventoryModule,
+      "collectTenantInventory",
+    ).mockImplementation((_databaseUrl, organisationCode) => ({
+      organisation:
+        organisationCode === "cookieworks-manufacturing"
+          ? {
               id: "cookieworks-org-id",
               code: "cookieworks-manufacturing",
               name: "CookieWorks Manufacturing",
-            },
-            sections: [],
-          };
-        }
-
-        return {
-          organisation: LEGACY_HOSTED_DEMO_ORGANISATION,
-          sections: [],
-        };
-      },
-    );
-    vi.spyOn(tenantStorage, "countTenantStorageObjects").mockReturnValue(0);
-    vi.spyOn(deleteLegacy, "listLegacyHostedDemoAuthUserIds").mockReturnValue(
-      [],
-    );
-    vi.spyOn(
-      deleteLegacy,
-      "listLegacyHostedDemoDeletableAuthUserIds",
-    ).mockReturnValue([]);
+            }
+          : LEGACY_HOSTED_DEMO_ORGANISATION,
+      sections: [],
+    }));
 
     await expect(
       runHostedTenantReplacement({

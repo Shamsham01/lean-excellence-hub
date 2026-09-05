@@ -102,7 +102,9 @@ export function collectTenantInventoryViaSql(
   databaseUrl: string,
   organisationCode: string,
 ) {
-  const rows = runSupabaseDbQueryJson<{ inventory?: TenantInventorySqlPayload }>(
+  const rows = runSupabaseDbQueryJson<{
+    inventory?: TenantInventorySqlPayload;
+  }>(
     {
       databaseUrl,
       outputFormat: "json",

@@ -1,4 +1,12 @@
-import { QA_ORGANISATION, QA_ORGANISATION_CODE } from "./constants";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import {
+  QA_ORGANISATION,
+  QA_ORGANISATION_CODE,
+  QA_UNITS,
+  QA_USER_IDS,
+  QA_USERS,
+} from "./constants";
 import {
   buildOrganisationScopeCte,
   foundationTableSqlList,
@@ -360,4 +368,77 @@ export function countOrganisationModuleRows(
   });
 
   return rows[0]?.count ?? 0;
+}
+
+export const HOSTED_REPLACEMENT_VERIFIED_MARKER =
+  "HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED";
+
+export async function assertCookieWorksCompleteFoundationVerified(
+  databaseUrl: string,
+  authAdmin?: SupabaseClient,
+) {
+  const organisation = assertCookieWorksOrganisationContract(databaseUrl);
+  const verification = assertCookieWorksFoundationOnlyVerified(databaseUrl);
+
+  const counts = runSupabaseDbQueryJson<{
+    memberships: number;
+    units: number;
+    role_grants: number;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: `
+      select
+        (select count(*)::int from public.organisation_memberships where organisation_id = '${organisation.id}'::uuid) as memberships,
+        (select count(*)::int from public.organisation_units where organisation_id = '${organisation.id}'::uuid) as units,
+        (select count(*)::int from public.access_grants where organisation_id = '${organisation.id}'::uuid and status = 'active') as role_grants;
+    `,
+  });
+
+  const membershipCount = counts[0]?.memberships ?? 0;
+  const unitCount = counts[0]?.units ?? 0;
+  const roleGrantCount = counts[0]?.role_grants ?? 0;
+  const expectedPersonas = Object.keys(QA_USERS).length;
+
+  if (membershipCount !== expectedPersonas) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${expectedPersonas} memberships, found ${membershipCount}.`,
+    );
+  }
+
+  if (unitCount !== QA_UNITS.length) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${QA_UNITS.length} organisational units, found ${unitCount}.`,
+    );
+  }
+
+  if (roleGrantCount !== expectedPersonas) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${expectedPersonas} active role grants, found ${roleGrantCount}.`,
+    );
+  }
+
+  if (authAdmin) {
+    const missingAuthUsers: string[] = [];
+    for (const userId of QA_USER_IDS) {
+      const existing = await authAdmin.auth.admin.getUserById(userId);
+      if (!existing.data.user) {
+        missingAuthUsers.push(userId);
+      }
+    }
+
+    if (missingAuthUsers.length > 0) {
+      throw new Error(
+        `CookieWorks foundation verification failed: missing auth identities ${missingAuthUsers.join(", ")}.`,
+      );
+    }
+  }
+
+  return {
+    organisation,
+    verification,
+    membershipCount,
+    unitCount,
+    roleGrantCount,
+  };
 }

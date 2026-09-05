@@ -9,9 +9,8 @@ vi.mock("../../scripts/qa-tenant/db-cli", () => ({
 
 describe("tenant inventory SQL", () => {
   it("collects inventory for an arbitrary organisation code", async () => {
-    const { runSupabaseDbQueryJson } = await import(
-      "../../scripts/qa-tenant/db-cli"
-    );
+    const { runSupabaseDbQueryJson } =
+      await import("../../scripts/qa-tenant/db-cli");
 
     vi.mocked(runSupabaseDbQueryJson).mockReturnValue([
       {
