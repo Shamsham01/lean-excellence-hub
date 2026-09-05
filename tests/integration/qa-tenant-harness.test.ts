@@ -67,12 +67,25 @@ describe.skipIf(!hasLocalSupabase)(
     let env: ReturnType<typeof loadLocalSupabaseEnv>;
     let admin: ReturnType<typeof createClient>;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       process.env.LEANHUB_ALLOW_QA_TENANT = "1";
       env = loadLocalSupabaseEnv("qa:cookie:seed");
       admin = createClient(env.apiUrl, env.serviceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false },
       });
+
+      // Deterministic foundation-only baseline even when MAT0 E2E or other local
+      // workflows left CookieWorks module data behind.
+      await purgeCookieWorksTenantModules(env.databaseUrl, {
+        storageAdmin: admin,
+      });
+      await seedCookieWorksFoundation({
+        admin,
+        apiUrl: env.apiUrl,
+        publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
+      });
+      assertCookieWorksResetVerified(env.databaseUrl);
 
       process.env.LEANHUB_ALLOW_DEMO_SEED = "1";
       execFileSync("node", ["--import", "tsx", "scripts/demo-seed/seed.ts"], {
