@@ -91,34 +91,30 @@ const hasLocalSupabase = isLocalSupabaseAvailable();
 describe.skipIf(!hasLocalSupabase)(
   "hosted replacement CLI dry-run subprocess",
   () => {
-    it(
-      "exits without invoking write-capable dependencies",
-      () => {
-        const output = execFileSync(
-          process.execPath,
-          ["--import", "tsx", "scripts/qa-tenant/hosted-replacement-cli.ts"],
-          {
-            cwd: process.cwd(),
-            encoding: "utf8",
-            env: {
-              ...process.env,
-              LEANHUB_QA_RESET_SUPABASE_URL:
-                "https://zsadfvjtknbbfomlmttv.supabase.co",
-              LEANHUB_QA_RESET_SERVICE_ROLE_KEY: "test-service-role-key",
-              LEANHUB_QA_RESET_DATABASE_URL:
-                "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-              LEANHUB_QA_RESET_PROJECT_REF: "zsadfvjtknbbfomlmttv",
-              LEANHUB_QA_RESET_PUBLISHABLE_KEY: "test-publishable-key",
-            },
-            stdio: ["ignore", "pipe", "pipe"],
-            timeout: 120_000,
+    it("exits without invoking write-capable dependencies", () => {
+      const output = execFileSync(
+        process.execPath,
+        ["--import", "tsx", "scripts/qa-tenant/hosted-replacement-cli.ts"],
+        {
+          cwd: process.cwd(),
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            LEANHUB_QA_RESET_SUPABASE_URL:
+              "https://zsadfvjtknbbfomlmttv.supabase.co",
+            LEANHUB_QA_RESET_SERVICE_ROLE_KEY: "test-service-role-key",
+            LEANHUB_QA_RESET_DATABASE_URL:
+              "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+            LEANHUB_QA_RESET_PROJECT_REF: "zsadfvjtknbbfomlmttv",
+            LEANHUB_QA_RESET_PUBLISHABLE_KEY: "test-publishable-key",
           },
-        );
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: 120_000,
+        },
+      );
 
-        expect(output).toContain("Mode: dry-run");
-        expect(output).toContain("No hosted data was modified.");
-      },
-      120_000,
-    );
+      expect(output).toContain("Mode: dry-run");
+      expect(output).toContain("No hosted data was modified.");
+    }, 120_000);
   },
 );
