@@ -210,7 +210,16 @@ describe("resolveNpmExecInvocation", () => {
   it("preserves Supabase CLI argument order", () => {
     const invocation = resolveNpmExecInvocation(
       "supabase",
-      ["db", "query", "--local", "--output-format", "json", "select 1"],
+      [
+        "db",
+        "query",
+        "--local",
+        "--output-format",
+        "json",
+        "--agent",
+        "no",
+        "select 1",
+      ],
       {
         env: { NODE_ENV: "test", npm_execpath: "/fake/npm-cli.js" },
         execPath: "/fake/node",
@@ -227,6 +236,8 @@ describe("resolveNpmExecInvocation", () => {
       "--local",
       "--output-format",
       "json",
+      "--agent",
+      "no",
       "select 1",
     ]);
   });

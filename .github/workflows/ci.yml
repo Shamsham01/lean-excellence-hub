@@ -99,3 +99,20 @@ jobs:
           npx playwright test tests/e2e/platform-shell.spec.ts tests/e2e/maturity-journeys.spec.ts tests/e2e/five-s-journeys.spec.ts tests/e2e/gemba-journeys.spec.ts tests/e2e/scheduling-journeys.spec.ts tests/e2e/milestone6-closure.spec.ts tests/e2e/training-journeys.spec.ts tests/e2e/milestone7-closure.spec.ts tests/e2e/milestone8-closure.spec.ts tests/e2e/milestone9-closure.spec.ts tests/e2e/milestone10-closure.spec.ts tests/e2e/milestone11-closure.spec.ts tests/e2e/milestone12-closure.spec.ts tests/e2e/invitation-lifecycle.spec.ts tests/e2e/workforce-provisioning.spec.ts tests/e2e/workforce-bulk-import.spec.ts tests/e2e/suggestion-portfolio.spec.ts --workers=1 --retries=0
       - if: always()
         run: npm run db:stop
+
+  qa-harness-windows:
+    name: QA harness portability (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - run: npm ci
+      - name: Run cross-platform QA harness unit tests
+        shell: pwsh
+        run: npm test -- tests/unit/qa-tenant-npm-exec.test.ts tests/unit/qa-tenant-db-cli.test.ts tests/unit/qa-tenant-db-query-result.test.ts tests/unit/qa-tenant-database-types-verify.test.ts tests/unit/qa-tenant-inventory.test.ts tests/unit/qa-tenant-working-tree-verify.test.ts tests/unit/qa-tenant-guards.test.ts tests/unit/qa-tenant-constants.test.ts
+      - name: Verify Supabase CLI resolves via npm exec on Windows
+        shell: pwsh
+        run: npm exec -- supabase --version

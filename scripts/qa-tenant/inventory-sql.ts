@@ -1,4 +1,5 @@
 import { QA_ORGANISATION_CODE } from "./constants";
+import { SupabaseDbQueryParseError } from "./db-query-result";
 import { runSupabaseDbQueryJson } from "./db-cli";
 
 const INVENTORY_SQL = `
@@ -53,28 +54,64 @@ select jsonb_build_object(
 ) as inventory;
 `;
 
-type InventorySqlPayload = {
+export type InventorySqlPayload = {
   organisation: { id: string; code: string; name: string } | null;
   counts: Record<string, number>;
 };
 
+function parseInventoryPayload(
+  inventory: unknown,
+  stdoutBytes: number,
+): InventorySqlPayload {
+  if (
+    typeof inventory !== "object" ||
+    inventory === null ||
+    !("organisation" in inventory) ||
+    !("counts" in inventory)
+  ) {
+    throw new SupabaseDbQueryParseError(
+      "Inventory row is malformed: expected object with organisation and counts.",
+      stdoutBytes,
+    );
+  }
+
+  const payload = inventory as InventorySqlPayload;
+
+  if (
+    payload.counts === null ||
+    typeof payload.counts !== "object" ||
+    Array.isArray(payload.counts)
+  ) {
+    throw new SupabaseDbQueryParseError(
+      "Inventory row counts field is malformed.",
+      stdoutBytes,
+    );
+  }
+
+  return payload;
+}
+
 export function collectCookieWorksInventoryViaSql(databaseUrl: string) {
-  const envelope = runSupabaseDbQueryJson<{
-    rows?: Array<{ inventory?: InventorySqlPayload } | InventorySqlPayload>;
-  }>({
-    databaseUrl,
-    outputFormat: "json",
-    sql: INVENTORY_SQL,
-  });
+  const rows = runSupabaseDbQueryJson<{ inventory?: InventorySqlPayload }>(
+    {
+      databaseUrl,
+      outputFormat: "json",
+      sql: INVENTORY_SQL,
+    },
+    { minRows: 1, maxRows: 1 },
+  );
 
-  const row = envelope.rows?.[0];
-  if (!row) {
-    throw new Error("Inventory SQL returned no rows.");
+  const row = rows[0];
+  if (!row?.inventory) {
+    throw new SupabaseDbQueryParseError(
+      `Inventory SQL first row is missing inventory column; row keys: [${Object.keys(
+        row ?? {},
+      )
+        .sort()
+        .join(", ")}].`,
+      0,
+    );
   }
 
-  if ("inventory" in row && row.inventory) {
-    return row.inventory;
-  }
-
-  return row as InventorySqlPayload;
+  return parseInventoryPayload(row.inventory, 0);
 }

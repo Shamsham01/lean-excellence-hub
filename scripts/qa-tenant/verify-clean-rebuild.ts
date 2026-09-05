@@ -6,12 +6,19 @@ import {
   collectCookieWorksInventory,
   formatInventoryReport,
 } from "./inventory";
-import { loadLocalSupabaseEnv } from "./local-env";
+import { loadLocalSupabaseEnv, buildLocalVerificationEnv } from "./local-env";
 import {
   assertCookieWorksFoundationOnlyVerified,
   formatVerificationSummary,
 } from "./verification";
 import { runNpmScript as executeNpmScript } from "./npm-exec";
+import {
+  assertWorkingTreeClean,
+  NEXT_ENV_RELATIVE_PATH,
+  readTrackedFileBytes,
+  restoreNextEnvIfOnlyTypegenImportDrift,
+  snapshotWorkingTreeStatus,
+} from "./working-tree-verify";
 
 type StepResult = {
   name: string;
@@ -59,6 +66,12 @@ function runStep(
 function assertCookieWorksFoundationState(databaseUrl: string) {
   const inventory = collectCookieWorksInventory(databaseUrl);
   const report = formatInventoryReport(inventory);
+
+  if (!inventory.organisation) {
+    throw new Error(
+      "CookieWorks inventory returned no organisation; foundation seed may have failed.",
+    );
+  }
 
   if (!report.includes("users (QA personas): 7")) {
     throw new Error("CookieWorks inventory expected 7 QA personas.");
@@ -123,7 +136,19 @@ function main() {
   const { skipReset, skipBuild, skipE2e } = parseArgs(process.argv.slice(2));
   const results: StepResult[] = [];
 
-  loadLocalSupabaseEnv("qa:verify:clean-rebuild");
+  const verificationEnv = buildLocalVerificationEnv("qa:verify:clean-rebuild");
+
+  const preStatus = snapshotWorkingTreeStatus(repoRoot);
+  const preNextEnvBytes = readTrackedFileBytes(
+    repoRoot,
+    NEXT_ENV_RELATIVE_PATH,
+  );
+  if (preStatus.length > 0) {
+    process.stdout.write(
+      "Warning: working tree was not clean before verification:\n",
+    );
+    process.stdout.write(`${preStatus}\n\n`);
+  }
 
   if (!skipReset) {
     results.push(
@@ -211,7 +236,7 @@ function main() {
   if (!skipE2e) {
     results.push(
       runStep("Smoke E2E", "npm run test:e2e:smoke", () => {
-        runNpmScript("test:e2e:smoke");
+        runNpmScript("test:e2e:smoke", verificationEnv);
       }),
     );
   }
@@ -219,10 +244,27 @@ function main() {
   if (!skipBuild) {
     results.push(
       runStep("Production build", "npm run build", () => {
-        runNpmScript("build");
+        runNpmScript("build", verificationEnv);
       }),
     );
   }
+
+  results.push(
+    runStep(
+      "Working tree cleanliness",
+      "git status --short (must be empty when started clean)",
+      () => {
+        if (preStatus.length === 0) {
+          restoreNextEnvIfOnlyTypegenImportDrift(repoRoot, preNextEnvBytes);
+          assertWorkingTreeClean(repoRoot);
+        } else {
+          process.stdout.write(
+            "    Skipped: working tree was not clean before verification.\n",
+          );
+        }
+      },
+    ),
+  );
 
   printSummary(results);
 }
