@@ -56,13 +56,20 @@ npm run qa:cookie:hosted-replacement
 
 Dry-run output must show:
 
-- Resolved legacy organisation name, code, and UUID
-- Membership count (**8** expected on current hosted pre-launch)
-- Module/business inventory counts
-- `organisation-evidence` object count for the legacy tenant prefix
-- Auth identities attached to legacy memberships
-- Auth identities safe to delete (legacy-only memberships)
-- Whether CookieWorks already exists (must be **no** before destructive run)
+- Legacy organisation UUID, code, name, and membership count (**8** expected)
+- Member/auth identity details: user ID, email, display name, membership count,
+  legacy-only flag, and conflicting organisation identifiers when present
+- Tenant foundation counts: organisational units, roles, role versions, role
+  grants, memberships, invitations
+- Private infrastructure counts:
+  `notification_delivery_provider_envelopes`, `notification_delivery_ledger`,
+  `domain_event_outbox`, `session_organisation_contexts`
+- Storage: `organisation-evidence` object count for the legacy tenant prefix
+- Modules: section/module counts and total tenant-owned module row count
+- CookieWorks presence (must be **no** before destructive run)
+- Cross-organisation conflicts (must be **none** before destructive run)
+
+Dry-run is read-only. No secrets, passwords, or tokens are printed.
 
 ## 2. Destructive replacement (maintainer only)
 
@@ -88,12 +95,37 @@ npm run qa:cookie:hosted-replacement -- --destructive
 The command performs, in order:
 
 1. Validate legacy organisation contract (id, code, name, membership count)
-2. Purge all legacy tenant module/business data
-3. Delete legacy tenant storage objects under `organisation-evidence/{legacy_org_id}/`
-4. Delete legacy foundation records and the `organisations` row
-5. Delete legacy-only auth identities (users with no memberships outside the legacy tenant)
-6. Seed CookieWorks foundation (`cookieworks-manufacturing`)
-7. Verify legacy absence and `FOUNDATION-ONLY VERIFIED` for CookieWorks
+2. Capture legacy auth user IDs **before** any mutation
+3. Abort if any legacy member belongs to another organisation
+4. Validate CookieWorks is absent and seed prerequisites are present
+5. Purge all legacy tenant module/business data
+6. Delete legacy tenant storage objects under `organisation-evidence/{legacy_org_id}/`
+7. Delete legacy foundation records and the `organisations` row
+8. Verify comprehensive legacy absence (organisation, module rows, private
+   infrastructure, storage, indirect references)
+9. Purge auth identity prerequisites and delete captured legacy-only auth users
+10. Verify captured auth identities are absent
+11. Seed CookieWorks foundation with explicit `databaseUrl` (no local env load)
+12. Verify CookieWorks foundation-only state and print
+    `HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED`
+
+## Partial failure recovery
+
+Database, Storage, and Auth operations are not one atomic transaction. If a
+step fails, **do not** print the success marker or assume a clean final state.
+
+| Failure point | Likely state | Recovery guidance |
+| --- | --- | --- |
+| Storage deletion fails | Legacy DB data still present; storage objects may remain | Fix Storage/API issue; re-run dry-run; retry destructive run only after confirming no partial CookieWorks seed |
+| DB tenant deletion fails | Module purge may have run; foundation/org row may remain | Inspect tenant inventory and private infrastructure counts; resolve SQL blockers; do not delete auth users until DB tenant is fully absent |
+| Auth deletion fails | Legacy tenant DB rows absent; auth identities may remain | Re-run auth deletion for the originally captured user IDs after purging `profiles` / `identity_controls` prerequisites; verify auth absence before seeding |
+| CookieWorks seed fails | Legacy absent; CookieWorks missing or partial | Inspect CookieWorks inventory; use hosted reset/seed tooling only after confirming legacy absence; never seed over an ambiguous partial state |
+
+Before any retry:
+
+- Re-run dry-run and confirm contract, cross-org isolation, and CookieWorks absence
+- Never rediscover auth user IDs after membership rows have been deleted — reuse the
+  captured ID list from the failed attempt's logs when safe to do so
 
 ## 3. Post-replacement verification
 
@@ -127,7 +159,7 @@ Expect:
 | Organisational units | **10** |
 | Active role grants | **7** |
 | All module counts | **0** |
-| Verification marker | `FOUNDATION-ONLY VERIFIED` |
+| Verification marker | `HOSTED DEMO → COOKIEWORKS REPLACEMENT VERIFIED` |
 | Legacy organisation | **Absent** |
 | `organisation-evidence` storage objects | **0** |
 
