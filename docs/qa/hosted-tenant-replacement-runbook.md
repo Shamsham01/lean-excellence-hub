@@ -23,6 +23,56 @@ before dry-run inspection completed.
 dedicated `*-cli.ts` files (`hosted-seed-cli.ts`, `hosted-replacement-cli.ts`).
 Importing library modules performs zero writes.
 
+## Incident note (QA2c): outbox FK blocked legacy tenant purge
+
+During the first real hosted QA2b recovery attempt (`--destructive
+--preserve-existing-cookieworks`), tenant purge aborted inside the PostgreSQL
+`DO $$ ... $$` module purge with:
+
+```text
+update or delete on table "domain_event_outbox"
+violates foreign key constraint
+"notification_projector_pre_cutover_skips_outbox_fkey"
+on table "notification_projector_pre_cutover_skips"
+```
+
+**Root cause:** migration `20260903120000_n1d_notification_worker_scheduling.sql`
+introduced `private.notification_projector_pre_cutover_skips` with composite FK
+`(organisation_id, event_id) -> private.domain_event_outbox(organisation_id, id)`
+and `ON DELETE RESTRICT`. The QA tenant purge deleted outbox rows before their
+dependent pre-cutover skip rows.
+
+**Why hosted state was unchanged:** the purge runs inside a single PostgreSQL
+`DO` block. The FK violation aborted that statement and PostgreSQL rolled back all
+mutations from the block. Storage and Auth stages had not started yet.
+
+**Private infrastructure deletion order (tenant-scoped):**
+
+```text
+notification_delivery_provider_envelopes
+  -> notification_delivery_ledger
+    -> domain_event_outbox
+notification_projector_pre_cutover_skips (via tenant outbox rows)
+  -> domain_event_outbox
+session_organisation_contexts (organisation-scoped; no outbox FK)
+```
+
+**Dry-run inventory now includes:** `private.notification_projector_pre_cutover_skips`
+(counted through the tenant's outbox rows).
+
+**Never rerun destructive replacement blindly after failure.** Always perform a
+read-only dry-run first and confirm:
+
+- legacy foundation/private counts match expectations
+- CookieWorks foundation-only contract (for recovery)
+- no partial module purge residue
+- no unexpected auth/storage drift
+
+Remember: statement-level DB rollback inside the purge `DO` block is **not** the
+same as atomicity across the full workflow (DB module purge, Storage deletion,
+foundation deletion, Auth deletion, CookieWorks seeding). Those stages are separate
+operations with independent failure modes.
+
 ## Target hosted project
 
 | Field | Value |
@@ -83,7 +133,8 @@ Dry-run output must show:
   grants, memberships, invitations
 - Private infrastructure counts:
   `notification_delivery_provider_envelopes`, `notification_delivery_ledger`,
-  `domain_event_outbox`, `session_organisation_contexts`
+  `domain_event_outbox`, `notification_projector_pre_cutover_skips`,
+  `session_organisation_contexts`
 - Storage: `organisation-evidence` object count for the legacy tenant prefix
 - Modules: section/module counts and total tenant-owned module row count
 - CookieWorks presence
@@ -192,7 +243,7 @@ step fails, **do not** print the success marker or assume a clean final state.
 | Failure point | Likely state | Recovery guidance |
 | --- | --- | --- |
 | Storage deletion fails | Legacy DB data still present; storage objects may remain | Fix Storage/API issue; re-run dry-run; retry destructive run only after confirming no partial CookieWorks seed |
-| DB tenant deletion fails | Module purge may have run; foundation/org row may remain | Inspect tenant inventory and private infrastructure counts; resolve SQL blockers; do not delete auth users until DB tenant is fully absent |
+| DB tenant deletion fails | Module purge `DO` block may roll back entirely on FK/SQL error; foundation/org row remains | Inspect dry-run private infrastructure counts (including pre-cutover skips); resolve deletion-order blockers; do not delete auth users until DB tenant is fully absent |
 | Auth deletion fails | Legacy tenant DB rows absent; auth identities may remain | Re-run auth deletion for the originally captured user IDs after purging `profiles` / `identity_controls` prerequisites; verify auth absence before seeding |
 | CookieWorks seed fails | Legacy absent; CookieWorks missing or partial | Inspect CookieWorks inventory; use hosted reset/seed tooling only after confirming legacy absence; never seed over an ambiguous partial state |
 

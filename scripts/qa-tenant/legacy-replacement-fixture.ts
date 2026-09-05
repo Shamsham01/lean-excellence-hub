@@ -32,6 +32,63 @@ export const LEGACY_REPLACEMENT_CROSS_ORG = {
   name: "QA Legacy Cross Org",
 } as const;
 
+export const LEGACY_REPLACEMENT_ISOLATION_ORG = {
+  code: "qa-notification-isolation-org",
+  name: "QA Notification Isolation Org",
+} as const;
+
+function insertTenantOutboxWithPreCutoverSkip(options: {
+  databaseUrl: string;
+  organisationId: string;
+  idempotencyKey: string;
+}) {
+  const eventId = randomUUID();
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      insert into private.domain_event_outbox (
+        id,
+        organisation_id,
+        event_type,
+        payload,
+        idempotency_key,
+        processing_state
+      ) values (
+        '${eventId}'::uuid,
+        '${options.organisationId}'::uuid,
+        'qa.legacy_replacement.fixture',
+        '{}'::jsonb,
+        '${escapeSqlLiteral(options.idempotencyKey)}',
+        'pending'
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      insert into private.notification_projector_pre_cutover_skips (
+        organisation_id,
+        event_id,
+        event_type,
+        event_created_at,
+        skip_reason
+      )
+      select
+        outbox_row.organisation_id,
+        outbox_row.id,
+        outbox_row.event_type,
+        outbox_row.created_at,
+        'pre_cutover_backlog'
+      from private.domain_event_outbox outbox_row
+      where outbox_row.organisation_id = '${options.organisationId}'::uuid
+        and outbox_row.id = '${eventId}'::uuid;
+    `,
+  });
+
+  return eventId;
+}
+
 function escapeSqlLiteral(value: string) {
   return value.replaceAll("'", "''");
 }
@@ -75,13 +132,52 @@ export async function seedLegacyReplacementFixture(options: {
   const orgCode = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code);
   const orgName = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.name);
 
+  if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
+    executePurgeTenantModuleDataSql(
+      options.databaseUrl,
+      LEGACY_HOSTED_DEMO_ORGANISATION.code,
+    );
+    executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
+  }
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from private.notification_projector_pre_cutover_skips skip_row
+      where exists (
+        select 1
+        from private.domain_event_outbox outbox_row
+        where outbox_row.organisation_id in (
+          select id
+          from public.organisations
+          where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+          and outbox_row.organisation_id = skip_row.organisation_id
+          and outbox_row.id = skip_row.event_id
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from private.domain_event_outbox
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+      );
+    `,
+  });
+
   runSupabaseDbQuery({
     databaseUrl: options.databaseUrl,
     sql: `
       delete from public.organisations
       where code in (
         '${orgCode}',
-        '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}'
+        '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+        '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
       )
          or id = '${orgId}'::uuid;
     `,
@@ -201,25 +297,34 @@ export async function seedLegacyReplacementFixture(options: {
     `,
   });
 
+  insertTenantOutboxWithPreCutoverSkip({
+    databaseUrl: options.databaseUrl,
+    organisationId: orgId,
+    idempotencyKey: "qa-legacy-replacement-fixture",
+  });
+
+  const isolationOrgId = randomUUID();
   runSupabaseDbQuery({
     databaseUrl: options.databaseUrl,
     sql: `
-      insert into private.domain_event_outbox (
+      insert into public.organisations (
         id,
-        organisation_id,
-        event_type,
-        payload,
-        idempotency_key,
-        processing_state
+        code,
+        name,
+        status
       ) values (
-        '${randomUUID()}'::uuid,
-        '${orgId}'::uuid,
-        'qa.legacy_replacement.fixture',
-        '{}'::jsonb,
-        'qa-legacy-replacement-fixture',
-        'pending'
+        '${isolationOrgId}'::uuid,
+        '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}',
+        '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.name)}',
+        'active'
       );
     `,
+  });
+
+  insertTenantOutboxWithPreCutoverSkip({
+    databaseUrl: options.databaseUrl,
+    organisationId: isolationOrgId,
+    idempotencyKey: "qa-notification-isolation-org",
   });
 
   const storagePath = `${orgId}/action/${actionId}/fixture.txt`;
@@ -278,6 +383,7 @@ export async function seedLegacyReplacementFixture(options: {
 
   return {
     organisationId: orgId,
+    isolationOrganisationId: isolationOrgId,
     storagePath,
     memberUserIds: LEGACY_REPLACEMENT_FIXTURE_MEMBERS.map(
       (member) => member.userId,
@@ -327,7 +433,40 @@ export async function cleanupLegacyReplacementFixture(options: {
       where organisation_id in (
         select id
         from public.organisations
-        where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}'
+        where code in (
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from private.notification_projector_pre_cutover_skips skip_row
+      where exists (
+        select 1
+        from private.domain_event_outbox outbox_row
+        where outbox_row.organisation_id in (
+          select id
+          from public.organisations
+          where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+          and outbox_row.organisation_id = skip_row.organisation_id
+          and outbox_row.id = skip_row.event_id
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from private.domain_event_outbox
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
       );
     `,
   });
@@ -336,7 +475,10 @@ export async function cleanupLegacyReplacementFixture(options: {
     databaseUrl: options.databaseUrl,
     sql: `
       delete from public.organisations
-      where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}'
+      where code in (
+        '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+        '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+      )
          or id = '${orgId}'::uuid
          or code = '${orgCode}';
     `,
@@ -377,7 +519,10 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
     memberships: number;
     actions: number;
     outbox: number;
+    pre_cutover_skips: number;
     storage_objects: number;
+    isolation_outbox: number;
+    isolation_pre_cutover_skips: number;
   }>({
     databaseUrl,
     outputFormat: "json",
@@ -387,7 +532,32 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
         (select count(*)::int from public.organisation_memberships where organisation_id = '${orgId}'::uuid) as memberships,
         (select count(*)::int from public.actions where organisation_id = '${orgId}'::uuid) as actions,
         (select count(*)::int from private.domain_event_outbox where organisation_id = '${orgId}'::uuid) as outbox,
-        (select count(*)::int from storage.objects where bucket_id = '${COOKIEWORKS_STORAGE_BUCKET}' and name like '${orgId}/%') as storage_objects;
+        (select count(*)::int
+         from private.notification_projector_pre_cutover_skips skip_row
+         where exists (
+           select 1
+           from private.domain_event_outbox outbox_row
+           where outbox_row.organisation_id = '${orgId}'::uuid
+             and outbox_row.organisation_id = skip_row.organisation_id
+             and outbox_row.id = skip_row.event_id
+         )) as pre_cutover_skips,
+        (select count(*)::int from storage.objects where bucket_id = '${COOKIEWORKS_STORAGE_BUCKET}' and name like '${orgId}/%') as storage_objects,
+        (select count(*)::int
+         from private.domain_event_outbox outbox_row
+         join public.organisations organisation_row
+           on organisation_row.id = outbox_row.organisation_id
+         where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}') as isolation_outbox,
+        (select count(*)::int
+         from private.notification_projector_pre_cutover_skips skip_row
+         where exists (
+           select 1
+           from private.domain_event_outbox outbox_row
+           join public.organisations organisation_row
+             on organisation_row.id = outbox_row.organisation_id
+           where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+             and outbox_row.organisation_id = skip_row.organisation_id
+             and outbox_row.id = skip_row.event_id
+         )) as isolation_pre_cutover_skips;
     `,
   });
 
@@ -397,7 +567,10 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
       memberships: 0,
       actions: 0,
       outbox: 0,
+      pre_cutover_skips: 0,
       storage_objects: 0,
+      isolation_outbox: 0,
+      isolation_pre_cutover_skips: 0,
     }
   );
 }

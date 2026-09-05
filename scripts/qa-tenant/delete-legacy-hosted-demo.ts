@@ -11,6 +11,7 @@ import {
   LEGACY_HOSTED_DEMO_ORGANISATION,
   LEGACY_HOSTED_DEMO_EXPECTED_MEMBERSHIPS,
 } from "./legacy-hosted-demo";
+import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
 import { purgeTenantStorageObjects } from "./tenant-storage-cleanup";
 
 function escapeSqlLiteral(value: string) {
@@ -340,17 +341,7 @@ begin
     return;
   end if;
 
-  delete from private.notification_delivery_provider_envelopes
-  where organisation_id = target_org_id;
-
-  delete from private.notification_delivery_ledger
-  where organisation_id = target_org_id;
-
-  delete from private.domain_event_outbox
-  where organisation_id = target_org_id;
-
-  delete from private.session_organisation_contexts
-  where organisation_id = target_org_id;
+${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
   delete from public.organisation_invitation_signup_bindings
   where invitation_id in (
