@@ -51,28 +51,18 @@ function defaultGitDiff(repoRoot: string, filePath: string): GitDiffResult {
 }
 
 /**
- * When db:types rewrites only line endings, restore the committed bytes so a
- * clean working tree stays clean after verification.
+ * After semantic verification passes, restore the pre-generation working-tree
+ * bytes when db:types rewrote only line-ending representation. Byte comparison
+ * — not git diff — decides restoration so Windows core.autocrlf checkout state
+ * cannot skip the restore path.
  */
-function restoreIfOnlyEolDrift(
-  repoRoot: string,
-  relativePath: string,
+function restoreOriginalBytesIfChanged(
+  typesPath: string,
   originalBytes: Buffer,
 ): void {
-  const absolutePath = join(repoRoot, relativePath);
-
-  try {
-    execFileSync("git", ["diff", "--exit-code", "--", relativePath], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    return;
-  } catch {
-    const eolAwareDiff = defaultGitDiff(repoRoot, relativePath);
-    if (eolAwareDiff.exitCode === 0) {
-      writeFileSync(absolutePath, originalBytes);
-    }
+  const generatedBytes = readFileSync(typesPath);
+  if (!generatedBytes.equals(originalBytes)) {
+    writeFileSync(typesPath, originalBytes);
   }
 }
 
@@ -81,7 +71,6 @@ export function assertDatabaseTypesCurrent(
 ): void {
   const runGitDiff = options.runGitDiff ?? defaultGitDiff;
   const typesPath = join(options.repoRoot, DATABASE_TYPES_RELATIVE_PATH);
-  const relativePath = DATABASE_TYPES_RELATIVE_PATH;
 
   const preGenerationDiff = runGitDiff(options.repoRoot, typesPath);
   if (preGenerationDiff.exitCode !== 0) {
@@ -101,5 +90,5 @@ export function assertDatabaseTypesCurrent(
     );
   }
 
-  restoreIfOnlyEolDrift(options.repoRoot, relativePath, originalBytes);
+  restoreOriginalBytesIfChanged(typesPath, originalBytes);
 }
