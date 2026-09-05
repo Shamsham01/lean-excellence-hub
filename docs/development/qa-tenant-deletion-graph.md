@@ -118,7 +118,12 @@ connection role. The harness therefore:
 - archives published template versions and reopens completed template submissions before purge
 - tolerates documented immutability/append-only SQLSTATE `55000` conflicts during ordering passes
 - excludes append-only DELETE-protected tables and template/resource registry infrastructure tables
-  from verification failure counts
+  from verification failure counts during CookieWorks module purge (`module-foundation-only`)
+- performs controlled append-only retirement deletes during legacy full tenant removal
+  (`full-tenant-removal`), including `ai_usage_events`
+- discovers custom append-only triggers (`prevent_ai_usage_event_mutation`,
+  `guard_benefit_overlap_allocation_history_mutation`) in addition to
+  `prevent_update_or_delete`
 - proves purge correctness with draft-level module fixtures that do not enter irreversible workflow
   states
 

@@ -15,6 +15,7 @@ import {
   PURGE_INFRASTRUCTURE_TABLES,
 } from "./deletion-graph";
 import { runSupabaseDbQueryJson, SupabaseDbQueryError } from "./db-cli";
+import { CUSTOM_APPEND_ONLY_DELETE_TABLES } from "./tenant-retirement-policy";
 
 export type TenantVerificationRow = {
   resource: string;
@@ -126,7 +127,9 @@ function discoverTableLists(databaseUrl: string) {
     sql: listFoundationTablesSql(),
   });
 
-  const appendOnlyRows = runSupabaseDbQueryJson<{ tables: string[] }>({
+  const appendOnlyRows = runSupabaseDbQueryJson<{
+    tables: Array<{ table: string; trigger: string }>;
+  }>({
     databaseUrl,
     outputFormat: "json",
     sql: listAppendOnlyDeleteTablesSql(),
@@ -134,9 +137,12 @@ function discoverTableLists(databaseUrl: string) {
 
   const moduleTables = (moduleRows[0]?.tables ?? []) as string[];
   const foundationTables = (foundationRows[0]?.tables ?? []) as string[];
-  const appendOnlyTables = new Set(
-    (appendOnlyRows[0]?.tables ?? []) as string[],
-  );
+  const appendOnlyTables = new Set<string>([
+    ...((appendOnlyRows[0]?.tables ?? []) as Array<{ table: string }>).map(
+      (entry) => entry.table,
+    ),
+    ...CUSTOM_APPEND_ONLY_DELETE_TABLES.map((policy) => policy.table),
+  ]);
 
   return { moduleTables, foundationTables, appendOnlyTables };
 }

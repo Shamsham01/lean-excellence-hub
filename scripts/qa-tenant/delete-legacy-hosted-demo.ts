@@ -5,7 +5,7 @@ import {
   assertLegacyAuthUsersAbsent,
   assertLegacyHostedDemoFullyAbsent,
 } from "./legacy-absence-verification";
-import { executePurgeTenantModuleDataSql } from "./delete-tenant";
+import { executeLegacyHostedDemoModulePurgeSql } from "./delete-tenant";
 import { runSupabaseDbQuery, runSupabaseDbQueryJson } from "./db-cli";
 import {
   LEGACY_HOSTED_DEMO_ORGANISATION,
@@ -510,10 +510,7 @@ export async function deleteLegacyHostedDemoTenant(options: {
         : { expectedMemberships: options.expectedMemberships },
     );
 
-  executePurgeTenantModuleDataSql(
-    options.databaseUrl,
-    LEGACY_HOSTED_DEMO_ORGANISATION.code,
-  );
+  executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
 
   await purgeTenantStorageObjects({
     databaseUrl: options.databaseUrl,

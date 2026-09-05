@@ -11,7 +11,7 @@ import {
   deleteLegacyHostedDemoTenant,
 } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
 import {
-  executePurgeTenantModuleDataSql,
+  executeLegacyHostedDemoModulePurgeSql,
   purgeCookieWorksTenantModules,
 } from "../../scripts/qa-tenant/delete-tenant";
 import {
@@ -125,6 +125,7 @@ describe
       expect(before.outbox).toBeGreaterThan(0);
       expect(before.pre_cutover_skips).toBeGreaterThan(0);
       expect(before.storage_objects).toBeGreaterThan(0);
+      expect(before.ai_usage_events).toBeGreaterThan(0);
     }, 180_000);
 
     it("replaces the legacy tenant with CookieWorks foundation-only state", async () => {
@@ -218,10 +219,7 @@ describe
       expect(before.pre_cutover_skips).toBeGreaterThan(0);
       expect(before.isolation_pre_cutover_skips).toBeGreaterThan(0);
 
-      executePurgeTenantModuleDataSql(
-        env.databaseUrl,
-        LEGACY_HOSTED_DEMO_ORGANISATION.code,
-      );
+      executeLegacyHostedDemoModulePurgeSql(env.databaseUrl);
 
       const legacyCounts = queryPrivateInfrastructureCounts(
         env.databaseUrl,
@@ -229,6 +227,17 @@ describe
       );
       expect(legacyCounts.domain_event_outbox).toBe(0);
       expect(legacyCounts.notification_projector_pre_cutover_skips).toBe(0);
+
+      const legacyUsageRows = runSupabaseDbQueryJson<{ count: number }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select count(*)::int as count
+          from public.ai_usage_events
+          where organisation_id = '${fixture.organisationId}'::uuid;
+        `,
+      });
+      expect(legacyUsageRows[0]?.count).toBe(0);
 
       const isolationCounts = queryPrivateInfrastructureCounts(
         env.databaseUrl,
@@ -238,6 +247,49 @@ describe
       expect(
         isolationCounts.notification_projector_pre_cutover_skips,
       ).toBeGreaterThan(0);
+
+      const isolationUsageRows = runSupabaseDbQueryJson<{ count: number }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select count(*)::int as count
+          from public.ai_usage_events
+          where organisation_id = '${fixture.isolationOrganisationId}'::uuid;
+        `,
+      });
+      expect(isolationUsageRows[0]?.count ?? 0).toBeGreaterThan(0);
+    }, 180_000);
+
+    it("fails closed when generic delete is attempted against ai_usage_events", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      const fixture = await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      expect(() =>
+        runSupabaseDbQuery({
+          databaseUrl: env.databaseUrl,
+          sql: `
+            delete from public.ai_usage_events
+            where organisation_id = '${fixture.organisationId}'::uuid;
+          `,
+        }),
+      ).toThrow(SupabaseDbQueryError);
+
+      const remaining = runSupabaseDbQueryJson<{ count: number }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select count(*)::int as count
+          from public.ai_usage_events
+          where organisation_id = '${fixture.organisationId}'::uuid;
+        `,
+      });
+      expect(remaining[0]?.count).toBeGreaterThan(0);
     }, 180_000);
 
     it("rolls back tenant module purge mutations when outbox is deleted before dependents", async () => {

@@ -73,6 +73,7 @@ const planDetailsFixture = {
   },
   storageObjectCount: 3,
   moduleRowTotal: 12,
+  appendOnlyInventory: [],
   inventoryReport:
     "Legacy hosted demo inventory\nOrganisation: Lean Excellence Demo",
 };

@@ -73,6 +73,78 @@ same as atomicity across the full workflow (DB module purge, Storage deletion,
 foundation deletion, Auth deletion, CookieWorks seeding). Those stages are separate
 operations with independent failure modes.
 
+## Incident note (QA2d): append-only `ai_usage_events` blocked module purge
+
+During the second real hosted QA2 recovery attempt (`--destructive --preserve-existing-cookieworks`), tenant purge aborted inside the PostgreSQL
+`DO $$ ... $$` module purge with:
+
+```text
+Tenant module purge failed on public.ai_usage_events: ai usage events are append-only
+```
+
+**Root cause:** `public.ai_usage_events` is protected by a custom append-only
+trigger (`ai_usage_events_append_only` → `private.prevent_ai_usage_event_mutation()`)
+introduced in migration `20260827009010_milestone12_security_hardening.sql`. The
+generic purge loop attempted `DELETE` against every `organisation_id` module table.
+Append-only discovery only matched triggers calling
+`private.prevent_update_or_delete()`, so `ai_usage_events` was not classified.
+The legacy SQLERRM handler only tolerated messages containing `is append-only`
+(`% is append-only` from `tg_table_name`), not the custom message
+`ai usage events are append-only`.
+
+**Schema facts (`public.ai_usage_events`):**
+
+| Property | Value |
+| --- | --- |
+| Primary key | `id uuid` (plus composite unique `(organisation_id, id)`) |
+| `organisation_id` | `uuid not null` (tenant-scoped, no direct FK to `organisations`) |
+| Incoming FKs | `organisation_memberships`, `ai_sessions`, `ai_runs` (all `ON DELETE RESTRICT`) |
+| DELETE trigger | `ai_usage_events_append_only` |
+| Trigger function | `private.prevent_ai_usage_event_mutation()` |
+| SQLSTATE | `55000` |
+| Exception message | `ai usage events are append-only` |
+| Introducing migrations | table `20260827009005_milestone12_ai_usage_rate_limits.sql`; immutability `20260827009010_milestone12_security_hardening.sql` |
+| Retention class | Authoritative AI usage/accounting telemetry; deletable only during controlled full tenant retirement |
+
+**Why hosted state was unchanged:** same as QA2c — the purge runs inside a single
+PostgreSQL `DO` block. The append-only exception aborted that statement and
+PostgreSQL rolled back all mutations from the block. Storage and Auth stages had
+not started yet.
+
+**Approved append-only / immutable tenant-retirement policy (QA2d):**
+
+| Class | Behaviour |
+| --- | --- |
+| A. ordinary tenant-deletable | Generic multi-pass `DELETE` loop |
+| B. controlled-retirement-delete | Narrow trigger disable → tenant-scoped `DELETE` → re-enable (full tenant removal only) |
+| C. append-only-module-retained | Excluded from generic loop and CookieWorks verification |
+| D. foundation-foundation-stage | Deleted in foundation stage (`security_audit_events`, `business_audit_events`) |
+| E. infrastructure-explicit | Template/resource registry handled explicitly |
+| F. immutable-explicit-unlock | Maturity subgraph unlocked in purge SQL |
+
+Custom append-only tables (not using `prevent_update_or_delete`) with controlled
+retirement deletion: `ai_usage_events`, `benefit_overlap_allocation_history`.
+
+**Purge classification order (full tenant removal):**
+
+```text
+private notification infrastructure (QA2c order)
+→ controlled append-only retirement deletes (custom + discovered)
+→ maturity explicit unlock deletes
+→ generic deletable module tables (append-only excluded)
+→ remaining-row verification (append-only must be zero)
+```
+
+**Dry-run inventory now includes:** explicit append-only / immutable tenant-owned
+row counts (at minimum `public.ai_usage_events` when present).
+
+**Fail-closed procedure:**
+
+1. Remove recovery confirmation token after any failed destructive attempt.
+2. Run read-only dry-run and verify append-only inventory section.
+3. Never rerun destructive replacement blindly.
+4. Unexpected append-only tables without an approved policy must abort the purge.
+
 ## Target hosted project
 
 | Field | Value |

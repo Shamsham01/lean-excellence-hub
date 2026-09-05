@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { purgeAuthUserIdentityPrerequisites } from "./auth-identity-cleanup";
 import { COOKIEWORKS_STORAGE_BUCKET } from "./deletion-graph";
-import { executePurgeTenantModuleDataSql } from "./delete-tenant";
+import { executeLegacyHostedDemoModulePurgeSql } from "./delete-tenant";
 import { executeDeleteLegacyHostedDemoOrganisationSql } from "./delete-legacy-hosted-demo";
 import { runSupabaseDbQuery, runSupabaseDbQueryJson } from "./db-cli";
 import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
@@ -36,6 +36,123 @@ export const LEGACY_REPLACEMENT_ISOLATION_ORG = {
   code: "qa-notification-isolation-org",
   name: "QA Notification Isolation Org",
 } as const;
+
+function escapeSqlLiteral(value: string) {
+  return value.replaceAll("'", "''");
+}
+
+function insertAppendOnlyAiUsageFixture(options: {
+  databaseUrl: string;
+  organisationId: string;
+  membershipId: string;
+  unitId: string;
+  fixtureKey: string;
+}) {
+  const caseId = randomUUID();
+  const sessionId = randomUUID();
+  const runId = randomUUID();
+  const usageEventId = randomUUID();
+  const resourceId = caseId;
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      insert into public.resource_records (
+        id,
+        organisation_id,
+        resource_type,
+        created_by_membership_id
+      ) values (
+        '${resourceId}'::uuid,
+        '${options.organisationId}'::uuid,
+        'problem_solving_case',
+        '${options.membershipId}'::uuid
+      );
+
+      insert into public.problem_solving_cases (
+        id,
+        organisation_id,
+        title,
+        organisation_unit_id,
+        owner_membership_id,
+        created_by_membership_id,
+        status
+      ) values (
+        '${caseId}'::uuid,
+        '${options.organisationId}'::uuid,
+        'QA append-only fixture case ${escapeSqlLiteral(options.fixtureKey)}',
+        '${options.unitId}'::uuid,
+        '${options.membershipId}'::uuid,
+        '${options.membershipId}'::uuid,
+        'draft'
+      );
+
+      insert into public.ai_sessions (
+        id,
+        organisation_id,
+        problem_solving_case_id,
+        created_by_membership_id,
+        mode,
+        status
+      ) values (
+        '${sessionId}'::uuid,
+        '${options.organisationId}'::uuid,
+        '${caseId}'::uuid,
+        '${options.membershipId}'::uuid,
+        'ask',
+        'active'
+      );
+
+      insert into public.ai_runs (
+        id,
+        organisation_id,
+        ai_session_id,
+        requested_by_membership_id,
+        provider,
+        model,
+        prompt_key,
+        prompt_version,
+        prompt_hash,
+        status
+      ) values (
+        '${runId}'::uuid,
+        '${options.organisationId}'::uuid,
+        '${sessionId}'::uuid,
+        '${options.membershipId}'::uuid,
+        'openai',
+        'gpt-test',
+        'qa-fixture',
+        '1',
+        'qa-fixture-hash',
+        'completed'
+      );
+
+      insert into public.ai_usage_events (
+        id,
+        organisation_id,
+        membership_id,
+        ai_session_id,
+        ai_run_id,
+        provider,
+        model,
+        input_tokens,
+        output_tokens
+      ) values (
+        '${usageEventId}'::uuid,
+        '${options.organisationId}'::uuid,
+        '${options.membershipId}'::uuid,
+        '${sessionId}'::uuid,
+        '${runId}'::uuid,
+        'openai',
+        'gpt-test',
+        12,
+        8
+      );
+    `,
+  });
+
+  return { caseId, sessionId, runId, usageEventId };
+}
 
 function insertTenantOutboxWithPreCutoverSkip(options: {
   databaseUrl: string;
@@ -89,10 +206,6 @@ function insertTenantOutboxWithPreCutoverSkip(options: {
   return eventId;
 }
 
-function escapeSqlLiteral(value: string) {
-  return value.replaceAll("'", "''");
-}
-
 export async function ensureLegacyReplacementFixtureMembers(
   admin: SupabaseClient,
 ) {
@@ -133,10 +246,7 @@ export async function seedLegacyReplacementFixture(options: {
   const orgName = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.name);
 
   if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
-    executePurgeTenantModuleDataSql(
-      options.databaseUrl,
-      LEGACY_HOSTED_DEMO_ORGANISATION.code,
-    );
+    executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
@@ -303,6 +413,14 @@ export async function seedLegacyReplacementFixture(options: {
     idempotencyKey: "qa-legacy-replacement-fixture",
   });
 
+  insertAppendOnlyAiUsageFixture({
+    databaseUrl: options.databaseUrl,
+    organisationId: orgId,
+    membershipId,
+    unitId,
+    fixtureKey: "legacy",
+  });
+
   const isolationOrgId = randomUUID();
   runSupabaseDbQuery({
     databaseUrl: options.databaseUrl,
@@ -326,6 +444,65 @@ export async function seedLegacyReplacementFixture(options: {
     organisationId: isolationOrgId,
     idempotencyKey: "qa-notification-isolation-org",
   });
+
+  const isolationMembershipId = randomUUID();
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      insert into public.organisation_units (
+        id,
+        organisation_id,
+        code,
+        name,
+        unit_type,
+        status
+      ) values (
+        '${randomUUID()}'::uuid,
+        '${isolationOrgId}'::uuid,
+        'isolation-site',
+        'Isolation Site',
+        'plant',
+        'active'
+      );
+
+      insert into public.organisation_memberships (
+        id,
+        organisation_id,
+        user_id,
+        status,
+        display_name,
+        activated_at
+      ) values (
+        '${isolationMembershipId}'::uuid,
+        '${isolationOrgId}'::uuid,
+        '${LEGACY_REPLACEMENT_FIXTURE_MEMBERS[0]!.userId}'::uuid,
+        'active',
+        'Isolation Fixture Member',
+        statement_timestamp()
+      );
+    `,
+  });
+
+  const isolationUnitId = runSupabaseDbQueryJson<{ id: string }>({
+    databaseUrl: options.databaseUrl,
+    outputFormat: "json",
+    sql: `
+      select id
+      from public.organisation_units
+      where organisation_id = '${isolationOrgId}'::uuid
+      limit 1;
+    `,
+  })[0]?.id;
+
+  if (isolationUnitId) {
+    insertAppendOnlyAiUsageFixture({
+      databaseUrl: options.databaseUrl,
+      organisationId: isolationOrgId,
+      membershipId: isolationMembershipId,
+      unitId: isolationUnitId,
+      fixtureKey: "isolation",
+    });
+  }
 
   const storagePath = `${orgId}/action/${actionId}/fixture.txt`;
   const { error: uploadError } = await options.admin.storage
@@ -419,10 +596,7 @@ export async function cleanupLegacyReplacementFixture(options: {
   }
 
   if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
-    executePurgeTenantModuleDataSql(
-      options.databaseUrl,
-      LEGACY_HOSTED_DEMO_ORGANISATION.code,
-    );
+    executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
@@ -523,6 +697,8 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
     storage_objects: number;
     isolation_outbox: number;
     isolation_pre_cutover_skips: number;
+    ai_usage_events: number;
+    isolation_ai_usage_events: number;
   }>({
     databaseUrl,
     outputFormat: "json",
@@ -557,7 +733,13 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
            where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
              and outbox_row.organisation_id = skip_row.organisation_id
              and outbox_row.id = skip_row.event_id
-         )) as isolation_pre_cutover_skips;
+         )) as isolation_pre_cutover_skips,
+        (select count(*)::int from public.ai_usage_events where organisation_id = '${orgId}'::uuid) as ai_usage_events,
+        (select count(*)::int
+         from public.ai_usage_events usage_row
+         join public.organisations organisation_row
+           on organisation_row.id = usage_row.organisation_id
+         where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}') as isolation_ai_usage_events;
     `,
   });
 
@@ -571,6 +753,8 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
       storage_objects: 0,
       isolation_outbox: 0,
       isolation_pre_cutover_skips: 0,
+      ai_usage_events: 0,
+      isolation_ai_usage_events: 0,
     }
   );
 }

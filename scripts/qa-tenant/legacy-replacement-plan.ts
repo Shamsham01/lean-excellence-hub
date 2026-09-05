@@ -5,6 +5,12 @@ import {
   formatPrivateInfrastructureCountLines,
   type TenantPrivateInfrastructureCounts,
 } from "./private-infrastructure-purge";
+import {
+  buildAppendOnlyTenantRowCountSql,
+  CUSTOM_APPEND_ONLY_DELETE_TABLES,
+  formatAppendOnlyInventoryLines,
+  listAllAppendOnlyDeleteTablesSql,
+} from "./tenant-retirement-policy";
 import { runSupabaseDbQueryJson } from "./db-cli";
 import {
   collectTenantInventory,
@@ -47,6 +53,7 @@ export type LegacyReplacementPlanDetails = {
   privateInfrastructure: LegacyPrivateInfrastructureCounts | null;
   storageObjectCount: number;
   moduleRowTotal: number;
+  appendOnlyInventory: Array<{ table: string; count: number }>;
   inventoryReport: string;
 };
 
@@ -157,6 +164,38 @@ function collectLegacyFoundationCounts(
   );
 }
 
+function collectLegacyAppendOnlyInventory(
+  databaseUrl: string,
+  organisationId: string,
+): Array<{ table: string; count: number }> {
+  const discoveredRows = runSupabaseDbQueryJson<{
+    tables: Array<{ table: string; trigger: string }>;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: listAllAppendOnlyDeleteTablesSql(),
+  });
+
+  const tableNames = [
+    ...new Set([
+      ...((discoveredRows[0]?.tables ?? []) as Array<{ table: string }>).map(
+        (entry) => entry.table,
+      ),
+      ...CUSTOM_APPEND_ONLY_DELETE_TABLES.map((policy) => policy.table),
+    ]),
+  ].sort();
+
+  const countRows = runSupabaseDbQueryJson<{
+    rows: Array<{ table: string; count: number }>;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: buildAppendOnlyTenantRowCountSql(organisationId, tableNames),
+  });
+
+  return (countRows[0]?.rows ?? []) as Array<{ table: string; count: number }>;
+}
+
 function collectLegacyPrivateInfrastructureCounts(
   databaseUrl: string,
   organisationId: string,
@@ -183,6 +222,7 @@ export function collectLegacyReplacementPlanDetails(
       privateInfrastructure: null,
       storageObjectCount: 0,
       moduleRowTotal: 0,
+      appendOnlyInventory: [],
       inventoryReport: formatTenantInventoryReport(
         collectTenantInventory(
           databaseUrl,
@@ -219,6 +259,10 @@ export function collectLegacyReplacementPlanDetails(
       LEGACY_HOSTED_DEMO_ORGANISATION.code,
     ),
     moduleRowTotal: countTenantModuleRows(inventory),
+    appendOnlyInventory: collectLegacyAppendOnlyInventory(
+      databaseUrl,
+      legacyOrganisation.id,
+    ),
     inventoryReport: formatTenantInventoryReport(
       inventory,
       "Legacy hosted demo inventory",
@@ -310,6 +354,9 @@ export function formatLegacyReplacementPlanDetails(
   lines.push(
     `  - total tenant-owned module row count: ${details.moduleRowTotal}`,
   );
+  lines.push("");
+  lines.push("Append-only / immutable tenant-owned rows");
+  lines.push(...formatAppendOnlyInventoryLines(details.appendOnlyInventory));
   lines.push("");
   lines.push(details.inventoryReport);
   lines.push("");
