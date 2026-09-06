@@ -40,17 +40,28 @@ export type CrossStageForeignKeyEdge = {
   deletionOrderSafe: boolean;
 };
 
-const PRIVATE_INFRASTRUCTURE_TABLES = new Set([
+const PRIVATE_INFRASTRUCTURE_TABLES = [
   "notification_delivery_provider_envelopes",
   "notification_delivery_ledger",
   "domain_event_outbox",
   "notification_projector_pre_cutover_skips",
   "session_organisation_contexts",
-  "workforce_aliases",
-]);
+] as const;
 
-const FOUNDATION_PRESERVED_PUBLIC_TABLES = new Set<string>(
-  FOUNDATION_TABLES.filter((table) => !table.includes(".")),
+const FOUNDATION_PRESERVED_PUBLIC_TABLES = FOUNDATION_TABLES.filter(
+  (table) => !table.includes("."),
+);
+
+const FOUNDATION_PRESERVED_PRIVATE_TABLES = FOUNDATION_TABLES.filter((table) =>
+  table.includes("."),
+).map((table) => table.split(".")[1]!);
+
+const FOUNDATION_PRESERVED_PUBLIC_TABLE_NAMES = new Set<string>(
+  FOUNDATION_PRESERVED_PUBLIC_TABLES,
+);
+
+const FOUNDATION_PRESERVED_PRIVATE_TABLE_NAMES = new Set<string>(
+  FOUNDATION_PRESERVED_PRIVATE_TABLES,
 );
 
 const FOUNDATION_STAGE_APPEND_ONLY_TABLE_NAMES = new Set<string>(
@@ -68,6 +79,110 @@ const MODULE_PURGE_INFRASTRUCTURE_TABLE_NAMES = new Set<string>(
 const MODULE_STAGE_APPEND_ONLY_TABLE_NAMES = new Set<string>(
   getModuleStageAppendOnlyTableNames(),
 );
+
+const PRIVATE_INFRASTRUCTURE_TABLE_NAMES = new Set<string>(
+  PRIVATE_INFRASTRUCTURE_TABLES,
+);
+
+function sqlStringList(values: readonly string[]) {
+  return values.map((value) => `'${value}'`).join(", ");
+}
+
+export function getFoundationPreservedPublicTableNames() {
+  return [...FOUNDATION_PRESERVED_PUBLIC_TABLES];
+}
+
+export function getFoundationPreservedPrivateTableNames() {
+  return [...FOUNDATION_PRESERVED_PRIVATE_TABLES];
+}
+
+export function foundationPreservedPublicTableSqlList() {
+  return sqlStringList(FOUNDATION_PRESERVED_PUBLIC_TABLES);
+}
+
+export function foundationPreservedPrivateTableSqlList() {
+  return sqlStringList(FOUNDATION_PRESERVED_PRIVATE_TABLES);
+}
+
+export function foundationDeferredTableSqlList() {
+  return sqlStringList(FOUNDATION_STAGE_DEPENDENCY_TABLES);
+}
+
+export function privateInfrastructureTableSqlList() {
+  return sqlStringList(PRIVATE_INFRASTRUCTURE_TABLES);
+}
+
+function buildCrossStageForeignKeyEdgeSelectSql(options?: {
+  indent?: string;
+  additionalWhere?: string;
+}) {
+  const indent = options?.indent ?? "";
+  const additionalWhere = options?.additionalWhere
+    ? `\n${indent}    and ${options.additionalWhere}`
+    : "";
+
+  return `
+${indent}  select
+${indent}    tc.constraint_name,
+${indent}    kcu.table_schema as child_schema,
+${indent}    kcu.table_name as child_table,
+${indent}    string_agg(kcu.column_name, ', ' order by kcu.ordinal_position) as child_columns,
+${indent}    parent_kcu.table_schema as parent_schema,
+${indent}    parent_kcu.table_name as parent_table,
+${indent}    string_agg(parent_kcu.column_name, ', ' order by kcu.ordinal_position) as parent_columns,
+${indent}    rc.delete_rule as on_delete
+${indent}  from information_schema.table_constraints tc
+${indent}  join information_schema.key_column_usage kcu
+${indent}    on tc.constraint_name = kcu.constraint_name
+${indent}   and tc.table_schema = kcu.table_schema
+${indent}  join information_schema.referential_constraints rc
+${indent}    on tc.constraint_name = rc.constraint_name
+${indent}   and tc.table_schema = rc.constraint_schema
+${indent}  join information_schema.key_column_usage parent_kcu
+${indent}    on rc.unique_constraint_schema = parent_kcu.constraint_schema
+${indent}   and rc.unique_constraint_name = parent_kcu.constraint_name
+${indent}   and kcu.position_in_unique_constraint = parent_kcu.ordinal_position
+${indent}  where tc.constraint_type = 'FOREIGN KEY'${additionalWhere}
+${indent}  group by
+${indent}    tc.constraint_name,
+${indent}    kcu.table_schema,
+${indent}    kcu.table_name,
+${indent}    parent_kcu.table_schema,
+${indent}    parent_kcu.table_name,
+${indent}    rc.delete_rule`;
+}
+
+function buildFoundationPreservedChildWhereClause(indent: string) {
+  const publicTables = foundationPreservedPublicTableSqlList();
+  const privateTables = foundationPreservedPrivateTableSqlList();
+
+  return `
+${indent}(
+${indent}  kcu.table_schema = 'public'
+${indent}  and kcu.table_name in (${publicTables})
+${indent})
+${indent}or (
+${indent}  kcu.table_schema = 'private'
+${indent}  and kcu.table_name in (${privateTables})
+${indent})`;
+}
+
+function buildModuleStageParentWhereClause(indent: string) {
+  const foundationPublicTables = foundationPreservedPublicTableSqlList();
+  const deferredTables = foundationDeferredTableSqlList();
+  const privateInfrastructureTables = privateInfrastructureTableSqlList();
+
+  return `
+${indent}(
+${indent}  parent_kcu.table_schema = 'public'
+${indent}  and parent_kcu.table_name not in (${foundationPublicTables})
+${indent}  and parent_kcu.table_name not in (${deferredTables})
+${indent})
+${indent}or (
+${indent}  parent_kcu.table_schema = 'private'
+${indent}  and parent_kcu.table_name in (${privateInfrastructureTables})
+${indent})`;
+}
 
 export function classifyCrossStageFkTableLifecycle(
   schema: string,
@@ -87,11 +202,21 @@ export function classifyCrossStageFkTableLifecycle(
     return "foundation-deferred";
   }
 
-  if (FOUNDATION_PRESERVED_PUBLIC_TABLES.has(table) && schema === "public") {
+  if (
+    FOUNDATION_PRESERVED_PUBLIC_TABLE_NAMES.has(table) &&
+    schema === "public"
+  ) {
     return "foundation-preserved";
   }
 
-  if (schema === "private" && PRIVATE_INFRASTRUCTURE_TABLES.has(table)) {
+  if (
+    FOUNDATION_PRESERVED_PRIVATE_TABLE_NAMES.has(table) &&
+    schema === "private"
+  ) {
+    return "foundation-preserved";
+  }
+
+  if (schema === "private" && PRIVATE_INFRASTRUCTURE_TABLE_NAMES.has(table)) {
     return "private-infrastructure";
   }
 
@@ -155,6 +280,8 @@ export function evaluateCrossStageForeignKeyEdge(
 }
 
 export function listCrossStageForeignKeysSql() {
+  const foundationPublicTables = foundationPreservedPublicTableSqlList();
+
   return `
 select coalesce(
   array_to_json(
@@ -175,59 +302,17 @@ select coalesce(
   '[]'::json
 ) as edges
 from (
-  select
-    tc.constraint_name,
-    tc.table_schema as child_schema,
-    tc.table_name as child_table,
-    string_agg(kcu.column_name, ', ' order by kcu.ordinal_position) as child_columns,
-    ccu.table_schema as parent_schema,
-    ccu.table_name as parent_table,
-    string_agg(ccu.column_name, ', ' order by kcu.ordinal_position) as parent_columns,
-    rc.delete_rule as on_delete
-  from information_schema.table_constraints tc
-  join information_schema.key_column_usage kcu
-    on tc.constraint_name = kcu.constraint_name
-   and tc.table_schema = kcu.table_schema
-  join information_schema.referential_constraints rc
-    on tc.constraint_name = rc.constraint_name
-   and tc.table_schema = rc.constraint_schema
-  join information_schema.constraint_column_usage ccu
-    on rc.unique_constraint_name = ccu.constraint_name
-   and rc.unique_constraint_schema = ccu.constraint_schema
-  where tc.constraint_type = 'FOREIGN KEY'
-    and (
-      tc.table_name in (
-        'security_audit_events',
-        'business_audit_events',
-        'resource_records'
-      )
-      or ccu.table_name in (
-        'security_audit_events',
-        'business_audit_events',
-        'resource_records',
-        'organisation_memberships',
-        'organisations'
-      )
-      or tc.table_schema = 'private'
-      or ccu.table_schema = 'private'
-      or tc.table_name = any(
-        array[${FOUNDATION_TABLES.filter((table) => !table.includes("."))
-          .map((table) => `'${table}'`)
-          .join(", ")}]
-      )
-      or ccu.table_name = any(
-        array[${FOUNDATION_TABLES.filter((table) => !table.includes("."))
-          .map((table) => `'${table}'`)
-          .join(", ")}]
-      )
-    )
-  group by
-    tc.constraint_name,
-    tc.table_schema,
-    tc.table_name,
-    ccu.table_schema,
-    ccu.table_name,
-    rc.delete_rule
+${buildCrossStageForeignKeyEdgeSelectSql({
+  indent: "  ",
+  additionalWhere: `(
+      kcu.table_name in (${foundationPublicTables})
+      or parent_kcu.table_name in (${foundationPublicTables})
+      or kcu.table_name in ('security_audit_events', 'business_audit_events', 'resource_records')
+      or parent_kcu.table_name in ('security_audit_events', 'business_audit_events', 'resource_records', 'organisation_memberships', 'organisations')
+      or kcu.table_schema = 'private'
+      or parent_kcu.table_schema = 'private'
+    )`,
+})}
 ) fk;
 `;
 }
@@ -300,15 +385,11 @@ export function buildCrossStageForeignKeyGuardStatements(options?: {
   indent?: string;
 }) {
   const indent = options?.indent ?? "  ";
-  const deferredTables = FOUNDATION_STAGE_DEPENDENCY_TABLES.map(
-    (table) => `'${table}'`,
-  ).join(", ");
-  const foundationAppendOnly = getFoundationStageAppendOnlyTableNames()
-    .map((table) => `'${table}'`)
-    .join(", ");
+  const childWhere = buildFoundationPreservedChildWhereClause(`${indent}    `);
+  const parentWhere = buildModuleStageParentWhereClause(`${indent}    `);
 
   return `
-${indent}-- Cross-stage FK guard: foundation-preserved children must not RESTRICT module-stage parent deletes.
+${indent}-- Cross-stage FK guard: all foundation-preserved children must not RESTRICT module-stage parent deletes.
 ${indent}select coalesce(
 ${indent}  array_agg(
 ${indent}    format(
@@ -328,44 +409,16 @@ ${indent}  array[]::text[]
 ${indent})
 ${indent}into cross_stage_fk_violations
 ${indent}from (
-${indent}  select
-${indent}    tc.constraint_name,
-${indent}    tc.table_schema as child_schema,
-${indent}    tc.table_name as child_table,
-${indent}    string_agg(kcu.column_name, ', ' order by kcu.ordinal_position) as child_columns,
-${indent}    ccu.table_schema as parent_schema,
-${indent}    ccu.table_name as parent_table,
-${indent}    string_agg(ccu.column_name, ', ' order by kcu.ordinal_position) as parent_columns,
-${indent}    rc.delete_rule as on_delete
-${indent}  from information_schema.table_constraints tc
-${indent}  join information_schema.key_column_usage kcu
-${indent}    on tc.constraint_name = kcu.constraint_name
-${indent}   and tc.table_schema = kcu.table_schema
-${indent}  join information_schema.referential_constraints rc
-${indent}    on tc.constraint_name = rc.constraint_name
-${indent}   and tc.table_schema = rc.constraint_schema
-${indent}  join information_schema.constraint_column_usage ccu
-${indent}    on rc.unique_constraint_name = ccu.constraint_name
-${indent}   and rc.unique_constraint_schema = ccu.constraint_schema
-${indent}  where tc.constraint_type = 'FOREIGN KEY'
-${indent}    and tc.table_schema = 'public'
-${indent}    and tc.table_name in (${foundationAppendOnly})
-${indent}    and ccu.table_schema = 'public'
-${indent}    and ccu.table_name not in (${deferredTables})
-${indent}    and ccu.table_name not in (${foundationAppendOnly})
-${indent}    and ccu.table_name not in (${FOUNDATION_TABLES.filter(
-    (table) => !table.includes("."),
-  )
-    .map((table) => `'${table}'`)
-    .join(", ")})
-${indent}    and rc.delete_rule in ('RESTRICT', 'NO ACTION')
-${indent}  group by
-${indent}    tc.constraint_name,
-${indent}    tc.table_schema,
-${indent}    tc.table_name,
-${indent}    ccu.table_schema,
-${indent}    ccu.table_name,
-${indent}    rc.delete_rule
+${buildCrossStageForeignKeyEdgeSelectSql({
+  indent: `${indent}  `,
+  additionalWhere: `(
+${childWhere}
+${indent}    )
+${indent}    and (
+${parentWhere}
+${indent}    )
+${indent}    and rc.delete_rule in ('RESTRICT', 'NO ACTION')`,
+})}
 ${indent}) unsafe;
 ${indent}
 ${indent}if coalesce(array_length(cross_stage_fk_violations, 1), 0) > 0 then
