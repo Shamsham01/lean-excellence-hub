@@ -380,6 +380,7 @@ export function collectCrossStageForeignKeyInventory(
   }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
     sql: listCrossStageForeignKeysSql(),
   });
 

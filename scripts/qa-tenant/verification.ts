@@ -118,12 +118,14 @@ function discoverTableLists(databaseUrl: string) {
   const moduleRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
     sql: listModuleTablesSql(),
   });
 
   const foundationRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
     sql: listFoundationTablesSql(),
   });
 
@@ -132,6 +134,7 @@ function discoverTableLists(databaseUrl: string) {
   }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
     sql: listAppendOnlyDeleteTablesSql(),
   });
 
@@ -228,6 +231,7 @@ export function verifyCookieWorksTenant(databaseUrl: string) {
     {
       databaseUrl,
       outputFormat: "json",
+      heavy: true,
       sql: buildVerificationSql(moduleTables, foundationTables),
     },
     { minRows: 1, maxRows: 1 },

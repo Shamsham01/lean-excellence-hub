@@ -459,6 +459,7 @@ export function executeDeleteLegacyHostedDemoOrganisationSql(
 ) {
   runSupabaseDbQuery({
     databaseUrl,
+    heavy: true,
     sql: buildDeleteLegacyOrganisationSql(),
   });
 }

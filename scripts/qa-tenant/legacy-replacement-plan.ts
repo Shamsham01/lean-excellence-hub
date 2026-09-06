@@ -181,7 +181,15 @@ function collectLegacyFoundationCounts(
   );
 }
 
-function collectDiscoveredAppendOnlyTables(databaseUrl: string) {
+type DiscoveredAppendOnlyTable = {
+  table: string;
+  trigger: string;
+  trigger_function?: string;
+};
+
+function collectDiscoveredAppendOnlyTables(
+  databaseUrl: string,
+): DiscoveredAppendOnlyTable[] {
   const discoveredRows = runSupabaseDbQueryJson<{
     tables: Array<{
       table: string;
@@ -191,29 +199,23 @@ function collectDiscoveredAppendOnlyTables(databaseUrl: string) {
   }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
     sql: listAllAppendOnlyDeleteTablesSql(),
   });
 
-  return (discoveredRows[0]?.tables ?? []) as Array<{
-    table: string;
-    trigger: string;
-    trigger_function?: string;
-  }>;
+  return (discoveredRows[0]?.tables ?? []) as DiscoveredAppendOnlyTable[];
 }
 
-function collectLegacyAppendOnlyInventory(
+function collectLegacyAppendOnlyInventoryFromDiscovered(
   databaseUrl: string,
   organisationId: string,
+  discovered: readonly DiscoveredAppendOnlyTable[],
 ): Array<{
   table: string;
   count: number;
   lifecycleStage?: "module" | "foundation" | "unknown";
 }> {
-  const discovered = collectDiscoveredAppendOnlyTables(databaseUrl);
-
-  const tableNames = [
-    ...new Set(discovered.map((entry) => entry.table)),
-  ].sort();
+  const tableNames = [...new Set(discovered.map((entry) => entry.table))].sort();
 
   const countRows = runSupabaseDbQueryJson<{
     rows: Array<{
@@ -235,11 +237,9 @@ function collectLegacyAppendOnlyInventory(
   }));
 }
 
-function collectUnclassifiedAppendOnlyTables(
-  databaseUrl: string,
+function collectUnclassifiedAppendOnlyTablesFromDiscovered(
+  discovered: readonly DiscoveredAppendOnlyTable[],
 ): LegacyReplacementPlanDetails["unclassifiedAppendOnlyTables"] {
-  const discovered = collectDiscoveredAppendOnlyTables(databaseUrl);
-
   return collectUnclassifiedAppendOnlyDiscoveryRows(
     discovered.map((entry) => ({
       table: entry.table,
@@ -248,6 +248,14 @@ function collectUnclassifiedAppendOnlyTables(
         ? { triggerFunction: entry.trigger_function }
         : {}),
     })),
+  );
+}
+
+function collectUnclassifiedAppendOnlyTables(
+  databaseUrl: string,
+): LegacyReplacementPlanDetails["unclassifiedAppendOnlyTables"] {
+  return collectUnclassifiedAppendOnlyTablesFromDiscovered(
+    collectDiscoveredAppendOnlyTables(databaseUrl),
   );
 }
 
@@ -269,6 +277,9 @@ export function collectLegacyReplacementPlanDetails(
   legacyOrganisation: LegacyHostedDemoOrganisation | null,
 ): LegacyReplacementPlanDetails {
   if (!legacyOrganisation) {
+    const unclassifiedAppendOnlyTables =
+      collectUnclassifiedAppendOnlyTables(databaseUrl);
+
     return {
       legacyOrganisation: null,
       membershipCount: 0,
@@ -278,10 +289,8 @@ export function collectLegacyReplacementPlanDetails(
       storageObjectCount: 0,
       moduleRowTotal: 0,
       appendOnlyInventory: [],
-      unclassifiedAppendOnlyTables:
-        collectUnclassifiedAppendOnlyTables(databaseUrl),
-      destructiveReadinessBlocked:
-        collectUnclassifiedAppendOnlyTables(databaseUrl).length > 0,
+      unclassifiedAppendOnlyTables,
+      destructiveReadinessBlocked: unclassifiedAppendOnlyTables.length > 0,
       inventoryReport: formatTenantInventoryReport(
         collectTenantInventory(
           databaseUrl,
@@ -300,13 +309,17 @@ export function collectLegacyReplacementPlanDetails(
     databaseUrl,
     legacyOrganisation.id,
   );
-
-  const appendOnlyInventory = collectLegacyAppendOnlyInventory(
+  const discoveredAppendOnlyTables =
+    collectDiscoveredAppendOnlyTables(databaseUrl);
+  const appendOnlyInventory = collectLegacyAppendOnlyInventoryFromDiscovered(
     databaseUrl,
     legacyOrganisation.id,
+    discoveredAppendOnlyTables,
   );
   const unclassifiedAppendOnlyTables =
-    collectUnclassifiedAppendOnlyTables(databaseUrl);
+    collectUnclassifiedAppendOnlyTablesFromDiscovered(
+      discoveredAppendOnlyTables,
+    );
   const crossStageFkViolations = collectUnsafeCrossStageForeignKeyEdges(
     collectCrossStageForeignKeyInventory(databaseUrl),
   );
