@@ -3,7 +3,10 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { purgeAuthUserIdentityPrerequisites } from "./auth-identity-cleanup";
-import { COOKIEWORKS_STORAGE_BUCKET } from "./deletion-graph";
+import {
+  buildFoundationStageDependencyDeleteStatements,
+  COOKIEWORKS_STORAGE_BUCKET,
+} from "./deletion-graph";
 import { executeLegacyHostedDemoModulePurgeSql } from "./delete-tenant";
 import { executeDeleteLegacyHostedDemoOrganisationSql } from "./delete-legacy-hosted-demo";
 import { runSupabaseDbQuery, runSupabaseDbQueryJson } from "./db-cli";
@@ -263,9 +266,6 @@ function deleteFixtureModuleDataForOrganisationCodes(
 
           delete from public.actions
           where organisation_id = target_org_id;
-
-          delete from public.resource_records
-          where organisation_id = target_org_id;
         end loop;
       end
       $$;
@@ -273,7 +273,7 @@ function deleteFixtureModuleDataForOrganisationCodes(
   });
 }
 
-function deleteFoundationAuditEventsForOrganisationCodes(
+function deleteFixtureFoundationDataForOrganisationCodes(
   databaseUrl: string,
   organisationCodes: readonly string[],
 ) {
@@ -298,6 +298,7 @@ function deleteFoundationAuditEventsForOrganisationCodes(
           where code in (${codeList})
         loop
 ${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "          " })}
+${buildFoundationStageDependencyDeleteStatements("target_org_id", { indent: "          " })}
         end loop;
       end
       $$;
@@ -436,13 +437,13 @@ export async function seedLegacyReplacementFixture(options: {
     `,
   });
 
-  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureFoundationDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_HOSTED_DEMO_ORGANISATION.code,
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);
 
-  deleteFoundationAuditEventsForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_HOSTED_DEMO_ORGANISATION.code,
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
@@ -854,12 +855,12 @@ export async function cleanupLegacyReplacementFixture(options: {
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
-  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureFoundationDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);
 
-  deleteFoundationAuditEventsForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);
