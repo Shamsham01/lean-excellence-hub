@@ -109,11 +109,13 @@ describe
           storageAdmin: admin,
         }),
       );
-      await runIntegrationPhase("suite cleanup: legacy replacement fixture", () =>
-        cleanupLegacyReplacementFixture({
-          admin,
-          databaseUrl: env.databaseUrl,
-        }),
+      await runIntegrationPhase(
+        "suite cleanup: legacy replacement fixture",
+        () =>
+          cleanupLegacyReplacementFixture({
+            admin,
+            databaseUrl: env.databaseUrl,
+          }),
       );
     }, 180_000);
 

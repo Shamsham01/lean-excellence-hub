@@ -215,7 +215,9 @@ function collectLegacyAppendOnlyInventoryFromDiscovered(
   count: number;
   lifecycleStage?: "module" | "foundation" | "unknown";
 }> {
-  const tableNames = [...new Set(discovered.map((entry) => entry.table))].sort();
+  const tableNames = [
+    ...new Set(discovered.map((entry) => entry.table)),
+  ].sort();
 
   const countRows = runSupabaseDbQueryJson<{
     rows: Array<{
