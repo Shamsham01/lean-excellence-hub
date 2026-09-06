@@ -13,6 +13,7 @@ import {
 } from "./legacy-hosted-demo";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
 import { buildFoundationStageAppendOnlyDeleteStatements } from "./tenant-retirement-policy";
+import { buildFoundationStageDependencyDeleteStatements } from "./deletion-graph";
 import { purgeTenantStorageObjects } from "./tenant-storage-cleanup";
 
 function escapeSqlLiteral(value: string) {
@@ -321,6 +322,10 @@ export function captureLegacyDeletionContext(
   };
 }
 
+export function buildDeleteLegacyHostedDemoOrganisationSql() {
+  return buildDeleteLegacyOrganisationSql();
+}
+
 function buildDeleteLegacyOrganisationSql() {
   const orgId = LEGACY_HOSTED_DEMO_ORGANISATION.id;
   const orgCode = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code);
@@ -387,6 +392,8 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
 ${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "  " })}
 
+${buildFoundationStageDependencyDeleteStatements("target_org_id", { indent: "  " })}
+
   delete from public.organisation_memberships
   where organisation_id = target_org_id;
 
@@ -452,6 +459,7 @@ export function executeDeleteLegacyHostedDemoOrganisationSql(
 ) {
   runSupabaseDbQuery({
     databaseUrl,
+    heavy: true,
     sql: buildDeleteLegacyOrganisationSql(),
   });
 }

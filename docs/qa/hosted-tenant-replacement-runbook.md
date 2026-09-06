@@ -133,10 +133,12 @@ retirement deletion: `ai_usage_events`, `benefit_overlap_allocation_history`.
 
 ```text
 append-only policy guard (abort on unknown)
+→ cross-stage FK guard (abort on unsafe RESTRICT edges)
 → private notification infrastructure (QA2c order)
 → controlled append-only retirement deletes (explicitly approved module tables only)
 → maturity explicit unlock deletes
 → generic deletable module tables (append-only excluded)
+→ template infrastructure deletes (resource_records deferred)
 → remaining-row verification (module-stage append-only must be zero)
 ```
 
@@ -158,6 +160,34 @@ discovery finds unclassified append-only protections.
 2. Run read-only dry-run and verify append-only inventory section.
 3. Never rerun destructive replacement blindly.
 4. Unexpected append-only tables without an approved policy must abort the purge.
+
+## Incident note (QA2e): `business_audit_events_resource_fkey` blocked module purge
+
+During a hosted QA2 recovery attempt after QA2d, tenant purge aborted inside the PostgreSQL
+`DO $$ ... $$` module purge with:
+
+```text
+update or delete on table "resource_records" violates foreign key constraint
+"business_audit_events_resource_fkey" on table "business_audit_events"
+```
+
+**Root cause:** `full-tenant-removal` module purge deleted `public.resource_records` while
+foundation-stage `public.business_audit_events` rows with non-null `resource_record_id` were still
+preserved. The RESTRICT FK is intentional: business audit evidence must not orphan resource
+references.
+
+**Why hosted state was unchanged:** same as QA2c/QA2d — the purge runs inside a single PostgreSQL
+`DO` block. The FK violation aborted that statement and PostgreSQL rolled back all mutations from
+the block.
+
+**Fix (QA2e):**
+
+- Introduced `FOUNDATION_STAGE_DEPENDENCY_TABLES` (`resource_records`) — deferred from module purge
+  to foundation deletion.
+- Foundation deletion order: audit ledger retirement → `resource_records` → memberships /
+  remaining foundation graph.
+- Added cross-stage FK pre-mutation guard and local integration fixture coverage for business audit
+  rows with real `resource_record_id` values.
 
 ## Target hosted project
 

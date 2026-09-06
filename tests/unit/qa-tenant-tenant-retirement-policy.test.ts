@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { FOUNDATION_TABLES } from "../../scripts/qa-tenant/deletion-graph";
+import {
+  assertDeletionGraphPolicyConsistency,
+  FOUNDATION_STAGE_DEPENDENCY_TABLES,
+  MODULE_PURGE_INFRASTRUCTURE_TABLES,
+  FOUNDATION_TABLES,
+} from "../../scripts/qa-tenant/deletion-graph";
 import {
   assertTenantRetirementPolicyConsistency,
   buildAppendOnlyUnknownGuardStatements,
@@ -21,12 +26,15 @@ import {
   buildLegacyHostedDemoModulePurgeSql,
   buildPurgeTenantModuleDataSql,
 } from "../../scripts/qa-tenant/tenant-purge-sql";
+import { buildDeleteLegacyHostedDemoOrganisationSql } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
+import { buildCrossStageForeignKeyGuardStatements } from "../../scripts/qa-tenant/cross-stage-fk-safety";
 
 describe("tenant retirement policy", () => {
   it("passes policy consistency checks for foundation vs module classification", () => {
     expect(() =>
       assertTenantRetirementPolicyConsistency(FOUNDATION_TABLES),
     ).not.toThrow();
+    expect(() => assertDeletionGraphPolicyConsistency()).not.toThrow();
   });
 
   it("classifies unknown append-only tables as unknown", () => {
@@ -209,6 +217,48 @@ describe("tenant purge SQL classification", () => {
     expect(statements).not.toContain("prevent_update_or_delete%'");
   });
 
+  it("does not delete deferred resource_records during full-removal module purge", () => {
+    const sql = buildLegacyHostedDemoModulePurgeSql();
+    const moduleSection = sql.slice(
+      0,
+      sql.indexOf("Tenant module purge complete"),
+    );
+
+    expect(moduleSection).not.toMatch(
+      /delete from public\.resource_records\b/i,
+    );
+  });
+
+  it("includes a pre-mutation cross-stage FK guard for full tenant removal", () => {
+    const sql = buildLegacyHostedDemoModulePurgeSql();
+    const guard = buildCrossStageForeignKeyGuardStatements();
+
+    expect(guard).toContain("unsafe cross-stage FK dependencies");
+    expect(sql).toContain("unsafe cross-stage FK dependencies");
+    expect(sql.indexOf("unsafe cross-stage FK dependencies")).toBeLessThan(
+      sql.indexOf(
+        "delete from private.notification_projector_pre_cutover_skips",
+      ),
+    );
+  });
+
+  it("deletes foundation dependencies only after append-only audit retirement", () => {
+    const sql = buildDeleteLegacyHostedDemoOrganisationSql();
+    const auditDeleteIndex = sql.indexOf(
+      "delete from public.business_audit_events",
+    );
+    const resourceDeleteIndex = sql.indexOf(
+      "delete from public.resource_records",
+    );
+    const membershipDeleteIndex = sql.indexOf(
+      "delete from public.organisation_memberships",
+    );
+
+    expect(auditDeleteIndex).toBeGreaterThanOrEqual(0);
+    expect(resourceDeleteIndex).toBeGreaterThan(auditDeleteIndex);
+    expect(membershipDeleteIndex).toBeGreaterThan(resourceDeleteIndex);
+  });
+
   it("builds module-stage controlled retirement delete statements only for approved tables", () => {
     const statements =
       buildControlledRetirementDeleteStatements("target_org_id");
@@ -235,5 +285,11 @@ describe("tenant purge SQL classification", () => {
     expect(statements).toContain(
       "Must run before organisation_memberships deletion",
     );
+  });
+
+  it("keeps foundation-stage dependency tables out of module-purge infrastructure", () => {
+    for (const dependencyTable of FOUNDATION_STAGE_DEPENDENCY_TABLES) {
+      expect(MODULE_PURGE_INFRASTRUCTURE_TABLES).not.toContain(dependencyTable);
+    }
   });
 });
