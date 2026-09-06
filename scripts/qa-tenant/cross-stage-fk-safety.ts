@@ -11,7 +11,9 @@
 import {
   FOUNDATION_STAGE_DEPENDENCY_TABLES,
   FOUNDATION_TABLES,
+  FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLES,
   MODULE_PURGE_INFRASTRUCTURE_TABLES,
+  SHARED_REFERENCE_CATALOG_TABLES,
 } from "./deletion-graph";
 import { runSupabaseDbQueryJson } from "./db-cli";
 import {
@@ -84,6 +86,14 @@ const PRIVATE_INFRASTRUCTURE_TABLE_NAMES = new Set<string>(
   PRIVATE_INFRASTRUCTURE_TABLES,
 );
 
+const FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLE_NAMES = new Set<string>(
+  FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLES,
+);
+
+const SHARED_REFERENCE_CATALOG_TABLE_NAMES = new Set<string>(
+  SHARED_REFERENCE_CATALOG_TABLES,
+);
+
 function sqlStringList(values: readonly string[]) {
   return values.map((value) => `'${value}'`).join(", ");
 }
@@ -106,6 +116,14 @@ export function foundationPreservedPrivateTableSqlList() {
 
 export function foundationDeferredTableSqlList() {
   return sqlStringList(FOUNDATION_STAGE_DEPENDENCY_TABLES);
+}
+
+export function fullTenantRemovalFoundationBridgeClearTableSqlList() {
+  return sqlStringList(FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLES);
+}
+
+export function sharedReferenceCatalogTableSqlList() {
+  return sqlStringList(SHARED_REFERENCE_CATALOG_TABLES);
 }
 
 export function privateInfrastructureTableSqlList() {
@@ -155,11 +173,13 @@ ${indent}    rc.delete_rule`;
 function buildFoundationPreservedChildWhereClause(indent: string) {
   const publicTables = foundationPreservedPublicTableSqlList();
   const privateTables = foundationPreservedPrivateTableSqlList();
+  const bridgeClearTables = fullTenantRemovalFoundationBridgeClearTableSqlList();
 
   return `
 ${indent}(
 ${indent}  kcu.table_schema = 'public'
 ${indent}  and kcu.table_name in (${publicTables})
+${indent}  and kcu.table_name not in (${bridgeClearTables})
 ${indent})
 ${indent}or (
 ${indent}  kcu.table_schema = 'private'
@@ -170,6 +190,7 @@ ${indent})`;
 function buildModuleStageParentWhereClause(indent: string) {
   const foundationPublicTables = foundationPreservedPublicTableSqlList();
   const deferredTables = foundationDeferredTableSqlList();
+  const sharedCatalogTables = sharedReferenceCatalogTableSqlList();
   const privateInfrastructureTables = privateInfrastructureTableSqlList();
 
   return `
@@ -177,6 +198,14 @@ ${indent}(
 ${indent}  parent_kcu.table_schema = 'public'
 ${indent}  and parent_kcu.table_name not in (${foundationPublicTables})
 ${indent}  and parent_kcu.table_name not in (${deferredTables})
+${indent}  and parent_kcu.table_name not in (${sharedCatalogTables})
+${indent}  and exists (
+${indent}    select 1
+${indent}    from information_schema.columns parent_org_col
+${indent}    where parent_org_col.table_schema = parent_kcu.table_schema
+${indent}      and parent_org_col.table_name = parent_kcu.table_name
+${indent}      and parent_org_col.column_name = 'organisation_id'
+${indent}  )
 ${indent})
 ${indent}or (
 ${indent}  parent_kcu.table_schema = 'private'
@@ -214,6 +243,13 @@ export function classifyCrossStageFkTableLifecycle(
     schema === "private"
   ) {
     return "foundation-preserved";
+  }
+
+  if (
+    SHARED_REFERENCE_CATALOG_TABLE_NAMES.has(table) &&
+    schema === "public"
+  ) {
+    return "unknown";
   }
 
   if (schema === "private" && PRIVATE_INFRASTRUCTURE_TABLE_NAMES.has(table)) {
@@ -266,10 +302,20 @@ export function evaluateCrossStageForeignKeyEdge(
     (edge.parentSchema === "public" &&
       FOUNDATION_STAGE_DEPENDENCY_TABLE_NAMES.has(edge.parentTable));
 
+  const childClearedBeforeModuleParents =
+    edge.childSchema === "public" &&
+    FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLE_NAMES.has(edge.childTable);
+
+  const parentIsSharedCatalog =
+    edge.parentSchema === "public" &&
+    SHARED_REFERENCE_CATALOG_TABLE_NAMES.has(edge.parentTable);
+
   const deletionOrderSafe =
     !crossesFoundationPreservedChildToModuleDeletedParent ||
     !isRestrictiveDeleteRule(edge.onDelete) ||
-    parentExplicitlyDeferred;
+    parentExplicitlyDeferred ||
+    childClearedBeforeModuleParents ||
+    parentIsSharedCatalog;
 
   return {
     ...edge,

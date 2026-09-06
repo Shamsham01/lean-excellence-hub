@@ -1,4 +1,5 @@
 import {
+  buildFullTenantRemovalFoundationBridgeClearStatements,
   foundationTableSqlList,
   foundationStageDependencyTableSqlList,
   MAX_MODULE_PURGE_PASSES,
@@ -59,6 +60,9 @@ ${buildAppendOnlyUnknownGuardStatements({ indent: "  " })}
 
   if purge_retention = 'full-tenant-removal' then
 ${buildCrossStageForeignKeyGuardStatements({ indent: "    " })}
+${buildFullTenantRemovalFoundationBridgeClearStatements("target_org_id", {
+  indent: "    ",
+})}
   end if;
 
 ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}

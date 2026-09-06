@@ -95,6 +95,24 @@ export const MODULE_PURGE_INFRASTRUCTURE_TABLES = [
  */
 export const FOUNDATION_STAGE_DEPENDENCY_TABLES = ["resource_records"] as const;
 
+/**
+ * Foundation tables cleared during full-tenant-removal module purge before
+ * tenant-scoped module parents are deleted. Required when foundation rows
+ * RESTRICT-delete against module tables such as job_functions.
+ */
+export const FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLES = [
+  "organisation_invitation_provisioning",
+  "workforce_provision_intents",
+] as const;
+
+/**
+ * Shared reference catalog tables without organisation_id. They are never
+ * tenant module-deletion targets during purge.
+ */
+export const SHARED_REFERENCE_CATALOG_TABLES = [
+  "permission_definitions",
+] as const;
+
 export const PURGE_INFRASTRUCTURE_TABLES = [
   ...MODULE_PURGE_INFRASTRUCTURE_TABLES,
   ...FOUNDATION_STAGE_DEPENDENCY_TABLES,
@@ -110,6 +128,34 @@ export function foundationStageDependencyTableSqlList() {
   return FOUNDATION_STAGE_DEPENDENCY_TABLES.map((table) => `'${table}'`).join(
     ", ",
   );
+}
+
+export function fullTenantRemovalFoundationBridgeClearTableSqlList() {
+  return FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLES.map(
+    (table) => `'${table}'`,
+  ).join(", ");
+}
+
+export function buildFullTenantRemovalFoundationBridgeClearStatements(
+  targetOrgVar: string,
+  options?: { indent?: string },
+) {
+  const indent = options?.indent ?? "  ";
+  const lines: string[] = [];
+
+  lines.push(
+    `${indent}-- Foundation bridge rows cleared before module parent deletion (full-tenant-removal only).`,
+  );
+
+  for (const tableName of FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLES) {
+    lines.push(
+      `${indent}delete from public.${tableName}`,
+      `${indent}where organisation_id = ${targetOrgVar};`,
+      "",
+    );
+  }
+
+  return lines.join("\n");
 }
 
 export function purgeInfrastructureTableSqlList() {

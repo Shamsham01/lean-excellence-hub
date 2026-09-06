@@ -62,6 +62,39 @@ describe("cross-stage FK safety evaluation", () => {
     expect(collectUnsafeCrossStageForeignKeyEdges([edge])).toHaveLength(1);
   });
 
+  it("treats role_permissions -> permission_definitions as safe (shared catalog parent)", () => {
+    const edge = evaluateCrossStageForeignKeyEdge({
+      constraintName: "role_permissions_permission_key_fkey",
+      childSchema: "public",
+      childTable: "role_permissions",
+      childColumns: "permission_key",
+      parentSchema: "public",
+      parentTable: "permission_definitions",
+      parentColumns: "permission_key",
+      onDelete: "RESTRICT",
+    });
+
+    expect(edge.childLifecycleStage).toBe("foundation-preserved");
+    expect(edge.deletionOrderSafe).toBe(true);
+  });
+
+  it("treats foundation bridge-clear children -> module parent RESTRICT edges as safe", () => {
+    const edge = evaluateCrossStageForeignKeyEdge({
+      constraintName: "organisation_invitation_provisioning_job_function_fkey",
+      childSchema: "public",
+      childTable: "organisation_invitation_provisioning",
+      childColumns: "organisation_id, intended_job_function_id",
+      parentSchema: "public",
+      parentTable: "job_functions",
+      parentColumns: "organisation_id, id",
+      onDelete: "RESTRICT",
+    });
+
+    expect(edge.childLifecycleStage).toBe("foundation-preserved");
+    expect(edge.parentLifecycleStage).toBe("module-deleted");
+    expect(edge.deletionOrderSafe).toBe(true);
+  });
+
   it("C) includes the full foundation-preserved public allowlist in the PostgreSQL guard", () => {
     const guard = buildCrossStageForeignKeyGuardStatements();
 
@@ -78,12 +111,16 @@ describe("cross-stage FK safety evaluation", () => {
   it("D) places the PostgreSQL guard before the first destructive mutation", () => {
     const sql = buildLegacyHostedDemoModulePurgeSql();
     const guardIndex = sql.indexOf("unsafe cross-stage FK dependencies");
+    const bridgeClearIndex = sql.indexOf(
+      "delete from public.organisation_invitation_provisioning",
+    );
     const firstMutationIndex = sql.indexOf(
       "delete from private.notification_projector_pre_cutover_skips",
     );
 
     expect(guardIndex).toBeGreaterThanOrEqual(0);
-    expect(firstMutationIndex).toBeGreaterThan(guardIndex);
+    expect(bridgeClearIndex).toBeGreaterThan(guardIndex);
+    expect(firstMutationIndex).toBeGreaterThan(bridgeClearIndex);
   });
 
   it("flags unsafe edges when a deferred parent is treated as module-deleted", () => {
