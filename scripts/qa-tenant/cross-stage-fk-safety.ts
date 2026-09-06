@@ -348,19 +348,83 @@ select coalesce(
   '[]'::json
 ) as edges
 from (
-${buildCrossStageForeignKeyEdgeSelectSql({
+${buildCrossStageForeignKeyEdgeSelectPgCatalogSql({
   indent: "  ",
   additionalWhere: `(
-      kcu.table_name in (${foundationPublicTables})
-      or parent_kcu.table_name in (${foundationPublicTables})
-      or kcu.table_name in ('security_audit_events', 'business_audit_events', 'resource_records')
-      or parent_kcu.table_name in ('security_audit_events', 'business_audit_events', 'resource_records', 'organisation_memberships', 'organisations')
-      or kcu.table_schema = 'private'
-      or parent_kcu.table_schema = 'private'
+      constraint_row.child_table in (${foundationPublicTables})
+      or constraint_row.parent_table in (${foundationPublicTables})
+      or constraint_row.child_table in ('security_audit_events', 'business_audit_events', 'resource_records')
+      or constraint_row.parent_table in ('security_audit_events', 'business_audit_events', 'resource_records', 'organisation_memberships', 'organisations')
+      or constraint_row.child_schema = 'private'
+      or constraint_row.parent_schema = 'private'
     )`,
 })}
 ) fk;
 `;
+}
+
+function buildCrossStageForeignKeyEdgeSelectPgCatalogSql(options?: {
+  indent?: string;
+  additionalWhere?: string;
+}) {
+  const indent = options?.indent ?? "";
+  const additionalWhere = options?.additionalWhere
+    ? `\n${indent}  and ${options.additionalWhere}`
+    : "";
+
+  return `
+${indent}select
+${indent}  constraint_row.constraint_name,
+${indent}  constraint_row.child_schema,
+${indent}  constraint_row.child_table,
+${indent}  constraint_row.child_columns,
+${indent}  constraint_row.parent_schema,
+${indent}  constraint_row.parent_table,
+${indent}  constraint_row.parent_columns,
+${indent}  constraint_row.on_delete
+${indent}from (
+${indent}  select
+${indent}    pg_constraint.conname as constraint_name,
+${indent}    child_namespace.nspname as child_schema,
+${indent}    child_relation.relname as child_table,
+${indent}    (
+${indent}      select string_agg(child_attribute.attname, ', ' order by key_columns.ord)
+${indent}      from unnest(pg_constraint.conkey) with ordinality as key_columns(attnum, ord)
+${indent}      join pg_attribute child_attribute
+${indent}        on child_attribute.attrelid = pg_constraint.conrelid
+${indent}       and child_attribute.attnum = key_columns.attnum
+${indent}       and not child_attribute.attisdropped
+${indent}    ) as child_columns,
+${indent}    parent_namespace.nspname as parent_schema,
+${indent}    parent_relation.relname as parent_table,
+${indent}    (
+${indent}      select string_agg(parent_attribute.attname, ', ' order by key_columns.ord)
+${indent}      from unnest(pg_constraint.confkey) with ordinality as key_columns(attnum, ord)
+${indent}      join pg_attribute parent_attribute
+${indent}        on parent_attribute.attrelid = pg_constraint.confrelid
+${indent}       and parent_attribute.attnum = key_columns.attnum
+${indent}       and not parent_attribute.attisdropped
+${indent}    ) as parent_columns,
+${indent}    case pg_constraint.confdeltype
+${indent}      when 'a' then 'NO ACTION'
+${indent}      when 'r' then 'RESTRICT'
+${indent}      when 'c' then 'CASCADE'
+${indent}      when 'n' then 'SET NULL'
+${indent}      when 'd' then 'SET DEFAULT'
+${indent}    end as on_delete
+${indent}  from pg_constraint
+${indent}  join pg_class child_relation
+${indent}    on child_relation.oid = pg_constraint.conrelid
+${indent}  join pg_namespace child_namespace
+${indent}    on child_namespace.oid = child_relation.relnamespace
+${indent}  join pg_class parent_relation
+${indent}    on parent_relation.oid = pg_constraint.confrelid
+${indent}  join pg_namespace parent_namespace
+${indent}    on parent_namespace.oid = parent_relation.relnamespace
+${indent}  where pg_constraint.contype = 'f'
+${indent}) constraint_row
+${indent}where constraint_row.child_columns is not null
+${indent}  and constraint_row.parent_columns is not null${additionalWhere}`;
 }
 
 export function collectCrossStageForeignKeyInventory(

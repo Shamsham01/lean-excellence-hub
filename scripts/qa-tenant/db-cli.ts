@@ -142,6 +142,37 @@ function readSqlPreview(options: SupabaseDbQueryOptions) {
 }
 
 export function runSupabaseDbQuery(options: SupabaseDbQueryOptions): string {
+  const maxAttempts = 3;
+  let lastError: SupabaseDbQueryError | undefined;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return runSupabaseDbQueryOnce(options);
+    } catch (error) {
+      if (
+        error instanceof SupabaseDbQueryError &&
+        isTransientDbConnectionError(error.message) &&
+        attempt < maxAttempts
+      ) {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw (
+    lastError ?? new SupabaseDbQueryError("Supabase DB query failed.", "", "")
+  );
+}
+
+function isTransientDbConnectionError(message: string) {
+  return /connection terminated unexpectedly|server closed the connection unexpectedly|ECONNRESET|connection reset by peer/i.test(
+    message,
+  );
+}
+
+function runSupabaseDbQueryOnce(options: SupabaseDbQueryOptions): string {
   let tempFile: string | undefined;
   const timeoutMs = resolveQueryTimeoutMs(options);
   const sqlPreview = readSqlPreview(options);

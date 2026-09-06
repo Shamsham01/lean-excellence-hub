@@ -25,6 +25,10 @@ import {
   formatTenantInventoryReport,
 } from "./tenant-inventory";
 import { countTenantStorageObjects } from "./tenant-storage-cleanup";
+import {
+  logIntegrationPhaseEnd,
+  logIntegrationPhaseStart,
+} from "./integration-phase-log";
 import type { LegacyHostedDemoOrganisation } from "./delete-legacy-hosted-demo";
 
 export type LegacyMemberIdentity = {
@@ -307,10 +311,21 @@ export function collectLegacyReplacementPlanDetails(
     databaseUrl,
     LEGACY_HOSTED_DEMO_ORGANISATION.code,
   );
+
+  logIntegrationPhaseStart("legacy plan: cross-stage FK inventory");
+  const crossStageFkViolations = collectUnsafeCrossStageForeignKeyEdges(
+    collectCrossStageForeignKeyInventory(databaseUrl),
+  );
+  logIntegrationPhaseEnd("legacy plan: cross-stage FK inventory");
+
+  logIntegrationPhaseStart("legacy plan: member identities");
   const members = collectLegacyMemberIdentities(
     databaseUrl,
     legacyOrganisation.id,
   );
+  logIntegrationPhaseEnd("legacy plan: member identities");
+
+  logIntegrationPhaseStart("legacy plan: append-only inventory");
   const discoveredAppendOnlyTables =
     collectDiscoveredAppendOnlyTables(databaseUrl);
   const appendOnlyInventory = collectLegacyAppendOnlyInventoryFromDiscovered(
@@ -322,9 +337,7 @@ export function collectLegacyReplacementPlanDetails(
     collectUnclassifiedAppendOnlyTablesFromDiscovered(
       discoveredAppendOnlyTables,
     );
-  const crossStageFkViolations = collectUnsafeCrossStageForeignKeyEdges(
-    collectCrossStageForeignKeyInventory(databaseUrl),
-  );
+  logIntegrationPhaseEnd("legacy plan: append-only inventory");
 
   return {
     legacyOrganisation,
