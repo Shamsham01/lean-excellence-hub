@@ -1,5 +1,9 @@
 import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
 import {
+  collectUnsafeCrossStageForeignKeyEdges,
+  collectCrossStageForeignKeyInventory,
+} from "./cross-stage-fk-safety";
+import {
   buildTenantPrivateInfrastructureCountSql,
   EMPTY_PRIVATE_INFRASTRUCTURE_COUNTS,
   formatPrivateInfrastructureCountLines,
@@ -303,6 +307,9 @@ export function collectLegacyReplacementPlanDetails(
   );
   const unclassifiedAppendOnlyTables =
     collectUnclassifiedAppendOnlyTables(databaseUrl);
+  const crossStageFkViolations = collectUnsafeCrossStageForeignKeyEdges(
+    collectCrossStageForeignKeyInventory(databaseUrl),
+  );
 
   return {
     legacyOrganisation,
@@ -325,7 +332,8 @@ export function collectLegacyReplacementPlanDetails(
     unclassifiedAppendOnlyTables,
     destructiveReadinessBlocked:
       unclassifiedAppendOnlyTables.length > 0 ||
-      hasUnknownAppendOnlyInventory(appendOnlyInventory),
+      hasUnknownAppendOnlyInventory(appendOnlyInventory) ||
+      crossStageFkViolations.length > 0,
     inventoryReport: formatTenantInventoryReport(
       inventory,
       "Legacy hosted demo inventory",

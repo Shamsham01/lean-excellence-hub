@@ -264,7 +264,7 @@ describe
       expect(isolationUsageRows[0]?.count ?? 0).toBeGreaterThan(0);
     }, 180_000);
 
-    it("preserves foundation audit ledgers through module purge then removes them during foundation deletion", async () => {
+    it("preserves foundation audit ledgers and deferred resource_records through module purge then removes them during foundation deletion", async () => {
       await cleanupLegacyReplacementFixture({
         admin,
         databaseUrl: env.databaseUrl,
@@ -275,40 +275,68 @@ describe
       });
 
       const before = snapshotLegacyFixtureState(env.databaseUrl);
-      expect(before.ai_usage_events).toBeGreaterThan(0);
-      expect(before.security_audit_events).toBeGreaterThan(0);
+      expect(before.resource_records).toBeGreaterThan(0);
       expect(before.business_audit_events).toBeGreaterThan(0);
-      expect(before.isolation_security_audit_events).toBeGreaterThan(0);
+      expect(before.business_audit_events_with_resource).toBeGreaterThan(0);
+      expect(before.security_audit_events).toBeGreaterThan(0);
+      expect(before.isolation_resource_records).toBeGreaterThan(0);
       expect(before.isolation_business_audit_events).toBeGreaterThan(0);
+      expect(
+        before.isolation_business_audit_events_with_resource,
+      ).toBeGreaterThan(0);
+      expect(before.isolation_security_audit_events).toBeGreaterThan(0);
+      expect(before.ai_usage_events).toBeGreaterThan(0);
+      expect(before.actions).toBeGreaterThan(0);
 
       executeLegacyHostedDemoModulePurgeSql(env.databaseUrl);
 
       const afterModulePurge = runSupabaseDbQueryJson<{
+        actions: number;
         ai_usage_events: number;
         security_audit_events: number;
         business_audit_events: number;
+        business_audit_events_with_resource: number;
+        resource_records: number;
         organisations: number;
         isolation_ai_usage_events: number;
         isolation_security_audit_events: number;
         isolation_business_audit_events: number;
+        isolation_business_audit_events_with_resource: number;
+        isolation_resource_records: number;
       }>({
         databaseUrl: env.databaseUrl,
         outputFormat: "json",
         sql: `
           select
+            (select count(*)::int from public.actions where organisation_id = '${fixture.organisationId}'::uuid) as actions,
             (select count(*)::int from public.ai_usage_events where organisation_id = '${fixture.organisationId}'::uuid) as ai_usage_events,
             (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as security_audit_events,
             (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as business_audit_events,
+            (select count(*)::int
+             from public.business_audit_events
+             where organisation_id = '${fixture.organisationId}'::uuid
+               and resource_record_id is not null) as business_audit_events_with_resource,
+            (select count(*)::int from public.resource_records where organisation_id = '${fixture.organisationId}'::uuid) as resource_records,
             (select count(*)::int from public.organisations where id = '${fixture.organisationId}'::uuid) as organisations,
             (select count(*)::int from public.ai_usage_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_ai_usage_events,
             (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_security_audit_events,
-            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_business_audit_events;
+            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_business_audit_events,
+            (select count(*)::int
+             from public.business_audit_events
+             where organisation_id = '${fixture.isolationOrganisationId}'::uuid
+               and resource_record_id is not null) as isolation_business_audit_events_with_resource,
+            (select count(*)::int from public.resource_records where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_resource_records;
         `,
       })[0]!;
 
+      expect(afterModulePurge.actions).toBe(0);
       expect(afterModulePurge.ai_usage_events).toBe(0);
       expect(afterModulePurge.security_audit_events).toBeGreaterThan(0);
       expect(afterModulePurge.business_audit_events).toBeGreaterThan(0);
+      expect(
+        afterModulePurge.business_audit_events_with_resource,
+      ).toBeGreaterThan(0);
+      expect(afterModulePurge.resource_records).toBeGreaterThan(0);
       expect(afterModulePurge.organisations).toBe(1);
       expect(afterModulePurge.isolation_ai_usage_events).toBeGreaterThan(0);
       expect(afterModulePurge.isolation_security_audit_events).toBe(
@@ -317,15 +345,23 @@ describe
       expect(afterModulePurge.isolation_business_audit_events).toBe(
         before.isolation_business_audit_events,
       );
+      expect(
+        afterModulePurge.isolation_business_audit_events_with_resource,
+      ).toBe(before.isolation_business_audit_events_with_resource);
+      expect(afterModulePurge.isolation_resource_records).toBe(
+        before.isolation_resource_records,
+      );
 
       executeDeleteLegacyHostedDemoOrganisationSql(env.databaseUrl);
 
       const afterFoundationDeletion = runSupabaseDbQueryJson<{
         security_audit_events: number;
         business_audit_events: number;
+        resource_records: number;
         organisations: number;
         isolation_security_audit_events: number;
         isolation_business_audit_events: number;
+        isolation_resource_records: number;
       }>({
         databaseUrl: env.databaseUrl,
         outputFormat: "json",
@@ -333,20 +369,26 @@ describe
           select
             (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as security_audit_events,
             (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as business_audit_events,
+            (select count(*)::int from public.resource_records where organisation_id = '${fixture.organisationId}'::uuid) as resource_records,
             (select count(*)::int from public.organisations where id = '${fixture.organisationId}'::uuid) as organisations,
             (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_security_audit_events,
-            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_business_audit_events;
+            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_business_audit_events,
+            (select count(*)::int from public.resource_records where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_resource_records;
         `,
       })[0]!;
 
       expect(afterFoundationDeletion.security_audit_events).toBe(0);
       expect(afterFoundationDeletion.business_audit_events).toBe(0);
+      expect(afterFoundationDeletion.resource_records).toBe(0);
       expect(afterFoundationDeletion.organisations).toBe(0);
       expect(afterFoundationDeletion.isolation_security_audit_events).toBe(
         before.isolation_security_audit_events,
       );
       expect(afterFoundationDeletion.isolation_business_audit_events).toBe(
         before.isolation_business_audit_events,
+      );
+      expect(afterFoundationDeletion.isolation_resource_records).toBe(
+        before.isolation_resource_records,
       );
     }, 180_000);
 

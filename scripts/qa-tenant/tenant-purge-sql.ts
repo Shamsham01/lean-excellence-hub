@@ -1,12 +1,14 @@
 import {
   foundationTableSqlList,
+  foundationStageDependencyTableSqlList,
   MAX_MODULE_PURGE_PASSES,
+  modulePurgeInfrastructureTableSqlList,
 } from "./deletion-graph";
+import { buildCrossStageForeignKeyGuardStatements } from "./cross-stage-fk-safety";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
 import {
   buildAppendOnlyUnknownGuardStatements,
   buildControlledRetirementDeleteStatements,
-  foundationStageAppendOnlyTableSqlList,
   moduleStageAppendOnlyTableSqlList,
   type TenantPurgeRetention,
 } from "./tenant-retirement-policy";
@@ -42,6 +44,7 @@ declare
   append_only_table text;
   rec record;
   unknown_append_only_tables text[];
+  cross_stage_fk_violations text[];
 begin
   select id into target_org_id
   from public.organisations
@@ -53,6 +56,10 @@ begin
   end if;
 
 ${buildAppendOnlyUnknownGuardStatements({ indent: "  " })}
+
+  if purge_retention = 'full-tenant-removal' then
+${buildCrossStageForeignKeyGuardStatements({ indent: "    " })}
+  end if;
 
 ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
@@ -227,15 +234,8 @@ ${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })
   into deletable_tables
   from unnest(tables) as module_table_name
   where module_table_name <> all(append_only_tables)
-    and module_table_name not in (
-      'resource_records',
-      'templates',
-      'template_versions',
-      'template_sections',
-      'template_questions',
-      'template_submissions',
-      'template_answers'
-    );
+    and module_table_name not in (${modulePurgeInfrastructureTableSqlList()})
+    and module_table_name not in (${foundationStageDependencyTableSqlList()});
 
   if deletable_tables is null or coalesce(array_length(deletable_tables, 1), 0) = 0 then
     raise exception 'Tenant module purge failed: no deletable module tables remain after classification.';
@@ -279,7 +279,8 @@ ${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })
       continue;
     end if;
 
-    if purge_table_name in ('resource_records', 'templates', 'template_versions', 'template_sections', 'template_questions') then
+    if purge_table_name in (${modulePurgeInfrastructureTableSqlList()})
+      or purge_table_name in (${foundationStageDependencyTableSqlList()}) then
       continue;
     end if;
 
@@ -315,9 +316,6 @@ ${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })
     where organisation_id = target_org_id;
 
     delete from public.templates
-    where organisation_id = target_org_id;
-
-    delete from public.resource_records
     where organisation_id = target_org_id;
   end if;
 

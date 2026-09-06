@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  PURGE_INFRASTRUCTURE_TABLES,
+  FOUNDATION_STAGE_DEPENDENCY_TABLES,
+  MODULE_PURGE_INFRASTRUCTURE_TABLES,
   listAppendOnlyDeleteTablesSql,
 } from "./deletion-graph";
 import { runSupabaseDbQueryJson } from "./db-cli";
@@ -144,7 +145,10 @@ export function assertLegacyHostedDemoFullyAbsent(
     ),
     ...MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES.map((policy) => policy.table),
   ]);
-  const infrastructureTables = new Set<string>(PURGE_INFRASTRUCTURE_TABLES);
+  const infrastructureTables = new Set<string>([
+    ...MODULE_PURGE_INFRASTRUCTURE_TABLES,
+    ...FOUNDATION_STAGE_DEPENDENCY_TABLES,
+  ]);
 
   const appendOnlyInventoryRows = runSupabaseDbQueryJson<{
     rows: Array<{ table: string; count: number }>;
@@ -193,6 +197,31 @@ export function assertLegacyHostedDemoFullyAbsent(
     });
 
     for (const row of ownedRows) {
+      failures.push(`${row.resource}=${row.count}`);
+    }
+  }
+
+  if (FOUNDATION_STAGE_DEPENDENCY_TABLES.length > 0) {
+    const dependencyRows = runSupabaseDbQueryJson<{
+      resource: string;
+      count: number;
+    }>({
+      databaseUrl,
+      outputFormat: "json",
+      sql: `
+        with counts as (
+          ${buildOrganisationOwnedCountUnionSql(
+            legacyOrgId,
+            FOUNDATION_STAGE_DEPENDENCY_TABLES,
+          )}
+        )
+        select resource, count
+        from counts
+        where count > 0;
+      `,
+    });
+
+    for (const row of dependencyRows) {
       failures.push(`${row.resource}=${row.count}`);
     }
   }

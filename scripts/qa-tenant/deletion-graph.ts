@@ -75,8 +75,11 @@ export const COOKIEWORKS_STORAGE_BUCKET = "organisation-evidence";
 
 export const MAX_MODULE_PURGE_PASSES = 160;
 
-export const PURGE_INFRASTRUCTURE_TABLES = [
-  "resource_records",
+/**
+ * Template/resource registry tables deleted explicitly during full-tenant-removal
+ * module purge (not the generic DELETE loop).
+ */
+export const MODULE_PURGE_INFRASTRUCTURE_TABLES = [
   "templates",
   "template_versions",
   "template_sections",
@@ -84,6 +87,81 @@ export const PURGE_INFRASTRUCTURE_TABLES = [
   "template_submissions",
   "template_answers",
 ] as const;
+
+/**
+ * Infrastructure parents that must survive module purge because foundation-stage
+ * append-only audit ledgers reference them with ON DELETE RESTRICT.
+ * Deleted only during foundation/organisation deletion after audit retirement.
+ */
+export const FOUNDATION_STAGE_DEPENDENCY_TABLES = ["resource_records"] as const;
+
+export const PURGE_INFRASTRUCTURE_TABLES = [
+  ...MODULE_PURGE_INFRASTRUCTURE_TABLES,
+  ...FOUNDATION_STAGE_DEPENDENCY_TABLES,
+] as const;
+
+export function modulePurgeInfrastructureTableSqlList() {
+  return MODULE_PURGE_INFRASTRUCTURE_TABLES.map((table) => `'${table}'`).join(
+    ", ",
+  );
+}
+
+export function foundationStageDependencyTableSqlList() {
+  return FOUNDATION_STAGE_DEPENDENCY_TABLES.map((table) => `'${table}'`).join(
+    ", ",
+  );
+}
+
+export function purgeInfrastructureTableSqlList() {
+  return PURGE_INFRASTRUCTURE_TABLES.map((table) => `'${table}'`).join(", ");
+}
+
+export function buildFoundationStageDependencyDeleteStatements(
+  targetOrgVar: string,
+  options?: { indent?: string },
+) {
+  const indent = options?.indent ?? "  ";
+  const lines: string[] = [];
+
+  lines.push(
+    `${indent}-- Foundation-stage dependency retirement (deferred from module purge).`,
+  );
+  lines.push(
+    `${indent}-- Must run after foundation append-only audit ledger deletion.`,
+  );
+
+  for (const tableName of FOUNDATION_STAGE_DEPENDENCY_TABLES) {
+    lines.push(
+      `${indent}delete from public.${tableName}`,
+      `${indent}where organisation_id = ${targetOrgVar};`,
+      "",
+    );
+  }
+
+  return lines.join("\n");
+}
+
+export function assertDeletionGraphPolicyConsistency() {
+  const failures: string[] = [];
+
+  for (const dependencyTable of FOUNDATION_STAGE_DEPENDENCY_TABLES) {
+    if (
+      MODULE_PURGE_INFRASTRUCTURE_TABLES.includes(
+        dependencyTable as (typeof MODULE_PURGE_INFRASTRUCTURE_TABLES)[number],
+      )
+    ) {
+      failures.push(
+        `${dependencyTable} is both foundation-stage dependency and module-purge infrastructure`,
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Deletion graph policy consistency check failed: ${failures.join("; ")}`,
+    );
+  }
+}
 
 export { listAllAppendOnlyDeleteTablesSql as listAppendOnlyDeleteTablesSql } from "./tenant-retirement-policy";
 
