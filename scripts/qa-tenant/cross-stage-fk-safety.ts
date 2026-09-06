@@ -173,7 +173,8 @@ ${indent}    rc.delete_rule`;
 function buildFoundationPreservedChildWhereClause(indent: string) {
   const publicTables = foundationPreservedPublicTableSqlList();
   const privateTables = foundationPreservedPrivateTableSqlList();
-  const bridgeClearTables = fullTenantRemovalFoundationBridgeClearTableSqlList();
+  const bridgeClearTables =
+    fullTenantRemovalFoundationBridgeClearTableSqlList();
 
   return `
 ${indent}(
@@ -245,10 +246,7 @@ export function classifyCrossStageFkTableLifecycle(
     return "foundation-preserved";
   }
 
-  if (
-    SHARED_REFERENCE_CATALOG_TABLE_NAMES.has(table) &&
-    schema === "public"
-  ) {
+  if (SHARED_REFERENCE_CATALOG_TABLE_NAMES.has(table) && schema === "public") {
     return "unknown";
   }
 
@@ -304,7 +302,9 @@ export function evaluateCrossStageForeignKeyEdge(
 
   const childClearedBeforeModuleParents =
     edge.childSchema === "public" &&
-    FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLE_NAMES.has(edge.childTable);
+    FULL_TENANT_REMOVAL_FOUNDATION_BRIDGE_CLEAR_TABLE_NAMES.has(
+      edge.childTable,
+    );
 
   const parentIsSharedCatalog =
     edge.parentSchema === "public" &&
