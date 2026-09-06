@@ -65,7 +65,11 @@ jobs:
     name: Full Regression / Database
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+<<<<<<< HEAD:.github/workflows/ci-full.yml
     timeout-minutes: 90
+=======
+    timeout-minutes: 120
+>>>>>>> f6f0d84 (CI: force hosted-replacement integration run and extend database job timeout.):.github/workflows/ci.yml
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

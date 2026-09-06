@@ -60,11 +60,16 @@ function queryPrivateInfrastructureCounts(
 }
 
 function isLocalSupabaseAvailable() {
+  if (process.env.LEANHUB_FORCE_LEGACY_REPLACEMENT_INTEGRATION === "1") {
+    return true;
+  }
+
   try {
     execFileSync("npx supabase status -o env", {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       shell: true,
+      timeout: 15_000,
     });
     return true;
   } catch {
