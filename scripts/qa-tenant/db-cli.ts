@@ -19,6 +19,12 @@ export type SupabaseDbQueryOptions = {
   timeoutMs?: number;
   /** Catalog/inventory/purge queries that legitimately run longer. */
   heavy?: boolean;
+  /**
+   * Opt-in retry for transient Postgres connection drops on read-only queries.
+   * Destructive SQL must leave this false (default) so a dropped connection after
+   * commit cannot be retried.
+   */
+  retryTransientConnection?: boolean;
 };
 
 export class SupabaseDbQueryError extends Error {
@@ -35,6 +41,7 @@ export class SupabaseDbQueryError extends Error {
 
 const DEFAULT_QUERY_TIMEOUT_MS = 120_000;
 const HEAVY_QUERY_TIMEOUT_MS = 300_000;
+export const TRANSIENT_DB_CONNECTION_RETRY_MAX_ATTEMPTS = 3;
 
 function resolveQueryTimeoutMs(options: SupabaseDbQueryOptions) {
   if (options.timeoutMs !== undefined) {
@@ -141,13 +148,26 @@ function readSqlPreview(options: SupabaseDbQueryOptions) {
   return "unknown SQL";
 }
 
-export function runSupabaseDbQuery(options: SupabaseDbQueryOptions): string {
-  const maxAttempts = 3;
+export function isTransientDbConnectionError(message: string) {
+  return /connection terminated unexpectedly|server closed the connection unexpectedly|ECONNRESET|connection reset by peer/i.test(
+    message,
+  );
+}
+
+export function executeWithOptionalTransientConnectionRetry<T>(
+  enabled: boolean,
+  execute: () => T,
+): T {
+  if (!enabled) {
+    return execute();
+  }
+
+  const maxAttempts = TRANSIENT_DB_CONNECTION_RETRY_MAX_ATTEMPTS;
   let lastError: SupabaseDbQueryError | undefined;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      return runSupabaseDbQueryOnce(options);
+      return execute();
     } catch (error) {
       if (
         error instanceof SupabaseDbQueryError &&
@@ -166,9 +186,10 @@ export function runSupabaseDbQuery(options: SupabaseDbQueryOptions): string {
   );
 }
 
-function isTransientDbConnectionError(message: string) {
-  return /connection terminated unexpectedly|server closed the connection unexpectedly|ECONNRESET|connection reset by peer/i.test(
-    message,
+export function runSupabaseDbQuery(options: SupabaseDbQueryOptions): string {
+  return executeWithOptionalTransientConnectionRetry(
+    options.retryTransientConnection === true,
+    () => runSupabaseDbQueryOnce(options),
   );
 }
 

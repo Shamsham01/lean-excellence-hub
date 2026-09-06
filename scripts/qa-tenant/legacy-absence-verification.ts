@@ -109,6 +109,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select id, code
       from public.organisations
@@ -128,6 +129,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   const moduleRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: listModuleTablesSql(),
   });
   const appendOnlyRows = runSupabaseDbQueryJson<{
@@ -135,6 +137,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: listAppendOnlyDeleteTablesSql(),
   });
 
@@ -155,6 +158,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: buildAppendOnlyTenantRowCountSql(
       legacyOrgId,
       [...appendOnlyTables].sort(),
@@ -186,6 +190,7 @@ export function assertLegacyHostedDemoFullyAbsent(
     }>({
       databaseUrl,
       outputFormat: "json",
+      retryTransientConnection: true,
       sql: `
         with counts as (
           ${buildOrganisationOwnedCountUnionSql(legacyOrgId, tablesToVerify)}
@@ -208,6 +213,7 @@ export function assertLegacyHostedDemoFullyAbsent(
     }>({
       databaseUrl,
       outputFormat: "json",
+      retryTransientConnection: true,
       sql: `
         with counts as (
           ${buildOrganisationOwnedCountUnionSql(
@@ -232,6 +238,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       with counts as (
         ${buildLegacyIndirectCountSql(legacyOrgId)}
@@ -251,6 +258,7 @@ export function assertLegacyHostedDemoFullyAbsent(
     {
       databaseUrl,
       outputFormat: "json",
+      retryTransientConnection: true,
       sql: buildTenantPrivateInfrastructureCountSql(legacyOrgId),
     },
   );
@@ -271,6 +279,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   const storageRows = runSupabaseDbQueryJson<{ storage_objects: number }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select
         (select count(*)::int

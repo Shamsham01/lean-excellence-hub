@@ -445,6 +445,7 @@ export function collectCrossStageForeignKeyInventory(
     databaseUrl,
     outputFormat: "json",
     heavy: true,
+    retryTransientConnection: true,
     sql: listCrossStageForeignKeysSql(),
   });
 

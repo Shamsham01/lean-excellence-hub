@@ -204,6 +204,7 @@ function collectDiscoveredAppendOnlyTables(
     databaseUrl,
     outputFormat: "json",
     heavy: true,
+    retryTransientConnection: true,
     sql: listAllAppendOnlyDeleteTablesSql(),
   });
 
@@ -232,6 +233,7 @@ function collectLegacyAppendOnlyInventoryFromDiscovered(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: buildAppendOnlyTenantRowCountSql(organisationId, tableNames),
   });
 

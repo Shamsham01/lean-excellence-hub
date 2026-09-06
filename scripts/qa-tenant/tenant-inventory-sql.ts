@@ -109,6 +109,7 @@ export function collectTenantInventoryViaSql(
       databaseUrl,
       outputFormat: "json",
       heavy: true,
+      retryTransientConnection: true,
       sql: buildInventorySql(organisationCode),
     },
     { minRows: 1, maxRows: 1 },

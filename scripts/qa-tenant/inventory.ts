@@ -3,12 +3,21 @@ import {
   QA_ORGANISATION,
   QA_USERS,
 } from "./constants";
+import { MODULE_PURGE_INFRASTRUCTURE_TABLES } from "./deletion-graph";
 import { collectCookieWorksInventoryViaSql } from "./inventory-sql";
 
 type InventorySection = {
   title: string;
-  items: Array<{ label: string; count: number | null }>;
+  items: Array<{ label: string; count: number | null; countKey?: string }>;
 };
+
+/**
+ * tenant-inventory-sql count keys retained during module-foundation-only purge.
+ * Aligned with verifyCookieWorksTenant exclusions (see qa-tenant-deletion-graph.md).
+ */
+const MODULE_FOUNDATION_ONLY_RETAINED_INVENTORY_COUNT_KEYS = new Set<string>(
+  MODULE_PURGE_INFRASTRUCTURE_TABLES.filter((table) => table === "templates"),
+);
 
 export function buildInventoryFromSqlPayload(
   payload: Awaited<ReturnType<typeof collectCookieWorksInventoryViaSql>>,
@@ -133,13 +142,14 @@ export function buildInventoryFromSqlPayload(
     {
       title: "Shared Platform",
       items: [
-        { label: "actions", count: Number(counts.actions ?? 0) },
-        { label: "templates", count: Number(counts.templates ?? 0) },
-        { label: "attachments", count: Number(counts.attachments ?? 0) },
-        { label: "comments", count: Number(counts.comments ?? 0) },
+        { label: "actions", count: Number(counts.actions ?? 0), countKey: "actions" },
+        { label: "templates", count: Number(counts.templates ?? 0), countKey: "templates" },
+        { label: "attachments", count: Number(counts.attachments ?? 0), countKey: "attachments" },
+        { label: "comments", count: Number(counts.comments ?? 0), countKey: "comments" },
         {
           label: "storage objects (organisation-evidence)",
           count: Number(counts.storage_objects ?? 0),
+          countKey: "storage_objects",
         },
       ],
     },
@@ -203,6 +213,15 @@ export function isFoundationOnlyInventory(
   );
 
   return moduleSections.every((section) =>
-    section.items.every((item) => (item.count ?? 0) === 0),
+    section.items.every((item) => {
+      if (
+        item.countKey &&
+        MODULE_FOUNDATION_ONLY_RETAINED_INVENTORY_COUNT_KEYS.has(item.countKey)
+      ) {
+        return true;
+      }
+
+      return (item.count ?? 0) === 0;
+    }),
   );
 }
