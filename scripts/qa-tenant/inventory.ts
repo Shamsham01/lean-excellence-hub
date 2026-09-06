@@ -142,10 +142,26 @@ export function buildInventoryFromSqlPayload(
     {
       title: "Shared Platform",
       items: [
-        { label: "actions", count: Number(counts.actions ?? 0), countKey: "actions" },
-        { label: "templates", count: Number(counts.templates ?? 0), countKey: "templates" },
-        { label: "attachments", count: Number(counts.attachments ?? 0), countKey: "attachments" },
-        { label: "comments", count: Number(counts.comments ?? 0), countKey: "comments" },
+        {
+          label: "actions",
+          count: Number(counts.actions ?? 0),
+          countKey: "actions",
+        },
+        {
+          label: "templates",
+          count: Number(counts.templates ?? 0),
+          countKey: "templates",
+        },
+        {
+          label: "attachments",
+          count: Number(counts.attachments ?? 0),
+          countKey: "attachments",
+        },
+        {
+          label: "comments",
+          count: Number(counts.comments ?? 0),
+          countKey: "comments",
+        },
         {
           label: "storage objects (organisation-evidence)",
           count: Number(counts.storage_objects ?? 0),
