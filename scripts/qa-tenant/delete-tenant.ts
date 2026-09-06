@@ -3,7 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { QA_ORGANISATION_CODE } from "./constants";
 import { runSupabaseDbQuery } from "./db-cli";
 import { purgeCookieWorksStorageObjects } from "./storage-cleanup";
-import { buildPurgeTenantModuleDataSql } from "./tenant-purge-sql";
+import {
+  buildPurgeTenantModuleDataSql,
+  buildLegacyHostedDemoModulePurgeSql,
+} from "./tenant-purge-sql";
+import type { TenantPurgeRetention } from "./tenant-retirement-policy";
 import {
   assertCookieWorksFoundationOnlyVerified,
   verifyCookieWorksTenant,
@@ -12,10 +16,18 @@ import {
 export function executePurgeTenantModuleDataSql(
   databaseUrl: string,
   organisationCode: string,
+  options?: { retention?: TenantPurgeRetention },
 ) {
   runSupabaseDbQuery({
     databaseUrl,
-    sql: buildPurgeTenantModuleDataSql(organisationCode),
+    sql: buildPurgeTenantModuleDataSql(organisationCode, options),
+  });
+}
+
+export function executeLegacyHostedDemoModulePurgeSql(databaseUrl: string) {
+  runSupabaseDbQuery({
+    databaseUrl,
+    sql: buildLegacyHostedDemoModulePurgeSql(),
   });
 }
 

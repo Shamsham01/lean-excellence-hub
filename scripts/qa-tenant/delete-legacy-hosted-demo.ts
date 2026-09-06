@@ -5,13 +5,14 @@ import {
   assertLegacyAuthUsersAbsent,
   assertLegacyHostedDemoFullyAbsent,
 } from "./legacy-absence-verification";
-import { executePurgeTenantModuleDataSql } from "./delete-tenant";
+import { executeLegacyHostedDemoModulePurgeSql } from "./delete-tenant";
 import { runSupabaseDbQuery, runSupabaseDbQueryJson } from "./db-cli";
 import {
   LEGACY_HOSTED_DEMO_ORGANISATION,
   LEGACY_HOSTED_DEMO_EXPECTED_MEMBERSHIPS,
 } from "./legacy-hosted-demo";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
+import { buildFoundationStageAppendOnlyDeleteStatements } from "./tenant-retirement-policy";
 import { purgeTenantStorageObjects } from "./tenant-storage-cleanup";
 
 function escapeSqlLiteral(value: string) {
@@ -384,6 +385,8 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   delete from public.organisation_invitations
   where organisation_id = target_org_id;
 
+${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "  " })}
+
   delete from public.organisation_memberships
   where organisation_id = target_org_id;
 
@@ -422,24 +425,6 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
   delete from private.workforce_aliases
   where organisation_id = target_org_id;
-
-  alter table public.business_audit_events
-    disable trigger business_audit_events_prevent_delete;
-
-  delete from public.business_audit_events
-  where organisation_id = target_org_id;
-
-  alter table public.business_audit_events
-    enable trigger business_audit_events_prevent_delete;
-
-  alter table public.security_audit_events
-    disable trigger security_audit_events_append_only;
-
-  delete from public.security_audit_events
-  where organisation_id = target_org_id;
-
-  alter table public.security_audit_events
-    enable trigger security_audit_events_append_only;
 
   delete from public.organisations
   where id = target_org_id
@@ -510,10 +495,7 @@ export async function deleteLegacyHostedDemoTenant(options: {
         : { expectedMemberships: options.expectedMemberships },
     );
 
-  executePurgeTenantModuleDataSql(
-    options.databaseUrl,
-    LEGACY_HOSTED_DEMO_ORGANISATION.code,
-  );
+  executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
 
   await purgeTenantStorageObjects({
     databaseUrl: options.databaseUrl,

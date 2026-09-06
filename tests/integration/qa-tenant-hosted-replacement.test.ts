@@ -10,8 +10,9 @@ import {
   captureLegacyDeletionContext,
   deleteLegacyHostedDemoTenant,
 } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
+import { executeDeleteLegacyHostedDemoOrganisationSql } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
 import {
-  executePurgeTenantModuleDataSql,
+  executeLegacyHostedDemoModulePurgeSql,
   purgeCookieWorksTenantModules,
 } from "../../scripts/qa-tenant/delete-tenant";
 import {
@@ -60,9 +61,10 @@ function queryPrivateInfrastructureCounts(
 
 function isLocalSupabaseAvailable() {
   try {
-    execFileSync("npx", ["supabase", "status", "-o", "env"], {
+    execFileSync("npx supabase status -o env", {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      shell: true,
     });
     return true;
   } catch {
@@ -125,6 +127,9 @@ describe
       expect(before.outbox).toBeGreaterThan(0);
       expect(before.pre_cutover_skips).toBeGreaterThan(0);
       expect(before.storage_objects).toBeGreaterThan(0);
+      expect(before.ai_usage_events).toBeGreaterThan(0);
+      expect(before.security_audit_events).toBeGreaterThan(0);
+      expect(before.business_audit_events).toBeGreaterThan(0);
     }, 180_000);
 
     it("replaces the legacy tenant with CookieWorks foundation-only state", async () => {
@@ -218,10 +223,7 @@ describe
       expect(before.pre_cutover_skips).toBeGreaterThan(0);
       expect(before.isolation_pre_cutover_skips).toBeGreaterThan(0);
 
-      executePurgeTenantModuleDataSql(
-        env.databaseUrl,
-        LEGACY_HOSTED_DEMO_ORGANISATION.code,
-      );
+      executeLegacyHostedDemoModulePurgeSql(env.databaseUrl);
 
       const legacyCounts = queryPrivateInfrastructureCounts(
         env.databaseUrl,
@@ -229,6 +231,17 @@ describe
       );
       expect(legacyCounts.domain_event_outbox).toBe(0);
       expect(legacyCounts.notification_projector_pre_cutover_skips).toBe(0);
+
+      const legacyUsageRows = runSupabaseDbQueryJson<{ count: number }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select count(*)::int as count
+          from public.ai_usage_events
+          where organisation_id = '${fixture.organisationId}'::uuid;
+        `,
+      });
+      expect(legacyUsageRows[0]?.count).toBe(0);
 
       const isolationCounts = queryPrivateInfrastructureCounts(
         env.databaseUrl,
@@ -238,6 +251,189 @@ describe
       expect(
         isolationCounts.notification_projector_pre_cutover_skips,
       ).toBeGreaterThan(0);
+
+      const isolationUsageRows = runSupabaseDbQueryJson<{ count: number }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select count(*)::int as count
+          from public.ai_usage_events
+          where organisation_id = '${fixture.isolationOrganisationId}'::uuid;
+        `,
+      });
+      expect(isolationUsageRows[0]?.count ?? 0).toBeGreaterThan(0);
+    }, 180_000);
+
+    it("preserves foundation audit ledgers through module purge then removes them during foundation deletion", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      const fixture = await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      const before = snapshotLegacyFixtureState(env.databaseUrl);
+      expect(before.ai_usage_events).toBeGreaterThan(0);
+      expect(before.security_audit_events).toBeGreaterThan(0);
+      expect(before.business_audit_events).toBeGreaterThan(0);
+      expect(before.isolation_security_audit_events).toBeGreaterThan(0);
+      expect(before.isolation_business_audit_events).toBeGreaterThan(0);
+
+      executeLegacyHostedDemoModulePurgeSql(env.databaseUrl);
+
+      const afterModulePurge = runSupabaseDbQueryJson<{
+        ai_usage_events: number;
+        security_audit_events: number;
+        business_audit_events: number;
+        organisations: number;
+        isolation_ai_usage_events: number;
+        isolation_security_audit_events: number;
+        isolation_business_audit_events: number;
+      }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select
+            (select count(*)::int from public.ai_usage_events where organisation_id = '${fixture.organisationId}'::uuid) as ai_usage_events,
+            (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as security_audit_events,
+            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as business_audit_events,
+            (select count(*)::int from public.organisations where id = '${fixture.organisationId}'::uuid) as organisations,
+            (select count(*)::int from public.ai_usage_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_ai_usage_events,
+            (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_security_audit_events,
+            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_business_audit_events;
+        `,
+      })[0]!;
+
+      expect(afterModulePurge.ai_usage_events).toBe(0);
+      expect(afterModulePurge.security_audit_events).toBeGreaterThan(0);
+      expect(afterModulePurge.business_audit_events).toBeGreaterThan(0);
+      expect(afterModulePurge.organisations).toBe(1);
+      expect(afterModulePurge.isolation_ai_usage_events).toBeGreaterThan(0);
+      expect(afterModulePurge.isolation_security_audit_events).toBe(
+        before.isolation_security_audit_events,
+      );
+      expect(afterModulePurge.isolation_business_audit_events).toBe(
+        before.isolation_business_audit_events,
+      );
+
+      executeDeleteLegacyHostedDemoOrganisationSql(env.databaseUrl);
+
+      const afterFoundationDeletion = runSupabaseDbQueryJson<{
+        security_audit_events: number;
+        business_audit_events: number;
+        organisations: number;
+        isolation_security_audit_events: number;
+        isolation_business_audit_events: number;
+      }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select
+            (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as security_audit_events,
+            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.organisationId}'::uuid) as business_audit_events,
+            (select count(*)::int from public.organisations where id = '${fixture.organisationId}'::uuid) as organisations,
+            (select count(*)::int from public.security_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_security_audit_events,
+            (select count(*)::int from public.business_audit_events where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_business_audit_events;
+        `,
+      })[0]!;
+
+      expect(afterFoundationDeletion.security_audit_events).toBe(0);
+      expect(afterFoundationDeletion.business_audit_events).toBe(0);
+      expect(afterFoundationDeletion.organisations).toBe(0);
+      expect(afterFoundationDeletion.isolation_security_audit_events).toBe(
+        before.isolation_security_audit_events,
+      );
+      expect(afterFoundationDeletion.isolation_business_audit_events).toBe(
+        before.isolation_business_audit_events,
+      );
+    }, 180_000);
+
+    it("fails closed when generic delete is attempted against ai_usage_events", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      const fixture = await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      expect(() =>
+        runSupabaseDbQuery({
+          databaseUrl: env.databaseUrl,
+          sql: `
+            delete from public.ai_usage_events
+            where organisation_id = '${fixture.organisationId}'::uuid;
+          `,
+        }),
+      ).toThrow(SupabaseDbQueryError);
+
+      const remaining = runSupabaseDbQueryJson<{ count: number }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select count(*)::int as count
+          from public.ai_usage_events
+          where organisation_id = '${fixture.organisationId}'::uuid;
+        `,
+      });
+      expect(remaining[0]?.count).toBeGreaterThan(0);
+    }, 180_000);
+
+    it("aborts full module purge before mutation when an unclassified append-only table exists", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      const before = snapshotLegacyFixtureState(env.databaseUrl);
+
+      runSupabaseDbQuery({
+        databaseUrl: env.databaseUrl,
+        sql: `
+          do $$
+          begin
+            execute '
+              create table if not exists public.qa_tenant_retirement_unknown_fixture (
+                id uuid primary key default gen_random_uuid(),
+                organisation_id uuid not null references public.organisations(id) on delete restrict,
+                note text not null default ''qa fixture''
+              )';
+
+            execute '
+              drop trigger if exists qa_tenant_retirement_unknown_fixture_prevent_delete
+                on public.qa_tenant_retirement_unknown_fixture';
+
+            execute '
+              create trigger qa_tenant_retirement_unknown_fixture_prevent_delete
+              before delete on public.qa_tenant_retirement_unknown_fixture
+              for each row execute function private.prevent_update_or_delete()';
+          end
+          $$;
+        `,
+      });
+
+      try {
+        expect(() =>
+          executeLegacyHostedDemoModulePurgeSql(env.databaseUrl),
+        ).toThrow(SupabaseDbQueryError);
+
+        const after = snapshotLegacyFixtureState(env.databaseUrl);
+        expect(after).toEqual(before);
+      } finally {
+        runSupabaseDbQuery({
+          databaseUrl: env.databaseUrl,
+          sql: `
+            drop table if exists public.qa_tenant_retirement_unknown_fixture cascade;
+          `,
+        });
+      }
     }, 180_000);
 
     it("rolls back tenant module purge mutations when outbox is deleted before dependents", async () => {

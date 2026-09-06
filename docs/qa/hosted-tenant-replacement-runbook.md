@@ -73,6 +73,92 @@ same as atomicity across the full workflow (DB module purge, Storage deletion,
 foundation deletion, Auth deletion, CookieWorks seeding). Those stages are separate
 operations with independent failure modes.
 
+## Incident note (QA2d): append-only `ai_usage_events` blocked module purge
+
+During the second real hosted QA2 recovery attempt (`--destructive --preserve-existing-cookieworks`), tenant purge aborted inside the PostgreSQL
+`DO $$ ... $$` module purge with:
+
+```text
+Tenant module purge failed on public.ai_usage_events: ai usage events are append-only
+```
+
+**Root cause:** `public.ai_usage_events` is protected by a custom append-only
+trigger (`ai_usage_events_append_only` → `private.prevent_ai_usage_event_mutation()`)
+introduced in migration `20260827009010_milestone12_security_hardening.sql`. The
+generic purge loop attempted `DELETE` against every `organisation_id` module table.
+Append-only discovery only matched triggers calling
+`private.prevent_update_or_delete()`, so `ai_usage_events` was not classified.
+The legacy SQLERRM handler only tolerated messages containing `is append-only`
+(`% is append-only` from `tg_table_name`), not the custom message
+`ai usage events are append-only`.
+
+**Schema facts (`public.ai_usage_events`):**
+
+| Property | Value |
+| --- | --- |
+| Primary key | `id uuid` (plus composite unique `(organisation_id, id)`) |
+| `organisation_id` | `uuid not null` (tenant-scoped, no direct FK to `organisations`) |
+| Incoming FKs | `organisation_memberships`, `ai_sessions`, `ai_runs` (all `ON DELETE RESTRICT`) |
+| DELETE trigger | `ai_usage_events_append_only` |
+| Trigger function | `private.prevent_ai_usage_event_mutation()` |
+| SQLSTATE | `55000` |
+| Exception message | `ai usage events are append-only` |
+| Introducing migrations | table `20260827009005_milestone12_ai_usage_rate_limits.sql`; immutability `20260827009010_milestone12_security_hardening.sql` |
+| Retention class | Authoritative AI usage/accounting telemetry; deletable only during controlled full tenant retirement |
+
+**Why hosted state was unchanged:** same as QA2c — the purge runs inside a single
+PostgreSQL `DO` block. The append-only exception aborted that statement and
+PostgreSQL rolled back all mutations from the block. Storage and Auth stages had
+not started yet.
+
+**Approved append-only / immutable tenant-retirement policy (QA2d):**
+
+| Class | Lifecycle stage | Behaviour |
+| --- | --- | --- |
+| A. ordinary tenant-deletable | module | Generic multi-pass `DELETE` loop |
+| B. controlled-retirement-delete | module | Narrow trigger disable → tenant-scoped `DELETE` → re-enable (full tenant removal module purge only) |
+| C. append-only-module-retained | module | Excluded from generic loop and CookieWorks verification |
+| D. foundation-foundation-stage | foundation | Preserved through module purge; deleted only in foundation/organisation deletion |
+| E. infrastructure-explicit | module | Template/resource registry handled explicitly |
+| F. immutable-explicit-unlock | module | Maturity subgraph unlocked in purge SQL |
+
+Foundation-stage audit ledgers (`security_audit_events`, `business_audit_events`) MUST
+survive module purge even during `full-tenant-removal`. They are removed only in the
+later foundation deletion transaction.
+
+Custom append-only tables (not using `prevent_update_or_delete`) with controlled
+retirement deletion: `ai_usage_events`, `benefit_overlap_allocation_history`.
+
+**Purge classification order (full tenant removal):**
+
+```text
+append-only policy guard (abort on unknown)
+→ private notification infrastructure (QA2c order)
+→ controlled append-only retirement deletes (explicitly approved module tables only)
+→ maturity explicit unlock deletes
+→ generic deletable module tables (append-only excluded)
+→ remaining-row verification (module-stage append-only must be zero)
+```
+
+**Approved append-only lifecycle stages:**
+
+- `module` — explicitly approved module-stage tables only (`ai_usage_events`,
+  `benefit_overlap_allocation_history`, and the enumerated standard/explicit-unlock
+  module tables in `tenant-retirement-policy.ts`)
+- `foundation` — `security_audit_events`, `business_audit_events`
+- `unknown` — any discovered append-only protection without an approved policy
+
+**Dry-run inventory now includes:** explicit append-only / immutable tenant-owned
+row counts with lifecycle stage labels, plus destructive readiness when schema
+discovery finds unclassified append-only protections.
+
+**Fail-closed procedure:**
+
+1. Remove recovery confirmation token after any failed destructive attempt.
+2. Run read-only dry-run and verify append-only inventory section.
+3. Never rerun destructive replacement blindly.
+4. Unexpected append-only tables without an approved policy must abort the purge.
+
 ## Target hosted project
 
 | Field | Value |

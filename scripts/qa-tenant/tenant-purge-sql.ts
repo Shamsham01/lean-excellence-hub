@@ -3,28 +3,45 @@ import {
   MAX_MODULE_PURGE_PASSES,
 } from "./deletion-graph";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
+import {
+  buildAppendOnlyUnknownGuardStatements,
+  buildControlledRetirementDeleteStatements,
+  foundationStageAppendOnlyTableSqlList,
+  moduleStageAppendOnlyTableSqlList,
+  type TenantPurgeRetention,
+} from "./tenant-retirement-policy";
 
 function escapeSqlLiteral(value: string) {
   return value.replaceAll("'", "''");
 }
 
-export function buildPurgeTenantModuleDataSql(organisationCode: string) {
+export function buildPurgeTenantModuleDataSql(
+  organisationCode: string,
+  options?: { retention?: TenantPurgeRetention },
+) {
   const targetOrgCode = escapeSqlLiteral(organisationCode);
+  const retention = options?.retention ?? "module-foundation-only";
 
   return `
 do $$
 declare
   target_org_id uuid;
   target_org_code text := '${targetOrgCode}';
-  table_name text;
+  purge_retention text := '${retention}';
+  purge_table_name text;
   pass_count int := 0;
   deleted_rows int;
   total_deleted int := 0;
   tables text[];
+  deletable_tables text[];
   remaining_count bigint;
   remaining_tables text[] := array[]::text[];
   indirect_remaining bigint;
   append_only_tables text[];
+  module_stage_append_only_tables text[];
+  append_only_table text;
+  rec record;
+  unknown_append_only_tables text[];
 begin
   select id into target_org_id
   from public.organisations
@@ -34,6 +51,8 @@ begin
     raise notice 'No organisation found for code %', target_org_code;
     return;
   end if;
+
+${buildAppendOnlyUnknownGuardStatements({ indent: "  " })}
 
 ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
@@ -168,23 +187,68 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   end if;
 
   select coalesce(
-    array_agg(distinct event_object_table order by event_object_table),
+    array_agg(distinct discovered_append_only_table order by discovered_append_only_table),
     array[]::text[]
   )
   into append_only_tables
-  from information_schema.triggers
-  where trigger_schema = 'public'
-    and event_manipulation = 'DELETE'
-    and action_statement ilike '%prevent_update_or_delete%';
+  from (
+    select distinct event_object_table as discovered_append_only_table
+    from information_schema.triggers
+    where trigger_schema = 'public'
+      and event_manipulation = 'DELETE'
+      and action_statement ilike '%prevent_update_or_delete%'
+    union
+    select distinct event_object_table as discovered_append_only_table
+    from information_schema.triggers
+    where trigger_schema = 'public'
+      and event_manipulation in ('DELETE', 'UPDATE')
+      and (
+        action_statement ilike '%prevent_ai_usage_event_mutation%'
+        or action_statement ilike '%guard_benefit_overlap_allocation_history_mutation%'
+      )
+  ) append_only_inventory;
+
+  select coalesce(
+    array_agg(append_only_table_name order by append_only_table_name),
+    array[]::text[]
+  )
+  into module_stage_append_only_tables
+  from unnest(append_only_tables) as append_only_table_name
+  where append_only_table_name in (${moduleStageAppendOnlyTableSqlList()});
+
+  if purge_retention = 'full-tenant-removal' then
+${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })}
+  end if;
+
+  select coalesce(
+    array_agg(module_table_name order by module_table_name),
+    array[]::text[]
+  )
+  into deletable_tables
+  from unnest(tables) as module_table_name
+  where module_table_name <> all(append_only_tables)
+    and module_table_name not in (
+      'resource_records',
+      'templates',
+      'template_versions',
+      'template_sections',
+      'template_questions',
+      'template_submissions',
+      'template_answers'
+    );
+
+  if deletable_tables is null or coalesce(array_length(deletable_tables, 1), 0) = 0 then
+    raise exception 'Tenant module purge failed: no deletable module tables remain after classification.';
+  end if;
 
   for pass_count in 1..${MAX_MODULE_PURGE_PASSES} loop
     total_deleted := 0;
 
-    foreach table_name in array tables loop
+    foreach purge_table_name in array deletable_tables loop
       begin
         execute format(
           'delete from public.%I where organisation_id = $1',
-          table_name
+          purge_table_name
         )
         using target_org_id;
 
@@ -193,21 +257,8 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
       exception
         when foreign_key_violation then
           null;
-        when sqlstate '55000' then
-          if SQLERRM like '%is append-only%'
-            or SQLERRM like '%published template version is immutable%'
-            or SQLERRM like '%completed submission is immutable%'
-            or SQLERRM like '%completed 5S audit is immutable%'
-            or SQLERRM like '%completed project is immutable%'
-            or SQLERRM like '%completed Gemba walk is immutable%'
-            or SQLERRM like '%maturity assessment context is immutable%' then
-            null;
-          else
-            raise exception 'Tenant module purge failed on public.%: %', table_name, SQLERRM
-              using errcode = SQLSTATE;
-          end if;
         when others then
-          raise exception 'Tenant module purge failed on public.%: %', table_name, SQLERRM
+          raise exception 'Tenant module purge failed on public.%: %', purge_table_name, SQLERRM
             using errcode = SQLSTATE;
       end;
     end loop;
@@ -222,18 +273,19 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
       total_deleted;
   end if;
 
-  foreach table_name in array tables loop
-    if table_name = any(append_only_tables) then
+  foreach purge_table_name in array tables loop
+    if purge_retention = 'module-foundation-only'
+      and purge_table_name = any(append_only_tables) then
       continue;
     end if;
 
-    if table_name in ('resource_records', 'templates', 'template_versions', 'template_sections', 'template_questions') then
+    if purge_table_name in ('resource_records', 'templates', 'template_versions', 'template_sections', 'template_questions') then
       continue;
     end if;
 
     execute format(
       'select count(*)::bigint from public.%I where organisation_id = $1',
-      table_name
+      purge_table_name
     )
     into remaining_count
     using target_org_id;
@@ -241,10 +293,51 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
     if remaining_count > 0 then
       remaining_tables := array_append(
         remaining_tables,
-        format('public.%s=%s', table_name, remaining_count)
+        format('public.%s=%s', purge_table_name, remaining_count)
       );
     end if;
   end loop;
+
+  if purge_retention = 'full-tenant-removal' then
+    delete from public.template_answers
+    where organisation_id = target_org_id;
+
+    delete from public.template_submissions
+    where organisation_id = target_org_id;
+
+    delete from public.template_questions
+    where organisation_id = target_org_id;
+
+    delete from public.template_sections
+    where organisation_id = target_org_id;
+
+    delete from public.template_versions
+    where organisation_id = target_org_id;
+
+    delete from public.templates
+    where organisation_id = target_org_id;
+
+    delete from public.resource_records
+    where organisation_id = target_org_id;
+  end if;
+
+  if purge_retention = 'full-tenant-removal' then
+    foreach append_only_table in array module_stage_append_only_tables loop
+      execute format(
+        'select count(*)::bigint from public.%I where organisation_id = $1',
+        append_only_table
+      )
+      into remaining_count
+      using target_org_id;
+
+      if remaining_count > 0 then
+        raise exception
+          'Tenant module purge left module-stage append-only rows after controlled retirement delete: public.%=%',
+          append_only_table,
+          remaining_count;
+      end if;
+    end loop;
+  end if;
 
   select count(*)::bigint
   into indirect_remaining
@@ -272,4 +365,10 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 end
 $$;
 `;
+}
+
+export function buildLegacyHostedDemoModulePurgeSql() {
+  return buildPurgeTenantModuleDataSql("lean-excellence-demo", {
+    retention: "full-tenant-removal",
+  });
 }

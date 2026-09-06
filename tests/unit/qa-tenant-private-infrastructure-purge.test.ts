@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPurgeTenantModuleDataSql } from "../../scripts/qa-tenant/tenant-purge-sql";
+import {
+  buildLegacyHostedDemoModulePurgeSql,
+  buildPurgeTenantModuleDataSql,
+} from "../../scripts/qa-tenant/tenant-purge-sql";
 import {
   buildTenantPrivateInfrastructureCountSql,
   buildTenantPrivateInfrastructurePurgeStatements,
@@ -47,6 +50,19 @@ describe("tenant private infrastructure purge SQL", () => {
 
     expect(skipIndex).toBeGreaterThanOrEqual(0);
     expect(outboxIndex).toBeGreaterThan(skipIndex);
+  });
+
+  it("classifies append-only tables before the generic delete loop", () => {
+    const modulePurgeSql = buildLegacyHostedDemoModulePurgeSql();
+    const controlledDeleteIndex = modulePurgeSql.indexOf(
+      "disable trigger ai_usage_events_append_only",
+    );
+    const genericLoopIndex = modulePurgeSql.indexOf(
+      "foreach purge_table_name in array deletable_tables loop",
+    );
+
+    expect(controlledDeleteIndex).toBeGreaterThanOrEqual(0);
+    expect(genericLoopIndex).toBeGreaterThan(controlledDeleteIndex);
   });
 
   it("counts pre-cutover skip rows through tenant outbox relationship", () => {

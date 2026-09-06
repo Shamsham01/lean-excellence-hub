@@ -5,6 +5,15 @@ import {
   formatPrivateInfrastructureCountLines,
   type TenantPrivateInfrastructureCounts,
 } from "./private-infrastructure-purge";
+import {
+  buildAppendOnlyTenantRowCountSql,
+  classifyDiscoveredAppendOnlyTable,
+  collectUnclassifiedAppendOnlyDiscoveryRows,
+  formatAppendOnlyInventoryLines,
+  formatUnclassifiedAppendOnlyFailureLines,
+  hasUnknownAppendOnlyInventory,
+  listAllAppendOnlyDeleteTablesSql,
+} from "./tenant-retirement-policy";
 import { runSupabaseDbQueryJson } from "./db-cli";
 import {
   collectTenantInventory,
@@ -47,6 +56,17 @@ export type LegacyReplacementPlanDetails = {
   privateInfrastructure: LegacyPrivateInfrastructureCounts | null;
   storageObjectCount: number;
   moduleRowTotal: number;
+  appendOnlyInventory: Array<{
+    table: string;
+    count: number;
+    lifecycleStage?: "module" | "foundation" | "unknown";
+  }>;
+  unclassifiedAppendOnlyTables: Array<{
+    table: string;
+    trigger?: string;
+    triggerFunction?: string;
+  }>;
+  destructiveReadinessBlocked: boolean;
   inventoryReport: string;
 };
 
@@ -157,6 +177,76 @@ function collectLegacyFoundationCounts(
   );
 }
 
+function collectDiscoveredAppendOnlyTables(databaseUrl: string) {
+  const discoveredRows = runSupabaseDbQueryJson<{
+    tables: Array<{
+      table: string;
+      trigger: string;
+      trigger_function?: string;
+    }>;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: listAllAppendOnlyDeleteTablesSql(),
+  });
+
+  return (discoveredRows[0]?.tables ?? []) as Array<{
+    table: string;
+    trigger: string;
+    trigger_function?: string;
+  }>;
+}
+
+function collectLegacyAppendOnlyInventory(
+  databaseUrl: string,
+  organisationId: string,
+): Array<{
+  table: string;
+  count: number;
+  lifecycleStage?: "module" | "foundation" | "unknown";
+}> {
+  const discovered = collectDiscoveredAppendOnlyTables(databaseUrl);
+
+  const tableNames = [
+    ...new Set(discovered.map((entry) => entry.table)),
+  ].sort();
+
+  const countRows = runSupabaseDbQueryJson<{
+    rows: Array<{
+      table: string;
+      count: number;
+      lifecycle_stage?: "module" | "foundation" | "unknown";
+    }>;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: buildAppendOnlyTenantRowCountSql(organisationId, tableNames),
+  });
+
+  return (countRows[0]?.rows ?? []).map((row) => ({
+    table: row.table,
+    count: row.count,
+    lifecycleStage:
+      row.lifecycle_stage ?? classifyDiscoveredAppendOnlyTable(row.table),
+  }));
+}
+
+function collectUnclassifiedAppendOnlyTables(
+  databaseUrl: string,
+): LegacyReplacementPlanDetails["unclassifiedAppendOnlyTables"] {
+  const discovered = collectDiscoveredAppendOnlyTables(databaseUrl);
+
+  return collectUnclassifiedAppendOnlyDiscoveryRows(
+    discovered.map((entry) => ({
+      table: entry.table,
+      ...(entry.trigger ? { trigger: entry.trigger } : {}),
+      ...(entry.trigger_function
+        ? { triggerFunction: entry.trigger_function }
+        : {}),
+    })),
+  );
+}
+
 function collectLegacyPrivateInfrastructureCounts(
   databaseUrl: string,
   organisationId: string,
@@ -183,6 +273,11 @@ export function collectLegacyReplacementPlanDetails(
       privateInfrastructure: null,
       storageObjectCount: 0,
       moduleRowTotal: 0,
+      appendOnlyInventory: [],
+      unclassifiedAppendOnlyTables:
+        collectUnclassifiedAppendOnlyTables(databaseUrl),
+      destructiveReadinessBlocked:
+        collectUnclassifiedAppendOnlyTables(databaseUrl).length > 0,
       inventoryReport: formatTenantInventoryReport(
         collectTenantInventory(
           databaseUrl,
@@ -202,6 +297,13 @@ export function collectLegacyReplacementPlanDetails(
     legacyOrganisation.id,
   );
 
+  const appendOnlyInventory = collectLegacyAppendOnlyInventory(
+    databaseUrl,
+    legacyOrganisation.id,
+  );
+  const unclassifiedAppendOnlyTables =
+    collectUnclassifiedAppendOnlyTables(databaseUrl);
+
   return {
     legacyOrganisation,
     membershipCount: members.length,
@@ -219,6 +321,11 @@ export function collectLegacyReplacementPlanDetails(
       LEGACY_HOSTED_DEMO_ORGANISATION.code,
     ),
     moduleRowTotal: countTenantModuleRows(inventory),
+    appendOnlyInventory,
+    unclassifiedAppendOnlyTables,
+    destructiveReadinessBlocked:
+      unclassifiedAppendOnlyTables.length > 0 ||
+      hasUnknownAppendOnlyInventory(appendOnlyInventory),
     inventoryReport: formatTenantInventoryReport(
       inventory,
       "Legacy hosted demo inventory",
@@ -309,6 +416,24 @@ export function formatLegacyReplacementPlanDetails(
   lines.push("Modules");
   lines.push(
     `  - total tenant-owned module row count: ${details.moduleRowTotal}`,
+  );
+  lines.push("");
+  lines.push("Append-only / immutable tenant-owned rows");
+  lines.push(
+    ...formatAppendOnlyInventoryLines(details.appendOnlyInventory, {
+      includeLifecycleStage: true,
+    }),
+  );
+  if (details.unclassifiedAppendOnlyTables.length > 0) {
+    lines.push("Unclassified append-only protections (schema discovery)");
+    lines.push(
+      ...formatUnclassifiedAppendOnlyFailureLines(
+        details.unclassifiedAppendOnlyTables,
+      ).map((line) => `  - ${line}`),
+    );
+  }
+  lines.push(
+    `Destructive replacement readiness: ${details.destructiveReadinessBlocked ? "BLOCKED" : "READY"}`,
   );
   lines.push("");
   lines.push(details.inventoryReport);

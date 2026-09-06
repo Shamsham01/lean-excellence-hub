@@ -4,10 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { purgeAuthUserIdentityPrerequisites } from "./auth-identity-cleanup";
 import { COOKIEWORKS_STORAGE_BUCKET } from "./deletion-graph";
-import { executePurgeTenantModuleDataSql } from "./delete-tenant";
+import { executeLegacyHostedDemoModulePurgeSql } from "./delete-tenant";
 import { executeDeleteLegacyHostedDemoOrganisationSql } from "./delete-legacy-hosted-demo";
 import { runSupabaseDbQuery, runSupabaseDbQueryJson } from "./db-cli";
 import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
+import { buildFoundationStageAppendOnlyDeleteStatements } from "./tenant-retirement-policy";
 
 export type LegacyReplacementFixtureMember = {
   userId: string;
@@ -27,6 +28,14 @@ export const LEGACY_REPLACEMENT_FIXTURE_MEMBERS: LegacyReplacementFixtureMember[
     };
   });
 
+export const LEGACY_REPLACEMENT_ISOLATION_MEMBER: LegacyReplacementFixtureMember =
+  {
+    userId: "d0000000-0000-0000-0000-000000000004",
+    email: "qa-notification-isolation@lean-excellence.local",
+    password: "IsolationFixture@004-QA-2026!",
+    displayName: "QA Notification Isolation Member",
+  };
+
 export const LEGACY_REPLACEMENT_CROSS_ORG = {
   code: "qa-legacy-cross-org",
   name: "QA Legacy Cross Org",
@@ -36,6 +45,262 @@ export const LEGACY_REPLACEMENT_ISOLATION_ORG = {
   code: "qa-notification-isolation-org",
   name: "QA Notification Isolation Org",
 } as const;
+
+function escapeSqlLiteral(value: string) {
+  return value.replaceAll("'", "''");
+}
+
+function insertAppendOnlyAiUsageFixture(options: {
+  databaseUrl: string;
+  organisationId: string;
+  membershipId: string;
+  unitId: string;
+  fixtureKey: string;
+}) {
+  const caseId = randomUUID();
+  const sessionId = randomUUID();
+  const runId = randomUUID();
+  const usageEventId = randomUUID();
+  const resourceId = caseId;
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      do $$
+      begin
+        insert into public.resource_records (
+          id,
+          organisation_id,
+          resource_type,
+          created_by_membership_id
+        ) values (
+          '${resourceId}'::uuid,
+          '${options.organisationId}'::uuid,
+          'problem_solving_case',
+          '${options.membershipId}'::uuid
+        );
+
+        insert into public.problem_solving_cases (
+          id,
+          organisation_id,
+          title,
+          organisation_unit_id,
+          owner_membership_id,
+          created_by_membership_id,
+          status
+        ) values (
+          '${caseId}'::uuid,
+          '${options.organisationId}'::uuid,
+          'QA append-only fixture case ${escapeSqlLiteral(options.fixtureKey)}',
+          '${options.unitId}'::uuid,
+          '${options.membershipId}'::uuid,
+          '${options.membershipId}'::uuid,
+          'draft'
+        );
+
+        insert into public.ai_sessions (
+          id,
+          organisation_id,
+          problem_solving_case_id,
+          created_by_membership_id,
+          mode,
+          status
+        ) values (
+          '${sessionId}'::uuid,
+          '${options.organisationId}'::uuid,
+          '${caseId}'::uuid,
+          '${options.membershipId}'::uuid,
+          'ask',
+          'active'
+        );
+
+        insert into public.ai_runs (
+          id,
+          organisation_id,
+          ai_session_id,
+          requested_by_membership_id,
+          provider,
+          model,
+          prompt_key,
+          prompt_version,
+          prompt_hash,
+          status
+        ) values (
+          '${runId}'::uuid,
+          '${options.organisationId}'::uuid,
+          '${sessionId}'::uuid,
+          '${options.membershipId}'::uuid,
+          'openai',
+          'gpt-test',
+          'qa-fixture',
+          '1',
+          'qa-fixture-hash',
+          'completed'
+        );
+
+        insert into public.ai_usage_events (
+          id,
+          organisation_id,
+          membership_id,
+          ai_session_id,
+          ai_run_id,
+          provider,
+          model,
+          input_tokens,
+          output_tokens
+        ) values (
+          '${usageEventId}'::uuid,
+          '${options.organisationId}'::uuid,
+          '${options.membershipId}'::uuid,
+          '${sessionId}'::uuid,
+          '${runId}'::uuid,
+          'openai',
+          'gpt-test',
+          12,
+          8
+        );
+      end
+      $$;
+    `,
+  });
+
+  return { caseId, sessionId, runId, usageEventId };
+}
+
+function insertFoundationAuditFixture(options: {
+  databaseUrl: string;
+  organisationId: string;
+  membershipId: string;
+  userId: string;
+  fixtureKey: string;
+}) {
+  const correlationId = randomUUID();
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      do $$
+      begin
+        insert into public.security_audit_events (
+          organisation_id,
+          actor_user_id,
+          actor_membership_id,
+          action,
+          outcome,
+          request_correlation_id
+        ) values (
+          '${options.organisationId}'::uuid,
+          '${options.userId}'::uuid,
+          '${options.membershipId}'::uuid,
+          'qa.fixture.security_event',
+          'succeeded',
+          '${correlationId}'::uuid
+        );
+
+        insert into public.business_audit_events (
+          organisation_id,
+          actor_membership_id,
+          event_action,
+          event_outcome,
+          request_correlation_id
+        ) values (
+          '${options.organisationId}'::uuid,
+          '${options.membershipId}'::uuid,
+          'qa.fixture.business_event.${escapeSqlLiteral(options.fixtureKey)}',
+          'succeeded',
+          '${correlationId}'::uuid
+        );
+      end
+      $$;
+    `,
+  });
+}
+
+function deleteFixtureModuleDataForOrganisationCodes(
+  databaseUrl: string,
+  organisationCodes: readonly string[],
+) {
+  if (organisationCodes.length === 0) {
+    return;
+  }
+
+  const codeList = organisationCodes
+    .map((code) => `'${escapeSqlLiteral(code)}'`)
+    .join(", ");
+
+  runSupabaseDbQuery({
+    databaseUrl,
+    sql: `
+      do $$
+      declare
+        target_org_id uuid;
+      begin
+        for target_org_id in
+          select id
+          from public.organisations
+          where code in (${codeList})
+        loop
+          alter table public.ai_usage_events
+            disable trigger ai_usage_events_append_only;
+
+          delete from public.ai_usage_events
+          where organisation_id = target_org_id;
+
+          alter table public.ai_usage_events
+            enable trigger ai_usage_events_append_only;
+
+          delete from public.ai_runs
+          where organisation_id = target_org_id;
+
+          delete from public.ai_sessions
+          where organisation_id = target_org_id;
+
+          delete from public.problem_solving_cases
+          where organisation_id = target_org_id;
+
+          delete from public.actions
+          where organisation_id = target_org_id;
+
+          delete from public.resource_records
+          where organisation_id = target_org_id;
+        end loop;
+      end
+      $$;
+    `,
+  });
+}
+
+function deleteFoundationAuditEventsForOrganisationCodes(
+  databaseUrl: string,
+  organisationCodes: readonly string[],
+) {
+  if (organisationCodes.length === 0) {
+    return;
+  }
+
+  const codeList = organisationCodes
+    .map((code) => `'${escapeSqlLiteral(code)}'`)
+    .join(", ");
+
+  runSupabaseDbQuery({
+    databaseUrl,
+    sql: `
+      do $$
+      declare
+        target_org_id uuid;
+      begin
+        for target_org_id in
+          select id
+          from public.organisations
+          where code in (${codeList})
+        loop
+${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "          " })}
+        end loop;
+      end
+      $$;
+    `,
+  });
+}
 
 function insertTenantOutboxWithPreCutoverSkip(options: {
   databaseUrl: string;
@@ -89,14 +354,15 @@ function insertTenantOutboxWithPreCutoverSkip(options: {
   return eventId;
 }
 
-function escapeSqlLiteral(value: string) {
-  return value.replaceAll("'", "''");
-}
-
 export async function ensureLegacyReplacementFixtureMembers(
   admin: SupabaseClient,
 ) {
-  for (const member of LEGACY_REPLACEMENT_FIXTURE_MEMBERS) {
+  const members = [
+    ...LEGACY_REPLACEMENT_FIXTURE_MEMBERS,
+    LEGACY_REPLACEMENT_ISOLATION_MEMBER,
+  ];
+
+  for (const member of members) {
     const existing = await admin.auth.admin.getUserById(member.userId);
     if (existing.error || !existing.data.user) {
       const created = await admin.auth.admin.createUser({
@@ -133,10 +399,7 @@ export async function seedLegacyReplacementFixture(options: {
   const orgName = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.name);
 
   if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
-    executePurgeTenantModuleDataSql(
-      options.databaseUrl,
-      LEGACY_HOSTED_DEMO_ORGANISATION.code,
-    );
+    executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
@@ -166,6 +429,69 @@ export async function seedLegacyReplacementFixture(options: {
         select id
         from public.organisations
         where code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+      );
+    `,
+  });
+
+  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+    LEGACY_HOSTED_DEMO_ORGANISATION.code,
+    LEGACY_REPLACEMENT_CROSS_ORG.code,
+    LEGACY_REPLACEMENT_ISOLATION_ORG.code,
+  ]);
+
+  deleteFoundationAuditEventsForOrganisationCodes(options.databaseUrl, [
+    LEGACY_HOSTED_DEMO_ORGANISATION.code,
+    LEGACY_REPLACEMENT_CROSS_ORG.code,
+    LEGACY_REPLACEMENT_ISOLATION_ORG.code,
+  ]);
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from public.organisation_memberships
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code in (
+          '${orgCode}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+           or id = '${orgId}'::uuid
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from public.organisation_unit_closure
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code in (
+          '${orgCode}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+           or id = '${orgId}'::uuid
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from public.organisation_units
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code in (
+          '${orgCode}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+           or id = '${orgId}'::uuid
       );
     `,
   });
@@ -303,6 +629,22 @@ export async function seedLegacyReplacementFixture(options: {
     idempotencyKey: "qa-legacy-replacement-fixture",
   });
 
+  insertAppendOnlyAiUsageFixture({
+    databaseUrl: options.databaseUrl,
+    organisationId: orgId,
+    membershipId,
+    unitId,
+    fixtureKey: "legacy",
+  });
+
+  insertFoundationAuditFixture({
+    databaseUrl: options.databaseUrl,
+    organisationId: orgId,
+    membershipId,
+    userId: LEGACY_REPLACEMENT_FIXTURE_MEMBERS[0]!.userId,
+    fixtureKey: "legacy",
+  });
+
   const isolationOrgId = randomUUID();
   runSupabaseDbQuery({
     databaseUrl: options.databaseUrl,
@@ -325,6 +667,65 @@ export async function seedLegacyReplacementFixture(options: {
     databaseUrl: options.databaseUrl,
     organisationId: isolationOrgId,
     idempotencyKey: "qa-notification-isolation-org",
+  });
+
+  const isolationMembershipId = randomUUID();
+  const isolationUnitId = randomUUID();
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      do $$
+      begin
+        insert into public.organisation_units (
+          id,
+          organisation_id,
+          code,
+          name,
+          unit_type,
+          status
+        ) values (
+          '${isolationUnitId}'::uuid,
+          '${isolationOrgId}'::uuid,
+          'isolation-site',
+          'Isolation Site',
+          'plant',
+          'active'
+        );
+
+        insert into public.organisation_memberships (
+          id,
+          organisation_id,
+          user_id,
+          status,
+          display_name,
+          activated_at
+        ) values (
+          '${isolationMembershipId}'::uuid,
+          '${isolationOrgId}'::uuid,
+          '${LEGACY_REPLACEMENT_ISOLATION_MEMBER.userId}'::uuid,
+          'active',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_MEMBER.displayName)}',
+          statement_timestamp()
+        );
+      end
+      $$;
+    `,
+  });
+
+  insertAppendOnlyAiUsageFixture({
+    databaseUrl: options.databaseUrl,
+    organisationId: isolationOrgId,
+    membershipId: isolationMembershipId,
+    unitId: isolationUnitId,
+    fixtureKey: "isolation",
+  });
+
+  insertFoundationAuditFixture({
+    databaseUrl: options.databaseUrl,
+    organisationId: isolationOrgId,
+    membershipId: isolationMembershipId,
+    userId: LEGACY_REPLACEMENT_ISOLATION_MEMBER.userId,
+    fixtureKey: "isolation",
   });
 
   const storagePath = `${orgId}/action/${actionId}/fixture.txt`;
@@ -419,12 +820,19 @@ export async function cleanupLegacyReplacementFixture(options: {
   }
 
   if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
-    executePurgeTenantModuleDataSql(
-      options.databaseUrl,
-      LEGACY_HOSTED_DEMO_ORGANISATION.code,
-    );
+    executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
+
+  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+    LEGACY_REPLACEMENT_CROSS_ORG.code,
+    LEGACY_REPLACEMENT_ISOLATION_ORG.code,
+  ]);
+
+  deleteFoundationAuditEventsForOrganisationCodes(options.databaseUrl, [
+    LEGACY_REPLACEMENT_CROSS_ORG.code,
+    LEGACY_REPLACEMENT_ISOLATION_ORG.code,
+  ]);
 
   runSupabaseDbQuery({
     databaseUrl: options.databaseUrl,
@@ -474,6 +882,36 @@ export async function cleanupLegacyReplacementFixture(options: {
   runSupabaseDbQuery({
     databaseUrl: options.databaseUrl,
     sql: `
+      delete from public.organisation_unit_closure
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code in (
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      delete from public.organisation_units
+      where organisation_id in (
+        select id
+        from public.organisations
+        where code in (
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
+          '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
+        )
+      );
+    `,
+  });
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
       delete from public.organisations
       where code in (
         '${escapeSqlLiteral(LEGACY_REPLACEMENT_CROSS_ORG.code)}',
@@ -486,10 +924,16 @@ export async function cleanupLegacyReplacementFixture(options: {
 
   purgeAuthUserIdentityPrerequisites(
     options.databaseUrl,
-    LEGACY_REPLACEMENT_FIXTURE_MEMBERS.map((member) => member.userId),
+    [
+      ...LEGACY_REPLACEMENT_FIXTURE_MEMBERS,
+      LEGACY_REPLACEMENT_ISOLATION_MEMBER,
+    ].map((member) => member.userId),
   );
 
-  for (const member of LEGACY_REPLACEMENT_FIXTURE_MEMBERS) {
+  for (const member of [
+    ...LEGACY_REPLACEMENT_FIXTURE_MEMBERS,
+    LEGACY_REPLACEMENT_ISOLATION_MEMBER,
+  ]) {
     const deleted = await options.admin.auth.admin.deleteUser(member.userId);
     if (deleted.error && deleted.error.status !== 404) {
       throw deleted.error;
@@ -523,6 +967,12 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
     storage_objects: number;
     isolation_outbox: number;
     isolation_pre_cutover_skips: number;
+    ai_usage_events: number;
+    isolation_ai_usage_events: number;
+    security_audit_events: number;
+    business_audit_events: number;
+    isolation_security_audit_events: number;
+    isolation_business_audit_events: number;
   }>({
     databaseUrl,
     outputFormat: "json",
@@ -557,7 +1007,25 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
            where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}'
              and outbox_row.organisation_id = skip_row.organisation_id
              and outbox_row.id = skip_row.event_id
-         )) as isolation_pre_cutover_skips;
+         )) as isolation_pre_cutover_skips,
+        (select count(*)::int from public.ai_usage_events where organisation_id = '${orgId}'::uuid) as ai_usage_events,
+        (select count(*)::int
+         from public.ai_usage_events usage_row
+         join public.organisations organisation_row
+           on organisation_row.id = usage_row.organisation_id
+         where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}') as isolation_ai_usage_events,
+        (select count(*)::int from public.security_audit_events where organisation_id = '${orgId}'::uuid) as security_audit_events,
+        (select count(*)::int from public.business_audit_events where organisation_id = '${orgId}'::uuid) as business_audit_events,
+        (select count(*)::int
+         from public.security_audit_events audit_row
+         join public.organisations organisation_row
+           on organisation_row.id = audit_row.organisation_id
+         where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}') as isolation_security_audit_events,
+        (select count(*)::int
+         from public.business_audit_events audit_row
+         join public.organisations organisation_row
+           on organisation_row.id = audit_row.organisation_id
+         where organisation_row.code = '${escapeSqlLiteral(LEGACY_REPLACEMENT_ISOLATION_ORG.code)}') as isolation_business_audit_events;
     `,
   });
 
@@ -571,6 +1039,12 @@ export function snapshotLegacyFixtureState(databaseUrl: string) {
       storage_objects: 0,
       isolation_outbox: 0,
       isolation_pre_cutover_skips: 0,
+      ai_usage_events: 0,
+      isolation_ai_usage_events: 0,
+      security_audit_events: 0,
+      business_audit_events: 0,
+      isolation_security_audit_events: 0,
+      isolation_business_audit_events: 0,
     }
   );
 }

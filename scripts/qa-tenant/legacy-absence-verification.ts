@@ -7,6 +7,11 @@ import {
 import { runSupabaseDbQueryJson } from "./db-cli";
 import { LEGACY_HOSTED_DEMO_ORGANISATION } from "./legacy-hosted-demo";
 import {
+  buildAppendOnlyTenantRowCountSql,
+  collectAppendOnlyInventoryFailures,
+  MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES,
+} from "./tenant-retirement-policy";
+import {
   buildTenantPrivateInfrastructureCountSql,
   collectPrivateInfrastructureAbsenceFailures,
   type TenantPrivateInfrastructureCounts,
@@ -124,17 +129,44 @@ export function assertLegacyHostedDemoFullyAbsent(
     outputFormat: "json",
     sql: listModuleTablesSql(),
   });
-  const appendOnlyRows = runSupabaseDbQueryJson<{ tables: string[] }>({
+  const appendOnlyRows = runSupabaseDbQueryJson<{
+    tables: Array<{ table: string; trigger: string }>;
+  }>({
     databaseUrl,
     outputFormat: "json",
     sql: listAppendOnlyDeleteTablesSql(),
   });
 
   const moduleTables = (moduleRows[0]?.tables ?? []) as string[];
-  const appendOnlyTables = new Set(
-    (appendOnlyRows[0]?.tables ?? []) as string[],
-  );
+  const appendOnlyTables = new Set<string>([
+    ...((appendOnlyRows[0]?.tables ?? []) as Array<{ table: string }>).map(
+      (entry) => entry.table,
+    ),
+    ...MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES.map((policy) => policy.table),
+  ]);
   const infrastructureTables = new Set<string>(PURGE_INFRASTRUCTURE_TABLES);
+
+  const appendOnlyInventoryRows = runSupabaseDbQueryJson<{
+    rows: Array<{ table: string; count: number }>;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    sql: buildAppendOnlyTenantRowCountSql(
+      legacyOrgId,
+      [...appendOnlyTables].sort(),
+    ),
+  });
+
+  failures.push(
+    ...collectAppendOnlyInventoryFailures(
+      (appendOnlyInventoryRows[0]?.rows ?? []) as Array<{
+        table: string;
+        count: number;
+        lifecycle_stage?: "module" | "foundation";
+      }>,
+      "full-absence",
+    ),
+  );
 
   const tablesToVerify = moduleTables.filter(
     (tableName) =>

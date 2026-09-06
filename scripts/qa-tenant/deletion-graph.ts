@@ -85,18 +85,7 @@ export const PURGE_INFRASTRUCTURE_TABLES = [
   "template_answers",
 ] as const;
 
-export function listAppendOnlyDeleteTablesSql() {
-  return `
-select coalesce(
-  array_to_json(array_agg(distinct event_object_table order by event_object_table)),
-  '[]'::json
-) as tables
-from information_schema.triggers
-where trigger_schema = 'public'
-  and event_manipulation = 'DELETE'
-  and action_statement ilike '%prevent_update_or_delete%';
-`;
-}
+export { listAllAppendOnlyDeleteTablesSql as listAppendOnlyDeleteTablesSql } from "./tenant-retirement-policy";
 
 export function foundationTableSqlList() {
   return FOUNDATION_TABLES.filter((table) => !table.includes("."))
