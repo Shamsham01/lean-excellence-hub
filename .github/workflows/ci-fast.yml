@@ -1,0 +1,41 @@
+name: Fast CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+
+env:
+  APP_ORIGIN: http://127.0.0.1:3000
+  AUTH_RATE_LIMIT_PEPPER: ci-only-pepper-that-is-at-least-32-characters
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  SUPABASE_SECRET_KEY: sb_secret_ci_placeholder
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Fast CI / Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

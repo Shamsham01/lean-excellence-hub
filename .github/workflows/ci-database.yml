@@ -1,0 +1,119 @@
+name: Database CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - "supabase/**"
+      - "scripts/qa-tenant/**"
+      - "tests/integration/**"
+      - "src/platform/supabase/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ci-database.yml"
+      - ".github/workflows/ci-full.yml"
+      - ".github/actions/supabase-local-start/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CREDENTIAL_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+jobs:
+  changes:
+    name: Detect database-related changes
+    runs-on: ubuntu-latest
+    outputs:
+      qa_tenant_replacement: ${{ steps.filter.outputs.qa_tenant_replacement }}
+      qa_tenant_harness: ${{ steps.filter.outputs.qa_tenant_harness }}
+      windows_qa_harness: ${{ steps.filter.outputs.windows_qa_harness }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            qa_tenant_replacement:
+              - "scripts/qa-tenant/**"
+              - "tests/integration/qa-tenant-hosted-replacement.test.ts"
+            qa_tenant_harness:
+              - "scripts/qa-tenant/**"
+              - "tests/integration/qa-tenant-harness.test.ts"
+            windows_qa_harness:
+              - "scripts/qa-tenant/**"
+              - "tests/unit/qa-tenant-**"
+              - "package.json"
+              - "package-lock.json"
+              - ".github/workflows/ci-database.yml"
+
+  database:
+    name: Database CI / Targeted
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - run: npm ci
+      - uses: ./.github/actions/supabase-local-start
+        with:
+          startup-timeout-minutes: "10"
+          max-attempts: "2"
+      - run: npm run db:lint
+      - run: npm run test:db
+      - name: QA tenant hosted replacement integration (local Supabase)
+        if: needs.changes.outputs.qa_tenant_replacement == 'true'
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LEANHUB_ALLOW_QA_TENANT: "1"
+          LEANHUB_FORCE_LEGACY_REPLACEMENT_INTEGRATION: "1"
+        run: |
+          eval "$(npx supabase status -o env)"
+          npx vitest run --reporter=verbose tests/integration/qa-tenant-hosted-replacement.test.ts
+      - name: QA tenant harness integration (local Supabase)
+        if: needs.changes.outputs.qa_tenant_harness == 'true'
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LEANHUB_ALLOW_QA_TENANT: "1"
+        run: |
+          eval "$(npx supabase status -o env)"
+          npx vitest run --reporter=verbose tests/integration/qa-tenant-harness.test.ts
+      - run: npm run db:types
+      - name: Confirm committed database types are current
+        run: git diff --exit-code -- src/platform/supabase/database.types.ts
+      - if: always()
+        run: npm run db:stop
+
+  qa-harness-windows:
+    name: Database CI / Windows QA harness
+    needs: changes
+    if: needs.changes.outputs.windows_qa_harness == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - run: npm ci
+      - name: Run cross-platform QA harness unit tests
+        shell: pwsh
+        run: npm test -- tests/unit/qa-tenant-npm-exec.test.ts tests/unit/qa-tenant-db-cli.test.ts tests/unit/qa-tenant-db-query-result.test.ts tests/unit/qa-tenant-database-types-verify.test.ts tests/unit/qa-tenant-inventory.test.ts tests/unit/qa-tenant-working-tree-verify.test.ts tests/unit/qa-tenant-guards.test.ts tests/unit/qa-tenant-constants.test.ts
+      - name: Verify Supabase CLI resolves via npm exec on Windows
+        shell: pwsh
+        run: npm exec -- supabase --version
