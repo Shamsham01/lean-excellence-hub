@@ -437,13 +437,13 @@ export async function seedLegacyReplacementFixture(options: {
     `,
   });
 
-  deleteFixtureFoundationDataForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_HOSTED_DEMO_ORGANISATION.code,
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);
 
-  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureFoundationDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_HOSTED_DEMO_ORGANISATION.code,
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
@@ -855,12 +855,12 @@ export async function cleanupLegacyReplacementFixture(options: {
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
-  deleteFixtureFoundationDataForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);
 
-  deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+  deleteFixtureFoundationDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);
