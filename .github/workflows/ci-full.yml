@@ -1,13 +1,23 @@
-name: CI
+name: Full Regression
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || format('main-{0}', github.sha) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   APP_ORIGIN: http://127.0.0.1:3000
@@ -15,11 +25,14 @@ env:
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
   NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
   SUPABASE_SECRET_KEY: sb_secret_ci_placeholder
+  CREDENTIAL_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 jobs:
   quality:
-    name: Quality and production build
+    name: Full Regression / Quality
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -33,9 +46,11 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  end-to-end:
-    name: Playwright smoke test
+  end-to-end-smoke:
+    name: Full Regression / E2E smoke
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -47,8 +62,10 @@ jobs:
       - run: npm run test:e2e:smoke
 
   database:
-    name: Local Supabase database baseline
+    name: Full Regression / Database
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -56,26 +73,21 @@ jobs:
           cache: npm
           node-version: 24
       - run: npm ci
-      - name: Start local Supabase
-        shell: bash
-        env:
-          CREDENTIAL_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-        run: |
-          for attempt in 1 2 3; do
-            if npm run db:start; then
-              exit 0
-            fi
-            echo "db:start attempt ${attempt} failed; retrying..." >&2
-            npm run db:stop || true
-            sleep 10
-          done
-          exit 1
+      - uses: ./.github/actions/supabase-local-start
+        with:
+          startup-timeout-minutes: "10"
+          max-attempts: "2"
       - run: npm run db:lint
       - run: npm run test:db
-      # N1a worker RPC semantics are covered by pgTAP (n1a_outbox_reliability,
-      # n1a_delivery_ledger, n1a_worker_api_reachability). The optional
-      # test:db:integration script depends on supabase db query CLI output and
-      # is kept for local PostgREST smoke checks only.
+      - name: QA tenant hosted replacement integration (local Supabase)
+        timeout-minutes: 75
+        shell: bash
+        env:
+          LEANHUB_ALLOW_QA_TENANT: "1"
+          LEANHUB_FORCE_LEGACY_REPLACEMENT_INTEGRATION: "1"
+        run: |
+          eval "$(npx supabase status -o env)"
+          npx vitest run --reporter=verbose tests/integration/qa-tenant-hosted-replacement.test.ts
       - run: npm run db:types
       - name: Confirm committed database types are current
         run: git diff --exit-code -- src/platform/supabase/database.types.ts
@@ -101,8 +113,10 @@ jobs:
         run: npm run db:stop
 
   qa-harness-windows:
-    name: QA harness portability (Windows)
+    name: Full Regression / Windows QA harness
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

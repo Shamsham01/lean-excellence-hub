@@ -1,0 +1,63 @@
+name: Start local Supabase (bounded)
+description: Start local Supabase with per-attempt timeout, retries, diagnostics, and guaranteed cleanup on failure.
+
+inputs:
+  startup-timeout-minutes:
+    description: Maximum minutes allowed for each startup attempt.
+    required: false
+    default: "10"
+  max-attempts:
+    description: Number of startup attempts before failing the step.
+    required: false
+    default: "2"
+
+runs:
+  using: composite
+  steps:
+    - name: Start local Supabase with bounded retries
+      shell: bash
+      env:
+        STARTUP_TIMEOUT_MINUTES: ${{ inputs.startup-timeout-minutes }}
+        MAX_ATTEMPTS: ${{ inputs.max-attempts }}
+      run: |
+        set -euo pipefail
+
+        dump_diagnostics() {
+          echo "=== Supabase CLI status ==="
+          npx supabase status || true
+          echo "=== Docker containers (supabase) ==="
+          docker ps -a --filter "name=supabase" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || true
+          echo "=== Recent Supabase container logs ==="
+          for container in $(docker ps -a --filter "name=supabase" --format "{{.Names}}" 2>/dev/null || true); do
+            echo "--- logs: ${container} ---"
+            docker logs --tail 80 "${container}" 2>&1 || true
+          done
+        }
+
+        stop_partial_stack() {
+          npm run db:stop || true
+        }
+
+        attempt=1
+        while [ "${attempt}" -le "${MAX_ATTEMPTS}" ]; do
+          echo "Supabase startup attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${STARTUP_TIMEOUT_MINUTES}m)"
+          if timeout "${STARTUP_TIMEOUT_MINUTES}m" npm run db:start; then
+            echo "Local Supabase is ready."
+            npx supabase status
+            exit 0
+          fi
+
+          echo "Supabase startup attempt ${attempt} failed or timed out." >&2
+          dump_diagnostics
+          stop_partial_stack
+
+          attempt=$((attempt + 1))
+          if [ "${attempt}" -le "${MAX_ATTEMPTS}" ]; then
+            echo "Retrying Supabase startup in 10 seconds..."
+            sleep 10
+          fi
+        done
+
+        dump_diagnostics
+        echo "Local Supabase failed to start after ${MAX_ATTEMPTS} attempt(s)." >&2
+        exit 1
