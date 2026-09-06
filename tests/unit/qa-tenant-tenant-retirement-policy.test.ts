@@ -3,13 +3,19 @@ import { describe, expect, it } from "vitest";
 import { FOUNDATION_TABLES } from "../../scripts/qa-tenant/deletion-graph";
 import {
   assertTenantRetirementPolicyConsistency,
+  buildAppendOnlyUnknownGuardStatements,
   buildControlledRetirementDeleteStatements,
   buildFoundationStageAppendOnlyDeleteStatements,
+  classifyDiscoveredAppendOnlyTable,
   collectAppendOnlyInventoryFailures,
   FOUNDATION_STAGE_APPEND_ONLY_TABLES,
   formatAppendOnlyInventoryLines,
+  getApprovedAppendOnlyTableNames,
   getFoundationStageAppendOnlyTableNames,
+  getModuleStageControlledRetirementTableNames,
+  getModuleStageStandardAppendOnlyTableNames,
   MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES,
+  MODULE_STAGE_STANDARD_APPEND_ONLY_TABLES,
 } from "../../scripts/qa-tenant/tenant-retirement-policy";
 import {
   buildLegacyHostedDemoModulePurgeSql,
@@ -23,10 +29,38 @@ describe("tenant retirement policy", () => {
     ).not.toThrow();
   });
 
+  it("classifies unknown append-only tables as unknown", () => {
+    expect(classifyDiscoveredAppendOnlyTable("future_unknown_table")).toBe(
+      "unknown",
+    );
+  });
+
+  it("keeps known module and foundation classifications", () => {
+    expect(classifyDiscoveredAppendOnlyTable("ai_usage_events")).toBe("module");
+    expect(
+      classifyDiscoveredAppendOnlyTable("benefit_overlap_allocation_history"),
+    ).toBe("module");
+    expect(classifyDiscoveredAppendOnlyTable("security_audit_events")).toBe(
+      "foundation",
+    );
+    expect(classifyDiscoveredAppendOnlyTable("business_audit_events")).toBe(
+      "foundation",
+    );
+  });
+
   it("lists module-stage custom append-only tables with controlled retirement triggers", () => {
     expect(
       MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES.map((entry) => entry.table),
     ).toEqual(["ai_usage_events", "benefit_overlap_allocation_history"]);
+  });
+
+  it("lists explicit module-stage standard append-only tables", () => {
+    expect(getModuleStageStandardAppendOnlyTableNames()).toEqual(
+      MODULE_STAGE_STANDARD_APPEND_ONLY_TABLES.map((entry) => entry.table),
+    );
+    expect(getModuleStageStandardAppendOnlyTableNames().length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("lists foundation-stage append-only audit ledgers", () => {
@@ -50,11 +84,17 @@ describe("tenant retirement policy", () => {
         count: 2,
         lifecycleStage: "foundation",
       },
+      {
+        table: "some_future_table",
+        count: 1,
+        lifecycleStage: "unknown",
+      },
     ]);
 
     expect(lines).toEqual([
       "  - public.ai_usage_events [module]: 3",
       "  - public.security_audit_events [foundation]: 2",
+      "  - public.some_future_table [unknown]: 1",
     ]);
   });
 
@@ -66,6 +106,11 @@ describe("tenant retirement policy", () => {
           table: "security_audit_events",
           count: 1,
           lifecycleStage: "foundation",
+        },
+        {
+          table: "some_future_table",
+          count: 4,
+          lifecycleStage: "unknown",
         },
       ],
       "module-purge",
@@ -101,6 +146,18 @@ describe("tenant retirement policy", () => {
 
     expect(failures).toEqual([]);
   });
+
+  it("covers every approved append-only table in exactly one lifecycle stage", () => {
+    const approved = getApprovedAppendOnlyTableNames();
+    const unique = new Set(approved);
+
+    expect(unique.size).toBe(approved.length);
+    expect(
+      approved.every(
+        (table) => classifyDiscoveredAppendOnlyTable(table) !== "unknown",
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("tenant purge SQL classification", () => {
@@ -124,6 +181,21 @@ describe("tenant purge SQL classification", () => {
     );
   });
 
+  it("contains a pre-mutation unknown append-only guard for full tenant removal", () => {
+    const sql = buildLegacyHostedDemoModulePurgeSql();
+    const guard = buildAppendOnlyUnknownGuardStatements();
+    const privatePurgeIndex = sql.indexOf(
+      "delete from private.notification_projector_pre_cutover_skips",
+    );
+    const guardIndex = sql.indexOf(
+      "Tenant module purge blocked: unclassified append-only tables discovered",
+    );
+
+    expect(guard).toContain("unclassified append-only tables discovered");
+    expect(guardIndex).toBeGreaterThanOrEqual(0);
+    expect(privatePurgeIndex).toBeGreaterThan(guardIndex);
+  });
+
   it("does not target foundation audit ledgers during module-stage controlled retirement", () => {
     const sql = buildLegacyHostedDemoModulePurgeSql();
     const statements =
@@ -133,20 +205,25 @@ describe("tenant purge SQL classification", () => {
     expect(sql).not.toContain("delete from public.business_audit_events");
     expect(statements).not.toContain("security_audit_events_append_only");
     expect(statements).not.toContain("business_audit_events_prevent_delete");
-    expect(statements).toContain(
-      "event_object_table not in ('security_audit_events', 'business_audit_events')",
-    );
+    expect(statements).not.toContain("for rec in");
+    expect(statements).not.toContain("prevent_update_or_delete%'");
   });
 
-  it("builds module-stage controlled retirement delete statements for custom append-only tables", () => {
+  it("builds module-stage controlled retirement delete statements only for approved tables", () => {
     const statements =
       buildControlledRetirementDeleteStatements("target_org_id");
 
+    for (const tableName of getModuleStageControlledRetirementTableNames()) {
+      expect(statements).toContain(`delete from public.${tableName}`);
+    }
     expect(statements).toContain("ai_usage_events_append_only");
     expect(statements).toContain(
       "benefit_overlap_allocation_history_guard_mutation",
     );
-    expect(statements).toContain("prevent_update_or_delete");
+    expect(statements).toContain("action_status_transitions_prevent_delete");
+    expect(statements).not.toContain(
+      "maturity_official_results_prevent_delete",
+    );
   });
 
   it("builds foundation-stage append-only delete statements before membership removal", () => {

@@ -382,6 +382,60 @@ describe
       expect(remaining[0]?.count).toBeGreaterThan(0);
     }, 180_000);
 
+    it("aborts full module purge before mutation when an unclassified append-only table exists", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      const before = snapshotLegacyFixtureState(env.databaseUrl);
+
+      runSupabaseDbQuery({
+        databaseUrl: env.databaseUrl,
+        sql: `
+          do $$
+          begin
+            execute '
+              create table if not exists public.qa_tenant_retirement_unknown_fixture (
+                id uuid primary key default gen_random_uuid(),
+                organisation_id uuid not null references public.organisations(id) on delete restrict,
+                note text not null default ''qa fixture''
+              )';
+
+            execute '
+              drop trigger if exists qa_tenant_retirement_unknown_fixture_prevent_delete
+                on public.qa_tenant_retirement_unknown_fixture';
+
+            execute '
+              create trigger qa_tenant_retirement_unknown_fixture_prevent_delete
+              before delete on public.qa_tenant_retirement_unknown_fixture
+              for each row execute function private.prevent_update_or_delete()';
+          end
+          $$;
+        `,
+      });
+
+      try {
+        expect(() =>
+          executeLegacyHostedDemoModulePurgeSql(env.databaseUrl),
+        ).toThrow(SupabaseDbQueryError);
+
+        const after = snapshotLegacyFixtureState(env.databaseUrl);
+        expect(after).toEqual(before);
+      } finally {
+        runSupabaseDbQuery({
+          databaseUrl: env.databaseUrl,
+          sql: `
+            drop table if exists public.qa_tenant_retirement_unknown_fixture cascade;
+          `,
+        });
+      }
+    }, 180_000);
+
     it("rolls back tenant module purge mutations when outbox is deleted before dependents", async () => {
       await cleanupLegacyReplacementFixture({
         admin,

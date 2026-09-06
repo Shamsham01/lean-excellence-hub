@@ -4,8 +4,10 @@ import {
 } from "./deletion-graph";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
 import {
+  buildAppendOnlyUnknownGuardStatements,
   buildControlledRetirementDeleteStatements,
   foundationStageAppendOnlyTableSqlList,
+  moduleStageAppendOnlyTableSqlList,
   type TenantPurgeRetention,
 } from "./tenant-retirement-policy";
 
@@ -39,6 +41,7 @@ declare
   module_stage_append_only_tables text[];
   append_only_table text;
   rec record;
+  unknown_append_only_tables text[];
 begin
   select id into target_org_id
   from public.organisations
@@ -48,6 +51,8 @@ begin
     raise notice 'No organisation found for code %', target_org_code;
     return;
   end if;
+
+${buildAppendOnlyUnknownGuardStatements({ indent: "  " })}
 
 ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
@@ -209,7 +214,7 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   )
   into module_stage_append_only_tables
   from unnest(append_only_tables) as append_only_table_name
-  where append_only_table_name not in (${foundationStageAppendOnlyTableSqlList()});
+  where append_only_table_name in (${moduleStageAppendOnlyTableSqlList()});
 
   if purge_retention = 'full-tenant-removal' then
 ${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })}

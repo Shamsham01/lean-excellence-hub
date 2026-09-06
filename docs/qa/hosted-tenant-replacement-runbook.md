@@ -132,15 +132,25 @@ retirement deletion: `ai_usage_events`, `benefit_overlap_allocation_history`.
 **Purge classification order (full tenant removal):**
 
 ```text
-private notification infrastructure (QA2c order)
-→ controlled append-only retirement deletes (custom + discovered)
+append-only policy guard (abort on unknown)
+→ private notification infrastructure (QA2c order)
+→ controlled append-only retirement deletes (explicitly approved module tables only)
 → maturity explicit unlock deletes
 → generic deletable module tables (append-only excluded)
-→ remaining-row verification (append-only must be zero)
+→ remaining-row verification (module-stage append-only must be zero)
 ```
 
+**Approved append-only lifecycle stages:**
+
+- `module` — explicitly approved module-stage tables only (`ai_usage_events`,
+  `benefit_overlap_allocation_history`, and the enumerated standard/explicit-unlock
+  module tables in `tenant-retirement-policy.ts`)
+- `foundation` — `security_audit_events`, `business_audit_events`
+- `unknown` — any discovered append-only protection without an approved policy
+
 **Dry-run inventory now includes:** explicit append-only / immutable tenant-owned
-row counts (at minimum `public.ai_usage_events` when present).
+row counts with lifecycle stage labels, plus destructive readiness when schema
+discovery finds unclassified append-only protections.
 
 **Fail-closed procedure:**
 
