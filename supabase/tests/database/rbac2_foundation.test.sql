@@ -1,6 +1,6 @@
 begin;
 
-select plan(42);
+select plan(45);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -205,6 +205,120 @@ select is(
   'module responsibility catalogue provisioned (12 modules + admin tag)'
 );
 
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"9c000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"9d000000-0000-0000-0000-000000000002","email":"rbac2-subject@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from rbac2_ids where key = 'organisation')),
+  'subject selects organisation before responsibility grants'
+);
+
+select ok(
+  public.member_has_permission('suggestions.submit'),
+  'baseline: active member can submit suggestions without management grant'
+);
+
+select ok(
+  public.member_has_permission('suggestions.read'),
+  'baseline: active member can read suggestions register via UI probe'
+);
+
+select ok(
+  not public.member_has_permission('suggestions.review'),
+  'baseline: active member cannot review suggestions without responsibility'
+);
+
+select ok(
+  not public.member_has_permission('suggestions.manage'),
+  'baseline: active member cannot manage suggestions without responsibility'
+);
+
+select ok(
+  not private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'suggestions.read',
+    null,
+    null
+  ),
+  'baseline suggestions.read UI probe does not grant scoped record read'
+);
+
+select ok(
+  not public.member_has_permission('five_s.audit.perform'),
+  'baseline: active member does not receive organisation-wide 5S audit perform'
+);
+
+select ok(
+  not public.member_has_permission('gemba.walk.perform'),
+  'baseline: active member does not receive organisation-wide Gemba walk perform'
+);
+
+select ok(
+  not public.member_has_permission('problem_solving.contribute'),
+  'baseline: active member does not receive organisation-wide problem solving contribute'
+);
+
+select ok(
+  not public.member_has_permission('comments.create'),
+  'baseline: active member does not receive organisation-wide comment create'
+);
+
+select ok(
+  not public.member_has_permission('submissions.create'),
+  'baseline: active member does not receive organisation-wide submission create'
+);
+
+select ok(
+  private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'actions.complete',
+    (select id from rbac2_ids where key = 'subject_membership'),
+    null
+  ),
+  'baseline actions.complete allowed for self membership anchor'
+);
+
+select ok(
+  not private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'actions.complete',
+    (select id from rbac2_ids where key = 'unrelated_membership'),
+    null
+  ),
+  'baseline actions.complete denied for another membership anchor'
+);
+
+select ok(
+  not pg_catalog.has_table_privilege(
+    'authenticated',
+    'private.baseline_participation_permissions',
+    'SELECT'
+  ),
+  'authenticated cannot read baseline catalogue table directly'
+);
+
+select ok(
+  public.member_has_permission('maturity.read'),
+  'authenticated resolves organisation baseline via security definer chain'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"9c000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"9d000000-0000-0000-0000-000000000001","email":"rbac2-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from rbac2_ids where key = 'organisation')),
+  'owner re-selects organisation for responsibility grants'
+);
+
 select ok(
   public.grant_role_version(
     (select id from rbac2_ids where key = 'organisation'),
@@ -314,98 +428,6 @@ select ok(
     (select id from rbac2_ids where key = 'dispatch_unit')
   ),
   'Projects organisation grant does not widen Suggestions management'
-);
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"9c000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"9d000000-0000-0000-0000-000000000002","email":"rbac2-subject@example.test"}',
-  true
-);
-
-select ok(
-  public.switch_organisation((select id from rbac2_ids where key = 'organisation')),
-  'subject selects organisation'
-);
-
-select ok(
-  public.member_has_permission('suggestions.submit'),
-  'baseline: active member can submit suggestions without management grant'
-);
-
-select ok(
-  public.member_has_permission('suggestions.read'),
-  'baseline: active member can read suggestions register'
-);
-
-select ok(
-  not public.member_has_permission('suggestions.review'),
-  'baseline: active member cannot review suggestions without responsibility'
-);
-
-select ok(
-  not public.member_has_permission('suggestions.manage'),
-  'baseline: active member cannot manage suggestions without responsibility'
-);
-
-select ok(
-  not public.member_has_permission('five_s.audit.perform'),
-  'baseline: active member does not receive organisation-wide 5S audit perform'
-);
-
-select ok(
-  not public.member_has_permission('gemba.walk.perform'),
-  'baseline: active member does not receive organisation-wide Gemba walk perform'
-);
-
-select ok(
-  not public.member_has_permission('problem_solving.contribute'),
-  'baseline: active member does not receive organisation-wide problem solving contribute'
-);
-
-select ok(
-  not public.member_has_permission('comments.create'),
-  'baseline: active member does not receive organisation-wide comment create'
-);
-
-select ok(
-  not public.member_has_permission('submissions.create'),
-  'baseline: active member does not receive organisation-wide submission create'
-);
-
-select ok(
-  private.membership_has_scoped_permission(
-    (select id from rbac2_ids where key = 'subject_membership'),
-    (select id from rbac2_ids where key = 'organisation'),
-    'actions.complete',
-    (select id from rbac2_ids where key = 'subject_membership'),
-    null
-  ),
-  'baseline actions.complete allowed for self membership anchor'
-);
-
-select ok(
-  not private.membership_has_scoped_permission(
-    (select id from rbac2_ids where key = 'subject_membership'),
-    (select id from rbac2_ids where key = 'organisation'),
-    'actions.complete',
-    (select id from rbac2_ids where key = 'unrelated_membership'),
-    null
-  ),
-  'baseline actions.complete denied for another membership anchor'
-);
-
-select ok(
-  not pg_catalog.has_table_privilege(
-    'authenticated',
-    'private.baseline_participation_permissions',
-    'SELECT'
-  ),
-  'authenticated cannot read baseline catalogue table directly'
-);
-
-select ok(
-  public.member_has_permission('maturity.read'),
-  'authenticated resolves organisation baseline via security definer chain'
 );
 
 select set_config(

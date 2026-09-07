@@ -63,7 +63,7 @@ Active members with complete identity enrolment receive **implicit** baseline pe
 
 | Module | Baseline permissions | Scope mode | Notes |
 |--------|---------------------|------------|-------|
-| Suggestions | read, submit | organisation | Submit required for PR1 acceptance; management remains grant-scoped |
+| Suggestions | read (UI probe only), submit (scoped) | organisation | `suggestions.read` excluded from scoped evaluation to preserve record-level RBAC |
 | Actions | read, complete | self | Assignee/creator paths use membership anchor |
 | Training | read | self | Own training visibility |
 | Skills | read | self | Own skill profile |
@@ -87,8 +87,14 @@ Assigned-work perform/contribute authority must be granted via module responsibi
 
 ### `membership_has_baseline_participation` scope semantics
 
-- **organisation mode:** authorises when `target_membership_id is null`. Does **not** evaluate `target_unit_id`. Organisation-wide read visibility is an explicit temporary PR1 decision; site/unit containment arrives in PR2.
-- **self mode:** authorises when `target_membership_id is null` or equals the actor membership (for assignee/creator anchored checks).
+Two evaluation paths exist:
+
+- **`membership_has_baseline_participation_probe`** — used by `member_has_permission` for UI/navigation probes. Active membership alone is sufficient; no anchor checks.
+- **`membership_has_baseline_participation`** — used by `membership_has_scoped_permission` for record/RPC authorization. Respects `include_in_scoped_permission` and anchor rules:
+  - **organisation mode:** authorises when `target_membership_id is null`. Does **not** evaluate `target_unit_id`.
+  - **self mode:** authorises only when `target_membership_id = actor_membership.id` (never via null anchor).
+
+`suggestions.read` is probe-only (`include_in_scoped_permission = false`) so record-level suggestion visibility remains grant/assignment qualified.
 
 Module **management** permissions are never implied by baseline.
 

@@ -43,6 +43,7 @@ create unique index if not exists roles_org_module_responsibility_key_idx
 create table if not exists private.baseline_participation_permissions (
   permission_key text primary key,
   scope_mode text not null,
+  include_in_scoped_permission boolean not null default true,
   constraint baseline_participation_permissions_scope_mode_check
     check (scope_mode in ('organisation', 'self'))
 );
@@ -77,31 +78,35 @@ with check (true);
 -- Write/perform/contribute permissions that rely on assignment/participant
 -- checks (5S audit perform, Gemba walk perform, problem solving contribute,
 -- generic submissions/comments create) are intentionally excluded here.
-insert into private.baseline_participation_permissions (permission_key, scope_mode)
+insert into private.baseline_participation_permissions (
+  permission_key,
+  scope_mode,
+  include_in_scoped_permission
+)
 values
-  ('suggestions.read', 'organisation'),
-  ('suggestions.submit', 'organisation'),
-  ('actions.read', 'self'),
-  ('actions.complete', 'self'),
-  ('training.read', 'self'),
-  ('skills.read', 'self'),
-  ('people.capability.read', 'self'),
-  ('maturity.read', 'organisation'),
-  ('five_s.read', 'organisation'),
-  ('gemba.read', 'organisation'),
-  ('problem_solving.view', 'organisation'),
-  ('projects.read', 'organisation'),
-  ('benefits.read', 'organisation'),
-  ('recognition.read', 'organisation'),
-  ('templates.read', 'organisation'),
-  ('attachments.read', 'organisation'),
-  ('comments.read', 'organisation'),
-  ('schedules.read', 'organisation')
+  ('suggestions.read', 'organisation', false),
+  ('suggestions.submit', 'organisation', true),
+  ('actions.read', 'self', true),
+  ('actions.complete', 'self', true),
+  ('training.read', 'self', false),
+  ('skills.read', 'self', false),
+  ('people.capability.read', 'self', false),
+  ('maturity.read', 'organisation', true),
+  ('five_s.read', 'organisation', true),
+  ('gemba.read', 'organisation', true),
+  ('problem_solving.view', 'organisation', true),
+  ('projects.read', 'organisation', true),
+  ('benefits.read', 'organisation', true),
+  ('recognition.read', 'organisation', true),
+  ('templates.read', 'organisation', true),
+  ('attachments.read', 'organisation', true),
+  ('comments.read', 'organisation', true),
+  ('schedules.read', 'organisation', true)
 on conflict (permission_key) do nothing;
 
--- Organisation-mode baseline authorises active members without evaluating
--- target_unit_id. Unit/site containment for reads is deferred to PR2; write
--- and perform authority must not be granted organisation-wide here.
+-- Organisation-mode scoped baseline authorises when target_membership_id is null
+-- and does not evaluate target_unit_id (PR2 site boundary follows).
+-- Self-mode scoped baseline requires an explicit self membership anchor.
 create or replace function private.membership_has_baseline_participation(
   actor_membership_id uuid,
   target_organisation_id uuid,
@@ -127,6 +132,7 @@ as $$
      and identity_control.enrolment_status = 'complete'
     join private.baseline_participation_permissions baseline_permission
       on baseline_permission.permission_key = target_permission_key
+     and baseline_permission.include_in_scoped_permission
     where actor_membership.id = actor_membership_id
       and actor_membership.organisation_id = target_organisation_id
       and actor_membership.status = 'active'
@@ -137,12 +143,38 @@ as $$
         )
         or (
           baseline_permission.scope_mode = 'self'
-          and (
-            target_membership_id is null
-            or target_membership_id = actor_membership.id
-          )
+          and target_membership_id = actor_membership.id
         )
       )
+  )
+$$;
+
+create or replace function private.membership_has_baseline_participation_probe(
+  actor_membership_id uuid,
+  target_organisation_id uuid,
+  target_permission_key text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.organisation_memberships actor_membership
+    join public.organisations organisation
+      on organisation.id = actor_membership.organisation_id
+     and organisation.status = 'active'
+    join private.identity_controls identity_control
+      on identity_control.user_id = actor_membership.user_id
+     and identity_control.status = 'active'
+     and identity_control.enrolment_status = 'complete'
+    join private.baseline_participation_permissions baseline_permission
+      on baseline_permission.permission_key = target_permission_key
+    where actor_membership.id = actor_membership_id
+      and actor_membership.organisation_id = target_organisation_id
+      and actor_membership.status = 'active'
   )
 $$;
 
@@ -259,12 +291,10 @@ as $$
   or (
     private.current_organisation_id() is not null
     and private.current_membership_id(private.current_organisation_id()) is not null
-    and private.membership_has_baseline_participation(
+    and private.membership_has_baseline_participation_probe(
       private.current_membership_id(private.current_organisation_id()),
       private.current_organisation_id(),
-      target_permission_key,
-      null,
-      null
+      target_permission_key
     )
   )
 $$;
@@ -1127,6 +1157,8 @@ end;
 $$;
 
 alter function private.membership_has_baseline_participation(uuid, uuid, text, uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.membership_has_baseline_participation_probe(uuid, uuid, text)
   owner to lean_hub_private_owner;
 alter function private.provision_module_responsibility_role(
   uuid, uuid, text, text, text, text[], text[]
