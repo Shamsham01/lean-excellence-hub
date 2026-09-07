@@ -263,15 +263,15 @@ select ok(
 insert into site_ids (key, id)
 select 'bodmin_assessment', public.start_maturity_assessment(
   (select id from site_ids where key = 'maturity_model_version'),
-  (select id from site_ids where key = 'bodmin_packing'),
-  'self', 'department'
+  (select id from site_ids where key = 'bodmin_site'),
+  'self', 'site'
 );
 
 insert into site_ids (key, id)
 select 'exeter_assessment', public.start_maturity_assessment(
   (select id from site_ids where key = 'maturity_model_version'),
-  (select id from site_ids where key = 'exeter_packing'),
-  'self', 'department'
+  (select id from site_ids where key = 'exeter_site'),
+  'self', 'site'
 );
 
 select ok(
@@ -345,7 +345,7 @@ select ok(
     (select id from site_ids where key = 'organisation'),
     'maturity.read',
     null,
-    (select id from site_ids where key = 'bodmin_packing')
+    (select id from site_ids where key = 'bodmin_site')
   ),
   'Bodmin operator baseline read within home site'
 );
@@ -355,7 +355,7 @@ select ok(
     (select id from site_ids where key = 'organisation'),
     'maturity.read',
     null,
-    (select id from site_ids where key = 'exeter_packing')
+    (select id from site_ids where key = 'exeter_site')
   ),
   'Bodmin operator cannot baseline-read Exeter unit'
 );
@@ -459,7 +459,7 @@ select ok(
     (select id from site_ids where key = 'organisation'),
     'projects.manage',
     null,
-    (select id from site_ids where key = 'bodmin_packing')
+    (select id from site_ids where key = 'bodmin_site')
   ),
   'organisation-scoped Projects can manage Bodmin'
 );
@@ -469,7 +469,7 @@ select ok(
     (select id from site_ids where key = 'organisation'),
     'projects.manage',
     null,
-    (select id from site_ids where key = 'exeter_packing')
+    (select id from site_ids where key = 'exeter_site')
   ),
   'organisation-scoped Projects can manage Exeter'
 );
@@ -479,7 +479,7 @@ select ok(
     (select id from site_ids where key = 'organisation'),
     'maturity.models.manage',
     null,
-    (select id from site_ids where key = 'bodmin_packing')
+    (select id from site_ids where key = 'bodmin_site')
   ),
   'Projects grant does not widen Maturity authority'
 );
