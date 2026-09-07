@@ -17,6 +17,7 @@ on:
       - ".github/workflows/ci-database.yml"
       - ".github/workflows/ci-full.yml"
       - ".github/actions/supabase-local-start/**"
+      - ".github/actions/supabase-playwright-e2e/**"
 
 permissions:
   contents: read
@@ -45,9 +46,13 @@ jobs:
             qa_tenant_replacement:
               - "scripts/qa-tenant/**"
               - "tests/integration/qa-tenant-hosted-replacement.test.ts"
+              - ".github/workflows/ci-database.yml"
+              - ".github/workflows/ci-full.yml"
             qa_tenant_harness:
               - "scripts/qa-tenant/**"
               - "tests/integration/qa-tenant-harness.test.ts"
+              - ".github/workflows/ci-database.yml"
+              - ".github/workflows/ci-full.yml"
             windows_qa_harness:
               - "scripts/qa-tenant/**"
               - "tests/unit/qa-tenant-**"
@@ -57,25 +62,59 @@ jobs:
 
   database:
     name: Database CI / Targeted
-    needs: changes
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           cache: npm
           node-version: 24
-      - run: npm ci
+      - name: Install dependencies
+        run: ./scripts/ci/timed.sh "npm ci" npm ci
       - uses: ./.github/actions/supabase-local-start
         with:
-          startup-timeout-minutes: "10"
+          startup-timeout-minutes: "8"
           max-attempts: "2"
-      - run: npm run db:lint
-      - run: npm run test:db
+      - name: Database lint
+        run: ./scripts/ci/timed.sh "db:lint" npm run db:lint
+      - name: pgTAP database tests
+        run: ./scripts/ci/timed.sh "test:db" npm run test:db
+      - name: Generate database types
+        run: ./scripts/ci/timed.sh "db:types" npm run db:types
+      - name: Confirm committed database types are current
+        run: git diff --exit-code -- src/platform/supabase/database.types.ts
+      - if: always()
+        run: npm run db:stop
+      - name: Database CI timing summary
+        if: always()
+        run: |
+          {
+            echo "## Database CI / Targeted timings"
+            echo ""
+            echo "Database core only. QA recovery integrations run in dedicated jobs when relevant paths change."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  qa-tenant-replacement:
+    name: Database CI / QA hosted replacement
+    needs: changes
+    if: needs.changes.outputs.qa_tenant_replacement == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: ./scripts/ci/timed.sh "npm ci" npm ci
+      - uses: ./.github/actions/supabase-local-start
+        with:
+          startup-timeout-minutes: "8"
+          max-attempts: "2"
       - name: QA tenant hosted replacement integration (local Supabase)
-        if: needs.changes.outputs.qa_tenant_replacement == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 18
         shell: bash
         env:
           LEANHUB_ALLOW_QA_TENANT: "1"
@@ -83,19 +122,36 @@ jobs:
           LEANHUB_QA_DB_LOCAL: "1"
         run: |
           eval "$(npx supabase status -o env)"
-          npx vitest run --reporter=verbose tests/integration/qa-tenant-hosted-replacement.test.ts
+          ./scripts/ci/timed.sh "QA hosted replacement integration" npx vitest run --reporter=verbose tests/integration/qa-tenant-hosted-replacement.test.ts
+      - if: always()
+        run: npm run db:stop
+
+  qa-tenant-harness:
+    name: Database CI / QA harness integration
+    needs: changes
+    if: needs.changes.outputs.qa_tenant_harness == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: ./scripts/ci/timed.sh "npm ci" npm ci
+      - uses: ./.github/actions/supabase-local-start
+        with:
+          startup-timeout-minutes: "8"
+          max-attempts: "2"
       - name: QA tenant harness integration (local Supabase)
-        if: needs.changes.outputs.qa_tenant_harness == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 18
         shell: bash
         env:
           LEANHUB_ALLOW_QA_TENANT: "1"
         run: |
           eval "$(npx supabase status -o env)"
-          npx vitest run --reporter=verbose tests/integration/qa-tenant-harness.test.ts
-      - run: npm run db:types
-      - name: Confirm committed database types are current
-        run: git diff --exit-code -- src/platform/supabase/database.types.ts
+          ./scripts/ci/timed.sh "QA harness integration" npx vitest run --reporter=verbose tests/integration/qa-tenant-harness.test.ts
       - if: always()
         run: npm run db:stop
 

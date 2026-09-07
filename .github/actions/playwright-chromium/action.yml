@@ -1,0 +1,27 @@
+name: Install Playwright Chromium (cached)
+description: Cache browser binaries keyed by package-lock and install Chromium with system dependencies.
+
+runs:
+  using: composite
+  steps:
+    - name: Restore Playwright browser cache
+      id: playwright-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+    - name: Install Playwright Chromium
+      shell: bash
+      run: |
+        set -euo pipefail
+        start_epoch="$(date +%s)"
+        npx playwright install-deps chromium
+        npx playwright install chromium
+        end_epoch="$(date +%s)"
+        duration="$((end_epoch - start_epoch))"
+        if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+          cache_state="${{ steps.playwright-cache.outputs.cache-hit == 'true' && 'hit' || 'miss' }}"
+          echo "- Playwright Chromium install (cache ${cache_state}): ${duration}s" >> "${GITHUB_STEP_SUMMARY}"
+        fi
+        echo "Playwright Chromium install completed in ${duration}s"
