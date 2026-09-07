@@ -508,7 +508,9 @@ select throws_ok(
   'cross-site reparent blocked for PR3 handoff'
 );
 
--- Site ownership immutability
+-- Site ownership immutability (trigger enforced regardless of RLS)
+reset role;
+
 select throws_ok(
   format(
     $sql$
@@ -525,6 +527,8 @@ select throws_ok(
   null,
   'historical site ownership cannot be mutated'
 );
+
+set local role authenticated;
 
 select * from finish();
 rollback;
