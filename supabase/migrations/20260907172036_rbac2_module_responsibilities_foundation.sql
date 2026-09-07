@@ -796,8 +796,9 @@ immutable
 as $$
   select case
     when target_is_owner_role then 'owner'
+    when target_canonical_name = 'organisation-administrator'
+      or target_module_responsibility_key = 'admin' then 'admin'
     when target_module_responsibility_key is not null then 'module'
-    when target_canonical_name = 'organisation-administrator' then 'admin'
     when target_canonical_name in ('manager', 'team-member', 'finance-validator') then 'legacy'
     else 'custom'
   end

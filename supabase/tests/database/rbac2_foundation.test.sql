@@ -629,5 +629,17 @@ select ok(
   'delegation picker includes module responsibility offers'
 );
 
+select is(
+  private.role_responsibility_kind('organisation-administrator', 'admin', false),
+  'admin',
+  'organisation-administrator with admin module tag classifies as admin'
+);
+
+select is(
+  private.role_responsibility_kind('responsibility-suggestions', 'suggestions', false),
+  'module',
+  'responsibility-suggestions classifies as module'
+);
+
 select * from finish();
 rollback;
