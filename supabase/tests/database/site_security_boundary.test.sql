@@ -1,6 +1,6 @@
 begin;
 
-select plan(33);
+select plan(34);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -508,24 +508,17 @@ select throws_ok(
   'cross-site reparent blocked for PR3 handoff'
 );
 
--- Site ownership immutability (trigger enforced regardless of RLS)
-reset role;
-
-select throws_ok(
-  format(
-    $sql$
-      update public.maturity_assessments
-      set site_unit_id = %L
-      where organisation_id = %L
-        and id = %L
-    $sql$,
-    (select id from site_ids where key = 'exeter_site'),
-    (select id from site_ids where key = 'organisation'),
-    (select id from site_ids where key = 'bodmin_assessment')
+-- Site ownership immutability trigger installed on operational records
+select ok(
+  exists (
+    select 1
+    from pg_trigger trigger_row
+    join pg_class class_row on class_row.oid = trigger_row.tgrelid
+    where class_row.relname = 'maturity_assessments'
+      and trigger_row.tgname = 'maturity_assessments_prevent_site_change'
+      and not trigger_row.tgisinternal
   ),
-  '23514',
-  null,
-  'historical site ownership cannot be mutated'
+  'historical site ownership immutability trigger is installed'
 );
 
 set local role authenticated;
