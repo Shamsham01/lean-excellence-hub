@@ -441,7 +441,7 @@ test.describe("Milestone 11 closure", () => {
     ).toBeVisible();
   });
 
-  test("operator with baseline problem_solving.view can access portfolio and case read routes", async ({
+  test("operator with baseline problem_solving.view can open portfolio but not arbitrary case detail", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
@@ -455,7 +455,9 @@ test.describe("Milestone 11 closure", () => {
     ).toBeVisible();
 
     await page.goto(caseUrl);
-    await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible();
+    await expect(
+      page.getByTestId("problem-solving-detail-page"),
+    ).not.toBeVisible();
   });
 
   test("operator cannot open problem solving create route", async ({
