@@ -13,6 +13,8 @@ export type DelegatableAccessOffer = {
   role_version_id: string;
   role_display_name: string;
   role_canonical_name: string;
+  module_responsibility_key?: string | null;
+  responsibility_kind?: string | null;
   scope_options: Array<{
     scope_type: string;
     scope_unit_id: string | null;

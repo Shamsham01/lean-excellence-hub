@@ -135,7 +135,13 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
             onAssignJobFunction={assignJobFunctionAction}
           />
           <section className="flex flex-col gap-3 border-t border-border pt-6">
-            <h2 className="text-base font-semibold">Access</h2>
+            <h2 className="text-base font-semibold">
+              Access &amp; Responsibilities
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Module responsibilities are scoped independently from organisation
+              placement above.
+            </p>
             <MemberAccessManagement
               grants={profile.access_grants}
               offers={offers}

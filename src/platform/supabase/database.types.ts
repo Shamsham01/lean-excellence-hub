@@ -8520,6 +8520,7 @@ export type Database = {
           id: string
           is_owner_role: boolean
           is_protected: boolean
+          module_responsibility_key: string | null
           organisation_id: string
           status: string
           status_changed_by_membership_id: string | null
@@ -8535,6 +8536,7 @@ export type Database = {
           id?: string
           is_owner_role?: boolean
           is_protected?: boolean
+          module_responsibility_key?: string | null
           organisation_id: string
           status?: string
           status_changed_by_membership_id?: string | null
@@ -8550,6 +8552,7 @@ export type Database = {
           id?: string
           is_owner_role?: boolean
           is_protected?: boolean
+          module_responsibility_key?: string | null
           organisation_id?: string
           status?: string
           status_changed_by_membership_id?: string | null

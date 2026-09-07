@@ -25,6 +25,9 @@ type JobFunctionOption = {
 type AccessGrant = {
   grant_id: string;
   role_display_name: string;
+  role_canonical_name?: string | null;
+  module_responsibility_key?: string | null;
+  responsibility_kind?: string | null;
   scope_type: string;
   scope_unit_name: string | null;
   status: string;

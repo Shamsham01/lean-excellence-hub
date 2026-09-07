@@ -28,7 +28,10 @@ Non-blocking product and UX improvements deferred from milestone delivery. Items
 
 ## RBAC2 — module access roles and scoped responsibilities
 
-Future access architecture should separate **organisational placement**, **baseline participation/read access**, and **privileged module responsibility**. The goal is to make access easier for customer administrators to understand without weakening the existing permission, scope, hierarchy, RLS, immutable role-version, or delegation model.
+**Status:** PR 1 (foundation) implemented on branch `cursor/rbac2-foundation-pre-smoke`.  
+See `docs/development/rbac2-foundation.md` for discovery, design, and handoff notes.
+
+Future access architecture separates **organisational placement**, **baseline participation/read access**, and **privileged module responsibility**. PR 1 delivers the catalogue, baseline participation, and Access & Responsibilities UX. Site isolation and Organisation Structure V2 follow in subsequent PRs.
 
 ### Core model
 
