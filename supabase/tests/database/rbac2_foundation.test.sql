@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(42);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -22,6 +22,12 @@ values
   (
     '9c000000-0000-0000-0000-000000000003',
     'rbac2-inactive@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    '9c000000-0000-0000-0000-000000000004',
+    'rbac2-unrelated@example.test',
     statement_timestamp(), statement_timestamp(), statement_timestamp(),
     '{"provider":"email","providers":["email"]}', '{}', false, false
   );
@@ -47,12 +53,45 @@ insert into auth.sessions (id, user_id, created_at, updated_at)
 values
   ('9d000000-0000-0000-0000-000000000001', '9c000000-0000-0000-0000-000000000001', statement_timestamp(), statement_timestamp()),
   ('9d000000-0000-0000-0000-000000000002', '9c000000-0000-0000-0000-000000000002', statement_timestamp(), statement_timestamp()),
-  ('9d000000-0000-0000-0000-000000000003', '9c000000-0000-0000-0000-000000000003', statement_timestamp(), statement_timestamp());
+  ('9d000000-0000-0000-0000-000000000003', '9c000000-0000-0000-0000-000000000003', statement_timestamp(), statement_timestamp()),
+  ('9d000000-0000-0000-0000-000000000004', '9c000000-0000-0000-0000-000000000004', statement_timestamp(), statement_timestamp());
 
-insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
+insert into public.organisation_memberships (
+  organisation_id,
+  user_id,
+  status,
+  activated_at
+)
 values
-  ((select id from rbac2_ids where key = 'organisation'), '9c000000-0000-0000-0000-000000000002', 'active', statement_timestamp()),
-  ((select id from rbac2_ids where key = 'organisation'), '9c000000-0000-0000-0000-000000000003', 'inactive', statement_timestamp());
+  (
+    (select id from rbac2_ids where key = 'organisation'),
+    '9c000000-0000-0000-0000-000000000002',
+    'active',
+    statement_timestamp()
+  ),
+  (
+    (select id from rbac2_ids where key = 'organisation'),
+    '9c000000-0000-0000-0000-000000000004',
+    'active',
+    statement_timestamp()
+  );
+
+insert into public.organisation_memberships (
+  organisation_id,
+  user_id,
+  status,
+  activated_at,
+  inactivated_at,
+  status_reason
+)
+values (
+  (select id from rbac2_ids where key = 'organisation'),
+  '9c000000-0000-0000-0000-000000000003',
+  'inactive',
+  statement_timestamp() - interval '30 days',
+  statement_timestamp(),
+  'RBAC2 inactive fixture'
+);
 
 update private.identity_controls
 set status = 'active',
@@ -60,7 +99,8 @@ set status = 'active',
     enrolment_completed_at = statement_timestamp()
 where user_id in (
   '9c000000-0000-0000-0000-000000000002',
-  '9c000000-0000-0000-0000-000000000003'
+  '9c000000-0000-0000-0000-000000000003',
+  '9c000000-0000-0000-0000-000000000004'
 );
 
 insert into rbac2_ids (key, id)
@@ -75,6 +115,12 @@ from public.organisation_memberships membership
 where membership.organisation_id = (select id from rbac2_ids where key = 'organisation')
   and membership.user_id = '9c000000-0000-0000-0000-000000000003';
 
+insert into rbac2_ids (key, id)
+select 'unrelated_membership', membership.id
+from public.organisation_memberships membership
+where membership.organisation_id = (select id from rbac2_ids where key = 'organisation')
+  and membership.user_id = '9c000000-0000-0000-0000-000000000004';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"9c000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"9d000000-0000-0000-0000-000000000001","email":"rbac2-owner@example.test"}',
@@ -88,29 +134,38 @@ select ok(
 );
 
 insert into rbac2_ids (key, id)
-select 'root_unit', public.create_organisation_unit(
+select 'production_unit', public.create_organisation_unit(
   (select id from rbac2_ids where key = 'organisation'),
   null,
-  'rbac2-root',
+  'rbac2-production',
   'Production',
   'site'
 );
 
 insert into rbac2_ids (key, id)
-select 'child_unit', public.create_organisation_unit(
+select 'line_unit', public.create_organisation_unit(
   (select id from rbac2_ids where key = 'organisation'),
-  (select id from rbac2_ids where key = 'root_unit'),
-  'rbac2-child',
+  (select id from rbac2_ids where key = 'production_unit'),
+  'rbac2-line-1',
   'Line 1',
   'line'
 );
 
 insert into rbac2_ids (key, id)
-select 'sibling_unit', public.create_organisation_unit(
+select 'warehouse_unit', public.create_organisation_unit(
   (select id from rbac2_ids where key = 'organisation'),
-  (select id from rbac2_ids where key = 'root_unit'),
-  'rbac2-sibling',
-  'Packing',
+  null,
+  'rbac2-warehouse',
+  'Warehouse',
+  'site'
+);
+
+insert into rbac2_ids (key, id)
+select 'dispatch_unit', public.create_organisation_unit(
+  (select id from rbac2_ids where key = 'organisation'),
+  (select id from rbac2_ids where key = 'warehouse_unit'),
+  'rbac2-dispatch',
+  'Dispatch',
   'department'
 );
 
@@ -156,7 +211,7 @@ select ok(
     (select id from rbac2_ids where key = 'subject_membership'),
     (select id from rbac2_ids where key = 'suggestions_role_version'),
     'unit_subtree',
-    (select id from rbac2_ids where key = 'root_unit')
+    (select id from rbac2_ids where key = 'production_unit')
   ) is not null,
   'grant Suggestions responsibility at Production subtree'
 );
@@ -167,7 +222,7 @@ select ok(
     (select id from rbac2_ids where key = 'subject_membership'),
     (select id from rbac2_ids where key = 'five_s_role_version'),
     'unit_subtree',
-    (select id from rbac2_ids where key = 'root_unit')
+    (select id from rbac2_ids where key = 'production_unit')
   ) is not null,
   'grant 5S responsibility at Production subtree'
 );
@@ -201,9 +256,20 @@ select ok(
     (select id from rbac2_ids where key = 'organisation'),
     'suggestions.review',
     null,
-    (select id from rbac2_ids where key = 'child_unit')
+    (select id from rbac2_ids where key = 'production_unit')
   ),
-  'Suggestions review allowed within Production subtree'
+  'Suggestions review allowed at Production anchor'
+);
+
+select ok(
+  private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'suggestions.review',
+    null,
+    (select id from rbac2_ids where key = 'line_unit')
+  ),
+  'Suggestions review allowed at Production descendant Line 1'
 );
 
 select ok(
@@ -212,9 +278,20 @@ select ok(
     (select id from rbac2_ids where key = 'organisation'),
     'suggestions.review',
     null,
-    (select id from rbac2_ids where key = 'sibling_unit')
+    (select id from rbac2_ids where key = 'warehouse_unit')
   ),
-  'Suggestions review denied outside Production subtree'
+  'Suggestions review denied at unrelated Warehouse site'
+);
+
+select ok(
+  not private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'suggestions.review',
+    null,
+    (select id from rbac2_ids where key = 'dispatch_unit')
+  ),
+  'Suggestions review denied at unrelated Warehouse descendant Dispatch'
 );
 
 select ok(
@@ -223,9 +300,9 @@ select ok(
     (select id from rbac2_ids where key = 'organisation'),
     'projects.manage',
     null,
-    (select id from rbac2_ids where key = 'sibling_unit')
+    (select id from rbac2_ids where key = 'dispatch_unit')
   ),
-  'Projects organisation grant applies across units'
+  'Projects organisation grant applies across unrelated sites'
 );
 
 select ok(
@@ -234,7 +311,7 @@ select ok(
     (select id from rbac2_ids where key = 'organisation'),
     'suggestions.manage',
     null,
-    (select id from rbac2_ids where key = 'sibling_unit')
+    (select id from rbac2_ids where key = 'dispatch_unit')
   ),
   'Projects organisation grant does not widen Suggestions management'
 );
@@ -268,6 +345,67 @@ select ok(
 select ok(
   not public.member_has_permission('suggestions.manage'),
   'baseline: active member cannot manage suggestions without responsibility'
+);
+
+select ok(
+  not public.member_has_permission('five_s.audit.perform'),
+  'baseline: active member does not receive organisation-wide 5S audit perform'
+);
+
+select ok(
+  not public.member_has_permission('gemba.walk.perform'),
+  'baseline: active member does not receive organisation-wide Gemba walk perform'
+);
+
+select ok(
+  not public.member_has_permission('problem_solving.contribute'),
+  'baseline: active member does not receive organisation-wide problem solving contribute'
+);
+
+select ok(
+  not public.member_has_permission('comments.create'),
+  'baseline: active member does not receive organisation-wide comment create'
+);
+
+select ok(
+  not public.member_has_permission('submissions.create'),
+  'baseline: active member does not receive organisation-wide submission create'
+);
+
+select ok(
+  private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'actions.complete',
+    (select id from rbac2_ids where key = 'subject_membership'),
+    null
+  ),
+  'baseline actions.complete allowed for self membership anchor'
+);
+
+select ok(
+  not private.membership_has_scoped_permission(
+    (select id from rbac2_ids where key = 'subject_membership'),
+    (select id from rbac2_ids where key = 'organisation'),
+    'actions.complete',
+    (select id from rbac2_ids where key = 'unrelated_membership'),
+    null
+  ),
+  'baseline actions.complete denied for another membership anchor'
+);
+
+select ok(
+  not pg_catalog.has_table_privilege(
+    'authenticated',
+    'private.baseline_participation_permissions',
+    'SELECT'
+  ),
+  'authenticated cannot read baseline catalogue table directly'
+);
+
+select ok(
+  public.member_has_permission('maturity.read'),
+  'authenticated resolves organisation baseline via security definer chain'
 );
 
 select set_config(
@@ -317,7 +455,7 @@ select ok(
     (select id from rbac2_ids where key = 'organisation'),
     'suggestions.review',
     null,
-    (select id from rbac2_ids where key = 'child_unit')
+    (select id from rbac2_ids where key = 'line_unit')
   ),
   'revoked Suggestions responsibility fails immediately'
 );
@@ -328,7 +466,7 @@ select ok(
 );
 
 select ok(
-  not private.membership_has_baseline_participation(
+  not private.membership_has_scoped_permission(
     (select id from rbac2_ids where key = 'inactive_membership'),
     (select id from rbac2_ids where key = 'organisation'),
     'suggestions.submit',
@@ -336,6 +474,22 @@ select ok(
     null
   ),
   'inactive membership denied baseline participation'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"9c000000-0000-0000-0000-000000000004","role":"authenticated","session_id":"9d000000-0000-0000-0000-000000000004","email":"rbac2-unrelated@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from rbac2_ids where key = 'organisation')),
+  'unrelated member selects organisation'
+);
+
+select ok(
+  not public.member_has_permission('five_s.audit.perform'),
+  'unrelated active member cannot perform 5S audits via baseline'
 );
 
 select set_config(

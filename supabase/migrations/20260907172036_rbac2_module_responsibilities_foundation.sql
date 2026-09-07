@@ -47,6 +47,36 @@ create table if not exists private.baseline_participation_permissions (
     check (scope_mode in ('organisation', 'self'))
 );
 
+alter table private.baseline_participation_permissions
+  owner to lean_hub_private_owner;
+
+alter table private.baseline_participation_permissions enable row level security;
+alter table private.baseline_participation_permissions force row level security;
+
+revoke all on table private.baseline_participation_permissions
+  from public, anon, authenticated, service_role;
+grant select on table private.baseline_participation_permissions
+  to postgres, lean_hub_private_owner;
+
+create policy private_owner_all_baseline_participation_permissions
+on private.baseline_participation_permissions
+for all
+to lean_hub_private_owner
+using (true)
+with check (true);
+
+create policy postgres_all_baseline_participation_permissions
+on private.baseline_participation_permissions
+for all
+to postgres
+using (true)
+with check (true);
+
+-- Baseline catalogue: organisation-mode READ visibility and explicit PR1
+-- participation writes that are independently authorised by module RPC/RLS.
+-- Write/perform/contribute permissions that rely on assignment/participant
+-- checks (5S audit perform, Gemba walk perform, problem solving contribute,
+-- generic submissions/comments create) are intentionally excluded here.
 insert into private.baseline_participation_permissions (permission_key, scope_mode)
 values
   ('suggestions.read', 'organisation'),
@@ -58,22 +88,20 @@ values
   ('people.capability.read', 'self'),
   ('maturity.read', 'organisation'),
   ('five_s.read', 'organisation'),
-  ('five_s.audit.perform', 'organisation'),
   ('gemba.read', 'organisation'),
-  ('gemba.walk.perform', 'organisation'),
   ('problem_solving.view', 'organisation'),
-  ('problem_solving.contribute', 'organisation'),
   ('projects.read', 'organisation'),
   ('benefits.read', 'organisation'),
   ('recognition.read', 'organisation'),
   ('templates.read', 'organisation'),
-  ('submissions.create', 'organisation'),
   ('attachments.read', 'organisation'),
   ('comments.read', 'organisation'),
-  ('comments.create', 'organisation'),
   ('schedules.read', 'organisation')
 on conflict (permission_key) do nothing;
 
+-- Organisation-mode baseline authorises active members without evaluating
+-- target_unit_id. Unit/site containment for reads is deferred to PR2; write
+-- and perform authority must not be granted organisation-wide here.
 create or replace function private.membership_has_baseline_participation(
   actor_membership_id uuid,
   target_organisation_id uuid,

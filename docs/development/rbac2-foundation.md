@@ -61,14 +61,34 @@ Legacy roles (`manager`, `team-member`, `finance-validator`) remain provisioned 
 
 Active members with complete identity enrolment receive **implicit** baseline permissions via `private.membership_has_baseline_participation()` integrated into `membership_has_scoped_permission` and `member_has_permission`.
 
-| Module | Baseline permissions | Scope mode |
-|--------|---------------------|------------|
-| Suggestions | read, submit | organisation |
-| Actions | read, complete | self (assignee / creator paths) |
-| Training | read | self |
-| Skills | read | self |
-| Maturity, 5S, Gemba, PS, Projects, Benefits, Recognition, People | read / view / contribute | organisation |
-| Shared | templates.read, submissions.create, attachments.read, comments.* | organisation / self |
+| Module | Baseline permissions | Scope mode | Notes |
+|--------|---------------------|------------|-------|
+| Suggestions | read, submit | organisation | Submit required for PR1 acceptance; management remains grant-scoped |
+| Actions | read, complete | self | Assignee/creator paths use membership anchor |
+| Training | read | self | Own training visibility |
+| Skills | read | self | Own skill profile |
+| People | capability.read | self | Own capability profile |
+| Maturity, 5S, Gemba, PS, Projects, Benefits, Recognition | read / view | organisation | **Read visibility only**; `target_unit_id` not evaluated in PR1 |
+| Shared reads | templates.read, attachments.read, comments.read, schedules.read | organisation | Module visibility / participation reads |
+
+### Explicitly excluded from baseline (PR1)
+
+These require assignment, participant, or module-responsibility grants — **not** organisation-wide baseline:
+
+| Permission | Reason |
+|------------|--------|
+| `five_s.audit.perform` | `start_five_s_audit` only checks scoped permission; no assignment gate |
+| `gemba.walk.perform` | `start_gemba_walk` only checks scoped permission |
+| `problem_solving.contribute` | Case contribute checks org-wide scoped permission |
+| `submissions.create` | Generic write without assignment seam |
+| `comments.create` | Generic write without assignment seam |
+
+Assigned-work perform/contribute authority must be granted via module responsibility or legacy role grants until a dedicated assignment-aware participation seam exists.
+
+### `membership_has_baseline_participation` scope semantics
+
+- **organisation mode:** authorises when `target_membership_id is null`. Does **not** evaluate `target_unit_id`. Organisation-wide read visibility is an explicit temporary PR1 decision; site/unit containment arrives in PR2.
+- **self mode:** authorises when `target_membership_id is null` or equals the actor membership (for assignee/creator anchored checks).
 
 Module **management** permissions are never implied by baseline.
 
