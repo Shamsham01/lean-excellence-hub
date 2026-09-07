@@ -69,14 +69,18 @@ jobs:
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      actions: read
+      checks: read
+      contents: read
     steps:
       - uses: actions/checkout@v7
       - name: Confirm Fast CI / Quality passed for this pull request
         if: github.event_name == 'pull_request'
         uses: ./.github/actions/wait-for-pr-check
         with:
-          workflow-file: ci-fast.yml
-          timeout-minutes: "12"
+          check-name: Fast CI / Quality
+          timeout-minutes: "8"
       - uses: actions/setup-node@v7
         if: github.event_name != 'pull_request'
         with:
