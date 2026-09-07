@@ -42,9 +42,7 @@ import {
 } from "../../scripts/qa-tenant/integration-phase-log";
 import { buildTenantPrivateInfrastructureCountSql } from "../../scripts/qa-tenant/private-infrastructure-purge";
 import { collectTenantInventory } from "../../scripts/qa-tenant/tenant-inventory";
-import {
-  getFoundationLifecycleGuardRetirementTriggerNames,
-} from "../../scripts/qa-tenant/tenant-retirement-policy";
+import { getFoundationLifecycleGuardRetirementTriggerNames } from "../../scripts/qa-tenant/tenant-retirement-policy";
 import {
   assertCookieWorksCompleteFoundationVerified,
   HOSTED_LEGACY_RECOVERY_VERIFIED_MARKER,

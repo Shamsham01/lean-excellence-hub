@@ -744,7 +744,8 @@ export const FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES: readonly Foundation
     {
       table: "organisation_invitation_grants",
       guardTrigger: "organisation_invitation_grants_guard",
-      tenantImmutabilityTrigger: "organisation_invitation_grants_immutable_tenant",
+      tenantImmutabilityTrigger:
+        "organisation_invitation_grants_immutable_tenant",
       description:
         "Sealed invitation authority grants (guard blocks DELETE when invitation is sealed)",
       triggerFunction: "guard_invitation_grant",
