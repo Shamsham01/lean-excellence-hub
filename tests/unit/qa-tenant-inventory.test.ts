@@ -54,6 +54,18 @@ describe("buildInventoryFromSqlPayload", () => {
 
     expect(isFoundationOnlyInventory(inventory)).toBe(false);
   });
+
+  it("treats purge infrastructure template counts as foundation-only compatible", () => {
+    const inventory = buildInventoryFromSqlPayload({
+      ...foundationPayload,
+      counts: {
+        ...foundationPayload.counts,
+        templates: 3,
+      },
+    });
+
+    expect(isFoundationOnlyInventory(inventory)).toBe(true);
+  });
 });
 
 describe("collectCookieWorksInventoryViaSql", () => {

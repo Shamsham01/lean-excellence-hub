@@ -3,7 +3,41 @@ import {
   QA_ORGANISATION,
   QA_USERS,
 } from "./constants";
+import { PURGE_INFRASTRUCTURE_TABLES } from "./deletion-graph";
 import { collectCookieWorksInventoryViaSql } from "./inventory-sql";
+import { verifyCookieWorksTenant } from "./verification";
+
+const FOUNDATION_INVENTORY_COUNT_KEYS = new Set([
+  "memberships",
+  "units",
+  "role_grants",
+]);
+
+function isInventoryModuleCountExcluded(tableName: string) {
+  return PURGE_INFRASTRUCTURE_TABLES.includes(
+    tableName as (typeof PURGE_INFRASTRUCTURE_TABLES)[number],
+  );
+}
+
+export function isFoundationOnlyInventoryFromCounts(
+  counts: Record<string, number>,
+) {
+  for (const [key, count] of Object.entries(counts)) {
+    if (FOUNDATION_INVENTORY_COUNT_KEYS.has(key)) {
+      continue;
+    }
+
+    if (isInventoryModuleCountExcluded(key)) {
+      continue;
+    }
+
+    if (count > 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 type InventorySection = {
   title: string;
@@ -148,6 +182,7 @@ export function buildInventoryFromSqlPayload(
   return {
     organisation: payload.organisation,
     sections,
+    counts: payload.counts,
     bootstrapExceptions: [...QA_BOOTSTRAP_EXCEPTIONS],
   };
 }
@@ -193,16 +228,15 @@ export function formatInventoryReport(
 
 export function isFoundationOnlyInventory(
   inventory: ReturnType<typeof collectCookieWorksInventory>,
+  options?: { databaseUrl?: string },
 ) {
   if (!inventory.organisation) {
     return false;
   }
 
-  const moduleSections = inventory.sections.filter(
-    (section) => section.title !== "Foundation",
-  );
+  if (options?.databaseUrl) {
+    return verifyCookieWorksTenant(options.databaseUrl).isFoundationOnly;
+  }
 
-  return moduleSections.every((section) =>
-    section.items.every((item) => (item.count ?? 0) === 0),
-  );
+  return isFoundationOnlyInventoryFromCounts(inventory.counts);
 }
