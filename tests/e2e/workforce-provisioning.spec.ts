@@ -44,7 +44,7 @@ test.describe("M1 workforce provisioning", () => {
     await page.getByLabel("Display name").fill("M1 Workforce Operator");
     await page.getByLabel(/^Username$/).fill(workforceUsername);
     await page.locator("#roleVersionId").selectOption({ label: "Team Member" });
-    await page.locator("#scopeKey").selectOption({ label: "Operations" });
+    await page.locator("#scopeKey").selectOption({ label: "Operations subtree" });
     await page.locator("#jobFunctionId").selectOption({ label: "Operator" });
     const unitOptionValue = await page
       .locator("#organisationalUnitId option", { hasText: "Operations" })

@@ -128,8 +128,9 @@ test.describe("Milestone 8 closure", () => {
     await expect(page.getByTestId("create-project-page")).not.toBeVisible();
 
     await page.goto("/platform/projects/methodologies");
+    await expect(page.getByTestId("methodology-manager-page")).toBeVisible();
     await expect(
-      page.getByTestId("methodology-manager-page"),
+      page.getByRole("link", { name: "Open editor" }),
     ).not.toBeVisible();
   });
 });

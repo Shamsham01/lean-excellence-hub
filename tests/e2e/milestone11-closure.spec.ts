@@ -441,7 +441,7 @@ test.describe("Milestone 11 closure", () => {
     ).toBeVisible();
   });
 
-  test("operator without problem_solving.view cannot access portfolio or case routes", async ({
+  test("operator with baseline problem_solving.view can access portfolio and case read routes", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
@@ -452,12 +452,12 @@ test.describe("Milestone 11 closure", () => {
     await page.goto("/platform/problem-solving");
     await expect(
       page.getByTestId("problem-solving-portfolio-page"),
-    ).not.toBeVisible();
+    ).toBeVisible();
 
     await page.goto(caseUrl);
     await expect(
       page.getByTestId("problem-solving-detail-page"),
-    ).not.toBeVisible();
+    ).toBeVisible();
   });
 
   test("operator cannot open problem solving create route", async ({
