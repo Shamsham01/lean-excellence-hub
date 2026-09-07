@@ -326,33 +326,67 @@ begin
 end;
 $$;
 
-create or replace function private.set_operational_record_site_unit_id()
+create or replace function private.set_operational_record_site_from_unit_id()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  anchor_unit_id uuid;
 begin
-  if new.site_unit_id is not null then
-    return new;
+  if new.site_unit_id is null and new.unit_id is not null then
+    new.site_unit_id := private.snapshot_site_unit_id(new.organisation_id, new.unit_id);
   end if;
+  return new;
+end;
+$$;
 
-  anchor_unit_id := case tg_table_name
-    when 'improvement_suggestions' then new.origin_unit_id
-    when 'improvement_benefits' then new.organisational_unit_id
-    when 'problem_solving_cases' then new.organisation_unit_id
-    when 'recognition_awards' then new.organisational_unit_id
-    when 'training_sessions' then new.organisational_unit_id
-    when 'membership_skill_assessments' then new.organisational_unit_id
-    else new.unit_id
-  end;
-
-  if anchor_unit_id is not null then
-    new.site_unit_id := private.snapshot_site_unit_id(new.organisation_id, anchor_unit_id);
+create or replace function private.set_operational_record_site_from_organisational_unit_id()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.site_unit_id is null and new.organisational_unit_id is not null then
+    new.site_unit_id := private.snapshot_site_unit_id(
+      new.organisation_id,
+      new.organisational_unit_id
+    );
   end if;
+  return new;
+end;
+$$;
 
+create or replace function private.set_operational_record_site_from_organisation_unit_id()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.site_unit_id is null and new.organisation_unit_id is not null then
+    new.site_unit_id := private.snapshot_site_unit_id(
+      new.organisation_id,
+      new.organisation_unit_id
+    );
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function private.set_operational_record_site_from_origin_unit_id()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.site_unit_id is null and new.origin_unit_id is not null then
+    new.site_unit_id := private.snapshot_site_unit_id(
+      new.organisation_id,
+      new.origin_unit_id
+    );
+  end if;
   return new;
 end;
 $$;
@@ -368,20 +402,14 @@ begin
     'schedule_definitions',
     'schedule_occurrences',
     'actions',
-    'ci_projects',
-    'improvement_suggestions',
-    'improvement_benefits',
-    'problem_solving_cases',
-    'recognition_awards',
-    'training_sessions',
-    'membership_skill_assessments'
+    'ci_projects'
   ]
   loop
     execute format('drop trigger if exists %I_set_site_unit_id on public.%I', table_name, table_name);
     execute format(
       'create trigger %I_set_site_unit_id
          before insert on public.%I
-         for each row execute function private.set_operational_record_site_unit_id()',
+         for each row execute function private.set_operational_record_site_from_unit_id()',
       table_name,
       table_name
     );
@@ -394,6 +422,53 @@ begin
       table_name
     );
   end loop;
+
+  foreach table_name in array array[
+    'improvement_benefits',
+    'recognition_awards',
+    'training_sessions',
+    'membership_skill_assessments'
+  ]
+  loop
+    execute format('drop trigger if exists %I_set_site_unit_id on public.%I', table_name, table_name);
+    execute format(
+      'create trigger %I_set_site_unit_id
+         before insert on public.%I
+         for each row execute function private.set_operational_record_site_from_organisational_unit_id()',
+      table_name,
+      table_name
+    );
+    execute format('drop trigger if exists %I_prevent_site_change on public.%I', table_name, table_name);
+    execute format(
+      'create trigger %I_prevent_site_change
+         before update on public.%I
+         for each row execute function private.prevent_site_unit_id_change()',
+      table_name,
+      table_name
+    );
+  end loop;
+
+  execute 'drop trigger if exists problem_solving_cases_set_site_unit_id on public.problem_solving_cases';
+  execute '
+    create trigger problem_solving_cases_set_site_unit_id
+      before insert on public.problem_solving_cases
+      for each row execute function private.set_operational_record_site_from_organisation_unit_id()';
+  execute 'drop trigger if exists problem_solving_cases_prevent_site_change on public.problem_solving_cases';
+  execute '
+    create trigger problem_solving_cases_prevent_site_change
+      before update on public.problem_solving_cases
+      for each row execute function private.prevent_site_unit_id_change()';
+
+  execute 'drop trigger if exists improvement_suggestions_set_site_unit_id on public.improvement_suggestions';
+  execute '
+    create trigger improvement_suggestions_set_site_unit_id
+      before insert on public.improvement_suggestions
+      for each row execute function private.set_operational_record_site_from_origin_unit_id()';
+  execute 'drop trigger if exists improvement_suggestions_prevent_site_change on public.improvement_suggestions';
+  execute '
+    create trigger improvement_suggestions_prevent_site_change
+      before update on public.improvement_suggestions
+      for each row execute function private.prevent_site_unit_id_change()';
 end;
 $$;
 
@@ -904,7 +979,13 @@ alter function private.snapshot_site_unit_id(uuid, uuid)
   owner to lean_hub_private_owner;
 alter function private.prevent_site_unit_id_change()
   owner to lean_hub_private_owner;
-alter function private.set_operational_record_site_unit_id()
+alter function private.set_operational_record_site_from_unit_id()
+  owner to lean_hub_private_owner;
+alter function private.set_operational_record_site_from_organisational_unit_id()
+  owner to lean_hub_private_owner;
+alter function private.set_operational_record_site_from_organisation_unit_id()
+  owner to lean_hub_private_owner;
+alter function private.set_operational_record_site_from_origin_unit_id()
   owner to lean_hub_private_owner;
 alter function private.assert_membership_placement_site_containment(uuid, uuid, uuid)
   owner to lean_hub_private_owner;
