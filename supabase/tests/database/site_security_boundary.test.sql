@@ -264,14 +264,14 @@ insert into site_ids (key, id)
 select 'bodmin_assessment', public.start_maturity_assessment(
   (select id from site_ids where key = 'maturity_model_version'),
   (select id from site_ids where key = 'bodmin_packing'),
-  'self', 'site'
+  'self', 'department'
 );
 
 insert into site_ids (key, id)
 select 'exeter_assessment', public.start_maturity_assessment(
   (select id from site_ids where key = 'maturity_model_version'),
   (select id from site_ids where key = 'exeter_packing'),
-  'self', 'site'
+  'self', 'department'
 );
 
 select ok(
