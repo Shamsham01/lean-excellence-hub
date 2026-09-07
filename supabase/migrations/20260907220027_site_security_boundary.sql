@@ -23,6 +23,8 @@ as $$
   )
 $$;
 
+-- Invariant: each unit has at most one active site ancestor. Ambiguous or absent
+-- ancestry returns NULL (fail closed) when a site boundary is required.
 create or replace function private.resolve_site_unit_id(
   target_organisation_id uuid,
   target_unit_id uuid
@@ -33,17 +35,141 @@ stable
 security definer
 set search_path = ''
 as $$
-  select site_unit.id
-  from public.organisation_unit_closure closure
-  join public.organisation_units site_unit
-    on site_unit.organisation_id = closure.organisation_id
-   and site_unit.id = closure.ancestor_unit_id
-   and site_unit.status = 'active'
-   and private.normalise_organisation_unit_semantic_scope(site_unit.unit_type) = 'site'
-  where closure.organisation_id = target_organisation_id
-    and closure.descendant_unit_id = target_unit_id
-  order by closure.depth asc
+  with site_ancestors as (
+    select
+      site_unit.id as site_unit_id,
+      min(closure.depth) as min_depth
+    from public.organisation_unit_closure closure
+    join public.organisation_units site_unit
+      on site_unit.organisation_id = closure.organisation_id
+     and site_unit.id = closure.ancestor_unit_id
+     and site_unit.status = 'active'
+     and private.normalise_organisation_unit_semantic_scope(site_unit.unit_type) = 'site'
+    where closure.organisation_id = target_organisation_id
+      and closure.descendant_unit_id = target_unit_id
+    group by site_unit.id
+  )
+  select ranked.site_unit_id
+  from (
+    select
+      site_unit_id,
+      min_depth,
+      count(*) over () as ancestor_count
+    from site_ancestors
+  ) ranked
+  where ranked.ancestor_count = 1
+  order by ranked.min_depth
   limit 1
+$$;
+
+create or replace function private.count_site_ancestors(
+  target_organisation_id uuid,
+  target_unit_id uuid
+)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+  from (
+    select distinct site_unit.id
+    from public.organisation_unit_closure closure
+    join public.organisation_units site_unit
+      on site_unit.organisation_id = closure.organisation_id
+     and site_unit.id = closure.ancestor_unit_id
+     and site_unit.status = 'active'
+     and private.normalise_organisation_unit_semantic_scope(site_unit.unit_type) = 'site'
+    where closure.organisation_id = target_organisation_id
+      and closure.descendant_unit_id = target_unit_id
+  ) site_ancestors
+$$;
+
+create or replace function private.finalise_operational_site_snapshot(
+  target_organisation_id uuid,
+  anchor_unit_id uuid,
+  incoming_site_unit_id uuid,
+  require_resolved_site boolean,
+  is_update boolean,
+  prior_anchor_unit_id uuid default null,
+  prior_site_unit_id uuid default null
+)
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  resolved_site_unit_id uuid;
+  prior_resolved_site uuid;
+  new_resolved_site uuid;
+begin
+  if is_update then
+    if prior_site_unit_id is not null
+      and incoming_site_unit_id is distinct from prior_site_unit_id then
+      raise exception 'site ownership is immutable on operational records'
+        using errcode = '23514';
+    end if;
+
+    if prior_anchor_unit_id is distinct from anchor_unit_id then
+      if prior_anchor_unit_id is not null then
+        prior_resolved_site := private.resolve_site_unit_id(
+          target_organisation_id,
+          prior_anchor_unit_id
+        );
+      end if;
+
+      if anchor_unit_id is not null then
+        new_resolved_site := private.resolve_site_unit_id(
+          target_organisation_id,
+          anchor_unit_id
+        );
+      end if;
+
+      if prior_resolved_site is distinct from new_resolved_site then
+        raise exception 'cross-site operational record move is not permitted'
+          using errcode = '23514';
+      end if;
+    end if;
+  end if;
+
+  if anchor_unit_id is not null then
+    resolved_site_unit_id := private.resolve_site_unit_id(
+      target_organisation_id,
+      anchor_unit_id
+    );
+
+    if private.organisation_requires_site_boundary(target_organisation_id)
+      and require_resolved_site
+      and resolved_site_unit_id is null then
+      raise exception 'site ownership could not be resolved for operational record'
+        using errcode = '23514';
+    end if;
+
+    if incoming_site_unit_id is not null
+      and resolved_site_unit_id is not null
+      and incoming_site_unit_id is distinct from resolved_site_unit_id then
+      raise exception 'site snapshot does not match unit anchor'
+        using errcode = '23514';
+    end if;
+
+    if incoming_site_unit_id is null then
+      return resolved_site_unit_id;
+    end if;
+
+    return incoming_site_unit_id;
+  end if;
+
+  if private.organisation_requires_site_boundary(target_organisation_id)
+    and require_resolved_site then
+    raise exception 'unit anchor is required when site boundary is active'
+      using errcode = '23514';
+  end if;
+
+  return incoming_site_unit_id;
+end;
 $$;
 
 create or replace function private.membership_home_site_unit_id(
@@ -309,6 +435,86 @@ set site_unit_id = private.snapshot_site_unit_id(
 where record_row.site_unit_id is null
   and record_row.organisational_unit_id is not null;
 
+-- Fail migration when site-boundary organisations have unresolved site-owned records.
+do $$
+declare
+  unresolved record;
+begin
+  for unresolved in
+    select *
+    from (
+      select organisation_id, 'maturity_assessments' as table_name, count(*)::integer as unresolved_count
+      from public.maturity_assessments
+      where unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'five_s_audits', count(*)::integer
+      from public.five_s_audits
+      where unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'gemba_walks', count(*)::integer
+      from public.gemba_walks
+      where unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'schedule_definitions', count(*)::integer
+      from public.schedule_definitions
+      where unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'schedule_occurrences', count(*)::integer
+      from public.schedule_occurrences
+      where unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'ci_projects', count(*)::integer
+      from public.ci_projects
+      where unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'improvement_suggestions', count(*)::integer
+      from public.improvement_suggestions
+      where origin_unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'improvement_benefits', count(*)::integer
+      from public.improvement_benefits
+      where organisational_unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'problem_solving_cases', count(*)::integer
+      from public.problem_solving_cases
+      where organisation_unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'recognition_awards', count(*)::integer
+      from public.recognition_awards
+      where organisational_unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'training_sessions', count(*)::integer
+      from public.training_sessions
+      where organisational_unit_id is not null and site_unit_id is null
+      group by organisation_id
+      union all
+      select organisation_id, 'membership_skill_assessments', count(*)::integer
+      from public.membership_skill_assessments
+      where organisational_unit_id is not null and site_unit_id is null
+      group by organisation_id
+    ) unresolved_rows
+    where private.organisation_requires_site_boundary(unresolved_rows.organisation_id)
+      and unresolved_rows.unresolved_count > 0
+  loop
+    raise exception
+      'site backfill unresolved for %.%: % records',
+      unresolved.organisation_id,
+      unresolved.table_name,
+      unresolved.unresolved_count;
+  end loop;
+end;
+$$;
+
 create or replace function private.prevent_site_unit_id_change()
 returns trigger
 language plpgsql
@@ -333,9 +539,15 @@ security definer
 set search_path = ''
 as $$
 begin
-  if new.site_unit_id is null and new.unit_id is not null then
-    new.site_unit_id := private.snapshot_site_unit_id(new.organisation_id, new.unit_id);
-  end if;
+  new.site_unit_id := private.finalise_operational_site_snapshot(
+    new.organisation_id,
+    new.unit_id,
+    new.site_unit_id,
+    new.unit_id is not null,
+    tg_op = 'UPDATE',
+    case when tg_op = 'UPDATE' then old.unit_id else null end,
+    case when tg_op = 'UPDATE' then old.site_unit_id else null end
+  );
   return new;
 end;
 $$;
@@ -347,12 +559,15 @@ security definer
 set search_path = ''
 as $$
 begin
-  if new.site_unit_id is null and new.organisational_unit_id is not null then
-    new.site_unit_id := private.snapshot_site_unit_id(
-      new.organisation_id,
-      new.organisational_unit_id
-    );
-  end if;
+  new.site_unit_id := private.finalise_operational_site_snapshot(
+    new.organisation_id,
+    new.organisational_unit_id,
+    new.site_unit_id,
+    new.organisational_unit_id is not null,
+    tg_op = 'UPDATE',
+    case when tg_op = 'UPDATE' then old.organisational_unit_id else null end,
+    case when tg_op = 'UPDATE' then old.site_unit_id else null end
+  );
   return new;
 end;
 $$;
@@ -364,12 +579,15 @@ security definer
 set search_path = ''
 as $$
 begin
-  if new.site_unit_id is null and new.organisation_unit_id is not null then
-    new.site_unit_id := private.snapshot_site_unit_id(
-      new.organisation_id,
-      new.organisation_unit_id
-    );
-  end if;
+  new.site_unit_id := private.finalise_operational_site_snapshot(
+    new.organisation_id,
+    new.organisation_unit_id,
+    new.site_unit_id,
+    new.organisation_unit_id is not null,
+    tg_op = 'UPDATE',
+    case when tg_op = 'UPDATE' then old.organisation_unit_id else null end,
+    case when tg_op = 'UPDATE' then old.site_unit_id else null end
+  );
   return new;
 end;
 $$;
@@ -381,12 +599,15 @@ security definer
 set search_path = ''
 as $$
 begin
-  if new.site_unit_id is null and new.origin_unit_id is not null then
-    new.site_unit_id := private.snapshot_site_unit_id(
-      new.organisation_id,
-      new.origin_unit_id
-    );
-  end if;
+  new.site_unit_id := private.finalise_operational_site_snapshot(
+    new.organisation_id,
+    new.origin_unit_id,
+    new.site_unit_id,
+    new.origin_unit_id is not null,
+    tg_op = 'UPDATE',
+    case when tg_op = 'UPDATE' then old.origin_unit_id else null end,
+    case when tg_op = 'UPDATE' then old.site_unit_id else null end
+  );
   return new;
 end;
 $$;
@@ -408,7 +629,7 @@ begin
     execute format('drop trigger if exists %I_set_site_unit_id on public.%I', table_name, table_name);
     execute format(
       'create trigger %I_set_site_unit_id
-         before insert on public.%I
+         before insert or update on public.%I
          for each row execute function private.set_operational_record_site_from_unit_id()',
       table_name,
       table_name
@@ -433,7 +654,7 @@ begin
     execute format('drop trigger if exists %I_set_site_unit_id on public.%I', table_name, table_name);
     execute format(
       'create trigger %I_set_site_unit_id
-         before insert on public.%I
+         before insert or update on public.%I
          for each row execute function private.set_operational_record_site_from_organisational_unit_id()',
       table_name,
       table_name
@@ -451,7 +672,7 @@ begin
   execute 'drop trigger if exists problem_solving_cases_set_site_unit_id on public.problem_solving_cases';
   execute '
     create trigger problem_solving_cases_set_site_unit_id
-      before insert on public.problem_solving_cases
+      before insert or update on public.problem_solving_cases
       for each row execute function private.set_operational_record_site_from_organisation_unit_id()';
   execute 'drop trigger if exists problem_solving_cases_prevent_site_change on public.problem_solving_cases';
   execute '
@@ -462,7 +683,7 @@ begin
   execute 'drop trigger if exists improvement_suggestions_set_site_unit_id on public.improvement_suggestions';
   execute '
     create trigger improvement_suggestions_set_site_unit_id
-      before insert on public.improvement_suggestions
+      before insert or update on public.improvement_suggestions
       for each row execute function private.set_operational_record_site_from_origin_unit_id()';
   execute 'drop trigger if exists improvement_suggestions_prevent_site_change on public.improvement_suggestions';
   execute '
@@ -875,6 +1096,130 @@ begin
   );
 
   return true;
+end;
+$$;
+
+-- Prevent nested site topology: a site unit cannot be created under an existing site ancestor.
+create or replace function private.create_organisation_unit(
+  target_organisation_id uuid,
+  target_parent_unit_id uuid,
+  unit_code text,
+  unit_name text,
+  unit_type text
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  new_unit_id uuid;
+begin
+  if private.current_membership_id(target_organisation_id) is null
+    or not private.has_scoped_permission(
+      target_organisation_id,
+      'hierarchy.manage',
+      null,
+      target_parent_unit_id
+    ) then
+    raise exception 'unit creation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if private.organisation_requires_site_boundary(target_organisation_id)
+    and private.normalise_organisation_unit_semantic_scope(unit_type) = 'site'
+    and target_parent_unit_id is not null
+    and private.resolve_site_unit_id(
+      target_organisation_id,
+      target_parent_unit_id
+    ) is not null then
+    raise exception 'nested site units are not permitted'
+      using errcode = '23514';
+  end if;
+
+  perform pg_advisory_xact_lock(
+    hashtextextended(target_organisation_id::text, 0)
+  );
+
+  if target_parent_unit_id is not null and not exists (
+    select 1
+    from public.organisation_units parent_unit
+    where parent_unit.organisation_id = target_organisation_id
+      and parent_unit.id = target_parent_unit_id
+      and parent_unit.status = 'active'
+    for update
+  ) then
+    raise exception 'parent unit is not active in organisation'
+      using errcode = '23514';
+  end if;
+
+  if not private.has_scoped_permission(
+    target_organisation_id,
+    'hierarchy.manage',
+    null,
+    target_parent_unit_id
+  ) then
+    raise exception 'unit creation authority changed'
+      using errcode = '42501';
+  end if;
+
+  insert into public.organisation_units (
+    organisation_id,
+    parent_unit_id,
+    code,
+    name,
+    unit_type
+  )
+  values (
+    target_organisation_id,
+    target_parent_unit_id,
+    unit_code,
+    unit_name,
+    unit_type
+  )
+  returning id into new_unit_id;
+
+  insert into public.organisation_unit_closure (
+    organisation_id,
+    ancestor_unit_id,
+    descendant_unit_id,
+    depth
+  )
+  values (
+    target_organisation_id,
+    new_unit_id,
+    new_unit_id,
+    0
+  );
+
+  if target_parent_unit_id is not null then
+    insert into public.organisation_unit_closure (
+      organisation_id,
+      ancestor_unit_id,
+      descendant_unit_id,
+      depth
+    )
+    select
+      target_organisation_id,
+      ancestor.ancestor_unit_id,
+      new_unit_id,
+      ancestor.depth + 1
+    from public.organisation_unit_closure ancestor
+    where ancestor.organisation_id = target_organisation_id
+      and ancestor.descendant_unit_id = target_parent_unit_id;
+  end if;
+
+  perform private.append_security_audit(
+    target_organisation_id,
+    'hierarchy.unit_created',
+    'unit',
+    new_unit_id,
+    'succeeded',
+    '{}'::jsonb
+  );
+
+  return new_unit_id;
 end;
 $$;
 
@@ -1375,3 +1720,566 @@ begin
   return new_intent_id;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- 7. Directory enumeration — site-contained hierarchy reads
+-- ---------------------------------------------------------------------------
+
+drop policy if exists units_select_scoped on public.organisation_units;
+create policy units_select_scoped
+on public.organisation_units
+for select
+to authenticated
+using (
+  organisation_id = (select private.current_organisation_id())
+  and (
+    private.has_scoped_permission(
+      organisation_id,
+      'hierarchy.read',
+      null,
+      id
+    )
+    or (
+      private.has_scoped_permission(
+        organisation_id,
+        'maturity.assess.self',
+        private.current_membership_id(organisation_id),
+        null
+      )
+      and (
+        not private.organisation_requires_site_boundary(organisation_id)
+        or private.membership_can_access_unit_site(
+          organisation_id,
+          private.current_membership_id(organisation_id),
+          id
+        )
+      )
+    )
+  )
+  and (
+    not private.organisation_requires_site_boundary(organisation_id)
+    or private.membership_can_access_unit_site(
+      organisation_id,
+      private.current_membership_id(organisation_id),
+      id
+    )
+    or private.membership_has_scoped_permission(
+      private.current_membership_id(organisation_id),
+      organisation_id,
+      'hierarchy.read',
+      null,
+      null
+    )
+    or private.membership_has_scoped_permission(
+      private.current_membership_id(organisation_id),
+      organisation_id,
+      'memberships.manage',
+      null,
+      null
+    )
+  )
+);
+
+create or replace function private.list_maturity_assessment_scope_entities(
+  target_model_version_id uuid,
+  target_scope_type text
+)
+returns table (
+  unit_id uuid,
+  unit_name text,
+  unit_code text,
+  unit_type text
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null
+    or not private.can_read_maturity_catalog(org_id) then
+    raise exception 'maturity scope listing is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if target_scope_type not in ('site', 'department', 'area') then
+    raise exception 'invalid assessment scope type'
+      using errcode = '22023';
+  end if;
+
+  if not exists (
+    select 1
+    from public.maturity_model_versions model_version
+    where model_version.organisation_id = org_id
+      and model_version.id = target_model_version_id
+      and model_version.status = 'published'
+  ) then
+    raise exception 'maturity model version is not published'
+      using errcode = '55000';
+  end if;
+
+  if not private.maturity_model_version_allows_scope(
+    org_id,
+    target_model_version_id,
+    target_scope_type
+  ) then
+    raise exception 'assessment scope type is not enabled for framework version'
+      using errcode = '55000';
+  end if;
+
+  return query
+  select
+    organisation_unit.id,
+    organisation_unit.name,
+    organisation_unit.code,
+    organisation_unit.unit_type
+  from public.organisation_units organisation_unit
+  where organisation_unit.organisation_id = org_id
+    and organisation_unit.status = 'active'
+    and private.normalise_organisation_unit_semantic_scope(
+      organisation_unit.unit_type
+    ) = target_scope_type
+    and (
+      not private.organisation_requires_site_boundary(org_id)
+      or private.membership_can_access_unit_site(
+        org_id,
+        actor_membership_id,
+        organisation_unit.id
+      )
+      or private.membership_has_scoped_permission(
+        actor_membership_id,
+        org_id,
+        'maturity.models.manage',
+        null,
+        null
+      )
+    )
+  order by organisation_unit.name;
+end;
+$$;
+
+create or replace function public.get_delegatable_access_offers()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  result jsonb := '[]'::jsonb;
+  role_record record;
+  scope_record record;
+  scope_options jsonb;
+  actor_can_delegate boolean := false;
+  actor_has_org_delegate boolean := false;
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'delegation offers are not authorised'
+      using errcode = '42501';
+  end if;
+
+  actor_has_org_delegate := private.membership_has_scoped_permission(
+    actor_membership_id,
+    org_id,
+    'roles.delegate',
+    null,
+    null
+  );
+
+  select
+    actor_has_org_delegate
+    or exists (
+      select 1
+      from public.organisation_units unit_row
+      where unit_row.organisation_id = org_id
+        and unit_row.status = 'active'
+        and private.membership_has_scoped_permission(
+          actor_membership_id,
+          org_id,
+          'roles.delegate',
+          null,
+          unit_row.id
+        )
+    )
+  into actor_can_delegate;
+
+  if not actor_can_delegate then
+    return jsonb_build_object('offers', '[]'::jsonb);
+  end if;
+
+  for role_record in
+    select distinct on (role_row.id)
+      role_version.id as role_version_id,
+      role_row.id as role_id,
+      role_row.display_name as role_display_name,
+      role_row.canonical_name as role_canonical_name,
+      role_row.module_responsibility_key,
+      role_row.is_owner_role,
+      private.role_responsibility_kind(
+        role_row.canonical_name,
+        role_row.module_responsibility_key,
+        role_row.is_owner_role
+      ) as responsibility_kind
+    from public.role_versions role_version
+    join public.roles role_row
+      on role_row.organisation_id = role_version.organisation_id
+     and role_row.id = role_version.role_id
+    where role_version.organisation_id = org_id
+      and role_version.status = 'published'
+      and role_row.status = 'active'
+      and (
+        not role_row.is_owner_role
+        or private.membership_is_effective_owner(
+          actor_membership_id,
+          org_id
+        )
+      )
+    order by
+      role_row.id,
+      role_version.version_number desc
+  loop
+    scope_options := '[]'::jsonb;
+
+    if private.role_grant_scope_allowed(
+      org_id,
+      role_record.role_id,
+      'organisation'
+    )
+    and private.role_version_is_delegatable_at_scope(
+      org_id,
+      role_record.role_version_id,
+      'organisation',
+      null,
+      actor_membership_id
+    ) and actor_has_org_delegate then
+      scope_options := scope_options || jsonb_build_array(
+        jsonb_build_object(
+          'scope_type', 'organisation',
+          'scope_unit_id', null,
+          'label', 'Entire organisation'
+        )
+      );
+    end if;
+
+    if private.role_grant_scope_allowed(
+      org_id,
+      role_record.role_id,
+      'unit_subtree'
+    ) then
+      for scope_record in
+        select unit_row.id, unit_row.name, unit_row.code
+        from public.organisation_units unit_row
+        where unit_row.organisation_id = org_id
+          and unit_row.status = 'active'
+          and private.membership_has_scoped_permission(
+            actor_membership_id,
+            org_id,
+            'roles.delegate',
+            null,
+            unit_row.id
+          )
+          and (
+            not private.organisation_requires_site_boundary(org_id)
+            or actor_has_org_delegate
+            or private.membership_can_access_unit_site(
+              org_id,
+              actor_membership_id,
+              unit_row.id
+            )
+          )
+          and private.role_version_is_delegatable_at_scope(
+            org_id,
+            role_record.role_version_id,
+            'unit_subtree',
+            unit_row.id,
+            actor_membership_id
+          )
+        order by unit_row.name
+      loop
+        scope_options := scope_options || jsonb_build_array(
+          jsonb_build_object(
+            'scope_type', 'unit_subtree',
+            'scope_unit_id', scope_record.id,
+            'label', scope_record.name || ' subtree',
+            'unit_code', scope_record.code
+          )
+        );
+      end loop;
+    end if;
+
+    if jsonb_array_length(scope_options) > 0 then
+      result := result || jsonb_build_array(
+        jsonb_build_object(
+          'role_version_id', role_record.role_version_id,
+          'role_display_name', role_record.role_display_name,
+          'role_canonical_name', role_record.role_canonical_name,
+          'module_responsibility_key', role_record.module_responsibility_key,
+          'responsibility_kind', role_record.responsibility_kind,
+          'scope_options', scope_options
+        )
+      );
+    end if;
+  end loop;
+
+  return jsonb_build_object(
+    'offers',
+    coalesce(
+      (
+        select jsonb_agg(offer_row order by offer_row ->> 'responsibility_kind', offer_row ->> 'role_display_name')
+        from jsonb_array_elements(result) as offer_row
+      ),
+      '[]'::jsonb
+    )
+  );
+end;
+$$;
+
+create or replace function private.grant_role_version(
+  target_organisation_id uuid,
+  target_grantee_membership_id uuid,
+  target_role_version_id uuid,
+  target_scope_type text,
+  target_scope_unit_id uuid default null
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  actor_membership_id uuid :=
+    private.current_membership_id(target_organisation_id);
+  target_anchor_membership_id uuid;
+  target_anchor_unit_id uuid;
+  new_grant_id uuid;
+  owner_role boolean;
+begin
+  target_anchor_membership_id :=
+    case when target_scope_type = 'self'
+      then target_grantee_membership_id else null end;
+  target_anchor_unit_id :=
+    case when target_scope_type = 'unit_subtree'
+      then target_scope_unit_id else null end;
+
+  if actor_membership_id is null
+    or not private.has_scoped_permission(
+      target_organisation_id,
+      'roles.delegate',
+      target_anchor_membership_id,
+      target_anchor_unit_id
+    ) then
+    raise exception 'role delegation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  perform private.assert_grant_site_containment(
+    target_organisation_id,
+    actor_membership_id,
+    target_scope_type,
+    target_scope_unit_id
+  );
+
+  perform private.assert_role_version_grant_scope_allowed(
+    target_organisation_id,
+    target_role_version_id,
+    target_scope_type,
+    target_scope_unit_id
+  );
+
+  select role_row.is_owner_role
+  into owner_role
+  from public.role_versions role_version
+  join public.roles role_row
+    on role_row.organisation_id = role_version.organisation_id
+   and role_row.id = role_version.role_id
+  where role_version.organisation_id = target_organisation_id
+    and role_version.id = target_role_version_id
+    and role_version.status = 'published'
+    and role_row.status = 'active';
+
+  if owner_role is null
+    or (owner_role and not private.current_membership_is_owner(
+      target_organisation_id
+    )) then
+    raise exception 'role version cannot be delegated'
+      using errcode = '42501';
+  end if;
+
+  if not exists (
+    select 1
+    from public.organisation_memberships membership
+    where membership.organisation_id = target_organisation_id
+      and membership.id = target_grantee_membership_id
+      and membership.status = 'active'
+  ) then
+    raise exception 'grantee membership is not active'
+      using errcode = '23514';
+  end if;
+
+  if not private.role_version_is_delegatable_at_scope(
+    target_organisation_id,
+    target_role_version_id,
+    target_scope_type,
+    target_scope_unit_id,
+    actor_membership_id
+  ) then
+    raise exception 'delegated authority exceeds caller authority'
+      using errcode = '42501';
+  end if;
+
+  update public.access_grants expired_grant
+  set status = 'expired'
+  where expired_grant.organisation_id = target_organisation_id
+    and expired_grant.status = 'active'
+    and expired_grant.expires_at <= statement_timestamp();
+
+  insert into public.access_grants (
+    organisation_id,
+    grantee_membership_id,
+    role_version_id,
+    scope_type,
+    scope_unit_id,
+    grantor_membership_id
+  )
+  values (
+    target_organisation_id,
+    target_grantee_membership_id,
+    target_role_version_id,
+    target_scope_type,
+    target_scope_unit_id,
+    actor_membership_id
+  )
+  returning id into new_grant_id;
+
+  perform private.append_security_audit(
+    target_organisation_id,
+    'grant.issued',
+    'grant',
+    new_grant_id,
+    'succeeded',
+    '{}'::jsonb
+  );
+
+  return new_grant_id;
+end;
+$$;
+
+create or replace function private.assign_membership_job_function(
+  target_membership_id uuid,
+  target_job_function_id uuid,
+  target_primary boolean default false,
+  target_organisational_unit_id uuid default null,
+  target_valid_from timestamptz default statement_timestamp(),
+  target_valid_to timestamptz default null,
+  target_assignment_reason text default null
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  membership_row public.organisation_memberships%rowtype;
+  job_function_row public.job_functions%rowtype;
+  new_assignment_id uuid;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.can_manage_job_functions(org_id) then
+    raise exception 'job function assignment is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select membership_registry.*
+  into membership_row
+  from public.organisation_memberships membership_registry
+  where membership_registry.organisation_id = org_id
+    and membership_registry.id = target_membership_id;
+
+  if not found or membership_row.status <> 'active' then
+    raise exception 'membership is not active'
+      using errcode = '22023';
+  end if;
+
+  select job_function_registry.*
+  into job_function_row
+  from public.job_functions job_function_registry
+  where job_function_registry.organisation_id = org_id
+    and job_function_registry.id = target_job_function_id
+    and job_function_registry.status = 'active';
+
+  if not found then
+    raise exception 'job function not found or not active'
+      using errcode = 'P0002';
+  end if;
+
+  if target_valid_to is not null and target_valid_to <= target_valid_from then
+    raise exception 'assignment valid_to must be after valid_from'
+      using errcode = '22023';
+  end if;
+
+  perform private.assert_membership_placement_site_containment(
+    org_id,
+    actor_membership_id,
+    target_organisational_unit_id
+  );
+
+  insert into public.membership_job_function_assignments (
+    organisation_id,
+    membership_id,
+    job_function_id,
+    organisational_unit_id,
+    is_primary,
+    valid_from,
+    valid_to,
+    job_function_name_snapshot,
+    job_function_code_snapshot,
+    assigned_by_membership_id,
+    assignment_reason
+  )
+  values (
+    org_id,
+    target_membership_id,
+    target_job_function_id,
+    target_organisational_unit_id,
+    target_primary,
+    target_valid_from,
+    target_valid_to,
+    job_function_row.name,
+    job_function_row.code,
+    actor_membership_id,
+    target_assignment_reason
+  )
+  returning id into new_assignment_id;
+
+  perform private.enqueue_domain_event(
+    org_id,
+    null,
+    'JobFunctionAssigned',
+    new_assignment_id::text,
+    jsonb_build_object(
+      'membership_id', target_membership_id,
+      'primary', target_primary,
+      'job_function_id', target_job_function_id
+    )
+  );
+
+  return new_assignment_id;
+end;
+$$;
+
+alter function private.count_site_ancestors(uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.finalise_operational_site_snapshot(uuid, uuid, uuid, boolean, boolean, uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.create_organisation_unit(uuid, uuid, text, text, text)
+  owner to lean_hub_private_owner;

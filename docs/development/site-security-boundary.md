@@ -20,6 +20,20 @@ PR2 makes **site** a real database-enforced security boundary within a multi-sit
 
 **Single-site compatibility:** When an organisation has **no** active site units, `organisation_requires_site_boundary()` returns false and organisation-mode baseline behaves as PR1 (legacy permissive within tenant).
 
+## Site resolution invariant (fail-closed)
+
+`private.resolve_site_unit_id(org_id, unit_id)` enforces:
+
+| Ancestor sites | Result |
+|----------------|--------|
+| Exactly one active site ancestor | That site UUID (nearest depth wins only when unambiguous) |
+| Zero site ancestors | `NULL` |
+| Two or more distinct site ancestors | `NULL` (ambiguous — fail closed) |
+
+**Topology prevention:** `private.create_organisation_unit` rejects creating a site unit under a parent that already has a site ancestor (`nested site units are not permitted`). Cross-site reparent remains blocked in `private.move_organisation_unit`.
+
+This prevents silent “nearest site wins” authorisation when malformed hierarchies exist. PR3 must preserve the single-site-ancestor invariant.
+
 ## Ownership inventory
 
 | Module | Table / resource | Tenant anchor | Unit anchor | Site strategy |
@@ -39,21 +53,42 @@ PR2 makes **site** a real database-enforced security boundary within a multi-sit
 | Benefits | improvement_benefits | organisation_id | organisational_unit_id | **site_unit_id** snapshot |
 | Problem Solving | problem_solving_cases | organisation_id | organisation_unit_id | **site_unit_id** snapshot |
 | Recognition | recognition_awards | organisation_id | organisational_unit_id | **site_unit_id** snapshot |
-| Training | training_sessions | organisation_id | organisational_unit_id | **site_unit_id** snapshot |
-| Skills | membership_skill_assessments | organisation_id | organisational_unit_id | **site_unit_id** snapshot |
+| Training | training_sessions | organisation_id | organisational_unit_id (nullable) | **site_unit_id** when unit set |
+| Skills | membership_skill_assessments | organisation_id | organisational_unit_id (nullable) | **site_unit_id** when unit set |
 | Shared | resource_records | organisation_id | via parent can_read_* | Inherits parent site |
 | Shared | attachments, comments | organisation_id | resolve_attachment_target_unit_id | Inherits target resource |
 | Child tables | *\_participants, *\_reviews, PS children, etc. | organisation_id | parent FK only | Inherit parent RLS |
+
+### Anchor / snapshot consistency
+
+`private.finalise_operational_site_snapshot` centralises INSERT/UPDATE validation:
+
+- **INSERT:** when site boundary active and anchor mandatory → unresolved site raises `site ownership could not be resolved`
+- **UPDATE anchor:** cross-site anchor change → `cross-site operational record move is not permitted`
+- **UPDATE site_unit_id:** always blocked (`site ownership is immutable`)
+- **Mismatch:** explicit `site_unit_id` that disagrees with resolved anchor → `site snapshot does not match unit anchor`
+
+**Exceptions (nullable anchor allowed):**
+
+| Table | Nullable anchor | Semantics |
+|-------|-----------------|-----------|
+| actions | `unit_id` | Organisation-level actions permitted |
+| training_sessions | `organisational_unit_id` | Organisation-wide sessions permitted |
+| membership_skill_assessments | `organisational_unit_id` | Membership-anchored assessments permitted |
+
+All other snapshotted operational roots require a resolvable site when `organisation_requires_site_boundary()` is true.
 
 ## Site resolution primitives
 
 | Function | Purpose |
 |----------|---------|
 | `organisation_requires_site_boundary(org_id)` | True when org has ≥1 active site unit |
-| `resolve_site_unit_id(org_id, unit_id)` | Nearest ancestor site via closure (indexed) |
+| `resolve_site_unit_id(org_id, unit_id)` | Unambiguous site ancestor only; else NULL |
+| `count_site_ancestors(org_id, unit_id)` | Diagnostic count for rollout/migration |
 | `membership_home_site_unit_id(org_id, membership_id)` | Site from primary job placement |
 | `membership_can_access_unit_site(org_id, membership_id, unit_id)` | Home site matches target unit's site |
 | `units_share_site_boundary(org_id, unit_a, unit_b)` | Same site or legacy org (no sites) |
+| `finalise_operational_site_snapshot(...)` | Central anchor/snapshot enforcement |
 
 ## Membership home site
 
@@ -93,11 +128,9 @@ Multiple module grants evaluate independently (OR union unchanged).
 
 Children without unit columns inherit parent `can_read_*` / `can_access_resource`. Site boundary enforced at parent permission evaluation. Direct UUID access to child rows denied when parent is hidden.
 
-## Historical ownership / reparenting contract (PR3 handoff)
+## Directory enumeration
 
-1. **`site_unit_id`** set on INSERT via trigger; **immutable** (update blocked).
-2. **Cross-site reparent** blocked in `move_organisation_unit` when boundary active.
-3. PR3 Organisation Structure V2 will implement safe reparent lifecycle respecting snapshotted ownership.
+`organisation_units` SELECT RLS and delegation/maturity scope listing RPCs apply `membership_can_access_unit_site` when boundary active, unless the actor has organisation-wide `hierarchy.read`, `memberships.manage`, or `roles.delegate`.
 
 ## Invitation / provisioning containment
 
@@ -105,35 +138,67 @@ Children without unit columns inherit parent `can_read_*` / `can_access_resource
 |------|---------|
 | `assert_grant_site_containment` | unit_subtree grants must be within actor's site unless org delegate |
 | `assert_membership_placement_site_containment` | Placement unit must be in actor's site unless org memberships.manage |
+| `grant_role_version` | Wired to `assert_grant_site_containment` |
+| `assign_membership_job_function` | Wired to `assert_membership_placement_site_containment` |
 | Workforce provision / invitations | Wired to both assertions |
 
-## Custom roles
-
-Custom roles without scope policies retain legacy permissive scope but **unit_subtree evaluation** still applies site containment when boundary active.
-
-## Migration
+## Migration / rollout safety
 
 `20260907220027_site_security_boundary.sql` — forward-only; local/CI only until hosted rollout gate.
+
+After backfill, migration **fails** if any site-boundary organisation has site-owned operational rows with a non-null anchor but `site_unit_id IS NULL`. No silent partial rollout.
+
+### Transition path
+
+1. **Single-site legacy** — no active site units → boundary inactive; legacy behaviour preserved.
+2. **Introduce first explicit site** — boundary activates; existing anchored records must backfill deterministically or migration aborts with table-level diagnostics.
+3. **Add second site** — cross-site isolation active; administrators must not leave anchored records in ambiguous/unresolved state.
 
 ## Test coverage
 
 `supabase/tests/database/site_security_boundary.test.sql` — CookieWorks two-site fixture:
 
-- Site resolution
+- Site resolution (self, descendant, ambiguous, no ancestry)
+- Nested site prevention
 - Home site from placement
-- Baseline read Bodmin ✓ Exeter ✗
+- Baseline read Bodmin ✓ Exeter ✗ (per-module matrix)
+- Multi-responsibility independent scope + revoke
+- Child UUID leakage (comments, PS children, suggestions)
 - RLS direct UUID denial
 - unit_subtree management site containment
 - organisation grant cross-site
 - Cross-site reparent blocked
-- site_unit_id immutability
+- Anchor/site consistency + immutability
+- Directory enumeration + delegation scope picker
+- Invitation provisioning hostile tests
 
-## PR3 Organisation Structure V2 handoff
+Focused E2E: `tests/e2e/site-security-boundary.spec.ts` (local QA seed).
 
-- Safe reparent UX and lifecycle
-- Hierarchy editor
-- Cross-site transfer workflow (explicit, audited)
-- site_unit_id contract is stable — reparent must not rewrite snapshots
+## PR3 Organisation Structure V2 contract
+
+PR3 **may**:
+
+- Rename site/unit **without changing UUID**
+- Reparent within the **same site** where lifecycle permits and no populated cross-site transfer is implied
+- Archive / reactivate units following existing status semantics
+
+PR3 **must NOT**:
+
+- Nest sites ambiguously (preserve single-site-ancestor invariant)
+- Move populated units cross-site silently
+- Rewrite historical `site_unit_id` snapshots on operational records
+- Create or leave unresolved site-owned descendants in a site-boundary organisation
+
+### Populated / history-bearing detection (PR3 guidance)
+
+A unit is **populated/history-bearing** when any of:
+
+- Active `membership_job_function_assignments` reference it
+- Active `access_grants` scope it via `unit_subtree`
+- Operational root records snapshot it as anchor or `site_unit_id`
+- Child closure descendants hold any of the above
+
+Cross-site transfer in PR3 requires an explicit audited workflow that does **not** rewrite `site_unit_id`; new records take new snapshots.
 
 ## Hosted rollout
 
