@@ -12,6 +12,7 @@ import {
   LEGACY_HOSTED_DEMO_EXPECTED_MEMBERSHIPS,
 } from "./legacy-hosted-demo";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
+import { buildFoundationStageDependencyDeleteStatements } from "./deletion-graph";
 import {
   buildFoundationLifecycleGuardRetirementDeleteStatements,
   buildFoundationStageAppendOnlyDeleteStatements,
@@ -325,6 +326,10 @@ export function captureLegacyDeletionContext(
   };
 }
 
+export function buildDeleteLegacyHostedDemoOrganisationSql() {
+  return buildDeleteLegacyOrganisationSql();
+}
+
 export function buildDeleteLegacyOrganisationSql() {
   const orgId = LEGACY_HOSTED_DEMO_ORGANISATION.id;
   const orgCode = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code);
@@ -367,7 +372,9 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
 ${buildFoundationLifecycleGuardRetirementDeleteStatements(
   "target_org_id",
-  getFoundationLifecycleGuardRetirementPolicy("organisation_invitation_grants")!,
+  getFoundationLifecycleGuardRetirementPolicy(
+    "organisation_invitation_grants",
+  )!,
   { indent: "  " },
 )}
 
@@ -411,7 +418,9 @@ ${buildFoundationLifecycleGuardRetirementDeleteStatements(
 
 ${buildFoundationLifecycleGuardRetirementDeleteStatements(
   "target_org_id",
-  getFoundationLifecycleGuardRetirementPolicy("problem_solving_method_versions")!,
+  getFoundationLifecycleGuardRetirementPolicy(
+    "problem_solving_method_versions",
+  )!,
   { indent: "  " },
 )}
 
@@ -423,6 +432,8 @@ ${buildFoundationLifecycleGuardRetirementDeleteStatements(
 
   delete from public.workforce_import_jobs
   where organisation_id = target_org_id;
+
+${buildFoundationStageDependencyDeleteStatements("target_org_id", { indent: "  " })}
 
   delete from public.organisation_memberships
   where organisation_id = target_org_id;
@@ -471,6 +482,7 @@ export function executeDeleteLegacyHostedDemoOrganisationSql(
 ) {
   runSupabaseDbQuery({
     databaseUrl,
+    heavy: true,
     sql: buildDeleteLegacyOrganisationSql(),
   });
 }

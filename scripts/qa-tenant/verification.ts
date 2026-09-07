@@ -118,12 +118,16 @@ function discoverTableLists(databaseUrl: string) {
   const moduleRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
+    retryTransientConnection: true,
     sql: listModuleTablesSql(),
   });
 
   const foundationRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
+    retryTransientConnection: true,
     sql: listFoundationTablesSql(),
   });
 
@@ -132,6 +136,8 @@ function discoverTableLists(databaseUrl: string) {
   }>({
     databaseUrl,
     outputFormat: "json",
+    heavy: true,
+    retryTransientConnection: true,
     sql: listAppendOnlyDeleteTablesSql(),
   });
 
@@ -228,6 +234,8 @@ export function verifyCookieWorksTenant(databaseUrl: string) {
     {
       databaseUrl,
       outputFormat: "json",
+      heavy: true,
+      retryTransientConnection: true,
       sql: buildVerificationSql(moduleTables, foundationTables),
     },
     { minRows: 1, maxRows: 1 },
@@ -249,6 +257,7 @@ export function assertCookieWorksOrganisationContract(databaseUrl: string) {
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select id, code, name
       from public.organisations
@@ -396,6 +405,7 @@ export async function assertCookieWorksCompleteFoundationVerified(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select
         (select count(*)::int from public.organisation_memberships where organisation_id = '${organisation.id}'::uuid) as memberships,

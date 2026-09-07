@@ -55,7 +55,7 @@ describe("buildInventoryFromSqlPayload", () => {
     expect(isFoundationOnlyInventory(inventory)).toBe(false);
   });
 
-  it("treats purge infrastructure template counts as foundation-only compatible", () => {
+  it("allows retained template infrastructure after module-foundation-only purge", () => {
     const inventory = buildInventoryFromSqlPayload({
       ...foundationPayload,
       counts: {

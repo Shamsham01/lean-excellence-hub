@@ -21,6 +21,7 @@ function listCookieWorksStorageObjectPaths(databaseUrl: string) {
   const rows = runSupabaseDbQueryJson<{ name: string }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select object_row.name
       from storage.objects object_row
@@ -41,6 +42,7 @@ export function countCookieWorksStorageObjects(databaseUrl: string) {
   const rows = runSupabaseDbQueryJson<{ count: number }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select count(*)::int as count
       from storage.objects object_row

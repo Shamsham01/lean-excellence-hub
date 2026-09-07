@@ -3,7 +3,7 @@ import {
   QA_ORGANISATION,
   QA_USERS,
 } from "./constants";
-import { PURGE_INFRASTRUCTURE_TABLES } from "./deletion-graph";
+import { MODULE_PURGE_INFRASTRUCTURE_TABLES } from "./deletion-graph";
 import { collectCookieWorksInventoryViaSql } from "./inventory-sql";
 import { verifyCookieWorksTenant } from "./verification";
 
@@ -14,8 +14,8 @@ const FOUNDATION_INVENTORY_COUNT_KEYS = new Set([
 ]);
 
 function isInventoryModuleCountExcluded(tableName: string) {
-  return PURGE_INFRASTRUCTURE_TABLES.includes(
-    tableName as (typeof PURGE_INFRASTRUCTURE_TABLES)[number],
+  return MODULE_PURGE_INFRASTRUCTURE_TABLES.includes(
+    tableName as (typeof MODULE_PURGE_INFRASTRUCTURE_TABLES)[number],
   );
 }
 
@@ -41,7 +41,7 @@ export function isFoundationOnlyInventoryFromCounts(
 
 type InventorySection = {
   title: string;
-  items: Array<{ label: string; count: number | null }>;
+  items: Array<{ label: string; count: number | null; countKey?: string }>;
 };
 
 export function buildInventoryFromSqlPayload(
@@ -167,13 +167,30 @@ export function buildInventoryFromSqlPayload(
     {
       title: "Shared Platform",
       items: [
-        { label: "actions", count: Number(counts.actions ?? 0) },
-        { label: "templates", count: Number(counts.templates ?? 0) },
-        { label: "attachments", count: Number(counts.attachments ?? 0) },
-        { label: "comments", count: Number(counts.comments ?? 0) },
+        {
+          label: "actions",
+          count: Number(counts.actions ?? 0),
+          countKey: "actions",
+        },
+        {
+          label: "templates",
+          count: Number(counts.templates ?? 0),
+          countKey: "templates",
+        },
+        {
+          label: "attachments",
+          count: Number(counts.attachments ?? 0),
+          countKey: "attachments",
+        },
+        {
+          label: "comments",
+          count: Number(counts.comments ?? 0),
+          countKey: "comments",
+        },
         {
           label: "storage objects (organisation-evidence)",
           count: Number(counts.storage_objects ?? 0),
+          countKey: "storage_objects",
         },
       ],
     },
