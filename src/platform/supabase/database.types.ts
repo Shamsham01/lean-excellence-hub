@@ -211,14 +211,19 @@ export type Database = {
           version: number
         }
         Insert: {
+          completed_at?: string | null
+          created_at?: string
           created_by_membership_id: string
           id: string
           organisation_id: string
           site_unit_id?: string | null
           title: string
+          unit_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          version?: number
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -245,13 +250,6 @@ export type Database = {
           {
             foreignKeyName: "actions_unit_fkey"
             columns: ["organisation_id", "unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "actions_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -2757,6 +2755,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          baseline_summary?: string | null
+          charter_submitted_at?: string | null
+          charter_submitted_by_membership_id?: string | null
+          constraints_risks?: string | null
+          created_at?: string
           created_by_membership_id: string
           id: string
           organisation_id: string
@@ -2764,9 +2769,9 @@ export type Database = {
           site_unit_id?: string | null
           title: string
           unit_id: string
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -2800,13 +2805,6 @@ export type Database = {
           {
             foreignKeyName: "ci_projects_unit_fkey"
             columns: ["organisation_id", "unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "ci_projects_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -3135,9 +3133,10 @@ export type Database = {
           standard_version_id: string
           submission_id: string
           unit_id: string
+          unit_name_snapshot?: string | null
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -3185,13 +3184,6 @@ export type Database = {
           {
             foreignKeyName: "five_s_audits_unit_fkey"
             columns: ["organisation_id", "unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "five_s_audits_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -3908,6 +3900,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          completed_at?: string | null
+          created_at?: string
           created_by_membership_id: string
           definition_version_id: string
           id: string
@@ -3916,9 +3910,10 @@ export type Database = {
           site_unit_id?: string | null
           submission_id: string
           unit_id: string
+          unit_name_snapshot?: string | null
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -3970,13 +3965,6 @@ export type Database = {
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
           },
-          {
-            foreignKeyName: "gemba_walks_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
         ]
       }
       improvement_benefits: {
@@ -4010,6 +3998,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          baseline_description?: string | null
+          baseline_financial_value?: number | null
+          baseline_measure_unit?: string | null
+          baseline_measure_value?: number | null
+          baseline_period_end?: string | null
+          baseline_period_start?: string | null
           benefit_class: string
           created_by_membership_id: string
           id: string
@@ -4018,9 +4012,9 @@ export type Database = {
           owner_membership_id: string
           site_unit_id?: string | null
           title: string
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -4061,13 +4055,6 @@ export type Database = {
           {
             foreignKeyName: "improvement_benefits_unit_fkey"
             columns: ["organisation_id", "organisational_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "improvement_benefits_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -4116,6 +4103,7 @@ export type Database = {
           withdrawn_at: string | null
         }
         Insert: {
+          accepted_at?: string | null
           author_membership_id: string
           category_id: string
           id: string
@@ -4127,9 +4115,10 @@ export type Database = {
           review_jurisdiction_unit_id: string
           site_unit_id?: string | null
           title: string
+          updated_at?: string
+          withdrawn_at?: string | null
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -4193,13 +4182,6 @@ export type Database = {
             columns: ["organisation_id", "template_submission_id"]
             isOneToOne: false
             referencedRelation: "template_submissions"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "improvement_suggestions_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -4546,6 +4528,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
           assessment_scope_type: string
           assessment_type: string
           created_by_membership_id: string
@@ -4555,9 +4538,9 @@ export type Database = {
           site_unit_id?: string | null
           submission_id: string
           unit_id: string
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -4598,13 +4581,6 @@ export type Database = {
           {
             foreignKeyName: "maturity_assessments_unit_fkey"
             columns: ["organisation_id", "unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "maturity_assessments_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -5364,9 +5340,11 @@ export type Database = {
           proficiency_scale_version_id: string
           site_unit_id?: string | null
           skill_id: string
+          status?: string
+          supersedes_assessment_id?: string | null
+          valid_until?: string | null
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -5421,13 +5399,6 @@ export type Database = {
           {
             foreignKeyName: "membership_skill_assessments_unit_fkey"
             columns: ["organisation_id", "organisational_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "membership_skill_assessments_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -6228,6 +6199,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activated_at?: string | null
+          background?: string | null
+          business_impact?: string | null
+          cancellation_rationale?: string | null
+          cancelled_at?: string | null
+          cancelled_by_membership_id?: string | null
+          case_number?: string | null
+          closed_at?: string | null
+          closed_by_membership_id?: string | null
+          closure_outcome?: string | null
+          closure_rationale?: string | null
+          created_at?: string
           created_by_membership_id: string
           id: string
           organisation_id: string
@@ -6235,9 +6218,10 @@ export type Database = {
           owner_membership_id: string
           site_unit_id?: string | null
           title: string
+          transferred_to_reference?: string | null
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -6299,13 +6283,6 @@ export type Database = {
           {
             foreignKeyName: "problem_solving_cases_unit_fkey"
             columns: ["organisation_id", "organisation_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "problem_solving_cases_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -7858,6 +7835,7 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          awarded_at?: string
           awarded_by_membership_id: string
           id: string
           message: string
@@ -7867,9 +7845,9 @@ export type Database = {
           recognition_type_name_snapshot: string
           site_unit_id?: string | null
           title: string
+          visibility?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -7903,13 +7881,6 @@ export type Database = {
           {
             foreignKeyName: "recognition_awards_unit_fkey"
             columns: ["organisation_id", "organisational_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "recognition_awards_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -8335,9 +8306,10 @@ export type Database = {
           timezone: string
           title: string
           unit_id: string
+          updated_at?: string
+          version_number?: number
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -8375,13 +8347,6 @@ export type Database = {
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
           },
-          {
-            foreignKeyName: "schedule_definitions_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
         ]
       }
       schedule_occurrences: {
@@ -8402,6 +8367,10 @@ export type Database = {
           unit_id: string
         }
         Insert: {
+          completed_at?: string | null
+          completion_resource_id?: string | null
+          created_at?: string
+          id?: string
           is_all_day: boolean
           organisation_id: string
           owner_membership_id: string
@@ -8411,8 +8380,7 @@ export type Database = {
           site_unit_id?: string | null
           unit_id: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -8439,13 +8407,6 @@ export type Database = {
           {
             foreignKeyName: "schedule_occurrences_unit_fkey"
             columns: ["organisation_id", "unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "schedule_occurrences_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
@@ -10390,15 +10351,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          capacity?: number | null
           course_version_id: string
           created_by_membership_id: string
           id: string
           organisation_id: string
           site_unit_id?: string | null
           title: string
+          trainer_membership_id?: string | null
+          trainer_name?: string | null
+          updated_at?: string
         }
-        Update: {
-          site_unit_id?: string | null
+        Update: {          site_unit_id?: string | null
         }
         Relationships: [
           {
@@ -10439,13 +10403,6 @@ export type Database = {
           {
             foreignKeyName: "training_sessions_unit_fkey"
             columns: ["organisation_id", "organisational_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_units"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "training_sessions_site_unit_fkey"
-            columns: ["organisation_id", "site_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
