@@ -29,7 +29,9 @@ export async function seedSiteBoundaryFixture(options: {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  await purgeCookieWorksTenantModules(options.databaseUrl, { storageAdmin: admin });
+  await purgeCookieWorksTenantModules(options.databaseUrl, {
+    storageAdmin: admin,
+  });
 
   await seedCookieWorksFoundation({
     admin,
@@ -71,7 +73,9 @@ export async function seedSiteBoundaryFixture(options: {
     });
 
   if (exeterPackingError || !exeterPackingId) {
-    throw exeterPackingError ?? new Error("Failed to create Exeter packing unit");
+    throw (
+      exeterPackingError ?? new Error("Failed to create Exeter packing unit")
+    );
   }
 
   unitIds[EXETER_SITE.code] = exeterSiteId;

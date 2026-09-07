@@ -53,12 +53,12 @@ test.describe("Site security boundary focused E2E", () => {
     page,
   }) => {
     await loginAsCookieWorksPersona(page, "operator");
-    await page.goto(
-      `/platform/maturity/assessments/${exeterAssessmentId}`,
-    );
+    await page.goto(`/platform/maturity/assessments/${exeterAssessmentId}`);
     await expect(page.getByText(EXETER_FACTORY_LABEL)).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: /not found|access denied|unavailable/i }),
+      page.getByRole("heading", {
+        name: /not found|access denied|unavailable/i,
+      }),
     ).toBeVisible();
   });
 
@@ -66,9 +66,7 @@ test.describe("Site security boundary focused E2E", () => {
     page,
   }) => {
     await loginAsCookieWorksPersona(page, "ciManager");
-    await page.goto(
-      `/platform/maturity/assessments/${exeterAssessmentId}`,
-    );
+    await page.goto(`/platform/maturity/assessments/${exeterAssessmentId}`);
     await expect(page.getByText(EXETER_FACTORY_LABEL).first()).toBeVisible();
   });
 
@@ -78,7 +76,10 @@ test.describe("Site security boundary focused E2E", () => {
     await loginAsCookieWorksPersona(page, "productionManager");
     await page.goto("/platform/settings/people");
     await page.getByRole("link", { name: /invite colleague/i }).click();
-    const scopeSelect = page.locator("select").filter({ hasText: /scope|organisation|subtree/i }).first();
+    const scopeSelect = page
+      .locator("select")
+      .filter({ hasText: /scope|organisation|subtree/i })
+      .first();
     if (await scopeSelect.count()) {
       await expect(scopeSelect.locator("option")).not.toContainText([
         EXETER_FACTORY_LABEL,

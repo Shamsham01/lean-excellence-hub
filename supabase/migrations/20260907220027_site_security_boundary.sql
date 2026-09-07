@@ -1258,6 +1258,13 @@ begin
     'memberships.manage',
     null,
     null
+  )
+  and not private.membership_has_scoped_permission(
+    actor_membership_id,
+    target_organisation_id,
+    'job_functions.manage',
+    null,
+    target_organisational_unit_id
   ) then
     raise exception 'membership placement is outside authorised site boundary'
       using errcode = '42501';
@@ -1982,15 +1989,6 @@ begin
             'roles.delegate',
             null,
             unit_row.id
-          )
-          and (
-            not private.organisation_requires_site_boundary(org_id)
-            or actor_has_org_delegate
-            or private.membership_can_access_unit_site(
-              org_id,
-              actor_membership_id,
-              unit_row.id
-            )
           )
           and private.role_version_is_delegatable_at_scope(
             org_id,

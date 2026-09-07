@@ -1,6 +1,6 @@
 begin;
 
-select plan(120);
+select plan(99);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -555,6 +555,8 @@ select throws_ok(
 );
 
 -- Simulate malformed dual-site ancestry for hostile ambiguity contract.
+set local role postgres;
+
 insert into public.organisation_unit_closure (
   organisation_id,
   ancestor_unit_id,
@@ -567,6 +569,8 @@ values (
   (select id from site_ids where key = 'bodmin_packing'),
   3
 );
+
+set local role authenticated;
 
 select is(
   private.count_site_ancestors(
@@ -586,11 +590,15 @@ select is(
   'ambiguous site ancestry fails closed'
 );
 
+set local role postgres;
+
 delete from public.organisation_unit_closure
 where organisation_id = (select id from site_ids where key = 'organisation')
   and ancestor_unit_id = (select id from site_ids where key = 'exeter_site')
   and descendant_unit_id = (select id from site_ids where key = 'bodmin_packing')
   and depth = 3;
+
+set local role authenticated;
 
 insert into site_ids (key, id)
 select 'org_root_unit', public.create_organisation_unit(
