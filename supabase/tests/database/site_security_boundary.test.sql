@@ -55,7 +55,11 @@ values
   ('c1000000-0000-0000-0000-000000000006', 'b1000000-0000-0000-0000-000000000006', statement_timestamp(), statement_timestamp());
 
 insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
-select (select id from site_ids where key = 'organisation'), user_id, 'active', statement_timestamp()
+select
+  (select id from site_ids where key = 'organisation'),
+  members.user_id::uuid,
+  'active',
+  statement_timestamp()
 from (values
   ('b1000000-0000-0000-0000-000000000002'),
   ('b1000000-0000-0000-0000-000000000003'),
