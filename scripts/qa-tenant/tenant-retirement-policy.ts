@@ -727,6 +727,51 @@ export function buildControlledRetirementDeleteStatements(
   return lines.join("\n");
 }
 
+/**
+ * Foundation-stage role_permissions retirement. `role_permissions_guard` blocks
+ * DELETE on published role versions; disabled only for tenant-scoped purge.
+ */
+export const FOUNDATION_ROLE_PERMISSIONS_RETIREMENT = {
+  table: "role_permissions",
+  guardTrigger: "role_permissions_guard",
+  tenantImmutabilityTrigger: "role_permissions_immutable_tenant",
+  description:
+    "Published role version permissions (guard blocks DELETE on published versions)",
+  lifecycleStage: "foundation" as const,
+  triggerFunction: "guard_role_permission",
+} as const;
+
+export function buildFoundationRolePermissionsRetirementDeleteStatements(
+  targetOrgVar: string,
+  options?: { indent?: string },
+) {
+  const indent = options?.indent ?? "  ";
+
+  return `
+${indent}-- Foundation-stage published role_permissions retirement.
+${indent}-- role_permissions_guard blocks DELETE on published role versions.
+${indent}alter table public.role_permissions
+${indent}  disable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger};
+${indent}delete from public.role_permissions
+${indent}where organisation_id = ${targetOrgVar};
+${indent}alter table public.role_permissions
+${indent}  enable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger};
+${indent}if not exists (
+${indent}  select 1
+${indent}  from pg_trigger trigger_row
+${indent}  join pg_class relation_row on relation_row.oid = trigger_row.tgrelid
+${indent}  join pg_namespace namespace_row on namespace_row.oid = relation_row.relnamespace
+${indent}  where namespace_row.nspname = 'public'
+${indent}    and relation_row.relname = '${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.table}'
+${indent}    and trigger_row.tgname = '${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger}'
+${indent}    and trigger_row.tgenabled <> 'D'
+${indent}) then
+${indent}  raise exception
+${indent}    'Foundation retirement failed to restore ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger} trigger.';
+${indent}end if;
+`;
+}
+
 export function buildFoundationStageAppendOnlyDeleteStatements(
   targetOrgVar: string,
   options?: { indent?: string },

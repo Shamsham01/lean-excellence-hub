@@ -12,7 +12,10 @@ import {
   LEGACY_HOSTED_DEMO_EXPECTED_MEMBERSHIPS,
 } from "./legacy-hosted-demo";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
-import { buildFoundationStageAppendOnlyDeleteStatements } from "./tenant-retirement-policy";
+import {
+  buildFoundationRolePermissionsRetirementDeleteStatements,
+  buildFoundationStageAppendOnlyDeleteStatements,
+} from "./tenant-retirement-policy";
 import { purgeTenantStorageObjects } from "./tenant-storage-cleanup";
 
 function escapeSqlLiteral(value: string) {
@@ -321,7 +324,7 @@ export function captureLegacyDeletionContext(
   };
 }
 
-function buildDeleteLegacyOrganisationSql() {
+export function buildDeleteLegacyOrganisationSql() {
   const orgId = LEGACY_HOSTED_DEMO_ORGANISATION.id;
   const orgCode = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code);
 
@@ -367,8 +370,7 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   delete from public.role_grant_scope_policies
   where organisation_id = target_org_id;
 
-  delete from public.role_permissions
-  where organisation_id = target_org_id;
+${buildFoundationRolePermissionsRetirementDeleteStatements("target_org_id", { indent: "  " })}
 
   delete from public.role_versions
   where organisation_id = target_org_id;

@@ -26,6 +26,8 @@ import { LEGACY_HOSTED_DEMO_ORGANISATION } from "../../scripts/qa-tenant/legacy-
 import {
   cleanupLegacyReplacementFixture,
   countLegacyOrganisationRows,
+  insertLegacyReplacementPublishedRolePermissionsFixture,
+  deleteFixtureRbacDataForOrganisationCodes,
   LEGACY_REPLACEMENT_FIXTURE_MEMBERS,
   LEGACY_REPLACEMENT_ISOLATION_ORG,
   seedLegacyReplacementFixture,
@@ -34,6 +36,7 @@ import {
 import { loadLocalSupabaseEnv } from "../../scripts/qa-tenant/local-env";
 import { buildTenantPrivateInfrastructureCountSql } from "../../scripts/qa-tenant/private-infrastructure-purge";
 import { collectTenantInventory } from "../../scripts/qa-tenant/tenant-inventory";
+import { buildFoundationRolePermissionsRetirementDeleteStatements } from "../../scripts/qa-tenant/tenant-retirement-policy";
 import {
   assertCookieWorksCompleteFoundationVerified,
   HOSTED_LEGACY_RECOVERY_VERIFIED_MARKER,
@@ -348,6 +351,142 @@ describe
       expect(afterFoundationDeletion.isolation_business_audit_events).toBe(
         before.isolation_business_audit_events,
       );
+    }, 180_000);
+
+    it("deletes published role permissions during foundation retirement while preserving isolation tenant permissions", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      const fixture = await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      const legacyMembershipId = runSupabaseDbQueryJson<{ id: string }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select id
+          from public.organisation_memberships
+          where organisation_id = '${fixture.organisationId}'::uuid
+          order by created_at
+          limit 1;
+        `,
+      })[0]?.id;
+
+      const isolationMembershipId = runSupabaseDbQueryJson<{ id: string }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select id
+          from public.organisation_memberships
+          where organisation_id = '${fixture.isolationOrganisationId}'::uuid
+          order by created_at
+          limit 1;
+        `,
+      })[0]?.id;
+
+      if (!legacyMembershipId || !isolationMembershipId) {
+        throw new Error(
+          "Published role permission fixture missing membership rows.",
+        );
+      }
+
+      insertLegacyReplacementPublishedRolePermissionsFixture({
+        databaseUrl: env.databaseUrl,
+        organisationId: fixture.organisationId,
+        membershipId: legacyMembershipId,
+        fixtureKey: "legacy",
+      });
+      insertLegacyReplacementPublishedRolePermissionsFixture({
+        databaseUrl: env.databaseUrl,
+        organisationId: fixture.isolationOrganisationId,
+        membershipId: isolationMembershipId,
+        fixtureKey: "isolation",
+      });
+
+      const beforeCounts = runSupabaseDbQueryJson<{
+        legacy_role_permissions: number;
+        isolation_role_permissions: number;
+      }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select
+            (select count(*)::int
+             from public.role_permissions
+             where organisation_id = '${fixture.organisationId}'::uuid) as legacy_role_permissions,
+            (select count(*)::int
+             from public.role_permissions
+             where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_role_permissions;
+        `,
+      })[0]!;
+
+      expect(beforeCounts.legacy_role_permissions).toBeGreaterThan(0);
+      expect(beforeCounts.isolation_role_permissions).toBeGreaterThan(0);
+
+      expect(() =>
+        runSupabaseDbQuery({
+          databaseUrl: env.databaseUrl,
+          sql: `
+            delete from public.role_permissions
+            where organisation_id = '${fixture.organisationId}'::uuid;
+          `,
+        }),
+      ).toThrow(SupabaseDbQueryError);
+
+      runSupabaseDbQuery({
+        databaseUrl: env.databaseUrl,
+        sql: `
+          do $$
+          declare
+            target_org_id uuid := '${fixture.organisationId}'::uuid;
+          begin
+${buildFoundationRolePermissionsRetirementDeleteStatements("target_org_id", { indent: "            " })}
+          end
+          $$;
+        `,
+      });
+
+      const afterCounts = runSupabaseDbQueryJson<{
+        legacy_role_permissions: number;
+        isolation_role_permissions: number;
+        guard_enabled: boolean;
+      }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select
+            (select count(*)::int
+             from public.role_permissions
+             where organisation_id = '${fixture.organisationId}'::uuid) as legacy_role_permissions,
+            (select count(*)::int
+             from public.role_permissions
+             where organisation_id = '${fixture.isolationOrganisationId}'::uuid) as isolation_role_permissions,
+            exists (
+              select 1
+              from pg_trigger trigger_row
+              join pg_class relation_row on relation_row.oid = trigger_row.tgrelid
+              join pg_namespace namespace_row on namespace_row.oid = relation_row.relnamespace
+              where namespace_row.nspname = 'public'
+                and relation_row.relname = 'role_permissions'
+                and trigger_row.tgname = 'role_permissions_guard'
+                and trigger_row.tgenabled <> 'D'
+            ) as guard_enabled;
+        `,
+      })[0]!;
+
+      expect(afterCounts.legacy_role_permissions).toBe(0);
+      expect(afterCounts.isolation_role_permissions).toBe(
+        beforeCounts.isolation_role_permissions,
+      );
+      expect(afterCounts.guard_enabled).toBe(true);
+
+      deleteFixtureRbacDataForOrganisationCodes(env.databaseUrl, [
+        LEGACY_HOSTED_DEMO_ORGANISATION.code,
+        LEGACY_REPLACEMENT_ISOLATION_ORG.code,
+      ]);
     }, 180_000);
 
     it("fails closed when generic delete is attempted against ai_usage_events", async () => {

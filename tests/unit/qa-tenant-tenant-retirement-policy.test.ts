@@ -5,9 +5,11 @@ import {
   assertTenantRetirementPolicyConsistency,
   buildAppendOnlyUnknownGuardStatements,
   buildControlledRetirementDeleteStatements,
+  buildFoundationRolePermissionsRetirementDeleteStatements,
   buildFoundationStageAppendOnlyDeleteStatements,
   classifyDiscoveredAppendOnlyTable,
   collectAppendOnlyInventoryFailures,
+  FOUNDATION_ROLE_PERMISSIONS_RETIREMENT,
   FOUNDATION_STAGE_APPEND_ONLY_TABLES,
   formatAppendOnlyInventoryLines,
   getApprovedAppendOnlyTableNames,
@@ -17,6 +19,7 @@ import {
   MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES,
   MODULE_STAGE_STANDARD_APPEND_ONLY_TABLES,
 } from "../../scripts/qa-tenant/tenant-retirement-policy";
+import { buildDeleteLegacyOrganisationSql } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
 import {
   buildLegacyHostedDemoModulePurgeSql,
   buildPurgeTenantModuleDataSql,
@@ -235,5 +238,40 @@ describe("tenant purge SQL classification", () => {
     expect(statements).toContain(
       "Must run before organisation_memberships deletion",
     );
+  });
+
+  it("builds foundation-stage published role_permissions retirement with guard restore verification", () => {
+    const statements =
+      buildFoundationRolePermissionsRetirementDeleteStatements("target_org_id");
+
+    expect(statements).toContain(
+      `disable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger}`,
+    );
+    expect(statements).toContain("delete from public.role_permissions");
+    expect(statements).toContain("where organisation_id = target_org_id");
+    expect(statements).toContain(
+      `enable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger}`,
+    );
+    expect(statements).not.toContain(
+      FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.tenantImmutabilityTrigger,
+    );
+    expect(statements).toContain(
+      "Foundation retirement failed to restore role_permissions_guard trigger",
+    );
+    expect(statements).toContain("trigger_row.tgenabled <> 'D'");
+  });
+
+  it("uses foundation role_permissions retirement in legacy organisation deletion SQL", () => {
+    const sql = buildDeleteLegacyOrganisationSql();
+    const rolePermissionsIndex = sql.indexOf("delete from public.role_permissions");
+    const roleVersionsIndex = sql.indexOf("delete from public.role_versions");
+    const disableIndex = sql.indexOf("disable trigger role_permissions_guard");
+    const enableIndex = sql.indexOf("enable trigger role_permissions_guard");
+
+    expect(disableIndex).toBeGreaterThanOrEqual(0);
+    expect(rolePermissionsIndex).toBeGreaterThan(disableIndex);
+    expect(enableIndex).toBeGreaterThan(rolePermissionsIndex);
+    expect(roleVersionsIndex).toBeGreaterThan(enableIndex);
+    expect(sql).not.toContain("disable trigger role_permissions_immutable_tenant");
   });
 });

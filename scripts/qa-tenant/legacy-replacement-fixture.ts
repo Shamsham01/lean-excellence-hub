@@ -50,6 +50,87 @@ function escapeSqlLiteral(value: string) {
   return value.replaceAll("'", "''");
 }
 
+function insertPublishedRolePermissionsFixture(options: {
+  databaseUrl: string;
+  organisationId: string;
+  membershipId: string;
+  fixtureKey: string;
+}) {
+  const roleId = randomUUID();
+  const roleVersionId = randomUUID();
+  const canonicalName = `qa-fixture-${options.fixtureKey}`.replaceAll(
+    /[^a-z0-9._-]/g,
+    "-",
+  );
+
+  runSupabaseDbQuery({
+    databaseUrl: options.databaseUrl,
+    sql: `
+      do $$
+      begin
+        insert into public.roles (
+          id,
+          organisation_id,
+          canonical_name,
+          display_name,
+          status
+        ) values (
+          '${roleId}'::uuid,
+          '${options.organisationId}'::uuid,
+          '${escapeSqlLiteral(canonicalName)}',
+          'QA Fixture Role ${escapeSqlLiteral(options.fixtureKey)}',
+          'active'
+        );
+
+        insert into public.role_versions (
+          id,
+          organisation_id,
+          role_id,
+          version_number,
+          status,
+          created_by_membership_id
+        ) values (
+          '${roleVersionId}'::uuid,
+          '${options.organisationId}'::uuid,
+          '${roleId}'::uuid,
+          1,
+          'draft',
+          '${options.membershipId}'::uuid
+        );
+
+        insert into public.role_permissions (
+          organisation_id,
+          role_version_id,
+          permission_key
+        ) values (
+          '${options.organisationId}'::uuid,
+          '${roleVersionId}'::uuid,
+          'actions.read'
+        );
+
+        update public.role_versions
+        set status = 'published',
+            published_by_membership_id = '${options.membershipId}'::uuid,
+            published_at = statement_timestamp()
+        where id = '${roleVersionId}'::uuid
+          and organisation_id = '${options.organisationId}'::uuid;
+      end
+      $$;
+    `,
+  });
+
+  return { roleId, roleVersionId };
+}
+
+export function insertLegacyReplacementPublishedRolePermissionsFixture(options: {
+  databaseUrl: string;
+  organisationId: string;
+  membershipId: string;
+  fixtureKey: string;
+}) {
+  return insertPublishedRolePermissionsFixture(options);
+}
+
 function insertAppendOnlyAiUsageFixture(options: {
   databaseUrl: string;
   organisationId: string;
@@ -270,6 +351,81 @@ function deleteFixtureModuleDataForOrganisationCodes(
   });
 }
 
+export function deleteFixtureRbacDataForOrganisationCodes(
+  databaseUrl: string,
+  organisationCodes: readonly string[],
+) {
+  if (organisationCodes.length === 0) {
+    return;
+  }
+
+  const codeList = organisationCodes
+    .map((code) => `'${escapeSqlLiteral(code)}'`)
+    .join(", ");
+
+  runSupabaseDbQuery({
+    databaseUrl,
+    sql: `
+      do $$
+      declare
+        target_org_id uuid;
+      begin
+        alter table public.organisation_invitation_grants
+          disable trigger organisation_invitation_grants_guard;
+        alter table public.role_permissions
+          disable trigger role_permissions_guard;
+        alter table public.role_versions
+          disable trigger role_versions_guard;
+
+        for target_org_id in
+          select id
+          from public.organisations
+          where code in (${codeList})
+        loop
+          delete from public.organisation_invitation_signup_bindings
+          where invitation_id in (
+            select id
+            from public.organisation_invitations
+            where organisation_id = target_org_id
+          );
+
+          delete from public.organisation_invitation_grants
+          where organisation_id = target_org_id;
+
+          delete from public.organisation_invitation_provisioning
+          where organisation_id = target_org_id;
+
+          delete from public.organisation_invitations
+          where organisation_id = target_org_id;
+
+          delete from public.access_grants
+          where organisation_id = target_org_id;
+
+          delete from public.role_grant_scope_policies
+          where organisation_id = target_org_id;
+
+          delete from public.role_permissions
+          where organisation_id = target_org_id;
+
+          delete from public.role_versions
+          where organisation_id = target_org_id;
+
+          delete from public.roles
+          where organisation_id = target_org_id;
+        end loop;
+
+        alter table public.organisation_invitation_grants
+          enable trigger organisation_invitation_grants_guard;
+        alter table public.role_permissions
+          enable trigger role_permissions_guard;
+        alter table public.role_versions
+          enable trigger role_versions_guard;
+      end
+      $$;
+    `,
+  });
+}
+
 function deleteFoundationAuditEventsForOrganisationCodes(
   databaseUrl: string,
   organisationCodes: readonly string[],
@@ -400,6 +556,9 @@ export async function seedLegacyReplacementFixture(options: {
 
   if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
     executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
+    deleteFixtureRbacDataForOrganisationCodes(options.databaseUrl, [
+      LEGACY_HOSTED_DEMO_ORGANISATION.code,
+    ]);
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
@@ -821,10 +980,18 @@ export async function cleanupLegacyReplacementFixture(options: {
 
   if (countLegacyOrganisationRows(options.databaseUrl) > 0) {
     executeLegacyHostedDemoModulePurgeSql(options.databaseUrl);
+    deleteFixtureRbacDataForOrganisationCodes(options.databaseUrl, [
+      LEGACY_HOSTED_DEMO_ORGANISATION.code,
+    ]);
     executeDeleteLegacyHostedDemoOrganisationSql(options.databaseUrl);
   }
 
   deleteFixtureModuleDataForOrganisationCodes(options.databaseUrl, [
+    LEGACY_REPLACEMENT_CROSS_ORG.code,
+    LEGACY_REPLACEMENT_ISOLATION_ORG.code,
+  ]);
+
+  deleteFixtureRbacDataForOrganisationCodes(options.databaseUrl, [
     LEGACY_REPLACEMENT_CROSS_ORG.code,
     LEGACY_REPLACEMENT_ISOLATION_ORG.code,
   ]);

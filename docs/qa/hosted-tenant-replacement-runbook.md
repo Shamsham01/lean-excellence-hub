@@ -159,6 +159,63 @@ discovery finds unclassified append-only protections.
 3. Never rerun destructive replacement blindly.
 4. Unexpected append-only tables without an approved policy must abort the purge.
 
+## Incident note (QA2f): published role_permissions blocked foundation deletion
+
+During the third real hosted QA2 recovery attempt (`--destructive
+--preserve-existing-cookieworks`), foundation deletion aborted inside the
+PostgreSQL `DO $$ ... $$` organisation deletion with:
+
+```text
+permissions may change only on a draft role version
+```
+
+**Root cause:** `public.role_permissions` is protected by
+`role_permissions_guard` → `private.guard_role_permission()`. The guard
+correctly prevents mutating permissions attached to published role versions
+during normal operation. Full tenant retirement nevertheless must delete those
+rows when removing the organisation.
+
+**Why hosted state was unchanged:** same as QA2c/QA2d — foundation deletion runs
+inside a single PostgreSQL `DO` block. The guard exception aborted that
+statement and PostgreSQL rolled back all mutations from the block. Auth and
+Storage stages had not started yet.
+
+**Hosted read-only state at failure (module purge already complete):**
+
+| Area | Count |
+| --- | --- |
+| Legacy organisation | present (`402811bb-aa05-4128-b7e5-a1e3b359b92e`) |
+| Memberships | 8 |
+| Organisational units | 14 |
+| Role grants | 16 |
+| Private infrastructure | 0 |
+| Storage objects | 0 |
+| Module-owned rows | 0 |
+| Module append-only/history rows | 0 |
+| Remaining append-only foundation rows | `business_audit_events` 160, `security_audit_events` 100 |
+
+CookieWorks remained verified foundation-only.
+
+**Fix (QA2f):** in the foundation/organisation deletion transaction only,
+temporarily disable **only** `role_permissions_guard`, delete
+`role_permissions` where `organisation_id = target_org_id`, immediately
+re-enable `role_permissions_guard`, and verify via `pg_trigger.tgenabled` that
+the trigger is not left disabled. `role_permissions_immutable_tenant` is **not**
+disabled. The change is transactional inside the existing `DO $$` block — a
+later failure rolls back the disable/enable pair.
+
+**Additional confirmed blocker (not fixed in QA2f):** the next statement in the
+same foundation deletion path,
+`delete from public.role_versions where organisation_id = target_org_id`, will
+fail on published versions because `role_versions_guard` →
+`private.guard_role_version()` raises `published role versions are immutable`
+on `DELETE` when `status <> 'draft'`. Expect a follow-up QA patch before
+re-running destructive recovery on hosted.
+
+**Never rerun destructive replacement blindly after failure.** Always perform a
+read-only dry-run first and confirm foundation RBAC counts (roles, published
+versions, role permissions, grants) match expectations.
+
 ## Target hosted project
 
 | Field | Value |
