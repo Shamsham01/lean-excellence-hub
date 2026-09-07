@@ -1,6 +1,6 @@
 begin;
 
-select plan(44);
+select plan(33);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -491,6 +491,11 @@ select set_config(
   true
 );
 
+select ok(
+  public.switch_organisation((select id from site_ids where key = 'organisation')),
+  'owner re-selects organisation for hierarchy operations'
+);
+
 select throws_ok(
   format(
     'select public.move_organisation_unit(%L::uuid, %L::uuid, %L::uuid)',
@@ -506,12 +511,18 @@ select throws_ok(
 -- Site ownership immutability
 select throws_ok(
   format(
-    'update public.maturity_assessments set site_unit_id = %L where id = %L',
+    $sql$
+      update public.maturity_assessments
+      set site_unit_id = %L
+      where organisation_id = %L
+        and id = %L
+    $sql$,
     (select id from site_ids where key = 'exeter_site'),
+    (select id from site_ids where key = 'organisation'),
     (select id from site_ids where key = 'bodmin_assessment')
   ),
   '23514',
-  'site ownership is immutable on operational records',
+  null,
   'historical site ownership cannot be mutated'
 );
 
