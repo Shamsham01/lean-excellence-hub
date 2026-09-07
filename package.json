@@ -28,6 +28,7 @@
     "test:db:integration:n1b": "node --import tsx scripts/test-n1b-notification-projector-integration.ts",
     "test:db:integration:n1c": "node --import tsx scripts/test-n1c-notification-delivery-integration.ts",
     "db:start": "supabase start",
+    "db:start:ci": "supabase start -x studio,realtime,logflare,vector,imgproxy",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:reset": "supabase db reset",

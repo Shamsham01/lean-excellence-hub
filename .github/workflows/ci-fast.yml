@@ -26,16 +26,30 @@ jobs:
   quality:
     name: Fast CI / Quality
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           cache: npm
           node-version: 24
-      - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+      - name: Install dependencies
+        run: ./scripts/ci/timed.sh "npm ci" npm ci
+      - name: Format check
+        run: ./scripts/ci/timed.sh "format:check" npm run format:check
+      - name: Lint
+        run: ./scripts/ci/timed.sh "lint" npm run lint
+      - name: Typecheck
+        run: ./scripts/ci/timed.sh "typecheck" npm run typecheck
+      - name: Unit tests
+        run: ./scripts/ci/timed.sh "unit tests" npm test
+      - name: Production build
+        run: ./scripts/ci/timed.sh "build" npm run build
+      - name: Fast CI timing summary
+        if: always()
+        run: |
+          {
+            echo "## Fast CI / Quality timings"
+            echo ""
+            echo "Fast CI is the authoritative quality gate for pull request commits."
+          } >> "$GITHUB_STEP_SUMMARY"

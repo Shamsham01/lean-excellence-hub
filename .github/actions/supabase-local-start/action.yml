@@ -10,6 +10,10 @@ inputs:
     description: Number of startup attempts before failing the step.
     required: false
     default: "2"
+  exclude-services:
+    description: Comma-separated Supabase services to exclude from startup.
+    required: false
+    default: "studio,realtime,logflare,vector,imgproxy"
 
 runs:
   using: composite
@@ -19,6 +23,7 @@ runs:
       env:
         STARTUP_TIMEOUT_MINUTES: ${{ inputs.startup-timeout-minutes }}
         MAX_ATTEMPTS: ${{ inputs.max-attempts }}
+        EXCLUDE_SERVICES: ${{ inputs.exclude-services }}
       run: |
         set -euo pipefail
 
@@ -38,10 +43,27 @@ runs:
           npm run db:stop || true
         }
 
+        exclude_flags=()
+        if [ -n "${EXCLUDE_SERVICES}" ]; then
+          IFS=',' read -ra excluded <<< "${EXCLUDE_SERVICES}"
+          for service in "${excluded[@]}"; do
+            trimmed="$(echo "${service}" | xargs)"
+            if [ -n "${trimmed}" ]; then
+              exclude_flags+=("-x" "${trimmed}")
+            fi
+          done
+        fi
+
         attempt=1
         while [ "${attempt}" -le "${MAX_ATTEMPTS}" ]; do
           echo "Supabase startup attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${STARTUP_TIMEOUT_MINUTES}m)"
-          if timeout "${STARTUP_TIMEOUT_MINUTES}m" npm run db:start; then
+          start_epoch="$(date +%s)"
+          if timeout "${STARTUP_TIMEOUT_MINUTES}m" npx supabase start "${exclude_flags[@]}"; then
+            end_epoch="$(date +%s)"
+            duration="$((end_epoch - start_epoch))"
+            if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+              echo "- Supabase startup (attempt ${attempt}, excludes: ${EXCLUDE_SERVICES:-none}): ${duration}s" >> "${GITHUB_STEP_SUMMARY}"
+            fi
             echo "Local Supabase is ready."
             npx supabase status
             exit 0
