@@ -200,6 +200,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           organisation_id: string
+          site_unit_id: string | null
           priority: string
           source_resource_id: string | null
           status: string
@@ -218,6 +219,7 @@ export type Database = {
           id: string
           idempotency_key?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           priority?: string
           source_resource_id?: string | null
           status?: string
@@ -236,6 +238,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           priority?: string
           source_resource_id?: string | null
           status?: string
@@ -2759,6 +2762,7 @@ export type Database = {
           methodology_version_id: string | null
           objective: string | null
           organisation_id: string
+          site_unit_id: string | null
           planned_end_date: string | null
           planned_start_date: string | null
           priority: string
@@ -2787,6 +2791,7 @@ export type Database = {
           methodology_version_id?: string | null
           objective?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           priority?: string
@@ -2815,6 +2820,7 @@ export type Database = {
           methodology_version_id?: string | null
           objective?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           priority?: string
@@ -3164,6 +3170,7 @@ export type Database = {
           created_by_membership_id: string
           id: string
           organisation_id: string
+          site_unit_id: string | null
           overall_score_percent: number | null
           result_status: string | null
           schedule_occurrence_id: string | null
@@ -3186,6 +3193,7 @@ export type Database = {
           created_by_membership_id: string
           id: string
           organisation_id: string
+          site_unit_id?: string | null
           overall_score_percent?: number | null
           result_status?: string | null
           schedule_occurrence_id?: string | null
@@ -3208,6 +3216,7 @@ export type Database = {
           created_by_membership_id?: string
           id?: string
           organisation_id?: string
+          site_unit_id?: string | null
           overall_score_percent?: number | null
           result_status?: string | null
           schedule_occurrence_id?: string | null
@@ -3972,6 +3981,7 @@ export type Database = {
           id: string
           leader_membership_id: string
           organisation_id: string
+          site_unit_id: string | null
           schedule_occurrence_id: string | null
           started_at: string | null
           status: string
@@ -3992,6 +4002,7 @@ export type Database = {
           id: string
           leader_membership_id: string
           organisation_id: string
+          site_unit_id?: string | null
           schedule_occurrence_id?: string | null
           started_at?: string | null
           status?: string
@@ -4012,6 +4023,7 @@ export type Database = {
           id?: string
           leader_membership_id?: string
           organisation_id?: string
+          site_unit_id?: string | null
           schedule_occurrence_id?: string | null
           started_at?: string | null
           status?: string
@@ -4095,6 +4107,7 @@ export type Database = {
           is_standalone_initiative: boolean
           non_financial_type: string | null
           organisation_id: string
+          site_unit_id: string | null
           organisational_unit_id: string
           owner_membership_id: string
           planned_realisation_end: string | null
@@ -4123,6 +4136,7 @@ export type Database = {
           is_standalone_initiative?: boolean
           non_financial_type?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           organisational_unit_id: string
           owner_membership_id: string
           planned_realisation_end?: string | null
@@ -4151,6 +4165,7 @@ export type Database = {
           is_standalone_initiative?: boolean
           non_financial_type?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           organisational_unit_id?: string
           owner_membership_id?: string
           planned_realisation_end?: string | null
@@ -4222,6 +4237,7 @@ export type Database = {
           implemented_at: string | null
           implemented_by_membership_id: string | null
           organisation_id: string
+          site_unit_id: string | null
           origin_unit_code_snapshot: string | null
           origin_unit_id: string
           origin_unit_name_snapshot: string | null
@@ -4261,6 +4277,7 @@ export type Database = {
           implemented_at?: string | null
           implemented_by_membership_id?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           origin_unit_code_snapshot?: string | null
           origin_unit_id: string
           origin_unit_name_snapshot?: string | null
@@ -4300,6 +4317,7 @@ export type Database = {
           implemented_at?: string | null
           implemented_by_membership_id?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           origin_unit_code_snapshot?: string | null
           origin_unit_id?: string
           origin_unit_name_snapshot?: string | null
@@ -4721,6 +4739,7 @@ export type Database = {
           lead_assessor_membership_id: string | null
           model_version_id: string
           organisation_id: string
+          site_unit_id: string | null
           published_at: string | null
           started_at: string | null
           status: string
@@ -4741,6 +4760,7 @@ export type Database = {
           lead_assessor_membership_id?: string | null
           model_version_id: string
           organisation_id: string
+          site_unit_id?: string | null
           published_at?: string | null
           started_at?: string | null
           status?: string
@@ -4761,6 +4781,7 @@ export type Database = {
           lead_assessor_membership_id?: string | null
           model_version_id?: string
           organisation_id?: string
+          site_unit_id?: string | null
           published_at?: string | null
           started_at?: string | null
           status?: string
@@ -5548,6 +5569,7 @@ export type Database = {
           membership_id: string
           notes: string | null
           organisation_id: string
+          site_unit_id: string | null
           organisational_unit_id: string | null
           proficiency_level_id: string
           proficiency_scale_version_id: string
@@ -5567,6 +5589,7 @@ export type Database = {
           membership_id: string
           notes?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           organisational_unit_id?: string | null
           proficiency_level_id: string
           proficiency_scale_version_id: string
@@ -5586,6 +5609,7 @@ export type Database = {
           membership_id?: string
           notes?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           organisational_unit_id?: string | null
           proficiency_level_id?: string
           proficiency_scale_version_id?: string
@@ -6431,6 +6455,7 @@ export type Database = {
           id: string
           method_version_id: string | null
           organisation_id: string
+          site_unit_id: string | null
           organisation_unit_id: string
           owner_membership_id: string
           priority: string | null
@@ -6465,6 +6490,7 @@ export type Database = {
           id: string
           method_version_id?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           organisation_unit_id: string
           owner_membership_id: string
           priority?: string | null
@@ -6499,6 +6525,7 @@ export type Database = {
           id?: string
           method_version_id?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           organisation_unit_id?: string
           owner_membership_id?: string
           priority?: string | null
@@ -8115,6 +8142,7 @@ export type Database = {
           id: string
           message: string
           organisation_id: string
+          site_unit_id: string | null
           organisational_unit_id: string
           recognition_type_id: string
           recognition_type_name_snapshot: string
@@ -8130,6 +8158,7 @@ export type Database = {
           id: string
           message: string
           organisation_id: string
+          site_unit_id?: string | null
           organisational_unit_id: string
           recognition_type_id: string
           recognition_type_name_snapshot: string
@@ -8145,6 +8174,7 @@ export type Database = {
           id?: string
           message?: string
           organisation_id?: string
+          site_unit_id?: string | null
           organisational_unit_id?: string
           recognition_type_id?: string
           recognition_type_name_snapshot?: string
@@ -8587,6 +8617,7 @@ export type Database = {
           is_all_day: boolean
           local_time: string | null
           organisation_id: string
+          site_unit_id: string | null
           owner_membership_id: string
           recurrence: Json
           start_date: string
@@ -8607,6 +8638,7 @@ export type Database = {
           is_all_day?: boolean
           local_time?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           owner_membership_id: string
           recurrence: Json
           start_date: string
@@ -8627,6 +8659,7 @@ export type Database = {
           is_all_day?: boolean
           local_time?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           owner_membership_id?: string
           recurrence?: Json
           start_date?: string
@@ -8685,6 +8718,7 @@ export type Database = {
           lifecycle_status: string
           local_time: string | null
           organisation_id: string
+          site_unit_id: string | null
           owner_membership_id: string
           planned_at: string
           planned_local_date: string
@@ -8700,6 +8734,7 @@ export type Database = {
           lifecycle_status?: string
           local_time?: string | null
           organisation_id: string
+          site_unit_id?: string | null
           owner_membership_id: string
           planned_at: string
           planned_local_date: string
@@ -8715,6 +8750,7 @@ export type Database = {
           lifecycle_status?: string
           local_time?: string | null
           organisation_id?: string
+          site_unit_id?: string | null
           owner_membership_id?: string
           planned_at?: string
           planned_local_date?: string
@@ -10678,6 +10714,7 @@ export type Database = {
           notes: string | null
           online_metadata: Json | null
           organisation_id: string
+          site_unit_id: string | null
           organisational_unit_id: string | null
           schedule_occurrence_id: string | null
           scheduled_end: string | null
@@ -10698,6 +10735,7 @@ export type Database = {
           notes?: string | null
           online_metadata?: Json | null
           organisation_id: string
+          site_unit_id?: string | null
           organisational_unit_id?: string | null
           schedule_occurrence_id?: string | null
           scheduled_end?: string | null
@@ -10718,6 +10756,7 @@ export type Database = {
           notes?: string | null
           online_metadata?: Json | null
           organisation_id?: string
+          site_unit_id?: string | null
           organisational_unit_id?: string | null
           schedule_occurrence_id?: string | null
           scheduled_end?: string | null
