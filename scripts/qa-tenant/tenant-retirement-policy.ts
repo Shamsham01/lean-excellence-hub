@@ -727,49 +727,119 @@ export function buildControlledRetirementDeleteStatements(
   return lines.join("\n");
 }
 
-/**
- * Foundation-stage role_permissions retirement. `role_permissions_guard` blocks
- * DELETE on published role versions; disabled only for tenant-scoped purge.
- */
-export const FOUNDATION_ROLE_PERMISSIONS_RETIREMENT = {
-  table: "role_permissions",
-  guardTrigger: "role_permissions_guard",
-  tenantImmutabilityTrigger: "role_permissions_immutable_tenant",
-  description:
-    "Published role version permissions (guard blocks DELETE on published versions)",
-  lifecycleStage: "foundation" as const,
-  triggerFunction: "guard_role_permission",
-} as const;
+export type FoundationLifecycleGuardRetirementPolicy = {
+  table: string;
+  guardTrigger: string;
+  tenantImmutabilityTrigger?: string;
+  description: string;
+  triggerFunction: string;
+};
 
-export function buildFoundationRolePermissionsRetirementDeleteStatements(
+/**
+ * Foundation-stage lifecycle guards that block tenant-scoped DELETE during normal
+ * operation but must be bypassed narrowly during full tenant retirement.
+ */
+export const FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES: readonly FoundationLifecycleGuardRetirementPolicy[] =
+  [
+    {
+      table: "organisation_invitation_grants",
+      guardTrigger: "organisation_invitation_grants_guard",
+      tenantImmutabilityTrigger: "organisation_invitation_grants_immutable_tenant",
+      description:
+        "Sealed invitation authority grants (guard blocks DELETE when invitation is sealed)",
+      triggerFunction: "guard_invitation_grant",
+    },
+    {
+      table: "role_permissions",
+      guardTrigger: "role_permissions_guard",
+      tenantImmutabilityTrigger: "role_permissions_immutable_tenant",
+      description:
+        "Published role version permissions (guard blocks DELETE on published versions)",
+      triggerFunction: "guard_role_permission",
+    },
+    {
+      table: "role_versions",
+      guardTrigger: "role_versions_guard",
+      tenantImmutabilityTrigger: "role_versions_immutable_tenant",
+      description:
+        "Published or retired role versions (guard blocks DELETE unless draft)",
+      triggerFunction: "guard_role_version",
+    },
+    {
+      table: "problem_solving_method_stages",
+      guardTrigger: "problem_solving_method_stages_guard_immutable",
+      description:
+        "Problem-solving method stages on non-draft versions (guard blocks DELETE)",
+      triggerFunction: "guard_problem_solving_method_stage_immutable",
+    },
+    {
+      table: "problem_solving_method_versions",
+      guardTrigger: "problem_solving_method_versions_guard_immutable",
+      description:
+        "Published or archived problem-solving method versions (guard blocks DELETE)",
+      triggerFunction: "guard_problem_solving_method_version_immutable",
+    },
+  ];
+
+/** @deprecated Use FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES entry for role_permissions */
+export const FOUNDATION_ROLE_PERMISSIONS_RETIREMENT =
+  FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES.find(
+    (policy) => policy.table === "role_permissions",
+  )!;
+
+export function getFoundationLifecycleGuardRetirementPolicy(tableName: string) {
+  return FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES.find(
+    (policy) => policy.table === tableName,
+  );
+}
+
+export function getFoundationLifecycleGuardRetirementTriggerNames() {
+  return FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES.map(
+    (policy) => policy.guardTrigger,
+  );
+}
+
+export function buildFoundationLifecycleGuardRetirementDeleteStatements(
   targetOrgVar: string,
+  policy: FoundationLifecycleGuardRetirementPolicy,
   options?: { indent?: string },
 ) {
   const indent = options?.indent ?? "  ";
 
   return `
-${indent}-- Foundation-stage published role_permissions retirement.
-${indent}-- role_permissions_guard blocks DELETE on published role versions.
-${indent}alter table public.role_permissions
-${indent}  disable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger};
-${indent}delete from public.role_permissions
+${indent}-- Foundation-stage ${policy.table} retirement.
+${indent}-- ${policy.guardTrigger} blocks tenant DELETE during normal operation.
+${indent}alter table public.${policy.table}
+${indent}  disable trigger ${policy.guardTrigger};
+${indent}delete from public.${policy.table}
 ${indent}where organisation_id = ${targetOrgVar};
-${indent}alter table public.role_permissions
-${indent}  enable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger};
+${indent}alter table public.${policy.table}
+${indent}  enable trigger ${policy.guardTrigger};
 ${indent}if not exists (
 ${indent}  select 1
 ${indent}  from pg_trigger trigger_row
 ${indent}  join pg_class relation_row on relation_row.oid = trigger_row.tgrelid
 ${indent}  join pg_namespace namespace_row on namespace_row.oid = relation_row.relnamespace
 ${indent}  where namespace_row.nspname = 'public'
-${indent}    and relation_row.relname = '${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.table}'
-${indent}    and trigger_row.tgname = '${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger}'
+${indent}    and relation_row.relname = '${policy.table}'
+${indent}    and trigger_row.tgname = '${policy.guardTrigger}'
 ${indent}    and trigger_row.tgenabled <> 'D'
 ${indent}) then
 ${indent}  raise exception
-${indent}    'Foundation retirement failed to restore ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger} trigger.';
+${indent}    'Foundation retirement failed to restore ${policy.guardTrigger} trigger.';
 ${indent}end if;
 `;
+}
+
+export function buildFoundationRolePermissionsRetirementDeleteStatements(
+  targetOrgVar: string,
+  options?: { indent?: string },
+) {
+  return buildFoundationLifecycleGuardRetirementDeleteStatements(
+    targetOrgVar,
+    FOUNDATION_ROLE_PERMISSIONS_RETIREMENT,
+    options,
+  );
 }
 
 export function buildFoundationStageAppendOnlyDeleteStatements(

@@ -196,25 +196,36 @@ Storage stages had not started yet.
 
 CookieWorks remained verified foundation-only.
 
-**Fix (QA2f):** in the foundation/organisation deletion transaction only,
-temporarily disable **only** `role_permissions_guard`, delete
-`role_permissions` where `organisation_id = target_org_id`, immediately
-re-enable `role_permissions_guard`, and verify via `pg_trigger.tgenabled` that
-the trigger is not left disabled. `role_permissions_immutable_tenant` is **not**
-disabled. The change is transactional inside the existing `DO $$` block — a
-later failure rolls back the disable/enable pair.
+**Fix (QA2f–QA2g):** in the foundation/organisation deletion transaction only,
+temporarily disable **only** the exact lifecycle guard trigger required for each
+protected table, delete tenant-scoped rows where
+`organisation_id = target_org_id`, immediately re-enable that guard, and verify
+via `pg_trigger.tgenabled` that the trigger is not left disabled. Tenant
+immutability triggers (`*_immutable_tenant`) are **not** disabled. Controlled
+retirement now covers:
 
-**Additional confirmed blocker (not fixed in QA2f):** the next statement in the
-same foundation deletion path,
-`delete from public.role_versions where organisation_id = target_org_id`, will
-fail on published versions because `role_versions_guard` →
-`private.guard_role_version()` raises `published role versions are immutable`
-on `DELETE` when `status <> 'draft'`. Expect a follow-up QA patch before
-re-running destructive recovery on hosted.
+| Table | Guard trigger |
+| --- | --- |
+| `organisation_invitation_grants` | `organisation_invitation_grants_guard` |
+| `role_permissions` | `role_permissions_guard` |
+| `role_versions` | `role_versions_guard` |
+| `problem_solving_method_stages` | `problem_solving_method_stages_guard_immutable` |
+| `problem_solving_method_versions` | `problem_solving_method_versions_guard_immutable` |
+
+Foundation append-only audit ledgers (`security_audit_events`,
+`business_audit_events`) continue to use the existing append-only retirement
+helper. The change is transactional inside the existing `DO $$` block — a later
+failure rolls back the disable/enable pairs together.
+
+`organisation_invitation_grants` are deleted **before** `role_versions` to
+respect the `role_version_id` FK while both remain present.
+
+**No further deterministic lifecycle-guard blockers** are expected in
+`buildDeleteLegacyOrganisationSql()` after QA2g (see exhaustive audit in PR).
 
 **Never rerun destructive replacement blindly after failure.** Always perform a
 read-only dry-run first and confirm foundation RBAC counts (roles, published
-versions, role permissions, grants) match expectations.
+versions, role permissions, grants, invitations) match expectations.
 
 ## Target hosted project
 

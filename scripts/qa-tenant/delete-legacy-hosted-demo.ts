@@ -13,8 +13,9 @@ import {
 } from "./legacy-hosted-demo";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
 import {
-  buildFoundationRolePermissionsRetirementDeleteStatements,
+  buildFoundationLifecycleGuardRetirementDeleteStatements,
   buildFoundationStageAppendOnlyDeleteStatements,
+  getFoundationLifecycleGuardRetirementPolicy,
 } from "./tenant-retirement-policy";
 import { purgeTenantStorageObjects } from "./tenant-storage-cleanup";
 
@@ -364,21 +365,34 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   delete from public.membership_notification_contacts
   where organisation_id = target_org_id;
 
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("organisation_invitation_grants")!,
+  { indent: "  " },
+)}
+
   delete from public.access_grants
   where organisation_id = target_org_id;
 
   delete from public.role_grant_scope_policies
   where organisation_id = target_org_id;
 
-${buildFoundationRolePermissionsRetirementDeleteStatements("target_org_id", { indent: "  " })}
-
-  delete from public.role_versions
+  delete from public.workforce_provision_intents
   where organisation_id = target_org_id;
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("role_permissions")!,
+  { indent: "  " },
+)}
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("role_versions")!,
+  { indent: "  " },
+)}
 
   delete from public.roles
-  where organisation_id = target_org_id;
-
-  delete from public.organisation_invitation_grants
   where organisation_id = target_org_id;
 
   delete from public.organisation_invitation_provisioning
@@ -388,6 +402,27 @@ ${buildFoundationRolePermissionsRetirementDeleteStatements("target_org_id", { in
   where organisation_id = target_org_id;
 
 ${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "  " })}
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("problem_solving_method_stages")!,
+  { indent: "  " },
+)}
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("problem_solving_method_versions")!,
+  { indent: "  " },
+)}
+
+  delete from public.problem_solving_methods
+  where organisation_id = target_org_id;
+
+  delete from public.workforce_import_rows
+  where organisation_id = target_org_id;
+
+  delete from public.workforce_import_jobs
+  where organisation_id = target_org_id;
 
   delete from public.organisation_memberships
   where organisation_id = target_org_id;
@@ -405,24 +440,6 @@ ${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "  "
   where organisation_id = target_org_id;
 
   delete from public.benefit_reporting_settings
-  where organisation_id = target_org_id;
-
-  delete from public.problem_solving_method_stages
-  where organisation_id = target_org_id;
-
-  delete from public.problem_solving_method_versions
-  where organisation_id = target_org_id;
-
-  delete from public.problem_solving_methods
-  where organisation_id = target_org_id;
-
-  delete from public.workforce_import_rows
-  where organisation_id = target_org_id;
-
-  delete from public.workforce_import_jobs
-  where organisation_id = target_org_id;
-
-  delete from public.workforce_provision_intents
   where organisation_id = target_org_id;
 
   delete from private.workforce_aliases
