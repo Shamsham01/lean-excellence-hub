@@ -45,6 +45,39 @@ describe("buildSupabaseDbQueryArgs", () => {
     ]);
   });
 
+  it("uses the local Supabase binary directly when available", () => {
+    const args = buildSupabaseDbQueryArgs({
+      local: true,
+      outputFormat: "json",
+      sql: "select 1",
+    }).slice(1);
+
+    expect(args[0]).toBe("db");
+    expect(args).toContain("--local");
+  });
+
+  it("prefers --local when LEANHUB_QA_DB_LOCAL is set", () => {
+    const previous = process.env.LEANHUB_QA_DB_LOCAL;
+    process.env.LEANHUB_QA_DB_LOCAL = "1";
+
+    try {
+      const args = buildSupabaseDbQueryArgs({
+        databaseUrl: "postgresql://example",
+        outputFormat: "json",
+        sql: "select 1",
+      });
+
+      expect(args).toContain("--local");
+      expect(args).not.toContain("--db-url");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.LEANHUB_QA_DB_LOCAL;
+      } else {
+        process.env.LEANHUB_QA_DB_LOCAL = previous;
+      }
+    }
+  });
+
   it("does not inject agent flag for text output", () => {
     const args = buildSupabaseDbQueryArgs({
       local: true,

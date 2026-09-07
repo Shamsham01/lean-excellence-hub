@@ -54,6 +54,18 @@ describe("buildInventoryFromSqlPayload", () => {
 
     expect(isFoundationOnlyInventory(inventory)).toBe(false);
   });
+
+  it("allows retained template infrastructure after module-foundation-only purge", () => {
+    const inventory = buildInventoryFromSqlPayload({
+      ...foundationPayload,
+      counts: {
+        ...foundationPayload.counts,
+        templates: 2,
+      },
+    });
+
+    expect(isFoundationOnlyInventory(inventory)).toBe(true);
+  });
 });
 
 describe("collectCookieWorksInventoryViaSql", () => {

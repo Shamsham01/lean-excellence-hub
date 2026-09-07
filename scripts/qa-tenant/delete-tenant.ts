@@ -20,6 +20,7 @@ export function executePurgeTenantModuleDataSql(
 ) {
   runSupabaseDbQuery({
     databaseUrl,
+    heavy: true,
     sql: buildPurgeTenantModuleDataSql(organisationCode, options),
   });
 }
@@ -27,6 +28,7 @@ export function executePurgeTenantModuleDataSql(
 export function executeLegacyHostedDemoModulePurgeSql(databaseUrl: string) {
   runSupabaseDbQuery({
     databaseUrl,
+    heavy: true,
     sql: buildLegacyHostedDemoModulePurgeSql(),
   });
 }

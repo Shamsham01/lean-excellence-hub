@@ -130,3 +130,57 @@ connection role. The harness therefore:
 A future maintainer-only `SECURITY DEFINER` purge RPC (migration) would be required for destructive
 cleanup of workflow-completed module data. Until then, hosted destructive reset must not be used
 for tenants that have entered those irreversible states.
+
+## Cross-stage FK dependencies (QA2e)
+
+Some foundation-preserved rows reference parents that are not themselves foundation tables.
+During `full-tenant-removal`, those parents must **not** be deleted in the module purge while
+foundation-stage append-only audit ledgers still exist.
+
+### Policy classes
+
+| Class | Constant | Lifecycle |
+| --- | --- | --- |
+| Module-purge infrastructure | `MODULE_PURGE_INFRASTRUCTURE_TABLES` | Deleted explicitly during module purge (`templates`, `template_*`) |
+| Foundation-stage dependency | `FOUNDATION_STAGE_DEPENDENCY_TABLES` | Deferred to foundation deletion after audit ledger retirement |
+
+`FOUNDATION_STAGE_DEPENDENCY_TABLES` currently contains only `resource_records`.
+
+### Why `resource_records` survives module purge
+
+`public.business_audit_events` is foundation-stage append-only and may carry a non-null
+`resource_record_id`. The schema enforces:
+
+```text
+business_audit_events (organisation_id, resource_record_id)
+  -> resource_records (organisation_id, id) ON DELETE RESTRICT
+```
+
+Deleting `resource_records` during module purge therefore fails with
+`business_audit_events_resource_fkey` whenever audit evidence references a resource record.
+`security_audit_events` does not reference `resource_records`; the cross-stage edge is specific
+to the business audit ledger.
+
+### Full tenant removal order
+
+```text
+MODULE PURGE
+  append-only unknown guard
+  cross-stage FK guard
+  private notification infrastructure
+  controlled module append-only retirement
+  maturity explicit unlock deletes
+  generic module DELETE loop
+  template infrastructure deletes
+  retain: security_audit_events, business_audit_events, resource_records
+
+FOUNDATION DELETION
+  foundation append-only controlled delete (security + business audit ledgers)
+  foundation-stage dependency delete (resource_records)
+  memberships + remaining foundation graph
+  organisation row
+```
+
+`scripts/qa-tenant/cross-stage-fk-safety.ts` derives the live FK catalog from
+`information_schema` and fails closed when a foundation-preserved child has a RESTRICT / NO ACTION
+edge to a module-deleted parent that is not explicitly deferred.

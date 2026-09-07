@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  PURGE_INFRASTRUCTURE_TABLES,
+  FOUNDATION_STAGE_DEPENDENCY_TABLES,
+  MODULE_PURGE_INFRASTRUCTURE_TABLES,
   listAppendOnlyDeleteTablesSql,
 } from "./deletion-graph";
 import { runSupabaseDbQueryJson } from "./db-cli";
@@ -108,6 +109,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select id, code
       from public.organisations
@@ -127,6 +129,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   const moduleRows = runSupabaseDbQueryJson<{ tables: string[] }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: listModuleTablesSql(),
   });
   const appendOnlyRows = runSupabaseDbQueryJson<{
@@ -134,6 +137,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: listAppendOnlyDeleteTablesSql(),
   });
 
@@ -144,13 +148,17 @@ export function assertLegacyHostedDemoFullyAbsent(
     ),
     ...MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES.map((policy) => policy.table),
   ]);
-  const infrastructureTables = new Set<string>(PURGE_INFRASTRUCTURE_TABLES);
+  const infrastructureTables = new Set<string>([
+    ...MODULE_PURGE_INFRASTRUCTURE_TABLES,
+    ...FOUNDATION_STAGE_DEPENDENCY_TABLES,
+  ]);
 
   const appendOnlyInventoryRows = runSupabaseDbQueryJson<{
     rows: Array<{ table: string; count: number }>;
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: buildAppendOnlyTenantRowCountSql(
       legacyOrgId,
       [...appendOnlyTables].sort(),
@@ -182,6 +190,7 @@ export function assertLegacyHostedDemoFullyAbsent(
     }>({
       databaseUrl,
       outputFormat: "json",
+      retryTransientConnection: true,
       sql: `
         with counts as (
           ${buildOrganisationOwnedCountUnionSql(legacyOrgId, tablesToVerify)}
@@ -197,12 +206,39 @@ export function assertLegacyHostedDemoFullyAbsent(
     }
   }
 
+  if (FOUNDATION_STAGE_DEPENDENCY_TABLES.length > 0) {
+    const dependencyRows = runSupabaseDbQueryJson<{
+      resource: string;
+      count: number;
+    }>({
+      databaseUrl,
+      outputFormat: "json",
+      retryTransientConnection: true,
+      sql: `
+        with counts as (
+          ${buildOrganisationOwnedCountUnionSql(
+            legacyOrgId,
+            FOUNDATION_STAGE_DEPENDENCY_TABLES,
+          )}
+        )
+        select resource, count
+        from counts
+        where count > 0;
+      `,
+    });
+
+    for (const row of dependencyRows) {
+      failures.push(`${row.resource}=${row.count}`);
+    }
+  }
+
   const indirectRows = runSupabaseDbQueryJson<{
     resource: string;
     count: number;
   }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       with counts as (
         ${buildLegacyIndirectCountSql(legacyOrgId)}
@@ -222,6 +258,7 @@ export function assertLegacyHostedDemoFullyAbsent(
     {
       databaseUrl,
       outputFormat: "json",
+      retryTransientConnection: true,
       sql: buildTenantPrivateInfrastructureCountSql(legacyOrgId),
     },
   );
@@ -242,6 +279,7 @@ export function assertLegacyHostedDemoFullyAbsent(
   const storageRows = runSupabaseDbQueryJson<{ storage_objects: number }>({
     databaseUrl,
     outputFormat: "json",
+    retryTransientConnection: true,
     sql: `
       select
         (select count(*)::int
