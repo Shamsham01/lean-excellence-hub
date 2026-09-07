@@ -117,10 +117,13 @@ Module **management** permissions are never implied by baseline.
 
 ## Handoff — Site isolation (PR 2)
 
-- Operational records use `organisation_id` + `organisational_unit_id`; no universal `site_id` yet
-- `unit_subtree` scope follows hierarchy, not site boundary
-- Multi-site CookieWorks QA requires explicit site security boundary before smoke testing
-- RBAC2 scoped grants are necessary but not sufficient for cross-site denial
+**Implemented in PR2:** See `docs/development/site-security-boundary.md`.
+
+- Site resolution via MAT1a semantic normalisation + closure table
+- `site_unit_id` immutable snapshot on operational root records
+- Baseline organisation-mode tightened to home site
+- `unit_subtree` grants site-contained; `organisation` grants cross-site
+- Cross-site reparent blocked pending Organisation Structure V2
 
 ## Handoff — Organisation Structure V2 (PR 3)
 
