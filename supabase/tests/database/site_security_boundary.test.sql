@@ -1,6 +1,6 @@
 begin;
 
-select plan(42);
+select plan(43);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -233,6 +233,17 @@ from public.maturity_model_versions model_version
 where model_version.organisation_id = (select id from site_ids where key = 'organisation')
   and model_version.model_id = (select id from site_ids where key = 'maturity_model')
   and model_version.version_number = 1;
+
+insert into site_ids (key, id)
+select 'maturity_pillar', public.add_maturity_pillar(
+  (select id from site_ids where key = 'maturity_model_version'),
+  'Operations',
+  1,
+  null,
+  1,
+  null,
+  'Operations pillar'
+);
 
 select ok(
   public.publish_maturity_model_version((select id from site_ids where key = 'maturity_model_version')),
