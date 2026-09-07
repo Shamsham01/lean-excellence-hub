@@ -455,9 +455,7 @@ test.describe("Milestone 11 closure", () => {
     ).toBeVisible();
 
     await page.goto(caseUrl);
-    await expect(
-      page.getByTestId("problem-solving-detail-page"),
-    ).toBeVisible();
+    await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible();
   });
 
   test("operator cannot open problem solving create route", async ({
