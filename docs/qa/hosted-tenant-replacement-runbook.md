@@ -189,6 +189,74 @@ the block.
 - Added cross-stage FK pre-mutation guard and local integration fixture coverage for business audit
   rows with real `resource_record_id` values.
 
+## Incident note (QA2f): published role_permissions blocked foundation deletion
+
+During the third real hosted QA2 recovery attempt (`--destructive
+--preserve-existing-cookieworks`), foundation deletion aborted inside the
+PostgreSQL `DO $$ ... $$` organisation deletion with:
+
+```text
+permissions may change only on a draft role version
+```
+
+**Root cause:** `public.role_permissions` is protected by
+`role_permissions_guard` → `private.guard_role_permission()`. The guard
+correctly prevents mutating permissions attached to published role versions
+during normal operation. Full tenant retirement nevertheless must delete those
+rows when removing the organisation.
+
+**Why hosted state was unchanged:** same as QA2c/QA2d — foundation deletion runs
+inside a single PostgreSQL `DO` block. The guard exception aborted that
+statement and PostgreSQL rolled back all mutations from the block. Auth and
+Storage stages had not started yet.
+
+**Hosted read-only state at failure (module purge already complete):**
+
+| Area | Count |
+| --- | --- |
+| Legacy organisation | present (`402811bb-aa05-4128-b7e5-a1e3b359b92e`) |
+| Memberships | 8 |
+| Organisational units | 14 |
+| Role grants | 16 |
+| Private infrastructure | 0 |
+| Storage objects | 0 |
+| Module-owned rows | 0 |
+| Module append-only/history rows | 0 |
+| Remaining append-only foundation rows | `business_audit_events` 160, `security_audit_events` 100 |
+
+CookieWorks remained verified foundation-only.
+
+**Fix (QA2f–QA2g):** in the foundation/organisation deletion transaction only,
+temporarily disable **only** the exact lifecycle guard trigger required for each
+protected table, delete tenant-scoped rows where
+`organisation_id = target_org_id`, immediately re-enable that guard, and verify
+via `pg_trigger.tgenabled` that the trigger is not left disabled. Tenant
+immutability triggers (`*_immutable_tenant`) are **not** disabled. Controlled
+retirement now covers:
+
+| Table | Guard trigger |
+| --- | --- |
+| `organisation_invitation_grants` | `organisation_invitation_grants_guard` |
+| `role_permissions` | `role_permissions_guard` |
+| `role_versions` | `role_versions_guard` |
+| `problem_solving_method_stages` | `problem_solving_method_stages_guard_immutable` |
+| `problem_solving_method_versions` | `problem_solving_method_versions_guard_immutable` |
+
+Foundation append-only audit ledgers (`security_audit_events`,
+`business_audit_events`) continue to use the existing append-only retirement
+helper. The change is transactional inside the existing `DO $$` block — a later
+failure rolls back the disable/enable pairs together.
+
+`organisation_invitation_grants` are deleted **before** `role_versions` to
+respect the `role_version_id` FK while both remain present.
+
+**No further deterministic lifecycle-guard blockers** are expected in
+`buildDeleteLegacyOrganisationSql()` after QA2g (see exhaustive audit in PR).
+
+**Never rerun destructive replacement blindly after failure.** Always perform a
+read-only dry-run first and confirm foundation RBAC counts (roles, published
+versions, role permissions, grants, invitations) match expectations.
+
 ## Target hosted project
 
 | Field | Value |

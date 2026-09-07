@@ -10,9 +10,13 @@ import {
   assertTenantRetirementPolicyConsistency,
   buildAppendOnlyUnknownGuardStatements,
   buildControlledRetirementDeleteStatements,
+  buildFoundationLifecycleGuardRetirementDeleteStatements,
+  buildFoundationRolePermissionsRetirementDeleteStatements,
   buildFoundationStageAppendOnlyDeleteStatements,
   classifyDiscoveredAppendOnlyTable,
   collectAppendOnlyInventoryFailures,
+  FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES,
+  FOUNDATION_ROLE_PERMISSIONS_RETIREMENT,
   FOUNDATION_STAGE_APPEND_ONLY_TABLES,
   formatAppendOnlyInventoryLines,
   getApprovedAppendOnlyTableNames,
@@ -22,6 +26,7 @@ import {
   MODULE_STAGE_CUSTOM_APPEND_ONLY_TABLES,
   MODULE_STAGE_STANDARD_APPEND_ONLY_TABLES,
 } from "../../scripts/qa-tenant/tenant-retirement-policy";
+import { buildDeleteLegacyOrganisationSql } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
 import {
   buildLegacyHostedDemoModulePurgeSql,
   buildPurgeTenantModuleDataSql,
@@ -285,6 +290,88 @@ describe("tenant purge SQL classification", () => {
     expect(statements).toContain(
       "Must run before organisation_memberships deletion",
     );
+  });
+
+  it("builds foundation-stage lifecycle guard retirement with guard restore verification", () => {
+    for (const policy of FOUNDATION_LIFECYCLE_GUARD_RETIREMENT_POLICIES) {
+      const statements =
+        buildFoundationLifecycleGuardRetirementDeleteStatements(
+          "target_org_id",
+          policy,
+        );
+
+      expect(statements).toContain(`disable trigger ${policy.guardTrigger}`);
+      expect(statements).toContain(`delete from public.${policy.table}`);
+      expect(statements).toContain("where organisation_id = target_org_id");
+      expect(statements).toContain(`enable trigger ${policy.guardTrigger}`);
+      if (policy.tenantImmutabilityTrigger) {
+        expect(statements).not.toContain(
+          `disable trigger ${policy.tenantImmutabilityTrigger}`,
+        );
+      }
+      expect(statements).toContain(
+        `Foundation retirement failed to restore ${policy.guardTrigger} trigger`,
+      );
+      expect(statements).toContain("trigger_row.tgenabled <> 'D'");
+    }
+  });
+
+  it("builds foundation-stage published role_permissions retirement with guard restore verification", () => {
+    const statements =
+      buildFoundationRolePermissionsRetirementDeleteStatements("target_org_id");
+
+    expect(statements).toContain(
+      `disable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger}`,
+    );
+    expect(statements).toContain("delete from public.role_permissions");
+    expect(statements).toContain("where organisation_id = target_org_id");
+    expect(statements).toContain(
+      `enable trigger ${FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.guardTrigger}`,
+    );
+    expect(statements).not.toContain(
+      FOUNDATION_ROLE_PERMISSIONS_RETIREMENT.tenantImmutabilityTrigger,
+    );
+    expect(statements).toContain(
+      "Foundation retirement failed to restore role_permissions_guard trigger",
+    );
+    expect(statements).toContain("trigger_row.tgenabled <> 'D'");
+  });
+
+  it("uses foundation lifecycle guard retirement in legacy organisation deletion SQL", () => {
+    const sql = buildDeleteLegacyOrganisationSql();
+    const invitationGrantDisable = sql.indexOf(
+      "disable trigger organisation_invitation_grants_guard",
+    );
+    const rolePermissionsDisable = sql.indexOf(
+      "disable trigger role_permissions_guard",
+    );
+    const roleVersionsDisable = sql.indexOf(
+      "disable trigger role_versions_guard",
+    );
+    const methodStagesDisable = sql.indexOf(
+      "disable trigger problem_solving_method_stages_guard_immutable",
+    );
+    const methodVersionsDisable = sql.indexOf(
+      "disable trigger problem_solving_method_versions_guard_immutable",
+    );
+
+    expect(invitationGrantDisable).toBeGreaterThanOrEqual(0);
+    expect(rolePermissionsDisable).toBeGreaterThan(invitationGrantDisable);
+    expect(roleVersionsDisable).toBeGreaterThan(rolePermissionsDisable);
+    expect(methodStagesDisable).toBeGreaterThan(roleVersionsDisable);
+    expect(methodVersionsDisable).toBeGreaterThan(methodStagesDisable);
+
+    expect(sql).not.toContain(
+      "disable trigger role_permissions_immutable_tenant",
+    );
+    expect(sql).not.toContain(
+      "disable trigger organisation_invitation_grants_immutable_tenant",
+    );
+    expect(sql).not.toContain("disable trigger role_versions_immutable_tenant");
+    expect(sql).not.toMatch(/session_replication_role/i);
+    expect(sql).not.toMatch(/disable trigger all/i);
+    expect(sql).not.toMatch(/\btruncate\b/i);
+    expect(sql).not.toMatch(/\bcascade\b/i);
   });
 
   it("keeps foundation-stage dependency tables out of module-purge infrastructure", () => {

@@ -110,7 +110,11 @@ describe.skipIf(!hasLocalSupabase)(
 
       const firstInventory = collectCookieWorksInventory(env.databaseUrl);
       expect(firstInventory.organisation?.code).toBe(QA_ORGANISATION.code);
-      expect(isFoundationOnlyInventory(firstInventory)).toBe(true);
+      expect(
+        isFoundationOnlyInventory(firstInventory, {
+          databaseUrl: env.databaseUrl,
+        }),
+      ).toBe(true);
 
       await seedCookieWorksFoundation({
         admin,
@@ -132,7 +136,11 @@ describe.skipIf(!hasLocalSupabase)(
 
       expect(memberships).toBe(7);
       expect(units).toBe(QA_UNITS.length);
-      expect(isFoundationOnlyInventory(secondInventory)).toBe(true);
+      expect(
+        isFoundationOnlyInventory(secondInventory, {
+          databaseUrl: env.databaseUrl,
+        }),
+      ).toBe(true);
     }, 180_000);
 
     it("purges representative module fixtures while preserving Apex and isolation tenants", async () => {
@@ -226,7 +234,11 @@ describe.skipIf(!hasLocalSupabase)(
       }
 
       const cookieInventory = collectCookieWorksInventory(env.databaseUrl);
-      expect(isFoundationOnlyInventory(cookieInventory)).toBe(true);
+      expect(
+        isFoundationOnlyInventory(cookieInventory, {
+          databaseUrl: env.databaseUrl,
+        }),
+      ).toBe(true);
     }, 300_000);
 
     it("supports repeatable CookieWorks reset after reseeding module fixtures", async () => {

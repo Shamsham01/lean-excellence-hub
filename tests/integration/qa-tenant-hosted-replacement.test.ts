@@ -7,10 +7,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { QA_ORGANISATION_CODE } from "../../scripts/qa-tenant/constants";
 import {
   assertLegacyAuthUsersIsolated,
+  buildDeleteLegacyOrganisationSql,
   captureLegacyDeletionContext,
   deleteLegacyHostedDemoTenant,
+  executeDeleteLegacyHostedDemoOrganisationSql,
 } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
-import { executeDeleteLegacyHostedDemoOrganisationSql } from "../../scripts/qa-tenant/delete-legacy-hosted-demo";
 import {
   executeLegacyHostedDemoModulePurgeSql,
   purgeCookieWorksTenantModules,
@@ -26,9 +27,11 @@ import { LEGACY_HOSTED_DEMO_ORGANISATION } from "../../scripts/qa-tenant/legacy-
 import {
   cleanupLegacyReplacementFixture,
   countLegacyOrganisationRows,
+  insertLegacyReplacementFoundationRetirementFixture,
   LEGACY_REPLACEMENT_FIXTURE_MEMBERS,
   LEGACY_REPLACEMENT_ISOLATION_ORG,
   seedLegacyReplacementFixture,
+  snapshotFoundationRetirementFixtureCounts,
   snapshotLegacyFixtureState,
 } from "../../scripts/qa-tenant/legacy-replacement-fixture";
 import { loadLocalSupabaseEnv } from "../../scripts/qa-tenant/local-env";
@@ -39,6 +42,7 @@ import {
 } from "../../scripts/qa-tenant/integration-phase-log";
 import { buildTenantPrivateInfrastructureCountSql } from "../../scripts/qa-tenant/private-infrastructure-purge";
 import { collectTenantInventory } from "../../scripts/qa-tenant/tenant-inventory";
+import { getFoundationLifecycleGuardRetirementTriggerNames } from "../../scripts/qa-tenant/tenant-retirement-policy";
 import {
   assertCookieWorksCompleteFoundationVerified,
   HOSTED_LEGACY_RECOVERY_VERIFIED_MARKER,
@@ -462,6 +466,171 @@ describe
 
       endIntegrationTest();
     }, 180_000);
+
+    it("completes production foundation deletion for guarded lifecycle foundation state", async () => {
+      await cleanupLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+      const fixture = await seedLegacyReplacementFixture({
+        admin,
+        databaseUrl: env.databaseUrl,
+      });
+
+      const legacyMembershipRows = runSupabaseDbQueryJson<{ id: string }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select id
+          from public.organisation_memberships
+          where organisation_id = '${fixture.organisationId}'::uuid
+          order by created_at;
+        `,
+      });
+      const isolationMembershipId = runSupabaseDbQueryJson<{ id: string }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select id
+          from public.organisation_memberships
+          where organisation_id = '${fixture.isolationOrganisationId}'::uuid
+          order by created_at
+          limit 1;
+        `,
+      })[0]?.id;
+      const legacyMembershipId = legacyMembershipRows[0]?.id;
+      const legacyGranteeMembershipId = legacyMembershipRows[1]?.id;
+
+      if (
+        !legacyMembershipId ||
+        !legacyGranteeMembershipId ||
+        !isolationMembershipId
+      ) {
+        throw new Error(
+          "Foundation retirement fixture missing required membership rows.",
+        );
+      }
+
+      insertLegacyReplacementFoundationRetirementFixture({
+        databaseUrl: env.databaseUrl,
+        organisationId: fixture.organisationId,
+        membershipId: legacyMembershipId,
+        granteeMembershipId: legacyGranteeMembershipId,
+        fixtureKey: "legacy",
+      });
+      insertLegacyReplacementFoundationRetirementFixture({
+        databaseUrl: env.databaseUrl,
+        organisationId: fixture.isolationOrganisationId,
+        membershipId: isolationMembershipId,
+        fixtureKey: "isolation",
+      });
+
+      const legacyBefore = snapshotFoundationRetirementFixtureCounts(
+        env.databaseUrl,
+        fixture.organisationId,
+      );
+      const isolationBefore = snapshotFoundationRetirementFixtureCounts(
+        env.databaseUrl,
+        fixture.isolationOrganisationId,
+      );
+
+      expect(legacyBefore.rolePermissions).toBeGreaterThan(0);
+      expect(legacyBefore.roleVersions).toBeGreaterThan(0);
+      expect(legacyBefore.accessGrants).toBeGreaterThan(0);
+      expect(legacyBefore.invitationGrants).toBeGreaterThan(0);
+      expect(legacyBefore.problemSolvingMethodVersions).toBeGreaterThan(0);
+      expect(legacyBefore.problemSolvingMethodStages).toBeGreaterThan(0);
+      expect(isolationBefore.rolePermissions).toBeGreaterThan(0);
+      expect(isolationBefore.invitationGrants).toBeGreaterThan(0);
+
+      const productionSql = buildDeleteLegacyOrganisationSql();
+      expect(productionSql).not.toMatch(/session_replication_role/i);
+      expect(productionSql).not.toMatch(/disable trigger all/i);
+      expect(productionSql).not.toMatch(/\btruncate\b/i);
+      expect(productionSql).not.toMatch(/\bcascade\b/i);
+
+      const guardedDeleteCases = [
+        {
+          table: "role_permissions",
+          message: /permissions may change only on a draft role version/i,
+        },
+        {
+          table: "role_versions",
+          message: /published role versions are immutable/i,
+        },
+        {
+          table: "organisation_invitation_grants",
+          message: /sealed invitation authority is immutable/i,
+        },
+        {
+          table: "problem_solving_method_stages",
+          message: /method stages are immutable unless version is draft/i,
+        },
+        {
+          table: "problem_solving_method_versions",
+          message: /published or archived method version cannot be deleted/i,
+        },
+      ] as const;
+
+      for (const guardedDeleteCase of guardedDeleteCases) {
+        expect(() =>
+          runSupabaseDbQuery({
+            databaseUrl: env.databaseUrl,
+            sql: `
+              delete from public.${guardedDeleteCase.table}
+              where organisation_id = '${fixture.organisationId}'::uuid;
+            `,
+          }),
+        ).toThrow(SupabaseDbQueryError);
+      }
+
+      executeLegacyHostedDemoModulePurgeSql(env.databaseUrl);
+      executeDeleteLegacyHostedDemoOrganisationSql(env.databaseUrl);
+
+      expect(countLegacyOrganisationRows(env.databaseUrl)).toBe(0);
+
+      const legacyAfter = snapshotFoundationRetirementFixtureCounts(
+        env.databaseUrl,
+        fixture.organisationId,
+      );
+      const isolationAfter = snapshotFoundationRetirementFixtureCounts(
+        env.databaseUrl,
+        fixture.isolationOrganisationId,
+      );
+
+      expect(legacyAfter.roles).toBe(0);
+      expect(legacyAfter.roleVersions).toBe(0);
+      expect(legacyAfter.rolePermissions).toBe(0);
+      expect(legacyAfter.accessGrants).toBe(0);
+      expect(legacyAfter.invitations).toBe(0);
+      expect(legacyAfter.invitationGrants).toBe(0);
+      expect(legacyAfter.problemSolvingMethods).toBe(0);
+      expect(legacyAfter.problemSolvingMethodVersions).toBe(0);
+      expect(legacyAfter.problemSolvingMethodStages).toBe(0);
+      expect(legacyAfter.securityAuditEvents).toBe(0);
+      expect(legacyAfter.businessAuditEvents).toBe(0);
+
+      expect(isolationAfter).toEqual(isolationBefore);
+
+      const disabledGuards = runSupabaseDbQueryJson<{ tgname: string }>({
+        databaseUrl: env.databaseUrl,
+        outputFormat: "json",
+        sql: `
+          select trigger_row.tgname
+          from pg_trigger trigger_row
+          join pg_class relation_row on relation_row.oid = trigger_row.tgrelid
+          join pg_namespace namespace_row on namespace_row.oid = relation_row.relnamespace
+          where namespace_row.nspname = 'public'
+            and trigger_row.tgname in (${getFoundationLifecycleGuardRetirementTriggerNames()
+              .map((triggerName) => `'${triggerName}'`)
+              .join(", ")})
+            and trigger_row.tgenabled = 'D'
+          order by trigger_row.tgname;
+        `,
+      });
+
+      expect(disabledGuards).toEqual([]);
+    }, 300_000);
 
     it("fails closed when generic delete is attempted against ai_usage_events", async () => {
       startIntegrationTest(

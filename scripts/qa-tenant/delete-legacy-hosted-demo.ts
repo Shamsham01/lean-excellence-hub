@@ -12,8 +12,12 @@ import {
   LEGACY_HOSTED_DEMO_EXPECTED_MEMBERSHIPS,
 } from "./legacy-hosted-demo";
 import { buildTenantPrivateInfrastructurePurgeStatements } from "./private-infrastructure-purge";
-import { buildFoundationStageAppendOnlyDeleteStatements } from "./tenant-retirement-policy";
 import { buildFoundationStageDependencyDeleteStatements } from "./deletion-graph";
+import {
+  buildFoundationLifecycleGuardRetirementDeleteStatements,
+  buildFoundationStageAppendOnlyDeleteStatements,
+  getFoundationLifecycleGuardRetirementPolicy,
+} from "./tenant-retirement-policy";
 import { purgeTenantStorageObjects } from "./tenant-storage-cleanup";
 
 function escapeSqlLiteral(value: string) {
@@ -326,7 +330,7 @@ export function buildDeleteLegacyHostedDemoOrganisationSql() {
   return buildDeleteLegacyOrganisationSql();
 }
 
-function buildDeleteLegacyOrganisationSql() {
+export function buildDeleteLegacyOrganisationSql() {
   const orgId = LEGACY_HOSTED_DEMO_ORGANISATION.id;
   const orgCode = escapeSqlLiteral(LEGACY_HOSTED_DEMO_ORGANISATION.code);
 
@@ -366,22 +370,36 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   delete from public.membership_notification_contacts
   where organisation_id = target_org_id;
 
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy(
+    "organisation_invitation_grants",
+  )!,
+  { indent: "  " },
+)}
+
   delete from public.access_grants
   where organisation_id = target_org_id;
 
   delete from public.role_grant_scope_policies
   where organisation_id = target_org_id;
 
-  delete from public.role_permissions
+  delete from public.workforce_provision_intents
   where organisation_id = target_org_id;
 
-  delete from public.role_versions
-  where organisation_id = target_org_id;
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("role_permissions")!,
+  { indent: "  " },
+)}
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("role_versions")!,
+  { indent: "  " },
+)}
 
   delete from public.roles
-  where organisation_id = target_org_id;
-
-  delete from public.organisation_invitation_grants
   where organisation_id = target_org_id;
 
   delete from public.organisation_invitation_provisioning
@@ -391,6 +409,29 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   where organisation_id = target_org_id;
 
 ${buildFoundationStageAppendOnlyDeleteStatements("target_org_id", { indent: "  " })}
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy("problem_solving_method_stages")!,
+  { indent: "  " },
+)}
+
+${buildFoundationLifecycleGuardRetirementDeleteStatements(
+  "target_org_id",
+  getFoundationLifecycleGuardRetirementPolicy(
+    "problem_solving_method_versions",
+  )!,
+  { indent: "  " },
+)}
+
+  delete from public.problem_solving_methods
+  where organisation_id = target_org_id;
+
+  delete from public.workforce_import_rows
+  where organisation_id = target_org_id;
+
+  delete from public.workforce_import_jobs
+  where organisation_id = target_org_id;
 
 ${buildFoundationStageDependencyDeleteStatements("target_org_id", { indent: "  " })}
 
@@ -410,24 +451,6 @@ ${buildFoundationStageDependencyDeleteStatements("target_org_id", { indent: "  "
   where organisation_id = target_org_id;
 
   delete from public.benefit_reporting_settings
-  where organisation_id = target_org_id;
-
-  delete from public.problem_solving_method_stages
-  where organisation_id = target_org_id;
-
-  delete from public.problem_solving_method_versions
-  where organisation_id = target_org_id;
-
-  delete from public.problem_solving_methods
-  where organisation_id = target_org_id;
-
-  delete from public.workforce_import_rows
-  where organisation_id = target_org_id;
-
-  delete from public.workforce_import_jobs
-  where organisation_id = target_org_id;
-
-  delete from public.workforce_provision_intents
   where organisation_id = target_org_id;
 
   delete from private.workforce_aliases

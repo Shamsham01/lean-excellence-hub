@@ -60,7 +60,7 @@ describe("buildInventoryFromSqlPayload", () => {
       ...foundationPayload,
       counts: {
         ...foundationPayload.counts,
-        templates: 2,
+        templates: 3,
       },
     });
 
