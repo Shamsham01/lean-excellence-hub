@@ -30,6 +30,15 @@ env:
   CREDENTIAL_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 jobs:
+  quality-warmup:
+    name: Prepare quality gate
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Allow Fast CI to register on synchronize
+        run: sleep 30
+
   changes:
     name: Detect specialised regression scope
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
@@ -51,7 +60,13 @@ jobs:
 
   quality:
     name: Full Regression / Quality
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - quality-warmup
+    if: >-
+      always() &&
+      !cancelled() &&
+      (needs.quality-warmup.result == 'success' || needs.quality-warmup.result == 'skipped') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

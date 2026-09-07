@@ -69,20 +69,31 @@ runs:
                     new Date(left.created_at).getTime(),
                 );
 
-              const latestRun = activeRuns[0];
+              const inProgressRun = activeRuns.find(
+                (run) => run.status !== "completed",
+              );
 
-              if (!latestRun) {
+              if (inProgressRun) {
+                core.info(
+                  `${workflowFile} status=${inProgressRun.status} conclusion=${inProgressRun.conclusion ?? "pending"}`,
+                );
+              } else if (activeRuns.length === 0) {
                 core.info(`${workflowFile} has not started yet`);
               } else {
+                const latestRun = activeRuns[0];
                 core.info(
                   `${workflowFile} status=${latestRun.status} conclusion=${latestRun.conclusion ?? "pending"}`,
                 );
 
-                if (latestRun.status === "completed") {
-                  if (latestRun.conclusion === "success") {
-                    return;
-                  }
+                if (latestRun.conclusion === "success") {
+                  return;
+                }
 
+                if (latestRun.conclusion === "cancelled") {
+                  core.info(
+                    `${workflowFile} latest run was cancelled; waiting for the superseding run`,
+                  );
+                } else {
                   core.setFailed(
                     `${workflowFile} completed with conclusion ${latestRun.conclusion}`,
                   );
@@ -132,10 +143,16 @@ runs:
                     return;
                   }
 
-                  core.setFailed(
-                    `"${checkName}" completed with conclusion ${latestRun.conclusion}`,
-                  );
-                  return;
+                  if (latestRun.conclusion === "cancelled") {
+                    core.info(
+                      `"${checkName}" latest run was cancelled; waiting for the superseding run`,
+                    );
+                  } else {
+                    core.setFailed(
+                      `"${checkName}" completed with conclusion ${latestRun.conclusion}`,
+                    );
+                    return;
+                  }
                 }
               }
 
