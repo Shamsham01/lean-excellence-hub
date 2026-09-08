@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(21);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -118,17 +118,65 @@ from public.organisation_memberships membership_row
 where membership_row.organisation_id = (select id from ps_baseline_ids where key = 'organisation')
   and membership_row.user_id = 'a1500000-0000-0000-0000-000000000001';
 
-insert into ps_baseline_ids (key, id)
-select 'operator_membership', membership_row.id
-from public.organisation_memberships membership_row
-where membership_row.organisation_id = (select id from ps_baseline_ids where key = 'organisation')
-  and membership_row.user_id = 'a1500000-0000-0000-0000-000000000002';
+reset role;
 
+with inserted_operator_membership as (
+  insert into public.organisation_memberships (
+    organisation_id,
+    user_id,
+    status,
+    activated_at
+  )
+  values (
+    (select id from ps_baseline_ids where key = 'organisation'),
+    'a1500000-0000-0000-0000-000000000002',
+    'active',
+    statement_timestamp()
+  )
+  returning id
+)
 insert into ps_baseline_ids (key, id)
-select 'outsider_membership', membership_row.id
-from public.organisation_memberships membership_row
-where membership_row.organisation_id = (select id from ps_baseline_ids where key = 'organisation')
-  and membership_row.user_id = 'a1500000-0000-0000-0000-000000000003';
+select 'operator_membership', id from inserted_operator_membership;
+
+with inserted_outsider_membership as (
+  insert into public.organisation_memberships (
+    organisation_id,
+    user_id,
+    status,
+    activated_at
+  )
+  values (
+    (select id from ps_baseline_ids where key = 'organisation'),
+    'a1500000-0000-0000-0000-000000000003',
+    'active',
+    statement_timestamp()
+  )
+  returning id
+)
+insert into ps_baseline_ids (key, id)
+select 'outsider_membership', id from inserted_outsider_membership;
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id in (
+  'a1500000-0000-0000-0000-000000000001',
+  'a1500000-0000-0000-0000-000000000002',
+  'a1500000-0000-0000-0000-000000000003'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"a1500000-0000-0000-0000-000000000001","role":"authenticated","session_id":"a1510000-0000-0000-0000-000000000001","email":"ps-baseline-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from ps_baseline_ids where key = 'organisation')),
+  'owner re-selects organisation after membership provisioning'
+);
 
 select ok(
   public.assign_membership_job_function(
@@ -224,8 +272,8 @@ select throws_ok(
     'select public.get_problem_solving_detail(%L::uuid)',
     (select id from ps_baseline_ids where key = 'case')
   ),
-  'problem solving detail is not authorised',
   '42501',
+  'problem solving detail is not authorised',
   'baseline operator cannot read same-site case detail by known UUID'
 );
 
@@ -234,8 +282,8 @@ select throws_ok(
     'select public.get_problem_solving_detail(%L::uuid)',
     (select id from ps_baseline_ids where key = 'exeter_case')
   ),
-  'problem solving detail is not authorised',
   '42501',
+  'problem solving detail is not authorised',
   'baseline operator cannot read cross-site case detail by known UUID'
 );
 

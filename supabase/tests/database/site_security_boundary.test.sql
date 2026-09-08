@@ -972,8 +972,8 @@ select throws_ok(
     'select public.get_problem_solving_detail(%L::uuid)',
     (select id from site_ids where key = 'bodmin_ps_case')
   ),
-  'problem solving detail is not authorised',
   '42501',
+  'problem solving detail is not authorised',
   'Bodmin operator cannot read same-site problem solving case detail by known UUID'
 );
 
