@@ -120,8 +120,12 @@ test.describe("S3a suggestions portfolio", () => {
     await expect(
       page.getByTestId("suggestion-portfolio-pagination"),
     ).toBeVisible();
-    await expect(page.getByText(/Page 1 of/)).toBeVisible();
-    await page.getByTestId("suggestion-portfolio-next").click();
+    const totalCount = await getPortfolioTotalCount(page);
+    expect(totalCount).toBeGreaterThan(25);
+    await expect(page.getByText(/Page 1 of [2-9]/)).toBeVisible();
+    const nextPage = page.getByTestId("suggestion-portfolio-next");
+    await expect(nextPage).toHaveAttribute("href", /page=2/);
+    await nextPage.click();
     await expect(page).toHaveURL(/page=2/);
     await expect(page.getByText(/Page 2 of/)).toBeVisible();
     await expect(

@@ -6,6 +6,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   loginAsCookieWorksPersona,
+  loginAsSiteBoundaryPeopleDelegate,
   COOKIEWORKS_ORGANISATION,
 } from "./helpers/cookieworks-auth";
 
@@ -74,8 +75,9 @@ test.describe("Site security boundary focused E2E", () => {
     page,
   }) => {
     // Production Manager is an operational role without invitations.manage or
-    // roles.delegate. Scenario D requires a legitimate Bodmin-scoped delegate.
-    await loginAsCookieWorksPersona(page, "peopleManager");
+    // roles.delegate. Scenario D uses a site-boundary-only Bodmin-scoped
+    // people delegate, not a permanent CookieWorks foundation persona.
+    await loginAsSiteBoundaryPeopleDelegate(page);
     await page.goto("/platform/settings/people");
     await expect(page.getByTestId("invite-colleague-form")).toBeVisible({
       timeout: 30_000,
@@ -85,12 +87,13 @@ test.describe("Site security boundary focused E2E", () => {
     const scopeSelect = page.locator("#invite-scope");
     await roleSelect.selectOption({ index: 0 });
 
-    const scopeLabels = await scopeSelect.locator("option").evaluateAll(
-      (options) =>
+    const scopeLabels = await scopeSelect
+      .locator("option")
+      .evaluateAll((options) =>
         options
           .map((option) => option.textContent?.trim() ?? "")
           .filter((label) => label.length > 0 && label !== "Select scope"),
-    );
+      );
 
     expect(
       scopeLabels.some((label) => label.includes(EXETER_FACTORY_LABEL)),

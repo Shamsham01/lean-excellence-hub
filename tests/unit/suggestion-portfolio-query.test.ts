@@ -186,4 +186,13 @@ describe("suggestion portfolio query helpers", () => {
       }),
     ).toBe("/platform/suggestions?reviewer=mine&page=2&pageSize=25");
   });
+
+  it("keeps default pageSize when building a page 2 href", () => {
+    expect(
+      suggestionPortfolioHref({
+        page: 2,
+        pageSize: DEFAULT_PAGE_SIZE,
+      }),
+    ).toBe("/platform/suggestions?page=2&pageSize=25");
+  });
 });

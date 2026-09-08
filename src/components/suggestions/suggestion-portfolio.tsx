@@ -78,15 +78,8 @@ function PaginationControls({
         Showing {rangeStart}–{rangeEnd} of {totalCount}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11"
-          asChild={page > 1}
-          disabled={page <= 1}
-          data-testid="suggestion-portfolio-previous"
-        >
-          {page > 1 ? (
+        {page > 1 ? (
+          <Button variant="outline" size="sm" className="min-h-11" asChild>
             <Link
               href={suggestionPortfolioHref({
                 ...filters,
@@ -95,25 +88,27 @@ function PaginationControls({
               })}
               aria-label="Previous page"
               prefetch={false}
+              data-testid="suggestion-portfolio-previous"
             >
               Previous
             </Link>
-          ) : (
-            <span aria-hidden="true">Previous</span>
-          )}
-        </Button>
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11"
+            disabled
+            data-testid="suggestion-portfolio-previous"
+          >
+            Previous
+          </Button>
+        )}
         <span className="px-2 text-sm text-muted-foreground" aria-live="polite">
           Page {page} of {totalPages}
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11"
-          asChild={page < totalPages}
-          disabled={page >= totalPages}
-          data-testid="suggestion-portfolio-next"
-        >
-          {page < totalPages ? (
+        {page < totalPages ? (
+          <Button variant="outline" size="sm" className="min-h-11" asChild>
             <Link
               href={suggestionPortfolioHref({
                 ...filters,
@@ -122,13 +117,22 @@ function PaginationControls({
               })}
               aria-label="Next page"
               prefetch={false}
+              data-testid="suggestion-portfolio-next"
             >
               Next
             </Link>
-          ) : (
-            <span aria-hidden="true">Next</span>
-          )}
-        </Button>
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11"
+            disabled
+            data-testid="suggestion-portfolio-next"
+          >
+            Next
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -7,13 +7,17 @@ import { seedCookieWorksFoundation } from "./foundation-seed";
 import { loadLocalSupabaseEnv } from "./local-env";
 import { seedCookieWorksModuleFixtures } from "./module-fixtures";
 import {
-  ensureInvitationAccepted,
-  ensurePublishedRole,
+  SITE_BOUNDARY_PEOPLE_DELEGATE,
+  SITE_BOUNDARY_PEOPLE_DELEGATE_ROLE,
+} from "./site-boundary-constants";
+import {
+  ensureInvitationAcceptedForIdentity,
+  ensurePublishedRoleDefinition,
   ensureUnits,
   resolveOrganisationId,
   switchOrganisation,
 } from "./shared/organisation";
-import { signInUser } from "./shared/auth";
+import { ensureAuthIdentity, signInIdentity, signInUser } from "./shared/auth";
 
 const EXETER_SITE = {
   code: "exeter-cookie-factory",
@@ -250,33 +254,50 @@ export async function seedSiteBoundaryFixture(options: {
     );
   }
 
-  const peopleDelegateRoleVersionId = await ensurePublishedRole(
+  await ensureAuthIdentity(admin, SITE_BOUNDARY_PEOPLE_DELEGATE);
+
+  const peopleDelegateRoleVersionId = await ensurePublishedRoleDefinition(
     adminClient,
     organisationId,
-    "peopleDelegateManager",
+    SITE_BOUNDARY_PEOPLE_DELEGATE_ROLE,
   );
-  await ensureInvitationAccepted(
+  await ensureInvitationAcceptedForIdentity(
     adminClient,
     options.apiUrl,
     options.publishableKey,
     organisationId,
-    "peopleManager",
+    SITE_BOUNDARY_PEOPLE_DELEGATE,
+    SITE_BOUNDARY_PEOPLE_DELEGATE_ROLE,
     peopleDelegateRoleVersionId,
     unitIds,
   );
+
+  const peopleDelegateClient = await signInIdentity(
+    options.apiUrl,
+    options.publishableKey,
+    SITE_BOUNDARY_PEOPLE_DELEGATE,
+  );
+  const { error: peopleDelegateProfileError } = await peopleDelegateClient
+    .from("profiles")
+    .update({ display_name: SITE_BOUNDARY_PEOPLE_DELEGATE.displayName })
+    .eq("user_id", SITE_BOUNDARY_PEOPLE_DELEGATE.id);
+
+  if (peopleDelegateProfileError) {
+    throw peopleDelegateProfileError;
+  }
 
   const { data: peopleManagerMembership, error: peopleManagerMembershipError } =
     await adminClient
       .from("organisation_memberships")
       .select("id")
       .eq("organisation_id", organisationId)
-      .eq("user_id", QA_USERS.peopleManager.id)
+      .eq("user_id", SITE_BOUNDARY_PEOPLE_DELEGATE.id)
       .maybeSingle();
 
   if (peopleManagerMembershipError || !peopleManagerMembership?.id) {
     throw (
       peopleManagerMembershipError ??
-      new Error("People manager membership missing after site-boundary seed")
+      new Error("People delegate membership missing after site-boundary seed")
     );
   }
 
