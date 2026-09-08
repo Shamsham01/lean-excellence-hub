@@ -80,17 +80,18 @@ function PaginationControls({
       <div className="flex flex-wrap items-center gap-2">
         {page > 1 ? (
           <Button variant="outline" size="sm" className="min-h-11" asChild>
-            <a
+            <Link
               href={suggestionPortfolioHref({
                 ...filters,
                 page: page - 1,
                 pageSize,
               })}
               aria-label="Previous page"
+              prefetch={false}
               data-testid="suggestion-portfolio-previous"
             >
               Previous
-            </a>
+            </Link>
           </Button>
         ) : (
           <Button
@@ -108,17 +109,18 @@ function PaginationControls({
         </span>
         {page < totalPages ? (
           <Button variant="outline" size="sm" className="min-h-11" asChild>
-            <a
+            <Link
               href={suggestionPortfolioHref({
                 ...filters,
                 page: page + 1,
                 pageSize,
               })}
               aria-label="Next page"
+              prefetch={false}
               data-testid="suggestion-portfolio-next"
             >
               Next
-            </a>
+            </Link>
           </Button>
         ) : (
           <Button
@@ -349,15 +351,7 @@ export function SuggestionPortfolio({
               asChild
               data-testid="suggestion-portfolio-clear-filters"
             >
-              <Link
-                href="/platform/suggestions"
-                onClick={(event) => {
-                  event.preventDefault();
-                  window.location.assign("/platform/suggestions");
-                }}
-              >
-                Clear filters
-              </Link>
+              <Link href="/platform/suggestions">Clear filters</Link>
             </Button>
           ) : null}
         </div>
@@ -528,15 +522,7 @@ export function SuggestionPortfolio({
                 className="mt-4 min-h-11"
                 asChild
               >
-                <Link
-                  href="/platform/suggestions"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    window.location.assign("/platform/suggestions");
-                  }}
-                >
-                  Clear filters
-                </Link>
+                <Link href="/platform/suggestions">Clear filters</Link>
               </Button>
             ) : null}
           </div>

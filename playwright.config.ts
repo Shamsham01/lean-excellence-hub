@@ -48,7 +48,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    command: `npm run dev -- --hostname 127.0.0.1 --port ${port} --webpack`,
     env: {
       APP_ORIGIN: baseURL,
       AUTH_RATE_LIMIT_PEPPER:
