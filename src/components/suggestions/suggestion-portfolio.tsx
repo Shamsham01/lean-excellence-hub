@@ -349,7 +349,15 @@ export function SuggestionPortfolio({
               asChild
               data-testid="suggestion-portfolio-clear-filters"
             >
-              <a href="/platform/suggestions">Clear filters</a>
+              <Link
+                href="/platform/suggestions"
+                onClick={(event) => {
+                  event.preventDefault();
+                  window.location.assign("/platform/suggestions");
+                }}
+              >
+                Clear filters
+              </Link>
             </Button>
           ) : null}
         </div>
@@ -520,7 +528,15 @@ export function SuggestionPortfolio({
                 className="mt-4 min-h-11"
                 asChild
               >
-                <a href="/platform/suggestions">Clear filters</a>
+                <Link
+                  href="/platform/suggestions"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    window.location.assign("/platform/suggestions");
+                  }}
+                >
+                  Clear filters
+                </Link>
               </Button>
             ) : null}
           </div>
