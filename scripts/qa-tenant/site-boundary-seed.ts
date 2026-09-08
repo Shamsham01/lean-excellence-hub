@@ -53,6 +53,7 @@ export async function seedSiteBoundaryFixture(options: {
   const { data: exeterSiteId, error: exeterSiteError } = await adminClient.rpc(
     "create_organisation_unit",
     {
+      target_organisation_id: organisationId,
       target_parent_unit_id: null,
       unit_code: EXETER_SITE.code,
       unit_name: EXETER_SITE.name,
@@ -66,6 +67,7 @@ export async function seedSiteBoundaryFixture(options: {
 
   const { data: exeterPackingId, error: exeterPackingError } =
     await adminClient.rpc("create_organisation_unit", {
+      target_organisation_id: organisationId,
       target_parent_unit_id: exeterSiteId,
       unit_code: EXETER_SITE.packingCode,
       unit_name: EXETER_SITE.packingName,
