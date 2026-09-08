@@ -760,7 +760,12 @@ select 'bodmin_benefit', public.create_benefit_draft(
   'Bodmin Benefit',
   (select id from site_ids where key = 'bodmin_site'),
   'financial',
-  'Bodmin benefit description'
+  'Bodmin benefit description',
+  'hard_saving',
+  null,
+  null,
+  null,
+  true
 );
 
 insert into site_ids (key, id)
@@ -768,7 +773,12 @@ select 'exeter_benefit', public.create_benefit_draft(
   'Exeter Benefit',
   (select id from site_ids where key = 'exeter_site'),
   'financial',
-  'Exeter benefit description'
+  'Exeter benefit description',
+  'hard_saving',
+  null,
+  null,
+  null,
+  true
 );
 
 insert into site_ids (key, id)
