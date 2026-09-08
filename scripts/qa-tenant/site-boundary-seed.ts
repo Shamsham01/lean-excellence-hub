@@ -105,7 +105,7 @@ export async function seedSiteBoundaryFixture(options: {
       .eq("user_id", QA_USERS.operator.id)
       .maybeSingle();
 
-  const bodminPackingUnitId = unitIds.packing;
+  const bodminPackingUnitId = unitIds["packing"];
   if (
     operatorMembershipError ||
     !operatorMembership?.id ||
