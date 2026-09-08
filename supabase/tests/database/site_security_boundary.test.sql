@@ -336,6 +336,22 @@ where role_version.organisation_id = (select id from site_ids where key = 'organ
   and role_row.module_responsibility_key = 'projects'
   and role_version.status = 'published';
 
+insert into site_ids (key, id)
+select 'suggestions_role_version', role_version.id
+from public.role_versions role_version
+join public.roles role_row on role_row.id = role_version.role_id
+where role_version.organisation_id = (select id from site_ids where key = 'organisation')
+  and role_row.module_responsibility_key = 'suggestions'
+  and role_version.status = 'published';
+
+insert into site_ids (key, id)
+select 'gemba_role_version', role_version.id
+from public.role_versions role_version
+join public.roles role_row on role_row.id = role_version.role_id
+where role_version.organisation_id = (select id from site_ids where key = 'organisation')
+  and role_row.module_responsibility_key = 'gemba'
+  and role_version.status = 'published';
+
 select ok(
   public.grant_role_version(
     (select id from site_ids where key = 'organisation'),
@@ -833,6 +849,19 @@ select 'exeter_action', public.create_action(
   (select id from site_ids where key = 'exeter_packing')
 );
 
+insert into public.action_assignees (
+  organisation_id,
+  action_id,
+  membership_id,
+  assigned_by_membership_id
+)
+values (
+  (select id from site_ids where key = 'organisation'),
+  (select id from site_ids where key = 'bodmin_action'),
+  (select id from site_ids where key = 'bodmin_operator_membership'),
+  (select id from site_ids where key = 'owner_membership')
+);
+
 insert into site_ids (key, id)
 select 'recognition_type', public.create_recognition_type('Teamwork', 'teamwork');
 
@@ -935,7 +964,7 @@ select is(
 select is(
   (select count(*)::integer from public.actions where id = (select id from site_ids where key = 'bodmin_action')),
   1,
-  'Bodmin operator reads Bodmin action'
+  'Bodmin operator reads assigned Bodmin action'
 );
 
 select is(
@@ -982,22 +1011,6 @@ select is(
 );
 
 -- Multi-responsibility persona
-insert into site_ids (key, id)
-select 'suggestions_role_version', role_version.id
-from public.role_versions role_version
-join public.roles role_row on role_row.id = role_version.role_id
-where role_version.organisation_id = (select id from site_ids where key = 'organisation')
-  and role_row.module_responsibility_key = 'suggestions'
-  and role_version.status = 'published';
-
-insert into site_ids (key, id)
-select 'gemba_role_version', role_version.id
-from public.role_versions role_version
-join public.roles role_row on role_row.id = role_version.role_id
-where role_version.organisation_id = (select id from site_ids where key = 'organisation')
-  and role_row.module_responsibility_key = 'gemba'
-  and role_version.status = 'published';
-
 select set_config(
   'request.jwt.claims',
   '{"sub":"b1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"c1000000-0000-0000-0000-000000000001","email":"cw-owner@example.test"}',
