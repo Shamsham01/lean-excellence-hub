@@ -12,6 +12,22 @@ export default async function AssessmentsListPage() {
     .select("id, status, assessment_type, updated_at, unit_id")
     .order("updated_at", { ascending: false });
 
+  const unitIds = [
+    ...new Set((assessments ?? []).map((assessment) => assessment.unit_id)),
+  ];
+  const unitNameById: Record<string, string> = {};
+
+  if (unitIds.length > 0) {
+    const { data: units } = await supabase
+      .from("organisation_units")
+      .select("id, name")
+      .in("id", unitIds);
+
+    for (const unit of units ?? []) {
+      unitNameById[unit.id] = unit.name;
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -38,7 +54,8 @@ export default async function AssessmentsListPage() {
                 {a.assessment_type.replace("_", " ")} assessment
               </p>
               <p className="typography-metadata">
-                Updated {new Date(a.updated_at).toLocaleDateString("en-GB")}
+                {unitNameById[a.unit_id] ?? "Unknown unit"} · Updated{" "}
+                {new Date(a.updated_at).toLocaleDateString("en-GB")}
               </p>
             </div>
             <AssessmentStatusBadge status={a.status} />
