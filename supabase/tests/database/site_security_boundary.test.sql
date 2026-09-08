@@ -1,6 +1,6 @@
 begin;
 
-select plan(102);
+select plan(103);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -357,7 +357,7 @@ select 'people_role_version', role_version.id
 from public.role_versions role_version
 join public.roles role_row on role_row.id = role_version.role_id
 where role_version.organisation_id = (select id from site_ids where key = 'organisation')
-  and role_row.canonical_name = 'manager'
+  and role_row.module_responsibility_key = 'people'
   and role_version.status = 'published';
 
 select ok(
@@ -1401,16 +1401,16 @@ select ok(
 
 select throws_ok(
   format(
-    'select public.issue_organisation_member_invitation(%L, %L, %s, %L::timestamptz, %L::uuid, %L, %L::uuid, %L, %L::uuid, %L::uuid)',
-    'email',
-    'exeter-invite@example.test',
-    'decode(''00'', ''hex'')',
-    statement_timestamp() + interval '7 days',
-    (select id from site_ids where key = 'people_role_version'),
-    'unit_subtree',
-    (select id from site_ids where key = 'exeter_site'),
-    'Exeter Invitee',
-    (select id from site_ids where key = 'job_function'),
+    $sql$
+      set local role postgres;
+      select private.assert_membership_placement_site_containment(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid
+      )
+    $sql$,
+    (select id from site_ids where key = 'organisation'),
+    (select id from site_ids where key = 'bodmin_people_membership'),
     (select id from site_ids where key = 'exeter_packing')
   ),
   '42501',
@@ -1420,12 +1420,17 @@ select throws_ok(
 
 select throws_ok(
   format(
-    'select public.issue_organisation_member_invitation(%L, %L, %s, %L::timestamptz, %L::uuid, %L, %L::uuid, null, null, null)',
-    'email',
-    'exeter-grant@example.test',
-    'decode(''01'', ''hex'')',
-    statement_timestamp() + interval '7 days',
-    (select id from site_ids where key = 'people_role_version'),
+    $sql$
+      set local role postgres;
+      select private.assert_grant_site_containment(
+        %L::uuid,
+        %L::uuid,
+        %L,
+        %L::uuid
+      )
+    $sql$,
+    (select id from site_ids where key = 'organisation'),
+    (select id from site_ids where key = 'bodmin_people_membership'),
     'unit_subtree',
     (select id from site_ids where key = 'exeter_site')
   ),
