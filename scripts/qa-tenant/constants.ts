@@ -49,6 +49,12 @@ export const QA_USERS = {
     password: "Finance@CookieWorks-QA-2026!",
     displayName: "CookieWorks Finance",
   },
+  peopleManager: {
+    id: "b0000000-0000-0000-0000-000000000008",
+    email: "people-manager@cookieworks.local",
+    password: "PeopleMgr@CookieWorks-QA-2026!",
+    displayName: "CookieWorks People Manager",
+  },
 } as const;
 
 export const QA_USER_IDS: string[] = Object.values(QA_USERS).map(
@@ -336,6 +342,25 @@ export const QA_ROLES = {
     ],
     invitationTokenSeed: "cookieworks-qa-finance-invitation-v1",
   },
+  peopleDelegateManager: {
+    canonicalName: "bodmin-people-delegate-manager",
+    displayName: "People Delegate Manager",
+    description:
+      "Bodmin-scoped people invitation and delegation authority for site-boundary QA.",
+    scopeType: "unit_subtree" as const,
+    scopeUnitKey: "packing",
+    isProtected: true,
+    permissions: [
+      "hierarchy.read",
+      "memberships.read",
+      "invitations.manage",
+      "roles.delegate",
+      "job_functions.read",
+      "job_functions.manage",
+    ],
+    invitationTokenSeed:
+      "cookieworks-qa-people-delegate-manager-invitation-v1",
+  },
 } as const;
 
 export const QA_USER_ROLE_KEY = {
@@ -345,6 +370,7 @@ export const QA_USER_ROLE_KEY = {
   operator: "operator",
   assessor: "assessor",
   finance: "financeValidator",
+  peopleManager: "peopleDelegateManager",
 } as const;
 
 export const QA_HOSTED_RESET_CONFIRM_TOKEN = "DELETE_COOKIEWORKS_ONLY";

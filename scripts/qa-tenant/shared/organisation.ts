@@ -178,8 +178,13 @@ export async function ensurePublishedRole(
     return existingVersionId;
   }
 
+  const createDraftRpc =
+    "isProtected" in role && role.isProtected
+      ? "create_protected_role_draft"
+      : "create_role_draft";
+
   const { data: draftVersionId, error: draftError } = await client.rpc(
-    "create_role_draft",
+    createDraftRpc,
     {
       target_organisation_id: organisationId,
       role_canonical_name: role.canonicalName,

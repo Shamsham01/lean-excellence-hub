@@ -7,6 +7,8 @@ import { seedCookieWorksFoundation } from "./foundation-seed";
 import { loadLocalSupabaseEnv } from "./local-env";
 import { seedCookieWorksModuleFixtures } from "./module-fixtures";
 import {
+  ensureInvitationAccepted,
+  ensurePublishedRole,
   ensureUnits,
   resolveOrganisationId,
   switchOrganisation,
@@ -51,38 +53,64 @@ export async function seedSiteBoundaryFixture(options: {
 
   const unitIds = await ensureUnits(adminClient, organisationId);
 
-  const { data: exeterSiteId, error: exeterSiteError } = await adminClient.rpc(
-    "create_organisation_unit",
-    {
-      target_organisation_id: organisationId,
-      target_parent_unit_id: null,
-      unit_code: EXETER_SITE.code,
-      unit_name: EXETER_SITE.name,
-      unit_type: "site",
-    },
-  );
+  const { data: existingExeterUnits, error: existingExeterUnitsError } =
+    await adminClient
+      .from("organisation_units")
+      .select("id, code")
+      .eq("organisation_id", organisationId)
+      .in("code", [EXETER_SITE.code, EXETER_SITE.packingCode]);
 
-  if (exeterSiteError || !exeterSiteId) {
-    throw exeterSiteError ?? new Error("Failed to create Exeter site unit");
+  if (existingExeterUnitsError) {
+    throw existingExeterUnitsError;
   }
 
-  const { data: exeterPackingId, error: exeterPackingError } =
-    await adminClient.rpc("create_organisation_unit", {
-      target_organisation_id: organisationId,
-      target_parent_unit_id: exeterSiteId,
-      unit_code: EXETER_SITE.packingCode,
-      unit_name: EXETER_SITE.packingName,
-      unit_type: "area",
-    });
+  for (const unit of existingExeterUnits ?? []) {
+    unitIds[unit.code] = unit.id;
+  }
 
-  if (exeterPackingError || !exeterPackingId) {
-    throw (
-      exeterPackingError ?? new Error("Failed to create Exeter packing unit")
+  let exeterSiteId = unitIds[EXETER_SITE.code];
+  if (!exeterSiteId) {
+    const { data, error: exeterSiteError } = await adminClient.rpc(
+      "create_organisation_unit",
+      {
+        target_organisation_id: organisationId,
+        target_parent_unit_id: null,
+        unit_code: EXETER_SITE.code,
+        unit_name: EXETER_SITE.name,
+        unit_type: "site",
+      },
     );
+
+    if (exeterSiteError || !data) {
+      throw exeterSiteError ?? new Error("Failed to create Exeter site unit");
+    }
+
+    exeterSiteId = data as string;
+    unitIds[EXETER_SITE.code] = exeterSiteId;
   }
 
-  unitIds[EXETER_SITE.code] = exeterSiteId;
-  unitIds[EXETER_SITE.packingCode] = exeterPackingId;
+  let exeterPackingId = unitIds[EXETER_SITE.packingCode];
+  if (!exeterPackingId) {
+    const { data, error: exeterPackingError } = await adminClient.rpc(
+      "create_organisation_unit",
+      {
+        target_organisation_id: organisationId,
+        target_parent_unit_id: exeterSiteId,
+        unit_code: EXETER_SITE.packingCode,
+        unit_name: EXETER_SITE.packingName,
+        unit_type: "area",
+      },
+    );
+
+    if (exeterPackingError || !data) {
+      throw (
+        exeterPackingError ?? new Error("Failed to create Exeter packing unit")
+      );
+    }
+
+    exeterPackingId = data as string;
+    unitIds[EXETER_SITE.packingCode] = exeterPackingId;
+  }
 
   const { data: operatorJobFunctionId, error: operatorJobFunctionError } =
     await adminClient.rpc("create_job_function", {
@@ -220,6 +248,50 @@ export async function seedSiteBoundaryFixture(options: {
     throw new Error(
       `Exeter maturity assessment site snapshot mismatch: expected ${exeterSiteId}, got ${exeterAssessment.site_unit_id}`,
     );
+  }
+
+  const peopleDelegateRoleVersionId = await ensurePublishedRole(
+    adminClient,
+    organisationId,
+    "peopleDelegateManager",
+  );
+  await ensureInvitationAccepted(
+    adminClient,
+    options.apiUrl,
+    options.publishableKey,
+    organisationId,
+    "peopleManager",
+    peopleDelegateRoleVersionId,
+    unitIds,
+  );
+
+  const { data: peopleManagerMembership, error: peopleManagerMembershipError } =
+    await adminClient
+      .from("organisation_memberships")
+      .select("id")
+      .eq("organisation_id", organisationId)
+      .eq("user_id", QA_USERS.peopleManager.id)
+      .maybeSingle();
+
+  if (peopleManagerMembershipError || !peopleManagerMembership?.id) {
+    throw (
+      peopleManagerMembershipError ??
+      new Error("People manager membership missing after site-boundary seed")
+    );
+  }
+
+  const { error: peopleManagerPlacementError } = await adminClient.rpc(
+    "assign_membership_job_function",
+    {
+      target_membership_id: peopleManagerMembership.id,
+      target_job_function_id: operatorJobFunctionId,
+      target_primary: true,
+      target_organisational_unit_id: bodminPackingUnitId,
+    },
+  );
+
+  if (peopleManagerPlacementError) {
+    throw peopleManagerPlacementError;
   }
 
   return {

@@ -70,23 +70,34 @@ test.describe("Site security boundary focused E2E", () => {
     await expect(page.getByText(EXETER_FACTORY_LABEL).first()).toBeVisible();
   });
 
-  test("D. Bodmin production manager scope picker excludes Exeter targets", async ({
+  test("D. Bodmin scoped people delegate scope picker excludes Exeter targets", async ({
     page,
   }) => {
-    await loginAsCookieWorksPersona(page, "productionManager");
+    // Production Manager is an operational role without invitations.manage or
+    // roles.delegate. Scenario D requires a legitimate Bodmin-scoped delegate.
+    await loginAsCookieWorksPersona(page, "peopleManager");
     await page.goto("/platform/settings/people");
-    await page.getByRole("link", { name: /invite colleague/i }).click();
-    const scopeSelect = page
-      .locator("select")
-      .filter({ hasText: /scope|organisation|subtree/i })
-      .first();
-    if (await scopeSelect.count()) {
-      await expect(scopeSelect.locator("option")).not.toContainText([
-        EXETER_FACTORY_LABEL,
-      ]);
-    } else {
-      await expect(page.getByText(EXETER_FACTORY_LABEL)).toHaveCount(0);
-    }
-    await expect(page.getByText(COOKIEWORKS_ORGANISATION.name)).toBeVisible();
+    await expect(page.getByTestId("invite-colleague-form")).toBeVisible({
+      timeout: 30_000,
+    });
+
+    const roleSelect = page.locator("#invite-role");
+    const scopeSelect = page.locator("#invite-scope");
+    await roleSelect.selectOption({ index: 0 });
+
+    const scopeLabels = await scopeSelect.locator("option").evaluateAll(
+      (options) =>
+        options
+          .map((option) => option.textContent?.trim() ?? "")
+          .filter((label) => label.length > 0 && label !== "Select scope"),
+    );
+
+    expect(
+      scopeLabels.some((label) => label.includes(EXETER_FACTORY_LABEL)),
+    ).toBe(false);
+    await expect(page.getByText(EXETER_FACTORY_LABEL)).toHaveCount(0);
+    await expect(page.getByTestId("platform-sidebar-org-name")).toHaveText(
+      COOKIEWORKS_ORGANISATION.name,
+    );
   });
 });
