@@ -37,6 +37,12 @@ export default async function AssessmentDetailPage({
     notFound();
   }
 
+  const { data: unit } = await supabase
+    .from("organisation_units")
+    .select("name")
+    .eq("id", assessment.unit_id)
+    .maybeSingle();
+
   const canReview = await currentMemberHasScopedPermission(
     MATURITY_PERMISSIONS.review,
     assessment.unit_id,
@@ -200,7 +206,7 @@ export default async function AssessmentDetailPage({
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Assessment"
-        description="Complete criterion responses and evidence."
+        description={`${unit?.name ?? "Unknown unit"} · Complete criterion responses and evidence.`}
         actions={
           <div className="flex flex-wrap gap-2">
             {overall ? <ScoreBadge score={Number(overall.score)} /> : null}

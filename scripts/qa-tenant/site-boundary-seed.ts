@@ -113,7 +113,9 @@ export async function seedSiteBoundaryFixture(options: {
   ) {
     throw (
       operatorMembershipError ??
-      new Error("Operator membership or Bodmin packing unit missing for placement")
+      new Error(
+        "Operator membership or Bodmin packing unit missing for placement",
+      )
     );
   }
 
