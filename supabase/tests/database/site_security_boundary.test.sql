@@ -849,6 +849,8 @@ select 'exeter_action', public.create_action(
   (select id from site_ids where key = 'exeter_packing')
 );
 
+set local role postgres;
+
 insert into public.action_assignees (
   organisation_id,
   action_id,
@@ -861,6 +863,8 @@ values (
   (select id from site_ids where key = 'bodmin_operator_membership'),
   (select id from site_ids where key = 'owner_membership')
 );
+
+set local role authenticated;
 
 insert into site_ids (key, id)
 select 'recognition_type', public.create_recognition_type('Teamwork', 'teamwork');
