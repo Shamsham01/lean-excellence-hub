@@ -352,6 +352,14 @@ where role_version.organisation_id = (select id from site_ids where key = 'organ
   and role_row.module_responsibility_key = 'gemba'
   and role_version.status = 'published';
 
+insert into site_ids (key, id)
+select 'people_role_version', role_version.id
+from public.role_versions role_version
+join public.roles role_row on role_row.id = role_version.role_id
+where role_version.organisation_id = (select id from site_ids where key = 'organisation')
+  and role_row.canonical_name = 'manager'
+  and role_version.status = 'published';
+
 select ok(
   public.grant_role_version(
     (select id from site_ids where key = 'organisation'),
@@ -1244,7 +1252,7 @@ select ok(
 
 select is(
   (select count(*)::integer from public.comments
-    where resource_id = (select id from site_ids where key = 'exeter_action')),
+    where target_resource_id = (select id from site_ids where key = 'exeter_action')),
   0,
   'Bodmin actor cannot read Exeter action child comments by resource id'
 );
@@ -1321,14 +1329,6 @@ select is(
 );
 
 -- Invitation / provisioning hostile tests
-insert into site_ids (key, id)
-select 'people_role_version', role_version.id
-from public.role_versions role_version
-join public.roles role_row on role_row.id = role_version.role_id
-where role_version.organisation_id = (select id from site_ids where key = 'organisation')
-  and role_row.canonical_name = 'manager'
-  and role_version.status = 'published';
-
 select set_config(
   'request.jwt.claims',
   '{"sub":"b1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"c1000000-0000-0000-0000-000000000001","email":"cw-owner@example.test"}',
