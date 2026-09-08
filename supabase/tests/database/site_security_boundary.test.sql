@@ -1,6 +1,6 @@
 begin;
 
-select plan(103);
+select plan(104);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -963,8 +963,18 @@ select is(
 
 select is(
   (select count(*)::integer from public.problem_solving_cases where id = (select id from site_ids where key = 'bodmin_ps_case')),
-  1,
-  'Bodmin operator baseline reads Bodmin problem solving case'
+  0,
+  'Bodmin operator cannot baseline-read arbitrary Bodmin problem solving case'
+);
+
+select throws_ok(
+  format(
+    'select public.get_problem_solving_detail(%L::uuid)',
+    (select id from site_ids where key = 'bodmin_ps_case')
+  ),
+  'problem solving detail is not authorised',
+  '42501',
+  'Bodmin operator cannot read same-site problem solving case detail by known UUID'
 );
 
 select is(

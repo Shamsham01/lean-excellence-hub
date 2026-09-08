@@ -118,14 +118,36 @@ export async function seedSiteBoundaryFixture(options: {
     await adminClient.rpc("start_maturity_assessment", {
       target_model_version_id: modelVersion.id,
       target_unit_id: exeterSiteId,
-      target_assessment_mode: "formal",
-      target_scope_type: "site",
+      target_assessment_type: "self",
+      target_assessment_scope_type: "site",
     });
 
   if (exeterAssessmentError || !exeterAssessmentId) {
+    throw new Error(
+      `start_maturity_assessment failed (expected canonical 5-arg RPC contract): ${
+        exeterAssessmentError?.message ??
+        "missing assessment id — verify target_assessment_type and target_assessment_scope_type"
+      }`,
+    );
+  }
+
+  const { data: exeterAssessment, error: exeterAssessmentReadError } =
+    await adminClient
+      .from("maturity_assessments")
+      .select("id, site_unit_id, unit_id")
+      .eq("id", exeterAssessmentId)
+      .maybeSingle();
+
+  if (exeterAssessmentReadError || !exeterAssessment) {
     throw (
-      exeterAssessmentError ??
-      new Error("Failed to create Exeter maturity assessment")
+      exeterAssessmentReadError ??
+      new Error("Exeter maturity assessment missing after seed")
+    );
+  }
+
+  if (exeterAssessment.site_unit_id !== exeterSiteId) {
+    throw new Error(
+      `Exeter maturity assessment site snapshot mismatch: expected ${exeterSiteId}, got ${exeterAssessment.site_unit_id}`,
     );
   }
 
