@@ -103,7 +103,11 @@ export function buildSuggestionPortfolioSearchParams(
   if (filters.page && filters.page > 1) {
     params.set("page", String(filters.page));
   }
-  if (filters.pageSize && filters.pageSize !== DEFAULT_PAGE_SIZE) {
+  if (
+    filters.pageSize &&
+    (filters.pageSize !== DEFAULT_PAGE_SIZE ||
+      (filters.page != null && filters.page > 1))
+  ) {
     params.set("pageSize", String(filters.pageSize));
   }
 

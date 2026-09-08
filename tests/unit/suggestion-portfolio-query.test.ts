@@ -182,7 +182,8 @@ describe("suggestion portfolio query helpers", () => {
       suggestionPortfolioHref({
         reviewer: "mine",
         page: 2,
+        pageSize: DEFAULT_PAGE_SIZE,
       }),
-    ).toBe("/platform/suggestions?reviewer=mine&page=2");
+    ).toBe("/platform/suggestions?reviewer=mine&page=2&pageSize=25");
   });
 });

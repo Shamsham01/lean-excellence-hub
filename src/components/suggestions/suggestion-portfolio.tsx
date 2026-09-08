@@ -88,13 +88,18 @@ function PaginationControls({
         >
           {page > 1 ? (
             <Link
-              href={suggestionPortfolioHref({ ...filters, page: page - 1 })}
+              href={suggestionPortfolioHref({
+                ...filters,
+                page: page - 1,
+                pageSize,
+              })}
               aria-label="Previous page"
+              prefetch={false}
             >
               Previous
             </Link>
           ) : (
-            <span>Previous</span>
+            <span aria-hidden="true">Previous</span>
           )}
         </Button>
         <span className="px-2 text-sm text-muted-foreground" aria-live="polite">
@@ -110,13 +115,18 @@ function PaginationControls({
         >
           {page < totalPages ? (
             <Link
-              href={suggestionPortfolioHref({ ...filters, page: page + 1 })}
+              href={suggestionPortfolioHref({
+                ...filters,
+                page: page + 1,
+                pageSize,
+              })}
               aria-label="Next page"
+              prefetch={false}
             >
               Next
             </Link>
           ) : (
-            <span>Next</span>
+            <span aria-hidden="true">Next</span>
           )}
         </Button>
       </div>
