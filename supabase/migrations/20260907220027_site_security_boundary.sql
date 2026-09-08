@@ -2190,9 +2190,20 @@ declare
   job_function_row public.job_functions%rowtype;
   new_assignment_id uuid;
 begin
-  if org_id is null
-    or actor_membership_id is null
-    or not private.can_manage_job_functions(org_id) then
+  if org_id is null or actor_membership_id is null then
+    raise exception 'job function assignment is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if target_primary and target_organisational_unit_id is null then
+    raise exception 'primary assignment requires an organisational unit'
+      using errcode = '22023';
+  end if;
+
+  if not private.can_manage_job_functions_in_unit(
+    org_id,
+    target_organisational_unit_id
+  ) then
     raise exception 'job function assignment is not authorised'
       using errcode = '42501';
   end if;
@@ -2218,6 +2229,29 @@ begin
   if not found then
     raise exception 'job function not found or not active'
       using errcode = 'P0002';
+  end if;
+
+  if target_organisational_unit_id is not null then
+    if not exists (
+      select 1
+      from public.organisation_units unit_row
+      where unit_row.organisation_id = org_id
+        and unit_row.id = target_organisational_unit_id
+        and unit_row.status = 'active'
+    ) then
+      raise exception 'organisational unit not found or not active'
+        using errcode = 'P0002';
+    end if;
+
+    if not private.has_scoped_permission(
+      org_id,
+      'hierarchy.read',
+      null,
+      target_organisational_unit_id
+    ) then
+      raise exception 'job function assignment unit is not authorised'
+        using errcode = '42501';
+    end if;
   end if;
 
   if target_valid_to is not null and target_valid_to <= target_valid_from then

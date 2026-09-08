@@ -30,7 +30,8 @@ export function assertQaLocalCommandAllowed(
     | "qa:cookie:seed"
     | "qa:cookie:reset"
     | "qa:cookie:inventory"
-    | "qa:verify:clean-rebuild",
+    | "qa:verify:clean-rebuild"
+    | "qa:site-boundary:reset",
 ) {
   const invokedViaNpmScript =
     process.env.npm_lifecycle_event === lifecycleEvent;

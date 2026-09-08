@@ -1,6 +1,6 @@
 begin;
 
-select plan(99);
+select plan(100);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -198,6 +198,22 @@ select ok(
 
 insert into site_ids (key, id)
 select 'job_function', public.create_job_function('Operator', 'operator');
+
+insert into site_ids (key, id)
+select 'owner_membership', membership.id
+from public.organisation_memberships membership
+where membership.organisation_id = (select id from site_ids where key = 'organisation')
+  and membership.user_id = 'b1000000-0000-0000-0000-000000000001';
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from site_ids where key = 'owner_membership'),
+    (select id from site_ids where key = 'job_function'),
+    true,
+    (select id from site_ids where key = 'bodmin_packing')
+  ) is not null,
+  'owner primary placement for module seeding'
+);
 
 select ok(
   public.assign_membership_job_function(

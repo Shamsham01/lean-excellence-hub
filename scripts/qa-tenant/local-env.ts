@@ -27,7 +27,8 @@ export function loadLocalSupabaseEnv(
     | "qa:cookie:seed"
     | "qa:cookie:reset"
     | "qa:cookie:inventory"
-    | "qa:verify:clean-rebuild",
+    | "qa:verify:clean-rebuild"
+    | "qa:site-boundary:reset",
 ): LocalSupabaseEnv {
   let output = "";
 
