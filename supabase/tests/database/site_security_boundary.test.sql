@@ -854,7 +854,7 @@ select 'exeter_recognition', public.award_recognition(
   'Exeter Award',
   'Great teamwork',
   (select id from site_ids where key = 'exeter_site'),
-  'team',
+  'organisation',
   array[(select id from site_ids where key = 'exeter_operator_membership')]::uuid[]
 );
 
