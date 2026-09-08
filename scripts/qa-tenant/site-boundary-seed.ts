@@ -2,6 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { purgeCookieWorksTenantModules } from "./delete-tenant";
+import { QA_USERS } from "./constants";
 import { seedCookieWorksFoundation } from "./foundation-seed";
 import { loadLocalSupabaseEnv } from "./local-env";
 import { seedCookieWorksModuleFixtures } from "./module-fixtures";
@@ -82,6 +83,53 @@ export async function seedSiteBoundaryFixture(options: {
 
   unitIds[EXETER_SITE.code] = exeterSiteId;
   unitIds[EXETER_SITE.packingCode] = exeterPackingId;
+
+  const { data: operatorJobFunctionId, error: operatorJobFunctionError } =
+    await adminClient.rpc("create_job_function", {
+      target_name: "Operator",
+      target_code: "site-boundary-operator",
+    });
+
+  if (operatorJobFunctionError || !operatorJobFunctionId) {
+    throw (
+      operatorJobFunctionError ??
+      new Error("Failed to create operator job function for site boundary seed")
+    );
+  }
+
+  const { data: operatorMembership, error: operatorMembershipError } =
+    await adminClient
+      .from("organisation_memberships")
+      .select("id")
+      .eq("organisation_id", organisationId)
+      .eq("user_id", QA_USERS.operator.id)
+      .maybeSingle();
+
+  const bodminPackingUnitId = unitIds.packing;
+  if (
+    operatorMembershipError ||
+    !operatorMembership?.id ||
+    !bodminPackingUnitId
+  ) {
+    throw (
+      operatorMembershipError ??
+      new Error("Operator membership or Bodmin packing unit missing for placement")
+    );
+  }
+
+  const { error: operatorPlacementError } = await adminClient.rpc(
+    "assign_membership_job_function",
+    {
+      target_membership_id: operatorMembership.id,
+      target_job_function_id: operatorJobFunctionId,
+      target_primary: true,
+      target_organisational_unit_id: bodminPackingUnitId,
+    },
+  );
+
+  if (operatorPlacementError) {
+    throw operatorPlacementError;
+  }
 
   const ciManagerClient = await signInUser(
     options.apiUrl,
