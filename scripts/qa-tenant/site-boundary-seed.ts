@@ -114,6 +114,27 @@ export async function seedSiteBoundaryFixture(options: {
     throw modelVersionError ?? new Error("Published maturity model missing");
   }
 
+  const bodminSiteId = unitIds["bodmin-cookie-factory"];
+  if (!bodminSiteId) {
+    throw new Error("Bodmin site unit missing for maturity fixture");
+  }
+
+  const { data: bodminAssessmentId, error: bodminAssessmentError } =
+    await adminClient.rpc("start_maturity_assessment", {
+      target_model_version_id: modelVersion.id,
+      target_unit_id: bodminSiteId,
+      target_assessment_type: "self",
+      target_assessment_scope_type: "site",
+    });
+
+  if (bodminAssessmentError || !bodminAssessmentId) {
+    throw new Error(
+      `Bodmin start_maturity_assessment failed: ${
+        bodminAssessmentError?.message ?? "missing assessment id"
+      }`,
+    );
+  }
+
   const { data: exeterAssessmentId, error: exeterAssessmentError } =
     await adminClient.rpc("start_maturity_assessment", {
       target_model_version_id: modelVersion.id,
@@ -154,9 +175,10 @@ export async function seedSiteBoundaryFixture(options: {
   return {
     organisationId,
     unitIds,
+    bodminAssessmentId,
     exeterAssessmentId,
     exeterSiteId,
-    bodminSiteId: unitIds["bodmin-cookie-factory"],
+    bodminSiteId,
   };
 }
 
