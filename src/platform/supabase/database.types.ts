@@ -13770,6 +13770,15 @@ export type Database = {
         Args: { target_display_name: string; target_membership_id: string }
         Returns: boolean
       }
+      update_organisation_unit: {
+        Args: {
+          target_organisation_id: string
+          target_unit_id: string
+          unit_name: string
+          unit_type: string
+        }
+        Returns: boolean
+      }
       update_problem_solving_case_draft: {
         Args: {
           target_background?: string

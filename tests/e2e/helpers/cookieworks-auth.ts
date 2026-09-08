@@ -4,7 +4,10 @@ import {
   QA_ORGANISATION,
   QA_USERS,
 } from "../../../scripts/qa-tenant/constants";
-import { SITE_BOUNDARY_PEOPLE_DELEGATE } from "../../../scripts/qa-tenant/site-boundary-constants";
+import {
+  SITE_BOUNDARY_HIERARCHY_DELEGATE,
+  SITE_BOUNDARY_PEOPLE_DELEGATE,
+} from "../../../scripts/qa-tenant/site-boundary-constants";
 import { expectPlatformOrganisationName } from "./platform-home";
 
 export type CookieWorksPersona = keyof typeof QA_USERS;
@@ -35,4 +38,8 @@ export async function loginAsCookieWorksPersona(
 
 export async function loginAsSiteBoundaryPeopleDelegate(page: Page) {
   await loginWithCookieWorksCredentials(page, SITE_BOUNDARY_PEOPLE_DELEGATE);
+}
+
+export async function loginAsSiteBoundaryHierarchyDelegate(page: Page) {
+  await loginWithCookieWorksCredentials(page, SITE_BOUNDARY_HIERARCHY_DELEGATE);
 }

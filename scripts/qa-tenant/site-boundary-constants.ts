@@ -23,3 +23,23 @@ export const SITE_BOUNDARY_PEOPLE_DELEGATE_ROLE = {
   ],
   invitationTokenSeed: "cookieworks-qa-people-delegate-manager-invitation-v1",
 } as const;
+
+export const SITE_BOUNDARY_HIERARCHY_DELEGATE = {
+  id: "b0000000-0000-0000-0000-000000000009",
+  email: "hierarchy-manager@cookieworks.local",
+  password: "HierarchyMgr@CookieWorks-QA-2026!",
+  displayName: "CookieWorks Hierarchy Manager",
+} as const;
+
+export const SITE_BOUNDARY_HIERARCHY_DELEGATE_ROLE = {
+  canonicalName: "bodmin-hierarchy-delegate-manager",
+  displayName: "Hierarchy Delegate Manager",
+  description:
+    "Bodmin-scoped hierarchy management authority for site-boundary QA.",
+  scopeType: "unit_subtree" as const,
+  scopeUnitKey: "bodmin-cookie-factory",
+  isProtected: true,
+  permissions: ["hierarchy.read", "hierarchy.manage"],
+  invitationTokenSeed:
+    "cookieworks-qa-hierarchy-delegate-manager-invitation-v1",
+} as const;
