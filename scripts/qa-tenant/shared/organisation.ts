@@ -8,10 +8,21 @@ import {
   QA_USERS,
 } from "../constants";
 import { invitationTokenDigest, invitationTokenFromSeed } from "../crypto";
-import type { QaUserKey } from "./auth";
-import { signInUser } from "./auth";
+import type { QaAuthIdentity, QaUserKey } from "./auth";
+import { signInIdentity, signInUser } from "./auth";
 
 export type UnitMap = Record<string, string>;
+
+export type QaRoleDefinition = {
+  canonicalName: string;
+  displayName: string;
+  description: string;
+  scopeType: "organisation" | "unit_subtree" | "self";
+  scopeUnitKey: string | null;
+  isProtected?: boolean;
+  permissions: readonly string[];
+  invitationTokenSeed: string;
+};
 
 export async function provisionOrganisation(admin: SupabaseClient) {
   const { data, error } = await admin.rpc("provision_organisation", {
@@ -162,12 +173,11 @@ async function findPublishedRoleVersionId(
   return version?.id ?? null;
 }
 
-export async function ensurePublishedRole(
+export async function ensurePublishedRoleDefinition(
   client: SupabaseClient,
   organisationId: string,
-  roleKey: keyof typeof QA_ROLES,
+  role: QaRoleDefinition,
 ) {
-  const role = QA_ROLES[roleKey];
   const existingVersionId = await findPublishedRoleVersionId(
     client,
     organisationId,
@@ -178,8 +188,13 @@ export async function ensurePublishedRole(
     return existingVersionId;
   }
 
+  const createDraftRpc =
+    "isProtected" in role && role.isProtected
+      ? "create_protected_role_draft"
+      : "create_role_draft";
+
   const { data: draftVersionId, error: draftError } = await client.rpc(
-    "create_role_draft",
+    createDraftRpc,
     {
       target_organisation_id: organisationId,
       role_canonical_name: role.canonicalName,
@@ -216,6 +231,18 @@ export async function ensurePublishedRole(
   return draftVersionId as string;
 }
 
+export async function ensurePublishedRole(
+  client: SupabaseClient,
+  organisationId: string,
+  roleKey: keyof typeof QA_ROLES,
+) {
+  return ensurePublishedRoleDefinition(
+    client,
+    organisationId,
+    QA_ROLES[roleKey],
+  );
+}
+
 async function userHasOrganisationMembership(
   ownerClient: SupabaseClient,
   organisationId: string,
@@ -238,27 +265,26 @@ async function userHasOrganisationMembership(
 
 type InvitedUserKey = Exclude<QaUserKey, "admin">;
 
-export async function ensureInvitationAccepted(
+export async function ensureInvitationAcceptedForIdentity(
   ownerClient: SupabaseClient,
   apiUrl: string,
   publishableKey: string,
   organisationId: string,
-  userKey: InvitedUserKey,
+  user: QaAuthIdentity,
+  role: QaRoleDefinition,
   roleVersionId: string,
   unitIds: UnitMap,
 ) {
   const alreadyMember = await userHasOrganisationMembership(
     ownerClient,
     organisationId,
-    QA_USERS[userKey].id,
+    user.id,
   );
 
   if (alreadyMember) {
     return;
   }
 
-  const roleKey = QA_USER_ROLE_KEY[userKey];
-  const role = QA_ROLES[roleKey];
   const token = invitationTokenFromSeed(role.invitationTokenSeed);
   const digest = invitationTokenDigest(token);
   const scopeUnitId =
@@ -266,7 +292,7 @@ export async function ensureInvitationAccepted(
       ? unitIds[role.scopeUnitKey]
       : null;
 
-  const invitee = await signInUser(apiUrl, publishableKey, userKey);
+  const invitee = await signInIdentity(apiUrl, publishableKey, user);
   const existingAccept = await invitee.rpc("accept_organisation_invitation", {
     invitation_token_digest: digest,
   });
@@ -280,7 +306,7 @@ export async function ensureInvitationAccepted(
     {
       target_organisation_id: organisationId,
       invitation_recipient_type: "email",
-      invitation_canonical_recipient: QA_USERS[userKey].email,
+      invitation_canonical_recipient: user.email,
       invitation_token_digest: digest,
       invitation_expires_at: new Date(
         Date.now() + 7 * 24 * 60 * 60 * 1000,
@@ -305,6 +331,28 @@ export async function ensureInvitationAccepted(
   if (acceptError) {
     throw acceptError;
   }
+}
+
+export async function ensureInvitationAccepted(
+  ownerClient: SupabaseClient,
+  apiUrl: string,
+  publishableKey: string,
+  organisationId: string,
+  userKey: InvitedUserKey,
+  roleVersionId: string,
+  unitIds: UnitMap,
+) {
+  const roleKey = QA_USER_ROLE_KEY[userKey];
+  await ensureInvitationAcceptedForIdentity(
+    ownerClient,
+    apiUrl,
+    publishableKey,
+    organisationId,
+    QA_USERS[userKey],
+    QA_ROLES[roleKey],
+    roleVersionId,
+    unitIds,
+  );
 }
 
 export async function ensureDisplayNames(

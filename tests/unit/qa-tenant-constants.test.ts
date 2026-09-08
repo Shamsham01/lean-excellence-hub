@@ -11,6 +11,7 @@ import {
   QA_UNITS,
   QA_USERS,
 } from "../../scripts/qa-tenant/constants";
+import { SITE_BOUNDARY_PEOPLE_DELEGATE } from "../../scripts/qa-tenant/site-boundary-constants";
 
 describe("CookieWorks QA constants", () => {
   it("uses a dedicated organisation code separate from Apex demo", () => {
@@ -47,6 +48,31 @@ describe("CookieWorks QA constants", () => {
     for (const user of Object.values(QA_USERS)) {
       expect(user.email.endsWith("@cookieworks.local")).toBe(true);
     }
+  });
+
+  it("keeps the CookieWorks foundation at seven personas", () => {
+    expect(Object.keys(QA_USERS)).toEqual([
+      "admin",
+      "ciManager",
+      "productionManager",
+      "teamLeader",
+      "operator",
+      "assessor",
+      "finance",
+    ]);
+    expect(Object.keys(QA_USERS)).toHaveLength(7);
+    expect(
+      Object.values(QA_USERS).map((user) => user.email as string),
+    ).not.toContain("people-manager@cookieworks.local");
+  });
+
+  it("keeps the People delegate persona outside the CookieWorks foundation", () => {
+    expect(SITE_BOUNDARY_PEOPLE_DELEGATE.email).toBe(
+      "people-manager@cookieworks.local",
+    );
+    expect(
+      Object.values(QA_USERS).map((user) => user.id as string),
+    ).not.toContain(SITE_BOUNDARY_PEOPLE_DELEGATE.id);
   });
 
   it("exposes the exact hosted confirmation token contract", () => {

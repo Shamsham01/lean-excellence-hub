@@ -37,6 +37,7 @@
     "db:seed-demo": "node --import tsx scripts/demo-seed/seed.ts",
     "qa:cookie:seed": "node --import tsx scripts/qa-tenant/seed.ts",
     "qa:cookie:reset": "node --import tsx scripts/qa-tenant/reset.ts",
+    "qa:site-boundary:reset": "node --import tsx scripts/qa-tenant/site-boundary-seed.ts",
     "qa:cookie:inventory": "node --import tsx scripts/qa-tenant/inventory-cli.ts",
     "qa:cookie:hosted-reset": "node --import tsx scripts/qa-tenant/hosted-reset.ts",
     "qa:cookie:hosted-seed": "node --import tsx scripts/qa-tenant/hosted-seed-cli.ts",

@@ -214,6 +214,7 @@ jobs:
               tests/e2e/gemba-journeys.spec.ts
               tests/e2e/scheduling-journeys.spec.ts
               tests/e2e/milestone6-closure.spec.ts
+              tests/e2e/site-security-boundary.spec.ts
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts
