@@ -36,19 +36,24 @@ function loadLocalSupabaseEnv(): Record<string, string> {
 }
 
 const localSupabaseEnv = loadLocalSupabaseEnv();
+const isCi = Boolean(process.env.CI);
+const webServerCommand = isCi
+  ? `npm run build && npm run start -- --hostname 127.0.0.1 --port ${port}`
+  : `npm run dev -- --hostname 127.0.0.1 --port ${port}`;
 
 export default defineConfig({
-  forbidOnly: Boolean(process.env.CI),
+  forbidOnly: isCi,
   fullyParallel: true,
-  reporter: process.env.CI ? "github" : "list",
-  retries: process.env.CI ? 2 : 0,
+  reporter: isCi ? "github" : "list",
+  retries: isCi ? 2 : 0,
   testDir: "./tests/e2e",
   use: {
     baseURL,
     trace: "on-first-retry",
   },
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port} --webpack`,
+    command: webServerCommand,
+    timeout: isCi ? 180_000 : 60_000,
     env: {
       APP_ORIGIN: baseURL,
       AUTH_RATE_LIMIT_PEPPER:
@@ -77,7 +82,7 @@ export default defineConfig({
           : (process.env.AI_PROVIDER ?? "openai"),
       AI_ALLOW_FAKE_PROVIDER: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
     },
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !isCi,
     url: baseURL,
   },
   projects: [

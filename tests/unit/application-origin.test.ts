@@ -60,6 +60,21 @@ describe("application origin resolution", () => {
     });
   });
 
+  it("allows localhost in a compiled local E2E server", () => {
+    const result = resolveApplicationOrigin({
+      environment: {
+        APP_ORIGIN: "http://127.0.0.1:3000",
+        NODE_ENV: "production",
+      },
+      allowLocalOrigin: true,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      origin: "http://127.0.0.1:3000",
+    });
+  });
+
   it("derives production origin from forwarded headers when APP_ORIGIN is local", () => {
     const requestHeaders = new Headers({
       "x-forwarded-host": "lean-excellence-hub.netlify.app",

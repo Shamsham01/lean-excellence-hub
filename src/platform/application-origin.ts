@@ -1,5 +1,8 @@
-import type { ServerEnvironment } from "@/platform/env";
-import { getServerEnvironment } from "@/platform/env";
+import {
+  getServerEnvironment,
+  isLocalSupabaseE2eRuntime,
+  type ServerEnvironment,
+} from "@/platform/env";
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
@@ -12,6 +15,7 @@ export type ApplicationOriginResult =
 type ResolveApplicationOriginOptions = {
   environment?: Pick<ServerEnvironment, "APP_ORIGIN" | "NODE_ENV">;
   requestHeaders?: Headers;
+  allowLocalOrigin?: boolean;
 };
 
 export function normalizeApplicationOrigin(origin: string): string {
@@ -81,9 +85,14 @@ export function resolveApplicationOrigin(
     return { ok: true, origin: derivedOrigin };
   }
 
+  const allowLocalOrigin =
+    options.allowLocalOrigin ??
+    (options.environment === undefined && isLocalSupabaseE2eRuntime());
+
   if (
     environment.NODE_ENV === "development" ||
-    environment.NODE_ENV === "test"
+    environment.NODE_ENV === "test" ||
+    allowLocalOrigin
   ) {
     return { ok: true, origin: configuredOrigin };
   }

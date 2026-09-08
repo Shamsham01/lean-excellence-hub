@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { AI_REASONING_EFFORTS } from "@/platform/ai/types";
+import { isLocalSupabaseE2eRuntime } from "@/platform/env";
 
 export { AI_REASONING_EFFORTS } from "@/platform/ai/types";
 export type { AiReasoningEffort } from "@/platform/ai/types";
@@ -54,7 +55,9 @@ export function isApplicationAiProviderAvailable(): boolean {
 
   const provider = env.AI_PROVIDER ?? "openai";
   if (provider === "fake") {
-    if (process.env.NODE_ENV === "production") return false;
+    if (process.env.NODE_ENV === "production" && !isLocalSupabaseE2eRuntime()) {
+      return false;
+    }
     return env.AI_ALLOW_FAKE_PROVIDER === "1";
   }
 
