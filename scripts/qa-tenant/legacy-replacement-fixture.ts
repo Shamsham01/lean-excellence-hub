@@ -49,6 +49,30 @@ export const LEGACY_REPLACEMENT_ISOLATION_ORG = {
   name: "QA Notification Isolation Org",
 } as const;
 
+function ensureUnitClosureSelfRow(
+  databaseUrl: string,
+  organisationId: string,
+  unitId: string,
+) {
+  runSupabaseDbQuery({
+    databaseUrl,
+    sql: `
+      insert into public.organisation_unit_closure (
+        organisation_id,
+        ancestor_unit_id,
+        descendant_unit_id,
+        depth
+      ) values (
+        '${organisationId}'::uuid,
+        '${unitId}'::uuid,
+        '${unitId}'::uuid,
+        0
+      )
+      on conflict do nothing;
+    `,
+  });
+}
+
 function escapeSqlLiteral(value: string) {
   return value.replaceAll("'", "''");
 }
@@ -1014,6 +1038,8 @@ export async function seedLegacyReplacementFixture(options: {
     `,
   });
 
+  ensureUnitClosureSelfRow(options.databaseUrl, orgId, unitId);
+
   const membershipId = runSupabaseDbQueryJson<{ id: string }>({
     databaseUrl: options.databaseUrl,
     outputFormat: "json",
@@ -1134,6 +1160,18 @@ export async function seedLegacyReplacementFixture(options: {
           'Isolation Site',
           'plant',
           'active'
+        );
+
+        insert into public.organisation_unit_closure (
+          organisation_id,
+          ancestor_unit_id,
+          descendant_unit_id,
+          depth
+        ) values (
+          '${isolationOrgId}'::uuid,
+          '${isolationUnitId}'::uuid,
+          '${isolationUnitId}'::uuid,
+          0
         );
 
         insert into public.organisation_memberships (
