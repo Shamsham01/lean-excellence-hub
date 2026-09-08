@@ -1037,14 +1037,17 @@ select ok(
   'multi-resp suggestions grant at Bodmin Production'
 );
 
+insert into site_ids (key, id)
+select 'multi_resp_gemba_grant', public.grant_role_version(
+  (select id from site_ids where key = 'organisation'),
+  (select id from site_ids where key = 'multi_resp_membership'),
+  (select id from site_ids where key = 'gemba_role_version'),
+  'unit_subtree',
+  (select id from site_ids where key = 'exeter_site')
+);
+
 select ok(
-  public.grant_role_version(
-    (select id from site_ids where key = 'organisation'),
-    (select id from site_ids where key = 'multi_resp_membership'),
-    (select id from site_ids where key = 'gemba_role_version'),
-    'unit_subtree',
-    (select id from site_ids where key = 'exeter_site')
-  ) is not null,
+  (select id from site_ids where key = 'multi_resp_gemba_grant') is not null,
   'multi-resp gemba grant at Exeter site'
 );
 
@@ -1152,12 +1155,14 @@ select set_config(
   true
 );
 
-update public.access_grants
-set status = 'revoked'
-where organisation_id = (select id from site_ids where key = 'organisation')
-  and grantee_membership_id = (select id from site_ids where key = 'multi_resp_membership')
-  and role_version_id = (select id from site_ids where key = 'gemba_role_version')
-  and status = 'active';
+select ok(
+  public.revoke_access_grant(
+    (select id from site_ids where key = 'organisation'),
+    (select id from site_ids where key = 'multi_resp_gemba_grant'),
+    'revoke gemba for multi-resp isolation test'
+  ),
+  'gemba grant revoked for multi-resp persona'
+);
 
 select set_config(
   'request.jwt.claims',
