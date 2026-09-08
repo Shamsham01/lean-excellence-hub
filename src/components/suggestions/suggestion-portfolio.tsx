@@ -80,18 +80,17 @@ function PaginationControls({
       <div className="flex flex-wrap items-center gap-2">
         {page > 1 ? (
           <Button variant="outline" size="sm" className="min-h-11" asChild>
-            <Link
+            <a
               href={suggestionPortfolioHref({
                 ...filters,
                 page: page - 1,
                 pageSize,
               })}
               aria-label="Previous page"
-              prefetch={false}
               data-testid="suggestion-portfolio-previous"
             >
               Previous
-            </Link>
+            </a>
           </Button>
         ) : (
           <Button
@@ -109,18 +108,17 @@ function PaginationControls({
         </span>
         {page < totalPages ? (
           <Button variant="outline" size="sm" className="min-h-11" asChild>
-            <Link
+            <a
               href={suggestionPortfolioHref({
                 ...filters,
                 page: page + 1,
                 pageSize,
               })}
               aria-label="Next page"
-              prefetch={false}
               data-testid="suggestion-portfolio-next"
             >
               Next
-            </Link>
+            </a>
           </Button>
         ) : (
           <Button
@@ -351,7 +349,7 @@ export function SuggestionPortfolio({
               asChild
               data-testid="suggestion-portfolio-clear-filters"
             >
-              <Link href="/platform/suggestions">Clear filters</Link>
+              <a href="/platform/suggestions">Clear filters</a>
             </Button>
           ) : null}
         </div>
@@ -522,7 +520,7 @@ export function SuggestionPortfolio({
                 className="mt-4 min-h-11"
                 asChild
               >
-                <Link href="/platform/suggestions">Clear filters</Link>
+                <a href="/platform/suggestions">Clear filters</a>
               </Button>
             ) : null}
           </div>
