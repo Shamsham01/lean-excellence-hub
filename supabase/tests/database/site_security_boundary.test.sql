@@ -842,7 +842,7 @@ select ok(
     'Bodmin Award',
     'Great teamwork',
     (select id from site_ids where key = 'bodmin_site'),
-    'team',
+    'organisation',
     array[(select id from site_ids where key = 'bodmin_operator_membership')]::uuid[]
   ) is not null,
   'Bodmin recognition award created'
