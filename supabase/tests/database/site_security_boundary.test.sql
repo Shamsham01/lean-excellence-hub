@@ -818,18 +818,20 @@ select ok(
 );
 
 insert into site_ids (key, id)
-select 'bodmin_action', public.create_action('Bodmin Action');
-
-update public.actions
-set unit_id = (select id from site_ids where key = 'bodmin_packing')
-where id = (select id from site_ids where key = 'bodmin_action');
+select 'bodmin_action', public.create_action(
+  'Bodmin Action',
+  null,
+  'normal',
+  (select id from site_ids where key = 'bodmin_packing')
+);
 
 insert into site_ids (key, id)
-select 'exeter_action', public.create_action('Exeter Action');
-
-update public.actions
-set unit_id = (select id from site_ids where key = 'exeter_packing')
-where id = (select id from site_ids where key = 'exeter_action');
+select 'exeter_action', public.create_action(
+  'Exeter Action',
+  null,
+  'normal',
+  (select id from site_ids where key = 'exeter_packing')
+);
 
 insert into site_ids (key, id)
 select 'recognition_type', public.create_recognition_type('Teamwork', 'teamwork');
