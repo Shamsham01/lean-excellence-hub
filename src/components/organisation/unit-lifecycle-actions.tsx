@@ -228,8 +228,9 @@ export function UnitLifecycleActions({
           <DialogHeader>
             <DialogTitle>Edit unit</DialogTitle>
             <DialogDescription>
-              Update the display name or type. Unit code and identifier are
-              preserved.
+              Update the display name or operational type label. Unit code and
+              identifier are preserved. Site-boundary classification cannot be
+              changed here.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">

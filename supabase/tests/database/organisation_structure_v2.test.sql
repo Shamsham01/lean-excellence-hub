@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(25);
 
 insert into auth.users (
   id,
@@ -396,6 +396,53 @@ select ok(
     (select id from orgv2_ids where key = 'exeter_site')
   ),
   'site containment remains intact for membership site access'
+);
+
+select throws_ok(
+  format(
+    'select public.update_organisation_unit(%L::uuid, %L::uuid, %L, %L)',
+    (select id from orgv2_ids where key = 'organisation'),
+    (select id from orgv2_ids where key = 'bodmin_site'),
+    'Bodmin Site',
+    'department'
+  ),
+  '23514',
+  'site boundary classification cannot be changed through unit editing',
+  'site to non-site type edit rejected'
+);
+
+select throws_ok(
+  format(
+    'select public.update_organisation_unit(%L::uuid, %L::uuid, %L, %L)',
+    (select id from orgv2_ids where key = 'organisation'),
+    (select id from orgv2_ids where key = 'bodmin_packing'),
+    'Bodmin Packing',
+    'site'
+  ),
+  '23514',
+  'site boundary classification cannot be changed through unit editing',
+  'non-site to site type edit rejected'
+);
+
+select ok(
+  public.update_organisation_unit(
+    (select id from orgv2_ids where key = 'organisation'),
+    (select id from orgv2_ids where key = 'bodmin_production'),
+    'Bodmin Production',
+    'division'
+  ),
+  'non-site to non-site type edit allowed'
+);
+
+select is(
+  (
+    select id
+    from public.organisation_units
+    where organisation_id = (select id from orgv2_ids where key = 'organisation')
+      and code = 'bodmin-site'
+  ),
+  (select id from orgv2_ids where key = 'bodmin_site'),
+  'rejected site type edit preserves UUID'
 );
 
 select * from finish();

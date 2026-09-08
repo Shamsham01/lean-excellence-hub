@@ -17,6 +17,8 @@ declare
   current_unit public.organisation_units%rowtype;
   trimmed_name text := btrim(unit_name);
   trimmed_type text := btrim(unit_type);
+  current_semantic_scope text;
+  new_semantic_scope text;
 begin
   if private.current_membership_id(target_organisation_id) is null
     or not private.has_scoped_permission(
@@ -57,37 +59,15 @@ begin
   end if;
 
   if trimmed_type is distinct from current_unit.unit_type then
-    if private.organisation_requires_site_boundary(target_organisation_id)
-      and private.normalise_organisation_unit_semantic_scope(trimmed_type) = 'site'
-      and current_unit.parent_unit_id is not null
-      and private.resolve_site_unit_id(
-        target_organisation_id,
-        current_unit.parent_unit_id
-      ) is not null then
-      raise exception 'nested site units are not permitted'
-        using errcode = '23514';
-    end if;
+    current_semantic_scope :=
+      private.normalise_organisation_unit_semantic_scope(current_unit.unit_type);
+    new_semantic_scope :=
+      private.normalise_organisation_unit_semantic_scope(trimmed_type);
 
-    if private.organisation_requires_site_boundary(target_organisation_id)
-      and private.normalise_organisation_unit_semantic_scope(
-        current_unit.unit_type
-      ) = 'site'
-      and private.resolve_site_unit_id(
-        target_organisation_id,
-        current_unit.id
-      ) = current_unit.id
-      and exists (
-        select 1
-        from public.organisation_unit_closure closure
-        join public.organisation_units descendant
-          on descendant.organisation_id = closure.organisation_id
-         and descendant.id = closure.descendant_unit_id
-        where closure.organisation_id = target_organisation_id
-          and closure.ancestor_unit_id = current_unit.id
-          and closure.depth > 0
-          and descendant.status = 'active'
-      ) then
-      raise exception 'site unit type cannot change while active descendants exist'
+    if (current_semantic_scope = 'site')
+      is distinct from (new_semantic_scope = 'site') then
+      raise exception
+        'site boundary classification cannot be changed through unit editing'
         using errcode = '23514';
     end if;
   end if;
