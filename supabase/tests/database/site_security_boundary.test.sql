@@ -1,6 +1,6 @@
 begin;
 
-select plan(100);
+select plan(102);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -1272,9 +1272,25 @@ select is(
 );
 
 -- Anchor/site consistency enforcement
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"c1000000-0000-0000-0000-000000000001","email":"cw-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from site_ids where key = 'organisation')),
+  'owner selects organisation for anchor/site consistency probes'
+);
+
 select throws_ok(
   format(
-    'update public.maturity_assessments set unit_id = %L::uuid where id = %L::uuid',
+    $sql$
+      set local role postgres;
+      update public.maturity_assessments
+      set unit_id = %L::uuid
+      where id = %L::uuid
+    $sql$,
     (select id from site_ids where key = 'exeter_site'),
     (select id from site_ids where key = 'bodmin_assessment')
   ),
@@ -1285,7 +1301,12 @@ select throws_ok(
 
 select throws_ok(
   format(
-    'update public.maturity_assessments set site_unit_id = %L::uuid where id = %L::uuid',
+    $sql$
+      set local role postgres;
+      update public.maturity_assessments
+      set site_unit_id = %L::uuid
+      where id = %L::uuid
+    $sql$,
     (select id from site_ids where key = 'exeter_site'),
     (select id from site_ids where key = 'bodmin_assessment')
   ),
@@ -1295,6 +1316,17 @@ select throws_ok(
 );
 
 -- Directory enumeration containment
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"c1000000-0000-0000-0000-000000000002","email":"bodmin-operator@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from site_ids where key = 'organisation')),
+  'Bodmin operator selects organisation for directory enumeration probe'
+);
+
 select is(
   (
     select count(*)::integer
@@ -1320,7 +1352,7 @@ select ok(
 select is(
   (
     select count(*)::integer
-    from public.get_delegatable_access_offers() -> 'offers' offer
+    from jsonb_array_elements(public.get_delegatable_access_offers() -> 'offers') offer
     cross join lateral jsonb_array_elements(offer -> 'scope_options') scope_option
     where scope_option ->> 'unit_code' = 'exeter-factory'
   ),
