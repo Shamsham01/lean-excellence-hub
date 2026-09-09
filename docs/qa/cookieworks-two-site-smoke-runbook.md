@@ -36,14 +36,14 @@ Foundation-only state after reset:
 - zero Training/Skills transactional business data beyond allowed catalogue/bootstrap
 - no Apex/demo tenant leakage
 
-Local verification commands:
+Local verification commands (`npm run qa:cookie:inventory` is **local Supabase only** — it uses `loadLocalSupabaseEnv()` and must not be used against hosted credentials):
 
 ```bash
 npm run db:reset
 npm run db:seed-demo
 LEANHUB_ALLOW_QA_TENANT=1 npm run qa:cookie:reset
 LEANHUB_ALLOW_QA_TENANT=1 npm run qa:cookie:reset   # prove idempotence
-npm run qa:cookie:inventory
+npm run qa:cookie:inventory   # local-only inventory report
 ```
 
 ## Hosted rollout — DO NOT EXECUTE IN PR4
@@ -52,10 +52,11 @@ Maintainer sequence after merge and CI green on `main`:
 
 1. Pull latest `main`.
 2. Check hosted migration status (`supabase migration list` against hosted project).
-3. Run hosted CookieWorks dry-run inventory:
+3. Run hosted CookieWorks dry-run plan (read-only; uses hosted credentials):
    ```bash
    npm run qa:cookie:hosted-replacement -- --dry-run
    ```
+   When CookieWorks is already present, this dry-run invokes the **complete PR4 foundation verifier** (8 personas, 16 units, 2 site roots, workforce placements, clean module state).
 4. Apply pending database migrations only with explicit maintainer approval.
 5. Rebuild/update CookieWorks foundation using the guarded hosted path:
    ```bash
@@ -65,11 +66,11 @@ Maintainer sequence after merge and CI green on `main`:
    ```bash
    LEANHUB_ALLOW_QA_TENANT=1 npm run qa:cookie:hosted-seed
    ```
-6. Verify final foundation:
+6. Verify final hosted foundation (read-only — do **not** use `npm run qa:cookie:inventory`, which is local-only):
    ```bash
-   npm run qa:cookie:inventory
+   npm run qa:cookie:hosted-replacement -- --dry-run
    ```
-   Expect: 1 organisation, 2 site roots, 16 units, 8 personas, foundation-only module counts.
+   Expect dry-run assessment to report CookieWorks foundation verified with the complete PR4 contract: 1 organisation, 2 site roots, 16 units, 8 personas, 8 active role grants, 3 job functions, 4 placements, zero module business rows.
 7. Log into hosted app with foundation personas.
 8. Begin manual smoke (below).
 

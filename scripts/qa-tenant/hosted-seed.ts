@@ -13,7 +13,7 @@ import {
   formatInventoryReport,
 } from "./inventory";
 import {
-  assertCookieWorksFoundationOnlyVerified,
+  assertCookieWorksCompleteFoundationVerified,
   formatVerificationSummary,
 } from "./verification";
 
@@ -61,20 +61,29 @@ export async function runHostedCookieWorksSeed(options?: {
   });
 
   const inventory = collectCookieWorksInventory(credentials.databaseUrl);
-  const verification = assertCookieWorksFoundationOnlyVerified(
-    credentials.databaseUrl,
-  );
+  const foundationVerification =
+    await assertCookieWorksCompleteFoundationVerified(
+      credentials.databaseUrl,
+      admin,
+    );
 
   console.log(formatInventoryReport(inventory));
   console.log("");
-  console.log(formatVerificationSummary(verification));
+  console.log(formatVerificationSummary(foundationVerification.verification));
   console.log("");
   console.log("Hosted CookieWorks QA foundation seed complete.");
   console.log(
     `Organisation: ${QA_ORGANISATION.name} (${QA_ORGANISATION.code})`,
   );
   console.log(`Organisation ID: ${organisationId}`);
-  console.log("Inventory dry-run: npm run qa:cookie:hosted-reset");
+  console.log(
+    "Hosted verification dry-run: npm run qa:cookie:hosted-replacement -- --dry-run",
+  );
 
-  return { organisationId, inventory, verification };
+  return {
+    organisationId,
+    inventory,
+    verification: foundationVerification.verification,
+    foundationVerification,
+  };
 }

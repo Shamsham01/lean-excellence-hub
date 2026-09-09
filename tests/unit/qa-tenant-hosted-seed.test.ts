@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { QA_ORGANISATION_CODE } from "../../scripts/qa-tenant/constants";
+import { QA_FOUNDATION_CONTRACT, QA_ORGANISATION_CODE } from "../../scripts/qa-tenant/constants";
 import {
   assertHostedSeedAllowed,
   resolveHostedSeedCredentials,
@@ -103,6 +103,14 @@ describe("hosted CookieWorks seed runner", () => {
       isFoundationOnly: true,
     };
 
+    const foundationVerification = {
+      organisation: inventory.organisation,
+      verification,
+      membershipCount: QA_FOUNDATION_CONTRACT.personas,
+      unitCount: QA_FOUNDATION_CONTRACT.units,
+      roleGrantCount: QA_FOUNDATION_CONTRACT.personas,
+    };
+
     const inventoryModule = await import("../../scripts/qa-tenant/inventory");
     const verificationModule =
       await import("../../scripts/qa-tenant/verification");
@@ -115,8 +123,8 @@ describe("hosted CookieWorks seed runner", () => {
     );
     vi.spyOn(
       verificationModule,
-      "assertCookieWorksFoundationOnlyVerified",
-    ).mockReturnValue(verification);
+      "assertCookieWorksCompleteFoundationVerified",
+    ).mockResolvedValue(foundationVerification);
     vi.spyOn(verificationModule, "formatVerificationSummary").mockReturnValue(
       "FOUNDATION-ONLY VERIFIED",
     );
@@ -133,7 +141,18 @@ describe("hosted CookieWorks seed runner", () => {
         publishableKey: hostedCredentials.publishableKey,
       }),
     );
+    expect(
+      verificationModule.assertCookieWorksCompleteFoundationVerified,
+    ).toHaveBeenCalledWith(
+      hostedCredentials.databaseUrl,
+      expect.objectContaining({
+        auth: expect.objectContaining({ autoRefreshToken: false }),
+      }),
+    );
     expect(result.verification.isFoundationOnly).toBe(true);
+    expect(result.foundationVerification?.unitCount).toBe(
+      QA_FOUNDATION_CONTRACT.units,
+    );
     expect(result.organisationId).toBe("org-uuid");
   });
 
@@ -172,18 +191,28 @@ describe("hosted CookieWorks seed runner", () => {
     );
     vi.spyOn(
       verificationModule,
-      "assertCookieWorksFoundationOnlyVerified",
-    ).mockReturnValue({
+      "assertCookieWorksCompleteFoundationVerified",
+    ).mockResolvedValue({
       organisation: {
         id: "org-uuid",
         code: QA_ORGANISATION_CODE,
         name: "CookieWorks Manufacturing",
       },
-      foundationCounts: [],
-      moduleTableCounts: [],
-      indirectCounts: [],
-      failures: [],
-      isFoundationOnly: true,
+      verification: {
+        organisation: {
+          id: "org-uuid",
+          code: QA_ORGANISATION_CODE,
+          name: "CookieWorks Manufacturing",
+        },
+        foundationCounts: [],
+        moduleTableCounts: [],
+        indirectCounts: [],
+        failures: [],
+        isFoundationOnly: true,
+      },
+      membershipCount: QA_FOUNDATION_CONTRACT.personas,
+      unitCount: QA_FOUNDATION_CONTRACT.units,
+      roleGrantCount: QA_FOUNDATION_CONTRACT.personas,
     });
     vi.spyOn(verificationModule, "formatVerificationSummary").mockReturnValue(
       "FOUNDATION-ONLY VERIFIED",
