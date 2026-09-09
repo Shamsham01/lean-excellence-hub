@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { QA_FOUNDATION_CONTRACT, QA_ORGANISATION_CODE } from "../../scripts/qa-tenant/constants";
+import {
+  QA_FOUNDATION_CONTRACT,
+  QA_ORGANISATION_CODE,
+} from "../../scripts/qa-tenant/constants";
 import {
   assertHostedSeedAllowed,
   resolveHostedSeedCredentials,
