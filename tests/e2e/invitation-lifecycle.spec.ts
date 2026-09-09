@@ -397,6 +397,7 @@ test.describe("Invitation lifecycle", () => {
       .locator("xpath=ancestor::li[1]")
       .getByRole("button", { name: "Revoke" })
       .click();
+    await expect(page.getByText("Invitation revoked.")).toBeVisible();
 
     await page.context().clearCookies();
     await page.goto(toE2eOriginUrl(invitationPath));

@@ -4,13 +4,14 @@ import { getAiEnvironment } from "@/platform/ai/config";
 import { FakeAIProvider } from "@/platform/ai/providers/fake";
 import { createOpenAIProvider } from "@/platform/ai/providers/openai-responses";
 import type { AIProvider } from "@/platform/ai/types";
+import { isLocalSupabaseE2eRuntime } from "@/platform/env";
 
 export function resolveAIProvider(): AIProvider {
   const env = getAiEnvironment();
   const provider = env.AI_PROVIDER ?? "openai";
 
   if (provider === "fake") {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !isLocalSupabaseE2eRuntime()) {
       throw new Error("Fake AI provider is not permitted in production");
     }
     if (env.AI_ALLOW_FAKE_PROVIDER !== "1") {

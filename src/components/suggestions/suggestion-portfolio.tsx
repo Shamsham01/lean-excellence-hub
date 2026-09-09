@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   ALLOWED_PAGE_SIZES,
-  buildSuggestionPortfolioSearchParams,
   hasActiveSuggestionPortfolioFilters,
   suggestionPortfolioHref,
   type SuggestionPortfolioFilters,
@@ -295,43 +291,9 @@ export function SuggestionPortfolio({
   hasAnySuggestions,
   showReviewerWorkflow = false,
 }: SuggestionPortfolioProps) {
-  const router = useRouter();
   const filtersActive = hasActiveSuggestionPortfolioFilters(filters);
   const filteredEmpty =
     items.length === 0 && (filtersActive || hasAnySuggestions);
-
-  function navigateWithFilters(nextFilters: SuggestionPortfolioFilters) {
-    const query = buildSuggestionPortfolioSearchParams({
-      ...nextFilters,
-      page: 1,
-    }).toString();
-    router.push(
-      query ? `/platform/suggestions?${query}` : "/platform/suggestions",
-    );
-  }
-
-  function applyFilters(formData: FormData) {
-    const pageSizeValue = Number(formData.get("pageSize") ?? filters.pageSize);
-
-    navigateWithFilters({
-      ...filters,
-      q: formData.get("q")?.toString().trim() || null,
-      status: formData.get("status")?.toString() || null,
-      programme: formData.get("programme")?.toString() || null,
-      category: formData.get("category")?.toString() || null,
-      originUnit: formData.get("unit")?.toString() || null,
-      reviewer: (formData.get("reviewer")?.toString() ||
-        filters.reviewer ||
-        "all") as SuggestionPortfolioFilters["reviewer"],
-      sort: (formData.get("sort")?.toString() ||
-        filters.sort) as SuggestionPortfolioFilters["sort"],
-      pageSize: ALLOWED_PAGE_SIZES.includes(
-        pageSizeValue as (typeof ALLOWED_PAGE_SIZES)[number],
-      )
-        ? pageSizeValue
-        : filters.pageSize,
-    });
-  }
 
   return (
     <Card data-testid="suggestion-portfolio">
@@ -357,10 +319,8 @@ export function SuggestionPortfolio({
         </div>
 
         <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            applyFilters(new FormData(event.currentTarget));
-          }}
+          method="get"
+          action="/platform/suggestions"
           className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
         >
           <label className="flex min-w-0 flex-col gap-1 text-sm sm:col-span-2 xl:col-span-3 2xl:col-span-2">

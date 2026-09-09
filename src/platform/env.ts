@@ -55,3 +55,7 @@ export function getServerEnvironment(): ServerEnvironment {
     TRUSTED_PROXY_IP_HEADER: process.env.TRUSTED_PROXY_IP_HEADER,
   });
 }
+
+export function isLocalSupabaseE2eRuntime() {
+  return process.env.E2E_WITH_SUPABASE === "1";
+}

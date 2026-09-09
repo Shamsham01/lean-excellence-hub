@@ -127,9 +127,13 @@ Module **management** permissions are never implied by baseline.
 
 ## Handoff — Organisation Structure V2 (PR 3)
 
-- Units are editable via existing RPCs; retirement/move policies need V2 lifecycle
-- Reparenting across sites is a security-sensitive operation (blocked or controlled transfer)
-- Stable UUID preservation already supported
+**Implemented in PR3:** See `docs/development/site-security-boundary.md` (Organisation Structure V2 section).
+
+- Full lifecycle on `/platform/settings/structure`: create, edit (name/type), move, archive, reactivate
+- Stable UUID preserved; unit codes are immutable
+- Archive is non-destructive (`status = retired`); no hard delete in UI
+- Archived units excluded from active tree and new responsibility scope offers; historical grants still display scope names
+- Existing Access & Responsibilities UX unchanged; multi-grant independence verified
 
 ## Test coverage
 

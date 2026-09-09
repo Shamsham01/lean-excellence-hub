@@ -7,6 +7,8 @@ import { seedCookieWorksFoundation } from "./foundation-seed";
 import { loadLocalSupabaseEnv } from "./local-env";
 import { seedCookieWorksModuleFixtures } from "./module-fixtures";
 import {
+  SITE_BOUNDARY_HIERARCHY_DELEGATE,
+  SITE_BOUNDARY_HIERARCHY_DELEGATE_ROLE,
   SITE_BOUNDARY_PEOPLE_DELEGATE,
   SITE_BOUNDARY_PEOPLE_DELEGATE_ROLE,
 } from "./site-boundary-constants";
@@ -313,6 +315,38 @@ export async function seedSiteBoundaryFixture(options: {
 
   if (peopleManagerPlacementError) {
     throw peopleManagerPlacementError;
+  }
+
+  await ensureAuthIdentity(admin, SITE_BOUNDARY_HIERARCHY_DELEGATE);
+
+  const hierarchyDelegateRoleVersionId = await ensurePublishedRoleDefinition(
+    adminClient,
+    organisationId,
+    SITE_BOUNDARY_HIERARCHY_DELEGATE_ROLE,
+  );
+  await ensureInvitationAcceptedForIdentity(
+    adminClient,
+    options.apiUrl,
+    options.publishableKey,
+    organisationId,
+    SITE_BOUNDARY_HIERARCHY_DELEGATE,
+    SITE_BOUNDARY_HIERARCHY_DELEGATE_ROLE,
+    hierarchyDelegateRoleVersionId,
+    unitIds,
+  );
+
+  const hierarchyDelegateClient = await signInIdentity(
+    options.apiUrl,
+    options.publishableKey,
+    SITE_BOUNDARY_HIERARCHY_DELEGATE,
+  );
+  const { error: hierarchyDelegateProfileError } = await hierarchyDelegateClient
+    .from("profiles")
+    .update({ display_name: SITE_BOUNDARY_HIERARCHY_DELEGATE.displayName })
+    .eq("user_id", SITE_BOUNDARY_HIERARCHY_DELEGATE.id);
+
+  if (hierarchyDelegateProfileError) {
+    throw hierarchyDelegateProfileError;
   }
 
   return {

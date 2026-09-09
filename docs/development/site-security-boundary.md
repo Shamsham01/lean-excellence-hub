@@ -174,31 +174,59 @@ After backfill, migration **fails** if any site-boundary organisation has site-o
 
 Focused E2E: `tests/e2e/site-security-boundary.spec.ts` (local QA seed).
 
-## PR3 Organisation Structure V2 contract
+## PR3 Organisation Structure V2
 
-PR3 **may**:
+**Status:** PR 3 of Issue #57 — implemented on `cursor/organisation-structure-v2-pr3`.
 
-- Rename site/unit **without changing UUID**
-- Reparent within the **same site** where lifecycle permits and no populated cross-site transfer is implied
-- Archive / reactivate units following existing status semantics
+### Lifecycle
 
-PR3 **must NOT**:
+| Operation | RPC | Notes |
+|-----------|-----|-------|
+| Create | `create_organisation_unit` | Unchanged; hierarchy.manage on parent |
+| Edit | `update_organisation_unit` | Name and unit type only; code immutable; UUID preserved |
+| Reparent | `move_organisation_unit` | Same-site only when boundary active; closure rebuilt |
+| Archive | `set_organisation_unit_status(..., 'retired', reason)` | Non-destructive; blocks active children, placements, scoped grants |
+| Reactivate | `set_organisation_unit_status(..., 'active', ...)` | Requires active parent |
 
-- Nest sites ambiguously (preserve single-site-ancestor invariant)
-- Move populated units cross-site silently
-- Rewrite historical `site_unit_id` snapshots on operational records
-- Create or leave unresolved site-owned descendants in a site-boundary organisation
+Hard delete is not exposed in the structure UI. Retirement does not revoke grants or move placements — administrators must resolve blockers explicitly.
 
-### Populated / history-bearing detection (PR3 guidance)
+### Stable UUID rule
 
-A unit is **populated/history-bearing** when any of:
+All lifecycle operations mutate `organisation_units` rows in place. Identifiers (`id`, `code`) are preserved for historic references, grants, and operational snapshots.
 
-- Active `membership_job_function_assignments` reference it
-- Active `access_grants` scope it via `unit_subtree`
-- Operational root records snapshot it as anchor or `site_unit_id`
-- Child closure descendants hold any of the above
+### Archive vs delete
 
-Cross-site transfer in PR3 requires an explicit audited workflow that does **not** rewrite `site_unit_id`; new records take new snapshots.
+| | Archive (retire) | Delete |
+|--|------------------|--------|
+| UUID | Preserved | Would break FK history |
+| Status | `retired` | N/A in PR3 UI |
+| Active tree | Hidden | N/A |
+| Historic grants | Remain visible with unit name | N/A |
+| New scope offers | Excluded (`status = active` filter) | N/A |
+
+### Within-site reparent
+
+`move_organisation_unit` rejects cross-site parent selection when `organisation_requires_site_boundary()` is true (`cross-site unit reparent is not permitted`). Cycles, self-parent, and descendant-as-parent are rejected.
+
+### Cross-site move blocked
+
+Cross-site transfer workflow is out of scope for PR3. Operational `site_unit_id` snapshots remain immutable.
+
+### Interaction with scoped responsibilities
+
+- `get_delegatable_access_offers` lists only **active** units for `unit_subtree` scopes
+- Existing grants on archived units continue to evaluate; profile UI shows `scope_unit_name` from the unit row
+- Revoking one grant does not affect other grants (unchanged RBAC2 union semantics)
+- Archive rejects units that anchor active `unit_subtree` grants
+
+### UI
+
+`/platform/settings/structure` — active tree with edit/move/archive actions, archived section with reactivate, create form unchanged.
+
+### Tests
+
+- `supabase/tests/database/organisation_structure_v2.test.sql`
+- `tests/e2e/organisation-structure-v2.spec.ts`
 
 ## Hosted rollout
 

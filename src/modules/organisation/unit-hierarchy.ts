@@ -13,6 +13,7 @@ export type FlatOrganisationUnit = {
   name: string;
   unit_type?: string;
   parent_unit_id?: string | null;
+  status?: string;
 };
 
 export function buildOrganisationUnitTree(
