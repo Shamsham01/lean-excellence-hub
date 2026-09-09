@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { QA_USERS } from "./constants";
 import {
   ensureDisplayNames,
+  ensureFoundationPlacements,
   ensureInvitationAccepted,
   ensurePublishedRole,
   ensureUnits,
@@ -45,6 +46,11 @@ export async function seedCookieWorksFoundation(options: {
       adminClient,
       organisationId,
       "productionManager",
+    ),
+    exeterProductionManager: await ensurePublishedRole(
+      adminClient,
+      organisationId,
+      "exeterProductionManager",
     ),
     teamLeader: await ensurePublishedRole(
       adminClient,
@@ -91,6 +97,15 @@ export async function seedCookieWorksFoundation(options: {
     options.apiUrl,
     options.publishableKey,
     organisationId,
+    "exeterProductionManager",
+    roleVersionIds.exeterProductionManager,
+    unitIds,
+  );
+  await ensureInvitationAccepted(
+    adminClient,
+    options.apiUrl,
+    options.publishableKey,
+    organisationId,
     "teamLeader",
     roleVersionIds.teamLeader,
     unitIds,
@@ -124,6 +139,8 @@ export async function seedCookieWorksFoundation(options: {
   );
 
   await ensureDisplayNames(options.apiUrl, options.publishableKey);
+
+  await ensureFoundationPlacements(adminClient, organisationId, unitIds);
 
   syncAllCookieWorksRolePermissions(options.databaseUrl);
 

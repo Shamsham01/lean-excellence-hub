@@ -39,6 +39,10 @@ describe("seedCookieWorksFoundation databaseUrl contract", () => {
     vi.spyOn(organisationModule, "ensureDisplayNames").mockResolvedValue(
       undefined,
     );
+    vi.spyOn(
+      organisationModule,
+      "ensureFoundationPlacements",
+    ).mockResolvedValue(undefined);
     const syncSpy = vi
       .spyOn(syncModule, "syncAllCookieWorksRolePermissions")
       .mockImplementation(() => undefined);

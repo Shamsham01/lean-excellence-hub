@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   QA_ORGANISATION,
   QA_ROLES,
+  QA_SITE_ROOT_CODES,
   QA_UNITS,
   QA_USER_ROLE_KEY,
   QA_USERS,
@@ -371,4 +372,211 @@ export async function ensureDisplayNames(
       throw error;
     }
   }
+}
+
+async function findMembershipId(
+  client: SupabaseClient,
+  organisationId: string,
+  userId: string,
+) {
+  const { data, error } = await client
+    .from("organisation_memberships")
+    .select("id")
+    .eq("organisation_id", organisationId)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.id ?? null;
+}
+
+async function ensureJobFunction(
+  client: SupabaseClient,
+  code: string,
+  name: string,
+) {
+  const { data: existing, error: existingError } = await client
+    .from("job_functions")
+    .select("id")
+    .eq("code", code)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existing?.id) {
+    return existing.id;
+  }
+
+  const { data, error } = await client.rpc("create_job_function", {
+    target_name: name,
+    target_code: code,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      const { data: retry, error: retryError } = await client
+        .from("job_functions")
+        .select("id")
+        .eq("code", code)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (retryError) {
+        throw retryError;
+      }
+
+      if (retry?.id) {
+        return retry.id;
+      }
+    }
+
+    throw error ?? new Error(`Failed to create job function ${code}`);
+  }
+
+  if (!data) {
+    throw new Error(`Failed to create job function ${code}`);
+  }
+
+  return data as string;
+}
+
+async function ensurePrimaryPlacement(
+  client: SupabaseClient,
+  membershipId: string,
+  jobFunctionId: string,
+  unitId: string,
+) {
+  const { data: existing, error: existingError } = await client
+    .from("membership_job_function_assignments")
+    .select("id, organisational_unit_id")
+    .eq("membership_id", membershipId)
+    .eq("job_function_id", jobFunctionId)
+    .is("valid_to", null)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existing?.organisational_unit_id === unitId) {
+    return;
+  }
+
+  const { error } = await client.rpc("assign_membership_job_function", {
+    target_membership_id: membershipId,
+    target_job_function_id: jobFunctionId,
+    target_primary: true,
+    target_organisational_unit_id: unitId,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function ensureFoundationPlacements(
+  client: SupabaseClient,
+  organisationId: string,
+  unitIds: UnitMap,
+) {
+  const productionManagerJobFunctionId = await ensureJobFunction(
+    client,
+    "cookieworks-production-manager",
+    "Production Manager",
+  );
+  const teamLeaderJobFunctionId = await ensureJobFunction(
+    client,
+    "cookieworks-team-leader",
+    "Team Leader",
+  );
+  const operatorJobFunctionId = await ensureJobFunction(
+    client,
+    "cookieworks-operator",
+    "Operator",
+  );
+
+  const bodminOperationsId = unitIds.operations;
+  const bodminPackingId = unitIds.packing;
+  const exeterOperationsId = unitIds["exeter-operations"];
+
+  if (!bodminOperationsId || !bodminPackingId || !exeterOperationsId) {
+    throw new Error(
+      "CookieWorks foundation placement units missing from unit map.",
+    );
+  }
+
+  const productionManagerMembershipId = await findMembershipId(
+    client,
+    organisationId,
+    QA_USERS.productionManager.id,
+  );
+  const exeterProductionManagerMembershipId = await findMembershipId(
+    client,
+    organisationId,
+    QA_USERS.exeterProductionManager.id,
+  );
+  const teamLeaderMembershipId = await findMembershipId(
+    client,
+    organisationId,
+    QA_USERS.teamLeader.id,
+  );
+  const operatorMembershipId = await findMembershipId(
+    client,
+    organisationId,
+    QA_USERS.operator.id,
+  );
+
+  if (
+    !productionManagerMembershipId ||
+    !exeterProductionManagerMembershipId ||
+    !teamLeaderMembershipId ||
+    !operatorMembershipId
+  ) {
+    throw new Error(
+      "CookieWorks foundation memberships missing for placement seeding.",
+    );
+  }
+
+  await ensurePrimaryPlacement(
+    client,
+    productionManagerMembershipId,
+    productionManagerJobFunctionId,
+    bodminOperationsId,
+  );
+  await ensurePrimaryPlacement(
+    client,
+    exeterProductionManagerMembershipId,
+    productionManagerJobFunctionId,
+    exeterOperationsId,
+  );
+  await ensurePrimaryPlacement(
+    client,
+    teamLeaderMembershipId,
+    teamLeaderJobFunctionId,
+    bodminOperationsId,
+  );
+  await ensurePrimaryPlacement(
+    client,
+    operatorMembershipId,
+    operatorJobFunctionId,
+    bodminPackingId,
+  );
+}
+
+export async function signInQaPersona(
+  apiUrl: string,
+  publishableKey: string,
+  userKey: QaUserKey,
+) {
+  const client = await signInUser(apiUrl, publishableKey, userKey);
+  const organisationId = await resolveOrganisationId(client);
+  await switchOrganisation(client, organisationId);
+  return client;
 }

@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 import { assertDatabaseTypesCurrent } from "./database-types-verify";
-import { QA_ORGANISATION_CODE, QA_USERS } from "./constants";
+import {
+  QA_ORGANISATION_CODE,
+  QA_FOUNDATION_CONTRACT,
+  QA_USERS,
+} from "./constants";
 import {
   collectCookieWorksInventory,
   formatInventoryReport,
@@ -73,8 +77,12 @@ function assertCookieWorksFoundationState(databaseUrl: string) {
     );
   }
 
-  if (!report.includes("users (QA personas): 7")) {
-    throw new Error("CookieWorks inventory expected 7 QA personas.");
+  if (
+    !report.includes(`users (QA personas): ${QA_FOUNDATION_CONTRACT.personas}`)
+  ) {
+    throw new Error(
+      `CookieWorks inventory expected ${QA_FOUNDATION_CONTRACT.personas} QA personas.`,
+    );
   }
 
   if (!report.includes(`Code: ${QA_ORGANISATION_CODE}`)) {
@@ -91,9 +99,9 @@ function assertCookieWorksFoundationState(databaseUrl: string) {
   }
 
   const expectedPersonaCount = Object.keys(QA_USERS).length;
-  if (expectedPersonaCount !== 7) {
+  if (expectedPersonaCount !== QA_FOUNDATION_CONTRACT.personas) {
     throw new Error(
-      `QA persona constant drift: expected 7 personas, found ${expectedPersonaCount}.`,
+      `QA persona constant drift: expected ${QA_FOUNDATION_CONTRACT.personas} personas, found ${expectedPersonaCount}.`,
     );
   }
 

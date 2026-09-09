@@ -337,9 +337,9 @@ describe("hosted tenant replacement runner", () => {
         failures: [],
         isFoundationOnly: true,
       },
-      membershipCount: 7,
-      unitCount: 10,
-      roleGrantCount: 7,
+      membershipCount: 8,
+      unitCount: 16,
+      roleGrantCount: 8,
     });
     vi.spyOn(verificationModule, "formatVerificationSummary").mockReturnValue(
       "FOUNDATION-ONLY VERIFIED",
@@ -411,9 +411,9 @@ describe("hosted tenant replacement runner", () => {
         failures: [],
         isFoundationOnly: true,
       },
-      membershipCount: 7,
-      unitCount: 10,
-      roleGrantCount: 7,
+      membershipCount: 8,
+      unitCount: 16,
+      roleGrantCount: 8,
     });
     vi.spyOn(verificationModule, "formatVerificationSummary").mockReturnValue(
       "FOUNDATION-ONLY VERIFIED",
@@ -496,9 +496,9 @@ describe("hosted tenant replacement runner", () => {
         failures: [],
         isFoundationOnly: true,
       },
-      membershipCount: 7,
-      unitCount: 10,
-      roleGrantCount: 7,
+      membershipCount: 8,
+      unitCount: 16,
+      roleGrantCount: 8,
     });
     vi.spyOn(dbModule, "runSupabaseDbQueryJson").mockReturnValue([
       { user_id: "shared-user" },

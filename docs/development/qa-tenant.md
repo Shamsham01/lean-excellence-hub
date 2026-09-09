@@ -27,6 +27,7 @@ project, not `NODE_ENV=production`). Hosted reset adds stronger maintainer safeg
 | Name | CookieWorks Manufacturing |
 | Code | `cookieworks-manufacturing` |
 | Primary site | Bodmin Cookie Factory |
+| Secondary site | Exeter Cookie Factory |
 
 ### Hierarchy
 
@@ -41,7 +42,16 @@ Bodmin Cookie Factory
 ├── Engineering
 ├── Warehouse
 └── Continuous Improvement
+
+Exeter Cookie Factory
+├── Operations
+│   ├── Mixing & Preparation
+│   ├── Baking
+│   └── Packing
+└── Quality
 ```
+
+Foundation contract (PR4): **2 site roots**, **16 units**, **8 permanent personas**.
 
 ## Personas (local development passwords only)
 
@@ -50,6 +60,7 @@ Bodmin Cookie Factory
 | Organisation Admin | `admin@cookieworks.local` | `Admin@CookieWorks-QA-2026!` |
 | CI / OpEx Manager | `ci-manager@cookieworks.local` | `CiManager@CookieWorks-QA-2026!` |
 | Production Manager | `production-manager@cookieworks.local` | `ProductionMgr@CookieWorks-QA-2026!` |
+| Exeter Production Manager | `exeter-production-manager@cookieworks.local` | `ExeterProdMgr@CookieWorks-QA-2026!` |
 | Team Leader | `team-leader@cookieworks.local` | `TeamLeader@CookieWorks-QA-2026!` |
 | Operator | `operator@cookieworks.local` | `Operator@CookieWorks-QA-2026!` |
 | QA / Maturity Assessor | `assessor@cookieworks.local` | `Assessor@CookieWorks-QA-2026!` |

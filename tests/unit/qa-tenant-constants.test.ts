@@ -5,9 +5,11 @@ import {
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 import {
+  QA_FOUNDATION_CONTRACT,
   QA_ORGANISATION,
   QA_ORGANISATION_CODE,
   QA_HOSTED_RESET_CONFIRM_TOKEN,
+  QA_SITE_ROOT_CODES,
   QA_UNITS,
   QA_USERS,
 } from "../../scripts/qa-tenant/constants";
@@ -33,8 +35,8 @@ describe("CookieWorks QA constants", () => {
     }
   });
 
-  it("models the Bodmin hierarchy with ten organisational units", () => {
-    expect(QA_UNITS).toHaveLength(10);
+  it("models the two-site foundation with sixteen organisational units", () => {
+    expect(QA_UNITS).toHaveLength(QA_FOUNDATION_CONTRACT.units);
     expect(QA_UNITS[0]?.code).toBe("bodmin-cookie-factory");
     expect(QA_UNITS.find((unit) => unit.code === "operations")?.parentKey).toBe(
       "bodmin-cookie-factory",
@@ -42,6 +44,13 @@ describe("CookieWorks QA constants", () => {
     expect(
       QA_UNITS.filter((unit) => unit.parentKey === "operations"),
     ).toHaveLength(4);
+    expect(QA_SITE_ROOT_CODES).toEqual([
+      "bodmin-cookie-factory",
+      "exeter-cookie-factory",
+    ]);
+    expect(
+      QA_UNITS.filter((unit) => unit.parentKey === "exeter-operations"),
+    ).toHaveLength(3);
   });
 
   it("uses fictional @cookieworks.local email domain", () => {
@@ -50,7 +59,7 @@ describe("CookieWorks QA constants", () => {
     }
   });
 
-  it("keeps the CookieWorks foundation at seven personas", () => {
+  it("keeps the CookieWorks foundation at eight permanent personas", () => {
     expect(Object.keys(QA_USERS)).toEqual([
       "admin",
       "ciManager",
@@ -59,8 +68,12 @@ describe("CookieWorks QA constants", () => {
       "operator",
       "assessor",
       "finance",
+      "exeterProductionManager",
     ]);
-    expect(Object.keys(QA_USERS)).toHaveLength(7);
+    expect(Object.keys(QA_USERS)).toHaveLength(QA_FOUNDATION_CONTRACT.personas);
+    expect(QA_USERS.exeterProductionManager.email).toBe(
+      "exeter-production-manager@cookieworks.local",
+    );
     expect(
       Object.values(QA_USERS).map((user) => user.email as string),
     ).not.toContain("people-manager@cookieworks.local");

@@ -23,9 +23,7 @@ import { ensureAuthIdentity, signInIdentity, signInUser } from "./shared/auth";
 
 const EXETER_SITE = {
   code: "exeter-cookie-factory",
-  name: "Exeter Cookie Factory",
   packingCode: "exeter-packing",
-  packingName: "Exeter Packing",
 } as const;
 
 export async function seedSiteBoundaryFixture(options: {
@@ -59,63 +57,14 @@ export async function seedSiteBoundaryFixture(options: {
 
   const unitIds = await ensureUnits(adminClient, organisationId);
 
-  const { data: existingExeterUnits, error: existingExeterUnitsError } =
-    await adminClient
-      .from("organisation_units")
-      .select("id, code")
-      .eq("organisation_id", organisationId)
-      .in("code", [EXETER_SITE.code, EXETER_SITE.packingCode]);
+  const exeterSiteId = unitIds[EXETER_SITE.code];
+  const exeterPackingId = unitIds[EXETER_SITE.packingCode];
+  const bodminPackingUnitId = unitIds["packing"];
 
-  if (existingExeterUnitsError) {
-    throw existingExeterUnitsError;
-  }
-
-  for (const unit of existingExeterUnits ?? []) {
-    unitIds[unit.code] = unit.id;
-  }
-
-  let exeterSiteId = unitIds[EXETER_SITE.code];
-  if (!exeterSiteId) {
-    const { data, error: exeterSiteError } = await adminClient.rpc(
-      "create_organisation_unit",
-      {
-        target_organisation_id: organisationId,
-        target_parent_unit_id: null,
-        unit_code: EXETER_SITE.code,
-        unit_name: EXETER_SITE.name,
-        unit_type: "site",
-      },
+  if (!exeterSiteId || !exeterPackingId || !bodminPackingUnitId) {
+    throw new Error(
+      "Site boundary seed requires PR4 foundation Exeter and Bodmin units.",
     );
-
-    if (exeterSiteError || !data) {
-      throw exeterSiteError ?? new Error("Failed to create Exeter site unit");
-    }
-
-    exeterSiteId = data as string;
-    unitIds[EXETER_SITE.code] = exeterSiteId;
-  }
-
-  let exeterPackingId = unitIds[EXETER_SITE.packingCode];
-  if (!exeterPackingId) {
-    const { data, error: exeterPackingError } = await adminClient.rpc(
-      "create_organisation_unit",
-      {
-        target_organisation_id: organisationId,
-        target_parent_unit_id: exeterSiteId,
-        unit_code: EXETER_SITE.packingCode,
-        unit_name: EXETER_SITE.packingName,
-        unit_type: "area",
-      },
-    );
-
-    if (exeterPackingError || !data) {
-      throw (
-        exeterPackingError ?? new Error("Failed to create Exeter packing unit")
-      );
-    }
-
-    exeterPackingId = data as string;
-    unitIds[EXETER_SITE.packingCode] = exeterPackingId;
   }
 
   const { data: operatorJobFunctionId, error: operatorJobFunctionError } =
@@ -139,12 +88,7 @@ export async function seedSiteBoundaryFixture(options: {
       .eq("user_id", QA_USERS.operator.id)
       .maybeSingle();
 
-  const bodminPackingUnitId = unitIds["packing"];
-  if (
-    operatorMembershipError ||
-    !operatorMembership?.id ||
-    !bodminPackingUnitId
-  ) {
+  if (operatorMembershipError || !operatorMembership?.id) {
     throw (
       operatorMembershipError ??
       new Error(

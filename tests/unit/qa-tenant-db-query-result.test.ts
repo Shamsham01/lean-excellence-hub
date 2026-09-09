@@ -83,14 +83,14 @@ describe("parseSupabaseDbQueryRows", () => {
 describe("extractDbQueryColumn", () => {
   it("extracts a named column from the first row", () => {
     const stdout = JSON.stringify([
-      { inventory: { counts: { memberships: 7 } } },
+      { inventory: { counts: { memberships: 8 } } },
     ]);
     const inventory = extractDbQueryColumn<{ counts: { memberships: number } }>(
       stdout,
       "inventory",
     );
 
-    expect(inventory.counts.memberships).toBe(7);
+    expect(inventory.counts.memberships).toBe(8);
   });
 
   it("fails when column is missing", () => {

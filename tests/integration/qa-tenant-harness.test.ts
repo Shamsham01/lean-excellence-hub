@@ -134,7 +134,7 @@ describe.skipIf(!hasLocalSupabase)(
         (item) => item.label === "organisational units",
       )?.count;
 
-      expect(memberships).toBe(7);
+      expect(memberships).toBe(8);
       expect(units).toBe(QA_UNITS.length);
       expect(
         isFoundationOnlyInventory(secondInventory, {
