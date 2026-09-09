@@ -33,7 +33,9 @@ test.describe("Milestone 6 closure journeys", () => {
     await page.getByTestId("schedule-frequency").selectOption("weekly");
     await page.getByTestId("schedule-submit").click();
 
-    await expect(page).toHaveURL(/\/platform\/5s\/standards\//);
+    await expect(page).toHaveURL((url) =>
+      url.pathname.startsWith("/platform/5s/standards/"),
+    );
     await page.goto("/platform/schedule");
     await expect(
       page
