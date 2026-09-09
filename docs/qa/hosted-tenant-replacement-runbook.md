@@ -385,8 +385,8 @@ Use this path **only** when:
 
 - Legacy demo (`lean-excellence-demo`) is still present
 - CookieWorks (`cookieworks-manufacturing`) already exists and passes the
-  **complete** foundation-only verifier (7 personas, 7 memberships, 10 units,
-  7 active role grants, zero module rows, zero storage objects)
+  **complete** foundation-only verifier (8 personas, 8 memberships, 16 units,
+  8 active role grants, zero module rows, zero storage objects)
 - Legacy and CookieWorks auth identities do **not** overlap
 
 This path deletes **only** the legacy demo tenant. It does **not** re-seed

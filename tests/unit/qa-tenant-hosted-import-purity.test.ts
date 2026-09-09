@@ -65,6 +65,28 @@ describe("hosted seed CLI entrypoint", () => {
           failures: [],
           isFoundationOnly: true,
         },
+        foundationVerification: {
+          organisation: {
+            id: "org-id",
+            code: "cookieworks-manufacturing",
+            name: "CookieWorks Manufacturing",
+          },
+          verification: {
+            organisation: {
+              id: "org-id",
+              code: "cookieworks-manufacturing",
+              name: "CookieWorks Manufacturing",
+            },
+            foundationCounts: [],
+            moduleTableCounts: [],
+            indirectCounts: [],
+            failures: [],
+            isFoundationOnly: true,
+          },
+          membershipCount: 8,
+          unitCount: 16,
+          roleGrantCount: 8,
+        },
       });
 
     await import("../../scripts/qa-tenant/hosted-seed-cli");

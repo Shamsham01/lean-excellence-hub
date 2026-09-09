@@ -17,9 +17,9 @@ describe("buildInventoryFromSqlPayload", () => {
       name: "CookieWorks Manufacturing",
     },
     counts: {
-      memberships: 7,
-      units: 1,
-      role_grants: 7,
+      memberships: 8,
+      units: 16,
+      role_grants: 8,
       storage_objects: 0,
       maturity_models: 0,
       suggestions: 0,
@@ -108,13 +108,13 @@ describe("collectCookieWorksInventoryViaSql", () => {
             code: "cookieworks-manufacturing",
             name: "CookieWorks Manufacturing",
           },
-          counts: { memberships: 7, suggestions: 0 },
+          counts: { memberships: 8, suggestions: 0 },
         },
       },
     ]);
 
     const payload = collectCookieWorksInventoryViaSql("postgresql://example");
     expect(payload.organisation?.code).toBe("cookieworks-manufacturing");
-    expect(payload.counts.memberships).toBe(7);
+    expect(payload.counts.memberships).toBe(8);
   });
 });

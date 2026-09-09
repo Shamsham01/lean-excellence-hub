@@ -1,8 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  QA_FOUNDATION_ALLOWED_MODULE_COUNTS,
+  QA_FOUNDATION_CONTRACT,
   QA_ORGANISATION,
   QA_ORGANISATION_CODE,
+  QA_SITE_ROOT_CODES,
   QA_UNITS,
   QA_USER_IDS,
   QA_USERS,
@@ -194,6 +197,18 @@ function parseVerificationPayload(
         tableName as (typeof PURGE_INFRASTRUCTURE_TABLES)[number],
       )
     ) {
+      continue;
+    }
+    const allowedModuleCount =
+      QA_FOUNDATION_ALLOWED_MODULE_COUNTS[
+        row.resource as keyof typeof QA_FOUNDATION_ALLOWED_MODULE_COUNTS
+      ];
+    if (allowedModuleCount !== undefined) {
+      if (count > allowedModuleCount) {
+        failures.push(
+          `${row.resource}=${count} (expected at most ${allowedModuleCount})`,
+        );
+      }
       continue;
     }
     if (count > 0) {
@@ -417,7 +432,7 @@ export async function assertCookieWorksCompleteFoundationVerified(
   const membershipCount = counts[0]?.memberships ?? 0;
   const unitCount = counts[0]?.units ?? 0;
   const roleGrantCount = counts[0]?.role_grants ?? 0;
-  const expectedPersonas = Object.keys(QA_USERS).length;
+  const expectedPersonas = QA_FOUNDATION_CONTRACT.personas;
 
   if (membershipCount !== expectedPersonas) {
     throw new Error(
@@ -425,15 +440,124 @@ export async function assertCookieWorksCompleteFoundationVerified(
     );
   }
 
+  if (unitCount !== QA_FOUNDATION_CONTRACT.units) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${QA_FOUNDATION_CONTRACT.units} organisational units, found ${unitCount}.`,
+    );
+  }
+
   if (unitCount !== QA_UNITS.length) {
     throw new Error(
-      `CookieWorks foundation verification failed: expected ${QA_UNITS.length} organisational units, found ${unitCount}.`,
+      `CookieWorks foundation verification failed: QA_UNITS length (${QA_UNITS.length}) does not match contract (${QA_FOUNDATION_CONTRACT.units}).`,
     );
   }
 
   if (roleGrantCount !== expectedPersonas) {
     throw new Error(
       `CookieWorks foundation verification failed: expected ${expectedPersonas} active role grants, found ${roleGrantCount}.`,
+    );
+  }
+
+  const siteRootRows = runSupabaseDbQueryJson<{ code: string }>({
+    databaseUrl,
+    outputFormat: "json",
+    retryTransientConnection: true,
+    sql: `
+      select unit_row.code
+      from public.organisation_units unit_row
+      where unit_row.organisation_id = '${organisation.id}'::uuid
+        and unit_row.status = 'active'
+        and unit_row.parent_unit_id is null
+      order by unit_row.code;
+    `,
+  });
+
+  if (siteRootRows.length !== QA_FOUNDATION_CONTRACT.siteRoots) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${QA_FOUNDATION_CONTRACT.siteRoots} site roots, found ${siteRootRows.length}.`,
+    );
+  }
+
+  const siteRootCodes = siteRootRows.map((row) => row.code).sort();
+  const expectedSiteRootCodes = [...QA_SITE_ROOT_CODES].sort();
+  if (siteRootCodes.join("|") !== expectedSiteRootCodes.join("|")) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected site roots ${expectedSiteRootCodes.join(", ")}, found ${siteRootCodes.join(", ")}.`,
+    );
+  }
+
+  for (const siteRootCode of QA_SITE_ROOT_CODES) {
+    const resolveRows = runSupabaseDbQueryJson<{ site_unit_id: string | null }>(
+      {
+        databaseUrl,
+        outputFormat: "json",
+        retryTransientConnection: true,
+        sql: `
+          select private.resolve_site_unit_id(
+            '${organisation.id}'::uuid,
+            (
+              select id
+              from public.organisation_units
+              where organisation_id = '${organisation.id}'::uuid
+                and code = '${siteRootCode}'
+              limit 1
+            )
+          ) as site_unit_id;
+        `,
+      },
+    );
+
+    const resolvedSiteUnitId = resolveRows[0]?.site_unit_id ?? null;
+    const expectedSiteUnitId = runSupabaseDbQueryJson<{ id: string }>({
+      databaseUrl,
+      outputFormat: "json",
+      retryTransientConnection: true,
+      sql: `
+        select id
+        from public.organisation_units
+        where organisation_id = '${organisation.id}'::uuid
+          and code = '${siteRootCode}'
+        limit 1;
+      `,
+    })[0]?.id;
+
+    if (!resolvedSiteUnitId || resolvedSiteUnitId !== expectedSiteUnitId) {
+      throw new Error(
+        `CookieWorks foundation verification failed: site root ${siteRootCode} did not resolve through resolve_site_unit_id.`,
+      );
+    }
+  }
+
+  const workforceCounts = runSupabaseDbQueryJson<{
+    job_functions: number;
+    membership_placements: number;
+  }>({
+    databaseUrl,
+    outputFormat: "json",
+    retryTransientConnection: true,
+    sql: `
+      select
+        (select count(*)::int from public.job_functions where organisation_id = '${organisation.id}'::uuid and status = 'active') as job_functions,
+        (select count(*)::int from public.membership_job_function_assignments assignment
+          join public.organisation_memberships membership
+            on membership.id = assignment.membership_id
+         where membership.organisation_id = '${organisation.id}'::uuid
+           and assignment.valid_to is null) as membership_placements;
+    `,
+  });
+
+  const jobFunctionCount = workforceCounts[0]?.job_functions ?? 0;
+  const placementCount = workforceCounts[0]?.membership_placements ?? 0;
+
+  if (jobFunctionCount !== QA_FOUNDATION_CONTRACT.jobFunctions) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${QA_FOUNDATION_CONTRACT.jobFunctions} job functions, found ${jobFunctionCount}.`,
+    );
+  }
+
+  if (placementCount !== QA_FOUNDATION_CONTRACT.membershipPlacements) {
+    throw new Error(
+      `CookieWorks foundation verification failed: expected ${QA_FOUNDATION_CONTRACT.membershipPlacements} membership placements, found ${placementCount}.`,
     );
   }
 

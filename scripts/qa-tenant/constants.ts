@@ -2,7 +2,29 @@ export const QA_ORGANISATION = {
   code: "cookieworks-manufacturing",
   name: "CookieWorks Manufacturing",
   primarySiteName: "Bodmin Cookie Factory",
+  secondarySiteName: "Exeter Cookie Factory",
 } as const;
+
+/** Deliberate PR4 foundation contract — two sites, compact Exeter hierarchy, eight personas. */
+export const QA_FOUNDATION_CONTRACT = {
+  siteRoots: 2,
+  units: 16,
+  personas: 8,
+  jobFunctions: 3,
+  membershipPlacements: 4,
+} as const;
+
+/** Module-adjacent tables permitted in the clean foundation (workforce placements). */
+export const QA_FOUNDATION_ALLOWED_MODULE_COUNTS = {
+  "public.job_functions": QA_FOUNDATION_CONTRACT.jobFunctions,
+  "public.membership_job_function_assignments":
+    QA_FOUNDATION_CONTRACT.membershipPlacements,
+} as const;
+
+export const QA_SITE_ROOT_CODES = [
+  "bodmin-cookie-factory",
+  "exeter-cookie-factory",
+] as const;
 
 export const QA_ORGANISATION_CODE = QA_ORGANISATION.code;
 
@@ -48,6 +70,12 @@ export const QA_USERS = {
     email: "finance@cookieworks.local",
     password: "Finance@CookieWorks-QA-2026!",
     displayName: "CookieWorks Finance",
+  },
+  exeterProductionManager: {
+    id: "b0000000-0000-0000-0000-000000000010",
+    email: "exeter-production-manager@cookieworks.local",
+    password: "ExeterProdMgr@CookieWorks-QA-2026!",
+    displayName: "Exeter Production Manager",
   },
 } as const;
 
@@ -125,6 +153,48 @@ export const QA_UNITS = [
     name: "Continuous Improvement",
     type: "department",
     parentKey: "bodmin-cookie-factory",
+  },
+  {
+    key: "exeter-cookie-factory",
+    code: "exeter-cookie-factory",
+    name: "Exeter Cookie Factory",
+    type: "plant",
+    parentKey: null,
+  },
+  {
+    key: "exeter-operations",
+    code: "exeter-operations",
+    name: "Operations",
+    type: "department",
+    parentKey: "exeter-cookie-factory",
+  },
+  {
+    key: "exeter-mixing-preparation",
+    code: "exeter-mixing-preparation",
+    name: "Mixing & Preparation",
+    type: "area",
+    parentKey: "exeter-operations",
+  },
+  {
+    key: "exeter-baking",
+    code: "exeter-baking",
+    name: "Baking",
+    type: "area",
+    parentKey: "exeter-operations",
+  },
+  {
+    key: "exeter-packing",
+    code: "exeter-packing",
+    name: "Packing",
+    type: "area",
+    parentKey: "exeter-operations",
+  },
+  {
+    key: "exeter-quality",
+    code: "exeter-quality",
+    name: "Quality",
+    type: "department",
+    parentKey: "exeter-cookie-factory",
   },
 ] as const;
 
@@ -236,6 +306,60 @@ export const QA_ROLES = {
     ],
     invitationTokenSeed: "cookieworks-qa-production-manager-invitation-v1",
   },
+  exeterProductionManager: {
+    canonicalName: "exeter-production-manager",
+    displayName: "Exeter Production Manager",
+    description: "Exeter Operations subtree manager for production oversight.",
+    scopeType: "unit_subtree" as const,
+    scopeUnitKey: "exeter-operations",
+    permissions: [
+      "hierarchy.read",
+      "memberships.read",
+      "actions.read",
+      "actions.create",
+      "actions.update",
+      "actions.assign",
+      "maturity.read",
+      "maturity.assess.formal",
+      "maturity.review",
+      "maturity.approve",
+      "templates.read",
+      "submissions.read",
+      "submissions.create",
+      "attachments.read",
+      "attachments.upload",
+      "five_s.read",
+      "five_s.standards.manage",
+      "five_s.audit.perform",
+      "five_s.audit.review",
+      "gemba.read",
+      "gemba.definitions.manage",
+      "gemba.walk.perform",
+      "gemba.walk.review",
+      "schedules.read",
+      "schedules.manage",
+      "schedules.complete",
+      "training.read",
+      "skills.read",
+      "people.capability.read",
+      "suggestions.read",
+      "suggestions.review",
+      "suggestions.manage",
+      "recognition.read",
+      "recognition.award",
+      "projects.read",
+      "projects.manage",
+      "benefits.read",
+      "benefits.create",
+      "benefits.manage",
+      "benefits.validate.ci",
+      "problem_solving.view",
+      "problem_solving.create",
+      "problem_solving.manage",
+    ],
+    invitationTokenSeed:
+      "cookieworks-qa-exeter-production-manager-invitation-v1",
+  },
   teamLeader: {
     canonicalName: "team-leader",
     displayName: "Team Leader",
@@ -341,6 +465,7 @@ export const QA_ROLES = {
 export const QA_USER_ROLE_KEY = {
   ciManager: "ciManager",
   productionManager: "productionManager",
+  exeterProductionManager: "exeterProductionManager",
   teamLeader: "teamLeader",
   operator: "operator",
   assessor: "assessor",

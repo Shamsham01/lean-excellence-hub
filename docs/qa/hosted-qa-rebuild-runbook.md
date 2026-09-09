@@ -144,7 +144,7 @@ npm run qa:cookie:hosted-seed
 | `npm run qa:cookie:seed` | **Local only** — blocked for `*.supabase.co` |
 | `npm run qa:cookie:hosted-seed` | **Hosted only** — requires explicit QA project ref guards |
 
-Hosted seed creates organisation hierarchy, RBAC, and seven QA personas only.
+Hosted seed creates organisation hierarchy, RBAC, and eight QA personas only.
 No module/business data. The command is non-destructive and idempotent.
 
 **Do not run** `npm run db:seed-demo`, `npm run qa:cookie:seed`, or
@@ -251,7 +251,7 @@ This scoped reset does **not** remove Apex or other tenants. Use
 - [ ] CookieWorks foundation seeded (`qa:cookie:hosted-seed`, not `qa:cookie:seed`)
 - [ ] Apex organisation absent (`apex-manufacturing` not found)
 - [ ] CookieWorks organisation present (`cookieworks-manufacturing`)
-- [ ] 7 QA personas confirmed
+- [ ] 8 QA personas confirmed
 - [ ] All module counts = 0
 - [ ] `FOUNDATION-ONLY VERIFIED` confirmed
 - [ ] `organisation-evidence` contains no historic QA objects

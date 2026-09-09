@@ -2,10 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { QA_ORGANISATION_CODE } from "./constants";
-import {
-  assertCookieWorksResetVerified,
-  purgeCookieWorksTenantModules,
-} from "./delete-tenant";
+import { purgeCookieWorksTenantModules } from "./delete-tenant";
 import { seedCookieWorksFoundation } from "./foundation-seed";
 import {
   assertHostedResetAllowed,
@@ -19,13 +16,27 @@ import {
 } from "./inventory";
 import { countCookieWorksStorageObjects } from "./storage-cleanup";
 import {
+  assertCookieWorksCompleteFoundationVerified,
   formatVerificationSummary,
   verifyCookieWorksTenant,
 } from "./verification";
 
-async function main() {
-  const { mode } = parseHostedResetArgs(process.argv.slice(2));
-  const credentials = resolveHostedCredentials();
+export type HostedResetCredentials = ReturnType<
+  typeof resolveHostedCredentials
+>;
+export type HostedResetMode = ReturnType<typeof parseHostedResetArgs>["mode"];
+
+export async function runHostedCookieWorksReset(options?: {
+  argv?: string[];
+  credentials?: HostedResetCredentials;
+  purgeModules?: typeof purgeCookieWorksTenantModules;
+  seedFoundation?: typeof seedCookieWorksFoundation;
+}) {
+  const argv = options?.argv ?? process.argv.slice(2);
+  const { mode } = parseHostedResetArgs(argv);
+  const credentials = options?.credentials ?? resolveHostedCredentials();
+  const purgeModules = options?.purgeModules ?? purgeCookieWorksTenantModules;
+  const seedFoundation = options?.seedFoundation ?? seedCookieWorksFoundation;
 
   assertHostedResetAllowed({
     apiUrl: credentials.apiUrl,
@@ -72,14 +83,14 @@ async function main() {
     console.log(
       `To execute destructively, set LEANHUB_QA_RESET_CONFIRM=DELETE_COOKIEWORKS_ONLY and rerun with --destructive.`,
     );
-    return;
+    return { mode, inventory, verification, foundationVerification: null };
   }
 
-  await purgeCookieWorksTenantModules(credentials.databaseUrl, {
+  await purgeModules(credentials.databaseUrl, {
     storageAdmin: admin,
   });
 
-  await seedCookieWorksFoundation({
+  await seedFoundation({
     admin,
     apiUrl: credentials.apiUrl,
     publishableKey: credentials.publishableKey,
@@ -87,17 +98,30 @@ async function main() {
   });
 
   const postInventory = collectCookieWorksInventory(credentials.databaseUrl);
-  const postVerification = assertCookieWorksResetVerified(
-    credentials.databaseUrl,
-  );
+  const foundationVerification =
+    await assertCookieWorksCompleteFoundationVerified(
+      credentials.databaseUrl,
+      admin,
+    );
 
   console.log("");
   console.log("Post-reset inventory:");
   console.log(formatInventoryReport(postInventory));
   console.log("");
-  console.log(formatVerificationSummary(postVerification));
+  console.log(formatVerificationSummary(foundationVerification.verification));
   console.log("");
   console.log("Hosted CookieWorks QA destructive reset complete.");
+
+  return {
+    mode,
+    inventory: postInventory,
+    verification: foundationVerification.verification,
+    foundationVerification,
+  };
+}
+
+async function main() {
+  await runHostedCookieWorksReset();
 }
 
 main().catch((error) => {

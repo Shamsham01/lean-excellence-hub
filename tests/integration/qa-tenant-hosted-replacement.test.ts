@@ -232,9 +232,9 @@ describe
           assertCookieWorksCompleteFoundationVerified(env.databaseUrl, admin),
       );
 
-      expect(verification.membershipCount).toBe(7);
-      expect(verification.unitCount).toBe(10);
-      expect(verification.roleGrantCount).toBe(7);
+      expect(verification.membershipCount).toBe(8);
+      expect(verification.unitCount).toBe(16);
+      expect(verification.roleGrantCount).toBe(8);
       expect(verification.verification.isFoundationOnly).toBe(true);
       expect(HOSTED_REPLACEMENT_VERIFIED_MARKER).toContain("COOKIEWORKS");
       expect(
@@ -811,9 +811,9 @@ describe
       expect(cookieWorksAfter.organisation.id).toBe(
         cookieWorksBefore.organisation.id,
       );
-      expect(cookieWorksAfter.membershipCount).toBe(7);
-      expect(cookieWorksAfter.unitCount).toBe(10);
-      expect(cookieWorksAfter.roleGrantCount).toBe(7);
+      expect(cookieWorksAfter.membershipCount).toBe(8);
+      expect(cookieWorksAfter.unitCount).toBe(16);
+      expect(cookieWorksAfter.roleGrantCount).toBe(8);
       expect(cookieWorksAfter.verification.isFoundationOnly).toBe(true);
       expect(
         collectTenantInventory(env.databaseUrl, QA_ORGANISATION_CODE)
