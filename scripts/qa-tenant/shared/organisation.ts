@@ -396,12 +396,14 @@ async function findMembershipId(
 
 async function ensureJobFunction(
   client: SupabaseClient,
+  organisationId: string,
   code: string,
   name: string,
 ) {
   const { data: existing, error: existingError } = await client
     .from("job_functions")
     .select("id")
+    .eq("organisation_id", organisationId)
     .eq("code", code)
     .eq("status", "active")
     .maybeSingle();
@@ -424,6 +426,7 @@ async function ensureJobFunction(
       const { data: retry, error: retryError } = await client
         .from("job_functions")
         .select("id")
+        .eq("organisation_id", organisationId)
         .eq("code", code)
         .eq("status", "active")
         .maybeSingle();
@@ -488,16 +491,19 @@ export async function ensureFoundationPlacements(
 ) {
   const productionManagerJobFunctionId = await ensureJobFunction(
     client,
+    organisationId,
     "cookieworks-production-manager",
     "Production Manager",
   );
   const teamLeaderJobFunctionId = await ensureJobFunction(
     client,
+    organisationId,
     "cookieworks-team-leader",
     "Team Leader",
   );
   const operatorJobFunctionId = await ensureJobFunction(
     client,
+    organisationId,
     "cookieworks-operator",
     "Operator",
   );
