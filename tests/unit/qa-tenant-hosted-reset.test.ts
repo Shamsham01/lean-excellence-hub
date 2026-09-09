@@ -229,10 +229,18 @@ describe("hosted CookieWorks reset CLI args", () => {
 describe("hosted CookieWorks reset credentials", () => {
   it("requires explicit hosted credentials", () => {
     delete process.env.LEANHUB_QA_RESET_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.LEANHUB_QA_RESET_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     delete process.env.LEANHUB_QA_RESET_PROJECT_REF;
-    delete process.env.LEANHUB_QA_RESET_PUBLISHABLE_KEY;
     delete process.env.LEANHUB_QA_RESET_DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    delete process.env.SUPABASE_DB_URL;
+    delete process.env.LEANHUB_QA_RESET_PUBLISHABLE_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.SUPABASE_ANON_KEY;
 
     expect(() => resolveHostedCredentials()).toThrow(
       /LEANHUB_QA_RESET_SUPABASE_URL/i,
