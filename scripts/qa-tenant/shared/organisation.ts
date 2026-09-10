@@ -461,6 +461,7 @@ async function ensurePrimaryPlacement(
     .select("id, organisational_unit_id")
     .eq("membership_id", membershipId)
     .eq("job_function_id", jobFunctionId)
+    .eq("is_primary", true)
     .is("valid_to", null)
     .maybeSingle();
 

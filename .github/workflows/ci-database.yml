@@ -51,6 +51,7 @@ jobs:
             qa_tenant_harness:
               - "scripts/qa-tenant/**"
               - "tests/integration/qa-tenant-harness.test.ts"
+              - "tests/integration/qa-tenant-primary-placement-reseed.test.ts"
               - ".github/workflows/ci-database.yml"
               - ".github/workflows/ci-full.yml"
             windows_qa_harness:
@@ -151,7 +152,8 @@ jobs:
           LEANHUB_ALLOW_QA_TENANT: "1"
         run: |
           eval "$(npx supabase status -o env)"
-          ./scripts/ci/timed.sh "QA harness integration" npx vitest run --reporter=verbose tests/integration/qa-tenant-harness.test.ts
+          ./scripts/ci/timed.sh "QA harness integration / harness" npx vitest run --reporter=verbose tests/integration/qa-tenant-harness.test.ts
+          ./scripts/ci/timed.sh "QA harness integration / primary placement reseed" npx vitest run --reporter=verbose tests/integration/qa-tenant-primary-placement-reseed.test.ts
       - if: always()
         run: npm run db:stop
 
