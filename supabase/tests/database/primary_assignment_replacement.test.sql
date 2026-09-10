@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(22);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -388,6 +388,15 @@ select 'other_job_function', public.create_job_function(
   'other-tenant-role'
 );
 
+insert into primary_replace_ids (key, id)
+select 'other_unit', public.create_organisation_unit(
+  (select id from primary_replace_ids where key = 'other_organisation'),
+  null,
+  'foreign-site',
+  'Foreign Site',
+  'site'
+);
+
 select throws_ok(
   $$
     select public.assign_membership_job_function(
@@ -425,6 +434,41 @@ select throws_ok(
   'P0002',
   null,
   'foreign job function id is rejected'
+);
+
+insert into primary_replace_ids (key, id)
+select 'active_primary_before_foreign_unit', assignment_row.id
+from public.membership_job_function_assignments assignment_row
+where assignment_row.organisation_id = (select id from primary_replace_ids where key = 'organisation')
+  and assignment_row.membership_id = (select id from primary_replace_ids where key = 'member_membership')
+  and assignment_row.is_primary = true
+  and assignment_row.valid_to is null;
+
+select throws_ok(
+  $$
+    select public.assign_membership_job_function(
+      (select id from primary_replace_ids where key = 'member_membership'),
+      (select id from primary_replace_ids where key = 'production_manager_job'),
+      true,
+      (select id from primary_replace_ids where key = 'other_unit')
+    )
+  $$,
+  'P0002',
+  null,
+  'foreign organisational unit id is rejected'
+);
+
+select is(
+  (
+    select assignment_row.id
+    from public.membership_job_function_assignments assignment_row
+    where assignment_row.organisation_id = (select id from primary_replace_ids where key = 'organisation')
+      and assignment_row.membership_id = (select id from primary_replace_ids where key = 'member_membership')
+      and assignment_row.is_primary = true
+      and assignment_row.valid_to is null
+  ),
+  (select id from primary_replace_ids where key = 'active_primary_before_foreign_unit'),
+  'current valid primary assignment remains unchanged after foreign unit rejection'
 );
 
 select * from finish();
