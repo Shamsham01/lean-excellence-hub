@@ -264,6 +264,17 @@ export function isSelectorPreferredValueMissing(
   );
 }
 
+export function requireSelectableMemberships<T>(result: {
+  data: T[] | null;
+  error: unknown;
+}): T[] {
+  if (result.error) {
+    throw new Error("Unable to load organisation memberships.");
+  }
+
+  return result.data ?? [];
+}
+
 export function mergeSelectablePeople(input: {
   memberships: Array<{
     id: string;
@@ -299,29 +310,23 @@ export function mergeSelectablePeople(input: {
     ]),
   );
 
-  const membershipIds = new Set(input.memberships.map((row) => row.id));
-  for (const directoryPerson of input.directoryPeople ?? []) {
-    membershipIds.add(directoryPerson.membership_id);
-  }
-
   const people: SelectablePerson[] = [];
 
-  for (const membershipId of membershipIds) {
-    const membership = input.memberships.find((row) => row.id === membershipId);
-    const directory = directoryById.get(membershipId);
-    const assignment = assignmentByMembershipId.get(membershipId);
+  for (const membership of input.memberships) {
+    const directory = directoryById.get(membership.id);
+    const assignment = assignmentByMembershipId.get(membership.id);
     const placementUnitId = assignment?.organisational_unit_id ?? null;
 
     people.push({
-      id: membershipId,
+      id: membership.id,
       displayName: resolvePersonDisplayName(
         directory?.display_name,
-        membership?.display_name,
+        membership.display_name,
         directory?.job_function_name,
         assignment?.job_function_name_snapshot,
-        membership?.job_title,
+        membership.job_title,
       ),
-      jobTitle: directory?.job_title ?? membership?.job_title ?? null,
+      jobTitle: directory?.job_title ?? membership.job_title ?? null,
       jobFunctionName:
         directory?.job_function_name ??
         assignment?.job_function_name_snapshot ??

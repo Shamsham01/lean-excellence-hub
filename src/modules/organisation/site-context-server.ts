@@ -7,6 +7,7 @@ import {
   ACTIVE_SITE_COOKIE,
   listAccessibleSites,
   mergeSelectablePeople,
+  requireSelectableMemberships,
   resolveActiveSiteContext,
   type ActiveSiteContext,
   type SelectablePerson,
@@ -97,9 +98,8 @@ export async function loadSelectablePeople(
   supabase: ServerSupabaseClient,
   units: FlatOrganisationUnit[],
 ): Promise<SelectablePerson[]> {
-  // Memberships (RLS) are the candidate set. Directory pages are name
-  // enrichment only and are walked until exhausted so users beyond page 1
-  // are not left as indistinguishable "Colleague" labels when authorised.
+  // organisation_memberships (RLS) is the sole candidate-ID set.
+  // Directory pages and assignments are name/placement enrichment only.
   const [membershipsResult, directoryPeople, assignmentsResult] =
     await Promise.all([
       supabase
@@ -118,7 +118,7 @@ export async function loadSelectablePeople(
     ]);
 
   return mergeSelectablePeople({
-    memberships: membershipsResult.data ?? [],
+    memberships: requireSelectableMemberships(membershipsResult),
     directoryPeople,
     assignments: assignmentsResult.error ? [] : (assignmentsResult.data ?? []),
     units,

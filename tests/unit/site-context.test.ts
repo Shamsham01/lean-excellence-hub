@@ -9,6 +9,7 @@ import {
   listAccessibleSites,
   mergeSelectablePeople,
   nextSelectorValue,
+  requireSelectableMemberships,
   resolveActiveSiteContext,
   resolvePersonDisplayName,
   resolveSelectorValue,
@@ -298,6 +299,68 @@ describe("human-readable people selector data", () => {
     expect(resolvePersonDisplayName("abcdef12", "Jane Operator")).toBe(
       "Jane Operator",
     );
+  });
+
+  it("does not emit a directory-only membership as a selectable candidate", () => {
+    const merged = mergeSelectablePeople({
+      memberships: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          display_name: null,
+          job_title: null,
+        },
+      ],
+      directoryPeople: [
+        {
+          membership_id: "11111111-1111-4111-8111-111111111111",
+          display_name: "CookieWorks Finance",
+        },
+        {
+          membership_id: "99999999-9999-4999-8999-999999999999",
+          display_name: "Directory Only Person",
+        },
+      ],
+      assignments: [
+        {
+          membership_id: "99999999-9999-4999-8999-999999999999",
+          job_function_name_snapshot: "Hidden Role",
+          organisational_unit_id: "exeter-ops",
+        },
+      ],
+      units: cookieWorksUnits,
+    });
+
+    expect(merged.map((person) => person.id)).toEqual([
+      "11111111-1111-4111-8111-111111111111",
+    ]);
+    expect(
+      merged.some(
+        (person) => person.id === "99999999-9999-4999-8999-999999999999",
+      ),
+    ).toBe(false);
+    expect(merged[0]?.displayName).toBe("CookieWorks Finance");
+  });
+
+  it("fails closed when the memberships query errors instead of falling back to directory rows", () => {
+    expect(() =>
+      requireSelectableMemberships({
+        data: null,
+        error: { message: "permission denied" },
+      }),
+    ).toThrow("Unable to load organisation memberships.");
+
+    expect(
+      requireSelectableMemberships({
+        data: [
+          {
+            id: "11111111-1111-4111-8111-111111111111",
+            display_name: "CookieWorks Finance",
+            job_title: null,
+          },
+        ],
+        error: null,
+      }),
+    ).toHaveLength(1);
   });
 });
 
