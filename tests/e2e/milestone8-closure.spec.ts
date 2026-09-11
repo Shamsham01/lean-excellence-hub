@@ -32,6 +32,7 @@ test.describe("Milestone 8 closure", () => {
 
     const projectTitle = `E2E Closure Project ${uniqueSuffix}`;
     await page.getByLabel("Project title").fill(projectTitle);
+    await page.getByTestId("project-unit-select").selectOption({ index: 1 });
     await page
       .locator("textarea")
       .first()
@@ -47,6 +48,7 @@ test.describe("Milestone 8 closure", () => {
     await page.getByLabel(/Methodology/i).selectOption({ index: 0 });
     await page.getByRole("button", { name: "Continue" }).click();
 
+    await page.getByTestId("project-owner-select").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByPlaceholder("Display name").fill("Changeover duration");

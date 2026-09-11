@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 
-import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import {
+  isSelectorPreferredValueMissing,
+  nextSelectorValue,
+  type UnitSelectOption,
+} from "@/modules/organisation/site-context";
 
 const SELECT_CLASS_NAME =
   "border-input min-h-11 rounded-md border bg-background px-3 py-2";
@@ -14,11 +18,14 @@ type OrganisationalUnitSelectProps = {
   options: UnitSelectOption[];
   value?: string;
   defaultValue?: string;
+  preferredValue?: string;
   onChange?: (unitId: string) => void;
   required?: boolean;
   disabled?: boolean;
   requiresSiteSelection?: boolean;
   emptyMessage?: string;
+  placeholderLabel?: string;
+  unavailableMessage?: string;
   testId?: string;
 };
 
@@ -29,27 +36,31 @@ export function OrganisationalUnitSelect({
   options,
   value,
   defaultValue,
+  preferredValue,
   onChange,
   required,
   disabled,
   requiresSiteSelection = false,
   emptyMessage,
+  placeholderLabel = "Select organisational unit…",
+  unavailableMessage = "The previously selected organisational unit is not available in the active site. Choose a unit.",
   testId = "organisational-unit-select",
 }: OrganisationalUnitSelectProps) {
   useEffect(() => {
     if (value === undefined || !onChange) {
       return;
     }
-    if (options.length === 0) {
-      if (value !== "") {
-        onChange("");
-      }
-      return;
-    }
-    if (!options.some((option) => option.id === value)) {
-      onChange(options[0]!.id);
+    const next = nextSelectorValue({ options, value });
+    if (next !== value) {
+      onChange(next);
     }
   }, [onChange, options, value]);
+
+  const selectedValue = value ?? defaultValue ?? "";
+  const preferredMissing = isSelectorPreferredValueMissing(
+    options,
+    preferredValue,
+  );
 
   if (options.length === 0) {
     return (
@@ -84,12 +95,20 @@ export function OrganisationalUnitSelect({
           onChange ? (event) => onChange(event.target.value) : undefined
         }
       >
+        <option value="" disabled={Boolean(required && selectedValue)}>
+          {placeholderLabel}
+        </option>
         {options.map((unit) => (
           <option key={unit.id} value={unit.id}>
             {unit.name}
           </option>
         ))}
       </select>
+      {preferredMissing ? (
+        <p className="text-destructive" data-testid={`${testId}-unavailable`}>
+          {unavailableMessage}
+        </p>
+      ) : null}
     </label>
   );
 }

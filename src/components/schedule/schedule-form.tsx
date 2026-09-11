@@ -8,9 +8,10 @@ import {
   type ScheduleRecurrence,
   WEEKDAY_OPTIONS,
 } from "@/lib/schedule/recurrence";
-import type {
-  PersonSelectOption,
-  UnitSelectOption,
+import {
+  resolveSelectorValue,
+  type PersonSelectOption,
+  type UnitSelectOption,
 } from "@/modules/organisation/site-context";
 
 type ScheduleFormValues = {
@@ -58,9 +59,11 @@ export function ScheduleForm({
   const defaultInterval = recurrence?.interval ?? 1;
   const defaultWeekdays = recurrence?.weekdays ?? ["monday"];
   const defaultMonthlyDay = recurrence?.monthly_day ?? 1;
-  const defaultUnitId = initialValues?.unitId ?? units[0]?.id ?? "";
-  const defaultOwnerId =
-    initialValues?.ownerMembershipId ?? memberships[0]?.id ?? "";
+  const defaultUnitId = resolveSelectorValue(units, initialValues?.unitId);
+  const defaultOwnerId = resolveSelectorValue(
+    memberships,
+    initialValues?.ownerMembershipId,
+  );
 
   return (
     <form
@@ -116,6 +119,9 @@ export function ScheduleForm({
           label="Unit"
           options={units}
           defaultValue={defaultUnitId}
+          {...(initialValues?.unitId
+            ? { preferredValue: initialValues.unitId }
+            : {})}
           required
           requiresSiteSelection={requiresSiteSelection}
           testId="schedule-unit-select"
@@ -126,6 +132,9 @@ export function ScheduleForm({
           label="Owner"
           options={memberships}
           defaultValue={defaultOwnerId}
+          {...(initialValues?.ownerMembershipId
+            ? { preferredValue: initialValues.ownerMembershipId }
+            : {})}
           required
           requiresSiteSelection={requiresSiteSelection}
           testId="schedule-owner-select"

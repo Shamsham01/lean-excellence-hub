@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 
@@ -69,6 +69,109 @@ describe("OrganisationalUnitSelect", () => {
       refreshed.querySelectorAll("option[value='bodmin-packing']"),
     ).toHaveLength(0);
     expect(refreshed).toHaveValue("exeter-packing");
+  });
+
+  it("starts unselected with a placeholder instead of the first unit", () => {
+    render(
+      <OrganisationalUnitSelect
+        label="Organisation unit"
+        options={[
+          { id: "bodmin-baking", name: "Baking" },
+          { id: "bodmin-packing", name: "Packing" },
+        ]}
+        value=""
+        onChange={() => undefined}
+        required
+      />,
+    );
+
+    const select = screen.getByTestId("organisational-unit-select");
+    expect(select).toHaveValue("");
+    expect(
+      screen.getByRole("option", { name: "Select organisational unit…" }),
+    ).toHaveValue("");
+    expect(select).not.toHaveValue("bodmin-baking");
+  });
+
+  it("clears an invalid value instead of substituting the first option", async () => {
+    const onChange = vi.fn();
+    render(
+      <OrganisationalUnitSelect
+        label="Organisation unit"
+        options={[
+          { id: "exeter-packing", name: "Packing" },
+          { id: "exeter-ops", name: "Operations" },
+        ]}
+        value="bodmin-packing"
+        onChange={onChange}
+        required
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith("");
+    });
+    expect(onChange).not.toHaveBeenCalledWith("exeter-packing");
+    expect(onChange).not.toHaveBeenCalledWith("exeter-ops");
+  });
+
+  it("auto-selects only when a single candidate exists and the value is empty", async () => {
+    const onChange = vi.fn();
+    render(
+      <OrganisationalUnitSelect
+        label="Organisation unit"
+        options={[{ id: "bodmin-packing", name: "Packing" }]}
+        value=""
+        onChange={onChange}
+        required
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith("bodmin-packing");
+    });
+  });
+
+  it("preserves a valid saved value and shows a visible failure when it is missing", () => {
+    const { rerender } = render(
+      <OrganisationalUnitSelect
+        label="Organisation unit"
+        options={[
+          { id: "bodmin-packing", name: "Packing" },
+          { id: "bodmin-baking", name: "Baking" },
+        ]}
+        defaultValue="bodmin-packing"
+        preferredValue="bodmin-packing"
+        required
+      />,
+    );
+
+    expect(screen.getByTestId("organisational-unit-select")).toHaveValue(
+      "bodmin-packing",
+    );
+    expect(
+      screen.queryByTestId("organisational-unit-select-unavailable"),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <OrganisationalUnitSelect
+        label="Organisation unit"
+        options={[
+          { id: "exeter-packing", name: "Packing" },
+          { id: "exeter-baking", name: "Baking" },
+        ]}
+        defaultValue=""
+        preferredValue="bodmin-packing"
+        required
+      />,
+    );
+
+    expect(screen.getByTestId("organisational-unit-select")).toHaveValue("");
+    expect(
+      screen.getByTestId("organisational-unit-select-unavailable"),
+    ).toHaveTextContent(
+      "The previously selected organisational unit is not available in the active site. Choose a unit.",
+    );
   });
 
   it("asks for an active site instead of mixing sites", () => {

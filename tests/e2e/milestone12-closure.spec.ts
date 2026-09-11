@@ -71,6 +71,8 @@ test.describe("Milestone 12 closure", () => {
     await page
       .getByTestId("create-case-title")
       .fill(aiCurrentConditionCaseTitle);
+    await wizard.getByTestId("case-unit-select").selectOption({ index: 1 });
+    await wizard.getByTestId("create-case-owner").selectOption({ index: 1 });
     await wizard
       .getByTestId("create-case-facilitator")
       .selectOption({ index: 1 });

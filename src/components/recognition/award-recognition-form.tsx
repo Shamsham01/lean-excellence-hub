@@ -8,9 +8,10 @@ import { OrganisationalUnitSelect } from "@/components/organisation/organisation
 import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type {
-  PersonSelectOption,
-  UnitSelectOption,
+import {
+  resolveSelectorValue,
+  type PersonSelectOption,
+  type UnitSelectOption,
 } from "@/modules/organisation/site-context";
 
 type RecognitionType = { id: string; name: string };
@@ -38,9 +39,11 @@ export function AwardRecognitionForm({
   const [typeId, setTypeId] = useState(types[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [unitId, setUnitId] = useState(defaultUnitId ?? units[0]?.id ?? "");
-  const [recipientId, setRecipientId] = useState(
-    defaultRecipientId ?? people[0]?.id ?? "",
+  const [unitId, setUnitId] = useState(() =>
+    resolveSelectorValue(units, defaultUnitId),
+  );
+  const [recipientId, setRecipientId] = useState(() =>
+    resolveSelectorValue(people, defaultRecipientId),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -128,7 +131,11 @@ export function AwardRecognitionForm({
             testId="recognition-recipient-select"
           />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button type="submit" className="min-h-11">
+          <Button
+            type="submit"
+            className="min-h-11"
+            disabled={!unitId || !recipientId}
+          >
             Award
           </Button>
         </form>

@@ -8,8 +8,10 @@ import {
   isLikelyOpaqueId,
   listAccessibleSites,
   mergeSelectablePeople,
+  nextSelectorValue,
   resolveActiveSiteContext,
   resolvePersonDisplayName,
+  resolveSelectorValue,
 } from "@/modules/organisation/site-context";
 import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 
@@ -296,5 +298,39 @@ describe("human-readable people selector data", () => {
     expect(resolvePersonDisplayName("abcdef12", "Jane Operator")).toBe(
       "Jane Operator",
     );
+  });
+});
+
+describe("selector value resolution", () => {
+  const units = [
+    { id: "bodmin-baking", name: "Baking" },
+    { id: "bodmin-packing", name: "Packing" },
+  ];
+
+  it("does not auto-select the first of many candidates", () => {
+    expect(resolveSelectorValue(units)).toBe("");
+    expect(nextSelectorValue({ options: units, value: "" })).toBe("");
+  });
+
+  it("auto-selects an exactly-one candidate only when empty", () => {
+    expect(resolveSelectorValue([{ id: "bodmin-packing" }])).toBe(
+      "bodmin-packing",
+    );
+  });
+
+  it("keeps a valid preferred or saved value", () => {
+    expect(resolveSelectorValue(units, "bodmin-packing")).toBe(
+      "bodmin-packing",
+    );
+  });
+
+  it("clears a missing saved value instead of substituting another record", () => {
+    expect(resolveSelectorValue(units, "exeter-packing")).toBe("");
+    expect(
+      nextSelectorValue({
+        options: [{ id: "bodmin-packing" }],
+        value: "exeter-packing",
+      }),
+    ).toBe("");
   });
 });

@@ -43,6 +43,8 @@ test.describe("Milestone 10 closure", () => {
 
     const title = `E2E Benefit ${uniqueSuffix}`;
     await page.getByLabel("Benefit title").fill(title);
+    await page.getByTestId("benefit-unit-select").selectOption({ index: 1 });
+    await page.getByTestId("benefit-owner-select").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByRole("button", { name: "Financial", exact: true }).click();

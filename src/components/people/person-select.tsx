@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 
-import type { PersonSelectOption } from "@/modules/organisation/site-context";
+import {
+  isSelectorPreferredValueMissing,
+  nextSelectorValue,
+  type PersonSelectOption,
+} from "@/modules/organisation/site-context";
 
 const SELECT_CLASS_NAME =
   "border-input min-h-11 rounded-md border bg-background px-3 py-2";
@@ -14,13 +18,16 @@ type PersonSelectProps = {
   options: PersonSelectOption[];
   value?: string;
   defaultValue?: string;
+  preferredValue?: string;
   onChange?: (membershipId: string) => void;
   required?: boolean;
   disabled?: boolean;
   allowEmpty?: boolean;
   emptyOptionLabel?: string;
+  placeholderLabel?: string;
   requiresSiteSelection?: boolean;
   emptyMessage?: string;
+  unavailableMessage?: string;
   testId?: string;
 };
 
@@ -31,35 +38,33 @@ export function PersonSelect({
   options,
   value,
   defaultValue,
+  preferredValue,
   onChange,
   required,
   disabled,
   allowEmpty = false,
   emptyOptionLabel = "None",
+  placeholderLabel = "Select person…",
   requiresSiteSelection = false,
   emptyMessage,
+  unavailableMessage = "The previously selected person is not available in the active site. Choose a person.",
   testId = "person-select",
 }: PersonSelectProps) {
   useEffect(() => {
     if (value === undefined || !onChange) {
       return;
     }
-    if (allowEmpty) {
-      if (value && !options.some((option) => option.id === value)) {
-        onChange("");
-      }
-      return;
-    }
-    if (options.length === 0) {
-      if (value !== "") {
-        onChange("");
-      }
-      return;
-    }
-    if (!options.some((option) => option.id === value)) {
-      onChange(options[0]!.id);
+    const next = nextSelectorValue({ options, value, allowEmpty });
+    if (next !== value) {
+      onChange(next);
     }
   }, [allowEmpty, onChange, options, value]);
+
+  const selectedValue = value ?? defaultValue ?? "";
+  const preferredMissing = isSelectorPreferredValueMissing(
+    options,
+    preferredValue,
+  );
 
   if (options.length === 0 && !allowEmpty) {
     return (
@@ -91,13 +96,24 @@ export function PersonSelect({
           onChange ? (event) => onChange(event.target.value) : undefined
         }
       >
-        {allowEmpty ? <option value="">{emptyOptionLabel}</option> : null}
+        {allowEmpty ? (
+          <option value="">{emptyOptionLabel}</option>
+        ) : (
+          <option value="" disabled={Boolean(required && selectedValue)}>
+            {placeholderLabel}
+          </option>
+        )}
         {options.map((person) => (
           <option key={person.id} value={person.id}>
             {person.label}
           </option>
         ))}
       </select>
+      {preferredMissing ? (
+        <p className="text-destructive" data-testid={`${testId}-unavailable`}>
+          {unavailableMessage}
+        </p>
+      ) : null}
     </label>
   );
 }

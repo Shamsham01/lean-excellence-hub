@@ -18,14 +18,44 @@ type ServerSupabaseClient = Awaited<
   ReturnType<typeof createServerSupabaseClient>
 >;
 
-type DirectoryPayload = {
-  people?: Array<{
-    membership_id: string;
-    display_name: string | null;
-    job_title?: string | null;
-    job_function_name?: string | null;
-  }>;
+type DirectoryPerson = {
+  membership_id: string;
+  display_name: string | null;
+  job_title?: string | null;
+  job_function_name?: string | null;
 };
+
+type DirectoryPayload = {
+  people?: DirectoryPerson[];
+};
+
+const DIRECTORY_PAGE_SIZE = 200;
+const DIRECTORY_MAX_PAGES = 25;
+
+async function loadDirectoryPeople(
+  supabase: ServerSupabaseClient,
+): Promise<DirectoryPerson[]> {
+  const people: DirectoryPerson[] = [];
+
+  for (let page = 1; page <= DIRECTORY_MAX_PAGES; page += 1) {
+    const { data, error } = await supabase.rpc("get_people_directory", {
+      target_page: page,
+      target_page_size: DIRECTORY_PAGE_SIZE,
+    });
+
+    if (error) {
+      return people;
+    }
+
+    const batch = (data as DirectoryPayload | null)?.people ?? [];
+    people.push(...batch);
+    if (batch.length < DIRECTORY_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return people;
+}
 
 export const loadAccessibleOrganisationUnits = cache(
   async (): Promise<FlatOrganisationUnit[]> => {
@@ -67,17 +97,17 @@ export async function loadSelectablePeople(
   supabase: ServerSupabaseClient,
   units: FlatOrganisationUnit[],
 ): Promise<SelectablePerson[]> {
-  const [membershipsResult, directoryResult, assignmentsResult] =
+  // Memberships (RLS) are the candidate set. Directory pages are name
+  // enrichment only and are walked until exhausted so users beyond page 1
+  // are not left as indistinguishable "Colleague" labels when authorised.
+  const [membershipsResult, directoryPeople, assignmentsResult] =
     await Promise.all([
       supabase
         .from("organisation_memberships")
         .select("id, display_name, job_title")
         .eq("status", "active")
         .order("display_name"),
-      supabase.rpc("get_people_directory", {
-        target_page: 1,
-        target_page_size: 200,
-      }),
+      loadDirectoryPeople(supabase),
       supabase
         .from("membership_job_function_assignments")
         .select(
@@ -87,13 +117,9 @@ export async function loadSelectablePeople(
         .is("valid_to", null),
     ]);
 
-  const directoryPayload = directoryResult.error
-    ? null
-    : (directoryResult.data as DirectoryPayload | null);
-
   return mergeSelectablePeople({
     memberships: membershipsResult.data ?? [],
-    directoryPeople: directoryPayload?.people ?? [],
+    directoryPeople,
     assignments: assignmentsResult.error ? [] : (assignmentsResult.data ?? []),
     units,
   });

@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type {
-  PersonSelectOption,
-  UnitSelectOption,
+import {
+  resolveSelectorValue,
+  type PersonSelectOption,
+  type UnitSelectOption,
 } from "@/modules/organisation/site-context";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +59,7 @@ export function CreateProjectWizard({
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
-  const [unitId, setUnitId] = useState(units[0]?.id ?? "");
+  const [unitId, setUnitId] = useState(() => resolveSelectorValue(units));
   const [problem, setProblem] = useState("");
   const [objective, setObjective] = useState("");
   const [impact, setImpact] = useState("");
@@ -71,7 +72,7 @@ export function CreateProjectWizard({
   const [methodologyVersionId, setMethodologyVersionId] = useState(
     methodologies[0]?.versionId ?? "",
   );
-  const [ownerId, setOwnerId] = useState(members[0]?.id ?? "");
+  const [ownerId, setOwnerId] = useState(() => resolveSelectorValue(members));
   const [measures, setMeasures] = useState<MeasureDraft[]>([
     { key: "primary", name: "", unit: "", baseline: "", target: "" },
   ]);
@@ -86,6 +87,10 @@ export function CreateProjectWizard({
   }
 
   async function handleCreate() {
+    if (!title.trim() || !unitId || !ownerId) {
+      setError("Title, unit, and owner are required");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -434,7 +439,10 @@ export function CreateProjectWizard({
               <Button
                 type="button"
                 onClick={nextStep}
-                disabled={step === 0 && !title.trim()}
+                disabled={
+                  (step === 0 && (!title.trim() || !unitId)) ||
+                  (step === 3 && !ownerId)
+                }
               >
                 Continue
               </Button>
@@ -442,7 +450,7 @@ export function CreateProjectWizard({
               <Button
                 type="button"
                 onClick={handleCreate}
-                disabled={loading || !title.trim()}
+                disabled={loading || !title.trim() || !unitId || !ownerId}
               >
                 {loading ? "Creating…" : "Create project"}
               </Button>

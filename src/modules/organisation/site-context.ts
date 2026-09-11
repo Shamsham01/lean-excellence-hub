@@ -220,6 +220,50 @@ export function toUnitSelectOption(
   return { id: unit.id, name: unit.name };
 }
 
+/**
+ * Resolve the next controlled selector value without substituting a different
+ * record. Invalid/stale values clear. An exactly-one-candidate set may be
+ * selected only when the current value is empty.
+ */
+export function nextSelectorValue(input: {
+  options: ReadonlyArray<{ id: string }>;
+  value: string;
+  allowEmpty?: boolean;
+}): string {
+  if (input.options.some((option) => option.id === input.value)) {
+    return input.value;
+  }
+
+  if (input.allowEmpty || input.value) {
+    return "";
+  }
+
+  if (input.options.length === 1) {
+    return input.options[0]!.id;
+  }
+
+  return "";
+}
+
+export function resolveSelectorValue(
+  options: ReadonlyArray<{ id: string }>,
+  preferred?: string | null,
+): string {
+  return nextSelectorValue({
+    options,
+    value: preferred ?? "",
+  });
+}
+
+export function isSelectorPreferredValueMissing(
+  options: ReadonlyArray<{ id: string }>,
+  preferred?: string | null,
+): boolean {
+  return Boolean(
+    preferred && !options.some((option) => option.id === preferred),
+  );
+}
+
 export function mergeSelectablePeople(input: {
   memberships: Array<{
     id: string;
