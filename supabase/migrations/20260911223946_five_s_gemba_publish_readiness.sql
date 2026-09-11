@@ -13,7 +13,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
-  template_version_id uuid;
+  linked_template_version_id uuid;
   standard_id uuid;
   scored_link record;
 begin
@@ -27,7 +27,7 @@ begin
   select
     standard_version.template_version_id,
     standard_version.standard_id
-  into template_version_id, standard_id
+  into linked_template_version_id, standard_id
   from public.five_s_standard_versions standard_version
   where standard_version.organisation_id = org_id
     and standard_version.id = target_standard_version_id
@@ -43,7 +43,7 @@ begin
     select 1
     from public.template_questions question_row
     where question_row.organisation_id = org_id
-      and question_row.template_version_id = publish_five_s_standard_version.template_version_id
+      and question_row.template_version_id = linked_template_version_id
       and btrim(question_row.prompt) <> ''
   ) then
     raise exception '5S standard version requires at least one question'
@@ -79,7 +79,7 @@ begin
     and id = target_standard_version_id;
 
   perform private.publish_template_version_internal(
-    template_version_id,
+    linked_template_version_id,
     org_id,
     actor_membership_id
   );
@@ -105,7 +105,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
-  template_version_id uuid;
+  linked_template_version_id uuid;
   definition_id uuid;
 begin
   if org_id is null
@@ -118,7 +118,7 @@ begin
   select
     definition_version.template_version_id,
     definition_version.definition_id
-  into template_version_id, definition_id
+  into linked_template_version_id, definition_id
   from public.gemba_definition_versions definition_version
   where definition_version.organisation_id = org_id
     and definition_version.id = target_definition_version_id
@@ -134,7 +134,7 @@ begin
     select 1
     from public.template_questions question_row
     where question_row.organisation_id = org_id
-      and question_row.template_version_id = publish_gemba_definition_version.template_version_id
+      and question_row.template_version_id = linked_template_version_id
       and btrim(question_row.prompt) <> ''
   ) then
     raise exception 'gemba definition version requires at least one question'
@@ -149,7 +149,7 @@ begin
     and id = target_definition_version_id;
 
   perform private.publish_template_version_internal(
-    template_version_id,
+    linked_template_version_id,
     org_id,
     actor_membership_id
   );
