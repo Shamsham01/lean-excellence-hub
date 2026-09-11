@@ -14,11 +14,13 @@ import {
   currentMemberHasScopedPermission,
 } from "@/modules/platform-shell/permissions";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
+import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 
 type PlatformShellProps = {
   children: ReactNode;
   organisationName: string;
   organisations: EligibleOrganisation[];
+  siteContext: ActiveSiteContext;
   membershipId: string;
 };
 
@@ -83,6 +85,7 @@ export async function PlatformShell({
   children,
   organisationName,
   organisations,
+  siteContext,
   membershipId,
 }: PlatformShellProps) {
   const [navWithSetup, member] = await Promise.all([
@@ -100,6 +103,7 @@ export async function PlatformShell({
         items={navWithSetup}
         organisationName={organisationName}
         organisations={organisations}
+        siteContext={siteContext}
         member={member}
         showSettings={showSettings}
       />

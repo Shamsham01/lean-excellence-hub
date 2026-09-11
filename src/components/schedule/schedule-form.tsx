@@ -2,15 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
+import { PersonSelect } from "@/components/people/person-select";
 import {
   type ScheduleRecurrence,
   WEEKDAY_OPTIONS,
 } from "@/lib/schedule/recurrence";
+import type {
+  PersonSelectOption,
+  UnitSelectOption,
+} from "@/modules/organisation/site-context";
 
-type MembershipOption = { id: string; label: string };
-type UnitOption = { id: string; name: string };
-
-export type ScheduleFormValues = {
+type ScheduleFormValues = {
   title: string;
   description?: string | null;
   unitId: string;
@@ -28,8 +31,9 @@ type ScheduleFormProps = {
   activityResourceId: string;
   activityLabel: string;
   timezone: string;
-  units: UnitOption[];
-  memberships: MembershipOption[];
+  units: UnitSelectOption[];
+  memberships: PersonSelectOption[];
+  requiresSiteSelection?: boolean;
   initialValues?: Partial<ScheduleFormValues>;
   scheduleId?: string;
   returnTo?: string;
@@ -43,6 +47,7 @@ export function ScheduleForm({
   timezone,
   units,
   memberships,
+  requiresSiteSelection = false,
   initialValues,
   scheduleId,
   returnTo,
@@ -53,6 +58,9 @@ export function ScheduleForm({
   const defaultInterval = recurrence?.interval ?? 1;
   const defaultWeekdays = recurrence?.weekdays ?? ["monday"];
   const defaultMonthlyDay = recurrence?.monthly_day ?? 1;
+  const defaultUnitId = initialValues?.unitId ?? units[0]?.id ?? "";
+  const defaultOwnerId =
+    initialValues?.ownerMembershipId ?? memberships[0]?.id ?? "";
 
   return (
     <form
@@ -102,40 +110,26 @@ export function ScheduleForm({
             className="mt-2"
           />
         </div>
-        <div>
-          <Label htmlFor="unitId">Unit</Label>
-          <select
-            id="unitId"
-            name="unitId"
-            required
-            defaultValue={initialValues?.unitId ?? units[0]?.id}
-            className="mt-2 min-h-11 w-full rounded-md border border-border bg-background px-3"
-          >
-            {units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="ownerMembershipId">Owner</Label>
-          <select
-            id="ownerMembershipId"
-            name="ownerMembershipId"
-            required
-            defaultValue={
-              initialValues?.ownerMembershipId ?? memberships[0]?.id
-            }
-            className="mt-2 min-h-11 w-full rounded-md border border-border bg-background px-3"
-          >
-            {memberships.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <OrganisationalUnitSelect
+          id="unitId"
+          name="unitId"
+          label="Unit"
+          options={units}
+          defaultValue={defaultUnitId}
+          required
+          requiresSiteSelection={requiresSiteSelection}
+          testId="schedule-unit-select"
+        />
+        <PersonSelect
+          id="ownerMembershipId"
+          name="ownerMembershipId"
+          label="Owner"
+          options={memberships}
+          defaultValue={defaultOwnerId}
+          required
+          requiresSiteSelection={requiresSiteSelection}
+          testId="schedule-owner-select"
+        />
       </div>
 
       <div className="rounded-lg border border-border p-4 sm:p-6">

@@ -4,10 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createImprovementProject } from "@/app/(platform)/platform/projects/actions";
+import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
+import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type {
+  PersonSelectOption,
+  UnitSelectOption,
+} from "@/modules/organisation/site-context";
 import { cn } from "@/lib/utils";
 
 const WIZARD_STEPS = [
@@ -20,17 +26,16 @@ const WIZARD_STEPS = [
   "Review",
 ] as const;
 
-type UnitOption = { id: string; name: string };
 type MethodologyOption = {
   versionId: string;
   label: string;
 };
-type MemberOption = { id: string; label: string };
 
 type CreateProjectWizardProps = {
-  units: UnitOption[];
+  units: UnitSelectOption[];
   methodologies: MethodologyOption[];
-  members: MemberOption[];
+  members: PersonSelectOption[];
+  requiresSiteSelection?: boolean;
 };
 
 type MeasureDraft = {
@@ -45,6 +50,7 @@ export function CreateProjectWizard({
   units,
   methodologies,
   members,
+  requiresSiteSelection = false,
 }: CreateProjectWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -160,20 +166,15 @@ export function CreateProjectWizard({
                   onChange={(e) => setTitle(e.target.value)}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Organisation unit</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={unitId}
-                  onChange={(e) => setUnitId(e.target.value)}
-                >
-                  {units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <OrganisationalUnitSelect
+                label="Organisation unit"
+                options={units}
+                value={unitId}
+                onChange={setUnitId}
+                required
+                requiresSiteSelection={requiresSiteSelection}
+                testId="project-unit-select"
+              />
               <label className="flex flex-col gap-1 text-sm">
                 <span>Problem statement</span>
                 <Textarea
@@ -279,20 +280,15 @@ export function CreateProjectWizard({
           ) : null}
 
           {step === 3 ? (
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Project owner</span>
-              <select
-                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
-              >
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PersonSelect
+              label="Project owner"
+              options={members}
+              value={ownerId}
+              onChange={setOwnerId}
+              required
+              requiresSiteSelection={requiresSiteSelection}
+              testId="project-owner-select"
+            />
           ) : null}
 
           {step === 4 ? (

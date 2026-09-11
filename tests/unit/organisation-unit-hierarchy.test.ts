@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildOrganisationUnitTree,
+  collectDescendantUnitIds,
+  filterUnitsToSite,
   formatUnitPath,
 } from "@/modules/organisation/unit-hierarchy";
 
@@ -90,5 +92,55 @@ describe("organisation unit hierarchy", () => {
     expect(formatUnitPath("line-b", units)).toBe(
       "Demo Manufacturing Site › Production › Line 1",
     );
+  });
+
+  it("collects a site subtree without crossing into a sibling site", () => {
+    const units = [
+      {
+        id: "bodmin",
+        code: "bodmin-cookie-factory",
+        name: "Bodmin Cookie Factory",
+        unit_type: "plant",
+        parent_unit_id: null,
+      },
+      {
+        id: "bodmin-packing",
+        code: "packing",
+        name: "Packing",
+        unit_type: "area",
+        parent_unit_id: "bodmin-ops",
+      },
+      {
+        id: "bodmin-ops",
+        code: "operations",
+        name: "Operations",
+        unit_type: "department",
+        parent_unit_id: "bodmin",
+      },
+      {
+        id: "exeter",
+        code: "exeter-cookie-factory",
+        name: "Exeter Cookie Factory",
+        unit_type: "plant",
+        parent_unit_id: null,
+      },
+      {
+        id: "exeter-packing",
+        code: "exeter-packing",
+        name: "Packing",
+        unit_type: "area",
+        parent_unit_id: "exeter",
+      },
+    ];
+
+    expect([...collectDescendantUnitIds(units, "bodmin")].sort()).toEqual([
+      "bodmin",
+      "bodmin-ops",
+      "bodmin-packing",
+    ]);
+    expect(filterUnitsToSite(units, "exeter").map((unit) => unit.id)).toEqual([
+      "exeter",
+      "exeter-packing",
+    ]);
   });
 });

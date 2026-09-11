@@ -8,10 +8,16 @@ import {
   createProblemSolvingCaseDraft,
   updateProblemSolvingCaseDraft,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
+import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type {
+  PersonSelectOption,
+  UnitSelectOption,
+} from "@/modules/organisation/site-context";
 import {
   PRIORITIES,
   priorityLabel,
@@ -30,19 +36,18 @@ const WIZARD_STEPS = [
   "Review",
 ] as const;
 
-type UnitOption = { id: string; name: string };
-type MemberOption = { id: string; label: string };
-
 type CreateCaseWizardProps = {
-  units: UnitOption[];
-  members: MemberOption[];
+  units: UnitSelectOption[];
+  members: PersonSelectOption[];
   methods: ProblemSolvingMethod[];
+  requiresSiteSelection?: boolean;
 };
 
 export function CreateCaseWizard({
   units,
   members,
   methods,
+  requiresSiteSelection = false,
 }: CreateCaseWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -195,51 +200,34 @@ export function CreateCaseWizard({
                   data-testid="create-case-title"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Organisation unit</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={unitId}
-                  onChange={(e) => setUnitId(e.target.value)}
-                >
-                  {units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Owner</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
-                  data-testid="create-case-owner"
-                >
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Facilitator (optional)</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={facilitatorId}
-                  onChange={(e) => setFacilitatorId(e.target.value)}
-                  data-testid="create-case-facilitator"
-                >
-                  <option value="">None</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <OrganisationalUnitSelect
+                label="Organisation unit"
+                options={units}
+                value={unitId}
+                onChange={setUnitId}
+                required
+                requiresSiteSelection={requiresSiteSelection}
+                testId="case-unit-select"
+              />
+              <PersonSelect
+                label="Owner"
+                options={members}
+                value={ownerId}
+                onChange={setOwnerId}
+                required
+                requiresSiteSelection={requiresSiteSelection}
+                testId="create-case-owner"
+              />
+              <PersonSelect
+                label="Facilitator (optional)"
+                options={members}
+                value={facilitatorId}
+                onChange={setFacilitatorId}
+                allowEmpty
+                emptyOptionLabel="None"
+                requiresSiteSelection={requiresSiteSelection}
+                testId="create-case-facilitator"
+              />
             </>
           ) : null}
 

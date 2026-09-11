@@ -4,10 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createBenefitWizardDraft } from "@/app/(platform)/platform/benefits/actions";
+import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
+import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type {
+  PersonSelectOption,
+  UnitSelectOption,
+} from "@/modules/organisation/site-context";
 import {
   FINANCIAL_TYPES,
   NON_FINANCIAL_TYPES,
@@ -30,20 +36,20 @@ const WIZARD_STEPS = [
   "Review",
 ] as const;
 
-type UnitOption = { id: string; name: string };
-type MemberOption = { id: string; label: string };
 type CategoryOption = { id: string; label: string };
 
 type CreateBenefitWizardProps = {
-  units: UnitOption[];
-  members: MemberOption[];
+  units: UnitSelectOption[];
+  members: PersonSelectOption[];
   categories: CategoryOption[];
+  requiresSiteSelection?: boolean;
 };
 
 export function CreateBenefitWizard({
   units,
   members,
   categories,
+  requiresSiteSelection = false,
 }: CreateBenefitWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -235,34 +241,24 @@ export function CreateBenefitWizard({
                   onChange={(e) => setTitle(e.target.value)}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Organisation unit</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={unitId}
-                  onChange={(e) => setUnitId(e.target.value)}
-                >
-                  {units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Owner</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
-                >
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <OrganisationalUnitSelect
+                label="Organisation unit"
+                options={units}
+                value={unitId}
+                onChange={setUnitId}
+                required
+                requiresSiteSelection={requiresSiteSelection}
+                testId="benefit-unit-select"
+              />
+              <PersonSelect
+                label="Owner"
+                options={members}
+                value={ownerId}
+                onChange={setOwnerId}
+                required
+                requiresSiteSelection={requiresSiteSelection}
+                testId="benefit-owner-select"
+              />
               <label className="flex flex-col gap-1 text-sm">
                 <span>Category</span>
                 <select

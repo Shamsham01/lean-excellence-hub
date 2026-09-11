@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { CreateCaseWizard } from "@/components/problem-solving/create-case-wizard";
 import { PageHeader } from "@/components/platform/page-header";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingMethodsResponse } from "@/lib/problem-solving/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -12,22 +13,13 @@ export default async function NewProblemSolvingCasePage() {
   if (!canCreate) notFound();
 
   const supabase = await createServerSupabaseClient();
+  const selectorOptions = await loadSiteScopedSelectorOptions({
+    requireConcreteSite: true,
+  });
   await callProblemSolvingRpc(
     supabase,
     "ensure_problem_solving_methods_provisioned",
   );
-
-  const { data: units } = await supabase
-    .from("organisation_units")
-    .select("id, name")
-    .eq("status", "active")
-    .order("name");
-
-  const { data: memberships } = await supabase
-    .from("organisation_memberships")
-    .select("id, display_name, job_title")
-    .eq("status", "active")
-    .order("display_name");
 
   const { data: methodsData } =
     await callProblemSolvingRpc<ProblemSolvingMethodsResponse>(
@@ -45,16 +37,9 @@ export default async function NewProblemSolvingCasePage() {
         description="Define the problem, scope, and method before activation."
       />
       <CreateCaseWizard
-        units={units?.map((unit) => ({ id: unit.id, name: unit.name })) ?? []}
-        members={
-          memberships?.map((membership) => ({
-            id: membership.id,
-            label:
-              membership.display_name ??
-              membership.job_title ??
-              membership.id.slice(0, 8),
-          })) ?? []
-        }
+        units={selectorOptions.units}
+        members={selectorOptions.people}
+        requiresSiteSelection={selectorOptions.requiresSiteSelection}
         methods={methodsData?.items ?? []}
       />
     </div>

@@ -1,3 +1,4 @@
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export async function loadScheduleFormContext() {
@@ -8,24 +9,14 @@ export async function loadScheduleFormContext() {
     .select("time_zone")
     .maybeSingle();
 
-  const { data: units } = await supabase
-    .from("organisation_units")
-    .select("id, name")
-    .order("name");
-
-  const { data: memberships } = await supabase
-    .from("organisation_memberships")
-    .select("id, display_name, user_id")
-    .eq("status", "active")
-    .order("display_name");
+  const selectorOptions = await loadSiteScopedSelectorOptions({
+    requireConcreteSite: true,
+  });
 
   return {
     timezone: org?.time_zone ?? "UTC",
-    units: units ?? [],
-    memberships:
-      memberships?.map((m) => ({
-        id: m.id,
-        label: m.display_name ?? m.id,
-      })) ?? [],
+    units: selectorOptions.units,
+    memberships: selectorOptions.people,
+    requiresSiteSelection: selectorOptions.requiresSiteSelection,
   };
 }

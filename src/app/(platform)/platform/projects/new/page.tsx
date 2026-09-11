@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { CreateProjectWizard } from "@/components/projects/create-project-wizard";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { untypedFrom } from "@/lib/projects/supabase-untyped";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -13,12 +14,9 @@ export default async function NewProjectPage() {
   }
 
   const supabase = await createServerSupabaseClient();
-
-  const { data: units } = await supabase
-    .from("organisation_units")
-    .select("id, name")
-    .eq("status", "active")
-    .order("name");
+  const selectorOptions = await loadSiteScopedSelectorOptions({
+    requireConcreteSite: true,
+  });
 
   const { data: methodologies } = await untypedFrom(
     supabase,
@@ -58,21 +56,6 @@ export default async function NewProjectPage() {
     label: `${methodologyNameById.get(version.methodology_id) ?? "Methodology"} v${version.version_number}`,
   }));
 
-  const { data: memberships } = await supabase
-    .from("organisation_memberships")
-    .select("id, display_name, job_title")
-    .eq("status", "active")
-    .order("display_name");
-
-  const memberOptions =
-    memberships?.map((membership) => ({
-      id: membership.id,
-      label:
-        membership.display_name ??
-        membership.job_title ??
-        membership.id.slice(0, 8),
-    })) ?? [];
-
   return (
     <div
       className="mx-auto flex max-w-2xl flex-col gap-6"
@@ -83,14 +66,10 @@ export default async function NewProjectPage() {
         description="Work through the charter step by step — basics, scope, methodology, team, and measures."
       />
       <CreateProjectWizard
-        units={
-          units?.map((unit) => ({
-            id: unit.id,
-            name: unit.name,
-          })) ?? []
-        }
+        units={selectorOptions.units}
         methodologies={methodologyOptions}
-        members={memberOptions}
+        members={selectorOptions.people}
+        requiresSiteSelection={selectorOptions.requiresSiteSelection}
       />
     </div>
   );

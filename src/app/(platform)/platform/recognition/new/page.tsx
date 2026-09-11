@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { AwardRecognitionForm } from "@/components/recognition/award-recognition-form";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -17,10 +18,23 @@ export default async function NewRecognitionPage({
 
   const params = await searchParams;
   const supabase = await createServerSupabaseClient();
+  const selectorOptions = await loadSiteScopedSelectorOptions({
+    requireConcreteSite: true,
+  });
   const { data: types } = await supabase
     .from("recognition_types")
     .select("id, name")
     .eq("status", "active");
+
+  const requestedUnitId =
+    params.unit && selectorOptions.units.some((unit) => unit.id === params.unit)
+      ? params.unit
+      : undefined;
+  const requestedRecipientId =
+    params.recipient &&
+    selectorOptions.people.some((person) => person.id === params.recipient)
+      ? params.recipient
+      : undefined;
 
   return (
     <div
@@ -33,8 +47,13 @@ export default async function NewRecognitionPage({
       />
       <AwardRecognitionForm
         types={types ?? []}
-        organisationalUnitId={params.unit ?? ""}
-        {...(params.recipient ? { defaultRecipientId: params.recipient } : {})}
+        units={selectorOptions.units}
+        people={selectorOptions.people}
+        requiresSiteSelection={selectorOptions.requiresSiteSelection}
+        {...(requestedUnitId ? { defaultUnitId: requestedUnitId } : {})}
+        {...(requestedRecipientId
+          ? { defaultRecipientId: requestedRecipientId }
+          : {})}
         {...(params.source ? { defaultSourceId: params.source } : {})}
       />
     </div>

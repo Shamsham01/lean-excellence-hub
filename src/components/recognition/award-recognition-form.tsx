@@ -4,21 +4,33 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { awardRecognition } from "@/app/(platform)/platform/recognition/actions";
+import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
+import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type {
+  PersonSelectOption,
+  UnitSelectOption,
+} from "@/modules/organisation/site-context";
 
 type RecognitionType = { id: string; name: string };
 
 type AwardRecognitionFormProps = {
   types: RecognitionType[];
-  organisationalUnitId: string;
+  units: UnitSelectOption[];
+  people: PersonSelectOption[];
+  requiresSiteSelection?: boolean;
+  defaultUnitId?: string;
   defaultRecipientId?: string;
   defaultSourceId?: string;
 };
 
 export function AwardRecognitionForm({
   types,
-  organisationalUnitId,
+  units,
+  people,
+  requiresSiteSelection = false,
+  defaultUnitId,
   defaultRecipientId,
   defaultSourceId,
 }: AwardRecognitionFormProps) {
@@ -26,18 +38,25 @@ export function AwardRecognitionForm({
   const [typeId, setTypeId] = useState(types[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [recipientId, setRecipientId] = useState(defaultRecipientId ?? "");
+  const [unitId, setUnitId] = useState(defaultUnitId ?? units[0]?.id ?? "");
+  const [recipientId, setRecipientId] = useState(
+    defaultRecipientId ?? people[0]?.id ?? "",
+  );
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!unitId || !recipientId) {
+      setError("Choose an organisational unit and recipient.");
+      return;
+    }
     try {
       const result = await awardRecognition({
         recognitionTypeId: typeId,
         title,
         message,
-        organisationalUnitId,
+        organisationalUnitId: unitId,
         visibility: "unit",
         recipientMembershipIds: [recipientId],
         ...(defaultSourceId ? { sourceResourceId: defaultSourceId } : {}),
@@ -90,15 +109,24 @@ export function AwardRecognitionForm({
               onChange={(e) => setMessage(e.target.value)}
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Recipient membership ID</span>
-            <input
-              required
-              className="border-input rounded-md border px-3 py-2"
-              value={recipientId}
-              onChange={(e) => setRecipientId(e.target.value)}
-            />
-          </label>
+          <OrganisationalUnitSelect
+            label="Organisation unit"
+            options={units}
+            value={unitId}
+            onChange={setUnitId}
+            required
+            requiresSiteSelection={requiresSiteSelection}
+            testId="recognition-unit-select"
+          />
+          <PersonSelect
+            label="Recipient"
+            options={people}
+            value={recipientId}
+            onChange={setRecipientId}
+            required
+            requiresSiteSelection={requiresSiteSelection}
+            testId="recognition-recipient-select"
+          />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit" className="min-h-11">
             Award
