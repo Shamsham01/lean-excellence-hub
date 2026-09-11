@@ -68,7 +68,14 @@ test.describe("Site security boundary focused E2E", () => {
   }) => {
     await loginAsCookieWorksPersona(page, "ciManager");
     await page.goto(`/platform/maturity/assessments/${exeterAssessmentId}`);
-    await expect(page.getByText(EXETER_FACTORY_LABEL).first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Assessment" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Exeter Cookie Factory · Complete criterion responses and evidence.",
+      ),
+    ).toBeVisible();
   });
 
   test("D. Bodmin scoped people delegate scope picker excludes Exeter targets", async ({
