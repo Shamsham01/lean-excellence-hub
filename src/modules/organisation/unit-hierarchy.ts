@@ -70,3 +70,45 @@ export function formatUnitPath(
 
   return parts.join(" › ");
 }
+
+export function collectDescendantUnitIds(
+  units: FlatOrganisationUnit[],
+  rootUnitId: string,
+): Set<string> {
+  const childrenByParent = new Map<string, string[]>();
+
+  for (const unit of units) {
+    if (!unit.parent_unit_id) {
+      continue;
+    }
+    const siblings = childrenByParent.get(unit.parent_unit_id) ?? [];
+    siblings.push(unit.id);
+    childrenByParent.set(unit.parent_unit_id, siblings);
+  }
+
+  const ids = new Set<string>([rootUnitId]);
+  const stack = [rootUnitId];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      continue;
+    }
+    for (const childId of childrenByParent.get(current) ?? []) {
+      if (!ids.has(childId)) {
+        ids.add(childId);
+        stack.push(childId);
+      }
+    }
+  }
+
+  return ids;
+}
+
+export function filterUnitsToSite(
+  units: FlatOrganisationUnit[],
+  siteUnitId: string,
+): FlatOrganisationUnit[] {
+  const ids = collectDescendantUnitIds(units, siteUnitId);
+  return units.filter((unit) => ids.has(unit.id));
+}

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { requirePlatformAccess } from "@/modules/identity/session";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function PlatformLayout({
@@ -15,7 +16,10 @@ export default async function PlatformLayout({
     redirect("/select-organisation");
   }
 
-  const organisations = await listEligibleOrganisations();
+  const [organisations, { context: siteContext }] = await Promise.all([
+    listEligibleOrganisations(),
+    loadActiveSiteContext(),
+  ]);
   const current = organisations.find(
     (organisation) => organisation.organisation_id === orgId.data,
   );
@@ -27,6 +31,7 @@ export default async function PlatformLayout({
     <PlatformShell
       organisationName={current.organisation_name}
       organisations={organisations}
+      siteContext={siteContext}
       membershipId={current.membership_id}
     >
       {children}

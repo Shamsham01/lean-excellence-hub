@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
+import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
 
@@ -20,6 +21,7 @@ type MobilePlatformNavigationProps = {
   items: PlatformNavItem[];
   organisationName: string;
   organisations: EligibleOrganisation[];
+  siteContext: ActiveSiteContext;
   member: PlatformShellMember;
   showSettings: boolean;
 };
@@ -28,6 +30,7 @@ export function MobilePlatformNavigation({
   items,
   organisationName,
   organisations,
+  siteContext,
   member,
   showSettings,
 }: MobilePlatformNavigationProps) {
@@ -57,6 +60,7 @@ export function MobilePlatformNavigation({
           <PlatformSidebarHeader
             organisationName={organisationName}
             organisations={organisations}
+            siteContext={siteContext}
           />
           <PlatformNavigation items={items} onNavigate={closeDrawer} />
           <PlatformSidebarFooter

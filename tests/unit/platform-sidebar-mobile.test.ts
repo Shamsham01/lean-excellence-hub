@@ -25,6 +25,7 @@ describe("platform sidebar layout", () => {
     expect(navigation).toContain("overflow-y-auto");
     expect(navigation).toContain('aria-label="Platform"');
     expect(header).toContain("shrink-0");
+    expect(header).toContain("SiteContextSwitcher");
     expect(footer).toContain("shrink-0");
     expect(sidebar).toContain("h-dvh");
     expect(sidebar).toContain("min-h-0");
@@ -41,6 +42,7 @@ describe("platform sidebar layout", () => {
     expect(mobile).toContain("min-h-0");
     expect(mobile).toContain("overflow-hidden");
     expect(mobile).toContain("PlatformSidebarHeader");
+    expect(mobile).toContain("siteContext={siteContext}");
     expect(mobile).toContain("PlatformNavigation");
     expect(mobile).toContain("PlatformSidebarFooter");
     expect(mobile).not.toMatch(/flex min-h-0 flex-1 flex-col overflow-hidden/);

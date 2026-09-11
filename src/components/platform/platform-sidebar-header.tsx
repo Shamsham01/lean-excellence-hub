@@ -1,15 +1,19 @@
 import Link from "next/link";
 
+import { SiteContextSwitcher } from "@/components/platform/site-context-switcher";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
+import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 
 type PlatformSidebarHeaderProps = {
   organisationName: string;
   organisations: EligibleOrganisation[];
+  siteContext: ActiveSiteContext;
 };
 
 export function PlatformSidebarHeader({
   organisationName,
   organisations,
+  siteContext,
 }: PlatformSidebarHeaderProps) {
   return (
     <div className="flex shrink-0 flex-col gap-2 border-b border-sidebar-border p-4">
@@ -30,6 +34,7 @@ export function PlatformSidebarHeader({
           </Link>
         ) : null}
       </div>
+      <SiteContextSwitcher context={siteContext} />
     </div>
   );
 }

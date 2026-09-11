@@ -25,7 +25,8 @@ export default async function NewSchedulePage({
   );
   if (!canManage) notFound();
 
-  const { timezone, units, memberships } = await loadScheduleFormContext();
+  const { timezone, units, memberships, requiresSiteSelection } =
+    await loadScheduleFormContext();
   const supabase = await createServerSupabaseClient();
 
   const activityResourceId = params.activityId ?? "";
@@ -69,6 +70,7 @@ export default async function NewSchedulePage({
           timezone={timezone}
           units={units}
           memberships={memberships}
+          requiresSiteSelection={requiresSiteSelection}
           returnTo={params.returnTo ?? "/platform/schedule"}
           submitLabel="Create schedule"
         />

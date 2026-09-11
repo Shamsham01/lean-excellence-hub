@@ -5,6 +5,12 @@ import { createClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  filterUnitsForActiveSite,
+  listAccessibleSites,
+  resolveActiveSiteContext,
+} from "@/modules/organisation/site-context";
+
+import {
   QA_FOUNDATION_CONTRACT,
   QA_SITE_ROOT_CODES,
   QA_UNITS,
@@ -175,6 +181,38 @@ describe.skipIf(!hasLocalSupabase)(
       expect(codes).toContain("packing");
       expect(codes.some((code) => code.startsWith("exeter-"))).toBe(false);
       expect(codes).not.toContain("exeter-cookie-factory");
+    });
+
+    it("keeps Bodmin selector candidates inside RLS-visible units even with a forged Exeter site cookie", async () => {
+      const client = await signInQaPersona(
+        env.apiUrl,
+        env.publishableKey,
+        "productionManager",
+      );
+
+      const { data, error } = await client
+        .from("organisation_units")
+        .select("id, code, name, unit_type, parent_unit_id, status")
+        .eq("status", "active");
+
+      expect(error).toBeNull();
+      const units = data ?? [];
+      const context = resolveActiveSiteContext(
+        listAccessibleSites(units),
+        unitIdsByCode["exeter-cookie-factory"],
+      );
+      const visible = filterUnitsForActiveSite(units, context, {
+        requireConcreteSite: true,
+      });
+
+      expect(context.locked).toBe(true);
+      expect(visible.some((unit) => unit.code.startsWith("exeter-"))).toBe(
+        false,
+      );
+      expect(visible.filter((unit) => unit.name === "Packing")).toHaveLength(1);
+      expect(visible.find((unit) => unit.name === "Packing")?.code).toBe(
+        "packing",
+      );
     });
 
     it("blocks Bodmin productionManager from selecting Exeter delegation scopes", async () => {

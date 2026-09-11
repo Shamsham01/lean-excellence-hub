@@ -23,7 +23,8 @@ export default async function EditSchedulePage({
   if (!canManage) notFound();
 
   const supabase = await createServerSupabaseClient();
-  const { timezone, units, memberships } = await loadScheduleFormContext();
+  const { timezone, units, memberships, requiresSiteSelection } =
+    await loadScheduleFormContext();
 
   const { data: schedule } = await supabase
     .from("schedule_definitions")
@@ -77,6 +78,7 @@ export default async function EditSchedulePage({
         timezone={timezone}
         units={units}
         memberships={memberships}
+        requiresSiteSelection={requiresSiteSelection}
         submitLabel="Save schedule"
         initialValues={{
           title: schedule.title,
