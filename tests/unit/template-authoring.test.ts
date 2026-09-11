@@ -185,4 +185,78 @@ describe("template authoring read model", () => {
     );
     expect(isTemplateAuthoringPublishReady(children)).toBe(true);
   });
+
+  it("fails closed when template_sections cannot be loaded", async () => {
+    const supabase = {
+      from: vi.fn((table: string) => {
+        expect(table).toBe("template_sections");
+        return {
+          select: () => ({
+            eq: () => ({
+              order: async () => ({
+                data: [{ id: "section-a", title: "Sort", position: 1 }],
+                error: { message: "permission denied for template_sections" },
+              }),
+            }),
+          }),
+        };
+      }),
+    };
+
+    await expect(
+      loadTemplateAuthoringChildren(supabase as never, "template-version-1"),
+    ).rejects.toThrow(
+      "Failed to load template_sections: permission denied for template_sections",
+    );
+    expect(supabase.from).toHaveBeenCalledTimes(1);
+    expect(supabase.from).toHaveBeenCalledWith("template_sections");
+  });
+
+  it("fails closed when template_questions cannot be loaded", async () => {
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "template_sections") {
+          return {
+            select: () => ({
+              eq: () => ({
+                order: async () => ({
+                  data: [{ id: "section-a", title: "Sort", position: 1 }],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+
+        expect(table).toBe("template_questions");
+        return {
+          select: () => ({
+            eq: () => ({
+              order: async () => ({
+                data: [
+                  {
+                    id: "question-1",
+                    section_id: "section-a",
+                    prompt: "Should not be used",
+                    question_type: "yes_no",
+                    position: 1,
+                  },
+                ],
+                error: { message: "permission denied for template_questions" },
+              }),
+            }),
+          }),
+        };
+      }),
+    };
+
+    await expect(
+      loadTemplateAuthoringChildren(supabase as never, "template-version-1"),
+    ).rejects.toThrow(
+      "Failed to load template_questions: permission denied for template_questions",
+    );
+    expect(supabase.from).toHaveBeenCalledTimes(2);
+    expect(supabase.from).toHaveBeenCalledWith("template_sections");
+    expect(supabase.from).toHaveBeenCalledWith("template_questions");
+  });
 });

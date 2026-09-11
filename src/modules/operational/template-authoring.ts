@@ -128,6 +128,22 @@ export function isTemplateAuthoringPublishReady(
   return children.usableQuestionCount > 0;
 }
 
+function throwIfAuthoringQueryError(
+  resource: "template_sections" | "template_questions",
+  error: { message?: string } | null | undefined,
+): void {
+  if (!error) {
+    return;
+  }
+
+  const detail = error.message?.trim();
+  throw new Error(
+    detail
+      ? `Failed to load ${resource}: ${detail}`
+      : `Failed to load ${resource}`,
+  );
+}
+
 export async function loadTemplateAuthoringChildren(
   supabase: TemplateAuthoringClient,
   templateVersionId: string | null | undefined,
@@ -136,17 +152,21 @@ export async function loadTemplateAuthoringChildren(
     return emptyTemplateAuthoringChildren();
   }
 
-  const { data: sectionsRaw } = await supabase
+  const { data: sectionsRaw, error: sectionsError } = await supabase
     .from("template_sections")
     .select(TEMPLATE_AUTHORING_SECTION_COLUMNS)
     .eq("template_version_id", templateVersionId)
     .order("position");
 
-  const { data: questionsRaw } = await supabase
+  throwIfAuthoringQueryError("template_sections", sectionsError);
+
+  const { data: questionsRaw, error: questionsError } = await supabase
     .from("template_questions")
     .select(TEMPLATE_AUTHORING_QUESTION_COLUMNS)
     .eq("template_version_id", templateVersionId)
     .order("position");
+
+  throwIfAuthoringQueryError("template_questions", questionsError);
 
   return assembleTemplateAuthoringChildren(
     sectionsRaw ?? [],
