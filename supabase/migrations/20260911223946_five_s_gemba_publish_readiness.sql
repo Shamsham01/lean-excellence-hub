@@ -43,7 +43,7 @@ begin
     select 1
     from public.template_questions question_row
     where question_row.organisation_id = org_id
-      and question_row.template_version_id = template_version_id
+      and question_row.template_version_id = publish_five_s_standard_version.template_version_id
       and btrim(question_row.prompt) <> ''
   ) then
     raise exception '5S standard version requires at least one question'
@@ -134,7 +134,7 @@ begin
     select 1
     from public.template_questions question_row
     where question_row.organisation_id = org_id
-      and question_row.template_version_id = template_version_id
+      and question_row.template_version_id = publish_gemba_definition_version.template_version_id
       and btrim(question_row.prompt) <> ''
   ) then
     raise exception 'gemba definition version requires at least one question'
