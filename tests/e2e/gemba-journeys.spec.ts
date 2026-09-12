@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  expectExecutionHeaderLayout,
+  selectFirstExecutionUnit,
+} from "./helpers/execution-unit-select";
 import { DEMO_GEMBA_DEFINITION } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -31,6 +35,14 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(
       page.getByRole("heading", { name: DEMO_GEMBA_DEFINITION.name }),
     ).toBeVisible();
+    await expectExecutionHeaderLayout(page, {
+      managementTestId: "gemba-management-actions",
+      executionTestId: "gemba-execution-actions",
+      unitSelectTestId: "gemba-unit-select",
+      submitTestId: "gemba-start-walk",
+    });
+    await selectFirstExecutionUnit(page, "gemba-unit-select");
+    await expect(page.getByTestId("gemba-start-walk")).toBeEnabled();
   });
 
   test("admin: walk history shows completed demo walk", async ({ page }) => {

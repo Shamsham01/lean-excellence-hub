@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  expectExecutionHeaderLayout,
+  selectFirstExecutionUnit,
+} from "./helpers/execution-unit-select";
 import { DEMO_FIVE_S_STANDARD } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -32,6 +36,13 @@ test.describe("Milestone 6 5S journeys", () => {
       page.getByRole("heading", { name: DEMO_FIVE_S_STANDARD.name }),
     ).toBeVisible();
 
+    await expectExecutionHeaderLayout(page, {
+      managementTestId: "five-s-management-actions",
+      executionTestId: "five-s-execution-actions",
+      unitSelectTestId: "five-s-unit-select",
+      submitTestId: "five-s-start-audit",
+    });
+    await selectFirstExecutionUnit(page, "five-s-unit-select");
     await page.getByRole("button", { name: "Start audit" }).click();
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
     await expect(page.getByLabel("Audit progress")).toBeVisible();

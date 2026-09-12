@@ -5,6 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  ALL_SITES_COOKIE_VALUE,
+  buildSiteScopedUnitOptions,
   filterUnitsForActiveSite,
   listAccessibleSites,
   resolveActiveSiteContext,
@@ -336,6 +338,113 @@ describe.skipIf(!hasLocalSupabase)(
       expect(codes).toContain("exeter-cookie-factory");
       expect(codes).toContain("operations");
       expect(codes).toContain("exeter-operations");
+    });
+
+    it("narrows organisation-admin 5S/Gemba execution units to Exeter only", async () => {
+      const client = await signInQaPersona(
+        env.apiUrl,
+        env.publishableKey,
+        "admin",
+      );
+
+      const { data, error } = await client
+        .from("organisation_units")
+        .select("id, code, name, unit_type, parent_unit_id, status")
+        .eq("status", "active");
+
+      expect(error).toBeNull();
+      const units = data ?? [];
+      const context = resolveActiveSiteContext(
+        listAccessibleSites(units),
+        unitIdsByCode["exeter-cookie-factory"],
+      );
+      const { units: options, requiresSiteSelection } =
+        buildSiteScopedUnitOptions(units, context, {
+          requireConcreteSite: true,
+        });
+
+      expect(requiresSiteSelection).toBe(false);
+      expect(options.some((unit) => unit.id === unitIdsByCode.packing)).toBe(
+        false,
+      );
+      expect(
+        options.some((unit) => unit.id === unitIdsByCode["exeter-packing"]),
+      ).toBe(true);
+      expect(options.filter((unit) => unit.name === "Packing")).toHaveLength(1);
+      expect(options.filter((unit) => unit.name === "Baking")).toHaveLength(1);
+      expect(
+        options.filter((unit) => unit.name === "Mixing & Preparation"),
+      ).toHaveLength(1);
+      expect(options.filter((unit) => unit.name === "Quality")).toHaveLength(1);
+      expect(
+        options.some(
+          (unit) => unit.id === unitIdsByCode["bodmin-cookie-factory"],
+        ),
+      ).toBe(false);
+    });
+
+    it("narrows organisation-admin 5S/Gemba execution units to Bodmin only", async () => {
+      const client = await signInQaPersona(
+        env.apiUrl,
+        env.publishableKey,
+        "admin",
+      );
+
+      const { data, error } = await client
+        .from("organisation_units")
+        .select("id, code, name, unit_type, parent_unit_id, status")
+        .eq("status", "active");
+
+      expect(error).toBeNull();
+      const units = data ?? [];
+      const context = resolveActiveSiteContext(
+        listAccessibleSites(units),
+        unitIdsByCode["bodmin-cookie-factory"],
+      );
+      const { units: options } = buildSiteScopedUnitOptions(units, context, {
+        requireConcreteSite: true,
+      });
+
+      expect(
+        options.some((unit) => unit.id === unitIdsByCode["exeter-packing"]),
+      ).toBe(false);
+      expect(options.some((unit) => unit.id === unitIdsByCode.packing)).toBe(
+        true,
+      );
+      expect(options.filter((unit) => unit.name === "Packing")).toHaveLength(1);
+      expect(
+        options.some(
+          (unit) => unit.id === unitIdsByCode["exeter-cookie-factory"],
+        ),
+      ).toBe(false);
+    });
+
+    it("does not expose a mixed-site execution list when All sites is active", async () => {
+      const client = await signInQaPersona(
+        env.apiUrl,
+        env.publishableKey,
+        "admin",
+      );
+
+      const { data, error } = await client
+        .from("organisation_units")
+        .select("id, code, name, unit_type, parent_unit_id, status")
+        .eq("status", "active");
+
+      expect(error).toBeNull();
+      const units = data ?? [];
+      const context = resolveActiveSiteContext(
+        listAccessibleSites(units),
+        ALL_SITES_COOKIE_VALUE,
+      );
+      const { units: options, requiresSiteSelection } =
+        buildSiteScopedUnitOptions(units, context, {
+          requireConcreteSite: true,
+        });
+
+      expect(context.mode).toBe("all");
+      expect(options).toEqual([]);
+      expect(requiresSiteSelection).toBe(true);
     });
 
     it("rejects admin cross-site reparent through authoritative RPC", async () => {

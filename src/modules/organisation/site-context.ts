@@ -140,6 +140,20 @@ export function filterUnitsForActiveSite(
   return filterUnitsToSite(units, context.activeSiteId);
 }
 
+export function buildSiteScopedUnitOptions(
+  units: FlatOrganisationUnit[],
+  context: ActiveSiteContext,
+  options: { requireConcreteSite?: boolean } = {},
+): { units: UnitSelectOption[]; requiresSiteSelection: boolean } {
+  const requireConcreteSite = options.requireConcreteSite === true;
+  return {
+    units: filterUnitsForActiveSite(units, context, {
+      requireConcreteSite,
+    }).map(toUnitSelectOption),
+    requiresSiteSelection: requireConcreteSite && context.mode === "all",
+  };
+}
+
 export function filterPeopleForActiveSite(
   people: SelectablePerson[],
   context: ActiveSiteContext,

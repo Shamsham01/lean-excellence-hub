@@ -5,6 +5,10 @@ import { tmpdir } from "node:os";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  expectExecutionHeaderLayout,
+  selectFirstExecutionUnit,
+} from "./helpers/execution-unit-select";
+import {
   DEMO_FIVE_S_STANDARD,
   DEMO_GEMBA_DEFINITION,
 } from "../../scripts/demo-seed/constants";
@@ -51,6 +55,7 @@ test.describe("Milestone 6 closure journeys", () => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
+    await selectFirstExecutionUnit(page, "five-s-unit-select");
     await page.getByRole("button", { name: "Start audit" }).click();
     await expect(page.getByLabel("Audit progress")).toBeVisible();
 
@@ -65,6 +70,7 @@ test.describe("Milestone 6 closure journeys", () => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
     await page.getByRole("link", { name: DEMO_GEMBA_DEFINITION.name }).click();
+    await selectFirstExecutionUnit(page, "gemba-unit-select");
     await page.getByRole("button", { name: "Start walk" }).click();
     await expect(page.getByLabel("Walk progress")).toBeVisible();
 
@@ -98,6 +104,13 @@ test.describe("Milestone 6 closure journeys", () => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
+    await expectExecutionHeaderLayout(page, {
+      managementTestId: "five-s-management-actions",
+      executionTestId: "five-s-execution-actions",
+      unitSelectTestId: "five-s-unit-select",
+      submitTestId: "five-s-start-audit",
+    });
+    await selectFirstExecutionUnit(page, "five-s-unit-select");
     await page.getByRole("button", { name: "Start audit" }).click();
 
     await expect(page.getByRole("button", { name: "Yes" })).toBeVisible();

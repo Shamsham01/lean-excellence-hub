@@ -216,6 +216,7 @@ jobs:
               tests/e2e/milestone6-closure.spec.ts
               tests/e2e/five-s-gemba-authoring.spec.ts
               tests/e2e/site-security-boundary.spec.ts
+              tests/e2e/cookieworks-execution-site-context.spec.ts
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { cn } from "@/lib/utils";
 import {
   isSelectorPreferredValueMissing,
   nextSelectorValue,
@@ -9,7 +10,7 @@ import {
 } from "@/modules/organisation/site-context";
 
 const SELECT_CLASS_NAME =
-  "border-input min-h-11 rounded-md border bg-background px-3 py-2";
+  "border-input min-h-11 w-full min-w-[12rem] rounded-md border bg-background px-3 py-2";
 
 type OrganisationalUnitSelectProps = {
   id?: string;
@@ -27,6 +28,7 @@ type OrganisationalUnitSelectProps = {
   placeholderLabel?: string;
   unavailableMessage?: string;
   testId?: string;
+  className?: string;
 };
 
 export function OrganisationalUnitSelect({
@@ -45,6 +47,7 @@ export function OrganisationalUnitSelect({
   placeholderLabel = "Select organisational unit…",
   unavailableMessage = "The previously selected organisational unit is not available in the active site. Choose a unit.",
   testId = "organisational-unit-select",
+  className,
 }: OrganisationalUnitSelectProps) {
   useEffect(() => {
     if (value === undefined || !onChange) {
@@ -64,7 +67,7 @@ export function OrganisationalUnitSelect({
 
   if (options.length === 0) {
     return (
-      <div className="flex flex-col gap-1 text-sm">
+      <div className={cn("flex min-w-0 flex-col gap-1 text-sm", className)}>
         <span>{label}</span>
         <p
           className="text-muted-foreground"
@@ -80,7 +83,7 @@ export function OrganisationalUnitSelect({
   }
 
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <label className={cn("flex min-w-0 flex-col gap-1 text-sm", className)}>
       <span>{label}</span>
       <select
         id={id}
