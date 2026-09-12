@@ -13,12 +13,14 @@ export function boxesOverlap(left: Box, right: Box) {
 
 export async function selectFirstExecutionUnit(page: Page, testId: string) {
   const locked = page.getByTestId(`${testId}-locked`);
+  const select = page.getByTestId(testId);
+  await expect(locked.or(select).first()).toBeVisible();
+
   if ((await locked.count()) > 0) {
     await expect(locked).toBeVisible();
     return;
   }
 
-  const select = page.getByTestId(testId);
   await expect(select).toBeVisible();
   await select.selectOption({ index: 1 });
 }
@@ -37,6 +39,7 @@ export async function expectExecutionHeaderLayout(
   const submit = page.getByTestId(input.submitTestId);
   const select = page.getByTestId(input.unitSelectTestId);
   const locked = page.getByTestId(`${input.unitSelectTestId}-locked`);
+  await expect(locked.or(select).first()).toBeVisible();
   const target = (await locked.count()) > 0 ? locked : select;
   const management = page.getByTestId(input.managementTestId);
 
