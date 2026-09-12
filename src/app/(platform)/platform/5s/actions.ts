@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { readApplicableUnitIds } from "@/modules/operational/five-s-applicability";
 import {
   loadTemplateAuthoringChildren,
   nextQuestionPosition,
@@ -36,11 +37,30 @@ async function loadFiveSDraftTemplateVersionId(
   return data.template_version_id;
 }
 
+export async function setFiveSStandardApplicableUnits(
+  standardId: string,
+  unitIds: string[],
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("set_five_s_standard_applicable_units", {
+    target_standard_id: standardId,
+    target_unit_ids: unitIds,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
+  return { ok: true };
+}
+
 export async function createFiveSStandard(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const applicableUnitIds = readApplicableUnitIds(formData);
   if (!name) {
     return { error: "Name is required" };
+  }
+  if (applicableUnitIds.length === 0) {
+    return { error: "Select at least one applicable area" };
   }
 
   const supabase = await createServerSupabaseClient();
@@ -59,7 +79,30 @@ export async function createFiveSStandard(formData: FormData) {
   );
 
   if (error) return { error: error.message };
-  return { standardId: data as string };
+  const standardId = data as string;
+  const applicability = await setFiveSStandardApplicableUnits(
+    standardId,
+    applicableUnitIds,
+  );
+  if (applicability.error) return { error: applicability.error };
+  return { standardId };
+}
+
+export async function setFiveSStandardApplicableUnitsFromForm(
+  formData: FormData,
+) {
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  const applicableUnitIds = readApplicableUnitIds(formData);
+  if (!standardId) {
+    throw new Error("Standard is required");
+  }
+  const result = await setFiveSStandardApplicableUnits(
+    standardId,
+    applicableUnitIds,
+  );
+  if (result.error) {
+    throw new Error(result.error);
+  }
 }
 
 export async function addFiveSSection(

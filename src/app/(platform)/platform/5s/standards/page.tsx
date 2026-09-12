@@ -2,12 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createFiveSStandard } from "@/app/(platform)/platform/5s/actions";
+import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function FiveSStandardsPage() {
@@ -16,6 +19,10 @@ export default async function FiveSStandardsPage() {
     .from("five_s_standards")
     .select("id, display_name, description, created_at")
     .order("created_at", { ascending: false });
+  const { units, context } = await loadActiveSiteContext();
+  const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
 
   async function createAction(formData: FormData) {
     "use server";
@@ -56,7 +63,15 @@ export default async function FiveSStandardsPage() {
                 className="mt-2"
               />
             </div>
-            <Button type="submit" className="min-h-11">
+            <ApplicableUnitsField
+              options={creationUnits.units}
+              requiresSiteSelection={creationUnits.requiresSiteSelection}
+            />
+            <Button
+              type="submit"
+              className="min-h-11"
+              disabled={creationUnits.units.length === 0}
+            >
               Create draft standard
             </Button>
           </form>

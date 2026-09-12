@@ -35,6 +35,7 @@ type ScheduleFormProps = {
   units: UnitSelectOption[];
   memberships: PersonSelectOption[];
   requiresSiteSelection?: boolean;
+  unitEmptyMessage?: string;
   initialValues?: Partial<ScheduleFormValues>;
   scheduleId?: string;
   returnTo?: string;
@@ -49,6 +50,7 @@ export function ScheduleForm({
   units,
   memberships,
   requiresSiteSelection = false,
+  unitEmptyMessage,
   initialValues,
   scheduleId,
   returnTo,
@@ -124,6 +126,7 @@ export function ScheduleForm({
             : {})}
           required
           requiresSiteSelection={requiresSiteSelection}
+          {...(unitEmptyMessage ? { emptyMessage: unitEmptyMessage } : {})}
           testId="schedule-unit-select"
         />
         <PersonSelect

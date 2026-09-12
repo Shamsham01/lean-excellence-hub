@@ -41,6 +41,61 @@ describe("ExecutionUnitStartForm", () => {
     expect(screen.getByTestId("five-s-start-audit")).toBeEnabled();
   });
 
+  it("locks a single applicable unit instead of rendering a dropdown", () => {
+    render(
+      <ExecutionUnitStartForm
+        action={() => undefined}
+        hiddenFields={<input type="hidden" name="standardId" value="std" />}
+        units={[{ id: "exeter-packing", name: "Packing" }]}
+        requiresSiteSelection={false}
+        unitFieldId="five-s-unit-id"
+        label="Start audit for unit"
+        lockedLabel="Audit area"
+        submitLabel="Start audit"
+        emptyMessage="Select an active site in the sidebar before starting an audit."
+        formTestId="five-s-start-audit-form"
+        unitSelectTestId="five-s-unit-select"
+        submitTestId="five-s-start-audit"
+      />,
+    );
+
+    expect(screen.getByTestId("five-s-unit-select-locked")).toHaveTextContent(
+      "Audit area",
+    );
+    expect(screen.getByTestId("five-s-unit-select-locked")).toHaveTextContent(
+      "Packing",
+    );
+    expect(screen.queryByTestId("five-s-unit-select")).not.toBeInTheDocument();
+    expect(screen.getByTestId("five-s-start-audit")).toBeEnabled();
+  });
+
+  it("does not fall back to unrelated units when none are applicable", () => {
+    render(
+      <ExecutionUnitStartForm
+        action={() => undefined}
+        hiddenFields={<input type="hidden" name="standardId" value="std" />}
+        units={[]}
+        requiresSiteSelection={false}
+        unitFieldId="five-s-unit-id"
+        label="Start audit for unit"
+        submitLabel="Start audit"
+        emptyMessage="Select an active site in the sidebar before starting an audit."
+        notApplicableMessage="This standard is not applicable to the active site."
+        formTestId="five-s-start-audit-form"
+        unitSelectTestId="five-s-unit-select"
+        submitTestId="five-s-start-audit"
+      />,
+    );
+
+    expect(screen.getByTestId("site-context-required")).toHaveTextContent(
+      "This standard is not applicable to the active site.",
+    );
+    expect(
+      screen.queryByRole("option", { name: "Baking" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("five-s-start-audit")).toBeDisabled();
+  });
+
   it("asks for an active site instead of exposing a mixed-site list", () => {
     render(
       <ExecutionUnitStartForm

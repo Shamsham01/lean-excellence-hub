@@ -3474,6 +3474,45 @@ export type Database = {
           },
         ]
       }
+      five_s_standard_applicable_units: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          standard_id: string
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          standard_id: string
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          standard_id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "five_s_standard_applicable_units_standard_fkey"
+            columns: ["organisation_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "five_s_standards"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_standard_applicable_units_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       five_s_standard_versions: {
         Row: {
           archived_at: string | null
@@ -13438,6 +13477,10 @@ export type Database = {
       }
       select_countermeasure: {
         Args: { target_countermeasure_id: string; target_rationale?: string }
+        Returns: boolean
+      }
+      set_five_s_standard_applicable_units: {
+        Args: { target_standard_id: string; target_unit_ids: string[] }
         Returns: boolean
       }
       set_maturity_model_version_assessment_scopes: {
