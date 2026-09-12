@@ -34,7 +34,7 @@ export function ApplicableUnitsField({
         ) : null}
         <p
           className="text-sm text-muted-foreground"
-          data-testid="site-context-required"
+          data-testid="applicable-units-empty"
         >
           {requiresSiteSelection
             ? emptyMessage
