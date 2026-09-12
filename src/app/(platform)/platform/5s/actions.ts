@@ -3,8 +3,38 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  loadTemplateAuthoringChildren,
+  nextQuestionPosition,
+} from "@/modules/operational/template-authoring";
 import type { Json } from "@/platform/supabase/database.types";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+function throwIfActionError(result: { error?: string }) {
+  if (result.error) {
+    throw new Error(result.error);
+  }
+}
+
+async function loadFiveSDraftTemplateVersionId(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  versionId: string,
+) {
+  const { data, error } = await supabase
+    .from("five_s_standard_versions")
+    .select("template_version_id, status")
+    .eq("id", versionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!data || data.status !== "draft" || !data.template_version_id) {
+    throw new Error("5S standard version is not editable");
+  }
+
+  return data.template_version_id;
+}
 
 export async function createFiveSStandard(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -238,26 +268,70 @@ export async function startFiveSAuditFromForm(formData: FormData) {
 
 export async function addFiveSSectionFromForm(formData: FormData) {
   const versionId = String(formData.get("versionId"));
-  const title = String(formData.get("sectionTitle"));
-  const position = Number(formData.get("position") ?? 1);
-  await addFiveSSection(versionId, title, position);
-  revalidatePath(`/platform/5s/standards/${formData.get("standardId")}`);
+  const title = String(formData.get("sectionTitle") ?? "").trim();
+  const standardId = String(formData.get("standardId"));
+  if (!title) {
+    throw new Error("Category name is required");
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const templateVersionId = await loadFiveSDraftTemplateVersionId(
+    supabase,
+    versionId,
+  );
+  const authoring = await loadTemplateAuthoringChildren(
+    supabase,
+    templateVersionId,
+  );
+  const result = await addFiveSSection(
+    versionId,
+    title,
+    authoring.nextSectionPosition,
+  );
+  throwIfActionError(result);
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function addFiveSQuestionFromForm(formData: FormData) {
   const versionId = String(formData.get("versionId"));
   const sectionId = String(formData.get("sectionId"));
-  const prompt = String(formData.get("prompt"));
+  const prompt = String(formData.get("prompt") ?? "").trim();
   const questionType = String(formData.get("questionType"));
   const standardId = String(formData.get("standardId"));
-  await addFiveSQuestion(versionId, sectionId, prompt, 1, questionType);
+  if (!prompt) {
+    throw new Error("Question prompt is required");
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const templateVersionId = await loadFiveSDraftTemplateVersionId(
+    supabase,
+    versionId,
+  );
+  const authoring = await loadTemplateAuthoringChildren(
+    supabase,
+    templateVersionId,
+  );
+  const section = authoring.sections.find((item) => item.id === sectionId);
+  if (!section) {
+    throw new Error("5S category was not found");
+  }
+
+  const result = await addFiveSQuestion(
+    versionId,
+    sectionId,
+    prompt,
+    nextQuestionPosition(section),
+    questionType,
+  );
+  throwIfActionError(result);
   revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function publishFiveSStandardFromForm(formData: FormData) {
   const versionId = String(formData.get("versionId"));
   const standardId = String(formData.get("standardId"));
-  await publishFiveSStandard(versionId, standardId);
+  const result = await publishFiveSStandard(versionId, standardId);
+  throwIfActionError(result);
 }
 
 export async function completeFiveSAuditFromForm(formData: FormData) {

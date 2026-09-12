@@ -3,7 +3,37 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  loadTemplateAuthoringChildren,
+  nextQuestionPosition,
+} from "@/modules/operational/template-authoring";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+function throwIfActionError(result: { error?: string }) {
+  if (result.error) {
+    throw new Error(result.error);
+  }
+}
+
+async function loadGembaDraftTemplateVersionId(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  versionId: string,
+) {
+  const { data, error } = await supabase
+    .from("gemba_definition_versions")
+    .select("template_version_id, status")
+    .eq("id", versionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!data || data.status !== "draft" || !data.template_version_id) {
+    throw new Error("gemba definition version is not editable");
+  }
+
+  return data.template_version_id;
+}
 
 export async function createGembaDefinition(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -156,12 +186,62 @@ export async function completeGembaWalk(walkId: string, summary?: string) {
 }
 
 export async function addGembaSectionFromForm(formData: FormData) {
-  await addGembaSection(
-    String(formData.get("versionId")),
-    String(formData.get("sectionTitle")),
-    Number(formData.get("position") ?? 1),
+  const versionId = String(formData.get("versionId"));
+  const title = String(formData.get("sectionTitle") ?? "").trim();
+  const definitionId = String(formData.get("definitionId"));
+  if (!title) {
+    throw new Error("Section title is required");
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const templateVersionId = await loadGembaDraftTemplateVersionId(
+    supabase,
+    versionId,
   );
-  revalidatePath(`/platform/gemba/definitions/${formData.get("definitionId")}`);
+  const authoring = await loadTemplateAuthoringChildren(
+    supabase,
+    templateVersionId,
+  );
+  const result = await addGembaSection(
+    versionId,
+    title,
+    authoring.nextSectionPosition,
+  );
+  throwIfActionError(result);
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
+}
+
+export async function addGembaQuestionFromForm(formData: FormData) {
+  const versionId = String(formData.get("versionId"));
+  const sectionId = String(formData.get("sectionId"));
+  const prompt = String(formData.get("prompt") ?? "").trim();
+  const definitionId = String(formData.get("definitionId"));
+  if (!prompt) {
+    throw new Error("Walk prompt is required");
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const templateVersionId = await loadGembaDraftTemplateVersionId(
+    supabase,
+    versionId,
+  );
+  const authoring = await loadTemplateAuthoringChildren(
+    supabase,
+    templateVersionId,
+  );
+  const section = authoring.sections.find((item) => item.id === sectionId);
+  if (!section) {
+    throw new Error("gemba section was not found");
+  }
+
+  const result = await addGembaQuestion(
+    versionId,
+    sectionId,
+    prompt,
+    nextQuestionPosition(section),
+  );
+  throwIfActionError(result);
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function completeGembaWalkFromForm(formData: FormData) {
@@ -177,10 +257,11 @@ export async function createGembaObservationFromForm(formData: FormData) {
 }
 
 export async function publishGembaDefinitionFromForm(formData: FormData) {
-  await publishGembaDefinition(
+  const result = await publishGembaDefinition(
     String(formData.get("versionId")),
     String(formData.get("definitionId")),
   );
+  throwIfActionError(result);
 }
 
 export async function initiateGembaEvidenceUpload(

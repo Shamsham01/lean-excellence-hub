@@ -18,8 +18,19 @@ import {
   FIVE_S_PERMISSIONS,
   SCHEDULE_PERMISSIONS,
 } from "@/modules/operational/permissions";
+import {
+  isTemplateAuthoringPublishReady,
+  loadTemplateAuthoringChildren,
+} from "@/modules/operational/template-authoring";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+function fiveSQuestionTypeLabel(questionType: string): string {
+  if (questionType === "yes_no") return "Yes / No";
+  if (questionType === "score") return "Score";
+  if (questionType === "short_text") return "Text";
+  return questionType;
+}
 
 export default async function FiveSStandardDetailPage({
   params,
@@ -58,15 +69,11 @@ export default async function FiveSStandardDetailPage({
     .select("id, name, code")
     .order("name");
 
-  let sections: Array<{ id: string; title: string; position: number }> = [];
-  if (editorVersion?.template_version_id) {
-    const { data } = await supabase
-      .from("template_sections")
-      .select("id, title, position")
-      .eq("template_version_id", editorVersion.template_version_id)
-      .order("position");
-    sections = data ?? [];
-  }
+  const authoring = await loadTemplateAuthoringChildren(
+    supabase,
+    editorVersion?.template_version_id,
+  );
+  const canPublish = isTemplateAuthoringPublishReady(authoring);
 
   return (
     <div className="flex flex-col gap-8">
@@ -146,11 +153,6 @@ export default async function FiveSStandardDetailPage({
             >
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="standardId" value={id} />
-              <input
-                type="hidden"
-                name="position"
-                value={sections.length + 1}
-              />
               <div>
                 <Label htmlFor="sectionTitle">Category name</Label>
                 <Input
@@ -165,12 +167,33 @@ export default async function FiveSStandardDetailPage({
               </Button>
             </form>
 
-            {sections.map((section) => (
+            {authoring.sections.map((section) => (
               <div
                 key={section.id}
                 className="rounded-lg border border-border p-4"
+                data-testid="authoring-section"
               >
                 <p className="font-medium">{section.title}</p>
+                {section.questions.length > 0 ? (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {section.questions.map((question) => (
+                      <li
+                        key={question.id}
+                        className="rounded-md border border-border bg-surface px-3 py-2"
+                        data-testid="authoring-question"
+                      >
+                        <p className="font-medium">{question.prompt}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {fiveSQuestionTypeLabel(question.questionType)}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    No questions in this category yet.
+                  </p>
+                )}
                 <form
                   action={addFiveSQuestionFromForm}
                   className="mt-3 flex flex-wrap items-end gap-3"
@@ -183,12 +206,19 @@ export default async function FiveSStandardDetailPage({
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="standardId" value={id} />
                   <div>
-                    <Label>Question</Label>
-                    <Input name="prompt" required className="mt-2 min-h-11" />
+                    <Label htmlFor={`prompt-${section.id}`}>Question</Label>
+                    <Input
+                      id={`prompt-${section.id}`}
+                      name="prompt"
+                      required
+                      className="mt-2 min-h-11"
+                      data-testid="five-s-question-prompt"
+                    />
                   </div>
                   <div>
-                    <Label>Type</Label>
+                    <Label htmlFor={`questionType-${section.id}`}>Type</Label>
                     <select
+                      id={`questionType-${section.id}`}
                       name="questionType"
                       className="mt-2 min-h-11 rounded-md border border-border px-3"
                     >
@@ -207,7 +237,21 @@ export default async function FiveSStandardDetailPage({
             <form action={publishFiveSStandardFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="standardId" value={id} />
-              <Button type="submit" className="min-h-11">
+              {!canPublish ? (
+                <p
+                  className="mb-3 text-sm text-muted-foreground"
+                  data-testid="publish-blocked-reason"
+                >
+                  Add at least one audit question before publishing this
+                  standard.
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                className="min-h-11"
+                disabled={!canPublish}
+                data-testid="publish-five-s-standard"
+              >
                 Publish standard
               </Button>
             </form>
