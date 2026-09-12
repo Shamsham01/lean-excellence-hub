@@ -24,6 +24,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     const secondPrompt = `Are waste bins labelled? ${Date.now()}`;
 
     await page.getByLabel("Name").fill(name);
+    await page.getByTestId("applicable-unit-checkbox").first().check();
     await page.getByRole("button", { name: "Create draft standard" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
     await expect(page.getByTestId("create-schedule-link")).toHaveCount(0);

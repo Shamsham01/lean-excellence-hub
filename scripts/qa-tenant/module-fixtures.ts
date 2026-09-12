@@ -219,6 +219,23 @@ export async function seedCookieWorksModuleFixtures(options: {
     target_scoring_metadata: { type: "yes_no", yes_value: 100, no_value: 0 },
   });
 
+  const bodminPackingId = options.unitIds.packing;
+  const exeterPackingId = options.unitIds["exeter-packing"];
+  if (!bodminPackingId || !exeterPackingId) {
+    throw new Error(
+      "CookieWorks packing units are required for 5S applicability fixtures.",
+    );
+  }
+
+  await expectRpc(
+    options.ciManagerClient,
+    "set_five_s_standard_applicable_units",
+    {
+      target_standard_id: fiveSStandardId,
+      target_unit_ids: [bodminPackingId, exeterPackingId],
+    },
+  );
+
   await expectRpc(options.ciManagerClient, "publish_five_s_standard_version", {
     target_standard_version_id: fiveSVersion.id,
   });
@@ -270,7 +287,7 @@ export async function seedCookieWorksModuleFixtures(options: {
   await expectRpc(options.ciManagerClient, "create_schedule_definition", {
     target_activity_resource_id: fiveSStandardId,
     target_title: "QA Weekly 5S",
-    target_unit_id: operationsUnitId,
+    target_unit_id: bodminPackingId,
     target_owner_membership_id: managerMembership.id,
     target_recurrence: {
       frequency: "weekly",

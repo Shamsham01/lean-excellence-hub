@@ -2016,6 +2016,15 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
     position += 1;
   }
 
+  const { error: applicabilityError } = await client.rpc(
+    "set_five_s_standard_applicable_units",
+    {
+      target_standard_id: fiveSStandardId,
+      target_unit_ids: [operationsUnitId],
+    },
+  );
+  if (applicabilityError) throw applicabilityError;
+
   await client.rpc("publish_five_s_standard_version", {
     target_standard_version_id: fiveSVersion.id,
   });

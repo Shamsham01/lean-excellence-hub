@@ -1,6 +1,6 @@
 begin;
 
-select plan(2);
+select plan(3);
 
 select ok(
   exists (
@@ -18,10 +18,19 @@ select ok(
 select ok(
   pg_catalog.has_function_privilege(
     'authenticated',
-    'public.create_five_s_standard_draft(text, text, numeric)',
+    'public.create_five_s_standard_draft(text, text, numeric, uuid[])',
     'execute'
   ),
   'authenticated can execute create_five_s_standard_draft'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.set_five_s_standard_applicable_units(uuid, uuid[])',
+    'execute'
+  ),
+  'authenticated can execute set_five_s_standard_applicable_units'
 );
 
 select * from finish();

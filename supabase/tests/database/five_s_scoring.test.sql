@@ -76,14 +76,6 @@ select lives_ok(
 
 select lives_ok(
   format(
-    'select public.publish_five_s_standard_version(%L::uuid)',
-    (select id from five_s_ids where key = 'version')
-  ),
-  'can publish five_s standard'
-);
-
-select lives_ok(
-  format(
     'select public.create_organisation_unit(%L::uuid, null, ''five-s-unit'', ''Five S Unit'', ''site'')',
     (select id from five_s_ids where key = 'organisation')
   ),
@@ -95,6 +87,19 @@ select 'unit', organisation_unit.id
 from public.organisation_units organisation_unit
 where organisation_unit.organisation_id = (select id from five_s_ids where key = 'organisation')
   and organisation_unit.code = 'five-s-unit';
+
+select public.set_five_s_standard_applicable_units(
+  (select id from five_s_ids where key = 'standard'),
+  array[(select id from five_s_ids where key = 'unit')]
+);
+
+select lives_ok(
+  format(
+    'select public.publish_five_s_standard_version(%L::uuid)',
+    (select id from five_s_ids where key = 'version')
+  ),
+  'can publish five_s standard'
+);
 
 insert into five_s_ids (key, id)
 select 'audit', public.start_five_s_audit(

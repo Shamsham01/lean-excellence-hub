@@ -5,7 +5,10 @@ import { updateScheduleFromForm } from "@/app/(platform)/platform/schedule/actio
 import { PageHeader } from "@/components/platform/page-header";
 import { ScheduleForm } from "@/components/schedule/schedule-form";
 import { Button } from "@/components/ui/button";
-import { loadScheduleFormContext } from "@/lib/schedule/form-context";
+import {
+  loadScheduleFormContext,
+  loadFiveSScheduleUnitOptions,
+} from "@/lib/schedule/form-context";
 import { parseRecurrenceJson } from "@/lib/schedule/recurrence";
 import { SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -33,6 +36,12 @@ export default async function EditSchedulePage({
     .maybeSingle();
 
   if (!schedule || schedule.status !== "active") notFound();
+
+  const scheduleUnits = await loadFiveSScheduleUnitOptions(
+    schedule.activity_resource_id,
+    units,
+    requiresSiteSelection,
+  );
 
   const { data: participants } = await supabase
     .from("schedule_participants")
@@ -76,9 +85,12 @@ export default async function EditSchedulePage({
         activityResourceId={schedule.activity_resource_id}
         activityLabel={activityLabel}
         timezone={timezone}
-        units={units}
+        units={scheduleUnits.units}
         memberships={memberships}
         requiresSiteSelection={requiresSiteSelection}
+        {...(scheduleUnits.unitEmptyMessage
+          ? { unitEmptyMessage: scheduleUnits.unitEmptyMessage }
+          : {})}
         submitLabel="Save schedule"
         initialValues={{
           title: schedule.title,

@@ -154,6 +154,30 @@ export function buildSiteScopedUnitOptions(
   };
 }
 
+export function filterUnitOptionsByIds(
+  options: UnitSelectOption[],
+  allowedIds: ReadonlySet<string>,
+): UnitSelectOption[] {
+  return options.filter((option) => allowedIds.has(option.id));
+}
+
+/**
+ * Compose RLS-visible units → active-site UX filter → exact-unit applicability.
+ * Active site remains UX context only; allowedIds never enlarge the candidate set.
+ */
+export function buildApplicableSiteScopedUnitOptions(
+  units: FlatOrganisationUnit[],
+  context: ActiveSiteContext,
+  applicableIds: ReadonlySet<string>,
+  options: { requireConcreteSite?: boolean } = {},
+): { units: UnitSelectOption[]; requiresSiteSelection: boolean } {
+  const scoped = buildSiteScopedUnitOptions(units, context, options);
+  return {
+    requiresSiteSelection: scoped.requiresSiteSelection,
+    units: filterUnitOptionsByIds(scoped.units, applicableIds),
+  };
+}
+
 export function filterPeopleForActiveSite(
   people: SelectablePerson[],
   context: ActiveSiteContext,

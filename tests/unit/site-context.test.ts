@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALL_SITES_COOKIE_VALUE,
+  buildApplicableSiteScopedUnitOptions,
   buildSiteScopedUnitOptions,
   filterPeopleForActiveSite,
   filterUnitsForActiveSite,
@@ -201,6 +202,77 @@ describe("active site context", () => {
         requireConcreteSite: true,
       }),
     ).toEqual([]);
+  });
+
+  it("intersects active-site units with exact 5S applicability", () => {
+    const applicableIds = new Set(["exeter-packing", "bodmin-packing"]);
+    const exeter = resolveActiveSiteContext(
+      listAccessibleSites(cookieWorksUnits),
+      "exeter",
+    );
+    const bodmin = resolveActiveSiteContext(
+      listAccessibleSites(cookieWorksUnits),
+      "bodmin",
+    );
+    const allSites = resolveActiveSiteContext(
+      listAccessibleSites(cookieWorksUnits),
+      ALL_SITES_COOKIE_VALUE,
+    );
+
+    const exeterOptions = buildApplicableSiteScopedUnitOptions(
+      cookieWorksUnits,
+      exeter,
+      applicableIds,
+      { requireConcreteSite: true },
+    );
+    const bodminOptions = buildApplicableSiteScopedUnitOptions(
+      cookieWorksUnits,
+      bodmin,
+      applicableIds,
+      { requireConcreteSite: true },
+    );
+    const allSitesOptions = buildApplicableSiteScopedUnitOptions(
+      cookieWorksUnits,
+      allSites,
+      applicableIds,
+      { requireConcreteSite: true },
+    );
+
+    expect(exeterOptions.units).toEqual([
+      { id: "exeter-packing", name: "Packing" },
+    ]);
+    expect(bodminOptions.units).toEqual([
+      { id: "bodmin-packing", name: "Packing" },
+    ]);
+    expect(allSitesOptions.units).toEqual([]);
+    expect(allSitesOptions.requiresSiteSelection).toBe(true);
+    expect(exeterOptions.units.some((unit) => unit.name === "Baking")).toBe(
+      false,
+    );
+    expect(exeterOptions.units.some((unit) => unit.id === "exeter")).toBe(
+      false,
+    );
+  });
+
+  it("does not enlarge scoped candidates with applicability outside authority", () => {
+    const bodminVisibleUnits = cookieWorksUnits.filter((unit) =>
+      unit.id.startsWith("bodmin"),
+    );
+    const context = resolveActiveSiteContext(
+      listAccessibleSites(bodminVisibleUnits),
+      "exeter",
+    );
+    const options = buildApplicableSiteScopedUnitOptions(
+      bodminVisibleUnits,
+      context,
+      new Set(["exeter-packing", "bodmin-packing"]),
+      { requireConcreteSite: true },
+    );
+
+    expect(options.units).toEqual([{ id: "bodmin-packing", name: "Packing" }]);
+    expect(options.units.some((unit) => unit.id.startsWith("exeter"))).toBe(
+      false,
+    );
   });
 
   it("cannot obtain another site's units from client-only site state", () => {

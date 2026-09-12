@@ -5,7 +5,10 @@ import { createScheduleFromForm } from "@/app/(platform)/platform/schedule/actio
 import { PageHeader } from "@/components/platform/page-header";
 import { ScheduleForm } from "@/components/schedule/schedule-form";
 import { Button } from "@/components/ui/button";
-import { loadScheduleFormContext } from "@/lib/schedule/form-context";
+import {
+  loadScheduleFormContext,
+  loadFiveSScheduleUnitOptions,
+} from "@/lib/schedule/form-context";
 import { SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -31,6 +34,13 @@ export default async function NewSchedulePage({
 
   const activityResourceId = params.activityId ?? "";
   let activityLabel = params.activityLabel ?? "Scheduled activity";
+  const scheduleUnits = activityResourceId
+    ? await loadFiveSScheduleUnitOptions(
+        activityResourceId,
+        units,
+        requiresSiteSelection,
+      )
+    : { units };
 
   if (activityResourceId && !params.activityLabel) {
     const { data: fiveS } = await supabase
@@ -68,9 +78,12 @@ export default async function NewSchedulePage({
           activityResourceId={activityResourceId}
           activityLabel={activityLabel}
           timezone={timezone}
-          units={units}
+          units={scheduleUnits.units}
           memberships={memberships}
           requiresSiteSelection={requiresSiteSelection}
+          {...(scheduleUnits.unitEmptyMessage
+            ? { unitEmptyMessage: scheduleUnits.unitEmptyMessage }
+            : {})}
           returnTo={params.returnTo ?? "/platform/schedule"}
           submitLabel="Create schedule"
         />

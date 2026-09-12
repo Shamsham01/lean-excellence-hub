@@ -6,8 +6,10 @@ import {
   addFiveSSectionFromForm,
   createFiveSStandardSuccessorFromForm,
   publishFiveSStandardFromForm,
+  setFiveSStandardApplicableUnitsFromForm,
   startFiveSAuditFromForm,
 } from "@/app/(platform)/platform/5s/actions";
+import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  collectUnitStatuses,
+  formatApplicableUnitLabels,
+  formatStaleApplicabilityWarning,
+  requireApplicableUnitIds,
+  requireQuerySuccess,
+  splitApplicabilitySelection,
+} from "@/modules/operational/five-s-applicability";
+import {
   FIVE_S_PERMISSIONS,
   SCHEDULE_PERMISSIONS,
 } from "@/modules/operational/permissions";
@@ -23,7 +33,10 @@ import {
   isTemplateAuthoringPublishReady,
   loadTemplateAuthoringChildren,
 } from "@/modules/operational/template-authoring";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildApplicableSiteScopedUnitOptions,
+  buildSiteScopedUnitOptions,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -49,34 +62,86 @@ export default async function FiveSStandardDetailPage({
     SCHEDULE_PERMISSIONS.manage,
   );
 
-  const { data: standard } = await supabase
+  const { data: standard, error: standardError } = await supabase
     .from("five_s_standards")
     .select("id, display_name, description")
     .eq("id", id)
     .maybeSingle();
 
+  requireQuerySuccess(standardError, standard, "Failed to load 5S standard");
   if (!standard) notFound();
 
-  const { data: versions } = await supabase
+  const { data: versions, error: versionsError } = await supabase
     .from("five_s_standard_versions")
     .select("id, version_number, status, template_version_id")
     .eq("standard_id", id)
     .order("version_number", { ascending: false });
 
-  const draftVersion = versions?.find((v) => v.status === "draft");
-  const publishedVersion = versions?.find((v) => v.status === "published");
+  const loadedVersions = requireQuerySuccess(
+    versionsError,
+    versions ?? [],
+    "Failed to load 5S standard versions",
+  );
+
+  const draftVersion = loadedVersions.find((v) => v.status === "draft");
+  const publishedVersion = loadedVersions.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
+  const { data: applicabilityRows, error: applicabilityError } = await supabase
+    .from("five_s_standard_applicable_units")
+    .select("unit_id")
+    .eq("standard_id", id);
+
+  const applicableIds = requireApplicableUnitIds(
+    applicabilityError,
+    applicabilityRows,
+  );
+  const mappedUnitIds = [...applicableIds];
+  const { data: mappedUnits, error: mappedUnitsError } =
+    mappedUnitIds.length > 0
+      ? await supabase
+          .from("organisation_units")
+          .select("id, status")
+          .in("id", mappedUnitIds)
+      : { data: [], error: null };
+
+  const unitStatusById = collectUnitStatuses(
+    requireQuerySuccess(
+      mappedUnitsError,
+      mappedUnits ?? [],
+      "Failed to load applicable organisational units",
+    ),
+  );
   const { units, context } = await loadActiveSiteContext();
-  const executionUnits = buildSiteScopedUnitOptions(units, context, {
+  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,
   });
+  const applicabilitySelection = splitApplicabilitySelection(
+    applicableIds,
+    configurationUnits.units,
+    unitStatusById,
+  );
+  const executionUnits = buildApplicableSiteScopedUnitOptions(
+    units,
+    context,
+    applicabilitySelection.confirmedActiveIds,
+    { requireConcreteSite: true },
+  );
+  const applicabilityLabels = formatApplicableUnitLabels(
+    applicabilitySelection.confirmedActiveIds,
+    units,
+  );
+  const staleWarning = formatStaleApplicabilityWarning(
+    applicabilitySelection.staleInactiveIds.length,
+  );
 
   const authoring = await loadTemplateAuthoringChildren(
     supabase,
     editorVersion?.template_version_id,
   );
-  const canPublish = isTemplateAuthoringPublishReady(authoring);
+  const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
+  const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
+  const canPublish = canPublishQuestions && hasApplicableUnits;
 
   const managementActions =
     (publishedVersion && !draftVersion && canManage) ||
@@ -128,8 +193,10 @@ export default async function FiveSStandardDetailPage({
                   requiresSiteSelection={executionUnits.requiresSiteSelection}
                   unitFieldId="five-s-unit-id"
                   label="Start audit for unit"
+                  lockedLabel="Audit area"
                   submitLabel="Start audit"
                   emptyMessage="Select an active site in the sidebar before starting an audit."
+                  notApplicableMessage="This standard is not applicable to the active site."
                   formTestId="five-s-start-audit-form"
                   unitSelectTestId="five-s-unit-select"
                   submitTestId="five-s-start-audit"
@@ -140,12 +207,64 @@ export default async function FiveSStandardDetailPage({
       />
 
       <div className="flex flex-wrap gap-2">
-        {versions?.map((version) => (
+        {loadedVersions.map((version) => (
           <Badge key={version.id} variant="outline">
             v{version.version_number} · {version.status}
           </Badge>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Applicability</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p data-testid="five-s-applicable-areas">
+            {applicabilityLabels.length > 0 ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  Applicable to:{" "}
+                </span>
+                <span className="font-medium">
+                  {applicabilityLabels.join(", ")}
+                </span>
+              </>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                No applicable areas configured. Start audit and scheduling stay
+                blocked until at least one organisational unit is assigned.
+              </span>
+            )}
+          </p>
+          {canManage ? (
+            <form
+              action={setFiveSStandardApplicableUnitsFromForm}
+              className="flex max-w-lg flex-col gap-4"
+            >
+              <input type="hidden" name="standardId" value={id} />
+              <ApplicableUnitsField
+                options={configurationUnits.units}
+                selectedIds={applicabilitySelection.selectedIds}
+                preservedIds={applicabilitySelection.preservedIds}
+                staleWarning={staleWarning}
+                requiresSiteSelection={configurationUnits.requiresSiteSelection}
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                className="min-h-11"
+                disabled={
+                  configurationUnits.units.length === 0 &&
+                  applicabilitySelection.preservedIds.length === 0
+                }
+                data-testid="save-five-s-applicability"
+              >
+                Save applicable areas
+              </Button>
+            </form>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {draftVersion ? (
         <Card>
@@ -243,12 +362,21 @@ export default async function FiveSStandardDetailPage({
             <form action={publishFiveSStandardFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="standardId" value={id} />
-              {!canPublish ? (
+              {!canPublishQuestions ? (
                 <p
                   className="mb-3 text-sm text-muted-foreground"
                   data-testid="publish-blocked-reason"
                 >
                   Add at least one audit question before publishing this
+                  standard.
+                </p>
+              ) : null}
+              {canPublishQuestions && !hasApplicableUnits ? (
+                <p
+                  className="mb-3 text-sm text-muted-foreground"
+                  data-testid="publish-blocked-reason"
+                >
+                  Assign at least one applicable area before publishing this
                   standard.
                 </p>
               ) : null}

@@ -693,6 +693,14 @@ select lives_ok(
   '5S question added for publish'
 );
 
+select public.set_five_s_standard_applicable_units(
+  (select id from site_ids where key = 'five_s_standard'),
+  array[
+    (select id from site_ids where key = 'bodmin_packing'),
+    (select id from site_ids where key = 'exeter_packing')
+  ]
+);
+
 select ok(
   public.publish_five_s_standard_version((select id from site_ids where key = 'five_s_version')),
   '5S standard publishes for two-site matrix'

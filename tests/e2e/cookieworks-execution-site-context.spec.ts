@@ -72,6 +72,15 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     ).toBeVisible();
   }
 
+  async function expectFiveSPackingOnlyTarget(page: Page) {
+    const form = page.getByTestId("five-s-start-audit-form");
+    await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
+      "Packing",
+    );
+    await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
+    await expect(form.getByRole("option")).toHaveCount(0);
+  }
+
   function expectSiteLocalOptions(
     labels: string[],
     expectedSite: string,
@@ -91,8 +100,10 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await selectActiveSite(page, EXETER_FACTORY_LABEL);
     await openFiveSStandard(page);
 
-    const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expectSiteLocalOptions(labels, EXETER_FACTORY_LABEL, BODMIN_FACTORY_LABEL);
+    await expect(page.getByTestId("five-s-applicable-areas")).toContainText(
+      "Packing",
+    );
+    await expectFiveSPackingOnlyTarget(page);
     await expectExecutionHeaderLayout(page, {
       managementTestId: "five-s-management-actions",
       executionTestId: "five-s-execution-actions",
@@ -108,8 +119,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await selectActiveSite(page, BODMIN_FACTORY_LABEL);
     await openFiveSStandard(page);
 
-    const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expectSiteLocalOptions(labels, BODMIN_FACTORY_LABEL, EXETER_FACTORY_LABEL);
+    await expectFiveSPackingOnlyTarget(page);
   });
 
   test("admin All sites requires a concrete site before 5S execution", async ({
@@ -122,8 +132,15 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     );
     await openFiveSStandard(page);
 
-    await expect(page.getByTestId("site-context-required")).toHaveText(
+    await expect(
+      page
+        .getByTestId("five-s-start-audit-form")
+        .getByTestId("site-context-required"),
+    ).toHaveText(
       "Select an active site in the sidebar before starting an audit.",
+    );
+    await expect(page.getByTestId("applicable-units-empty")).toHaveText(
+      "Select an active site in the sidebar before choosing applicable areas.",
     );
     await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
     await expect(page.getByTestId("five-s-start-audit")).toBeDisabled();
@@ -194,11 +211,6 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
       await expect(siteLabel).toHaveText(BODMIN_FACTORY_LABEL);
     }
 
-    const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expect(labels).not.toContain(EXETER_FACTORY_LABEL);
-    expect(labels.some((label) => label.startsWith("Exeter"))).toBe(false);
-    expect(labels.filter((label) => label === "Packing")).toHaveLength(1);
-    expect(labels).toContain("Operations");
-    expect(labels).toContain("Packing");
+    await expectFiveSPackingOnlyTarget(page);
   });
 });
