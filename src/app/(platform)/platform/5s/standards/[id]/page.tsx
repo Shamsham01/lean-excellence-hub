@@ -18,8 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  collectApplicableUnitIds,
   formatApplicableUnitLabels,
+  requireApplicableUnitIds,
+  requireQuerySuccess,
   splitApplicabilitySelection,
 } from "@/modules/operational/five-s-applicability";
 import {
@@ -59,30 +60,40 @@ export default async function FiveSStandardDetailPage({
     SCHEDULE_PERMISSIONS.manage,
   );
 
-  const { data: standard } = await supabase
+  const { data: standard, error: standardError } = await supabase
     .from("five_s_standards")
     .select("id, display_name, description")
     .eq("id", id)
     .maybeSingle();
 
+  requireQuerySuccess(standardError, standard, "Failed to load 5S standard");
   if (!standard) notFound();
 
-  const { data: versions } = await supabase
+  const { data: versions, error: versionsError } = await supabase
     .from("five_s_standard_versions")
     .select("id, version_number, status, template_version_id")
     .eq("standard_id", id)
     .order("version_number", { ascending: false });
 
-  const draftVersion = versions?.find((v) => v.status === "draft");
-  const publishedVersion = versions?.find((v) => v.status === "published");
+  const loadedVersions = requireQuerySuccess(
+    versionsError,
+    versions ?? [],
+    "Failed to load 5S standard versions",
+  );
+
+  const draftVersion = loadedVersions.find((v) => v.status === "draft");
+  const publishedVersion = loadedVersions.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
-  const { data: applicabilityRows } = await supabase
+  const { data: applicabilityRows, error: applicabilityError } = await supabase
     .from("five_s_standard_applicable_units")
     .select("unit_id")
     .eq("standard_id", id);
 
-  const applicableIds = collectApplicableUnitIds(applicabilityRows);
+  const applicableIds = requireApplicableUnitIds(
+    applicabilityError,
+    applicabilityRows,
+  );
   const { units, context } = await loadActiveSiteContext();
   const configurationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,
@@ -103,7 +114,9 @@ export default async function FiveSStandardDetailPage({
     supabase,
     editorVersion?.template_version_id,
   );
-  const canPublish = isTemplateAuthoringPublishReady(authoring);
+  const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
+  const hasApplicableUnits = applicableIds.size > 0;
+  const canPublish = canPublishQuestions && hasApplicableUnits;
 
   const managementActions =
     (publishedVersion && !draftVersion && canManage) ||
@@ -169,7 +182,7 @@ export default async function FiveSStandardDetailPage({
       />
 
       <div className="flex flex-wrap gap-2">
-        {versions?.map((version) => (
+        {loadedVersions.map((version) => (
           <Badge key={version.id} variant="outline">
             v{version.version_number} · {version.status}
           </Badge>
@@ -323,12 +336,21 @@ export default async function FiveSStandardDetailPage({
             <form action={publishFiveSStandardFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="standardId" value={id} />
-              {!canPublish ? (
+              {!canPublishQuestions ? (
                 <p
                   className="mb-3 text-sm text-muted-foreground"
                   data-testid="publish-blocked-reason"
                 >
                   Add at least one audit question before publishing this
+                  standard.
+                </p>
+              ) : null}
+              {canPublishQuestions && !hasApplicableUnits ? (
+                <p
+                  className="mb-3 text-sm text-muted-foreground"
+                  data-testid="publish-blocked-reason"
+                >
+                  Assign at least one applicable area before publishing this
                   standard.
                 </p>
               ) : null}

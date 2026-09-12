@@ -7,6 +7,37 @@ export function collectApplicableUnitIds(
   return new Set((rows ?? []).map((row) => row.unit_id));
 }
 
+export function requireQuerySuccess<T>(
+  error: { message: string } | null | undefined,
+  data: T,
+  context: string,
+): T {
+  if (error) {
+    throw new Error(`${context}: ${error.message}`);
+  }
+  return data;
+}
+
+export function interpretFiveSStandardLookup(
+  error: { message: string } | null | undefined,
+  row: { id: string } | null | undefined,
+): "not_five_s" | "five_s" {
+  if (error) {
+    throw new Error(`Failed to load 5S standard: ${error.message}`);
+  }
+  return row ? "five_s" : "not_five_s";
+}
+
+export function requireApplicableUnitIds(
+  error: { message: string } | null | undefined,
+  rows: Array<{ unit_id: string }> | null | undefined,
+): Set<string> {
+  if (error) {
+    throw new Error(`Failed to load 5S applicability: ${error.message}`);
+  }
+  return collectApplicableUnitIds(rows);
+}
+
 export function readApplicableUnitIds(formData: FormData): string[] {
   return [
     ...new Set(

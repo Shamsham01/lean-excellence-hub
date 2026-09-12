@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   collectApplicableUnitIds,
   formatApplicableUnitLabels,
+  interpretFiveSStandardLookup,
   readApplicableUnitIds,
+  requireApplicableUnitIds,
+  requireQuerySuccess,
   splitApplicabilitySelection,
 } from "@/modules/operational/five-s-applicability";
 import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
@@ -79,5 +82,41 @@ describe("5S applicability helpers", () => {
       "exeter-packing",
       "bodmin-packing",
     ]);
+  });
+
+  it("treats a successful empty applicability query as empty, not all units", () => {
+    expect(requireApplicableUnitIds(null, [])).toEqual(new Set());
+    expect(requireApplicableUnitIds(undefined, null)).toEqual(new Set());
+  });
+
+  it("fails closed when applicability rows cannot be loaded", () => {
+    expect(() =>
+      requireApplicableUnitIds({ message: "JWT expired" }, [
+        { unit_id: "exeter-packing" },
+      ]),
+    ).toThrow("Failed to load 5S applicability: JWT expired");
+  });
+
+  it("distinguishes a missing 5S standard from a lookup failure", () => {
+    expect(interpretFiveSStandardLookup(null, null)).toBe("not_five_s");
+    expect(interpretFiveSStandardLookup(null, { id: "standard-1" })).toBe(
+      "five_s",
+    );
+    expect(() =>
+      interpretFiveSStandardLookup({ message: "connection reset" }, null),
+    ).toThrow("Failed to load 5S standard: connection reset");
+  });
+
+  it("does not convert a query failure into empty domain state", () => {
+    expect(() =>
+      requireQuerySuccess(
+        { message: "timeout" },
+        null,
+        "Failed to load 5S standard",
+      ),
+    ).toThrow("Failed to load 5S standard: timeout");
+    expect(requireQuerySuccess(null, { id: "standard-1" }, "unused")).toEqual({
+      id: "standard-1",
+    });
   });
 });

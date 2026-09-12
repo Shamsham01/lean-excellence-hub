@@ -18,7 +18,7 @@ select ok(
 select ok(
   pg_catalog.has_function_privilege(
     'authenticated',
-    'public.create_five_s_standard_draft(text, text, numeric)',
+    'public.create_five_s_standard_draft(text, text, numeric, uuid[])',
     'execute'
   ),
   'authenticated can execute create_five_s_standard_draft'

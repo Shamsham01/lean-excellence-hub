@@ -12037,6 +12037,7 @@ export type Database = {
           target_description?: string
           target_display_name: string
           target_threshold_percent?: number
+          target_unit_ids?: string[]
         }
         Returns: string
       }

@@ -2016,10 +2016,6 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
     position += 1;
   }
 
-  await client.rpc("publish_five_s_standard_version", {
-    target_standard_version_id: fiveSVersion.id,
-  });
-
   const { error: applicabilityError } = await client.rpc(
     "set_five_s_standard_applicable_units",
     {
@@ -2028,6 +2024,10 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
     },
   );
   if (applicabilityError) throw applicabilityError;
+
+  await client.rpc("publish_five_s_standard_version", {
+    target_standard_version_id: fiveSVersion.id,
+  });
 
   const { data: gembaDefinitionId, error: gembaError } = await client.rpc(
     "create_gemba_definition_draft",

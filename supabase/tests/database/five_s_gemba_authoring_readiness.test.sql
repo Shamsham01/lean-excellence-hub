@@ -189,24 +189,6 @@ select is(
 
 select lives_ok(
   format(
-    'select public.publish_five_s_standard_version(%L::uuid)',
-    (select id from authoring_ids where key = 'five_s_version')
-  ),
-  'five_s draft with usable questions can publish'
-);
-
-select is(
-  (
-    select version_row.status
-    from public.five_s_standard_versions version_row
-    where version_row.id = (select id from authoring_ids where key = 'five_s_version')
-  ),
-  'published',
-  'published five_s version remains readable after readiness gate'
-);
-
-select lives_ok(
-  format(
     'select public.create_organisation_unit(%L::uuid, null, ''authoring-unit'', ''Authoring Unit'', ''site'')',
     (select id from authoring_ids where key = 'organisation')
   ),
@@ -222,6 +204,24 @@ where organisation_unit.organisation_id = (select id from authoring_ids where ke
 select public.set_five_s_standard_applicable_units(
   (select id from authoring_ids where key = 'five_s_standard'),
   array[(select id from authoring_ids where key = 'unit')]
+);
+
+select lives_ok(
+  format(
+    'select public.publish_five_s_standard_version(%L::uuid)',
+    (select id from authoring_ids where key = 'five_s_version')
+  ),
+  'five_s draft with usable questions can publish'
+);
+
+select is(
+  (
+    select version_row.status
+    from public.five_s_standard_versions version_row
+    where version_row.id = (select id from authoring_ids where key = 'five_s_version')
+  ),
+  'published',
+  'published five_s version remains readable after readiness gate'
 );
 
 select lives_ok(

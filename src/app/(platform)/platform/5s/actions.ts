@@ -64,28 +64,15 @@ export async function createFiveSStandard(formData: FormData) {
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc(
-    "create_five_s_standard_draft",
-    description
-      ? {
-          target_display_name: name,
-          target_description: description,
-          target_threshold_percent: Number(formData.get("threshold") ?? 90),
-        }
-      : {
-          target_display_name: name,
-          target_threshold_percent: Number(formData.get("threshold") ?? 90),
-        },
-  );
+  const { data, error } = await supabase.rpc("create_five_s_standard_draft", {
+    target_display_name: name,
+    ...(description ? { target_description: description } : {}),
+    target_threshold_percent: Number(formData.get("threshold") ?? 90),
+    target_unit_ids: applicableUnitIds,
+  });
 
   if (error) return { error: error.message };
-  const standardId = data as string;
-  const applicability = await setFiveSStandardApplicableUnits(
-    standardId,
-    applicableUnitIds,
-  );
-  if (applicability.error) return { error: applicability.error };
-  return { standardId };
+  return { standardId: data as string };
 }
 
 export async function setFiveSStandardApplicableUnitsFromForm(

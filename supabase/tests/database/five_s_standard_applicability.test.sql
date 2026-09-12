@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(38);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -144,20 +144,14 @@ select lives_ok(
   'can add packing question'
 );
 
-select ok(
-  public.publish_five_s_standard_version((select id from applicability_ids where key = 'version')),
-  'can publish standard before applicability is assigned'
-);
-
 select throws_ok(
   format(
-    'select public.start_five_s_audit(%L::uuid, %L::uuid)',
-    (select id from applicability_ids where key = 'standard'),
-    (select id from applicability_ids where key = 'packing')
+    'select public.publish_five_s_standard_version(%L::uuid)',
+    (select id from applicability_ids where key = 'version')
   ),
-  '22023',
-  '5S standard is not applicable to the selected organisational unit',
-  'missing applicability fails closed'
+  '55000',
+  '5S standard requires at least one applicable organisational unit',
+  'new standard cannot publish before applicability is assigned'
 );
 
 select throws_ok(
@@ -176,6 +170,11 @@ select ok(
     array[(select id from applicability_ids where key = 'packing')]
   ),
   'can assign packing-only applicability'
+);
+
+select ok(
+  public.publish_five_s_standard_version((select id from applicability_ids where key = 'version')),
+  'can publish after applicability is assigned'
 );
 
 insert into applicability_ids (key, id)
@@ -239,24 +238,31 @@ select throws_ok(
   'schedule create rejects a unit outside applicability'
 );
 
-select lives_ok(
-  format(
-    $sql$
-      select public.create_schedule_definition(
-        %L::uuid,
-        'Packing 5S schedule',
-        %L::uuid,
-        %L::uuid,
-        '{"frequency":"weekly","interval":1,"weekdays":["monday"]}'::jsonb,
-        current_date,
-        true
-      )
-    $sql$,
-    (select id from applicability_ids where key = 'standard'),
-    (select id from applicability_ids where key = 'packing'),
-    (select id from applicability_ids where key = 'membership')
-  ),
+insert into applicability_ids (key, id)
+select 'packing_schedule', public.create_schedule_definition(
+  (select id from applicability_ids where key = 'standard'),
+  'Packing 5S schedule',
+  (select id from applicability_ids where key = 'packing'),
+  (select id from applicability_ids where key = 'membership'),
+  '{"frequency":"weekly","interval":1,"weekdays":["monday"]}'::jsonb,
+  current_date,
+  true
+);
+
+select ok(
+  (select id from applicability_ids where key = 'packing_schedule') is not null,
   'schedule create accepts an applicable packing unit'
+);
+
+select throws_ok(
+  format(
+    'select public.set_five_s_standard_applicable_units(%L::uuid, array[%L::uuid])',
+    (select id from applicability_ids where key = 'standard'),
+    (select id from applicability_ids where key = 'baking')
+  ),
+  '22023',
+  'Cannot remove 5S applicability from an organisational unit that still has an active schedule. Reassign or deactivate the schedule first.',
+  'cannot remove packing applicability while an active packing schedule exists'
 );
 
 select lives_ok(
@@ -316,6 +322,13 @@ select 'baking_audit', public.start_five_s_audit(
 );
 
 select ok(
+  public.deactivate_schedule_definition(
+    (select id from applicability_ids where key = 'packing_schedule')
+  ),
+  'can deactivate packing schedule before removing packing applicability'
+);
+
+select ok(
   public.set_five_s_standard_applicable_units(
     (select id from applicability_ids where key = 'standard'),
     array[(select id from applicability_ids where key = 'baking')]
@@ -370,6 +383,218 @@ select throws_ok(
   '22023',
   '5S standard is not applicable to the selected organisational unit',
   'future starts follow the updated applicability'
+);
+
+select lives_ok(
+  format(
+    'select public.create_organisation_unit(%L::uuid, %L::uuid, ''retired-area'', ''Retired Area'', ''area'')',
+    (select id from applicability_ids where key = 'organisation'),
+    (select id from applicability_ids where key = 'site')
+  ),
+  'can create unit that will be retired'
+);
+
+insert into applicability_ids (key, id)
+select 'retired_area', organisation_unit.id
+from public.organisation_units organisation_unit
+where organisation_unit.organisation_id = (select id from applicability_ids where key = 'organisation')
+  and organisation_unit.code = 'retired-area';
+
+select ok(
+  public.set_organisation_unit_status(
+    (select id from applicability_ids where key = 'organisation'),
+    (select id from applicability_ids where key = 'retired_area'),
+    'retired',
+    'Issue 75 inactive applicability coverage'
+  ),
+  'can retire unused organisational unit'
+);
+
+select throws_ok(
+  format(
+    'select public.set_five_s_standard_applicable_units(%L::uuid, array[%L::uuid, %L::uuid])',
+    (select id from applicability_ids where key = 'standard'),
+    (select id from applicability_ids where key = 'baking'),
+    (select id from applicability_ids where key = 'retired_area')
+  ),
+  '22023',
+  '5S standard applicability includes an inactive organisational unit',
+  'assigning an inactive unit is rejected'
+);
+
+select ok(
+  public.set_organisation_unit_status(
+    (select id from applicability_ids where key = 'organisation'),
+    (select id from applicability_ids where key = 'baking'),
+    'retired',
+    'Issue 75 future execution fail-closed'
+  ),
+  'can retire previously applicable baking unit'
+);
+
+select throws_ok(
+  format(
+    'select public.start_five_s_audit(%L::uuid, %L::uuid)',
+    (select id from applicability_ids where key = 'standard'),
+    (select id from applicability_ids where key = 'baking')
+  ),
+  '22023',
+  '5S standard is not applicable to the selected organisational unit',
+  'future audit start rejects a unit that became inactive after assignment'
+);
+
+select throws_ok(
+  format(
+    $sql$
+      select public.create_schedule_definition(
+        %L::uuid,
+        'Inactive baking 5S schedule',
+        %L::uuid,
+        %L::uuid,
+        '{"frequency":"weekly","interval":1,"weekdays":["monday"]}'::jsonb,
+        current_date,
+        true
+      )
+    $sql$,
+    (select id from applicability_ids where key = 'standard'),
+    (select id from applicability_ids where key = 'baking'),
+    (select id from applicability_ids where key = 'membership')
+  ),
+  '22023',
+  '5S standard is not applicable to the selected organisational unit',
+  'schedule create rejects an inactive unit even if a mapping row remains'
+);
+
+select is(
+  (
+    select audit_row.status
+    from public.five_s_audits audit_row
+    where audit_row.id = (select id from applicability_ids where key = 'baking_audit')
+  ),
+  'in_progress',
+  'historical in-progress audit remains readable after the unit is retired'
+);
+
+insert into applicability_ids (key, id)
+select 'atomic_standard', public.create_five_s_standard_draft(
+  'Atomic Packing 5S Standard',
+  'Created with initial applicability',
+  90,
+  array[(select id from applicability_ids where key = 'packing')]
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.five_s_standard_applicable_units applicability_row
+    where applicability_row.standard_id = (
+      select id from applicability_ids where key = 'atomic_standard'
+    )
+      and applicability_row.unit_id = (select id from applicability_ids where key = 'packing')
+  ),
+  1,
+  'atomic create persists initial applicability in the same transaction'
+);
+
+select throws_ok(
+  format(
+    'select public.create_five_s_standard_draft(%L, %L, 90, array[%L::uuid])',
+    'Orphan Draft 5S Standard',
+    'Must not persist if applicability fails',
+    '93000000-0000-0000-0000-000000000099'
+  ),
+  '23503',
+  '5S standard applicability includes an invalid organisational unit',
+  'atomic create rejects invalid initial applicability'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.five_s_standards standard_row
+    where standard_row.organisation_id = (select id from applicability_ids where key = 'organisation')
+      and standard_row.display_name = 'Orphan Draft 5S Standard'
+  ),
+  0,
+  'failed atomic create does not leave an orphan draft'
+);
+
+insert into applicability_ids (key, id)
+select 'legacy_standard', public.create_five_s_standard_draft(
+  'Legacy Published 5S Standard',
+  'Simulates pre-migration published standard',
+  90
+);
+
+insert into applicability_ids (key, id)
+select 'legacy_version', version_row.id
+from public.five_s_standard_versions version_row
+where version_row.standard_id = (select id from applicability_ids where key = 'legacy_standard')
+  and version_row.version_number = 1;
+
+insert into applicability_ids (key, id)
+select 'legacy_section', public.add_five_s_section(
+  (select id from applicability_ids where key = 'legacy_version'),
+  'Sort',
+  1
+);
+
+select public.add_five_s_question(
+  (select id from applicability_ids where key = 'legacy_version'),
+  (select id from applicability_ids where key = 'legacy_section'),
+  'yes_no',
+  'Is the area sorted?',
+  1,
+  true,
+  false,
+  null,
+  null,
+  true,
+  '{"type":"yes_no","yes_value":100,"no_value":0}'::jsonb,
+  1
+);
+
+select public.set_five_s_standard_applicable_units(
+  (select id from applicability_ids where key = 'legacy_standard'),
+  array[(select id from applicability_ids where key = 'packing')]
+);
+
+select public.publish_five_s_standard_version(
+  (select id from applicability_ids where key = 'legacy_version')
+);
+
+reset role;
+
+delete from public.five_s_standard_applicable_units
+where organisation_id = (select id from applicability_ids where key = 'organisation')
+  and standard_id = (select id from applicability_ids where key = 'legacy_standard');
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"93000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"93000000-0000-0000-0000-000000000002","email":"five-s-applicability@example.test"}',
+  true
+);
+set local role authenticated;
+
+select is(
+  (
+    select version_row.status
+    from public.five_s_standard_versions version_row
+    where version_row.id = (select id from applicability_ids where key = 'legacy_version')
+  ),
+  'published',
+  'legacy published standard remains published after applicability is missing'
+);
+
+select throws_ok(
+  format(
+    'select public.start_five_s_audit(%L::uuid, %L::uuid)',
+    (select id from applicability_ids where key = 'legacy_standard'),
+    (select id from applicability_ids where key = 'packing')
+  ),
+  '22023',
+  '5S standard is not applicable to the selected organisational unit',
+  'legacy published standard without applicability stays fail-closed for execution'
 );
 
 select * from finish();

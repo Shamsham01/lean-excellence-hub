@@ -219,10 +219,6 @@ export async function seedCookieWorksModuleFixtures(options: {
     target_scoring_metadata: { type: "yes_no", yes_value: 100, no_value: 0 },
   });
 
-  await expectRpc(options.ciManagerClient, "publish_five_s_standard_version", {
-    target_standard_version_id: fiveSVersion.id,
-  });
-
   const bodminPackingId = options.unitIds.packing;
   const exeterPackingId = options.unitIds["exeter-packing"];
   if (!bodminPackingId || !exeterPackingId) {
@@ -239,6 +235,10 @@ export async function seedCookieWorksModuleFixtures(options: {
       target_unit_ids: [bodminPackingId, exeterPackingId],
     },
   );
+
+  await expectRpc(options.ciManagerClient, "publish_five_s_standard_version", {
+    target_standard_version_id: fiveSVersion.id,
+  });
 
   const gembaDefinitionId = (await expectRpc(
     options.ciManagerClient,

@@ -1,5 +1,8 @@
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
-import { collectApplicableUnitIds } from "@/modules/operational/five-s-applicability";
+import {
+  interpretFiveSStandardLookup,
+  requireApplicableUnitIds,
+} from "@/modules/operational/five-s-applicability";
 import { filterUnitOptionsByIds } from "@/modules/organisation/site-context";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -10,17 +13,17 @@ export async function loadFiveSScheduleUnitOptions(
   requiresSiteSelection: boolean,
 ): Promise<{ units: UnitSelectOption[]; unitEmptyMessage?: string }> {
   const supabase = await createServerSupabaseClient();
-  const { data: fiveS } = await supabase
+  const { data: fiveS, error: fiveSError } = await supabase
     .from("five_s_standards")
     .select("id")
     .eq("id", activityResourceId)
     .maybeSingle();
 
-  if (!fiveS) {
+  if (interpretFiveSStandardLookup(fiveSError, fiveS) === "not_five_s") {
     return { units };
   }
 
-  const { data: applicabilityRows } = await supabase
+  const { data: applicabilityRows, error: applicabilityError } = await supabase
     .from("five_s_standard_applicable_units")
     .select("unit_id")
     .eq("standard_id", activityResourceId);
@@ -28,7 +31,7 @@ export async function loadFiveSScheduleUnitOptions(
   return {
     units: filterUnitOptionsByIds(
       units,
-      collectApplicableUnitIds(applicabilityRows),
+      requireApplicableUnitIds(applicabilityError, applicabilityRows),
     ),
     ...(requiresSiteSelection
       ? {}
