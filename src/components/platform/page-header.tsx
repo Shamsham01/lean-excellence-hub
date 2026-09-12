@@ -22,7 +22,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="flex flex-col gap-1.5">
+      <div className="flex min-w-0 flex-col gap-1.5">
         <h1 className="typography-page-title">{title}</h1>
         {description ? (
           <p
@@ -34,7 +34,7 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {actions}
         </div>
       ) : null}

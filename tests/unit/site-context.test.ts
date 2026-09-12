@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALL_SITES_COOKIE_VALUE,
+  buildSiteScopedUnitOptions,
   filterPeopleForActiveSite,
   filterUnitsForActiveSite,
   formatPersonOptionLabel,
@@ -214,6 +215,102 @@ describe("active site context", () => {
       requireConcreteSite: true,
     });
 
+    expect(units.some((unit) => unit.id.startsWith("exeter"))).toBe(false);
+    expect(units.map((unit) => unit.id)).toEqual(
+      expect.arrayContaining(["bodmin", "bodmin-packing"]),
+    );
+  });
+});
+
+describe("5S/Gemba execution unit selector", () => {
+  function executionOptions(requestedSiteId: string | null) {
+    const context = resolveActiveSiteContext(
+      listAccessibleSites(cookieWorksUnits),
+      requestedSiteId,
+    );
+    return {
+      context,
+      ...buildSiteScopedUnitOptions(cookieWorksUnits, context, {
+        requireConcreteSite: true,
+      }),
+    };
+  }
+
+  it("shows only Exeter units for organisation admin with Exeter active", () => {
+    const { units } = executionOptions("exeter");
+    const names = units.map((unit) => unit.name);
+
+    expect(names).toEqual([
+      "Exeter Cookie Factory",
+      "Operations",
+      "Packing",
+      "Baking",
+      "Quality",
+    ]);
+    expect(units.some((unit) => unit.id.startsWith("bodmin"))).toBe(false);
+    expect(units.filter((unit) => unit.name === "Packing")).toHaveLength(1);
+    expect(units.find((unit) => unit.name === "Packing")?.id).toBe(
+      "exeter-packing",
+    );
+    expect(units.find((unit) => unit.name === "Baking")?.id).toBe(
+      "exeter-baking",
+    );
+  });
+
+  it("shows only Bodmin units for organisation admin with Bodmin active", () => {
+    const { units } = executionOptions("bodmin");
+
+    expect(units.map((unit) => unit.name)).toEqual([
+      "Bodmin Cookie Factory",
+      "Operations",
+      "Packing",
+      "Baking",
+      "Quality",
+    ]);
+    expect(units.some((unit) => unit.id.startsWith("exeter"))).toBe(false);
+    expect(units.filter((unit) => unit.name === "Packing")).toHaveLength(1);
+    expect(units.find((unit) => unit.name === "Packing")?.id).toBe(
+      "bodmin-packing",
+    );
+  });
+
+  it("omits a known Bodmin unit while Exeter is active", () => {
+    const { units } = executionOptions("exeter");
+
+    expect(units.some((unit) => unit.id === "bodmin-packing")).toBe(false);
+    expect(units.some((unit) => unit.id === "bodmin")).toBe(false);
+    expect(units.some((unit) => unit.name === "Bodmin Cookie Factory")).toBe(
+      false,
+    );
+  });
+
+  it("asks for a concrete site instead of mixing sites when All sites is active", () => {
+    const { units, requiresSiteSelection, context } = executionOptions(
+      ALL_SITES_COOKIE_VALUE,
+    );
+
+    expect(context.mode).toBe("all");
+    expect(units).toEqual([]);
+    expect(requiresSiteSelection).toBe(true);
+  });
+
+  it("cannot obtain Exeter units from a Bodmin-scoped candidate set and a forged Exeter cookie", () => {
+    const bodminVisibleUnits = cookieWorksUnits.filter((unit) =>
+      unit.id.startsWith("bodmin"),
+    );
+    const context = resolveActiveSiteContext(
+      listAccessibleSites(bodminVisibleUnits),
+      "exeter",
+    );
+    const { units, requiresSiteSelection } = buildSiteScopedUnitOptions(
+      bodminVisibleUnits,
+      context,
+      { requireConcreteSite: true },
+    );
+
+    expect(context.locked).toBe(true);
+    expect(context.activeSiteId).toBe("bodmin");
+    expect(requiresSiteSelection).toBe(false);
     expect(units.some((unit) => unit.id.startsWith("exeter"))).toBe(false);
     expect(units.map((unit) => unit.id)).toEqual(
       expect.arrayContaining(["bodmin", "bodmin-packing"]),

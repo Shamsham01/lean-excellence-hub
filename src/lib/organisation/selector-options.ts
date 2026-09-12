@@ -1,8 +1,7 @@
 import {
+  buildSiteScopedUnitOptions,
   filterPeopleForActiveSite,
-  filterUnitsForActiveSite,
   toPersonSelectOption,
-  toUnitSelectOption,
   type ActiveSiteContext,
   type PersonSelectOption,
   type UnitSelectOption,
@@ -26,10 +25,10 @@ export async function loadSiteScopedSelectorOptions(options?: {
   const requireConcreteSite = options?.requireConcreteSite === true;
   const supabase = await createServerSupabaseClient();
   const { units, context } = await loadActiveSiteContext();
-  const visibleUnits = filterUnitsForActiveSite(units, context, {
+  const unitOptions = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite,
   });
-  const visibleUnitIds = new Set(visibleUnits.map((unit) => unit.id));
+  const visibleUnitIds = new Set(unitOptions.units.map((unit) => unit.id));
   const people = await loadSelectablePeople(supabase, units);
   const visiblePeople = filterPeopleForActiveSite(
     people,
@@ -40,8 +39,8 @@ export async function loadSiteScopedSelectorOptions(options?: {
 
   return {
     context,
-    units: visibleUnits.map(toUnitSelectOption),
+    units: unitOptions.units,
     people: visiblePeople.map(toPersonSelectOption),
-    requiresSiteSelection: requireConcreteSite && context.mode === "all",
+    requiresSiteSelection: unitOptions.requiresSiteSelection,
   };
 }

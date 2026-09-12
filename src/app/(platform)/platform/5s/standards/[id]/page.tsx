@@ -8,7 +8,8 @@ import {
   publishFiveSStandardFromForm,
   startFiveSAuditFromForm,
 } from "@/app/(platform)/platform/5s/actions";
-import { PageHeader } from "@/components/platform/page-header";
+import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
+import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import {
   isTemplateAuthoringPublishReady,
   loadTemplateAuthoringChildren,
 } from "@/modules/operational/template-authoring";
+import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -64,10 +67,10 @@ export default async function FiveSStandardDetailPage({
   const publishedVersion = versions?.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
-  const { data: units } = await supabase
-    .from("organisation_units")
-    .select("id, name, code")
-    .order("name");
+  const { units, context } = await loadActiveSiteContext();
+  const executionUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
 
   const authoring = await loadTemplateAuthoringChildren(
     supabase,
@@ -75,62 +78,65 @@ export default async function FiveSStandardDetailPage({
   );
   const canPublish = isTemplateAuthoringPublishReady(authoring);
 
+  const managementActions =
+    (publishedVersion && !draftVersion && canManage) ||
+    (canSchedule && publishedVersion) ? (
+      <>
+        {publishedVersion && !draftVersion && canManage ? (
+          <form action={createFiveSStandardSuccessorFromForm}>
+            <input type="hidden" name="standardId" value={id} />
+            <Button
+              type="submit"
+              variant="outline"
+              className="min-h-11"
+              data-testid="create-successor"
+            >
+              Create new version
+            </Button>
+          </form>
+        ) : null}
+        {canSchedule && publishedVersion ? (
+          <Button variant="outline" className="min-h-11" asChild>
+            <Link
+              href={`/platform/schedule/new?activityId=${id}&activityLabel=${encodeURIComponent(standard.display_name)}&returnTo=/platform/5s/standards/${id}`}
+              data-testid="create-schedule-link"
+            >
+              Create schedule
+            </Link>
+          </Button>
+        ) : null}
+      </>
+    ) : undefined;
+
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
+      <PublishedExecutionHeader
         title={standard.display_name}
         description={standard.description ?? "5S standard configuration"}
-        actions={
-          <div className="flex flex-wrap items-end gap-2">
-            {publishedVersion && !draftVersion && canManage ? (
-              <form action={createFiveSStandardSuccessorFromForm}>
-                <input type="hidden" name="standardId" value={id} />
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="min-h-11"
-                  data-testid="create-successor"
-                >
-                  Create new version
-                </Button>
-              </form>
-            ) : null}
-            {canSchedule && publishedVersion ? (
-              <Button variant="outline" className="min-h-11" asChild>
-                <Link
-                  href={`/platform/schedule/new?activityId=${id}&activityLabel=${encodeURIComponent(standard.display_name)}&returnTo=/platform/5s/standards/${id}`}
-                  data-testid="create-schedule-link"
-                >
-                  Create schedule
-                </Link>
-              </Button>
-            ) : null}
-            {publishedVersion ? (
-              <form action={startFiveSAuditFromForm}>
-                <input type="hidden" name="standardId" value={id} />
-                <div className="flex items-end gap-2">
-                  <div>
-                    <Label htmlFor="unitId">Start audit for unit</Label>
-                    <select
-                      id="unitId"
-                      name="unitId"
-                      className="mt-2 min-h-11 rounded-md border border-border bg-background px-3"
-                    >
-                      {units?.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button type="submit" className="min-h-11">
-                    Start audit
-                  </Button>
-                </div>
-              </form>
-            ) : null}
-          </div>
-        }
+        managementTestId="five-s-management-actions"
+        executionTestId="five-s-execution-actions"
+        {...(managementActions ? { managementActions } : {})}
+        {...(publishedVersion
+          ? {
+              executionActions: (
+                <ExecutionUnitStartForm
+                  action={startFiveSAuditFromForm}
+                  hiddenFields={
+                    <input type="hidden" name="standardId" value={id} />
+                  }
+                  units={executionUnits.units}
+                  requiresSiteSelection={executionUnits.requiresSiteSelection}
+                  unitFieldId="five-s-unit-id"
+                  label="Start audit for unit"
+                  submitLabel="Start audit"
+                  emptyMessage="Select an active site in the sidebar before starting an audit."
+                  formTestId="five-s-start-audit-form"
+                  unitSelectTestId="five-s-unit-select"
+                  submitTestId="five-s-start-audit"
+                />
+              ),
+            }
+          : {})}
       />
 
       <div className="flex flex-wrap gap-2">
