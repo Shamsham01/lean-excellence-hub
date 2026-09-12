@@ -186,12 +186,19 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     ]);
     await openFiveSStandard(page);
 
-    await expect(page.getByTestId("site-context-label")).toHaveText(
-      BODMIN_FACTORY_LABEL,
-    );
+    // Production Manager is scoped to Bodmin Operations, not the plant root,
+    // so PR #69 has no site switcher/label to forge. Authority remains RLS.
+    await expect(page.getByTestId("site-context-switcher")).toHaveCount(0);
+    const siteLabel = page.getByTestId("site-context-label");
+    if ((await siteLabel.count()) > 0) {
+      await expect(siteLabel).toHaveText(BODMIN_FACTORY_LABEL);
+    }
+
     const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expect(labels).toContain(BODMIN_FACTORY_LABEL);
     expect(labels).not.toContain(EXETER_FACTORY_LABEL);
+    expect(labels.some((label) => label.startsWith("Exeter"))).toBe(false);
     expect(labels.filter((label) => label === "Packing")).toHaveLength(1);
+    expect(labels).toContain("Operations");
+    expect(labels).toContain("Packing");
   });
 });
