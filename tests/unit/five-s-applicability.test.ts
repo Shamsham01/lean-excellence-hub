@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectApplicableUnitIds,
   formatApplicableUnitLabels,
+  formatStaleApplicabilityWarning,
   interpretFiveSStandardLookup,
   readApplicableUnitIds,
   requireApplicableUnitIds,
@@ -55,10 +56,57 @@ describe("5S applicability helpers", () => {
     const split = splitApplicabilitySelection(
       new Set(["exeter-packing", "bodmin-packing"]),
       [{ id: "exeter-packing" }, { id: "exeter-baking" }],
+      new Map([
+        ["exeter-packing", "active"],
+        ["bodmin-packing", "active"],
+      ]),
     );
 
     expect([...split.selectedIds]).toEqual(["exeter-packing"]);
     expect(split.preservedIds).toEqual(["bodmin-packing"]);
+    expect(split.staleInactiveIds).toEqual([]);
+    expect([...split.confirmedActiveIds].sort()).toEqual([
+      "bodmin-packing",
+      "exeter-packing",
+    ]);
+  });
+
+  it("does not preserve retired mapped units as hidden applicability values", () => {
+    const split = splitApplicabilitySelection(
+      new Set(["exeter-packing", "bodmin-packing"]),
+      [{ id: "exeter-baking" }, { id: "exeter-quality" }],
+      new Map([
+        ["exeter-packing", "retired"],
+        ["bodmin-packing", "active"],
+      ]),
+    );
+
+    expect([...split.selectedIds]).toEqual([]);
+    expect(split.preservedIds).toEqual(["bodmin-packing"]);
+    expect(split.staleInactiveIds).toEqual(["exeter-packing"]);
+    expect([...split.confirmedActiveIds]).toEqual(["bodmin-packing"]);
+  });
+
+  it("treats RLS-hidden mapped units as preserved rather than deleting them", () => {
+    const split = splitApplicabilitySelection(
+      new Set(["hidden-bodmin-packing"]),
+      [{ id: "exeter-packing" }],
+      new Map([["exeter-packing", "active"]]),
+    );
+
+    expect(split.preservedIds).toEqual(["hidden-bodmin-packing"]);
+    expect(split.staleInactiveIds).toEqual([]);
+    expect([...split.confirmedActiveIds]).toEqual([]);
+  });
+
+  it("describes stale inactive mappings that Save will drop", () => {
+    expect(formatStaleApplicabilityWarning(0)).toBeNull();
+    expect(formatStaleApplicabilityWarning(1)).toBe(
+      "1 previously applicable area is inactive and will be removed when you save.",
+    );
+    expect(formatStaleApplicabilityWarning(2)).toBe(
+      "2 previously applicable areas are inactive and will be removed when you save.",
+    );
   });
 
   it("disambiguates duplicate packing names across sites", () => {

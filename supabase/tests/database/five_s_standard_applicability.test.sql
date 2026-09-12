@@ -1,6 +1,6 @@
 begin;
 
-select plan(38);
+select plan(44);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -496,6 +496,34 @@ select is(
   'atomic create persists initial applicability in the same transaction'
 );
 
+insert into applicability_ids (key, id)
+select 'atomic_version', version_row.id
+from public.five_s_standard_versions version_row
+where version_row.standard_id = (select id from applicability_ids where key = 'atomic_standard')
+  and version_row.version_number = 1;
+
+insert into applicability_ids (key, id)
+select 'atomic_section', public.add_five_s_section(
+  (select id from applicability_ids where key = 'atomic_version'),
+  'Sort',
+  1
+);
+
+select public.add_five_s_question(
+  (select id from applicability_ids where key = 'atomic_version'),
+  (select id from applicability_ids where key = 'atomic_section'),
+  'yes_no',
+  'Is packing sorted?',
+  1,
+  true,
+  false,
+  null,
+  null,
+  true,
+  '{"type":"yes_no","yes_value":100,"no_value":0}'::jsonb,
+  1
+);
+
 select throws_ok(
   format(
     'select public.create_five_s_standard_draft(%L, %L, 90, array[%L::uuid])',
@@ -595,6 +623,68 @@ select throws_ok(
   '22023',
   '5S standard is not applicable to the selected organisational unit',
   'legacy published standard without applicability stays fail-closed for execution'
+);
+
+select ok(
+  public.set_organisation_unit_status(
+    (select id from applicability_ids where key = 'organisation'),
+    (select id from applicability_ids where key = 'packing'),
+    'retired',
+    'Issue 75 stale applicability remediation'
+  ),
+  'can retire previously applicable packing unit'
+);
+
+select throws_ok(
+  format(
+    'select public.publish_five_s_standard_version(%L::uuid)',
+    (select id from applicability_ids where key = 'atomic_version')
+  ),
+  '55000',
+  '5S standard requires at least one applicable organisational unit',
+  'publish stays blocked when only inactive mappings remain'
+);
+
+select throws_ok(
+  format(
+    'select public.set_five_s_standard_applicable_units(%L::uuid, array[%L::uuid])',
+    (select id from applicability_ids where key = 'atomic_standard'),
+    (select id from applicability_ids where key = 'packing')
+  ),
+  '22023',
+  '5S standard applicability includes an inactive organisational unit',
+  'newly assigning an inactive unit still fails at the DB boundary'
+);
+
+select ok(
+  public.set_five_s_standard_applicable_units(
+    (select id from applicability_ids where key = 'atomic_standard'),
+    array[(select id from applicability_ids where key = 'quality')]
+  ),
+  'saving applicability can remediate a retired mapping with an active unit'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.five_s_standard_applicable_units applicability_row
+    where applicability_row.standard_id = (
+      select id from applicability_ids where key = 'atomic_standard'
+    )
+      and applicability_row.unit_id = (select id from applicability_ids where key = 'packing')
+  ),
+  0,
+  'remediation save no longer keeps the retired packing mapping'
+);
+
+select is(
+  (
+    select audit_row.status
+    from public.five_s_audits audit_row
+    where audit_row.id = (select id from applicability_ids where key = 'packing_audit')
+  ),
+  'completed',
+  'historical completed packing audit remains readable after packing is retired'
 );
 
 select * from finish();

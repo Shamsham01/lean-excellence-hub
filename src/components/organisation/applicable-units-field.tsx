@@ -4,6 +4,7 @@ type ApplicableUnitsFieldProps = {
   options: UnitSelectOption[];
   selectedIds?: ReadonlySet<string>;
   preservedIds?: readonly string[];
+  staleWarning?: string | null;
   requiresSiteSelection?: boolean;
   emptyMessage?: string;
 };
@@ -12,13 +13,25 @@ export function ApplicableUnitsField({
   options,
   selectedIds,
   preservedIds = [],
+  staleWarning = null,
   requiresSiteSelection = false,
   emptyMessage = "Select an active site in the sidebar before choosing applicable areas.",
 }: ApplicableUnitsFieldProps) {
   if (requiresSiteSelection || options.length === 0) {
     return (
       <div className="flex flex-col gap-2">
+        {preservedIds.map((id) => (
+          <input key={id} type="hidden" name="applicableUnitIds" value={id} />
+        ))}
         <p className="text-sm font-medium">Applicable areas</p>
+        {staleWarning ? (
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid="five-s-stale-applicability-warning"
+          >
+            {staleWarning}
+          </p>
+        ) : null}
         <p
           className="text-sm text-muted-foreground"
           data-testid="site-context-required"
@@ -40,6 +53,14 @@ export function ApplicableUnitsField({
       {preservedIds.map((id) => (
         <input key={id} type="hidden" name="applicableUnitIds" value={id} />
       ))}
+      {staleWarning ? (
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="five-s-stale-applicability-warning"
+        >
+          {staleWarning}
+        </p>
+      ) : null}
       <div className="mt-1 flex flex-col gap-2">
         {options.map((unit) => (
           <label

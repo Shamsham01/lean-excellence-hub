@@ -18,7 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  collectUnitStatuses,
   formatApplicableUnitLabels,
+  formatStaleApplicabilityWarning,
   requireApplicableUnitIds,
   requireQuerySuccess,
   splitApplicabilitySelection,
@@ -94,20 +96,43 @@ export default async function FiveSStandardDetailPage({
     applicabilityError,
     applicabilityRows,
   );
+  const mappedUnitIds = [...applicableIds];
+  const { data: mappedUnits, error: mappedUnitsError } =
+    mappedUnitIds.length > 0
+      ? await supabase
+          .from("organisation_units")
+          .select("id, status")
+          .in("id", mappedUnitIds)
+      : { data: [], error: null };
+
+  const unitStatusById = collectUnitStatuses(
+    requireQuerySuccess(
+      mappedUnitsError,
+      mappedUnits ?? [],
+      "Failed to load applicable organisational units",
+    ),
+  );
   const { units, context } = await loadActiveSiteContext();
   const configurationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,
   });
-  const executionUnits = buildApplicableSiteScopedUnitOptions(
-    units,
-    context,
-    applicableIds,
-    { requireConcreteSite: true },
-  );
-  const applicabilityLabels = formatApplicableUnitLabels(applicableIds, units);
   const applicabilitySelection = splitApplicabilitySelection(
     applicableIds,
     configurationUnits.units,
+    unitStatusById,
+  );
+  const executionUnits = buildApplicableSiteScopedUnitOptions(
+    units,
+    context,
+    applicabilitySelection.confirmedActiveIds,
+    { requireConcreteSite: true },
+  );
+  const applicabilityLabels = formatApplicableUnitLabels(
+    applicabilitySelection.confirmedActiveIds,
+    units,
+  );
+  const staleWarning = formatStaleApplicabilityWarning(
+    applicabilitySelection.staleInactiveIds.length,
   );
 
   const authoring = await loadTemplateAuthoringChildren(
@@ -115,7 +140,7 @@ export default async function FiveSStandardDetailPage({
     editorVersion?.template_version_id,
   );
   const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
-  const hasApplicableUnits = applicableIds.size > 0;
+  const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
   const canPublish = canPublishQuestions && hasApplicableUnits;
 
   const managementActions =
@@ -221,6 +246,7 @@ export default async function FiveSStandardDetailPage({
                 options={configurationUnits.units}
                 selectedIds={applicabilitySelection.selectedIds}
                 preservedIds={applicabilitySelection.preservedIds}
+                staleWarning={staleWarning}
                 requiresSiteSelection={configurationUnits.requiresSiteSelection}
               />
               <Button

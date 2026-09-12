@@ -49,23 +49,66 @@ export function readApplicableUnitIds(formData: FormData): string[] {
   ];
 }
 
+export function collectUnitStatuses(
+  rows: Array<{ id: string; status: string }> | null | undefined,
+): Map<string, string> {
+  return new Map((rows ?? []).map((row) => [row.id, row.status]));
+}
+
+export type ApplicabilitySelection = {
+  selectedIds: Set<string>;
+  preservedIds: string[];
+  staleInactiveIds: string[];
+  confirmedActiveIds: Set<string>;
+};
+
 export function splitApplicabilitySelection(
   applicableIds: ReadonlySet<string>,
   visibleOptions: ReadonlyArray<{ id: string }>,
-): { selectedIds: Set<string>; preservedIds: string[] } {
+  unitStatusById: ReadonlyMap<string, string> = new Map(),
+): ApplicabilitySelection {
   const visible = new Set(visibleOptions.map((option) => option.id));
   const selectedIds = new Set<string>();
   const preservedIds: string[] = [];
+  const staleInactiveIds: string[] = [];
+  const confirmedActiveIds = new Set<string>();
 
   for (const id of applicableIds) {
+    const status = unitStatusById.get(id);
+    if (status && status !== "active") {
+      staleInactiveIds.push(id);
+      continue;
+    }
+
+    if (status === "active") {
+      confirmedActiveIds.add(id);
+    }
+
     if (visible.has(id)) {
       selectedIds.add(id);
     } else {
+      // Active off-site mappings, and mappings whose unit row is RLS-hidden,
+      // stay preserved so Save cannot silently drop them.
       preservedIds.push(id);
     }
   }
 
-  return { selectedIds, preservedIds };
+  return {
+    selectedIds,
+    preservedIds,
+    staleInactiveIds,
+    confirmedActiveIds,
+  };
+}
+
+export function formatStaleApplicabilityWarning(
+  staleCount: number,
+): string | null {
+  if (staleCount <= 0) return null;
+  if (staleCount === 1) {
+    return "1 previously applicable area is inactive and will be removed when you save.";
+  }
+  return `${staleCount} previously applicable areas are inactive and will be removed when you save.`;
 }
 
 export function formatApplicableUnitLabels(
