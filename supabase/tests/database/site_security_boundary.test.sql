@@ -698,6 +698,14 @@ select ok(
   '5S standard publishes for two-site matrix'
 );
 
+select public.set_five_s_standard_applicable_units(
+  (select id from site_ids where key = 'five_s_standard'),
+  array[
+    (select id from site_ids where key = 'bodmin_packing'),
+    (select id from site_ids where key = 'exeter_packing')
+  ]
+);
+
 insert into site_ids (key, id)
 select 'bodmin_five_s_audit', public.start_five_s_audit(
   (select id from site_ids where key = 'five_s_standard'),

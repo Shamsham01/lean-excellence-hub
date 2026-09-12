@@ -96,6 +96,11 @@ from public.organisation_units organisation_unit
 where organisation_unit.organisation_id = (select id from five_s_ids where key = 'organisation')
   and organisation_unit.code = 'five-s-unit';
 
+select public.set_five_s_standard_applicable_units(
+  (select id from five_s_ids where key = 'standard'),
+  array[(select id from five_s_ids where key = 'unit')]
+);
+
 insert into five_s_ids (key, id)
 select 'audit', public.start_five_s_audit(
   (select id from five_s_ids where key = 'standard'),

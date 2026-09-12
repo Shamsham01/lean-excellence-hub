@@ -6,8 +6,10 @@ import {
   addFiveSSectionFromForm,
   createFiveSStandardSuccessorFromForm,
   publishFiveSStandardFromForm,
+  setFiveSStandardApplicableUnitsFromForm,
   startFiveSAuditFromForm,
 } from "@/app/(platform)/platform/5s/actions";
+import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  collectApplicableUnitIds,
+  formatApplicableUnitLabels,
+  splitApplicabilitySelection,
+} from "@/modules/operational/five-s-applicability";
+import {
   FIVE_S_PERMISSIONS,
   SCHEDULE_PERMISSIONS,
 } from "@/modules/operational/permissions";
@@ -23,7 +30,10 @@ import {
   isTemplateAuthoringPublishReady,
   loadTemplateAuthoringChildren,
 } from "@/modules/operational/template-authoring";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildApplicableSiteScopedUnitOptions,
+  buildSiteScopedUnitOptions,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -67,10 +77,27 @@ export default async function FiveSStandardDetailPage({
   const publishedVersion = versions?.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
+  const { data: applicabilityRows } = await supabase
+    .from("five_s_standard_applicable_units")
+    .select("unit_id")
+    .eq("standard_id", id);
+
+  const applicableIds = collectApplicableUnitIds(applicabilityRows);
   const { units, context } = await loadActiveSiteContext();
-  const executionUnits = buildSiteScopedUnitOptions(units, context, {
+  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,
   });
+  const executionUnits = buildApplicableSiteScopedUnitOptions(
+    units,
+    context,
+    applicableIds,
+    { requireConcreteSite: true },
+  );
+  const applicabilityLabels = formatApplicableUnitLabels(applicableIds, units);
+  const applicabilitySelection = splitApplicabilitySelection(
+    applicableIds,
+    configurationUnits.units,
+  );
 
   const authoring = await loadTemplateAuthoringChildren(
     supabase,
@@ -128,8 +155,10 @@ export default async function FiveSStandardDetailPage({
                   requiresSiteSelection={executionUnits.requiresSiteSelection}
                   unitFieldId="five-s-unit-id"
                   label="Start audit for unit"
+                  lockedLabel="Audit area"
                   submitLabel="Start audit"
                   emptyMessage="Select an active site in the sidebar before starting an audit."
+                  notApplicableMessage="This standard is not applicable to the active site."
                   formTestId="five-s-start-audit-form"
                   unitSelectTestId="five-s-unit-select"
                   submitTestId="five-s-start-audit"
@@ -146,6 +175,57 @@ export default async function FiveSStandardDetailPage({
           </Badge>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Applicability</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p data-testid="five-s-applicable-areas">
+            {applicabilityLabels.length > 0 ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  Applicable to:{" "}
+                </span>
+                <span className="font-medium">
+                  {applicabilityLabels.join(", ")}
+                </span>
+              </>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                No applicable areas configured. Start audit and scheduling stay
+                blocked until at least one organisational unit is assigned.
+              </span>
+            )}
+          </p>
+          {canManage ? (
+            <form
+              action={setFiveSStandardApplicableUnitsFromForm}
+              className="flex max-w-lg flex-col gap-4"
+            >
+              <input type="hidden" name="standardId" value={id} />
+              <ApplicableUnitsField
+                options={configurationUnits.units}
+                selectedIds={applicabilitySelection.selectedIds}
+                preservedIds={applicabilitySelection.preservedIds}
+                requiresSiteSelection={configurationUnits.requiresSiteSelection}
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                className="min-h-11"
+                disabled={
+                  configurationUnits.units.length === 0 &&
+                  applicabilitySelection.preservedIds.length === 0
+                }
+                data-testid="save-five-s-applicability"
+              >
+                Save applicable areas
+              </Button>
+            </form>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {draftVersion ? (
         <Card>

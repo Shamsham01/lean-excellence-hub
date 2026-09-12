@@ -91,8 +91,18 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await selectActiveSite(page, EXETER_FACTORY_LABEL);
     await openFiveSStandard(page);
 
-    const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expectSiteLocalOptions(labels, EXETER_FACTORY_LABEL, BODMIN_FACTORY_LABEL);
+    await expect(page.getByTestId("five-s-applicable-areas")).toContainText(
+      "Packing",
+    );
+    await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
+      "Packing",
+    );
+    await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Baking" })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Quality" })).toHaveCount(0);
+    await expect(
+      page.getByRole("option", { name: EXETER_FACTORY_LABEL }),
+    ).toHaveCount(0);
     await expectExecutionHeaderLayout(page, {
       managementTestId: "five-s-management-actions",
       executionTestId: "five-s-execution-actions",
@@ -108,8 +118,14 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await selectActiveSite(page, BODMIN_FACTORY_LABEL);
     await openFiveSStandard(page);
 
-    const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expectSiteLocalOptions(labels, BODMIN_FACTORY_LABEL, EXETER_FACTORY_LABEL);
+    await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
+      "Packing",
+    );
+    await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Baking" })).toHaveCount(0);
+    await expect(
+      page.getByRole("option", { name: EXETER_FACTORY_LABEL }),
+    ).toHaveCount(0);
   });
 
   test("admin All sites requires a concrete site before 5S execution", async ({
@@ -194,11 +210,16 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
       await expect(siteLabel).toHaveText(BODMIN_FACTORY_LABEL);
     }
 
-    const labels = await optionLabels(page.getByTestId("five-s-unit-select"));
-    expect(labels).not.toContain(EXETER_FACTORY_LABEL);
-    expect(labels.some((label) => label.startsWith("Exeter"))).toBe(false);
-    expect(labels.filter((label) => label === "Packing")).toHaveLength(1);
-    expect(labels).toContain("Operations");
-    expect(labels).toContain("Packing");
+    await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
+      "Packing",
+    );
+    await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
+    await expect(
+      page.getByRole("option", { name: EXETER_FACTORY_LABEL }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Operations" })).toHaveCount(
+      0,
+    );
+    await expect(page.getByRole("option", { name: "Baking" })).toHaveCount(0);
   });
 });

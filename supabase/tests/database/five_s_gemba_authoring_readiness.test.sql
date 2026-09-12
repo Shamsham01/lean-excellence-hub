@@ -219,6 +219,11 @@ from public.organisation_units organisation_unit
 where organisation_unit.organisation_id = (select id from authoring_ids where key = 'organisation')
   and organisation_unit.code = 'authoring-unit';
 
+select public.set_five_s_standard_applicable_units(
+  (select id from authoring_ids where key = 'five_s_standard'),
+  array[(select id from authoring_ids where key = 'unit')]
+);
+
 select lives_ok(
   format(
     'select public.start_five_s_audit(%L::uuid, %L::uuid)',

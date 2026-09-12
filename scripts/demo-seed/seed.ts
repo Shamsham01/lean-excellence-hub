@@ -2020,6 +2020,15 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
     target_standard_version_id: fiveSVersion.id,
   });
 
+  const { error: applicabilityError } = await client.rpc(
+    "set_five_s_standard_applicable_units",
+    {
+      target_standard_id: fiveSStandardId,
+      target_unit_ids: [operationsUnitId],
+    },
+  );
+  if (applicabilityError) throw applicabilityError;
+
   const { data: gembaDefinitionId, error: gembaError } = await client.rpc(
     "create_gemba_definition_draft",
     {
