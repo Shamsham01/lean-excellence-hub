@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { completeFiveSAuditFromForm } from "@/app/(platform)/platform/5s/actions";
+import { completeFiveSAudit } from "@/app/(platform)/platform/5s/actions";
 import { FiveSAuditWorkspace } from "@/components/five-s/audit-workspace";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
@@ -140,16 +140,6 @@ export default async function FiveSAuditPage({
       <PageHeader
         title="5S audit"
         description={audit.unit_name_snapshot ?? "In progress"}
-        actions={
-          canEdit && audit.status === "in_progress" ? (
-            <form action={completeFiveSAuditFromForm}>
-              <input type="hidden" name="auditId" value={id} />
-              <Button type="submit" className="min-h-11">
-                Complete audit
-              </Button>
-            </form>
-          ) : null
-        }
       />
       <FiveSAuditWorkspace
         auditId={id}
@@ -158,6 +148,8 @@ export default async function FiveSAuditPage({
         answers={answers}
         evidence={evidence}
         canEdit={canEdit && audit.status === "in_progress"}
+        canComplete={canEdit && audit.status === "in_progress"}
+        onComplete={completeFiveSAudit}
       />
     </div>
   );

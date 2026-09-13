@@ -56,4 +56,33 @@ test.describe("Milestone 6 5S journeys", () => {
     ).toBeVisible();
     await expect(page.getByText("100%").first()).toBeVisible();
   });
+
+  test("admin: 5S Yes/No selection is visible without refresh", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/5s/standards");
+    await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
+    await selectFirstExecutionUnit(page, "five-s-unit-select");
+    await page.getByRole("button", { name: "Start audit" }).click();
+
+    const yes = page.getByRole("button", { name: "Yes" });
+    const no = page.getByRole("button", { name: "No" });
+    await expect(yes).toBeVisible();
+    await expect(yes).toHaveAttribute("aria-pressed", "false");
+    await expect(no).toHaveAttribute("aria-pressed", "false");
+
+    await yes.click();
+    await expect(yes).toHaveAttribute("aria-pressed", "true");
+    await expect(no).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await expect(page.getByTestId("evidence-uploader")).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
 });
