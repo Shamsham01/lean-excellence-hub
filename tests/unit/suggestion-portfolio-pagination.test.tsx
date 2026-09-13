@@ -100,11 +100,11 @@ describe("SuggestionPortfolio pagination controls", () => {
     expect(screen.getByTestId("suggestion-portfolio-previous")).toBeDisabled();
   });
 
-  it("renders a native previous link on later pages", () => {
+  it("renders native previous and next links on middle pages", () => {
     render(
       <SuggestionPortfolio
         items={[item]}
-        totalCount={60}
+        totalCount={120}
         page={2}
         pageSize={50}
         filters={{ ...filteredPageOne, page: 2 }}
@@ -124,9 +124,13 @@ describe("SuggestionPortfolio pagination controls", () => {
       }),
     );
     expect(previous).not.toHaveAttribute("data-next-link");
-    expect(screen.getByTestId("suggestion-portfolio-next")).toHaveAttribute(
+
+    const next = screen.getByTestId("suggestion-portfolio-next");
+    expect(next.tagName).toBe("A");
+    expect(next).toHaveAttribute(
       "href",
       "/platform/suggestions?q=changeover&status=implemented&sort=oldest&page=3&pageSize=50",
     );
+    expect(next).not.toHaveAttribute("data-next-link");
   });
 });
