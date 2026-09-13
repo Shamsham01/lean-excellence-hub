@@ -144,9 +144,7 @@ test.describe("S3a suggestions portfolio", () => {
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await page.goto(
-      "/platform/suggestions?q=S3a&sort=oldest&pageSize=25",
-    );
+    await page.goto("/platform/suggestions?q=S3a&sort=oldest&pageSize=25");
     await expect(
       page.getByTestId("suggestion-portfolio-pagination"),
     ).toBeVisible();
