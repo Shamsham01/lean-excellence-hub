@@ -102,14 +102,42 @@ test.describe("S3a suggestions portfolio", () => {
   test("clear filters restores the full portfolio", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto(
-      "/platform/suggestions?status=implemented&q=changeover&page=1",
+      "/platform/suggestions?status=implemented&q=changeover&page=1&sort=oldest&pageSize=50",
     );
-    await page.getByTestId("suggestion-portfolio-clear-filters").click();
+    const clearFilters = page.getByTestId("suggestion-portfolio-clear-filters");
+    await expect(clearFilters).toBeVisible();
+    await expect(clearFilters).toHaveRole("link");
+    await expect(clearFilters).toHaveAttribute("href", "/platform/suggestions");
+
+    await clearFilters.click();
     await expect(page).toHaveURL("/platform/suggestions");
+    await expect(page).not.toHaveURL(/\?/);
+    await expect(
+      page.getByTestId("suggestion-portfolio-clear-filters"),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("suggestion-portfolio-search")).toHaveValue(
+      "",
+    );
+    await expect(page.getByTestId("suggestion-portfolio-status")).toHaveValue(
+      "",
+    );
+    await expect(page.getByTestId("suggestion-portfolio-sort")).toHaveValue(
+      "newest",
+    );
+    await expect(
+      page.getByTestId("suggestion-portfolio-page-size"),
+    ).toHaveValue("25");
     const totalCount = await getPortfolioTotalCount(page);
     expect(totalCount).toBeGreaterThanOrEqual(
       DEMO_SUGGESTION_PORTFOLIO_MIN_COUNT,
     );
+
+    await page.goBack();
+    await expect(page).toHaveURL(/status=implemented/);
+    await expect(page).toHaveURL(/q=changeover/);
+    await expect(
+      page.getByTestId("suggestion-portfolio-clear-filters"),
+    ).toBeVisible();
   });
 
   test("pagination preserves filters and supports next page", async ({
