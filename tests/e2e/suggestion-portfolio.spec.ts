@@ -171,14 +171,17 @@ test.describe("S3a suggestions portfolio", () => {
 
     const previousPage = page.getByTestId("suggestion-portfolio-previous");
     await expect(previousPage).toHaveRole("link");
-    await expect(previousPage).toHaveAttribute("href", /pageSize=25/);
+    await expect(previousPage).toHaveAttribute("href", /q=S3a/);
+    await expect(previousPage).toHaveAttribute("href", /sort=oldest/);
     await expect(previousPage).not.toHaveAttribute("href", /page=2/);
     await previousPage.click();
     await expect(page).toHaveURL(/q=S3a/);
     await expect(page).toHaveURL(/sort=oldest/);
-    await expect(page).toHaveURL(/pageSize=25/);
     await expect(page).not.toHaveURL(/page=2/);
     await expect(page.getByText(/Page 1 of/)).toBeVisible();
+    await expect(
+      page.getByTestId("suggestion-portfolio-page-size"),
+    ).toHaveValue("25");
   });
 
   test("detail navigation returns to filtered portfolio state", async ({
