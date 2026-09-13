@@ -2067,6 +2067,16 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
       },
     );
     if (gembaQuestionError) throw gembaQuestionError;
+
+    const { error: gembaApplicabilityError } = await client.rpc(
+      "set_gemba_definition_applicable_units",
+      {
+        target_definition_id: gembaDefinitionId,
+        target_unit_ids: [operationsUnitId],
+      },
+    );
+    if (gembaApplicabilityError) throw gembaApplicabilityError;
+
     await client.rpc("publish_gemba_definition_version", {
       target_definition_version_id: gembaVersion.id,
     });

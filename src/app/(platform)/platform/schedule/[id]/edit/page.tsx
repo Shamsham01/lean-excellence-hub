@@ -7,7 +7,7 @@ import { ScheduleForm } from "@/components/schedule/schedule-form";
 import { Button } from "@/components/ui/button";
 import {
   loadScheduleFormContext,
-  loadFiveSScheduleUnitOptions,
+  loadActivityScheduleUnitOptions,
 } from "@/lib/schedule/form-context";
 import { parseRecurrenceJson } from "@/lib/schedule/recurrence";
 import { SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
@@ -37,7 +37,7 @@ export default async function EditSchedulePage({
 
   if (!schedule || schedule.status !== "active") notFound();
 
-  const scheduleUnits = await loadFiveSScheduleUnitOptions(
+  const scheduleUnits = await loadActivityScheduleUnitOptions(
     schedule.activity_resource_id,
     units,
     requiresSiteSelection,

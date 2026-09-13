@@ -3,11 +3,15 @@ import {
   interpretFiveSStandardLookup,
   requireApplicableUnitIds,
 } from "@/modules/operational/five-s-applicability";
+import {
+  interpretGembaDefinitionLookup,
+  requireGembaApplicableUnitIds,
+} from "@/modules/operational/gemba-applicability";
 import { filterUnitOptionsByIds } from "@/modules/organisation/site-context";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export async function loadFiveSScheduleUnitOptions(
+export async function loadActivityScheduleUnitOptions(
   activityResourceId: string,
   units: UnitSelectOption[],
   requiresSiteSelection: boolean,
@@ -19,27 +23,66 @@ export async function loadFiveSScheduleUnitOptions(
     .eq("id", activityResourceId)
     .maybeSingle();
 
-  if (interpretFiveSStandardLookup(fiveSError, fiveS) === "not_five_s") {
+  if (interpretFiveSStandardLookup(fiveSError, fiveS) === "five_s") {
+    const { data: applicabilityRows, error: applicabilityError } =
+      await supabase
+        .from("five_s_standard_applicable_units")
+        .select("unit_id")
+        .eq("standard_id", activityResourceId);
+
+    return {
+      units: filterUnitOptionsByIds(
+        units,
+        requireApplicableUnitIds(applicabilityError, applicabilityRows),
+      ),
+      ...(requiresSiteSelection
+        ? {}
+        : {
+            unitEmptyMessage:
+              "This 5S standard is not applicable to the active site.",
+          }),
+    };
+  }
+
+  const { data: gemba, error: gembaError } = await supabase
+    .from("gemba_definitions")
+    .select("id")
+    .eq("id", activityResourceId)
+    .maybeSingle();
+
+  if (interpretGembaDefinitionLookup(gembaError, gemba) === "not_gemba") {
     return { units };
   }
 
   const { data: applicabilityRows, error: applicabilityError } = await supabase
-    .from("five_s_standard_applicable_units")
+    .from("gemba_definition_applicable_units")
     .select("unit_id")
-    .eq("standard_id", activityResourceId);
+    .eq("definition_id", activityResourceId);
 
   return {
     units: filterUnitOptionsByIds(
       units,
-      requireApplicableUnitIds(applicabilityError, applicabilityRows),
+      requireGembaApplicableUnitIds(applicabilityError, applicabilityRows),
     ),
     ...(requiresSiteSelection
       ? {}
       : {
           unitEmptyMessage:
-            "This 5S standard is not applicable to the active site.",
+            "This Gemba definition is not applicable to the active site.",
         }),
   };
+}
+
+export async function loadFiveSScheduleUnitOptions(
+  activityResourceId: string,
+  units: UnitSelectOption[],
+  requiresSiteSelection: boolean,
+): Promise<{ units: UnitSelectOption[]; unitEmptyMessage?: string }> {
+  return loadActivityScheduleUnitOptions(
+    activityResourceId,
+    units,
+    requiresSiteSelection,
+  );
 }
 
 export async function loadScheduleFormContext() {

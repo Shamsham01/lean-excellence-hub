@@ -7,7 +7,7 @@ import { ScheduleForm } from "@/components/schedule/schedule-form";
 import { Button } from "@/components/ui/button";
 import {
   loadScheduleFormContext,
-  loadFiveSScheduleUnitOptions,
+  loadActivityScheduleUnitOptions,
 } from "@/lib/schedule/form-context";
 import { SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -35,7 +35,7 @@ export default async function NewSchedulePage({
   const activityResourceId = params.activityId ?? "";
   let activityLabel = params.activityLabel ?? "Scheduled activity";
   const scheduleUnits = activityResourceId
-    ? await loadFiveSScheduleUnitOptions(
+    ? await loadActivityScheduleUnitOptions(
         activityResourceId,
         units,
         requiresSiteSelection,

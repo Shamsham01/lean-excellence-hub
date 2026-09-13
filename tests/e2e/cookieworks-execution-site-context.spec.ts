@@ -17,13 +17,6 @@ const BODMIN_FACTORY_LABEL = "Bodmin Cookie Factory";
 const EXETER_FACTORY_LABEL = "Exeter Cookie Factory";
 const FIVE_S_STANDARD = "QA CookieWorks 5S Standard";
 const GEMBA_DEFINITION = "QA CookieWorks Gemba";
-const DUPLICATE_UNIT_LABELS = [
-  "Baking",
-  "Mixing & Preparation",
-  "Operations",
-  "Packing",
-  "Quality",
-];
 
 test.describe("CookieWorks 5S/Gemba execution site context", () => {
   test.describe.configure({ mode: "serial" });
@@ -81,16 +74,13 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await expect(form.getByRole("option")).toHaveCount(0);
   }
 
-  function expectSiteLocalOptions(
-    labels: string[],
-    expectedSite: string,
-    absentSite: string,
-  ) {
-    expect(labels).toContain(expectedSite);
-    expect(labels).not.toContain(absentSite);
-    for (const name of DUPLICATE_UNIT_LABELS) {
-      expect(labels.filter((label) => label === name)).toHaveLength(1);
-    }
+  async function expectGembaPackingOnlyTarget(page: Page) {
+    const form = page.getByTestId("gemba-start-walk-form");
+    await expect(page.getByTestId("gemba-unit-select-locked")).toContainText(
+      "Packing",
+    );
+    await expect(page.getByTestId("gemba-unit-select")).toHaveCount(0);
+    await expect(form.getByRole("option")).toHaveCount(0);
   }
 
   test("admin Exeter active site keeps 5S execution units in Exeter", async ({
@@ -153,14 +143,10 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await selectActiveSite(page, EXETER_FACTORY_LABEL);
     await openGembaDefinition(page);
 
-    const exeterLabels = await optionLabels(
-      page.getByTestId("gemba-unit-select"),
+    await expect(page.getByTestId("gemba-applicable-areas")).toContainText(
+      "Packing",
     );
-    expectSiteLocalOptions(
-      exeterLabels,
-      EXETER_FACTORY_LABEL,
-      BODMIN_FACTORY_LABEL,
-    );
+    await expectGembaPackingOnlyTarget(page);
     await expectExecutionHeaderLayout(page, {
       managementTestId: "gemba-management-actions",
       executionTestId: "gemba-execution-actions",
@@ -168,16 +154,42 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
       submitTestId: "gemba-start-walk",
     });
 
+    await page.getByTestId("create-schedule-link").click();
+    await expect(page.getByTestId("schedule-form")).toBeVisible();
+    await expect(page.getByTestId("schedule-unit-select")).toContainText(
+      "Packing",
+    );
+    expect(
+      await optionLabels(page.getByTestId("schedule-unit-select")),
+    ).toEqual(["Packing"]);
+
     await selectActiveSite(page, BODMIN_FACTORY_LABEL);
     await openGembaDefinition(page);
-    const bodminLabels = await optionLabels(
-      page.getByTestId("gemba-unit-select"),
+    await expectGembaPackingOnlyTarget(page);
+  });
+
+  test("admin All sites requires a concrete site before Gemba execution", async ({
+    page,
+  }) => {
+    await loginAsCookieWorksPersona(page, "admin");
+    await selectActiveSite(page, "All sites");
+    await expect(page.getByTestId("site-context-switcher")).toHaveValue(
+      ALL_SITES_COOKIE_VALUE,
     );
-    expectSiteLocalOptions(
-      bodminLabels,
-      BODMIN_FACTORY_LABEL,
-      EXETER_FACTORY_LABEL,
+    await openGembaDefinition(page);
+
+    await expect(
+      page
+        .getByTestId("gemba-start-walk-form")
+        .getByTestId("site-context-required"),
+    ).toHaveText(
+      "Select an active site in the sidebar before starting a walk.",
     );
+    await expect(page.getByTestId("applicable-units-empty")).toHaveText(
+      "Select an active site in the sidebar before choosing applicable areas.",
+    );
+    await expect(page.getByTestId("gemba-unit-select")).toHaveCount(0);
+    await expect(page.getByTestId("gemba-start-walk")).toBeDisabled();
   });
 
   test("scoped production manager cannot obtain Exeter units from a forged site cookie", async ({
@@ -212,5 +224,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     }
 
     await expectFiveSPackingOnlyTarget(page);
+    await openGembaDefinition(page);
+    await expectGembaPackingOnlyTarget(page);
   });
 });

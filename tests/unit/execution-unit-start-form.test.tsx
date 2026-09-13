@@ -119,4 +119,57 @@ describe("ExecutionUnitStartForm", () => {
     expect(screen.queryByTestId("gemba-unit-select")).not.toBeInTheDocument();
     expect(screen.getByTestId("gemba-start-walk")).toBeDisabled();
   });
+
+  it("does not fall back to unrelated units when none are applicable for a Gemba walk", () => {
+    render(
+      <ExecutionUnitStartForm
+        action={() => undefined}
+        hiddenFields={<input type="hidden" name="definitionId" value="def" />}
+        units={[]}
+        requiresSiteSelection={false}
+        unitFieldId="gemba-unit-id"
+        label="Start walk for unit"
+        lockedLabel="Walk area"
+        submitLabel="Start walk"
+        emptyMessage="Select an active site in the sidebar before starting a walk."
+        notApplicableMessage="This definition is not applicable to the active site."
+        formTestId="gemba-start-walk-form"
+        unitSelectTestId="gemba-unit-select"
+        submitTestId="gemba-start-walk"
+      />,
+    );
+
+    expect(screen.getByTestId("site-context-required")).toHaveTextContent(
+      "This definition is not applicable to the active site.",
+    );
+    expect(screen.getByTestId("gemba-start-walk")).toBeDisabled();
+  });
+
+  it("locks a single applicable Gemba unit instead of rendering a dropdown", () => {
+    render(
+      <ExecutionUnitStartForm
+        action={() => undefined}
+        hiddenFields={<input type="hidden" name="definitionId" value="def" />}
+        units={[{ id: "exeter-packing", name: "Packing" }]}
+        requiresSiteSelection={false}
+        unitFieldId="gemba-unit-id"
+        label="Start walk for unit"
+        lockedLabel="Walk area"
+        submitLabel="Start walk"
+        emptyMessage="Select an active site in the sidebar before starting a walk."
+        formTestId="gemba-start-walk-form"
+        unitSelectTestId="gemba-unit-select"
+        submitTestId="gemba-start-walk"
+      />,
+    );
+
+    expect(screen.getByTestId("gemba-unit-select-locked")).toHaveTextContent(
+      "Walk area",
+    );
+    expect(screen.getByTestId("gemba-unit-select-locked")).toHaveTextContent(
+      "Packing",
+    );
+    expect(screen.queryByTestId("gemba-unit-select")).not.toBeInTheDocument();
+    expect(screen.getByTestId("gemba-start-walk")).toBeEnabled();
+  });
 });
