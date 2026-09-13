@@ -73,6 +73,27 @@ function programmeCategoryLabel(item: SuggestionPortfolioItem): string {
   return parts.length > 0 ? parts.join(" · ") : "—";
 }
 
+function SuggestionPortfolioPaginationLink({
+  href,
+  label,
+  testId,
+}: {
+  href: string;
+  label: "Previous page" | "Next page";
+  testId: string;
+}) {
+  // Native <a> (not next/link): same-path query changes via the App Router are
+  // aborted under the compiled Playwright server, leaving the URL unchanged.
+  // Document navigation is required. Do not wrap this in Link.
+  return (
+    <Button variant="outline" size="sm" className="min-h-11" asChild>
+      <a href={href} aria-label={label} data-testid={testId}>
+        {label === "Previous page" ? "Previous" : "Next"}
+      </a>
+    </Button>
+  );
+}
+
 function PaginationControls({
   filters,
   totalCount,
@@ -87,6 +108,16 @@ function PaginationControls({
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd = Math.min(page * pageSize, totalCount);
+  const previousHref = suggestionPortfolioHref({
+    ...filters,
+    page: page - 1,
+    pageSize,
+  });
+  const nextHref = suggestionPortfolioHref({
+    ...filters,
+    page: page + 1,
+    pageSize,
+  });
 
   return (
     <div
@@ -98,20 +129,11 @@ function PaginationControls({
       </p>
       <div className="flex flex-wrap items-center gap-2">
         {page > 1 ? (
-          <Button variant="outline" size="sm" className="min-h-11" asChild>
-            <Link
-              href={suggestionPortfolioHref({
-                ...filters,
-                page: page - 1,
-                pageSize,
-              })}
-              aria-label="Previous page"
-              prefetch={false}
-              data-testid="suggestion-portfolio-previous"
-            >
-              Previous
-            </Link>
-          </Button>
+          <SuggestionPortfolioPaginationLink
+            href={previousHref}
+            label="Previous page"
+            testId="suggestion-portfolio-previous"
+          />
         ) : (
           <Button
             variant="outline"
@@ -127,20 +149,11 @@ function PaginationControls({
           Page {page} of {totalPages}
         </span>
         {page < totalPages ? (
-          <Button variant="outline" size="sm" className="min-h-11" asChild>
-            <Link
-              href={suggestionPortfolioHref({
-                ...filters,
-                page: page + 1,
-                pageSize,
-              })}
-              aria-label="Next page"
-              prefetch={false}
-              data-testid="suggestion-portfolio-next"
-            >
-              Next
-            </Link>
-          </Button>
+          <SuggestionPortfolioPaginationLink
+            href={nextHref}
+            label="Next page"
+            testId="suggestion-portfolio-next"
+          />
         ) : (
           <Button
             variant="outline"

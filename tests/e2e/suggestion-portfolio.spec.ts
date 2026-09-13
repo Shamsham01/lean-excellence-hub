@@ -144,21 +144,44 @@ test.describe("S3a suggestions portfolio", () => {
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await page.goto("/platform/suggestions?pageSize=25");
+    await page.goto(
+      "/platform/suggestions?q=changeover&status=implemented&sort=oldest&pageSize=50",
+    );
     await expect(
       page.getByTestId("suggestion-portfolio-pagination"),
     ).toBeVisible();
     const totalCount = await getPortfolioTotalCount(page);
-    expect(totalCount).toBeGreaterThan(25);
+    expect(totalCount).toBeGreaterThan(50);
     await expect(page.getByText(/Page 1 of [2-9]/)).toBeVisible();
     const nextPage = page.getByTestId("suggestion-portfolio-next");
+    await expect(nextPage).toHaveRole("link");
     await expect(nextPage).toHaveAttribute("href", /page=2/);
+    await expect(nextPage).toHaveAttribute("href", /q=changeover/);
+    await expect(nextPage).toHaveAttribute("href", /status=implemented/);
+    await expect(nextPage).toHaveAttribute("href", /sort=oldest/);
+    await expect(nextPage).toHaveAttribute("href", /pageSize=50/);
     await nextPage.click();
     await expect(page).toHaveURL(/page=2/);
+    await expect(page).toHaveURL(/q=changeover/);
+    await expect(page).toHaveURL(/status=implemented/);
+    await expect(page).toHaveURL(/sort=oldest/);
+    await expect(page).toHaveURL(/pageSize=50/);
     await expect(page.getByText(/Page 2 of/)).toBeVisible();
     await expect(
       page.getByTestId(/suggestion-portfolio-item-/).first(),
     ).toBeVisible();
+
+    const previousPage = page.getByTestId("suggestion-portfolio-previous");
+    await expect(previousPage).toHaveRole("link");
+    await expect(previousPage).toHaveAttribute("href", /pageSize=50/);
+    await expect(previousPage).not.toHaveAttribute("href", /page=2/);
+    await previousPage.click();
+    await expect(page).toHaveURL(/q=changeover/);
+    await expect(page).toHaveURL(/status=implemented/);
+    await expect(page).toHaveURL(/sort=oldest/);
+    await expect(page).toHaveURL(/pageSize=50/);
+    await expect(page).not.toHaveURL(/page=2/);
+    await expect(page.getByText(/Page 1 of/)).toBeVisible();
   });
 
   test("detail navigation returns to filtered portfolio state", async ({
