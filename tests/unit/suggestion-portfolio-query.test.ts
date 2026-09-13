@@ -114,6 +114,23 @@ describe("suggestion portfolio query helpers", () => {
     expect(params.get("pageSize")).toBe("50");
   });
 
+  it("builds a query-free clear-filters href", () => {
+    expect(suggestionPortfolioHref({})).toBe("/platform/suggestions");
+    expect(
+      suggestionPortfolioHref(
+        parseSuggestionPortfolioSearchParams({
+          status: "implemented",
+          q: "changeover",
+          page: "1",
+          sort: "oldest",
+          pageSize: "50",
+        }),
+      ),
+    ).toBe(
+      "/platform/suggestions?q=changeover&status=implemented&sort=oldest&pageSize=50",
+    );
+  });
+
   it("omits default sort, page, page size, and reviewer from generated query strings", () => {
     const params = buildSuggestionPortfolioSearchParams({
       q: null,

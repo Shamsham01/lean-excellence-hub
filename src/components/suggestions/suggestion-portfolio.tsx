@@ -33,12 +33,35 @@ type SuggestionPortfolioProps = {
   showReviewerWorkflow?: boolean;
 };
 
+const SUGGESTION_PORTFOLIO_CLEAR_HREF = suggestionPortfolioHref({});
+
 function formatSubmittedDate(value: string | null): string {
   if (!value) {
     return "—";
   }
 
   return new Date(value).toLocaleDateString("en-GB");
+}
+
+function SuggestionPortfolioClearFiltersControl({
+  testId,
+  variant,
+  className,
+}: {
+  testId?: string;
+  variant: "ghost" | "outline";
+  className?: string;
+}) {
+  // Native <a> (not next/link): same-path query reset via the App Router is
+  // aborted under the compiled Playwright server, leaving the filtered URL
+  // unchanged. Document navigation is required. Do not wrap this in Link.
+  return (
+    <Button variant={variant} size="sm" className={className} asChild>
+      <a href={SUGGESTION_PORTFOLIO_CLEAR_HREF} data-testid={testId}>
+        Clear filters
+      </a>
+    </Button>
+  );
 }
 
 function programmeCategoryLabel(item: SuggestionPortfolioItem): string {
@@ -306,15 +329,11 @@ export function SuggestionPortfolio({
             </p>
           </div>
           {filtersActive ? (
-            <Button
+            <SuggestionPortfolioClearFiltersControl
               variant="ghost"
-              size="sm"
               className="min-h-11 self-start sm:self-auto"
-              asChild
-              data-testid="suggestion-portfolio-clear-filters"
-            >
-              <Link href="/platform/suggestions">Clear filters</Link>
-            </Button>
+              testId="suggestion-portfolio-clear-filters"
+            />
           ) : null}
         </div>
 
@@ -476,14 +495,11 @@ export function SuggestionPortfolio({
                 : "No suggestions have been submitted yet."}
             </p>
             {filteredEmpty ? (
-              <Button
-                size="sm"
+              <SuggestionPortfolioClearFiltersControl
                 variant="outline"
                 className="mt-4 min-h-11"
-                asChild
-              >
-                <Link href="/platform/suggestions">Clear filters</Link>
-              </Button>
+                testId="suggestion-portfolio-empty-clear-filters"
+              />
             ) : null}
           </div>
         ) : (
