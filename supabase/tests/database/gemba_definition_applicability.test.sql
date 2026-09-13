@@ -1,6 +1,6 @@
 begin;
 
-select plan(55);
+select plan(61);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -537,6 +537,102 @@ select ok(
     ]
   ),
   'can expand applicability to packing and baking'
+);
+
+insert into gemba_applicability_ids (key, id)
+select 'packing_occurrence', occurrence_row.id
+from public.schedule_occurrences occurrence_row
+where occurrence_row.schedule_definition_id = (
+  select id from gemba_applicability_ids where key = 'packing_schedule'
+)
+  and occurrence_row.lifecycle_status = 'open'
+order by occurrence_row.planned_local_date
+limit 1;
+
+select ok(
+  (select id from gemba_applicability_ids where key = 'packing_occurrence') is not null,
+  'packing schedule has an open occurrence'
+);
+
+insert into gemba_applicability_ids (key, id)
+select 'baking_schedule', public.create_schedule_definition(
+  (select id from gemba_applicability_ids where key = 'definition'),
+  'Baking Gemba schedule',
+  (select id from gemba_applicability_ids where key = 'baking'),
+  (select id from gemba_applicability_ids where key = 'membership'),
+  '{"frequency":"weekly","interval":1,"weekdays":["monday"]}'::jsonb,
+  current_date,
+  true
+);
+
+insert into gemba_applicability_ids (key, id)
+select 'baking_occurrence', occurrence_row.id
+from public.schedule_occurrences occurrence_row
+where occurrence_row.schedule_definition_id = (
+  select id from gemba_applicability_ids where key = 'baking_schedule'
+)
+  and occurrence_row.lifecycle_status = 'open'
+order by occurrence_row.planned_local_date
+limit 1;
+
+select ok(
+  (select id from gemba_applicability_ids where key = 'baking_occurrence') is not null,
+  'baking schedule has an open occurrence'
+);
+
+select throws_ok(
+  format(
+    'select public.start_gemba_walk(%L::uuid, %L::uuid, %L::uuid)',
+    (select id from gemba_applicability_ids where key = 'definition'),
+    (select id from gemba_applicability_ids where key = 'baking'),
+    (select id from gemba_applicability_ids where key = 'packing_occurrence')
+  ),
+  '55000',
+  'schedule occurrence is not valid for this gemba definition',
+  'start walk rejects a packing occurrence bound to a baking unit'
+);
+
+select throws_ok(
+  format(
+    'select public.start_gemba_walk(%L::uuid, %L::uuid, %L::uuid)',
+    (select id from gemba_applicability_ids where key = 'definition'),
+    (select id from gemba_applicability_ids where key = 'packing'),
+    (select id from gemba_applicability_ids where key = 'baking_occurrence')
+  ),
+  '55000',
+  'schedule occurrence is not valid for this gemba definition',
+  'start walk rejects a baking occurrence bound to a packing unit'
+);
+
+insert into gemba_applicability_ids (key, id)
+select 'packing_scheduled_walk', public.start_gemba_walk(
+  (select id from gemba_applicability_ids where key = 'definition'),
+  (select id from gemba_applicability_ids where key = 'packing'),
+  (select id from gemba_applicability_ids where key = 'packing_occurrence')
+);
+
+select is(
+  (
+    select walk_row.unit_id
+    from public.gemba_walks walk_row
+    where walk_row.id = (
+      select id from gemba_applicability_ids where key = 'packing_scheduled_walk'
+    )
+  ),
+  (select id from gemba_applicability_ids where key = 'packing'),
+  'matching occurrence start stays bound to the occurrence unit'
+);
+
+select is(
+  (
+    select walk_row.schedule_occurrence_id
+    from public.gemba_walks walk_row
+    where walk_row.id = (
+      select id from gemba_applicability_ids where key = 'packing_scheduled_walk'
+    )
+  ),
+  (select id from gemba_applicability_ids where key = 'packing_occurrence'),
+  'matching occurrence start records the occurrence used'
 );
 
 insert into gemba_applicability_ids (key, id)
