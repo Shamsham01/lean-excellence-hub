@@ -6,8 +6,10 @@ import {
   addGembaSectionFromForm,
   createGembaDefinitionSuccessorFromForm,
   publishGembaDefinitionFromForm,
+  setGembaDefinitionApplicableUnitsFromForm,
   startGembaWalkFromForm,
 } from "@/app/(platform)/platform/gemba/actions";
+import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  collectUnitStatuses,
+  formatApplicableUnitLabels,
+  formatStaleApplicabilityWarning,
+  requireGembaApplicableUnitIds,
+  requireQuerySuccess,
+  splitApplicabilitySelection,
+} from "@/modules/operational/gemba-applicability";
+import {
   GEMBA_PERMISSIONS,
   SCHEDULE_PERMISSIONS,
 } from "@/modules/operational/permissions";
@@ -23,10 +33,16 @@ import {
   isTemplateAuthoringPublishReady,
   loadTemplateAuthoringChildren,
 } from "@/modules/operational/template-authoring";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildApplicableSiteScopedUnitOptions,
+  buildSiteScopedUnitOptions,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+const APPLICABILITY_DESCRIPTION =
+  "Applicability controls where this Gemba definition can be executed or scheduled. It does not grant permission.";
 
 export default async function GembaDefinitionPage({
   params,
@@ -42,33 +58,90 @@ export default async function GembaDefinitionPage({
     SCHEDULE_PERMISSIONS.manage,
   );
 
-  const { data: definition } = await supabase
+  const { data: definition, error: definitionError } = await supabase
     .from("gemba_definitions")
     .select("id, display_name, description")
     .eq("id", id)
     .maybeSingle();
+
+  requireQuerySuccess(
+    definitionError,
+    definition,
+    "Failed to load Gemba definition",
+  );
   if (!definition) notFound();
 
-  const { data: versions } = await supabase
+  const { data: versions, error: versionsError } = await supabase
     .from("gemba_definition_versions")
     .select("id, version_number, status, template_version_id")
     .eq("definition_id", id)
     .order("version_number", { ascending: false });
 
-  const draftVersion = versions?.find((v) => v.status === "draft");
-  const publishedVersion = versions?.find((v) => v.status === "published");
+  const loadedVersions = requireQuerySuccess(
+    versionsError,
+    versions ?? [],
+    "Failed to load Gemba definition versions",
+  );
+
+  const draftVersion = loadedVersions.find((v) => v.status === "draft");
+  const publishedVersion = loadedVersions.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
+  const { data: applicabilityRows, error: applicabilityError } = await supabase
+    .from("gemba_definition_applicable_units")
+    .select("unit_id")
+    .eq("definition_id", id);
+
+  const applicableIds = requireGembaApplicableUnitIds(
+    applicabilityError,
+    applicabilityRows,
+  );
+  const mappedUnitIds = [...applicableIds];
+  const { data: mappedUnits, error: mappedUnitsError } =
+    mappedUnitIds.length > 0
+      ? await supabase
+          .from("organisation_units")
+          .select("id, status")
+          .in("id", mappedUnitIds)
+      : { data: [], error: null };
+
+  const unitStatusById = collectUnitStatuses(
+    requireQuerySuccess(
+      mappedUnitsError,
+      mappedUnits ?? [],
+      "Failed to load applicable organisational units",
+    ),
+  );
   const { units, context } = await loadActiveSiteContext();
-  const executionUnits = buildSiteScopedUnitOptions(units, context, {
+  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,
   });
+  const applicabilitySelection = splitApplicabilitySelection(
+    applicableIds,
+    configurationUnits.units,
+    unitStatusById,
+  );
+  const executionUnits = buildApplicableSiteScopedUnitOptions(
+    units,
+    context,
+    applicabilitySelection.confirmedActiveIds,
+    { requireConcreteSite: true },
+  );
+  const applicabilityLabels = formatApplicableUnitLabels(
+    applicabilitySelection.confirmedActiveIds,
+    units,
+  );
+  const staleWarning = formatStaleApplicabilityWarning(
+    applicabilitySelection.staleInactiveIds.length,
+  );
 
   const authoring = await loadTemplateAuthoringChildren(
     supabase,
     editorVersion?.template_version_id,
   );
-  const canPublish = isTemplateAuthoringPublishReady(authoring);
+  const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
+  const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
+  const canPublish = canPublishQuestions && hasApplicableUnits;
 
   const managementActions =
     (publishedVersion && !draftVersion && canManage) ||
@@ -115,8 +188,10 @@ export default async function GembaDefinitionPage({
                   requiresSiteSelection={executionUnits.requiresSiteSelection}
                   unitFieldId="gemba-unit-id"
                   label="Start walk for unit"
+                  lockedLabel="Walk area"
                   submitLabel="Start walk"
                   emptyMessage="Select an active site in the sidebar before starting a walk."
+                  notApplicableMessage="This definition is not applicable to the active site."
                   formTestId="gemba-start-walk-form"
                   unitSelectTestId="gemba-unit-select"
                   submitTestId="gemba-start-walk"
@@ -127,12 +202,66 @@ export default async function GembaDefinitionPage({
       />
 
       <div className="flex flex-wrap gap-2">
-        {versions?.map((version) => (
+        {loadedVersions.map((version) => (
           <Badge key={version.id} variant="outline">
             v{version.version_number} · {version.status}
           </Badge>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Applicability</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p data-testid="gemba-applicable-areas">
+            {applicabilityLabels.length > 0 ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  Applicable to:{" "}
+                </span>
+                <span className="font-medium">
+                  {applicabilityLabels.join(", ")}
+                </span>
+              </>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                No applicable areas configured. Start walk and scheduling stay
+                blocked until at least one organisational unit is assigned.
+              </span>
+            )}
+          </p>
+          {canManage ? (
+            <form
+              action={setGembaDefinitionApplicableUnitsFromForm}
+              className="flex max-w-lg flex-col gap-4"
+            >
+              <input type="hidden" name="definitionId" value={id} />
+              <ApplicableUnitsField
+                options={configurationUnits.units}
+                selectedIds={applicabilitySelection.selectedIds}
+                preservedIds={applicabilitySelection.preservedIds}
+                staleWarning={staleWarning}
+                staleWarningTestId="gemba-stale-applicability-warning"
+                requiresSiteSelection={configurationUnits.requiresSiteSelection}
+                description={APPLICABILITY_DESCRIPTION}
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                className="min-h-11"
+                disabled={
+                  configurationUnits.units.length === 0 &&
+                  applicabilitySelection.preservedIds.length === 0
+                }
+                data-testid="save-gemba-applicability"
+              >
+                Save applicable areas
+              </Button>
+            </form>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {draftVersion ? (
         <Card>
@@ -216,12 +345,21 @@ export default async function GembaDefinitionPage({
             <form action={publishGembaDefinitionFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />
               <input type="hidden" name="definitionId" value={id} />
-              {!canPublish ? (
+              {!canPublishQuestions ? (
                 <p
                   className="mb-3 text-sm text-muted-foreground"
                   data-testid="publish-blocked-reason"
                 >
                   Add at least one walk prompt before publishing this
+                  definition.
+                </p>
+              ) : null}
+              {canPublishQuestions && !hasApplicableUnits ? (
+                <p
+                  className="mb-3 text-sm text-muted-foreground"
+                  data-testid="publish-blocked-reason"
+                >
+                  Assign at least one applicable area before publishing this
                   definition.
                 </p>
               ) : null}

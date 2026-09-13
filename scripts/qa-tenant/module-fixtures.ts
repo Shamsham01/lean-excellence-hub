@@ -277,6 +277,15 @@ export async function seedCookieWorksModuleFixtures(options: {
 
     await expectRpc(
       options.ciManagerClient,
+      "set_gemba_definition_applicable_units",
+      {
+        target_definition_id: gembaDefinitionId,
+        target_unit_ids: [bodminPackingId, exeterPackingId],
+      },
+    );
+
+    await expectRpc(
+      options.ciManagerClient,
       "publish_gemba_definition_version",
       {
         target_definition_version_id: gembaVersion.id,

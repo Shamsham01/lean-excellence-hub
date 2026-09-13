@@ -2,13 +2,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createGembaDefinition } from "@/app/(platform)/platform/gemba/actions";
+import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+const APPLICABILITY_DESCRIPTION =
+  "Choose the exact organisational units where this Gemba definition can be executed or scheduled. Applicability does not grant permission.";
 
 export default async function GembaDefinitionsPage() {
   const supabase = await createServerSupabaseClient();
@@ -16,6 +22,10 @@ export default async function GembaDefinitionsPage() {
     .from("gemba_definitions")
     .select("id, display_name, description")
     .order("created_at", { ascending: false });
+  const { units, context } = await loadActiveSiteContext();
+  const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
 
   async function createAction(formData: FormData) {
     "use server";
@@ -45,7 +55,16 @@ export default async function GembaDefinitionsPage() {
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" name="description" className="mt-2" />
             </div>
-            <Button type="submit" className="min-h-11">
+            <ApplicableUnitsField
+              options={creationUnits.units}
+              requiresSiteSelection={creationUnits.requiresSiteSelection}
+              description={APPLICABILITY_DESCRIPTION}
+            />
+            <Button
+              type="submit"
+              className="min-h-11"
+              disabled={creationUnits.units.length === 0}
+            >
               Create draft
             </Button>
           </form>

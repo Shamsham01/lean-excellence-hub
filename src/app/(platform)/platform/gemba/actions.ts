@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { readApplicableUnitIds } from "@/modules/operational/gemba-applicability";
 import {
   loadTemplateAuthoringChildren,
   nextQuestionPosition,
@@ -35,22 +36,60 @@ async function loadGembaDraftTemplateVersionId(
   return data.template_version_id;
 }
 
+export async function setGembaDefinitionApplicableUnits(
+  definitionId: string,
+  unitIds: string[],
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc(
+    "set_gemba_definition_applicable_units",
+    {
+      target_definition_id: definitionId,
+      target_unit_ids: unitIds,
+    },
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
+  return { ok: true };
+}
+
 export async function createGembaDefinition(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const applicableUnitIds = readApplicableUnitIds(formData);
   if (!name) {
     return { error: "Name is required" };
   }
+  if (applicableUnitIds.length === 0) {
+    return { error: "Select at least one applicable area" };
+  }
 
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc(
-    "create_gemba_definition_draft",
-    description
-      ? { target_display_name: name, target_description: description }
-      : { target_display_name: name },
-  );
+  const { data, error } = await supabase.rpc("create_gemba_definition_draft", {
+    target_display_name: name,
+    ...(description ? { target_description: description } : {}),
+    target_unit_ids: applicableUnitIds,
+  });
   if (error) return { error: error.message };
   return { definitionId: data as string };
+}
+
+export async function setGembaDefinitionApplicableUnitsFromForm(
+  formData: FormData,
+) {
+  const definitionId = String(formData.get("definitionId") ?? "").trim();
+  const applicableUnitIds = readApplicableUnitIds(formData);
+  if (!definitionId) {
+    throw new Error("Definition is required");
+  }
+  const result = await setGembaDefinitionApplicableUnits(
+    definitionId,
+    applicableUnitIds,
+  );
+  if (result.error) {
+    throw new Error(result.error);
+  }
 }
 
 export async function addGembaSection(

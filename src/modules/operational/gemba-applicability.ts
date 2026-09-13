@@ -11,22 +11,22 @@ export {
   type ApplicabilitySelection,
 } from "@/modules/organisation/applicability-selection";
 
-export function interpretFiveSStandardLookup(
+export function interpretGembaDefinitionLookup(
   error: { message: string } | null | undefined,
   row: { id: string } | null | undefined,
-): "not_five_s" | "five_s" {
+): "not_gemba" | "gemba" {
   if (error) {
-    throw new Error(`Failed to load 5S standard: ${error.message}`);
+    throw new Error(`Failed to load Gemba definition: ${error.message}`);
   }
-  return row ? "five_s" : "not_five_s";
+  return row ? "gemba" : "not_gemba";
 }
 
-export function requireApplicableUnitIds(
+export function requireGembaApplicableUnitIds(
   error: { message: string } | null | undefined,
   rows: Array<{ unit_id: string }> | null | undefined,
 ): Set<string> {
   if (error) {
-    throw new Error(`Failed to load 5S applicability: ${error.message}`);
+    throw new Error(`Failed to load Gemba applicability: ${error.message}`);
   }
   return collectApplicableUnitIds(rows);
 }

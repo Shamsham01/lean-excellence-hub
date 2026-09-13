@@ -5,8 +5,10 @@ type ApplicableUnitsFieldProps = {
   selectedIds?: ReadonlySet<string>;
   preservedIds?: readonly string[];
   staleWarning?: string | null;
+  staleWarningTestId?: string;
   requiresSiteSelection?: boolean;
   emptyMessage?: string;
+  description?: string;
 };
 
 export function ApplicableUnitsField({
@@ -14,8 +16,10 @@ export function ApplicableUnitsField({
   selectedIds,
   preservedIds = [],
   staleWarning = null,
+  staleWarningTestId = "five-s-stale-applicability-warning",
   requiresSiteSelection = false,
   emptyMessage = "Select an active site in the sidebar before choosing applicable areas.",
+  description,
 }: ApplicableUnitsFieldProps) {
   if (requiresSiteSelection || options.length === 0) {
     return (
@@ -24,10 +28,13 @@ export function ApplicableUnitsField({
           <input key={id} type="hidden" name="applicableUnitIds" value={id} />
         ))}
         <p className="text-sm font-medium">Applicable areas</p>
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        ) : null}
         {staleWarning ? (
           <p
             className="text-sm text-muted-foreground"
-            data-testid="five-s-stale-applicability-warning"
+            data-testid={staleWarningTestId}
           >
             {staleWarning}
           </p>
@@ -50,13 +57,16 @@ export function ApplicableUnitsField({
       data-testid="applicable-units-field"
     >
       <legend className="text-sm font-medium">Applicable areas</legend>
+      {description ? (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      ) : null}
       {preservedIds.map((id) => (
         <input key={id} type="hidden" name="applicableUnitIds" value={id} />
       ))}
       {staleWarning ? (
         <p
           className="text-sm text-muted-foreground"
-          data-testid="five-s-stale-applicability-warning"
+          data-testid={staleWarningTestId}
         >
           {staleWarning}
         </p>

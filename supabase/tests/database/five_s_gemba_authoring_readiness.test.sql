@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(30);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -367,6 +367,24 @@ select is(
   ),
   array['What abnormal condition is visible?', 'What help does the team need?']::text[],
   'gemba prompts remain deterministically ordered'
+);
+
+select throws_ok(
+  format(
+    'select public.publish_gemba_definition_version(%L::uuid)',
+    (select id from authoring_ids where key = 'gemba_version')
+  ),
+  '55000',
+  'gemba definition requires at least one applicable organisational unit',
+  'gemba draft with prompts cannot publish before applicability is assigned'
+);
+
+select ok(
+  public.set_gemba_definition_applicable_units(
+    (select id from authoring_ids where key = 'gemba_definition'),
+    array[(select id from authoring_ids where key = 'unit')]
+  ),
+  'can assign authoring unit applicability before gemba publish'
 );
 
 select lives_ok(

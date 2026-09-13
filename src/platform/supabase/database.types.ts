@@ -3720,6 +3720,45 @@ export type Database = {
           },
         ]
       }
+      gemba_definition_applicable_units: {
+        Row: {
+          created_at: string
+          definition_id: string
+          id: string
+          organisation_id: string
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          definition_id: string
+          id?: string
+          organisation_id: string
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          definition_id?: string
+          id?: string
+          organisation_id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_definition_applicable_units_definition_fkey"
+            columns: ["organisation_id", "definition_id"]
+            isOneToOne: false
+            referencedRelation: "gemba_definitions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_definition_applicable_units_unit_fkey"
+            columns: ["organisation_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       gemba_definition_versions: {
         Row: {
           archived_at: string | null
@@ -12063,6 +12102,7 @@ export type Database = {
           target_description?: string
           target_display_name: string
           target_expected_duration_minutes?: number
+          target_unit_ids?: string[]
         }
         Returns: string
       }
@@ -13482,6 +13522,10 @@ export type Database = {
       }
       set_five_s_standard_applicable_units: {
         Args: { target_standard_id: string; target_unit_ids: string[] }
+        Returns: boolean
+      }
+      set_gemba_definition_applicable_units: {
+        Args: { target_definition_id: string; target_unit_ids: string[] }
         Returns: boolean
       }
       set_maturity_model_version_assessment_scopes: {
