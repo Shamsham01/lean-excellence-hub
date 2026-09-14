@@ -53,4 +53,89 @@ test.describe("Milestone 6 Gemba journeys", () => {
     ).toBeVisible();
     await expect(page.getByText(DEMO_GEMBA_DEFINITION.name)).toBeVisible();
   });
+
+  test("admin: walk notes persist across navigation, refresh, and complete", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/gemba/definitions");
+
+    const name = `E2E Gemba Notes ${Date.now()}`;
+    const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
+    const secondPrompt = `What help does the team need? ${Date.now()}`;
+    const typedNotes = "Typed floor observation from packing.";
+    const filledNotes = `${typedNotes} Pasted follow-up: labels drifting.`;
+
+    await page.getByLabel("Name").fill(name);
+    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await page.getByRole("button", { name: "Create draft" }).click();
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+
+    await page.getByLabel("Section title").fill("Safety");
+    await page.getByRole("button", { name: "Add section" }).click();
+    await expect(page.getByTestId("authoring-section")).toContainText("Safety");
+
+    await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
+    await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("authoring-question")).toHaveCount(1);
+
+    await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
+    await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("authoring-question")).toHaveCount(2);
+
+    await page.getByTestId("publish-gemba-definition").click();
+    await expect(page.getByText(/v1 · published/)).toBeVisible();
+
+    await selectFirstExecutionUnit(page, "gemba-unit-select");
+    await page.getByRole("button", { name: "Start walk" }).click();
+    await expect(page).toHaveURL(/\/platform\/gemba\/walks\//);
+    await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: firstPrompt }),
+    ).toBeVisible();
+
+    const notes = page.getByTestId("gemba-walk-notes");
+    await expect(notes).toBeVisible();
+    await notes.click();
+    await notes.pressSequentially(typedNotes);
+    await expect(notes).toHaveValue(typedNotes);
+    await notes.fill(filledNotes);
+    await expect(notes).toHaveValue(filledNotes);
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: secondPrompt }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Previous", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: firstPrompt }),
+    ).toBeVisible();
+    await expect(notes).toHaveValue(filledNotes);
+
+    const walkUrl = page.url();
+    await page.reload();
+    await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
+
+    await page.goto("/platform/gemba");
+    await page.goto(walkUrl);
+    await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
+
+    await page.getByTestId("gemba-complete-walk").click();
+    await expect(
+      page.getByRole("heading", { name: "Gemba walk summary" }),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "History" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Gemba history" }),
+    ).toBeVisible();
+    await expect(page.getByText(name)).toBeVisible();
+    await page.getByRole("link", { name }).click();
+    await expect(
+      page.getByRole("heading", { name: "Gemba walk summary" }),
+    ).toBeVisible();
+  });
 });
