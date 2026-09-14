@@ -1,6 +1,12 @@
-import { redirect } from "next/navigation";
+import { cache } from "react";
+import { redirect, unstable_rethrow } from "next/navigation";
 
-import type { EligibleOrganisation } from "@/modules/organisations/context";
+import { listEligibleOrganisations } from "@/modules/organisations/context";
+import {
+  isNextNavigationError,
+  throwPlatformBoundaryError,
+} from "@/platform/observability/platform-boundary";
+import { readRequestPathname } from "@/platform/http/request-path";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import type { Database } from "@/platform/supabase/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -13,32 +19,66 @@ type IdentityState = {
 
 type SessionSupabaseClient = SupabaseClient<Database>;
 
-export async function requireClaims() {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.auth.getClaims();
+export const requireClaims = cache(async () => {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase.auth.getClaims();
 
-  if (error || !data?.claims?.sub) {
-    redirect("/login");
+    if (error) {
+      throwPlatformBoundaryError({
+        category: "auth",
+        operation: "getClaims",
+        route: await readRequestPathname(),
+        supabaseError: {
+          code: error.code ?? null,
+          message: error.message,
+        },
+      });
+    }
+
+    if (!data?.claims?.sub) {
+      redirect("/login");
+    }
+
+    return data.claims;
+  } catch (cause) {
+    unstable_rethrow(cause);
+    if (isNextNavigationError(cause)) {
+      throw cause;
+    }
+
+    throwPlatformBoundaryError({
+      category: "auth",
+      operation: "getClaims",
+      route: await readRequestPathname(),
+      cause,
+    });
+  }
+});
+
+const readIdentityState = cache(async (): Promise<IdentityState | null> => {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("current_identity_state");
+  if (error) {
+    throwPlatformBoundaryError({
+      category: "identity",
+      operation: "current_identity_state",
+      route: await readRequestPathname(),
+      supabaseError: error,
+    });
   }
 
-  return data.claims;
-}
-
-async function readIdentityState(
-  supabase: SessionSupabaseClient,
-): Promise<IdentityState | null> {
-  const { data, error } = await supabase.rpc("current_identity_state");
-  if (error || !data?.[0]) {
+  if (!data?.[0]) {
     return null;
   }
 
   return data[0] as IdentityState;
-}
+});
 
 export async function resolvePostAuthenticationRedirectPath(
   supabase: SessionSupabaseClient,
 ): Promise<string> {
-  const identity = await readIdentityState(supabase);
+  const identity = await readIdentityState();
 
   if (!identity || identity.identity_status !== "active") {
     return "/no-access";
@@ -48,12 +88,7 @@ export async function resolvePostAuthenticationRedirectPath(
     return "/update-password";
   }
 
-  const { data, error } = await supabase.rpc("list_my_eligible_organisations");
-  if (error) {
-    throw new Error("Unable to load organisation access.");
-  }
-
-  const organisations = (data ?? []) as EligibleOrganisation[];
+  const organisations = await listEligibleOrganisations();
   if (organisations.length === 0) {
     return "/no-access";
   }
@@ -70,10 +105,9 @@ export async function resolvePostAuthenticationRedirectPath(
   return "/select-organisation";
 }
 
-export async function requirePlatformAccess() {
+export const requirePlatformAccess = cache(async () => {
   await requireClaims();
-  const supabase = await createServerSupabaseClient();
-  const identity = await readIdentityState(supabase);
+  const identity = await readIdentityState();
 
   if (!identity || identity.identity_status !== "active") {
     redirect("/no-access");
@@ -85,7 +119,7 @@ export async function requirePlatformAccess() {
   ) {
     redirect("/update-password");
   }
-}
+});
 
 export async function routeAfterAuthentication() {
   const supabase = await createServerSupabaseClient();
