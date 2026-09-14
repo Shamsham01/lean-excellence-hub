@@ -52,6 +52,11 @@ export function buildGembaWalkPromptSearch(questionId: string) {
   return `?${params.toString()}`;
 }
 
+export function subscribeGembaWalkPromptLocation(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  return () => window.removeEventListener("popstate", onStoreChange);
+}
+
 export function resolveGembaWalkPromptIndex({
   questionIds,
   preferredQuestionId,

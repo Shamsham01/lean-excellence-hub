@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import {
   completeGembaWalk,
@@ -44,6 +51,7 @@ import {
   readGembaWalkPromptIdFromSearch,
   readStoredGembaWalkPromptId,
   resolveGembaWalkPromptIndex,
+  subscribeGembaWalkPromptLocation,
   writeStoredGembaWalkPromptId,
 } from "@/modules/operational/gemba-walk-prompt";
 
@@ -170,26 +178,41 @@ export function GembaWalkWorkspace({
     () => sections.flatMap((section) => section.questions.map((q) => q.id)),
     [sections],
   );
-  const questionIdsKey = questionIds.join(",");
-  const [index, setIndex] = useState(() =>
-    resolveGembaWalkPromptIndex({
-      questionIds,
-      preferredQuestionId: initialPromptId,
-    }),
+  const restoredPromptId = useSyncExternalStore(
+    subscribeGembaWalkPromptLocation,
+    () =>
+      readGembaWalkPromptIdFromSearch(window.location.search) ??
+      readStoredGembaWalkPromptId(walkId),
+    () => initialPromptId,
   );
+  const restoredIndex = resolveGembaWalkPromptIndex({
+    questionIds,
+    preferredQuestionId: restoredPromptId ?? initialPromptId,
+    storedQuestionId: restoredPromptId,
+  });
+  const [userIndex, setUserIndex] = useState<number | null>(null);
+  const [indexWalkId, setIndexWalkId] = useState(walkId);
+  if (indexWalkId !== walkId) {
+    setIndexWalkId(walkId);
+    setUserIndex(null);
+  }
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
   const [summary, setSummary] = useState("");
   const [completeError, setCompleteError] = useState<string | null>(null);
-  const [observationIntegrity, setObservationIntegrity] =
-    useState<ObservationIntegrity>({
-      dirty: false,
-      busy: false,
-      error: false,
-    });
-  const observationIntegrityRef = useRef(observationIntegrity);
-  observationIntegrityRef.current = observationIntegrity;
+  const observationIntegrityRef = useRef<ObservationIntegrity>({
+    dirty: false,
+    busy: false,
+    error: false,
+  });
+  const handleObservationIntegrity = useCallback(
+    (next: ObservationIntegrity) => {
+      observationIntegrityRef.current = next;
+    },
+    [],
+  );
+  const index = userIndex ?? restoredIndex;
   const safeIndex =
     flatQuestions.length === 0
       ? 0
@@ -215,19 +238,6 @@ export function GembaWalkWorkspace({
   });
 
   useEffect(() => {
-    const fromUrl = readGembaWalkPromptIdFromSearch(window.location.search);
-    const fromSession = readStoredGembaWalkPromptId(walkId);
-    const nextIndex = resolveGembaWalkPromptIndex({
-      questionIds,
-      preferredQuestionId: fromUrl ?? initialPromptId,
-      storedQuestionId: fromSession,
-    });
-    setIndex(nextIndex);
-    // questionIdsKey tracks identity; questionIds is read from the current render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- restore only when the walk or prompt set changes
-  }, [walkId, questionIdsKey, initialPromptId]);
-
-  useEffect(() => {
     const questionId = flatQuestions[safeIndex]?.question.id;
     if (!questionId || status !== "in_progress") return;
     writeStoredGembaWalkPromptId(walkId, questionId);
@@ -248,7 +258,7 @@ export function GembaWalkWorkspace({
     try {
       const saved = await flushQuestion(current.question.id);
       if (!saved) return;
-      setIndex(nextIndex);
+      setUserIndex(nextIndex);
     } finally {
       setNavigating(false);
     }
@@ -379,7 +389,7 @@ export function GembaWalkWorkspace({
         observations={observations}
         evidence={evidence}
         canEdit={canEdit}
-        onIntegrityChange={setObservationIntegrity}
+        onIntegrityChange={handleObservationIntegrity}
       />
 
       <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">

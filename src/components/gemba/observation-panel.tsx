@@ -102,10 +102,13 @@ export function GembaObservationPanel({
   const deleteLockRef = useRef(false);
   const requestIdRef = useRef<string | null>(null);
   const observationsFingerprint = JSON.stringify(observations);
-
-  useEffect(() => {
+  const [syncedFingerprint, setSyncedFingerprint] = useState(
+    observationsFingerprint,
+  );
+  if (syncedFingerprint !== observationsFingerprint) {
+    setSyncedFingerprint(observationsFingerprint);
     setItems(observations);
-  }, [observationsFingerprint, observations]);
+  }
 
   const dirty = captureOpen || editingId != null;
   const busy =
