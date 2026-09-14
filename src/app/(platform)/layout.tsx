@@ -1,31 +1,13 @@
-import { redirect } from "next/navigation";
-
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { requirePlatformAccess } from "@/modules/identity/session";
-import { listEligibleOrganisations } from "@/modules/organisations/context";
-import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
-import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { loadPlatformWorkspaceContext } from "@/modules/platform-shell/workspace-context";
+
+export const dynamic = "force-dynamic";
 
 export default async function PlatformLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await requirePlatformAccess();
-  const supabase = await createServerSupabaseClient();
-  const orgId = await supabase.rpc("current_organisation_id");
-  if (orgId.error || !orgId.data) {
-    redirect("/select-organisation");
-  }
-
-  const [organisations, { context: siteContext }] = await Promise.all([
-    listEligibleOrganisations(),
-    loadActiveSiteContext(),
-  ]);
-  const current = organisations.find(
-    (organisation) => organisation.organisation_id === orgId.data,
-  );
-  if (!current) {
-    redirect("/select-organisation");
-  }
+  const { current, organisations, siteContext } =
+    await loadPlatformWorkspaceContext();
 
   return (
     <PlatformShell

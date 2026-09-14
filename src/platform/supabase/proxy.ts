@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { normalizeApplicationOrigin } from "@/platform/application-origin";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
+import { createPlatformPassthroughResponse } from "@/platform/http/pathname-header";
 import type { Database } from "@/platform/supabase/database.types";
 
 function canonicalizeLocalRequestOrigin(request: NextRequest) {
@@ -36,7 +37,7 @@ export async function refreshSupabaseSession(request: NextRequest) {
   }
 
   const environment = getPublicEnvironment();
-  let response = NextResponse.next({ request });
+  let response = createPlatformPassthroughResponse(request);
 
   const supabase = createServerClient<Database>(
     environment.NEXT_PUBLIC_SUPABASE_URL,
@@ -48,7 +49,7 @@ export async function refreshSupabaseSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value);
           });
-          response = NextResponse.next({ request });
+          response = createPlatformPassthroughResponse(request);
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });

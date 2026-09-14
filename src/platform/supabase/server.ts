@@ -1,10 +1,11 @@
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { getPublicEnvironment } from "@/platform/env";
 import type { Database } from "@/platform/supabase/database.types";
 
-export async function createServerSupabaseClient() {
+async function createUncachedServerSupabaseClient() {
   const environment = getPublicEnvironment();
   const cookieStore = await cookies();
 
@@ -27,3 +28,9 @@ export async function createServerSupabaseClient() {
     },
   );
 }
+
+// One client per RSC/action request. Multiple createServerClient() calls in the
+// same render can race a single-use refresh token and crash the shared layout.
+export const createServerSupabaseClient = cache(
+  createUncachedServerSupabaseClient,
+);

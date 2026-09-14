@@ -13,6 +13,8 @@ import {
   type SelectablePerson,
 } from "@/modules/organisation/site-context";
 import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
+import { throwPlatformBoundaryError } from "@/platform/observability/platform-boundary";
+import { readRequestPathname } from "@/platform/http/request-path";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type ServerSupabaseClient = Awaited<
@@ -68,7 +70,12 @@ export const loadAccessibleOrganisationUnits = cache(
       .order("name");
 
     if (error) {
-      throw new Error("Unable to load organisational units.");
+      throwPlatformBoundaryError({
+        category: "active_site",
+        operation: "organisation_units",
+        route: await readRequestPathname(),
+        supabaseError: error,
+      });
     }
 
     return data ?? [];
