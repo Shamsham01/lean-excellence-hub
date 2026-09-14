@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
-  completeGembaWalkFromForm,
+  completeGembaWalk,
   createGembaObservationFromForm,
 } from "@/app/(platform)/platform/gemba/actions";
 import { GembaWalkWorkspace } from "@/components/gemba/walk-workspace";
@@ -140,16 +140,6 @@ export default async function GembaWalkPage({
       <PageHeader
         title="Gemba walk"
         description={walk.unit_name_snapshot ?? "In progress"}
-        actions={
-          canEdit ? (
-            <form action={completeGembaWalkFromForm}>
-              <input type="hidden" name="walkId" value={id} />
-              <Button type="submit" className="min-h-11">
-                Complete walk
-              </Button>
-            </form>
-          ) : null
-        }
       />
 
       <div className="flex flex-wrap gap-2">
@@ -182,6 +172,8 @@ export default async function GembaWalkPage({
         answers={answers}
         evidence={evidence}
         canEdit={canEdit && walk.status === "in_progress"}
+        canComplete={canEdit && walk.status === "in_progress"}
+        onComplete={completeGembaWalk}
       />
     </div>
   );
