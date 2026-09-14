@@ -105,12 +105,12 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(notes).toHaveValue(filledNotes);
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
 
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: secondPrompt }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Previous" }).click();
+    await page.getByRole("button", { name: "Previous", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: firstPrompt }),
     ).toBeVisible();
