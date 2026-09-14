@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export function WorkspaceLoadError({
   title = "This workspace couldn’t load",
-  description = "Reload to try again, or go back. Your data was not changed by this page error.",
+  description = "The page failed to reload. Your previous action may already have been saved. Reload before repeating it.",
   digest,
   onRetry,
 }: {

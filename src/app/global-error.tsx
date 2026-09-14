@@ -33,8 +33,8 @@ export default function GlobalError({
             This workspace couldn’t load
           </h1>
           <p style={{ margin: 0, color: "#9aa8b5" }}>
-            Reload to try again, or go back. Your data was not changed by this
-            page error.
+            The page failed to reload. Your previous action may already have
+            been saved. Reload before repeating it.
           </p>
           {error.digest ? (
             <p

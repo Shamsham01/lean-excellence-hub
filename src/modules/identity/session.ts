@@ -3,9 +3,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import {
-  createPlatformBoundaryReference,
   isNextNavigationError,
-  logPlatformBoundaryError,
   throwPlatformBoundaryError,
 } from "@/platform/observability/platform-boundary";
 import { readRequestPathname } from "@/platform/http/request-path";
@@ -26,17 +24,19 @@ export const requireClaims = cache(async () => {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.auth.getClaims();
 
-    if (error || !data?.claims?.sub) {
-      if (error) {
-        logPlatformBoundaryError({
-          category: "auth",
-          operation: "getClaims",
-          reference: createPlatformBoundaryReference(),
-          route: await readRequestPathname(),
-          supabaseCode: error.code ?? null,
-          supabaseMessage: error.message,
-        });
-      }
+    if (error) {
+      throwPlatformBoundaryError({
+        category: "auth",
+        operation: "getClaims",
+        route: await readRequestPathname(),
+        supabaseError: {
+          code: error.code ?? null,
+          message: error.message,
+        },
+      });
+    }
+
+    if (!data?.claims?.sub) {
       redirect("/login");
     }
 
