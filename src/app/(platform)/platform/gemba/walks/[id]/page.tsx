@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  completeGembaWalk,
-  createGembaObservationFromForm,
-} from "@/app/(platform)/platform/gemba/actions";
+import { completeGembaWalk } from "@/app/(platform)/platform/gemba/actions";
+import { GembaWalkSummary } from "@/components/gemba/walk-summary";
 import { GembaWalkWorkspace } from "@/components/gemba/walk-workspace";
 import { PageHeader } from "@/components/platform/page-header";
 import { Button } from "@/components/ui/button";
@@ -15,10 +13,13 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaWalkPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ prompt?: string }>;
 }) {
   const { id } = await params;
+  const { prompt } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const canEdit = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.walkPerform,
@@ -99,8 +100,9 @@ export default async function GembaWalkPage({
 
   const { data: observations } = await supabase
     .from("gemba_walk_observations")
-    .select("id, observation_text, observation_type")
-    .eq("walk_id", id);
+    .select("id, observation_text, observation_type, created_at")
+    .eq("walk_id", id)
+    .order("created_at", { ascending: true });
 
   if (walk.status === "completed") {
     return (
@@ -111,21 +113,17 @@ export default async function GembaWalkPage({
         />
         <Card>
           <CardContent className="flex flex-col gap-4 py-6">
-            <p className="text-sm text-muted-foreground">
-              {walk.unit_name_snapshot}
-            </p>
-            {walk.summary_notes ? <p>{walk.summary_notes}</p> : null}
-            <ul className="flex flex-col gap-2">
-              {observations?.map((o) => (
-                <li
-                  key={o.id}
-                  className="rounded-md border border-border px-3 py-2 text-sm"
-                >
-                  <span className="font-medium">{o.observation_type}</span>:{" "}
-                  {o.observation_text}
-                </li>
-              ))}
-            </ul>
+            <GembaWalkSummary
+              definitionName={walk.definition_name_snapshot ?? ""}
+              unitName={walk.unit_name_snapshot}
+              status={walk.status}
+              completedAt={walk.completed_at}
+              summaryNotes={walk.summary_notes}
+              sections={sections}
+              answers={answers}
+              observations={observations ?? []}
+              evidence={evidence}
+            />
             <Button variant="outline" asChild>
               <Link href="/platform/gemba/history">History</Link>
             </Button>
@@ -142,37 +140,16 @@ export default async function GembaWalkPage({
         description={walk.unit_name_snapshot ?? "In progress"}
       />
 
-      <div className="flex flex-wrap gap-2">
-        {["positive_practice", "improvement_opportunity", "issue"].map(
-          (type) => (
-            <form key={type} action={createGembaObservationFromForm}>
-              <input type="hidden" name="walkId" value={id} />
-              <input type="hidden" name="observationType" value={type} />
-              <input
-                type="hidden"
-                name="text"
-                value={`Observation: ${type.replace(/_/g, " ")}`}
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                className="min-h-11 capitalize"
-              >
-                {type.replace(/_/g, " ")}
-              </Button>
-            </form>
-          ),
-        )}
-      </div>
-
       <GembaWalkWorkspace
         walkId={id}
         status={walk.status}
         sections={sections}
         answers={answers}
         evidence={evidence}
+        observations={observations ?? []}
         canEdit={canEdit && walk.status === "in_progress"}
         canComplete={canEdit && walk.status === "in_progress"}
+        initialPromptId={prompt ?? null}
         onComplete={completeGembaWalk}
       />
     </div>

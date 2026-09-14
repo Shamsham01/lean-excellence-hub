@@ -71,7 +71,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     await expect(page.getByTestId("publish-five-s-standard")).toBeEnabled();
 
     await page.getByTestId("publish-five-s-standard").click();
-    await expect(page.getByText(/v1 · published/)).toBeVisible();
+    await expect(page.getByText(/v1 · published/i)).toBeVisible();
     await expect(page.getByTestId("create-schedule-link")).toBeVisible();
   });
 
@@ -131,7 +131,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     await expect(page.getByTestId("publish-gemba-definition")).toBeEnabled();
 
     await page.getByTestId("publish-gemba-definition").click();
-    await expect(page.getByText(/v1 · published/)).toBeVisible();
+    await expect(page.getByText(/v1 · published/i)).toBeVisible();
     await expect(page.getByTestId("create-schedule-link")).toBeVisible();
   });
 });
