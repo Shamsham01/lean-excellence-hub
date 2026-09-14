@@ -15,6 +15,18 @@ const redirect = vi.fn((path: string) => {
 
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => redirect(path),
+  unstable_rethrow: (error: unknown) => {
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof error.digest === "string" &&
+      (error.digest.startsWith("NEXT_REDIRECT") ||
+        error.digest === "DYNAMIC_SERVER_USAGE")
+    ) {
+      throw error;
+    }
+  },
 }));
 
 vi.mock("@/platform/http/request-path", () => ({
@@ -69,6 +81,19 @@ describe("requirePlatformAccess", () => {
     getClaims.mockResolvedValueOnce({ data: { claims: null }, error: null });
 
     await expect(requirePlatformAccess()).rejects.toThrow("REDIRECT:/login");
+  });
+
+  it("does not swallow Next.js dynamic-rendering control errors", async () => {
+    const dynamicError = Object.assign(
+      new Error(
+        "Dynamic server usage: Route /select-organisation used cookies",
+      ),
+      { digest: "DYNAMIC_SERVER_USAGE" },
+    );
+    getClaims.mockRejectedValueOnce(dynamicError);
+
+    await expect(requirePlatformAccess()).rejects.toBe(dynamicError);
+    expect(redirect).not.toHaveBeenCalled();
   });
 
   it("fails closed when getClaims throws a transport error", async () => {

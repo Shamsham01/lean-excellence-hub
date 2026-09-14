@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import {
@@ -42,6 +42,7 @@ export const requireClaims = cache(async () => {
 
     return data.claims;
   } catch (cause) {
+    unstable_rethrow(cause);
     if (isNextNavigationError(cause)) {
       throw cause;
     }

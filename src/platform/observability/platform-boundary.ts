@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 export const PLATFORM_BOUNDARY_LOG_PREFIX = "[platform-boundary]";
 
 export const PLATFORM_BOUNDARY_USER_MESSAGE =
@@ -57,7 +55,11 @@ export function formatPlatformBoundaryUserMessage(reference: string) {
 }
 
 export function createPlatformBoundaryReference() {
-  return randomUUID();
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `ref-${Date.now().toString(36)}`;
 }
 
 export function sanitizeBoundaryMessage(

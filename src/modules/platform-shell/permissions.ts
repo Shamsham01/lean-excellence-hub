@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { unstable_rethrow } from "next/navigation";
 
 import {
   createPlatformBoundaryReference,
@@ -61,6 +62,7 @@ export const currentMemberHasPermission = cache(
       }
       return result.data === true;
     } catch (error) {
+      unstable_rethrow(error);
       await logPermissionFailure("member_has_permission", permissionKey, error);
       return false;
     }
@@ -117,6 +119,7 @@ export const currentMemberHasScopedPermission = cache(
 
       return result.data === true;
     } catch (error) {
+      unstable_rethrow(error);
       await logPermissionFailure("has_scoped_permission", permissionKey, error);
       return false;
     }
@@ -147,6 +150,7 @@ export async function currentMemberHasDelegatableAccess() {
     const offers = (result.data as { offers?: unknown[] } | null)?.offers ?? [];
     return offers.length > 0;
   } catch (error) {
+    unstable_rethrow(error);
     await logPermissionFailure(
       "get_delegatable_access_offers",
       "delegatable_access",

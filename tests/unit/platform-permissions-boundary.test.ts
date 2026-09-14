@@ -41,6 +41,18 @@ describe("platform permission checks", () => {
     await expect(currentMemberHasPermission("gemba.read")).resolves.toBe(false);
   });
 
+  it("does not swallow Next.js dynamic-rendering control errors", async () => {
+    const dynamicError = Object.assign(
+      new Error("Dynamic server usage: Route /platform used cookies"),
+      { digest: "DYNAMIC_SERVER_USAGE" },
+    );
+    rpc.mockRejectedValueOnce(dynamicError);
+
+    await expect(currentMemberHasPermission("gemba.read")).rejects.toBe(
+      dynamicError,
+    );
+  });
+
   it("returns true only when the RPC explicitly grants the permission", async () => {
     rpc.mockResolvedValueOnce({ data: true, error: null });
     await expect(currentMemberHasPermission("gemba.read")).resolves.toBe(true);

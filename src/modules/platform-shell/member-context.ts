@@ -1,5 +1,7 @@
 import "server-only";
 
+import { unstable_rethrow } from "next/navigation";
+
 import {
   createPlatformBoundaryReference,
   logPlatformBoundaryError,
@@ -53,6 +55,7 @@ export async function loadPlatformShellMember(
       roleLabel,
     };
   } catch (error) {
+    unstable_rethrow(error);
     logPlatformBoundaryError({
       category: "identity",
       operation: "loadPlatformShellMember",
