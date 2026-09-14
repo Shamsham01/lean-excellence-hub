@@ -3962,9 +3962,9 @@ export type Database = {
       }
       gemba_walk_observations: {
         Row: {
+          client_request_id: string | null
           created_at: string
           created_by_membership_id: string
-          client_request_id: string | null
           id: string
           observation_text: string
           observation_type: string
@@ -3976,9 +3976,9 @@ export type Database = {
           walk_id: string
         }
         Insert: {
+          client_request_id?: string | null
           created_at?: string
           created_by_membership_id: string
-          client_request_id?: string | null
           id?: string
           observation_text: string
           observation_type: string
@@ -3990,9 +3990,9 @@ export type Database = {
           walk_id: string
         }
         Update: {
+          client_request_id?: string | null
           created_at?: string
           created_by_membership_id?: string
-          client_request_id?: string | null
           id?: string
           observation_text?: string
           observation_type?: string

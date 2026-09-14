@@ -246,24 +246,24 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
-  observation_text text;
-  observation_type text;
+  normalized_text text;
+  normalized_type text;
 begin
   perform private.require_editable_gemba_observation(
     target_walk_id,
     target_observation_id
   );
 
-  observation_text := private.normalize_gemba_observation_text(
+  normalized_text := private.normalize_gemba_observation_text(
     target_observation_text
   );
-  observation_type := private.assert_gemba_observation_type(
+  normalized_type := private.assert_gemba_observation_type(
     target_observation_type
   );
 
   update public.gemba_walk_observations
-  set observation_text = observation_text,
-      observation_type = observation_type
+  set observation_text = normalized_text,
+      observation_type = normalized_type
   where organisation_id = org_id
     and id = target_observation_id
     and walk_id = target_walk_id;
