@@ -1,6 +1,6 @@
 begin;
 
-select plan(38);
+select plan(41);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -172,8 +172,80 @@ select ok(
     'anon',
     'public.delete_gemba_observations(uuid, uuid[])',
     'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon',
+    'public.create_gemba_observation(uuid, text, text, uuid, uuid, text, text, uuid)',
+    'execute'
   ),
   'anon cannot execute observation mutation RPCs'
+);
+
+select ok(
+  (
+    select bool_and(role_row.rolname = 'lean_hub_private_owner')
+    from pg_catalog.pg_proc procedure_row
+    join pg_catalog.pg_namespace namespace_row
+      on namespace_row.oid = procedure_row.pronamespace
+    join pg_catalog.pg_roles role_row
+      on role_row.oid = procedure_row.proowner
+    where namespace_row.nspname = 'private'
+      and procedure_row.proname in (
+        'require_editable_gemba_observation',
+        'create_gemba_observation',
+        'update_gemba_observation',
+        'unlink_gemba_observation_evidence',
+        'delete_gemba_observation',
+        'delete_gemba_observations',
+        'link_gemba_evidence',
+        'count_unanswered_required_gemba_questions'
+      )
+  ),
+  'private gemba observation lifecycle helpers are owned by lean_hub_private_owner'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.require_editable_gemba_observation(uuid, uuid)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.create_gemba_observation(uuid, text, text, uuid, uuid, text, text, uuid)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.update_gemba_observation(uuid, uuid, text, text)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.delete_gemba_observation(uuid, uuid)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.delete_gemba_observations(uuid, uuid[])',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.unlink_gemba_observation_evidence(uuid, uuid, uuid[])',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.link_gemba_evidence(uuid, uuid, uuid, uuid, uuid)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.count_unanswered_required_gemba_questions(uuid, uuid)',
+    'execute'
+  ),
+  'authenticated cannot execute private gemba observation helpers directly'
 );
 
 select set_config(
@@ -253,6 +325,15 @@ select lives_ok(
     (select id from gemba_observation_ids where key = 'section')
   ),
   'can add walk prompt'
+);
+
+insert into gemba_observation_ids (key, id)
+select 'question', question_row.id
+from public.template_questions question_row
+join public.gemba_definition_versions version_row
+  on version_row.template_version_id = question_row.template_version_id
+where version_row.id = (
+  select id from gemba_observation_ids where key = 'version'
 );
 
 select ok(
@@ -626,6 +707,16 @@ select ok(
     (select id from gemba_observation_ids where key = 'organisation')
   ),
   'owner resumes organisation context'
+);
+
+select lives_ok(
+  format(
+    'select public.upsert_gemba_walk_answer(%L::uuid, %L::uuid, false, %L)',
+    (select id from gemba_observation_ids where key = 'walk'),
+    (select id from gemba_observation_ids where key = 'question'),
+    'Required prompt answered before completion.'
+  ),
+  'can answer required prompt before completion'
 );
 
 select ok(

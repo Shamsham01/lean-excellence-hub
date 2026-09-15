@@ -40,7 +40,10 @@ export function GembaWalkSummary({
   completedAt: string | null;
   summaryNotes: string | null;
   sections: Section[];
-  answers: Record<string, { text_value?: string | null }>;
+  answers: Record<
+    string,
+    { text_value?: string | null; is_not_applicable?: boolean }
+  >;
   observations: WalkObservation[];
   evidence: EvidenceItem[];
 }) {
@@ -141,7 +144,10 @@ export function GembaWalkSummary({
         <CardContent className="flex flex-col gap-4">
           {sections.flatMap((section) =>
             section.questions.map((question) => {
-              const answer = answers[question.id]?.text_value?.trim();
+              const answer = answers[question.id];
+              const display = answer?.is_not_applicable
+                ? "Not applicable."
+                : answer?.text_value?.trim() || "No notes recorded.";
               const linkedEvidence = evidenceByQuestion.get(question.id) ?? [];
               return (
                 <div key={question.id} className="flex flex-col gap-1">
@@ -149,7 +155,7 @@ export function GembaWalkSummary({
                     {section.title}
                   </p>
                   <p className="font-medium">{question.prompt}</p>
-                  <p className="text-sm">{answer || "No notes recorded."}</p>
+                  <p className="text-sm">{display}</p>
                   {linkedEvidence.length > 0 ? (
                     <p className="text-xs text-muted-foreground">
                       Evidence:{" "}

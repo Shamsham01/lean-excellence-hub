@@ -6,6 +6,7 @@ import { saveGembaWalkAnswer } from "@/app/(platform)/platform/gemba/actions";
 
 export type WalkAnswer = {
   text_value?: string | null;
+  is_not_applicable?: boolean;
 };
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -18,10 +19,14 @@ export const ANSWER_SAVE_ERROR_MESSAGE =
 export const COMPLETE_WALK_SAVE_ERROR_MESSAGE =
   "Couldn't save all answers. Fix the error and try again.";
 
+export const REQUIRED_PROMPTS_INCOMPLETE_MESSAGE =
+  "Answer all required prompts before completing this walk.";
+
 export const TEXT_SAVE_DEBOUNCE_MS = 400;
 
 type SavePayload = {
   textValue?: string | null;
+  isNotApplicable?: boolean;
 };
 
 type SaveJob = {
@@ -52,9 +57,11 @@ function cloneAnswers(
 
 export function normalizeAnswer(answer: WalkAnswer | undefined): {
   text_value: string | null;
+  is_not_applicable: boolean;
 } {
   return {
     text_value: answer?.text_value ?? null,
+    is_not_applicable: answer?.is_not_applicable ?? false,
   };
 }
 
@@ -62,7 +69,11 @@ export function answersEqual(
   left: WalkAnswer | undefined,
   right: WalkAnswer | undefined,
 ) {
-  return normalizeAnswer(left).text_value === normalizeAnswer(right).text_value;
+  const a = normalizeAnswer(left);
+  const b = normalizeAnswer(right);
+  return (
+    a.text_value === b.text_value && a.is_not_applicable === b.is_not_applicable
+  );
 }
 
 function isSaveSuccess(result: unknown) {
@@ -408,7 +419,19 @@ export function useWalkAnswerState({
   }
 
   function changeText(questionId: string, value: string) {
-    schedulePersist(questionId, { textValue: value }, { text_value: value });
+    schedulePersist(
+      questionId,
+      { textValue: value },
+      { text_value: value, is_not_applicable: false },
+    );
+  }
+
+  function selectNotApplicable(questionId: string) {
+    enqueue(
+      questionId,
+      { isNotApplicable: true, textValue: null },
+      { text_value: null, is_not_applicable: true },
+    );
   }
 
   async function flushQuestion(questionId: string) {
@@ -461,6 +484,7 @@ export function useWalkAnswerState({
     getError,
     isQuestionBusy,
     changeText,
+    selectNotApplicable,
     flushQuestion,
     flushAllQuestions,
     retryQuestion,

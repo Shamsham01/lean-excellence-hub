@@ -24,6 +24,7 @@ import {
 import {
   ANSWER_SAVE_ERROR_MESSAGE,
   COMPLETE_WALK_SAVE_ERROR_MESSAGE,
+  REQUIRED_PROMPTS_INCOMPLETE_MESSAGE,
   useWalkAnswerState,
   type SaveStatus,
 } from "@/components/gemba/walk-answer-state";
@@ -46,6 +47,10 @@ import {
   formatGembaWalkStatus,
 } from "@/modules/operational/gemba-display";
 import {
+  countUnansweredRequiredGembaPrompts,
+  hasUsableGembaPromptAnswer,
+} from "@/modules/operational/gemba-walk-completion";
+import {
   buildGembaWalkPromptSearch,
   clearStoredGembaWalkPromptId,
   readGembaWalkPromptIdFromSearch,
@@ -63,6 +68,8 @@ type Section = {
     prompt: string;
     question_type: string;
     help_text: string | null;
+    is_required: boolean;
+    allows_not_applicable: boolean;
   }>;
 };
 
@@ -70,7 +77,10 @@ type GembaWalkWorkspaceProps = {
   walkId: string;
   status: string;
   sections: Section[];
-  answers: Record<string, { text_value?: string | null }>;
+  answers: Record<
+    string,
+    { text_value?: string | null; is_not_applicable?: boolean }
+  >;
   evidence: EvidenceItem[];
   observations?: WalkObservation[];
   canEdit: boolean;
@@ -212,6 +222,10 @@ export function GembaWalkWorkspace({
     },
     [],
   );
+  const [liveObservations, setLiveObservations] = useState(observations);
+  const handleObservationsChange = useCallback((next: WalkObservation[]) => {
+    setLiveObservations(next);
+  }, []);
   const index = userIndex ?? restoredIndex;
   const safeIndex =
     flatQuestions.length === 0
@@ -227,6 +241,7 @@ export function GembaWalkWorkspace({
     getError,
     isQuestionBusy,
     changeText,
+    selectNotApplicable,
     flushQuestion,
     flushAllQuestions,
     retryQuestion,
@@ -301,12 +316,29 @@ export function GembaWalkWorkspace({
         setCompleteOpen(false);
         return;
       }
+      const unansweredRequired = countUnansweredRequiredGembaPrompts(
+        flatQuestions.map((item) => item.question),
+        getAnswer,
+      );
+      if (unansweredRequired > 0) {
+        setCompleteError(REQUIRED_PROMPTS_INCOMPLETE_MESSAGE);
+        return;
+      }
       const flushed = await flushAllQuestions(
         flatQuestions.map((item) => item.question.id),
       );
       if (!flushed) {
         setCompleteError(COMPLETE_WALK_SAVE_ERROR_MESSAGE);
         setCompleteOpen(false);
+        return;
+      }
+      if (
+        countUnansweredRequiredGembaPrompts(
+          flatQuestions.map((item) => item.question),
+          getAnswer,
+        ) > 0
+      ) {
+        setCompleteError(REQUIRED_PROMPTS_INCOMPLETE_MESSAGE);
         return;
       }
       const trimmedSummary = summary.trim();
@@ -346,10 +378,14 @@ export function GembaWalkWorkspace({
   const saveStatus = getStatus(current.question.id);
   const saveError = getError(current.question.id);
   const questionBusy = navigating || isQuestionBusy(current.question.id);
-  const answeredCount = questionIds.filter((questionId) =>
-    Boolean(getAnswer(questionId).text_value?.trim()),
+  const answeredCount = flatQuestions.filter((item) =>
+    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
   ).length;
-  const observationCounts = countGembaObservationsByType(observations);
+  const unansweredRequiredCount = countUnansweredRequiredGembaPrompts(
+    flatQuestions.map((item) => item.question),
+    getAnswer,
+  );
+  const observationCounts = countGembaObservationsByType(liveObservations);
 
   return (
     <div className="flex flex-col gap-6" data-testid="gemba-walk-workspace">
@@ -390,6 +426,7 @@ export function GembaWalkWorkspace({
         evidence={evidence}
         canEdit={canEdit}
         onIntegrityChange={handleObservationIntegrity}
+        onObservationsChange={handleObservationsChange}
       />
 
       <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
@@ -397,12 +434,15 @@ export function GembaWalkWorkspace({
         <h2 className="typography-section-title mt-2">
           {current.question.prompt}
         </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {current.question.is_required ? "Required prompt" : "Optional prompt"}
+        </p>
         <div className="mt-6">
           <Label htmlFor="walk-notes">Notes</Label>
           <Textarea
             id="walk-notes"
             className="mt-2 min-h-24"
-            value={answer.text_value ?? ""}
+            value={answer.is_not_applicable ? "" : (answer.text_value ?? "")}
             disabled={!canEdit}
             data-testid="gemba-walk-notes"
             onChange={(e) => changeText(current.question.id, e.target.value)}
@@ -411,6 +451,19 @@ export function GembaWalkWorkspace({
             }}
           />
         </div>
+        {current.question.allows_not_applicable ? (
+          <Button
+            type="button"
+            variant={answer.is_not_applicable ? "secondary" : "outline"}
+            className="mt-3 min-h-11"
+            disabled={!canEdit}
+            aria-pressed={Boolean(answer.is_not_applicable)}
+            onClick={() => selectNotApplicable(current.question.id)}
+            data-testid="gemba-answer-na"
+          >
+            N/A
+          </Button>
+        ) : null}
         <div className="mt-4">
           <AnswerSaveFeedback
             status={saveStatus}
@@ -463,11 +516,19 @@ export function GembaWalkWorkspace({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 text-sm">
-            <p>
+            <p data-testid="gemba-completion-answered-count">
               Answered prompts: {answeredCount} of {questionIds.length}
             </p>
-            <p>
-              Observations: {observations.length} (
+            <p
+              className={
+                unansweredRequiredCount > 0 ? "text-destructive" : undefined
+              }
+              data-testid="gemba-completion-required-unanswered"
+            >
+              Required prompts unanswered: {unansweredRequiredCount}
+            </p>
+            <p data-testid="gemba-completion-observation-count">
+              Observations: {liveObservations.length} (
               {formatGembaObservationType("positive_practice")}{" "}
               {observationCounts.positive_practice},{" "}
               {formatGembaObservationType("improvement_opportunity")}{" "}
@@ -500,7 +561,7 @@ export function GembaWalkWorkspace({
             <Button
               type="button"
               className="min-h-11"
-              disabled={completing}
+              disabled={completing || unansweredRequiredCount > 0}
               onClick={() => {
                 void handleConfirmComplete();
               }}

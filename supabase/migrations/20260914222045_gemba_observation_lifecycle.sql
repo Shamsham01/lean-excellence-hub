@@ -565,3 +565,186 @@ revoke all on function public.delete_gemba_observation(uuid, uuid)
   from public, anon;
 revoke all on function public.delete_gemba_observations(uuid, uuid[])
   from public, anon;
+
+create or replace function private.count_unanswered_required_gemba_questions(
+  target_organisation_id uuid,
+  target_walk_id uuid
+)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+  from public.gemba_walks walk_row
+  join public.gemba_definition_versions version_row
+    on version_row.organisation_id = walk_row.organisation_id
+   and version_row.id = walk_row.definition_version_id
+  join public.template_questions question_row
+    on question_row.organisation_id = walk_row.organisation_id
+   and question_row.template_version_id = version_row.template_version_id
+  left join public.template_answers answer_row
+    on answer_row.organisation_id = walk_row.organisation_id
+   and answer_row.submission_id = walk_row.submission_id
+   and answer_row.question_id = question_row.id
+  where walk_row.organisation_id = target_organisation_id
+    and walk_row.id = target_walk_id
+    and question_row.is_required = true
+    and not (
+      (
+        coalesce(answer_row.is_not_applicable, false)
+        and question_row.allows_not_applicable
+      )
+      or nullif(btrim(coalesce(answer_row.text_value, '')), '') is not null
+      or answer_row.number_value is not null
+      or answer_row.date_value is not null
+      or answer_row.json_value is not null
+    )
+$$;
+
+create or replace function private.complete_gemba_walk(
+  target_walk_id uuid,
+  target_summary_notes text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  walk_row public.gemba_walks%rowtype;
+  definition_row public.gemba_definitions%rowtype;
+  definition_version_row public.gemba_definition_versions%rowtype;
+  template_version_row public.template_versions%rowtype;
+  unit_row public.organisation_units%rowtype;
+begin
+  if not private.can_edit_gemba_walk(org_id, target_walk_id) then
+    raise exception 'gemba walk completion is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select walk_item.*
+  into walk_row
+  from public.gemba_walks walk_item
+  where walk_item.organisation_id = org_id
+    and walk_item.id = target_walk_id
+  for update;
+
+  if private.count_unanswered_required_gemba_questions(
+    org_id,
+    target_walk_id
+  ) > 0 then
+    raise exception 'required gemba walk questions are unanswered'
+      using errcode = '55000';
+  end if;
+
+  select definition_item.*
+  into definition_row
+  from public.gemba_definitions definition_item
+  join public.gemba_definition_versions definition_version
+    on definition_version.organisation_id = definition_item.organisation_id
+   and definition_version.definition_id = definition_item.id
+  where definition_version.organisation_id = org_id
+    and definition_version.id = walk_row.definition_version_id;
+
+  select definition_version_item.*
+  into definition_version_row
+  from public.gemba_definition_versions definition_version_item
+  where definition_version_item.organisation_id = org_id
+    and definition_version_item.id = walk_row.definition_version_id;
+
+  select template_version_item.*
+  into template_version_row
+  from public.template_versions template_version_item
+  where template_version_item.organisation_id = org_id
+    and template_version_item.id = definition_version_row.template_version_id;
+
+  select unit_item.*
+  into unit_row
+  from public.organisation_units unit_item
+  where unit_item.organisation_id = org_id
+    and unit_item.id = walk_row.unit_id;
+
+  update public.gemba_walks
+  set status = 'completed',
+      completed_at = statement_timestamp(),
+      summary_notes = target_summary_notes,
+      definition_name_snapshot = definition_row.display_name,
+      template_version_number_snapshot = template_version_row.version_number,
+      unit_name_snapshot = unit_row.name,
+      unit_code_snapshot = unit_row.code
+  where organisation_id = org_id
+    and id = target_walk_id;
+
+  perform private.complete_template_submission(walk_row.submission_id);
+
+  if walk_row.schedule_occurrence_id is not null then
+    perform private.complete_schedule_occurrence(
+      walk_row.schedule_occurrence_id,
+      target_walk_id
+    );
+  end if;
+
+  perform private.enqueue_domain_event(
+    org_id, target_walk_id, 'GembaWalkCompleted', target_walk_id::text,
+    jsonb_build_object('walk_id', target_walk_id)
+  );
+
+  return true;
+end;
+$$;
+
+alter function private.normalize_gemba_observation_text(text)
+  owner to lean_hub_private_owner;
+alter function private.assert_gemba_observation_type(text)
+  owner to lean_hub_private_owner;
+alter function private.require_editable_gemba_observation(uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.create_gemba_observation(
+  uuid, text, text, uuid, uuid, text, text, uuid
+)
+  owner to lean_hub_private_owner;
+alter function private.update_gemba_observation(uuid, uuid, text, text)
+  owner to lean_hub_private_owner;
+alter function private.unlink_gemba_observation_evidence(uuid, uuid, uuid[])
+  owner to lean_hub_private_owner;
+alter function private.delete_gemba_observation(uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.delete_gemba_observations(uuid, uuid[])
+  owner to lean_hub_private_owner;
+alter function private.link_gemba_evidence(uuid, uuid, uuid, uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.count_unanswered_required_gemba_questions(uuid, uuid)
+  owner to lean_hub_private_owner;
+
+revoke all on function private.normalize_gemba_observation_text(text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.assert_gemba_observation_type(text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.require_editable_gemba_observation(uuid, uuid)
+  from public, anon, authenticated, service_role;
+revoke all on function private.create_gemba_observation(
+  uuid, text, text, uuid, uuid, text, text, uuid
+)
+  from public, anon, authenticated, service_role;
+revoke all on function private.update_gemba_observation(uuid, uuid, text, text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.unlink_gemba_observation_evidence(
+  uuid, uuid, uuid[]
+)
+  from public, anon, authenticated, service_role;
+revoke all on function private.delete_gemba_observation(uuid, uuid)
+  from public, anon, authenticated, service_role;
+revoke all on function private.delete_gemba_observations(uuid, uuid[])
+  from public, anon, authenticated, service_role;
+revoke all on function private.link_gemba_evidence(
+  uuid, uuid, uuid, uuid, uuid
+)
+  from public, anon, authenticated, service_role;
+revoke all on function private.count_unanswered_required_gemba_questions(
+  uuid, uuid
+)
+  from public, anon, authenticated, service_role;

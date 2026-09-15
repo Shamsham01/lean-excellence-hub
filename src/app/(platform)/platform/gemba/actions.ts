@@ -172,17 +172,21 @@ export async function startGembaWalkFromForm(formData: FormData) {
 export async function saveGembaWalkAnswer(
   walkId: string,
   questionId: string,
-  payload: { textValue?: string | null },
+  payload: { textValue?: string | null; isNotApplicable?: boolean },
 ) {
   const supabase = await createServerSupabaseClient();
   const rpcArgs: {
     target_walk_id: string;
     target_question_id: string;
     target_text_value?: string;
+    target_is_not_applicable?: boolean;
   } = {
     target_walk_id: walkId,
     target_question_id: questionId,
   };
+  if (payload.isNotApplicable) {
+    rpcArgs.target_is_not_applicable = true;
+  }
   if (payload.textValue != null) {
     rpcArgs.target_text_value = payload.textValue;
   }

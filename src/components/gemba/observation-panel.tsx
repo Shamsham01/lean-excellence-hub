@@ -50,6 +50,7 @@ type GembaObservationPanelProps = {
   evidence: EvidenceItem[];
   canEdit: boolean;
   onIntegrityChange?: (integrity: ObservationIntegrity) => void;
+  onObservationsChange?: (observations: WalkObservation[]) => void;
 };
 
 const CREATE_ERROR_MESSAGE = "Couldn't save this observation. Try again.";
@@ -74,6 +75,7 @@ export function GembaObservationPanel({
   evidence,
   canEdit,
   onIntegrityChange,
+  onObservationsChange,
 }: GembaObservationPanelProps) {
   const [items, setItems] = useState(observations);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -115,11 +117,18 @@ export function GembaObservationPanel({
     saveStatus === "saving" ||
     editStatus === "saving" ||
     deleteStatus === "saving";
-  const error = saveStatus === "error" || editStatus === "error";
+  const error =
+    saveStatus === "error" ||
+    editStatus === "error" ||
+    deleteStatus === "error";
 
   useEffect(() => {
     onIntegrityChange?.({ dirty, busy, error });
   }, [busy, dirty, error, onIntegrityChange]);
+
+  useEffect(() => {
+    onObservationsChange?.(items);
+  }, [items, onObservationsChange]);
 
   function resetCapture() {
     createLockRef.current = false;
@@ -314,7 +323,7 @@ export function GembaObservationPanel({
           ? await deleteGembaObservation(walkId, pendingDeleteIds[0]!)
           : await deleteGembaObservations(walkId, pendingDeleteIds);
 
-      if (!isMutationSuccess(result) && result.error) {
+      if (!isMutationSuccess(result)) {
         setDeleteStatus("error");
         setDeleteError(
           typeof result.error === "string"
@@ -505,7 +514,11 @@ export function GembaObservationPanel({
       ) : null}
 
       {deleteError && !pendingDeleteIds ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p
+          className="text-sm text-destructive"
+          role="alert"
+          data-testid="gemba-delete-error"
+        >
           {deleteError}
         </p>
       ) : null}
@@ -686,7 +699,11 @@ export function GembaObservationPanel({
             </DialogDescription>
           </DialogHeader>
           {deleteError ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p
+              className="text-sm text-destructive"
+              role="alert"
+              data-testid="gemba-delete-error"
+            >
               {deleteError}
             </p>
           ) : null}

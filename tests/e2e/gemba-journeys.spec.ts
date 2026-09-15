@@ -129,6 +129,23 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
 
     await page.getByTestId("gemba-complete-walk").click();
+    await expect(
+      page.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveText("Required prompts unanswered: 1");
+    await expect(page.getByTestId("gemba-confirm-complete")).toBeDisabled();
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: secondPrompt }),
+    ).toBeVisible();
+    await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+
+    await page.getByTestId("gemba-complete-walk").click();
+    await expect(
+      page.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveText("Required prompts unanswered: 0");
     await page.getByTestId("gemba-confirm-complete").click();
     await expect(
       page.getByRole("heading", { name: "Gemba walk summary" }),
@@ -220,6 +237,19 @@ test.describe("Milestone 6 Gemba journeys", () => {
     );
     await expect(page.getByText("Improvement opportunity")).toBeVisible();
 
+    await page.getByTestId("gemba-complete-walk").click();
+    await expect(
+      page.getByTestId("gemba-completion-observation-count"),
+    ).toContainText("Observations: 1");
+    await expect(
+      page.getByTestId("gemba-completion-observation-count"),
+    ).toContainText("Improvement opportunity 1");
+    await expect(
+      page.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveText("Required prompts unanswered: 1");
+    await expect(page.getByTestId("gemba-confirm-complete")).toBeDisabled();
+    await page.getByRole("button", { name: "Cancel" }).click();
+
     await page.reload();
     await expect(
       page.getByRole("heading", { name: secondPrompt }),
@@ -309,7 +339,25 @@ test.describe("Milestone 6 Gemba journeys", () => {
     ).toBeVisible();
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(firstNotes);
 
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: secondPrompt }),
+    ).toBeVisible();
+    await page
+      .getByTestId("gemba-walk-notes")
+      .fill("Second prompt notes after observation cleanup.");
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+
     await page.getByTestId("gemba-complete-walk").click();
+    await expect(
+      page.getByTestId("gemba-completion-observation-count"),
+    ).toContainText("Observations: 1");
+    await expect(
+      page.getByTestId("gemba-completion-observation-count"),
+    ).toContainText("Improvement opportunity 1");
+    await expect(
+      page.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveText("Required prompts unanswered: 0");
     await page.getByTestId("gemba-summary-notes").fill(summaryNotes);
     await page.getByTestId("gemba-confirm-complete").click();
     await expect(

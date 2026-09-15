@@ -2155,6 +2155,33 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
           "Operator updated visual standard after improvement.",
         target_observation_type: "positive_practice",
       });
+
+      const { data: completedWalk } = await client
+        .from("gemba_walks")
+        .select("submission_id, definition_version_id")
+        .eq("id", walkId)
+        .maybeSingle();
+      const { data: completedVersion } = await client
+        .from("gemba_definition_versions")
+        .select("template_version_id")
+        .eq("id", completedWalk?.definition_version_id ?? "")
+        .maybeSingle();
+      const { data: walkQuestions } = await client
+        .from("template_questions")
+        .select("id")
+        .eq(
+          "template_version_id",
+          completedVersion?.template_version_id ?? "",
+        );
+
+      for (const question of walkQuestions ?? []) {
+        await client.rpc("upsert_gemba_walk_answer", {
+          target_walk_id: walkId,
+          target_question_id: question.id,
+          target_text_value: "Observed stable operations on the floor.",
+        });
+      }
+
       await client.rpc("complete_gemba_walk", {
         target_walk_id: walkId,
         target_summary_notes: "Completed demo operations Gemba.",

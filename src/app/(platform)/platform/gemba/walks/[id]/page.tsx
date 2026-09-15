@@ -47,7 +47,9 @@ export default async function GembaWalkPage({
 
   const { data: questionsRaw } = await supabase
     .from("template_questions")
-    .select("id, section_id, prompt, question_type, help_text")
+    .select(
+      "id, section_id, prompt, question_type, help_text, is_required, allows_not_applicable",
+    )
     .eq("template_version_id", version?.template_version_id ?? "");
 
   const sections =
@@ -62,15 +64,20 @@ export default async function GembaWalkPage({
             prompt: q.prompt,
             question_type: q.question_type,
             help_text: q.help_text,
+            is_required: q.is_required,
+            allows_not_applicable: q.allows_not_applicable,
           })) ?? [],
     })) ?? [];
 
   const { data: answersRaw } = await supabase
     .from("template_answers")
-    .select("question_id, text_value")
+    .select("question_id, text_value, is_not_applicable")
     .eq("submission_id", walk.submission_id);
 
-  const answers: Record<string, { text_value?: string | null }> = {};
+  const answers: Record<
+    string,
+    { text_value?: string | null; is_not_applicable?: boolean }
+  > = {};
   for (const a of answersRaw ?? []) answers[a.question_id] = a;
 
   const { data: evidenceLinks } = await supabase
