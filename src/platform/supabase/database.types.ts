@@ -3962,6 +3962,7 @@ export type Database = {
       }
       gemba_walk_observations: {
         Row: {
+          client_request_id: string | null
           created_at: string
           created_by_membership_id: string
           id: string
@@ -3975,6 +3976,7 @@ export type Database = {
           walk_id: string
         }
         Insert: {
+          client_request_id?: string | null
           created_at?: string
           created_by_membership_id: string
           id?: string
@@ -3988,6 +3990,7 @@ export type Database = {
           walk_id: string
         }
         Update: {
+          client_request_id?: string | null
           created_at?: string
           created_by_membership_id?: string
           id?: string
@@ -12112,6 +12115,7 @@ export type Database = {
       }
       create_gemba_observation: {
         Args: {
+          target_client_request_id?: string
           target_observation_text: string
           target_observation_type: string
           target_priority?: string
@@ -12475,6 +12479,14 @@ export type Database = {
           target_suggestion_id: string
         }
         Returns: string
+      }
+      delete_gemba_observation: {
+        Args: { target_observation_id: string; target_walk_id: string }
+        Returns: boolean
+      }
+      delete_gemba_observations: {
+        Args: { target_observation_ids: string[]; target_walk_id: string }
+        Returns: number
       }
       delete_maturity_model_draft_version: {
         Args: { target_model_version_id: string }
@@ -13777,6 +13789,15 @@ export type Database = {
           target_description?: string
           target_is_still_required?: boolean
           target_rationale?: string
+        }
+        Returns: boolean
+      }
+      update_gemba_observation: {
+        Args: {
+          target_observation_id: string
+          target_observation_text: string
+          target_observation_type: string
+          target_walk_id: string
         }
         Returns: boolean
       }

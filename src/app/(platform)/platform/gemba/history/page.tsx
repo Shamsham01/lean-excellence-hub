@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import { PageHeader } from "@/components/platform/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatGembaWalkStatus } from "@/modules/operational/gemba-display";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaHistoryPage() {
@@ -9,7 +11,7 @@ export default async function GembaHistoryPage() {
   const { data: walks } = await supabase
     .from("gemba_walks")
     .select(
-      "id, definition_name_snapshot, unit_name_snapshot, completed_at, summary_notes",
+      "id, definition_name_snapshot, unit_name_snapshot, completed_at, summary_notes, status",
     )
     .eq("status", "completed")
     .order("completed_at", { ascending: false })
@@ -30,6 +32,16 @@ export default async function GembaHistoryPage() {
               <p className="text-sm text-muted-foreground">
                 {walk.unit_name_snapshot}
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant="success">
+                  {formatGembaWalkStatus(walk.status)}
+                </Badge>
+                {walk.completed_at ? (
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(walk.completed_at).toLocaleDateString("en-GB")}
+                  </span>
+                ) : null}
+              </div>
             </Link>
           ))}
         </CardContent>

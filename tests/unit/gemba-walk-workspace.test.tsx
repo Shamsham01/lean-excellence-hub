@@ -9,13 +9,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   completeGembaWalk,
+  createGembaObservation,
+  deleteGembaObservation,
+  deleteGembaObservations,
   saveGembaWalkAnswer,
+  updateGembaObservation,
 } from "@/app/(platform)/platform/gemba/actions";
 import {
   ANSWER_SAVE_ERROR_MESSAGE,
   COMPLETE_WALK_SAVE_ERROR_MESSAGE,
 } from "@/components/gemba/walk-answer-state";
-import { GembaWalkWorkspace } from "@/components/gemba/walk-workspace";
+import {
+  DIRTY_OBSERVATION_COMPLETE_MESSAGE,
+  GembaWalkWorkspace,
+  OBSERVATION_SAVE_COMPLETE_ERROR_MESSAGE,
+} from "@/components/gemba/walk-workspace";
+import { gembaWalkPromptStorageKey } from "@/modules/operational/gemba-walk-prompt";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -27,10 +36,18 @@ vi.mock("@/app/(platform)/platform/gemba/actions", () => ({
   initiateGembaEvidenceUpload: vi.fn(),
   confirmGembaEvidenceUpload: vi.fn(),
   linkGembaEvidence: vi.fn(),
+  createGembaObservation: vi.fn(),
+  updateGembaObservation: vi.fn(),
+  deleteGembaObservation: vi.fn(),
+  deleteGembaObservations: vi.fn(),
 }));
 
 const saveAnswer = vi.mocked(saveGembaWalkAnswer);
 const completeWalk = vi.mocked(completeGembaWalk);
+const createObservation = vi.mocked(createGembaObservation);
+const updateObservation = vi.mocked(updateGembaObservation);
+const deleteObservation = vi.mocked(deleteGembaObservation);
+const bulkDeleteObservations = vi.mocked(deleteGembaObservations);
 
 const FIRST_ID = "q-first";
 const SECOND_ID = "q-second";
@@ -40,14 +57,22 @@ type Question = {
   prompt: string;
   question_type: string;
   help_text: string | null;
+  is_required: boolean;
+  allows_not_applicable: boolean;
 };
 
-function question(id: string, prompt: string): Question {
+function question(
+  id: string,
+  prompt: string,
+  extras?: { is_required?: boolean; allows_not_applicable?: boolean },
+): Question {
   return {
     id,
     prompt,
     question_type: "long_text",
     help_text: null,
+    is_required: extras?.is_required ?? true,
+    allows_not_applicable: extras?.allows_not_applicable ?? false,
   };
 }
 
@@ -68,12 +93,17 @@ function renderWorkspace({
   ],
   answers = {},
   evidence = [],
+  observations = [],
   canEdit = true,
   canComplete = false,
   onComplete,
+  initialPromptId,
 }: {
   questions?: Question[];
-  answers?: Record<string, { text_value?: string | null }>;
+  answers?: Record<
+    string,
+    { text_value?: string | null; is_not_applicable?: boolean }
+  >;
   evidence?: Array<{
     id: string;
     filename: string;
@@ -81,9 +111,15 @@ function renderWorkspace({
     byte_size: number;
     question_id?: string | null;
   }>;
+  observations?: Array<{
+    id: string;
+    observation_text: string;
+    observation_type: string;
+  }>;
   canEdit?: boolean;
   canComplete?: boolean;
   onComplete?: typeof completeGembaWalk;
+  initialPromptId?: string | null;
 } = {}) {
   return render(
     <GembaWalkWorkspace
@@ -92,15 +128,24 @@ function renderWorkspace({
       sections={sections(questions)}
       answers={answers}
       evidence={evidence}
+      observations={observations}
       canEdit={canEdit}
       canComplete={canComplete}
+      {...(initialPromptId !== undefined ? { initialPromptId } : {})}
       {...(onComplete ? { onComplete } : {})}
     />,
   );
 }
 
+function confirmCompleteWalk() {
+  fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+  fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+}
+
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
+  window.history.replaceState(null, "", "/");
 });
 
 beforeEach(() => {
@@ -108,6 +153,14 @@ beforeEach(() => {
   saveAnswer.mockResolvedValue({ ok: true });
   completeWalk.mockReset();
   completeWalk.mockResolvedValue({ ok: true });
+  createObservation.mockReset();
+  createObservation.mockResolvedValue({ observationId: "obs-new" });
+  updateObservation.mockReset();
+  updateObservation.mockResolvedValue({ ok: true });
+  deleteObservation.mockReset();
+  deleteObservation.mockResolvedValue({ ok: true });
+  bulkDeleteObservations.mockReset();
+  bulkDeleteObservations.mockResolvedValue({ ok: true });
 });
 
 describe("GembaWalkWorkspace answer state", () => {
@@ -443,12 +496,23 @@ describe("GembaWalkWorkspace answer state", () => {
         }),
     );
     const onComplete = vi.fn().mockResolvedValue({ ok: true });
-    renderWorkspace({ canComplete: true, onComplete });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
 
     fireEvent.change(screen.getByLabelText("Notes"), {
       target: { value: "final walk notes" },
     });
-    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    confirmCompleteWalk();
 
     await waitFor(() => {
       expect(saveAnswer).toHaveBeenCalledWith("walk-1", FIRST_ID, {
@@ -456,7 +520,7 @@ describe("GembaWalkWorkspace answer state", () => {
       });
     });
     expect(onComplete).not.toHaveBeenCalled();
-    expect(screen.getByTestId("gemba-complete-walk")).toHaveTextContent(
+    expect(screen.getByTestId("gemba-confirm-complete")).toHaveTextContent(
       "Completing…",
     );
 
@@ -470,7 +534,18 @@ describe("GembaWalkWorkspace answer state", () => {
   it("does not complete the walk when an answer save fails", async () => {
     saveAnswer.mockResolvedValue({ error: "RPC failed" });
     const onComplete = vi.fn().mockResolvedValue({ ok: true });
-    renderWorkspace({ canComplete: true, onComplete });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
 
     fireEvent.change(screen.getByLabelText("Notes"), {
       target: { value: "blocked notes" },
@@ -482,7 +557,7 @@ describe("GembaWalkWorkspace answer state", () => {
       );
     });
 
-    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    confirmCompleteWalk();
 
     await waitFor(() => {
       expect(screen.getByTestId("gemba-complete-error")).toHaveTextContent(
@@ -505,12 +580,23 @@ describe("GembaWalkWorkspace answer state", () => {
         }),
     );
     const onComplete = vi.fn().mockResolvedValue({ ok: true });
-    renderWorkspace({ canComplete: true, onComplete });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
 
     fireEvent.change(screen.getByLabelText("Notes"), {
       target: { value: "drain failure" },
     });
-    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    confirmCompleteWalk();
     expect(onComplete).not.toHaveBeenCalled();
 
     resolveSave({ error: "RPC failed" });
@@ -534,7 +620,18 @@ describe("GembaWalkWorkspace answer state", () => {
         }),
     );
     const onComplete = vi.fn().mockResolvedValue({ ok: true });
-    renderWorkspace({ canComplete: true, onComplete });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
 
     const input = screen.getByLabelText("Notes");
     fireEvent.change(input, { target: { value: "A" } });
@@ -546,7 +643,7 @@ describe("GembaWalkWorkspace answer state", () => {
     });
 
     fireEvent.change(input, { target: { value: "B" } });
-    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    confirmCompleteWalk();
     expect(onComplete).not.toHaveBeenCalled();
     expect(input).toHaveValue("B");
 
@@ -593,5 +690,524 @@ describe("GembaWalkWorkspace answer state", () => {
     expect(screen.getByTestId("evidence-uploader")).toBeVisible();
     expect(screen.getByText("floor-photo.jpg")).toBeVisible();
     expect(screen.queryByText("other-prompt.png")).not.toBeInTheDocument();
+  });
+
+  it("shows a friendly walk status instead of the raw enum", () => {
+    renderWorkspace();
+    expect(screen.getByTestId("gemba-walk-status")).toHaveTextContent(
+      "In progress",
+    );
+    expect(screen.queryByText("in_progress")).not.toBeInTheDocument();
+  });
+
+  it("disables Next on the final prompt while keeping Complete walk available", async () => {
+    renderWorkspace({
+      canComplete: true,
+      questions: [
+        question("q1", "Prompt one"),
+        question("q2", "Prompt two"),
+        question("q3", "Prompt three"),
+        question("q4", "Prompt four"),
+      ],
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Prompt two" })).toBeVisible();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Prompt three" }),
+      ).toBeVisible();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Prompt four" }),
+      ).toBeVisible();
+    });
+
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
+    expect(screen.getByTestId("gemba-complete-walk")).toBeEnabled();
+  });
+
+  it("restores the current prompt after remount from session state", async () => {
+    const view = renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "What help does the team need?" }),
+      ).toBeVisible();
+    });
+    expect(sessionStorage.getItem(gembaWalkPromptStorageKey("walk-1"))).toBe(
+      SECOND_ID,
+    );
+
+    view.unmount();
+    renderWorkspace();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "What help does the team need?" }),
+      ).toBeVisible();
+    });
+  });
+
+  it("falls back to the first prompt when stored identity is invalid", async () => {
+    sessionStorage.setItem(gembaWalkPromptStorageKey("walk-1"), "missing-id");
+    renderWorkspace();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", {
+          name: "What did you observe on the operations floor?",
+        }),
+      ).toBeVisible();
+    });
+  });
+
+  it("blocks completion while an observation editor is dirty", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-capture-observation"));
+    fireEvent.click(
+      screen.getByTestId("gemba-observation-type-improvement_opportunity"),
+    );
+    fireEvent.change(screen.getByTestId("gemba-observation-text"), {
+      target: { value: "Unsaved floor issue" },
+    });
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-complete-error")).toHaveTextContent(
+        DIRTY_OBSERVATION_COMPLETE_MESSAGE,
+      );
+    });
+    expect(
+      screen.queryByTestId("gemba-confirm-complete"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("gemba-observation-text")).toHaveValue(
+      "Unsaved floor issue",
+    );
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(createObservation).not.toHaveBeenCalled();
+  });
+
+  it("passes summary notes through the complete action", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    fireEvent.change(screen.getByTestId("gemba-summary-notes"), {
+      target: { value: "Line is stable after the standard work refresh." },
+    });
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith(
+        "walk-1",
+        "Line is stable after the standard work refresh.",
+      );
+    });
+  });
+
+  it("does not expose observation edit controls when the walk cannot be edited", () => {
+    renderWorkspace({
+      canEdit: false,
+      observations: [
+        {
+          id: "obs-1",
+          observation_text: "Observation: positive practice",
+          observation_type: "positive_practice",
+        },
+      ],
+    });
+
+    expect(screen.getByText("Positive practice")).toBeVisible();
+    expect(screen.getByText("Observation: positive practice")).toBeVisible();
+    expect(
+      screen.queryByTestId("gemba-observation-edit-obs-1"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("gemba-observation-delete-obs-1"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("gemba-capture-observation"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("blocks Complete walk after a failed single delete even if the dialog is closed", async () => {
+    deleteObservation.mockResolvedValue({ error: "RPC failed" });
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+      observations: [
+        {
+          id: "obs-1",
+          observation_text: "Accidental observation",
+          observation_type: "issue",
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-observation-delete-obs-1"));
+    fireEvent.click(screen.getByTestId("gemba-confirm-delete"));
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-delete-error")).toHaveTextContent(
+        "RPC failed",
+      );
+    });
+    fireEvent.click(screen.getByTestId("gemba-cancel-delete"));
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-complete-error")).toHaveTextContent(
+        OBSERVATION_SAVE_COMPLETE_ERROR_MESSAGE,
+      );
+    });
+    expect(
+      screen.queryByTestId("gemba-confirm-complete"),
+    ).not.toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(screen.getByText("Accidental observation")).toBeVisible();
+  });
+
+  it("blocks Complete walk after a failed bulk delete even if the dialog is closed", async () => {
+    bulkDeleteObservations.mockResolvedValue({ error: "RPC failed" });
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+      observations: [
+        {
+          id: "obs-1",
+          observation_text: "First accidental observation",
+          observation_type: "issue",
+        },
+        {
+          id: "obs-2",
+          observation_text: "Second accidental observation",
+          observation_type: "issue",
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-observation-select-obs-1"));
+    fireEvent.click(screen.getByTestId("gemba-observation-select-obs-2"));
+    fireEvent.click(screen.getByTestId("gemba-delete-selected"));
+    fireEvent.click(screen.getByTestId("gemba-confirm-delete"));
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-delete-error")).toHaveTextContent(
+        "RPC failed",
+      );
+    });
+    fireEvent.click(screen.getByTestId("gemba-cancel-delete"));
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-complete-error")).toHaveTextContent(
+        OBSERVATION_SAVE_COMPLETE_ERROR_MESSAGE,
+      );
+    });
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(screen.getByText("First accidental observation")).toBeVisible();
+  });
+
+  it("clears the delete-error completion block after a successful retry", async () => {
+    deleteObservation.mockResolvedValueOnce({ error: "RPC failed" });
+    deleteObservation.mockResolvedValueOnce({ ok: true });
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+      observations: [
+        {
+          id: "obs-1",
+          observation_text: "Observation to remove",
+          observation_type: "issue",
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-observation-delete-obs-1"));
+    fireEvent.click(screen.getByTestId("gemba-confirm-delete"));
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-delete-error")).toHaveTextContent(
+        "RPC failed",
+      );
+    });
+    fireEvent.click(screen.getByTestId("gemba-confirm-delete"));
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Observation to remove"),
+      ).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
+  });
+
+  it("disables Confirm completion while required prompts are unanswered", () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({ canComplete: true, onComplete });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveTextContent("Required prompts unanswered: 2");
+    expect(screen.getByTestId("gemba-confirm-complete")).toBeDisabled();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("allows Confirm completion after required prompts are answered", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      answers: {
+        [FIRST_ID]: { text_value: "First required answer" },
+        [SECOND_ID]: { text_value: "Second required answer" },
+      },
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveTextContent("Required prompts unanswered: 0");
+    expect(screen.getByTestId("gemba-confirm-complete")).toBeEnabled();
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
+  });
+
+  it("does not block completion when only optional prompts are unanswered", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?"),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+      answers: { [FIRST_ID]: { text_value: "Required answer only" } },
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveTextContent("Required prompts unanswered: 0");
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
+  });
+
+  it("counts allowed N/A as a required prompt answer in the completion panel", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          allows_not_applicable: true,
+        }),
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-answer-na"));
+    await waitFor(() => {
+      expect(saveAnswer).toHaveBeenCalledWith("walk-1", FIRST_ID, {
+        isNotApplicable: true,
+        textValue: null,
+      });
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveTextContent("Required prompts unanswered: 0");
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
+  });
+
+  it("updates completion observation counts from live create, type edit, and delete", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-observation-count"),
+    ).toHaveTextContent("Observations: 0");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByTestId("gemba-capture-observation"));
+    fireEvent.click(
+      screen.getByTestId("gemba-observation-type-positive_practice"),
+    );
+    fireEvent.change(screen.getByTestId("gemba-observation-text"), {
+      target: { value: "Labels are current." },
+    });
+    fireEvent.click(screen.getByTestId("gemba-observation-save"));
+    await waitFor(() => {
+      expect(screen.getByText("Labels are current.")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-observation-count"),
+    ).toHaveTextContent("Positive practice 1");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByTestId("gemba-observation-edit-obs-new"));
+    fireEvent.click(screen.getByRole("button", { name: "Issue" }));
+    fireEvent.click(screen.getByTestId("gemba-observation-edit-save"));
+    await waitFor(() => {
+      expect(screen.getByText("Observation updated.")).toBeVisible();
+    });
+    expect(updateObservation).toHaveBeenCalledWith(
+      "walk-1",
+      "obs-new",
+      "Labels are current.",
+      "issue",
+    );
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-observation-count"),
+    ).toHaveTextContent("Issue 1");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByTestId("gemba-observation-delete-obs-new"));
+    fireEvent.click(screen.getByTestId("gemba-confirm-delete"));
+    await waitFor(() => {
+      expect(screen.getByText("No observations captured yet.")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-observation-count"),
+    ).toHaveTextContent("Observations: 0");
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
+  });
+
+  it("reduces completion observation counts after bulk delete", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+      observations: [
+        {
+          id: "obs-1",
+          observation_text: "First bulk observation",
+          observation_type: "issue",
+        },
+        {
+          id: "obs-2",
+          observation_text: "Second bulk observation",
+          observation_type: "issue",
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-observation-count"),
+    ).toHaveTextContent("Observations: 2");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByTestId("gemba-observation-select-obs-1"));
+    fireEvent.click(screen.getByTestId("gemba-observation-select-obs-2"));
+    fireEvent.click(screen.getByTestId("gemba-delete-selected"));
+    fireEvent.click(screen.getByTestId("gemba-confirm-delete"));
+    await waitFor(() => {
+      expect(screen.getByText("No observations captured yet.")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByTestId("gemba-complete-walk"));
+    expect(
+      screen.getByTestId("gemba-completion-observation-count"),
+    ).toHaveTextContent("Observations: 0");
+    fireEvent.click(screen.getByTestId("gemba-confirm-complete"));
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
   });
 });
