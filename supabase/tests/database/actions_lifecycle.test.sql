@@ -170,10 +170,10 @@ select ok(
     (select id from lifecycle_ids where key = 'organisation'),
     (select id from lifecycle_ids where key = 'member_membership'),
     (select id from lifecycle_ids where key = 'team_member_role_version'),
-    'self',
-    null
+    'unit_subtree',
+    (select id from lifecycle_ids where key = 'child_unit')
   ) is not null,
-  'owner grants team member self-scoped role'
+  'owner grants team member role on child unit only'
 );
 
 select ok(
@@ -330,7 +330,7 @@ select throws_ok(
   ),
   '42501',
   'action detail is not authorised',
-  'self-scoped member cannot read an unassigned action outside their authority'
+  'unit-scoped member cannot read an unassigned action outside their authority'
 );
 
 select throws_ok(
@@ -341,7 +341,7 @@ select throws_ok(
   ),
   '42501',
   'action update is not authorised',
-  'self-scoped member cannot update an action outside delegated scope'
+  'unit-scoped member cannot update an action outside delegated scope'
 );
 
 reset role;

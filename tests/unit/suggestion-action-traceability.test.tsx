@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SuggestionDetail } from "@/components/suggestions/suggestion-detail";
@@ -56,8 +56,6 @@ describe("suggestion action traceability", () => {
         canUploadEvidence={false}
       />,
     );
-
-    fireEvent.click(screen.getByRole("tab", { name: "Activity" }));
 
     expect(screen.getByTestId("suggestion-activity-actions")).toHaveTextContent(
       "ACT-2026-0004",

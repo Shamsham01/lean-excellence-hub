@@ -401,7 +401,7 @@ export function SuggestionDetail({
           </Card>
         </TabsContent>
 
-        <TabsContent value="activity">
+        <TabsContent value="activity" forceMount>
           <Card>
             <CardHeader>
               <CardTitle>Activity</CardTitle>

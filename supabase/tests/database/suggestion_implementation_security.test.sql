@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(15);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -169,11 +169,14 @@ select is(
 
 select is(
   (
-    select count(*)
-    from public.suggestion_action_context context_row
-    where context_row.suggestion_id = (select id from implementation_ids where key = 'suggestion')
+    select jsonb_array_length(detail -> 'linked_actions')
+    from (
+      select public.get_suggestion_detail(
+        (select id from implementation_ids where key = 'suggestion')
+      ) as detail
+    ) suggestion_detail
   ),
-  1::bigint,
+  1,
   'repeated suggestion handoff does not create a second linked action'
 );
 
