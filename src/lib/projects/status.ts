@@ -86,6 +86,17 @@ export function projectStatusBadgeVariant(
   }
 }
 
+export function formatProjectReference(
+  projectNumber: string | null | undefined,
+  title: string,
+): string {
+  if (projectNumber && projectNumber.trim()) {
+    return projectNumber.trim();
+  }
+
+  return title;
+}
+
 export function portfolioFilterStatuses(): ProjectStatus[] {
   return [
     "active",

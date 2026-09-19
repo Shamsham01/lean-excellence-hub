@@ -100,6 +100,7 @@ describe("Benefits owner selector", () => {
         units={[{ id: "bodmin-packing", name: "Packing" }]}
         members={people}
         categories={[]}
+        projects={[]}
       />,
     );
 
@@ -119,6 +120,7 @@ describe("Benefits owner selector", () => {
         ]}
         members={people}
         categories={[]}
+        projects={[]}
       />,
     );
 

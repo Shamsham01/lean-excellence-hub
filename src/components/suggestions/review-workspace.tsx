@@ -129,7 +129,10 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 : null}
             </p>
           </div>
-          <Badge variant={suggestionStatusBadgeVariant(suggestion.status)}>
+          <Badge
+            variant={suggestionStatusBadgeVariant(suggestion.status)}
+            data-testid="review-workspace-status"
+          >
             {suggestionStatusLabel(suggestion.status)}
           </Badge>
         </div>

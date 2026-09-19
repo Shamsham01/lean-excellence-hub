@@ -64,6 +64,9 @@ export type BenefitSourceLinkSummary = {
   resource_type: string;
   relationship_role: string;
   display_label: string | null;
+  title?: string | null;
+  href?: string | null;
+  context?: Record<string, unknown> | null;
 };
 
 export type BenefitSubmissionSnapshot = {

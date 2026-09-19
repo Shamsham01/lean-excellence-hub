@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createBenefitWizardDraft } from "@/app/(platform)/platform/benefits/actions";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
+import { ProjectSelect } from "@/components/projects/project-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,8 @@ import {
   realisationPatternLabel,
 } from "@/lib/benefits/forecast";
 import { cn } from "@/lib/utils";
+import { formatProjectReference } from "@/lib/projects/status";
+import type { ProjectSelectorOption } from "@/lib/projects/types";
 
 const WIZARD_STEPS = [
   "Basics",
@@ -43,6 +46,7 @@ type CreateBenefitWizardProps = {
   units: UnitSelectOption[];
   members: PersonSelectOption[];
   categories: CategoryOption[];
+  projects: ProjectSelectorOption[];
   requiresSiteSelection?: boolean;
 };
 
@@ -50,6 +54,7 @@ export function CreateBenefitWizard({
   units,
   members,
   categories,
+  projects,
   requiresSiteSelection = false,
 }: CreateBenefitWizardProps) {
   const router = useRouter();
@@ -94,11 +99,15 @@ export function CreateBenefitWizard({
   const [periodAmount, setPeriodAmount] = useState("");
 
   const [isStandalone, setIsStandalone] = useState(false);
-  const [sourceResourceId, setSourceResourceId] = useState("");
+  const [sourceProjectId, setSourceProjectId] = useState("");
 
   function nextStep() {
     if (step === 0 && (!title.trim() || !unitId || !ownerId)) {
       setError("Title, unit, and owner are required");
+      return;
+    }
+    if (step === 4 && !isStandalone && !sourceProjectId) {
+      setError("Select a project or choose standalone initiative");
       return;
     }
     setError(null);
@@ -112,6 +121,10 @@ export function CreateBenefitWizard({
   async function handleCreate() {
     if (!title.trim() || !unitId || !ownerId) {
       setError("Title, unit, and owner are required");
+      return;
+    }
+    if (!isStandalone && !sourceProjectId) {
+      setError("Select a project or choose standalone initiative");
       return;
     }
     setLoading(true);
@@ -152,8 +165,8 @@ export function CreateBenefitWizard({
         ...(categoryId ? { categoryId } : {}),
         ownerMembershipId: ownerId,
         isStandaloneInitiative: isStandalone,
-        ...(sourceResourceId.trim() && !isStandalone
-          ? { primarySourceResourceId: sourceResourceId.trim() }
+        ...(sourceProjectId && !isStandalone
+          ? { primarySourceResourceId: sourceProjectId }
           : {}),
         ...(baselineDescription.trim()
           ? { baselineDescription: baselineDescription.trim() }
@@ -194,9 +207,6 @@ export function CreateBenefitWizard({
               ...(targetDate ? { targetDate } : {}),
               ...(forecastPeriods ? { forecastPeriods } : {}),
             }
-          : {}),
-        ...(sourceResourceId.trim() && !isStandalone
-          ? { sourceResourceId: sourceResourceId.trim() }
           : {}),
       });
       if (result.error || !result.id) {
@@ -537,20 +547,40 @@ export function CreateBenefitWizard({
                 <input
                   type="checkbox"
                   checked={isStandalone}
-                  onChange={(e) => setIsStandalone(e.target.checked)}
+                  onChange={(event) => {
+                    setIsStandalone(event.target.checked);
+                    if (event.target.checked) {
+                      setSourceProjectId("");
+                    }
+                  }}
+                  data-testid="benefit-standalone-checkbox"
                 />
                 Standalone initiative (no source link required)
               </label>
               {!isStandalone ? (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span>Primary source resource ID</span>
-                  <Input
-                    value={sourceResourceId}
-                    onChange={(e) => setSourceResourceId(e.target.value)}
-                    placeholder="Project or suggestion resource ID"
-                  />
-                </label>
-              ) : null}
+                <ProjectSelect
+                  options={projects}
+                  value={sourceProjectId}
+                  onChange={(projectId) => {
+                    setSourceProjectId(projectId);
+                    const selected = projects.find(
+                      (project) => project.id === projectId,
+                    );
+                    if (
+                      selected &&
+                      units.some((unit) => unit.id === selected.unit_id)
+                    ) {
+                      setUnitId(selected.unit_id);
+                    }
+                  }}
+                  requiresSiteSelection={requiresSiteSelection}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Standalone benefits are an explicit exception. The normal path
+                  is to link a project.
+                </p>
+              )}
             </>
           ) : null}
 
@@ -582,11 +612,20 @@ export function CreateBenefitWizard({
                   {targetMeasureValue || "—"} {targetMeasureUnit}
                 </p>
               )}
-              <p>
+              <p data-testid="benefit-wizard-source-summary">
                 <span className="font-medium">Source:</span>{" "}
                 {isStandalone
                   ? "Standalone"
-                  : sourceResourceId || "Linked later"}
+                  : sourceProjectId
+                    ? formatProjectReference(
+                        projects.find(
+                          (project) => project.id === sourceProjectId,
+                        )?.project_number ?? null,
+                        projects.find(
+                          (project) => project.id === sourceProjectId,
+                        )?.title ?? "Selected project",
+                      )
+                    : "Linked later"}
               </p>
             </div>
           ) : null}

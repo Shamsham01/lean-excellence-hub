@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { CreateBenefitWizard } from "@/components/benefits/create-benefit-wizard";
-import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { untypedFrom } from "@/lib/benefits/supabase-untyped";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
+import { callProjectRpc } from "@/lib/projects/supabase-untyped";
+import type { ProjectPortfolioResponse } from "@/lib/projects/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -24,6 +26,20 @@ export default async function NewBenefitPage() {
     .eq("status", "active")
     .order("display_order");
 
+  const { data: portfolio } = await callProjectRpc<ProjectPortfolioResponse>(
+    supabase,
+    "get_ci_projects_portfolio",
+    {
+      target_page: 1,
+      target_page_size: 100,
+    },
+  );
+
+  const visibleUnitIds = new Set(selectorOptions.units.map((unit) => unit.id));
+  const projects = (portfolio?.items ?? []).filter((project) =>
+    visibleUnitIds.has(project.unit_id),
+  );
+
   return (
     <div
       className="mx-auto flex max-w-2xl flex-col gap-6"
@@ -31,12 +47,13 @@ export default async function NewBenefitPage() {
     >
       <PageHeader
         title="New improvement benefit"
-        description="Define classification, baseline, forecast, and source links before submission."
+        description="Link a project, then define classification, baseline, and forecast before submission."
       />
       <CreateBenefitWizard
         units={selectorOptions.units}
         members={selectorOptions.people}
         requiresSiteSelection={selectorOptions.requiresSiteSelection}
+        projects={projects}
         categories={
           (
             categoryRows as Array<{

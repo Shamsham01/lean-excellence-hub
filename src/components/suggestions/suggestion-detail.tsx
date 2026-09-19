@@ -36,6 +36,11 @@ import {
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { actionStatusLabel, formatActionReference } from "@/lib/actions/status";
 import type { LinkedSuggestionAction } from "@/lib/actions/types";
+import {
+  formatProjectReference,
+  projectStatusLabel,
+} from "@/lib/projects/status";
+import type { LinkedSuggestionProject } from "@/lib/projects/types";
 import { suggestionStatusLabel } from "@/lib/suggestions/status";
 
 type StatusHistoryRow = {
@@ -81,6 +86,9 @@ export function SuggestionDetail({
   const linkedActions = Array.isArray(detail.linked_actions)
     ? (detail.linked_actions as LinkedSuggestionAction[])
     : [];
+  const linkedProjects = Array.isArray(detail.linked_projects)
+    ? (detail.linked_projects as LinkedSuggestionProject[])
+    : [];
 
   async function handleAction() {
     const title = `Action: ${detail.title as string}`;
@@ -104,9 +112,15 @@ export function SuggestionDetail({
 
   async function handleProject() {
     const result = await createProjectFromSuggestion(id);
-    setMessage(
-      result.error ? result.error : `Project created: ${result.id ?? ""}`,
-    );
+    if (result.error) {
+      setMessage(result.error);
+      return;
+    }
+    setMessage("Project created");
+    if (result.id) {
+      router.push(`/platform/projects/${result.id}`);
+      router.refresh();
+    }
   }
 
   async function handleImplemented() {
@@ -333,6 +347,20 @@ export function SuggestionDetail({
                       data-testid="employee-outcome"
                     />
                   </label>
+                  {linkedProjects.length > 0 ? (
+                    <div
+                      className="flex flex-col gap-2"
+                      data-testid="suggestion-linked-projects"
+                    >
+                      <p className="font-medium">Linked projects</p>
+                      {linkedProjects.map((project) => (
+                        <SuggestionLinkedProjectRow
+                          key={project.id}
+                          project={project}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                   {linkedActions.length > 0 ? (
                     <div
                       className="flex flex-col gap-2"
@@ -361,6 +389,7 @@ export function SuggestionDetail({
                         size="sm"
                         variant="outline"
                         onClick={() => handleProject()}
+                        data-testid="suggestion-create-project"
                       >
                         Create project
                       </Button>
@@ -407,6 +436,24 @@ export function SuggestionDetail({
               <CardTitle>Activity</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 text-sm">
+              <div
+                className="flex flex-col gap-2"
+                data-testid="suggestion-activity-projects"
+              >
+                <p className="font-medium">Linked projects</p>
+                {linkedProjects.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    No linked projects yet.
+                  </p>
+                ) : (
+                  linkedProjects.map((project) => (
+                    <SuggestionLinkedProjectRow
+                      key={project.id}
+                      project={project}
+                    />
+                  ))
+                )}
+              </div>
               <div
                 className="flex flex-col gap-2"
                 data-testid="suggestion-activity-actions"
@@ -474,6 +521,45 @@ export function SuggestionDetail({
           ) : null}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function SuggestionLinkedProjectRow({
+  project,
+}: {
+  project: LinkedSuggestionProject;
+}) {
+  const reference = formatProjectReference(
+    project.project_number,
+    project.title,
+  );
+
+  return (
+    <div
+      className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+      data-testid={`suggestion-linked-project-${project.id}`}
+    >
+      <div>
+        <p className="font-medium">{project.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {reference} · {projectStatusLabel(project.status)}
+        </p>
+      </div>
+      {project.can_open ? (
+        <Link
+          href={project.href}
+          className="text-sm text-primary hover:underline"
+          data-testid={`suggestion-open-project-${project.id}`}
+          aria-label={`Open project ${reference}`}
+        >
+          Open project
+        </Link>
+      ) : (
+        <span className="text-xs text-muted-foreground">
+          Linked project is outside your current scope.
+        </span>
+      )}
     </div>
   );
 }

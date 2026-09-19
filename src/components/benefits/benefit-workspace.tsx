@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -29,6 +30,10 @@ import {
   formatBenefitCurrencyAmount,
   formatMeasureValue,
 } from "@/lib/benefits/forecast";
+import {
+  benefitSourceDisplayLabel,
+  benefitSourceHref,
+} from "@/lib/benefits/source";
 import { benefitStatusLabel } from "@/lib/benefits/status";
 import type {
   BenefitDetail,
@@ -223,24 +228,46 @@ export function BenefitWorkspace({
                 {sourceLinks.length === 0 ? (
                   <p className="text-muted-foreground">No linked sources.</p>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {sourceLinks.map((link) => (
-                      <div
-                        key={link.source_resource_id}
-                        className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-                      >
-                        <span>
-                          {link.display_label ?? link.source_resource_id}
-                          <span className="text-muted-foreground">
-                            {" "}
-                            · {link.resource_type}
-                          </span>
-                        </span>
-                        <Badge variant="outline">
-                          {link.relationship_role}
-                        </Badge>
-                      </div>
-                    ))}
+                  <div
+                    className="flex flex-col gap-2"
+                    data-testid="benefit-source-links"
+                  >
+                    {sourceLinks.map((link) => {
+                      const label = benefitSourceDisplayLabel(link);
+                      const href = benefitSourceHref(link);
+                      return (
+                        <div
+                          key={link.source_resource_id}
+                          className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                        >
+                          {href ? (
+                            <Link
+                              href={href}
+                              className="font-medium text-primary hover:underline"
+                              data-testid={`benefit-source-link-${link.source_resource_id}`}
+                            >
+                              {label}
+                              {link.title && link.title !== label
+                                ? ` · ${link.title}`
+                                : ""}
+                            </Link>
+                          ) : (
+                            <span
+                              data-testid={`benefit-source-label-${link.source_resource_id}`}
+                            >
+                              {label}
+                              <span className="text-muted-foreground">
+                                {" "}
+                                · {link.resource_type.replaceAll("_", " ")}
+                              </span>
+                            </span>
+                          )}
+                          <Badge variant="outline">
+                            {link.relationship_role}
+                          </Badge>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

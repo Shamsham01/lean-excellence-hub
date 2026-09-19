@@ -1,28 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { signInAsDemoUser } from "./helpers/demo-auth";
 import { S2B2_WORKFLOW_FIXTURE_TITLES } from "../../scripts/demo-seed/constants";
+import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  expectReviewStatus,
+  expectReviewTestId,
+  expectReviewerLabel,
+  openReviewQueueForTitle,
+  parkCurrentReview,
+  reviewWorkspace,
+} from "./helpers/suggestion-review";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-function reviewWorkspace(page: Page) {
-  return page.getByTestId("suggestion-review-workspace");
-}
-
-async function openReviewQueueForTitle(
-  page: Page,
-  title: string,
-  queue: "mine" | "unassigned" = "unassigned",
-) {
-  await page.goto(`/platform/suggestions/review?queue=${queue}`);
-  await expect(page.getByTestId("suggestion-review-queue")).toBeVisible();
-  await page
-    .locator('[data-testid^="review-queue-item-"]', { hasText: title })
-    .first()
-    .click();
-  await expect(reviewWorkspace(page)).toBeVisible();
-  await expect(page).toHaveURL(/suggestionId=/);
-}
 
 function portfolioRowForTitle(page: Page, title: string) {
   return page
@@ -75,12 +64,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.claim);
     await page.getByTestId("review-claim-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Claimed by you/i, { timeout: 15000 });
-    await expect(
-      reviewWorkspace(page).getByText("Submitted", { exact: true }),
-    ).toBeVisible();
+    await expectReviewerLabel(page, /Claimed by you/i);
+    await expectReviewStatus(page, "Submitted");
   });
 
   test("reviewer begins review explicitly", async ({ page }) => {
@@ -91,9 +76,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       "mine",
     );
     await page.getByTestId("review-begin-button").click();
-    await expect(
-      reviewWorkspace(page).getByText("Under Review", { exact: true }),
-    ).toBeVisible();
+    await expectReviewStatus(page, "Under Review");
   });
 
   test("reviewer parks with rationale and keeps assignment", async ({
@@ -105,16 +88,11 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       S2B2_WORKFLOW_FIXTURE_TITLES.claim,
       "mine",
     );
-    await page
-      .getByTestId("review-rationale")
-      .fill("Internal: waiting for supplier quote.");
-    await page
-      .getByTestId("review-employee-feedback")
-      .fill("Waiting for supplier quote.");
-    await page.getByTestId("review-park-button").click();
-    await expect(
-      page.getByTestId("review-workspace-parked-current"),
-    ).toBeVisible();
+    await parkCurrentReview(
+      page,
+      "Internal: waiting for supplier quote.",
+      "Waiting for supplier quote.",
+    );
     await page.goto("/platform/suggestions/review?queue=mine");
     await expect(
       page
@@ -135,12 +113,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       "mine",
     );
     await page.getByTestId("review-begin-button").click();
-    await expect(
-      reviewWorkspace(page).getByText("Under Review", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId("review-workspace-parked-history"),
-    ).toBeVisible();
+    await expectReviewStatus(page, "Under Review");
+    await expectReviewTestId(page, "review-workspace-parked-history");
     await expect(page.getByText("Previously parked")).toBeVisible();
   });
 
@@ -158,9 +132,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       .getByTestId("review-employee-feedback")
       .fill("Clear operational benefit.");
     await page.getByTestId("review-approve-button").click();
-    await expect(
-      reviewWorkspace(page).getByText("Accepted", { exact: true }),
-    ).toBeVisible();
+    await expectReviewStatus(page, "Accepted");
     await page.goto("/platform/suggestions/review?queue=mine");
     await expect(
       page.locator('[data-testid^="review-queue-item-"]', {
@@ -179,9 +151,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       .getByTestId("review-employee-feedback")
       .fill("Not viable at this time.");
     await page.getByTestId("review-decline-button").click();
-    await expect(
-      reviewWorkspace(page).getByText("Rejected", { exact: true }),
-    ).toBeVisible();
+    await expectReviewStatus(page, "Rejected");
   });
 
   test("stale claim surfaces safe conflict messaging", async ({ browser }) => {
@@ -206,9 +176,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await expect(managerB.getByTestId("review-claim-button")).toBeVisible();
 
     await managerB.getByTestId("review-claim-button").click();
-    await expect(
-      managerB.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Claimed by you/i, { timeout: 15000 });
+    await expectReviewerLabel(managerB, /Claimed by you/i);
 
     await managerA.getByTestId("review-claim-button").click();
     await expect(managerA.getByTestId("review-workspace-error")).toContainText(
@@ -226,12 +194,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       label: "Apex Finance",
     });
     await page.getByTestId("review-assign-button").click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Assigned to Apex Finance/i);
-    await expect(
-      reviewWorkspace(page).getByText("Submitted", { exact: true }),
-    ).toBeVisible();
+    await expectReviewerLabel(page, /Assigned to Apex Finance/i);
+    await expectReviewStatus(page, "Submitted");
   });
 
   test("manager reassigns an assigned suggestion", async ({ page }) => {
@@ -244,16 +208,15 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       label: "Apex Finance",
     });
     await page.getByTestId("review-assign-button").click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Assigned to Apex Finance/i);
+    await expectReviewerLabel(page, /Assigned to Apex Finance/i);
     await page.getByTestId("review-assign-select").selectOption({
       label: "Apex Manager",
     });
     await page.getByRole("button", { name: "Reassign reviewer" }).click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Assigned to Apex Manager|Claimed by you|Reassigned to/i);
+    await expectReviewerLabel(
+      page,
+      /Assigned to Apex Manager|Claimed by you|Reassigned to/i,
+    );
   });
 
   test("read-only user does not see reviewer workflow leakage", async ({
@@ -292,13 +255,11 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.parked);
     await page.getByTestId("review-claim-button").click();
     await page.getByTestId("review-begin-button").click();
-    await page
-      .getByTestId("review-rationale")
-      .fill("Internal: need additional evidence.");
-    await page
-      .getByTestId("review-employee-feedback")
-      .fill("Need additional evidence.");
-    await page.getByTestId("review-park-button").click();
+    await parkCurrentReview(
+      page,
+      "Internal: need additional evidence.",
+      "Need additional evidence.",
+    );
     await page.goto("/platform/suggestions/review?queue=mine");
     await expect(
       page
