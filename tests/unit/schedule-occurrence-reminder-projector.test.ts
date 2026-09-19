@@ -12,6 +12,7 @@ const EVENT: ClaimedDomainEvent = {
   resourceRecordId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
   eventType: "ScheduleOccurrenceReminderDue",
   payload: {
+    occurrence_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     recipient_membership_ids: [
       "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
       "dddddddd-dddd-4ddd-8ddd-dddddddddddd",

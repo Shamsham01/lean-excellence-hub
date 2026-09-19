@@ -426,7 +426,7 @@ begin
 
     perform private.enqueue_domain_event(
       occurrence_row.organisation_id,
-      occurrence_row.id,
+      occurrence_row.schedule_definition_id,
       'ScheduleOccurrenceReminderDue',
       'schedule-occurrence-reminder:' || occurrence_row.id::text || ':morning-of',
       jsonb_build_object(
@@ -881,7 +881,7 @@ begin
       on schedule_row.organisation_id = occurrence_row.organisation_id
      and schedule_row.id = occurrence_row.schedule_definition_id
     where occurrence_row.organisation_id = target_organisation_id
-      and occurrence_row.id = event_row.resource_record_id
+      and occurrence_row.id = nullif(event_row.payload ->> 'occurrence_id', '')::uuid
     limit 1;
 
     resolved_link_path := coalesce(resolved_link_path, '/platform/schedule');

@@ -18,7 +18,7 @@ create temporary table schedule_lifecycle_ids (
   id uuid not null
 ) on commit drop;
 
-grant select, insert, update on schedule_lifecycle_ids to authenticated;
+grant select, insert, update on schedule_lifecycle_ids to authenticated, lean_hub_private_owner;
 
 insert into schedule_lifecycle_ids (key, id)
 values (
@@ -370,12 +370,8 @@ select is(
     select count(*)
     from private.domain_event_outbox outbox_row
     where outbox_row.event_type = 'ScheduleOccurrenceReminderDue'
-      and outbox_row.resource_record_id in (
-        select occurrence_row.id
-        from public.schedule_occurrences occurrence_row
-        where occurrence_row.schedule_definition_id = (
-          select id from schedule_lifecycle_ids where key = 'once_schedule'
-        )
+      and outbox_row.resource_record_id = (
+        select id from schedule_lifecycle_ids where key = 'once_schedule'
       )
   ),
   1::bigint,
@@ -395,12 +391,8 @@ select is(
     select count(*)
     from private.domain_event_outbox outbox_row
     where outbox_row.event_type = 'ScheduleOccurrenceReminderDue'
-      and outbox_row.resource_record_id in (
-        select occurrence_row.id
-        from public.schedule_occurrences occurrence_row
-        where occurrence_row.schedule_definition_id = (
-          select id from schedule_lifecycle_ids where key = 'once_schedule'
-        )
+      and outbox_row.resource_record_id = (
+        select id from schedule_lifecycle_ids where key = 'once_schedule'
       )
   ),
   1::bigint,

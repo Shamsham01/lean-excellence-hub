@@ -34,15 +34,22 @@ function readRecipientMembershipIds(event: ClaimedDomainEvent): string[] {
   return unique;
 }
 
+function readOccurrenceId(event: ClaimedDomainEvent): string {
+  const rawValue = event.payload.occurrence_id;
+  if (typeof rawValue === "string" && UUID_PATTERN.test(rawValue.trim())) {
+    return rawValue.trim();
+  }
+
+  throw new TerminalProjectionError(
+    "invalid_payload",
+    "ScheduleOccurrenceReminderDue payload must include occurrence_id",
+  );
+}
+
 export function projectScheduleOccurrenceReminder(
   event: ClaimedDomainEvent,
 ): ProjectorOutcome {
-  if (!event.resourceRecordId || !UUID_PATTERN.test(event.resourceRecordId)) {
-    throw new TerminalProjectionError(
-      "invalid_payload",
-      "ScheduleOccurrenceReminderDue requires resource_record_id occurrence UUID",
-    );
-  }
+  readOccurrenceId(event);
 
   return {
     kind: "project",
