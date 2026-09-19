@@ -207,26 +207,28 @@ export async function recordSuggestionReview(
 
 export async function createSuggestionAction(
   suggestionId: string,
-
   title: string,
-
   description?: string,
 ): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await supabase.rpc("create_suggestion_action", {
+  const { data, error } = await supabase.rpc("create_suggestion_action", {
     target_suggestion_id: suggestionId,
-
     target_title: title,
-
     ...(description ? { target_description: description } : {}),
   });
 
   if (error) return { error: error.message };
 
-  revalidatePath(`/platform/suggestions/${suggestionId}`);
+  const actionId = data as string;
 
-  return { ok: true };
+  revalidatePath(`/platform/suggestions/${suggestionId}`);
+  revalidatePath("/platform/actions");
+  if (actionId) {
+    revalidatePath(`/platform/actions/${actionId}`);
+  }
+
+  return { ok: true, id: actionId };
 }
 
 export async function createProjectFromSuggestion(

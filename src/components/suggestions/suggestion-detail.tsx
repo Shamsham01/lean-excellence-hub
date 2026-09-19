@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import {
@@ -33,6 +34,8 @@ import {
   benefitStatusLabel,
 } from "@/lib/benefits/status";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
+import { actionStatusLabel, formatActionReference } from "@/lib/actions/status";
+import type { LinkedSuggestionAction } from "@/lib/actions/types";
 import { suggestionStatusLabel } from "@/lib/suggestions/status";
 
 type StatusHistoryRow = {
@@ -63,20 +66,40 @@ export function SuggestionDetail({
   canCreateProject,
   canUploadEvidence,
 }: SuggestionDetailProps) {
+  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
+  const [createdAction, setCreatedAction] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [implementationSummary, setImplementationSummary] = useState(
     "Improvement completed on the floor.",
   );
   const [employeeOutcome, setEmployeeOutcome] = useState("");
   const status = detail.status as string;
   const id = detail.id as string;
+  const linkedActions = Array.isArray(detail.linked_actions)
+    ? (detail.linked_actions as LinkedSuggestionAction[])
+    : [];
 
   async function handleAction() {
-    const result = await createSuggestionAction(
-      id,
-      `Action: ${detail.title as string}`,
+    const title = `Action: ${detail.title as string}`;
+    const result = await createSuggestionAction(id, title);
+    if (result.error) {
+      setMessage(result.error);
+      setCreatedAction(null);
+      return;
+    }
+    setCreatedAction(result.id ? { id: result.id, title } : null);
+    const alreadyLinked = linkedActions.some(
+      (action) => action.id === result.id,
     );
-    setMessage(result.error ? result.error : "Action created");
+    setMessage(
+      alreadyLinked
+        ? "This suggestion already has a linked action."
+        : "Action created",
+    );
+    router.refresh();
   }
 
   async function handleProject() {
@@ -310,11 +333,26 @@ export function SuggestionDetail({
                       data-testid="employee-outcome"
                     />
                   </label>
+                  {linkedActions.length > 0 ? (
+                    <div
+                      className="flex flex-col gap-2"
+                      data-testid="suggestion-linked-actions"
+                    >
+                      <p className="font-medium">Linked actions</p>
+                      {linkedActions.map((action) => (
+                        <SuggestionLinkedActionRow
+                          key={action.id}
+                          action={action}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleAction()}
+                      data-testid="suggestion-create-action"
                     >
                       Create action
                     </Button>
@@ -368,36 +406,111 @@ export function SuggestionDetail({
             <CardHeader>
               <CardTitle>Activity</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm">
-              {statusHistory.length === 0 ? (
-                <p className="text-muted-foreground">No status history yet.</p>
-              ) : (
-                statusHistory.map((entry, index) => (
-                  <div
-                    key={`${entry.changed_at}-${index}`}
-                    className="flex flex-col gap-1 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-start sm:justify-between"
-                  >
-                    <span>
-                      {suggestionStatusLabel(entry.from_status)} →{" "}
-                      {suggestionStatusLabel(entry.to_status)}
-                      {entry.reason ? ` · ${entry.reason}` : ""}
-                    </span>
-                    <span className="text-xs text-muted-foreground sm:text-right">
-                      {new Date(entry.changed_at).toLocaleString("en-GB")}
-                    </span>
-                  </div>
-                ))
-              )}
+            <CardContent className="flex flex-col gap-4 text-sm">
+              <div
+                className="flex flex-col gap-2"
+                data-testid="suggestion-activity-actions"
+              >
+                <p className="font-medium">Linked actions</p>
+                {linkedActions.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    No linked actions yet.
+                  </p>
+                ) : (
+                  linkedActions.map((action) => (
+                    <SuggestionLinkedActionRow
+                      key={action.id}
+                      action={action}
+                    />
+                  ))
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="font-medium">Status history</p>
+                {statusHistory.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    No status history yet.
+                  </p>
+                ) : (
+                  statusHistory.map((entry, index) => (
+                    <div
+                      key={`${entry.changed_at}-${index}`}
+                      className="flex flex-col gap-1 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                      <span>
+                        {suggestionStatusLabel(entry.from_status)} →{" "}
+                        {suggestionStatusLabel(entry.to_status)}
+                        {entry.reason ? ` · ${entry.reason}` : ""}
+                      </span>
+                      <span className="text-xs text-muted-foreground sm:text-right">
+                        {new Date(entry.changed_at).toLocaleString("en-GB")}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
       {message ? (
-        <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        <p
+          className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+          data-testid="suggestion-handoff-message"
+        >
           {message}
+          {createdAction ? (
+            <>
+              {" "}
+              <Link
+                href={`/platform/actions/${createdAction.id}`}
+                className="text-primary hover:underline"
+                data-testid="suggestion-open-created-action"
+              >
+                Open action
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function SuggestionLinkedActionRow({
+  action,
+}: {
+  action: LinkedSuggestionAction;
+}) {
+  const label = `${formatActionReference(action.action_number, action.title)} · ${action.title}`;
+
+  return (
+    <div
+      className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+      data-testid={`suggestion-linked-action-${action.id}`}
+    >
+      <div>
+        <p className="font-medium">{action.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {formatActionReference(action.action_number, action.title)} ·{" "}
+          {actionStatusLabel(action.status)}
+        </p>
+      </div>
+      {action.can_open ? (
+        <Link
+          href={action.href}
+          className="text-sm text-primary hover:underline"
+          data-testid={`suggestion-open-action-${action.id}`}
+          aria-label={`Open action ${label}`}
+        >
+          Open action
+        </Link>
+      ) : (
+        <span className="text-xs text-muted-foreground">
+          Linked action is outside your current scope.
+        </span>
+      )}
     </div>
   );
 }
