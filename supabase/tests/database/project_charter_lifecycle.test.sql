@@ -409,8 +409,8 @@ select throws_ok(
     'select public.submit_project(%L::uuid)',
     (select id from charter_ids where key = 'incomplete_project')
   ),
-  '42501',
-  'project submission is not authorised'
+  'P0002',
+  'project not found'
 );
 
 select * from finish();
