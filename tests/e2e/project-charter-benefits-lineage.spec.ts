@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  approveCurrentReview,
+  beginCurrentReview,
+  claimCurrentReview,
+  openReviewQueueForTitle,
+} from "./helpers/suggestion-review";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -38,31 +44,14 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     suggestionPath = new URL(page.url()).pathname;
 
     await signInAsDemoUser(page, "manager");
-    await page.goto("/platform/suggestions/review?queue=unassigned");
-    await page
-      .locator('[data-testid^="review-queue-item-"]', {
-        hasText: suggestionTitle,
-      })
-      .first()
-      .click();
-    await expect(page.getByTestId("suggestion-review-workspace")).toBeVisible();
-    await page.getByTestId("review-claim-button").click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Claimed by you/i, { timeout: 15_000 });
-    await page.getByTestId("review-begin-button").click();
-    await page
-      .getByTestId("review-rationale")
-      .fill("Internal: convert this into a project.");
-    await page
-      .getByTestId("review-employee-feedback")
-      .fill("Approved to become a project.");
-    await page.getByTestId("review-approve-button").click();
-    await expect(
-      page.getByTestId("suggestion-review-workspace").getByText("Accepted", {
-        exact: true,
-      }),
-    ).toBeVisible();
+    await openReviewQueueForTitle(page, suggestionTitle);
+    await claimCurrentReview(page);
+    await beginCurrentReview(page);
+    await approveCurrentReview(
+      page,
+      "Internal: convert this into a project.",
+      "Approved to become a project.",
+    );
 
     await page.goto(suggestionPath);
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
