@@ -37,6 +37,10 @@ import {
   projectSkillProficiencyValidated,
 } from "./projectors/skill-proficiency-validated.ts";
 import {
+  SCHEDULE_OCCURRENCE_REMINDER_EVENT,
+  projectScheduleOccurrenceReminder,
+} from "./projectors/schedule-occurrence-reminder.ts";
+import {
   TRAINING_COMPLETED_EVENT,
   projectTrainingCompleted,
 } from "./projectors/training-completed.ts";
@@ -102,6 +106,10 @@ export const NOTIFICATION_EVENT_PROJECTORS: DomainEventProjector[] = [
   {
     eventType: SUGGESTION_IMPLEMENTED_EVENT,
     project: projectSuggestionImplemented,
+  },
+  {
+    eventType: SCHEDULE_OCCURRENCE_REMINDER_EVENT,
+    project: projectScheduleOccurrenceReminder,
   },
 ];
 

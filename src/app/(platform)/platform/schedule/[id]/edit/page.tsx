@@ -91,6 +91,9 @@ export default async function EditSchedulePage({
         {...(scheduleUnits.unitEmptyMessage
           ? { unitEmptyMessage: scheduleUnits.unitEmptyMessage }
           : {})}
+        {...(scheduleUnits.loadError
+          ? { loadError: scheduleUnits.loadError }
+          : {})}
         submitLabel="Save schedule"
         initialValues={{
           title: schedule.title,

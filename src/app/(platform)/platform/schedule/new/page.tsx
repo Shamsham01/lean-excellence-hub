@@ -81,8 +81,12 @@ export default async function NewSchedulePage({
           units={scheduleUnits.units}
           memberships={memberships}
           requiresSiteSelection={requiresSiteSelection}
-          {...(scheduleUnits.unitEmptyMessage
+          {...("unitEmptyMessage" in scheduleUnits &&
+          scheduleUnits.unitEmptyMessage
             ? { unitEmptyMessage: scheduleUnits.unitEmptyMessage }
+            : {})}
+          {...("loadError" in scheduleUnits && scheduleUnits.loadError
+            ? { loadError: scheduleUnits.loadError }
             : {})}
           returnTo={params.returnTo ?? "/platform/schedule"}
           submitLabel="Create schedule"

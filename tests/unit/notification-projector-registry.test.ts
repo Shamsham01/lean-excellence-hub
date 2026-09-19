@@ -42,6 +42,7 @@ describe("notification projector registry", () => {
       "SuggestionRejected",
       "SuggestionParked",
       "SuggestionImplemented",
+      "ScheduleOccurrenceReminderDue",
     ]);
   });
 

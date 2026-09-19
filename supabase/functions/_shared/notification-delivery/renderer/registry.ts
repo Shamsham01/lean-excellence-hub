@@ -1,6 +1,7 @@
 import {
   JOB_FUNCTION_ASSIGNED_KIND,
   RECOGNITION_AWARDED_KIND,
+  SCHEDULE_OCCURRENCE_REMINDER_KIND,
   SKILL_PROFICIENCY_VALIDATED_KIND,
   SUGGESTION_APPROVED_KIND,
   SUGGESTION_DECLINED_KIND,
@@ -12,6 +13,7 @@ import {
   TRAINING_COMPLETED_KIND,
   renderJobFunctionAssignedEmail,
   renderRecognitionAwardedEmail,
+  renderScheduleOccurrenceReminderEmail,
   renderSkillProficiencyValidatedEmail,
   renderSuggestionApprovedEmail,
   renderSuggestionDeclinedEmail,
@@ -46,6 +48,7 @@ const RENDERERS: Record<string, NotificationRenderer> = {
   [SUGGESTION_DECLINED_KIND]: renderSuggestionDeclinedEmail,
   [SUGGESTION_PARKED_KIND]: renderSuggestionParkedEmail,
   [SUGGESTION_IMPLEMENTED_KIND]: renderSuggestionImplementedEmail,
+  [SCHEDULE_OCCURRENCE_REMINDER_KIND]: renderScheduleOccurrenceReminderEmail,
 };
 
 export function renderOperationalNotification(
