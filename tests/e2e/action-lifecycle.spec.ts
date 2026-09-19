@@ -128,7 +128,11 @@ test.describe("Action lifecycle and suggestion traceability", () => {
       .getByTestId("review-employee-feedback")
       .fill("Approved for a linked action.");
     await page.getByTestId("review-approve-button").click();
-    await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
+    await expect(
+      page.getByTestId("suggestion-review-workspace").getByText("Accepted", {
+        exact: true,
+      }),
+    ).toBeVisible();
 
     await page.goto(suggestionPath);
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
