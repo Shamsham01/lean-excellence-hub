@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import { AppLink } from "@/components/ui/app-link";
 
 import { PlatformNavIconComponent } from "@/components/platform/platform-nav-icons";
 import {
@@ -23,8 +24,9 @@ export function PlatformNavItemLink({
   const active = isNavItemActive(pathname, item);
 
   return (
-    <Link
+    <AppLink
       href={item.href}
+      data-testid={`platform-nav-${item.icon}`}
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
@@ -36,6 +38,6 @@ export function PlatformNavItemLink({
     >
       <PlatformNavIconComponent icon={item.icon} className="size-4 shrink-0" />
       <span className="truncate">{item.label}</span>
-    </Link>
+    </AppLink>
   );
 }

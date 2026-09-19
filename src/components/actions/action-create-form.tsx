@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { createAction } from "@/app/(platform)/platform/actions/actions";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { navigateTo } from "@/lib/navigation/navigate";
 
 export function ActionCreateForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -25,8 +24,7 @@ export function ActionCreateForm() {
       return;
     }
     if (result.id) {
-      router.push(`/platform/actions/${result.id}`);
-      router.refresh();
+      navigateTo(`/platform/actions/${result.id}`);
     }
   }
 

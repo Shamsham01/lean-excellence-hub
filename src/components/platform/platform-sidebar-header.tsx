@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 
 import { SiteContextSwitcher } from "@/components/platform/site-context-switcher";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
@@ -26,12 +26,12 @@ export function PlatformSidebarHeader({
           {organisationName}
         </p>
         {organisations.length > 1 ? (
-          <Link
+          <AppLink
             href="/select-organisation"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Switch organisation
-          </Link>
+          </AppLink>
         ) : null}
       </div>
       <SiteContextSwitcher context={siteContext} />

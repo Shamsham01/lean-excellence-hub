@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -25,6 +24,7 @@ import { PersonSelect } from "@/components/people/person-select";
 import { ProjectBenefitCreateForm } from "@/components/projects/project-benefit-create-form";
 import { ProjectEvidenceBlock } from "@/components/projects/project-evidence-block";
 import { ProjectHeader } from "@/components/projects/project-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -730,7 +730,7 @@ export function ProjectWorkspace({
                 </p>
               ) : (
                 actions.map((action) => (
-                  <Link
+                  <AppLink
                     key={action.id}
                     href={`/platform/actions/${action.id}`}
                     className="flex items-center justify-between rounded-md border border-border px-3 py-2 transition-colors hover:bg-muted/40"
@@ -755,7 +755,7 @@ export function ProjectWorkspace({
                         {actionPriorityLabel(action.priority)}
                       </Badge>
                     </div>
-                  </Link>
+                  </AppLink>
                 ))
               )}
             </CardContent>
@@ -876,7 +876,7 @@ export function ProjectWorkspace({
                 </p>
               ) : (
                 benefits.map((benefit) => (
-                  <Link
+                  <AppLink
                     key={benefit.id}
                     href={`/platform/benefits/${benefit.id}`}
                     className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
@@ -934,7 +934,7 @@ export function ProjectWorkspace({
                         </span>
                       )}
                     </div>
-                  </Link>
+                  </AppLink>
                 ))
               )}
             </CardContent>

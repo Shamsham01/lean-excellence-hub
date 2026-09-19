@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,7 +36,7 @@ export function ActionList({ actions }: { actions: ActionListItem[] }) {
   return (
     <div className="flex flex-col gap-2" data-testid="actions-list">
       {actions.map((action) => (
-        <Link
+        <AppLink
           key={action.id}
           href={`/platform/actions/${action.id}`}
           className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/40"
@@ -59,7 +59,7 @@ export function ActionList({ actions }: { actions: ActionListItem[] }) {
               {actionPriorityLabel(action.priority)}
             </Badge>
           </div>
-        </Link>
+        </AppLink>
       ))}
     </div>
   );

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 import { ThemeToggle } from "@/components/platform/theme-toggle";
 import { PlatformNavIconComponent } from "@/components/platform/platform-nav-icons";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import {
@@ -25,8 +25,9 @@ function FooterSettingsLink({ onNavigate }: { onNavigate?: () => void }) {
   const active = isNavItemActive(pathname, settingsNavigationItem);
 
   return (
-    <Link
+    <AppLink
       href={settingsNavigationItem.href}
+      data-testid="platform-nav-settings"
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
@@ -41,7 +42,7 @@ function FooterSettingsLink({ onNavigate }: { onNavigate?: () => void }) {
         className="size-4 shrink-0"
       />
       Settings
-    </Link>
+    </AppLink>
   );
 }
 

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 
 import { notFound } from "next/navigation";
 
@@ -96,13 +96,12 @@ export default async function SuggestionDetailPage({
         canUploadEvidence={canUploadEvidence}
       />
 
-      <Link
+      <AppLink
         href="/platform/suggestions"
-
         className="text-sm text-muted-foreground hover:underline"
       >
         Back to suggestions
-      </Link>
+      </AppLink>
     </div>
   );
 }

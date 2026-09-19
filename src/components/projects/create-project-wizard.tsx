@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { createImprovementProject } from "@/app/(platform)/platform/projects/actions";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
@@ -15,6 +14,7 @@ import {
   type PersonSelectOption,
   type UnitSelectOption,
 } from "@/modules/organisation/site-context";
+import { navigateTo } from "@/lib/navigation/navigate";
 import { cn } from "@/lib/utils";
 
 const WIZARD_STEPS = [
@@ -53,7 +53,6 @@ export function CreateProjectWizard({
   members,
   requiresSiteSelection = false,
 }: CreateProjectWizardProps) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,8 +126,7 @@ export function CreateProjectWizard({
           ? { sourceResourceId: sourceResourceId.trim() }
           : {}),
       });
-      router.push(`/platform/projects/${projectId}`);
-      router.refresh();
+      navigateTo(`/platform/projects/${projectId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Project creation failed");
     } finally {

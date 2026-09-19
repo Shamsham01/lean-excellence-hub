@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,14 +52,11 @@ function SuggestionPortfolioClearFiltersControl({
   variant: "ghost" | "outline";
   className?: string;
 }) {
-  // Native <a> (not next/link): same-path query reset via the App Router is
-  // aborted under the compiled Playwright server, leaving the filtered URL
-  // unchanged. Document navigation is required. Do not wrap this in Link.
   return (
     <Button variant={variant} size="sm" className={className} asChild>
-      <a href={SUGGESTION_PORTFOLIO_CLEAR_HREF} data-testid={testId}>
+      <AppLink href={SUGGESTION_PORTFOLIO_CLEAR_HREF} data-testid={testId}>
         Clear filters
-      </a>
+      </AppLink>
     </Button>
   );
 }
@@ -82,14 +79,11 @@ function SuggestionPortfolioPaginationLink({
   label: "Previous page" | "Next page";
   testId: string;
 }) {
-  // Native <a> (not next/link): same-path query changes via the App Router are
-  // aborted under the compiled Playwright server, leaving the URL unchanged.
-  // Document navigation is required. Do not wrap this in Link.
   return (
     <Button variant="outline" size="sm" className="min-h-11" asChild>
-      <a href={href} aria-label={label} data-testid={testId}>
+      <AppLink href={href} aria-label={label} data-testid={testId}>
         {label === "Previous page" ? "Previous" : "Next"}
-      </a>
+      </AppLink>
     </Button>
   );
 }
@@ -193,17 +187,22 @@ function PortfolioTableRow({
       data-testid={`suggestion-portfolio-item-${item.id}`}
     >
       <td className="px-3 py-2 align-top text-sm">
-        <Link
+        <AppLink
           href={detailHref}
           className="font-medium text-primary hover:underline"
+          data-testid={`suggestion-portfolio-reference-${item.id}`}
         >
           {reference}
-        </Link>
+        </AppLink>
       </td>
       <td className="px-3 py-2 align-top text-sm">
-        <Link href={detailHref} className="hover:underline">
+        <AppLink
+          href={detailHref}
+          className="hover:underline"
+          data-testid={`suggestion-portfolio-title-${item.id}`}
+        >
           {item.title}
-        </Link>
+        </AppLink>
       </td>
       <td className="px-3 py-2 align-top text-sm text-muted-foreground">
         {programmeCategoryLabel(item)}
@@ -230,13 +229,13 @@ function PortfolioTableRow({
       {showReviewerWorkflow ? (
         <td className="px-3 py-2 align-top text-sm">
           {showReviewAction ? (
-            <Link
+            <AppLink
               href={`/platform/suggestions/review?suggestionId=${item.id}`}
               className="font-medium text-primary hover:underline"
               data-testid={`suggestion-portfolio-review-link-${item.id}`}
             >
               Review
-            </Link>
+            </AppLink>
           ) : (
             "—"
           )}
@@ -270,16 +269,21 @@ function PortfolioMobileCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link
+          <AppLink
             href={detailHref}
             className="text-sm font-medium text-primary hover:underline"
+            data-testid={`suggestion-portfolio-mobile-reference-${item.id}`}
           >
             {reference}
-          </Link>
+          </AppLink>
           <p className="mt-1 font-medium">
-            <Link href={detailHref} className="hover:underline">
+            <AppLink
+              href={detailHref}
+              className="hover:underline"
+              data-testid={`suggestion-portfolio-mobile-title-${item.id}`}
+            >
               {item.title}
-            </Link>
+            </AppLink>
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {programmeCategoryLabel(item)}
@@ -305,12 +309,12 @@ function PortfolioMobileCard({
           Submitted {formatSubmittedDate(item.submitted_at)}
         </span>
         {showReviewAction ? (
-          <Link
+          <AppLink
             href={`/platform/suggestions/review?suggestionId=${item.id}`}
             className="font-medium text-primary hover:underline"
           >
             Review
-          </Link>
+          </AppLink>
         ) : null}
       </div>
     </div>
