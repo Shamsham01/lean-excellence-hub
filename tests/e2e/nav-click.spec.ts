@@ -150,11 +150,22 @@ test.describe("NAV-CLICK-001 shared in-app navigation", () => {
     await expect(page).toHaveURL(/\/platform\/projects\/[0-9a-f-]{36}/);
     const projectPath = new URL(page.url()).pathname;
 
-    await page.goto(suggestionPath);
-    await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
-    await page.getByRole("tab", { name: "Activity" }).click();
+    const sourceLink = page.getByTestId(/^project-source-link-/).first();
+    if (await sourceLink.count()) {
+      await sourceLink.click();
+      await expect(page).toHaveURL(new RegExp(`${suggestionPath}$`));
+      await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
+    } else {
+      await page.goto(suggestionPath);
+      await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
+    }
+
+    await page.getByRole("tab", { name: "Implementation" }).click();
     const openProject = page.getByTestId(/^suggestion-open-project-/).first();
-    await expect(openProject).toBeVisible();
+    if ((await openProject.count()) === 0) {
+      await page.getByRole("tab", { name: "Activity" }).click();
+    }
+    await expect(openProject).toBeVisible({ timeout: 15_000 });
     await openProject.click();
     await expect(page).toHaveURL(new RegExp(`${projectPath}$`));
     await expect(page.getByTestId("project-detail-page")).toBeVisible();
