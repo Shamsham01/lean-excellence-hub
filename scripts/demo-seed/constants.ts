@@ -81,6 +81,7 @@ export const DEMO_ROLES = {
       "actions.create",
       "actions.update",
       "actions.assign",
+      "actions.complete",
       "templates.read",
       "submissions.read",
       "submissions.create",

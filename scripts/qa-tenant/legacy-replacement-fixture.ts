@@ -1080,11 +1080,13 @@ export async function seedLegacyReplacementFixture(options: {
       insert into public.actions (
         id,
         organisation_id,
+        action_number,
         title,
         created_by_membership_id
       ) values (
         '${actionId}'::uuid,
         '${orgId}'::uuid,
+        'ACT-LEGACY-0001',
         'Legacy replacement fixture action',
         '${membershipId}'::uuid
       );
@@ -1205,11 +1207,13 @@ export async function seedLegacyReplacementFixture(options: {
         insert into public.actions (
           id,
           organisation_id,
+          action_number,
           title,
           created_by_membership_id
         ) values (
           '${isolationActionId}'::uuid,
           '${isolationOrgId}'::uuid,
+          'ACT-ISOL-0001',
           'Isolation fixture action',
           '${isolationMembershipId}'::uuid
         );

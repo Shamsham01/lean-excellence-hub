@@ -192,6 +192,7 @@ export type Database = {
       }
       actions: {
         Row: {
+          action_number: string
           completed_at: string | null
           created_at: string
           created_by_membership_id: string
@@ -211,6 +212,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          action_number: string
           completed_at?: string | null
           created_at?: string
           created_by_membership_id: string
@@ -230,6 +232,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          action_number?: string
           completed_at?: string | null
           created_at?: string
           created_by_membership_id?: string
@@ -11755,6 +11758,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      complete_action: {
+        Args: {
+          target_action_id: string
+          target_expected_version?: number
+          target_reason?: string
+        }
+        Returns: boolean
+      }
       complete_domain_event_for_worker: {
         Args: {
           expected_lease_token: string
@@ -12639,6 +12650,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_action_detail: { Args: { target_action_id: string }; Returns: Json }
       get_ai_session_detail: {
         Args: { target_ai_session_id: string }
         Returns: Json
@@ -13452,6 +13464,14 @@ export type Database = {
         Args: { target_participant_id: string; target_session_id: string }
         Returns: boolean
       }
+      reopen_action: {
+        Args: {
+          target_action_id: string
+          target_expected_version?: number
+          target_reason?: string
+        }
+        Returns: boolean
+      }
       replace_benefit_forecast_periods: {
         Args: { target_forecast_version_id: string; target_periods: Json }
         Returns: boolean
@@ -13530,6 +13550,10 @@ export type Database = {
       }
       select_countermeasure: {
         Args: { target_countermeasure_id: string; target_rationale?: string }
+        Returns: boolean
+      }
+      set_action_assignee: {
+        Args: { target_action_id: string; target_membership_id?: string }
         Returns: boolean
       }
       set_five_s_standard_applicable_units: {
@@ -13705,6 +13729,27 @@ export type Database = {
       }
       switch_organisation: {
         Args: { target_organisation_id: string }
+        Returns: boolean
+      }
+      transition_action_status: {
+        Args: {
+          target_action_id: string
+          target_expected_version?: number
+          target_reason?: string
+          target_to_status: string
+        }
+        Returns: boolean
+      }
+      update_action: {
+        Args: {
+          target_action_id: string
+          target_clear_due_at?: boolean
+          target_description?: string
+          target_due_at?: string
+          target_expected_version?: number
+          target_priority?: string
+          target_title?: string
+        }
         Returns: boolean
       }
       update_benefit_category: {

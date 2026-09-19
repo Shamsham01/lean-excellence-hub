@@ -230,6 +230,8 @@ jobs:
               tests/e2e/milestone8-closure.spec.ts
               tests/e2e/milestone9-closure.spec.ts
               tests/e2e/suggestion-portfolio.spec.ts
+              tests/e2e/suggestion-reviewer-workflow.spec.ts
+              tests/e2e/action-lifecycle.spec.ts
               tests/e2e/milestone10-closure.spec.ts
               tests/e2e/milestone11-closure.spec.ts
           - label: ai-closure

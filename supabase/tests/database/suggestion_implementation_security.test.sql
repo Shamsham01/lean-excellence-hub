@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(15);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -139,16 +139,84 @@ select ok(
   'implementation phase begins'
 );
 
-select ok(
-  public.create_suggestion_action(
+insert into implementation_ids (key, id)
+select 'action', public.create_suggestion_action(
     (select id from implementation_ids where key = 'suggestion'),
     'Install label holders',
     'Deploy holders on Line 2',
     'normal',
     null,
     'implementation'
-  ) is not null,
+  );
+
+select ok(
+  (select id from implementation_ids where key = 'action') is not null,
   'accepted suggestion links created action safely'
+);
+
+select is(
+  public.create_suggestion_action(
+    (select id from implementation_ids where key = 'suggestion'),
+    'Install label holders again',
+    'Duplicate submit',
+    'high',
+    null,
+    'implementation'
+  ),
+  (select id from implementation_ids where key = 'action'),
+  'repeated suggestion handoff returns the same linked action'
+);
+
+select is(
+  (
+    select jsonb_array_length(detail -> 'linked_actions')
+    from (
+      select public.get_suggestion_detail(
+        (select id from implementation_ids where key = 'suggestion')
+      ) as detail
+    ) suggestion_detail
+  ),
+  1,
+  'repeated suggestion handoff does not create a second linked action'
+);
+
+select is(
+  (
+    select detail -> 'linked_actions' -> 0 ->> 'title'
+    from (
+      select public.get_suggestion_detail(
+        (select id from implementation_ids where key = 'suggestion')
+      ) as detail
+    ) suggestion_detail
+  ),
+  'Install label holders',
+  'suggestion detail exposes human-readable linked action title'
+);
+
+select isnt(
+  (
+    select detail -> 'linked_actions' -> 0 ->> 'action_number'
+    from (
+      select public.get_suggestion_detail(
+        (select id from implementation_ids where key = 'suggestion')
+      ) as detail
+    ) suggestion_detail
+  ),
+  null,
+  'suggestion detail exposes action number rather than a raw UUID as the reference'
+);
+
+select is(
+  (
+    select detail -> 'source' ->> 'href'
+    from (
+      select public.get_action_detail(
+        (select id from implementation_ids where key = 'action')
+      ) as detail
+    ) action_detail
+  ),
+  '/platform/suggestions/' || (select id from implementation_ids where key = 'suggestion'),
+  'action detail links back to the source suggestion'
 );
 
 select ok(
