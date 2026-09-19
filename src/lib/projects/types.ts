@@ -60,6 +60,31 @@ export type ProjectStatusHistoryEntry = {
   changed_at: string;
 };
 
+export type ProjectSourceLink = {
+  id: string;
+  resource_type: string;
+  title: string | null;
+  reference: string | null;
+  href: string | null;
+};
+
+export type LinkedSuggestionProject = {
+  id: string;
+  project_number: string | null;
+  title: string;
+  status: string;
+  href: string;
+  can_open: boolean;
+};
+
+export type ProjectSelectorOption = {
+  id: string;
+  project_number: string;
+  title: string;
+  status: string;
+  unit_id: string;
+};
+
 export type ProjectDetail = {
   id: string;
   project_number: string;
@@ -91,6 +116,7 @@ export type ProjectDetail = {
   phases: ProjectPhase[];
   metrics: ProjectMetric[];
   completion_snapshot: Record<string, unknown> | null;
+  source_links?: ProjectSourceLink[];
 };
 
 export type ProjectPortfolioMetrics = {

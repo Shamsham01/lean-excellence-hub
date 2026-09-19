@@ -238,15 +238,19 @@ export async function createProjectFromSuggestion(
 
   const { data, error } = await supabase.rpc(
     "create_improvement_project_from_suggestion",
-
     { target_suggestion_id: suggestionId },
   );
 
-  if (error) return { error: error.message };
+  if (error) return { error: mapSuggestionReviewActionError(error) };
 
+  const projectId = data as string;
   revalidatePath(`/platform/suggestions/${suggestionId}`);
+  revalidatePath("/platform/projects");
+  if (projectId) {
+    revalidatePath(`/platform/projects/${projectId}`);
+  }
 
-  return { ok: true, id: data as string };
+  return { ok: true, id: projectId };
 }
 
 export async function markSuggestionImplemented(

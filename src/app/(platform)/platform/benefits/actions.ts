@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { mapBenefitMutationError } from "@/lib/benefits/errors";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type RpcArgs = Record<string, unknown>;
@@ -178,7 +179,10 @@ export async function createBenefitWizardDraft(input: {
       }
     }
 
-    if (input.sourceResourceId) {
+    if (
+      input.sourceResourceId &&
+      input.sourceResourceId !== input.primarySourceResourceId
+    ) {
       await callRpc("add_benefit_source_link", {
         target_benefit_id: benefitId,
         target_source_resource_id: input.sourceResourceId,
@@ -189,7 +193,7 @@ export async function createBenefitWizardDraft(input: {
     revalidateBenefitPaths(benefitId);
     return { ok: true, id: benefitId };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Create failed" };
+    return { error: mapBenefitMutationError(error) };
   }
 }
 
@@ -930,10 +934,7 @@ export async function createBenefitFromCiProject(input: {
     revalidatePath(`/platform/projects/${input.projectId}`);
     return { ok: true, id };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Create from project failed",
-    };
+    return { error: mapBenefitMutationError(error) };
   }
 }
 
