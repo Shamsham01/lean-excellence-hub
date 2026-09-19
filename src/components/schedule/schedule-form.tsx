@@ -161,6 +161,7 @@ export function ScheduleForm({
             name="description"
             defaultValue={initialValues?.description ?? ""}
             className="mt-2"
+            data-testid="schedule-description"
           />
         </div>
         <OrganisationalUnitSelect

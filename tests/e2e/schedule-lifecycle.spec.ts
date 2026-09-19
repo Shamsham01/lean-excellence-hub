@@ -34,6 +34,7 @@ test.describe("Schedule lifecycle reliability", () => {
   let weeklyPath = "";
   const weeklyTitle = `Lifecycle weekly ${suffix}`;
   const weeklyEdited = `Lifecycle weekly edited ${suffix}`;
+  const weeklyDescription = `SCHED-EDIT-001 description ${suffix}`;
   const dailyTitle = `Lifecycle daily ${suffix}`;
   const monthlyTitle = `Lifecycle monthly ${suffix}`;
 
@@ -64,19 +65,36 @@ test.describe("Schedule lifecycle reliability", () => {
     await expect(page.getByTestId("schedule-form")).toBeVisible();
     await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
     await page.getByTestId("schedule-title").fill(weeklyEdited);
+    await page.getByTestId("schedule-description").fill(weeklyDescription);
     await page.getByTestId("schedule-submit").click();
 
     await expect(page.getByTestId("schedule-detail-page")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: weeklyEdited }),
     ).toBeVisible();
+    await expect(page.getByTestId("schedule-description-text")).toHaveText(
+      weeklyDescription,
+    );
     await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
+    await expect(page.getByTestId("schedule-form-error")).toHaveCount(0);
 
     await page.reload();
     await expect(page.getByTestId("schedule-detail-page")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: weeklyEdited }),
     ).toBeVisible();
+    await expect(page.getByTestId("schedule-description-text")).toHaveText(
+      weeklyDescription,
+    );
+    await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
+
+    await page.goto(`${weeklyPath}/edit`);
+    await expect(page.getByTestId("schedule-form")).toBeVisible();
+    await expect(page.getByTestId("schedule-title")).toHaveValue(weeklyEdited);
+    await expect(page.getByTestId("schedule-description")).toHaveValue(
+      weeklyDescription,
+    );
+    await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
   });
 
   test("failed edit stays on the form and does not look like a workspace crash", async ({

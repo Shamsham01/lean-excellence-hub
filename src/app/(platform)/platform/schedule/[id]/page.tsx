@@ -52,6 +52,7 @@ export default async function ScheduleDetailPage({
       <PageHeader
         title={schedule.title}
         description={schedule.description ?? "Schedule definition"}
+        descriptionTestId="schedule-description-text"
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild className="min-h-11">

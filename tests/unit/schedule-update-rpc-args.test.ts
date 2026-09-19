@@ -46,6 +46,21 @@ describe("schedule RPC argument builders (SCHED-EDIT-001)", () => {
     );
   });
 
+  it("does not reproduce the hosted extra-argument update payload", () => {
+    const scheduleId = "55555555-5555-4555-8555-555555555555";
+    const updateArgs = buildUpdateScheduleRpcArgs(scheduleId, payload);
+    const hostedMainEraArgs = {
+      target_schedule_definition_id: scheduleId,
+      ...buildCreateScheduleRpcArgs(payload),
+    };
+
+    expect(hostedMainEraArgs).toHaveProperty("target_activity_resource_id");
+    expect(updateArgs).not.toHaveProperty("target_activity_resource_id");
+    expect(Object.keys(hostedMainEraArgs).sort()).not.toEqual(
+      Object.keys(updateArgs).sort(),
+    );
+  });
+
   it("matches generated PostgREST contracts", () => {
     const createKeys = Object.keys(
       buildCreateScheduleRpcArgs(payload),
