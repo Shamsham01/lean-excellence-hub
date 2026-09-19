@@ -191,13 +191,27 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     await expect(page.getByText("Primary source resource ID")).toHaveCount(0);
   });
 
-  test("scoped operator cannot open the project or benefit", async ({
+  test("scoped operator cannot change an in-scope project or create a benefit", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "operator");
     await page.goto(projectPath);
-    await expect(page.getByTestId("project-detail-page")).toHaveCount(0);
+    await expect(page.getByTestId("project-detail-page")).toBeVisible();
+    await expect(page.getByTestId("approve-project-button")).toHaveCount(0);
+    await expect(
+      page.getByTestId("return-project-to-draft-button"),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("save-charter-button")).toHaveCount(0);
+    await page.getByRole("tab", { name: "Benefits" }).click();
+    await expect(page.getByTestId("project-create-benefit")).toHaveCount(0);
+
     await page.goto(benefitPath);
-    await expect(page.getByTestId("benefit-workspace")).toHaveCount(0);
+    await expect(page.getByTestId("benefit-workspace")).toBeVisible();
+
+    await page.goto("/platform/benefits/new");
+    await expect(page.getByTestId("create-benefit-wizard")).toHaveCount(0);
+
+    await page.goto("/platform/projects/00000000-0000-4000-8000-000000000099");
+    await expect(page.getByTestId("project-detail-page")).toHaveCount(0);
   });
 });
