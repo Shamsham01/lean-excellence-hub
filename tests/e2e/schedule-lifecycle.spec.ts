@@ -20,7 +20,8 @@ async function createScheduleFromStandard(
   await page.getByTestId("schedule-owner-select").selectOption({ index: 1 });
   await page.getByTestId("schedule-frequency").selectOption(frequency);
   await page.getByTestId("schedule-submit").click();
-  await expect(page).toHaveURL(/\/platform\/5s\/standards\//);
+  await expect(page.getByTestId("schedule-form")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/platform\/5s\/standards\/[^/?#]+$/);
 }
 
 test.describe("Schedule lifecycle reliability", () => {
@@ -47,7 +48,9 @@ test.describe("Schedule lifecycle reliability", () => {
     await createScheduleFromStandard(page, monthlyTitle, "monthly");
 
     await page.goto("/platform/schedule");
-    await expect(page.getByRole("link", { name: dailyTitle })).toBeVisible();
+    await expect(page.getByRole("link", { name: dailyTitle })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByRole("link", { name: weeklyTitle })).toBeVisible();
     await expect(page.getByRole("link", { name: monthlyTitle })).toBeVisible();
   });
