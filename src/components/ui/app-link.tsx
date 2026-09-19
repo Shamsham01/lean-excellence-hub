@@ -32,8 +32,8 @@ export const AppLink = forwardRef<HTMLAnchorElement, AppLinkProps>(
     {
       href,
       replace = false,
-      prefetch: _prefetch,
-      scroll: _scroll,
+      prefetch,
+      scroll,
       onClick,
       target,
       download,
@@ -41,6 +41,8 @@ export const AppLink = forwardRef<HTMLAnchorElement, AppLinkProps>(
     },
     ref,
   ) {
+    void prefetch;
+    void scroll;
     const resolvedHref = resolveAppHref(href);
 
     function handleClick(event: MouseEvent<HTMLAnchorElement>) {
