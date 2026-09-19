@@ -25,6 +25,7 @@ import {
   requireQuerySuccess,
   splitApplicabilitySelection,
 } from "@/modules/operational/gemba-applicability";
+import { formatGembaVersionStatus } from "@/modules/operational/gemba-display";
 import {
   GEMBA_PERMISSIONS,
   SCHEDULE_PERMISSIONS,
@@ -204,7 +205,8 @@ export default async function GembaDefinitionPage({
       <div className="flex flex-wrap gap-2">
         {loadedVersions.map((version) => (
           <Badge key={version.id} variant="outline">
-            v{version.version_number} · {version.status}
+            v{version.version_number} ·{" "}
+            {formatGembaVersionStatus(version.status)}
           </Badge>
         ))}
       </div>

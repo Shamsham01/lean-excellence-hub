@@ -172,17 +172,21 @@ export async function startGembaWalkFromForm(formData: FormData) {
 export async function saveGembaWalkAnswer(
   walkId: string,
   questionId: string,
-  payload: { textValue?: string | null },
+  payload: { textValue?: string | null; isNotApplicable?: boolean },
 ) {
   const supabase = await createServerSupabaseClient();
   const rpcArgs: {
     target_walk_id: string;
     target_question_id: string;
     target_text_value?: string;
+    target_is_not_applicable?: boolean;
   } = {
     target_walk_id: walkId,
     target_question_id: questionId,
   };
+  if (payload.isNotApplicable) {
+    rpcArgs.target_is_not_applicable = true;
+  }
   if (payload.textValue != null) {
     rpcArgs.target_text_value = payload.textValue;
   }
@@ -196,16 +200,90 @@ export async function createGembaObservation(
   walkId: string,
   text: string,
   observationType: string,
+  clientRequestId?: string,
 ) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { error: "Enter observation text before saving." };
+  }
+
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc("create_gemba_observation", {
+  const rpcArgs: {
+    target_walk_id: string;
+    target_observation_text: string;
+    target_observation_type: string;
+    target_client_request_id?: string;
+  } = {
     target_walk_id: walkId,
-    target_observation_text: text,
+    target_observation_text: trimmed,
+    target_observation_type: observationType,
+  };
+  if (clientRequestId) {
+    rpcArgs.target_client_request_id = clientRequestId;
+  }
+
+  const { data, error } = await supabase.rpc(
+    "create_gemba_observation",
+    rpcArgs,
+  );
+  if (error) return { error: error.message };
+  revalidatePath(`/platform/gemba/walks/${walkId}`);
+  return { observationId: data as string };
+}
+
+export async function updateGembaObservation(
+  walkId: string,
+  observationId: string,
+  text: string,
+  observationType: string,
+) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { error: "Enter observation text before saving." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("update_gemba_observation", {
+    target_walk_id: walkId,
+    target_observation_id: observationId,
+    target_observation_text: trimmed,
     target_observation_type: observationType,
   });
   if (error) return { error: error.message };
   revalidatePath(`/platform/gemba/walks/${walkId}`);
-  return { observationId: data as string };
+  return { ok: true };
+}
+
+export async function deleteGembaObservation(
+  walkId: string,
+  observationId: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("delete_gemba_observation", {
+    target_walk_id: walkId,
+    target_observation_id: observationId,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/platform/gemba/walks/${walkId}`);
+  return { ok: true };
+}
+
+export async function deleteGembaObservations(
+  walkId: string,
+  observationIds: string[],
+) {
+  if (observationIds.length === 0) {
+    return { error: "Select at least one observation to delete." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("delete_gemba_observations", {
+    target_walk_id: walkId,
+    target_observation_ids: observationIds,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/platform/gemba/walks/${walkId}`);
+  return { ok: true };
 }
 
 export async function completeGembaWalk(walkId: string, summary?: string) {
@@ -288,11 +366,14 @@ export async function completeGembaWalkFromForm(formData: FormData) {
 }
 
 export async function createGembaObservationFromForm(formData: FormData) {
-  await createGembaObservation(
+  const result = await createGembaObservation(
     String(formData.get("walkId")),
-    String(formData.get("text")),
+    String(formData.get("text") ?? ""),
     String(formData.get("observationType")),
   );
+  if (result.error) {
+    throw new Error(result.error);
+  }
 }
 
 export async function publishGembaDefinitionFromForm(formData: FormData) {

@@ -83,7 +83,7 @@ test.describe("platform reliability after shared RSC refresh", () => {
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);
 
     await page.getByTestId("publish-gemba-definition").click();
-    await expect(page.getByText(/v1 · published/)).toBeVisible();
+    await expect(page.getByText(/v1 · published/i)).toBeVisible();
 
     await selectFirstExecutionUnit(page, "gemba-unit-select");
     await expectExecutionHeaderLayout(page, {

@@ -12,8 +12,9 @@ import {
 
 type GembaEvidenceBlockProps = {
   walkId: string;
-  sectionId: string;
-  questionId: string;
+  sectionId?: string;
+  questionId?: string;
+  observationId?: string;
   evidence: EvidenceItem[];
   canEdit: boolean;
 };
@@ -22,6 +23,7 @@ export function GembaEvidenceBlock({
   walkId,
   sectionId,
   questionId,
+  observationId,
   evidence,
   canEdit,
 }: GembaEvidenceBlockProps) {
@@ -29,13 +31,23 @@ export function GembaEvidenceBlock({
     <EvidenceUploader
       existingEvidence={evidence}
       canEdit={canEdit}
-      filter={(item) => item.question_id === questionId}
+      filter={(item) =>
+        observationId
+          ? item.observation_id === observationId
+          : item.question_id === questionId
+      }
       onInitiate={(filename, mimeType, byteSize) =>
         initiateGembaEvidenceUpload(walkId, filename, mimeType, byteSize)
       }
       onConfirm={confirmGembaEvidenceUpload}
       onLink={(attachmentId) =>
-        linkGembaEvidence(walkId, attachmentId, sectionId, questionId)
+        linkGembaEvidence(
+          walkId,
+          attachmentId,
+          sectionId,
+          questionId,
+          observationId,
+        )
       }
     />
   );
