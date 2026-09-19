@@ -4,7 +4,10 @@ import { S2B2_WORKFLOW_FIXTURE_TITLES } from "../../scripts/demo-seed/constants"
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   expectReviewStatus,
+  expectReviewTestId,
+  expectReviewerLabel,
   openReviewQueueForTitle,
+  parkCurrentReview,
   reviewWorkspace,
 } from "./helpers/suggestion-review";
 
@@ -61,9 +64,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.claim);
     await page.getByTestId("review-claim-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Claimed by you/i, { timeout: 15000 });
+    await expectReviewerLabel(page, /Claimed by you/i);
     await expectReviewStatus(page, "Submitted");
   });
 
@@ -87,16 +88,11 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       S2B2_WORKFLOW_FIXTURE_TITLES.claim,
       "mine",
     );
-    await page
-      .getByTestId("review-rationale")
-      .fill("Internal: waiting for supplier quote.");
-    await page
-      .getByTestId("review-employee-feedback")
-      .fill("Waiting for supplier quote.");
-    await page.getByTestId("review-park-button").click();
-    await expect(
-      page.getByTestId("review-workspace-parked-current"),
-    ).toBeVisible();
+    await parkCurrentReview(
+      page,
+      "Internal: waiting for supplier quote.",
+      "Waiting for supplier quote.",
+    );
     await page.goto("/platform/suggestions/review?queue=mine");
     await expect(
       page
@@ -118,9 +114,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     );
     await page.getByTestId("review-begin-button").click();
     await expectReviewStatus(page, "Under Review");
-    await expect(
-      page.getByTestId("review-workspace-parked-history"),
-    ).toBeVisible();
+    await expectReviewTestId(page, "review-workspace-parked-history");
     await expect(page.getByText("Previously parked")).toBeVisible();
   });
 
@@ -182,9 +176,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await expect(managerB.getByTestId("review-claim-button")).toBeVisible();
 
     await managerB.getByTestId("review-claim-button").click();
-    await expect(
-      managerB.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Claimed by you/i, { timeout: 15000 });
+    await expectReviewerLabel(managerB, /Claimed by you/i);
 
     await managerA.getByTestId("review-claim-button").click();
     await expect(managerA.getByTestId("review-workspace-error")).toContainText(
@@ -202,9 +194,7 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       label: "Apex Finance",
     });
     await page.getByTestId("review-assign-button").click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Assigned to Apex Finance/i);
+    await expectReviewerLabel(page, /Assigned to Apex Finance/i);
     await expectReviewStatus(page, "Submitted");
   });
 
@@ -218,16 +208,15 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       label: "Apex Finance",
     });
     await page.getByTestId("review-assign-button").click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Assigned to Apex Finance/i);
+    await expectReviewerLabel(page, /Assigned to Apex Finance/i);
     await page.getByTestId("review-assign-select").selectOption({
       label: "Apex Manager",
     });
     await page.getByRole("button", { name: "Reassign reviewer" }).click();
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Assigned to Apex Manager|Claimed by you|Reassigned to/i);
+    await expectReviewerLabel(
+      page,
+      /Assigned to Apex Manager|Claimed by you|Reassigned to/i,
+    );
   });
 
   test("read-only user does not see reviewer workflow leakage", async ({
@@ -266,13 +255,11 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.parked);
     await page.getByTestId("review-claim-button").click();
     await page.getByTestId("review-begin-button").click();
-    await page
-      .getByTestId("review-rationale")
-      .fill("Internal: need additional evidence.");
-    await page
-      .getByTestId("review-employee-feedback")
-      .fill("Need additional evidence.");
-    await page.getByTestId("review-park-button").click();
+    await parkCurrentReview(
+      page,
+      "Internal: need additional evidence.",
+      "Need additional evidence.",
+    );
     await page.goto("/platform/suggestions/review?queue=mine");
     await expect(
       page

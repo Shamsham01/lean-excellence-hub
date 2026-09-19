@@ -12,23 +12,49 @@ function queueItemForTitle(page: Page, title: string) {
     .first();
 }
 
-export async function expectReviewStatus(page: Page, label: string) {
-  const status = page.getByTestId("review-workspace-status");
-
+async function expectAfterReviewRefresh(
+  page: Page,
+  assertion: () => Promise<void>,
+) {
   try {
-    await expect(status).toHaveText(label, { timeout: REVIEW_TIMEOUT_MS });
+    await assertion();
     return;
   } catch {
     // Production RSC refresh after a review mutation can abort
     // ("destination stream closed early"); a full reload reads the
-    // persisted status instead of waiting on router.refresh().
+    // persisted workspace instead of waiting on router.refresh().
   }
 
   await page.reload();
   await expect(reviewWorkspace(page)).toBeVisible({
     timeout: REVIEW_TIMEOUT_MS,
   });
-  await expect(status).toHaveText(label, { timeout: REVIEW_TIMEOUT_MS });
+  await assertion();
+}
+
+export async function expectReviewStatus(page: Page, label: string) {
+  await expectAfterReviewRefresh(page, async () => {
+    await expect(page.getByTestId("review-workspace-status")).toHaveText(
+      label,
+      { timeout: REVIEW_TIMEOUT_MS },
+    );
+  });
+}
+
+export async function expectReviewTestId(page: Page, testId: string) {
+  await expectAfterReviewRefresh(page, async () => {
+    await expect(page.getByTestId(testId)).toBeVisible({
+      timeout: REVIEW_TIMEOUT_MS,
+    });
+  });
+}
+
+export async function expectReviewerLabel(page: Page, pattern: RegExp) {
+  await expectAfterReviewRefresh(page, async () => {
+    await expect(
+      page.getByTestId("review-workspace-reviewer-label"),
+    ).toContainText(pattern, { timeout: REVIEW_TIMEOUT_MS });
+  });
 }
 
 export async function openReviewQueueForTitle(
@@ -79,37 +105,28 @@ export async function openReviewQueueForTitle(
 export async function claimCurrentReview(page: Page) {
   await page.getByTestId("review-claim-button").click();
   await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
-
-  try {
-    await expect(
-      page.getByTestId("review-workspace-reviewer-label"),
-    ).toContainText(/Claimed by you/i, { timeout: REVIEW_TIMEOUT_MS });
-    return;
-  } catch {
-    await page.reload();
-  }
-
-  await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
-  await expect(
-    page.getByTestId("review-workspace-reviewer-label"),
-  ).toContainText(/Claimed by you/i, { timeout: REVIEW_TIMEOUT_MS });
+  await expectReviewerLabel(page, /Claimed by you/i);
 }
 
 export async function beginCurrentReview(page: Page) {
   await page.getByTestId("review-begin-button").click();
-
-  try {
+  await expectAfterReviewRefresh(page, async () => {
     await expect(page.getByTestId("review-approve-button")).toBeVisible({
       timeout: REVIEW_TIMEOUT_MS,
     });
-    return;
-  } catch {
-    await page.reload();
-  }
-
-  await expect(page.getByTestId("review-approve-button")).toBeVisible({
-    timeout: REVIEW_TIMEOUT_MS,
   });
+}
+
+export async function parkCurrentReview(
+  page: Page,
+  rationale: string,
+  employeeFeedback: string,
+) {
+  await page.getByTestId("review-rationale").fill(rationale);
+  await page.getByTestId("review-employee-feedback").fill(employeeFeedback);
+  await page.getByTestId("review-park-button").click();
+  await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
+  await expectReviewTestId(page, "review-workspace-parked-current");
 }
 
 export async function approveCurrentReview(
