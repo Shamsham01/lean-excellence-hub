@@ -475,6 +475,40 @@ as $$
   )
 $$;
 
+-- Attachment FORCE RLS is authenticated-only. Private Gemba helpers owned by
+-- lean_hub_private_owner must validate via a postgres-owned reader, matching
+-- private.attachment_is_active_in_organisation.
+create or replace function private.attachment_is_active_for_resource(
+  target_organisation_id uuid,
+  expected_attachment_id uuid,
+  expected_resource_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.attachments attachment_row
+    where attachment_row.organisation_id = target_organisation_id
+      and attachment_row.id = expected_attachment_id
+      and attachment_row.target_resource_id = expected_resource_id
+      and attachment_row.lifecycle = 'active'
+  )
+$$;
+
+alter function private.attachment_is_active_for_resource(uuid, uuid, uuid)
+  owner to postgres;
+
+revoke all on function private.attachment_is_active_for_resource(
+  uuid, uuid, uuid
+) from public, anon, authenticated, service_role;
+grant execute on function private.attachment_is_active_for_resource(
+  uuid, uuid, uuid
+) to lean_hub_private_owner;
+
 create or replace function private.link_gemba_evidence(
   target_walk_id uuid,
   target_attachment_id uuid,
@@ -498,13 +532,10 @@ begin
       using errcode = '42501';
   end if;
 
-  if not exists (
-    select 1
-    from public.attachments attachment_row
-    where attachment_row.organisation_id = org_id
-      and attachment_row.id = target_attachment_id
-      and attachment_row.target_resource_id = target_walk_id
-      and attachment_row.lifecycle = 'active'
+  if not private.attachment_is_active_for_resource(
+    org_id,
+    target_attachment_id,
+    target_walk_id
   ) then
     raise exception 'gemba evidence attachment is not valid for this walk'
       using errcode = '22023';
@@ -545,6 +576,28 @@ begin
 end;
 $$;
 
+create or replace function public.link_gemba_evidence(
+  target_walk_id uuid,
+  target_attachment_id uuid,
+  target_section_id uuid default null,
+  target_question_id uuid default null,
+  target_observation_id uuid default null
+)
+returns uuid
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  select private.link_gemba_evidence(
+    target_walk_id,
+    target_attachment_id,
+    target_section_id,
+    target_question_id,
+    target_observation_id
+  )
+$$;
+
 grant execute on function public.create_gemba_observation(
   uuid, text, text, uuid, uuid, text, text, uuid
 ) to authenticated;
@@ -555,6 +608,9 @@ grant execute on function public.delete_gemba_observation(uuid, uuid)
   to authenticated;
 grant execute on function public.delete_gemba_observations(uuid, uuid[])
   to authenticated;
+grant execute on function public.link_gemba_evidence(
+  uuid, uuid, uuid, uuid, uuid
+) to authenticated;
 
 revoke all on function public.create_gemba_observation(
   uuid, text, text, uuid, uuid, text, text, uuid
@@ -565,6 +621,9 @@ revoke all on function public.delete_gemba_observation(uuid, uuid)
   from public, anon;
 revoke all on function public.delete_gemba_observations(uuid, uuid[])
   from public, anon;
+revoke all on function public.link_gemba_evidence(
+  uuid, uuid, uuid, uuid, uuid
+) from public, anon;
 
 create or replace function private.count_unanswered_required_gemba_questions(
   target_organisation_id uuid,

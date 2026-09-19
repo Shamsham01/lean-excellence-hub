@@ -153,6 +153,11 @@ select ok(
     'authenticated',
     'public.delete_gemba_observations(uuid, uuid[])',
     'execute'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.link_gemba_evidence(uuid, uuid, uuid, uuid, uuid)',
+    'execute'
   ),
   'authenticated can execute observation lifecycle RPCs'
 );
@@ -176,6 +181,11 @@ select ok(
   and not pg_catalog.has_function_privilege(
     'anon',
     'public.create_gemba_observation(uuid, text, text, uuid, uuid, text, text, uuid)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon',
+    'public.link_gemba_evidence(uuid, uuid, uuid, uuid, uuid)',
     'execute'
   ),
   'anon cannot execute observation mutation RPCs'
@@ -238,6 +248,11 @@ select ok(
   and not pg_catalog.has_function_privilege(
     'authenticated',
     'private.link_gemba_evidence(uuid, uuid, uuid, uuid, uuid)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.attachment_is_active_for_resource(uuid, uuid, uuid)',
     'execute'
   )
   and not pg_catalog.has_function_privilege(

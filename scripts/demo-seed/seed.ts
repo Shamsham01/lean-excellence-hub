@@ -2169,10 +2169,7 @@ async function ensureM6Demo(client: SupabaseClient, unitIds: UnitMap) {
       const { data: walkQuestions } = await client
         .from("template_questions")
         .select("id")
-        .eq(
-          "template_version_id",
-          completedVersion?.template_version_id ?? "",
-        );
+        .eq("template_version_id", completedVersion?.template_version_id ?? "");
 
       for (const question of walkQuestions ?? []) {
         await client.rpc("upsert_gemba_walk_answer", {
