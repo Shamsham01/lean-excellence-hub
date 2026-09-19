@@ -228,9 +228,8 @@ begin
 end;
 $$;
 
-alter function public.get_ci_project_detail(uuid) owner to lean_hub_private_owner;
-revoke all on function public.get_ci_project_detail(uuid) from public, anon;
-grant execute on function public.get_ci_project_detail(uuid) to authenticated;
+-- Existing public wrapper keeps lean_hub_private_owner; CREATE OR REPLACE does
+-- not change owner. Do not ALTER OWNER here — that role has no CREATE on public.
 
 -- ---------------------------------------------------------------------------
 -- Suggestion detail: human-readable linked projects
@@ -334,9 +333,8 @@ begin
 end;
 $$;
 
-alter function public.get_suggestion_detail(uuid) owner to lean_hub_private_owner;
-revoke all on function public.get_suggestion_detail(uuid) from public, anon;
-grant execute on function public.get_suggestion_detail(uuid) to authenticated;
+-- Existing public wrapper keeps lean_hub_private_owner; CREATE OR REPLACE does
+-- not change owner. Do not ALTER OWNER here — that role has no CREATE on public.
 
 -- ---------------------------------------------------------------------------
 -- Benefit source links: human-readable labels. href only when the caller
