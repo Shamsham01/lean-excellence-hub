@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type {
@@ -57,14 +56,29 @@ export default async function BenefitsPortfolioPage({
           <div className="flex gap-2">
             {canCreate ? (
               <Button size="sm" asChild>
-                <Link href="/platform/benefits/new">New benefit</Link>
+                <AppLink
+                  href="/platform/benefits/new"
+                  data-testid="benefits-new-link"
+                >
+                  New benefit
+                </AppLink>
               </Button>
             ) : null}
             <Button size="sm" variant="outline" asChild>
-              <Link href="/platform/benefits/validation">Validation queue</Link>
+              <AppLink
+                href="/platform/benefits/validation"
+                data-testid="benefits-validation-link"
+              >
+                Validation queue
+              </AppLink>
             </Button>
             <Button size="sm" variant="outline" asChild>
-              <Link href="/platform/benefits/categories">Categories</Link>
+              <AppLink
+                href="/platform/benefits/categories"
+                data-testid="benefits-categories-link"
+              >
+                Categories
+              </AppLink>
             </Button>
           </div>
         }

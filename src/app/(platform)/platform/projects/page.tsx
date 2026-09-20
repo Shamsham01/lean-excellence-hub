@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { ProjectPortfolio } from "@/components/projects/project-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { computePortfolioMetrics } from "@/lib/projects/portfolio-metrics";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
@@ -124,11 +123,21 @@ export default async function ProjectsPortfolioPage({
           <div className="flex gap-2">
             {canManage ? (
               <Button size="sm" asChild>
-                <Link href="/platform/projects/new">New project</Link>
+                <AppLink
+                  href="/platform/projects/new"
+                  data-testid="projects-new-link"
+                >
+                  New project
+                </AppLink>
               </Button>
             ) : null}
             <Button size="sm" variant="outline" asChild>
-              <Link href="/platform/projects/methodologies">Methodologies</Link>
+              <AppLink
+                href="/platform/projects/methodologies"
+                data-testid="projects-methodologies-link"
+              >
+                Methodologies
+              </AppLink>
             </Button>
           </div>
         }

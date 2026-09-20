@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BenefitWorkspace } from "@/components/benefits/benefit-workspace";
+import { AppLink } from "@/components/ui/app-link";
 import { callBenefitRpc, untypedFrom } from "@/lib/benefits/supabase-untyped";
 import type {
   BenefitDetail,
@@ -146,12 +146,13 @@ export default async function BenefitDetailPage({
         canValidateRealisation={canValidateRealisation}
         canApproveForecast={canValidateFinance || canManage}
       />
-      <Link
+      <AppLink
         href="/platform/benefits"
         className="mt-6 inline-block text-sm text-muted-foreground hover:underline"
+        data-testid="benefits-back-link"
       >
         Back to benefits
-      </Link>
+      </AppLink>
     </div>
   );
 }

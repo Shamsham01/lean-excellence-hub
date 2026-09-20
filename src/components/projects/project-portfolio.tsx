@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { MetricCard } from "@/components/platform/metric-card";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -120,16 +120,17 @@ export function ProjectPortfolio({
               </p>
               {canManage ? (
                 <Button size="sm" className="mt-4" asChild>
-                  <Link href="/platform/projects/new">New project</Link>
+                  <AppLink href="/platform/projects/new">New project</AppLink>
                 </Button>
               ) : null}
             </div>
           ) : (
             items.map((item) => (
-              <Link
+              <AppLink
                 key={item.id}
                 href={`/platform/projects/${item.id}`}
                 className="flex flex-col gap-3 rounded-lg border border-border px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                data-testid={`project-portfolio-item-${item.id}`}
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">
@@ -150,7 +151,7 @@ export function ProjectPortfolio({
                     {projectPriorityLabel(item.priority)}
                   </Badge>
                 </div>
-              </Link>
+              </AppLink>
             ))
           )}
         </CardContent>

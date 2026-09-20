@@ -235,6 +235,7 @@ jobs:
               tests/e2e/suggestion-portfolio.spec.ts
               tests/e2e/suggestion-reviewer-workflow.spec.ts
               tests/e2e/nav-click.spec.ts
+              tests/e2e/projects-benefits-nav-click.spec.ts
               tests/e2e/action-lifecycle.spec.ts
               tests/e2e/project-charter-benefits-lineage.spec.ts
               tests/e2e/milestone10-closure.spec.ts

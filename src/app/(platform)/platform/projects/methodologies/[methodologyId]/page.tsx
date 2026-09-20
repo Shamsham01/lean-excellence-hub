@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MethodologyEditor } from "@/components/projects/methodology-editor";
+import { AppLink } from "@/components/ui/app-link";
 import { untypedFrom } from "@/lib/projects/supabase-untyped";
 import type {
   MethodologyPhaseRow,
@@ -68,7 +68,7 @@ export default async function MethodologyDetailPage({
   }
 
   return (
-    <div data-testid="methodology-manager-page">
+    <div data-testid="methodology-detail-page">
       <MethodologyEditor
         methodologyId={methodologyRow.id}
         methodologyName={methodologyRow.name}
@@ -77,12 +77,13 @@ export default async function MethodologyDetailPage({
         phases={phases}
         canManage={canManage}
       />
-      <Link
+      <AppLink
         href="/platform/projects/methodologies"
         className="mt-6 inline-block text-sm text-muted-foreground hover:underline"
+        data-testid="methodology-back-link"
       >
         Back to methodologies
-      </Link>
+      </AppLink>
     </div>
   );
 }
