@@ -86,6 +86,17 @@ export async function handleWorkforceImportExportRequest(
     return jsonResponse({ error: "Unauthorized." }, 401);
   }
 
+  const { error: accessError } = await userClient.rpc(
+    "assert_workforce_import_credential_export_access",
+    {
+      target_import_job_id: importJobId,
+      target_export_session_id: exportSessionId,
+    },
+  );
+  if (accessError) {
+    return jsonResponse({ error: "Credential export is not available." }, 403);
+  }
+
   const service = dependencies.createServiceClient();
   const { data: exportRows, error: exportError } = await service.rpc(
     "get_workforce_import_credential_export_rows",

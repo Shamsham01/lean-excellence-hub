@@ -312,6 +312,54 @@ begin
 end;
 $$;
 
+create or replace function public.assert_workforce_import_credential_export_access(
+  target_import_job_id uuid,
+  target_export_session_id uuid
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  job_row public.workforce_import_jobs%rowtype;
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'credential export is not authorised'
+      using errcode = '42501';
+  end if;
+
+  perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
+  perform private.expire_stale_workforce_import_export_sessions(target_import_job_id);
+
+  select *
+  into job_row
+  from public.workforce_import_jobs import_job
+  where import_job.id = target_import_job_id
+    and import_job.organisation_id = org_id;
+
+  if job_row.id is null then
+    raise exception 'import job does not exist'
+      using errcode = 'P0002';
+  end if;
+
+  if job_row.credential_export_status <> 'exporting'
+    or job_row.credential_export_session_id is distinct from target_export_session_id then
+    raise exception 'credential export session is not active'
+      using errcode = '55000';
+  end if;
+
+  if job_row.credential_expires_at is not null
+    and job_row.credential_expires_at <= statement_timestamp() then
+    raise exception 'credential export has expired'
+      using errcode = '55000';
+  end if;
+end;
+$$;
+
 drop function if exists public.get_workforce_import_credential_export_rows(uuid);
 
 create or replace function public.get_workforce_import_credential_export_rows(
@@ -1542,6 +1590,8 @@ $$;
 -- ---------------------------------------------------------------------------
 
 grant execute on function public.begin_workforce_import_credential_export(uuid) to authenticated;
+grant execute on function public.assert_workforce_import_credential_export_access(uuid, uuid)
+  to authenticated;
 grant execute on function public.ack_workforce_import_credentials_exported(uuid, uuid) to authenticated;
 grant execute on function public.archive_workforce_import_job(uuid) to authenticated;
 grant execute on function public.preauthorize_workforce_credential_reset(uuid) to authenticated;
@@ -1549,6 +1599,8 @@ grant execute on function public.finalize_workforce_credential_reset(uuid, uuid)
   to lean_hub_private_owner, service_role;
 
 revoke all on function public.begin_workforce_import_credential_export(uuid) from public, anon;
+revoke all on function public.assert_workforce_import_credential_export_access(uuid, uuid)
+  from public, anon;
 revoke all on function public.ack_workforce_import_credentials_exported(uuid, uuid) from public, anon;
 revoke all on function public.archive_workforce_import_job(uuid) from public, anon;
 revoke all on function public.preauthorize_workforce_credential_reset(uuid) from public, anon;

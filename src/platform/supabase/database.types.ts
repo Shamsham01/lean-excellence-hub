@@ -11644,6 +11644,10 @@ export type Database = {
         Args: { target_import_job_id: string }
         Returns: boolean
       }
+      assert_workforce_import_credential_export_access: {
+        Args: { target_export_session_id: string; target_import_job_id: string }
+        Returns: undefined
+      }
       assign_ci_project_team_member: {
         Args: {
           target_membership_id: string

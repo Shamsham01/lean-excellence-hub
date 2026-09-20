@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(11);
 
 insert into auth.users (
   id,
@@ -301,6 +301,16 @@ select is(
   ) ->> 'credential_export_status',
   'exporting',
   'export session stays active before acknowledgement'
+);
+
+select lives_ok(
+  $$
+    select public.assert_workforce_import_credential_export_access(
+      (select id from issue94_ids where key = 'import_job'),
+      (select session_id from issue94_export_session)
+    );
+  $$,
+  'authorized importer can assert active export session access'
 );
 
 select lives_ok(

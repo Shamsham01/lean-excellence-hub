@@ -35,7 +35,20 @@ async function encryptTestCredential(plaintext: string) {
 describe("workforce import export handler", () => {
   it("returns csv without acknowledging export server-side", async () => {
     const encrypted = await encryptTestCredential("Temp-Pass-123!");
-    const markExported = vi.fn().mockResolvedValue({ error: null });
+    const assertExportAccess = vi.fn().mockResolvedValue({ error: null });
+    const getExportRows = vi.fn().mockResolvedValue({
+      data: [
+        {
+          first_name: "Anna",
+          last_name: "Smith",
+          username: "anna.smith",
+          job_title: "Operator",
+          primary_unit_path: "Site > Ops",
+          ...encrypted,
+        },
+      ],
+      error: null,
+    });
     const dependencies = {
       readEnv: () => TEST_KEY_HEX,
       createUserClient: () => ({
@@ -45,24 +58,12 @@ describe("workforce import export handler", () => {
             error: null,
           }),
         },
-        rpc: markExported,
+        rpc: assertExportAccess,
       }),
       createServiceClient: () => ({
         rpc: async (fn: string) => {
           if (fn === "get_workforce_import_credential_export_rows") {
-            return {
-              data: [
-                {
-                  first_name: "Anna",
-                  last_name: "Smith",
-                  username: "anna.smith",
-                  job_title: "Operator",
-                  primary_unit_path: "Site > Ops",
-                  ...encrypted,
-                },
-              ],
-              error: null,
-            };
+            return getExportRows();
           }
           return { data: null, error: new Error("unexpected rpc") };
         },
@@ -87,7 +88,50 @@ describe("workforce import export handler", () => {
 
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("anna.smith");
-    expect(markExported).not.toHaveBeenCalled();
+    expect(assertExportAccess).toHaveBeenCalledWith(
+      "assert_workforce_import_credential_export_access",
+      {
+        target_import_job_id: "job-1",
+        target_export_session_id: "session-1",
+      },
+    );
+    expect(getExportRows).toHaveBeenCalled();
+  });
+
+  it("rejects export when user-scoped access assertion fails", async () => {
+    const getExportRows = vi.fn();
+    const response = await handleWorkforceImportExportRequest(
+      new Request("http://localhost/functions/v1/workforce-import-export", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          importJobId: "job-1",
+          organisationCode: "demo",
+          exportSessionId: "session-1",
+        }),
+      }),
+      {
+        readEnv: () => undefined,
+        createUserClient: () => ({
+          auth: {
+            getUser: async () => ({
+              data: { user: { id: "user-1" } },
+              error: null,
+            }),
+          },
+          rpc: vi.fn().mockResolvedValue({
+            error: new Error("credential export is not authorised"),
+          }),
+        }),
+        createServiceClient: () => ({ rpc: getExportRows }),
+      },
+    );
+
+    expect(response.status).toBe(403);
+    expect(getExportRows).not.toHaveBeenCalled();
   });
 
   it("requires exportSessionId in request body", async () => {
