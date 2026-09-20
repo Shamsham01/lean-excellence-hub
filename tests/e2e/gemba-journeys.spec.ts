@@ -29,6 +29,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(
       page.getByRole("heading", { name: "Gemba walks" }),
     ).toBeVisible();
+    await expect(page.getByText("Walks in progress")).toBeVisible();
     await expect(page.getByText("Completed walks")).toBeVisible();
 
     await page.getByRole("link", { name: "Definitions" }).click();
@@ -125,6 +126,15 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
 
     await page.goto("/platform/gemba");
+    await expect(page.getByTestId("gemba-overview-page")).toBeVisible();
+    await expect(page.getByText(name)).toBeVisible();
+    await expect(page.getByText("Resume walk")).toBeVisible();
+
+    await page.goto("/platform/gemba/history");
+    await expect(page.getByTestId("gemba-history-page")).toBeVisible();
+    await expect(page.getByText(name)).toBeVisible();
+    await expect(page.getByText("Resume walk")).toBeVisible();
+
     await page.goto(walkUrl);
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { findResumableGembaWalkId } from "@/modules/operational/gemba-active-walks";
 import { readApplicableUnitIds } from "@/modules/operational/gemba-applicability";
 import {
   loadTemplateAuthoringChildren,
@@ -145,6 +146,16 @@ export async function startGembaWalk(
   occurrenceId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
+
+  const existingWalkId = await findResumableGembaWalkId(
+    supabase,
+    definitionId,
+    unitId,
+  );
+  if (existingWalkId) {
+    return { walkId: existingWalkId };
+  }
+
   const rpcArgs: {
     target_definition_id: string;
     target_unit_id: string;
