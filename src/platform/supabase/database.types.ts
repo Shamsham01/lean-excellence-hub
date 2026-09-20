@@ -12821,24 +12821,15 @@ export type Database = {
           text_body: string
         }[]
       }
-      get_people_directory:
-        | {
-            Args: {
-              target_page?: number
-              target_page_size?: number
-              target_search?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              target_include_inactive?: boolean
-              target_page?: number
-              target_page_size?: number
-              target_search?: string
-            }
-            Returns: Json
-          }
+      get_people_directory: {
+        Args: {
+          target_include_inactive?: boolean
+          target_page?: number
+          target_page_size?: number
+          target_search?: string
+        }
+        Returns: Json
+      }
       get_potential_benefit_overlaps: {
         Args: { target_benefit_id: string }
         Returns: {

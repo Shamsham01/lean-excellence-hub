@@ -1501,6 +1501,10 @@ $$;
 -- People directory: optional inactive visibility for administrators
 -- ---------------------------------------------------------------------------
 
+-- Issue #94 added a fourth parameter; drop the legacy 3-arg overload so
+-- PostgREST can resolve RPC calls unambiguously (PGRST203 otherwise).
+drop function if exists public.get_people_directory(text, integer, integer);
+
 create or replace function public.get_people_directory(
   target_search text default null,
   target_page integer default 1,
@@ -1584,6 +1588,11 @@ begin
   );
 end;
 $$;
+
+grant execute on function public.get_people_directory(text, integer, integer, boolean)
+  to authenticated;
+revoke all on function public.get_people_directory(text, integer, integer, boolean)
+  from public, anon;
 
 -- ---------------------------------------------------------------------------
 -- Grants
