@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { awardRecognition } from "@/app/(platform)/platform/recognition/actions";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { navigateTo } from "@/lib/navigation/navigate";
 import {
   resolveSelectorValue,
   type PersonSelectOption,
@@ -35,7 +35,6 @@ export function AwardRecognitionForm({
   defaultRecipientId,
   defaultSourceId,
 }: AwardRecognitionFormProps) {
-  const router = useRouter();
   const [typeId, setTypeId] = useState(types[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -65,8 +64,13 @@ export function AwardRecognitionForm({
         ...(defaultSourceId ? { sourceResourceId: defaultSourceId } : {}),
       });
       if (result.error) throw new Error(result.error);
-      router.push("/platform/recognition");
-      router.refresh();
+      // NAV-CLICK-001: do not pair router.push with router.refresh — the
+      // refresh cancels the in-flight destination on compiled/hosted servers.
+      navigateTo(
+        result.id
+          ? `/platform/recognition/${result.id}`
+          : "/platform/recognition",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Award failed");
     }
@@ -135,6 +139,7 @@ export function AwardRecognitionForm({
             type="submit"
             className="min-h-11"
             disabled={!unitId || !recipientId}
+            data-testid="award-recognition-submit"
           >
             Award
           </Button>

@@ -1,7 +1,7 @@
-import Link from "next/link";
-
 import { TrainingMatrix } from "@/components/training/training-matrix";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type DirectoryPerson = {
@@ -72,17 +72,19 @@ export default async function TrainingMatrixPage() {
     .eq("status", "completed");
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="training-matrix-page">
       <PageHeader
         title="Training matrix"
         description="Who needs what training, and where are the gaps?"
         actions={
-          <Link
-            href="/platform/training"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Back to training
-          </Link>
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/training"
+              data-testid="training-matrix-back-link"
+            >
+              Back to training
+            </AppLink>
+          </Button>
         }
       />
       <TrainingMatrix

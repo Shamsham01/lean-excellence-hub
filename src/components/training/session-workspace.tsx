@@ -8,6 +8,7 @@ import {
   updateSessionParticipantStatus,
 } from "@/app/(platform)/platform/training/actions";
 import { BulkCompletionDialog } from "@/components/training/bulk-completion-dialog";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -115,7 +116,13 @@ export function SessionWorkspace({
               className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p className="font-medium">{participant.display_name}</p>
+                <AppLink
+                  href={`/platform/people/${participant.membership_id}`}
+                  className="font-medium hover:underline"
+                  data-testid={`training-participant-link-${participant.membership_id}`}
+                >
+                  {participant.display_name}
+                </AppLink>
                 <Badge variant="outline" className="mt-1">
                   {participant.status}
                 </Badge>

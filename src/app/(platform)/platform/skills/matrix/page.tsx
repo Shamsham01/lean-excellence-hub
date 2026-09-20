@@ -3,6 +3,8 @@ import {
   type SkillsMatrixGapRow,
 } from "@/components/skills/skills-matrix";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type DirectoryPerson = {
@@ -68,10 +70,20 @@ export default async function SkillsMatrixPage() {
   );
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="skills-matrix-page">
       <PageHeader
         title="Skills matrix"
         description="Current proficiency vs role requirements."
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/skills"
+              data-testid="skills-matrix-back-link"
+            >
+              Back to skills
+            </AppLink>
+          </Button>
+        }
       />
       <SkillsMatrix
         memberships={memberships ?? []}

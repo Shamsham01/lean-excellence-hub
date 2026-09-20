@@ -1,4 +1,6 @@
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function TrainingCurriculumPage() {
@@ -36,10 +38,20 @@ export default async function TrainingCurriculumPage() {
   const courses = await supabase.from("training_courses").select("id, name");
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="training-curriculum-page">
       <PageHeader
         title="Training curriculum"
         description="Job function training requirements for the published curriculum."
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/training"
+              data-testid="training-curriculum-back-link"
+            >
+              Back to training
+            </AppLink>
+          </Button>
+        }
       />
       <div className="space-y-4">
         {jobFunctions.data?.map((jf) => (
@@ -52,9 +64,16 @@ export default async function TrainingCurriculumPage() {
                   const course = courses.data?.find(
                     (c) => c.id === req.course_id,
                   );
+                  const courseName = course?.name ?? "Course";
                   return (
                     <li key={req.id}>
-                      {course?.name ?? req.course_id}
+                      <AppLink
+                        href={`/platform/training/courses/${req.course_id}`}
+                        className="hover:underline"
+                        data-testid={`training-curriculum-course-link-${req.course_id}`}
+                      >
+                        {courseName}
+                      </AppLink>
                       {req.mandatory ? " (mandatory)" : ""}
                     </li>
                   );

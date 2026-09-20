@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -19,13 +18,18 @@ export default async function SkillsOverviewPage() {
     .eq("status", "active");
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="skills-overview">
       <PageHeader
         title="Skills"
         description="Capability catalogue, proficiency scales, and skills matrix."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/skills/matrix">Skills matrix</Link>
+            <AppLink
+              href="/platform/skills/matrix"
+              data-testid="skills-matrix-link"
+            >
+              Skills matrix
+            </AppLink>
           </Button>
         }
       />
@@ -36,9 +40,13 @@ export default async function SkillsOverviewPage() {
         />
         <MetricCard label="Active skills" value={skillCount ?? 0} />
       </div>
-      <Link href="/platform/skills/catalog" className="text-sm hover:underline">
+      <AppLink
+        href="/platform/skills/catalog"
+        className="text-sm hover:underline"
+        data-testid="skills-catalog-link"
+      >
         Skills catalogue
-      </Link>
+      </AppLink>
     </div>
   );
 }
