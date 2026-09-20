@@ -1,12 +1,5 @@
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
-import {
-  interpretFiveSStandardLookup,
-  requireApplicableUnitIds,
-} from "@/modules/operational/five-s-applicability";
-import {
-  interpretGembaDefinitionLookup,
-  requireGembaApplicableUnitIds,
-} from "@/modules/operational/gemba-applicability";
+import { collectApplicableUnitIds } from "@/modules/organisation/applicability-selection";
 import { filterUnitOptionsByIds } from "@/modules/organisation/site-context";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -15,7 +8,11 @@ export async function loadActivityScheduleUnitOptions(
   activityResourceId: string,
   units: UnitSelectOption[],
   requiresSiteSelection: boolean,
-): Promise<{ units: UnitSelectOption[]; unitEmptyMessage?: string }> {
+): Promise<{
+  units: UnitSelectOption[];
+  unitEmptyMessage?: string;
+  loadError?: string;
+}> {
   const supabase = await createServerSupabaseClient();
   const { data: fiveS, error: fiveSError } = await supabase
     .from("five_s_standards")
@@ -23,17 +20,33 @@ export async function loadActivityScheduleUnitOptions(
     .eq("id", activityResourceId)
     .maybeSingle();
 
-  if (interpretFiveSStandardLookup(fiveSError, fiveS) === "five_s") {
+  if (fiveSError) {
+    return {
+      units,
+      loadError:
+        "This schedule page loaded, but activity units could not be verified. You can still edit other fields; save failures will stay on this form.",
+    };
+  }
+
+  if (fiveS) {
     const { data: applicabilityRows, error: applicabilityError } =
       await supabase
         .from("five_s_standard_applicable_units")
         .select("unit_id")
         .eq("standard_id", activityResourceId);
 
+    if (applicabilityError) {
+      return {
+        units,
+        loadError:
+          "This schedule page loaded, but 5S applicability units could not be verified. Save failures will stay on this form.",
+      };
+    }
+
     return {
       units: filterUnitOptionsByIds(
         units,
-        requireApplicableUnitIds(applicabilityError, applicabilityRows),
+        collectApplicableUnitIds(applicabilityRows),
       ),
       ...(requiresSiteSelection
         ? {}
@@ -50,7 +63,15 @@ export async function loadActivityScheduleUnitOptions(
     .eq("id", activityResourceId)
     .maybeSingle();
 
-  if (interpretGembaDefinitionLookup(gembaError, gemba) === "not_gemba") {
+  if (gembaError) {
+    return {
+      units,
+      loadError:
+        "This schedule page loaded, but activity units could not be verified. You can still edit other fields; save failures will stay on this form.",
+    };
+  }
+
+  if (!gemba) {
     return { units };
   }
 
@@ -59,10 +80,18 @@ export async function loadActivityScheduleUnitOptions(
     .select("unit_id")
     .eq("definition_id", activityResourceId);
 
+  if (applicabilityError) {
+    return {
+      units,
+      loadError:
+        "This schedule page loaded, but Gemba applicability units could not be verified. Save failures will stay on this form.",
+    };
+  }
+
   return {
     units: filterUnitOptionsByIds(
       units,
-      requireGembaApplicableUnitIds(applicabilityError, applicabilityRows),
+      collectApplicableUnitIds(applicabilityRows),
     ),
     ...(requiresSiteSelection
       ? {}
@@ -77,7 +106,11 @@ export async function loadFiveSScheduleUnitOptions(
   activityResourceId: string,
   units: UnitSelectOption[],
   requiresSiteSelection: boolean,
-): Promise<{ units: UnitSelectOption[]; unitEmptyMessage?: string }> {
+): Promise<{
+  units: UnitSelectOption[];
+  unitEmptyMessage?: string;
+  loadError?: string;
+}> {
   return loadActivityScheduleUnitOptions(
     activityResourceId,
     units,

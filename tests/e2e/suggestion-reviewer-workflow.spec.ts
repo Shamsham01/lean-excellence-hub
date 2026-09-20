@@ -3,6 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { S2B2_WORKFLOW_FIXTURE_TITLES } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  beginCurrentReview,
+  claimCurrentReview,
   expectReviewStatus,
   expectReviewTestId,
   expectReviewerLabel,
@@ -144,8 +146,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("reviewer declines a separate fixture", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.decline);
-    await page.getByTestId("review-claim-button").click();
-    await page.getByTestId("review-begin-button").click();
+    await claimCurrentReview(page);
+    await beginCurrentReview(page);
     await page.getByTestId("review-rationale").fill("Internal: not viable.");
     await page
       .getByTestId("review-employee-feedback")
@@ -253,8 +255,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("parked assignment appears in my reviews queue", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.parked);
-    await page.getByTestId("review-claim-button").click();
-    await page.getByTestId("review-begin-button").click();
+    await claimCurrentReview(page);
+    await beginCurrentReview(page);
     await parkCurrentReview(
       page,
       "Internal: need additional evidence.",

@@ -39,6 +39,7 @@ tenant-aware, deterministic, and idempotent.
 | `TrainingCompleted` | `workforce.training_completed` | `payload.membership_id` |
 | `SkillProficiencyValidated` | `workforce.skill_proficiency_validated` | `payload.membership_id` |
 | `RecognitionAwarded` | `recognition.awarded` | all rows in `recognition_recipients` for `resource_record_id` |
+| `ScheduleOccurrenceReminderDue` | `schedule.occurrence_reminder` | owner + participants from payload `recipient_membership_ids` |
 
 Implementation lives in:
 

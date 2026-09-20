@@ -13,6 +13,7 @@ import {
   SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
   SUGGESTION_PARKED_KIND,
   SUGGESTION_REVIEWER_ASSIGNED_KIND,
+  SCHEDULE_OCCURRENCE_REMINDER_KIND,
   SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
 } from "../../supabase/functions/_shared/notification-delivery/renderer/renderers.ts";
@@ -58,6 +59,7 @@ describe("notification renderers", () => {
     SUGGESTION_DECLINED_KIND,
     SUGGESTION_PARKED_KIND,
     SUGGESTION_IMPLEMENTED_KIND,
+    SCHEDULE_OCCURRENCE_REMINDER_KIND,
   ])("renders subject, text, and html for %s", (notificationKind) => {
     const rendered = renderOperationalNotification(
       buildContext(notificationKind, {

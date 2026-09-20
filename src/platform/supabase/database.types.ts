@@ -12549,6 +12549,10 @@ export type Database = {
         Args: { target_assignment_id: string; target_valid_to?: string }
         Returns: boolean
       }
+      enqueue_due_schedule_occurrence_reminders: {
+        Args: never
+        Returns: number
+      }
       ensure_problem_solving_methods_provisioned: {
         Args: never
         Returns: boolean
@@ -13246,6 +13250,10 @@ export type Database = {
       }
       publish_training_curriculum_version: {
         Args: { target_curriculum_version_id: string }
+        Returns: boolean
+      }
+      reactivate_schedule_definition: {
+        Args: { target_schedule_definition_id: string }
         Returns: boolean
       }
       reactivate_suggestion_category: {

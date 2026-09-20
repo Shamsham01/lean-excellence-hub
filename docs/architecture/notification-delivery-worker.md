@@ -66,6 +66,7 @@ Renderers are registered by immutable `notification_kind`.
 | `workforce.training_completed` | Training completion recorded | `/platform/training/courses/{courseId}` when available, else `/platform/training/matrix` |
 | `workforce.skill_proficiency_validated` | Skill proficiency validated | `/platform/skills/{skillId}` when available, else `/platform/skills/matrix` |
 | `recognition.awarded` | Recognition awarded | `/platform/recognition` |
+| `schedule.occurrence_reminder` | Scheduled activity is due | `/platform/schedule/{scheduleId}` |
 
 Implementation lives in:
 

@@ -30,6 +30,7 @@ export const SUGGESTION_APPROVED_KIND = "suggestions.approved";
 export const SUGGESTION_DECLINED_KIND = "suggestions.declined";
 export const SUGGESTION_PARKED_KIND = "suggestions.parked";
 export const SUGGESTION_IMPLEMENTED_KIND = "suggestions.implemented";
+export const SCHEDULE_OCCURRENCE_REMINDER_KIND = "schedule.occurrence_reminder";
 
 export function renderJobFunctionAssignedEmail(
   context: NotificationDeliveryContext,
@@ -303,6 +304,37 @@ export function renderSuggestionParkedEmail(
     bodyDetail: "Your suggestion has been parked for further consideration",
     feedbackHeading: "Feedback from reviewer",
   });
+}
+
+export function renderScheduleOccurrenceReminderEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  const scheduleTitle = context.contextTitle ?? "Scheduled activity";
+  const detail = context.contextDetail ?? "A scheduled activity is due today.";
+  const ctaUrl = buildOperationalCtaUrl(appOrigin, context.contextLinkPath);
+
+  const subject = `Schedule reminder: ${scheduleTitle}`;
+  const intro =
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
+    `${detail} in ${context.organisationName}.\n\n` +
+    `Open Lean Excellence Hub to review the schedule.`;
+
+  return {
+    subject,
+    text: `${intro}\n\nView schedule: ${ctaUrl}`,
+    html: renderBrandedOperationalEmail({
+      eyebrow: context.organisationName,
+      title: "Scheduled activity is due",
+      intro:
+        `${formatRecipientGreeting(context.recipientDisplayName)}, ${detail.toLowerCase()} ` +
+        `in ${context.organisationName}.`,
+      ctaLabel: "View schedule",
+      ctaUrl,
+      footer:
+        "You received this operational notification from Lean Excellence Hub.",
+    }),
+  };
 }
 
 export function renderSuggestionImplementedEmail(

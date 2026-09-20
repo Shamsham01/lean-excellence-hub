@@ -1,6 +1,6 @@
 begin;
 
-select plan(3);
+select plan(5);
 
 select ok(
   exists (
@@ -31,6 +31,24 @@ select ok(
     'execute'
   ),
   'authenticated can execute derive_schedule_occurrence_status'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.update_schedule_definition(uuid, text, uuid, uuid, jsonb, date, boolean, time, date, text, uuid[])',
+    'execute'
+  ),
+  'authenticated can execute update_schedule_definition'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.reactivate_schedule_definition(uuid)',
+    'execute'
+  ),
+  'authenticated can execute reactivate_schedule_definition'
 );
 
 select * from finish();

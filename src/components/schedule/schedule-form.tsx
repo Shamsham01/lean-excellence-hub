@@ -1,9 +1,14 @@
+"use client";
+
+import { useActionState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
+import type { ScheduleFormState } from "@/app/(platform)/platform/schedule/actions";
 import {
   type ScheduleRecurrence,
   WEEKDAY_OPTIONS,
@@ -28,7 +33,10 @@ type ScheduleFormValues = {
 };
 
 type ScheduleFormProps = {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (
+    state: ScheduleFormState,
+    formData: FormData,
+  ) => Promise<ScheduleFormState>;
   activityResourceId: string;
   activityLabel: string;
   timezone: string;
@@ -36,6 +44,7 @@ type ScheduleFormProps = {
   memberships: PersonSelectOption[];
   requiresSiteSelection?: boolean;
   unitEmptyMessage?: string;
+  loadError?: string;
   initialValues?: Partial<ScheduleFormValues>;
   scheduleId?: string;
   returnTo?: string;
@@ -51,11 +60,13 @@ export function ScheduleForm({
   memberships,
   requiresSiteSelection = false,
   unitEmptyMessage,
+  loadError,
   initialValues,
   scheduleId,
   returnTo,
   submitLabel,
 }: ScheduleFormProps) {
+  const [state, formAction] = useActionState(action, {});
   const recurrence = initialValues?.recurrence;
   const defaultFrequency = recurrence?.frequency ?? "weekly";
   const defaultInterval = recurrence?.interval ?? 1;
@@ -66,10 +77,11 @@ export function ScheduleForm({
     memberships,
     initialValues?.ownerMembershipId,
   );
+  const isEdit = Boolean(scheduleId);
 
   return (
     <form
-      action={action}
+      action={formAction}
       className="flex flex-col gap-6"
       data-testid="schedule-form"
     >
@@ -85,6 +97,26 @@ export function ScheduleForm({
         <input type="hidden" name="returnTo" value={returnTo} />
       ) : null}
 
+      {loadError ? (
+        <p
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          role="alert"
+          data-testid="schedule-load-error"
+        >
+          {loadError}
+        </p>
+      ) : null}
+
+      {state.error ? (
+        <p
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          role="alert"
+          data-testid="schedule-form-error"
+        >
+          {state.error}
+        </p>
+      ) : null}
+
       <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
         <p className="text-sm font-medium text-muted-foreground">Activity</p>
         <p className="mt-1 text-base font-semibold">{activityLabel}</p>
@@ -92,7 +124,23 @@ export function ScheduleForm({
           Organisation timezone:{" "}
           <span className="font-medium text-foreground">{timezone}</span>
         </p>
+        {isEdit ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            The activity cannot be changed after a schedule is created.
+          </p>
+        ) : null}
       </div>
+
+      {isEdit ? (
+        <p
+          className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+          data-testid="schedule-edit-occurrence-note"
+        >
+          Saving updates the definition and rematerialises future open
+          occurrences from today in this timezone. Completed and past
+          occurrences stay as recorded history.
+        </p>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
@@ -113,6 +161,7 @@ export function ScheduleForm({
             name="description"
             defaultValue={initialValues?.description ?? ""}
             className="mt-2"
+            data-testid="schedule-description"
           />
         </div>
         <OrganisationalUnitSelect
@@ -225,6 +274,7 @@ export function ScheduleForm({
               initialValues?.startDate ?? new Date().toISOString().slice(0, 10)
             }
             className="mt-2 min-h-11"
+            data-testid="schedule-start-date"
           />
         </div>
         <div>
@@ -235,6 +285,7 @@ export function ScheduleForm({
             type="date"
             defaultValue={initialValues?.endDate ?? ""}
             className="mt-2 min-h-11"
+            data-testid="schedule-end-date"
           />
         </div>
         <div className="flex items-center gap-3 sm:col-span-2">

@@ -1,6 +1,6 @@
 begin;
 
-select plan(4);
+select plan(6);
 
 select is(
   public.derive_schedule_occurrence_status(
@@ -43,6 +43,28 @@ select is(
   ),
   'missed',
   'past local day is missed'
+);
+
+select is(
+  timezone('UTC', private.schedule_local_to_timestamptz(
+    '2026-03-28'::date,
+    '09:00:00'::time,
+    false,
+    'Europe/London'
+  )),
+  '2026-03-28 09:00:00'::timestamp,
+  'Europe/London winter local time converts to GMT'
+);
+
+select is(
+  timezone('UTC', private.schedule_local_to_timestamptz(
+    '2026-03-30'::date,
+    '09:00:00'::time,
+    false,
+    'Europe/London'
+  )),
+  '2026-03-30 08:00:00'::timestamp,
+  'Europe/London summer local time converts to BST (UTC+1)'
 );
 
 select * from finish();
