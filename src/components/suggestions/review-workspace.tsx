@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -13,6 +12,7 @@ import {
   parkSuggestion,
   recordSuggestionReview,
 } from "@/app/(platform)/platform/suggestions/actions";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -523,9 +523,9 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 className="min-h-11"
                 data-testid="review-view-suggestion"
               >
-                <Link href={`/platform/suggestions/${suggestion.id}`}>
+                <AppLink href={`/platform/suggestions/${suggestion.id}`}>
                   View suggestion
-                </Link>
+                </AppLink>
               </Button>
               <Button
                 asChild
@@ -533,9 +533,9 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 className="min-h-11"
                 data-testid="review-back-to-queue"
               >
-                <Link href="/platform/suggestions/review">
+                <AppLink href="/platform/suggestions/review">
                   Back to review queue
-                </Link>
+                </AppLink>
               </Button>
             </div>
           </div>

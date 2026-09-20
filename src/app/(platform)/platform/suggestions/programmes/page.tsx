@@ -1,8 +1,8 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
 
 import { ProgrammeManagement } from "@/components/suggestions/programme-management";
+
+import { AppLink } from "@/components/ui/app-link";
 
 import { Button } from "@/components/ui/button";
 
@@ -73,7 +73,12 @@ export default async function SuggestionProgrammesPage() {
 
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/suggestions">Back to suggestions</Link>
+            <AppLink
+              href="/platform/suggestions"
+              data-testid="suggestions-programmes-back-link"
+            >
+              Back to suggestions
+            </AppLink>
           </Button>
         }
       />

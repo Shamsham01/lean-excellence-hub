@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
   countAllVisibleSuggestions,
@@ -64,12 +64,22 @@ export default async function SuggestionsOverviewPage({
           <div className="flex gap-2">
             {canSubmit ? (
               <Button size="sm" asChild>
-                <Link href="/platform/suggestions/new">New suggestion</Link>
+                <AppLink
+                  href="/platform/suggestions/new"
+                  data-testid="suggestions-new-link"
+                >
+                  New suggestion
+                </AppLink>
               </Button>
             ) : null}
             {canManageProgrammes ? (
               <Button size="sm" variant="outline" asChild>
-                <Link href="/platform/suggestions/programmes">Programmes</Link>
+                <AppLink
+                  href="/platform/suggestions/programmes"
+                  data-testid="suggestions-programmes-link"
+                >
+                  Programmes
+                </AppLink>
               </Button>
             ) : null}
           </div>
@@ -121,9 +131,12 @@ export default async function SuggestionsOverviewPage({
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Review queue</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/suggestions/review?queue=mine">
+              <AppLink
+                href="/platform/suggestions/review?queue=mine"
+                data-testid="suggestions-open-queue-link"
+              >
                 Open queue
-              </Link>
+              </AppLink>
             </Button>
           </CardHeader>
         </Card>

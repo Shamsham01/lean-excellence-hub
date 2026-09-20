@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { navigateTo } from "@/lib/navigation/navigate";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
@@ -51,8 +50,6 @@ export function NewSuggestionForm({
   primaryUnit,
   canManageProgrammes,
 }: NewSuggestionFormProps) {
-  const router = useRouter();
-
   const [programmeVersionId, setProgrammeVersionId] = useState(
     programmeVersions[0]?.id ?? "",
   );
@@ -122,8 +119,9 @@ export function NewSuggestionForm({
 
       if (submitError) throw submitError;
 
-      router.push(`/platform/suggestions/${draftId as string}`);
-      router.refresh();
+      // NAV-CLICK-001: do not pair router.push with router.refresh — the
+      // refresh cancels the in-flight destination on compiled/hosted servers.
+      navigateTo(`/platform/suggestions/${draftId as string}`);
     } catch (err) {
       setError(
         toCustomerErrorMessage(
@@ -151,9 +149,12 @@ export function NewSuggestionForm({
             <p className="text-foreground">{configurationMessage}</p>
             {canManageProgrammes ? (
               <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/platform/suggestions/programmes">
+                <AppLink
+                  href="/platform/suggestions/programmes"
+                  data-testid="suggestion-configure-programmes-link"
+                >
                   Configure suggestion programmes
-                </Link>
+                </AppLink>
               </Button>
             ) : null}
           </div>
@@ -167,11 +168,12 @@ export function NewSuggestionForm({
             <p className="text-foreground">{blockedMessage}</p>
             {primaryUnit.canManageAssignment && primaryUnit.membershipId ? (
               <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link
+                <AppLink
                   href={`/platform/people/${primaryUnit.membershipId}/admin`}
+                  data-testid="suggestion-assign-work-area-link"
                 >
                   Assign my primary work area
-                </Link>
+                </AppLink>
               </Button>
             ) : null}
           </div>
