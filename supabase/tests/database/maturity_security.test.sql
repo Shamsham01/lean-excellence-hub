@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -76,6 +76,32 @@ select 'pillar', public.add_maturity_pillar(
   1,
   null,
   'Leadership'
+);
+
+insert into maturity_ids (key, id)
+select 'criterion', public.add_maturity_criterion(
+  (select id from maturity_ids where key = 'pillar'),
+  'Gemba walks',
+  1
+);
+
+insert into maturity_ids (key, id)
+select 'question', public.add_maturity_question(
+  (select id from maturity_ids where key = 'model_version'),
+  (select section_id from public.maturity_pillars where id = (select id from maturity_ids where key = 'pillar')),
+  'score',
+  'Rate Gemba walks',
+  1,
+  true
+);
+
+select lives_ok(
+  format(
+    'select public.link_criterion_question(%L::uuid, %L::uuid, true, ''{"type":"direct"}''::jsonb)',
+    (select id from maturity_ids where key = 'criterion'),
+    (select id from maturity_ids where key = 'question')
+  ),
+  'link scored question before publish'
 );
 
 select throws_ok(

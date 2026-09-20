@@ -1,6 +1,6 @@
 begin;
 
-select plan(104);
+select plan(105);
 
 -- CookieWorks Manufacturing — two-site hostile fixture (local/CI only).
 
@@ -283,6 +283,32 @@ select 'maturity_pillar', public.add_maturity_pillar(
   1,
   null,
   'Operations pillar'
+);
+
+insert into site_ids (key, id)
+select 'maturity_criterion', public.add_maturity_criterion(
+  (select id from site_ids where key = 'maturity_pillar'),
+  'Standard work',
+  1
+);
+
+insert into site_ids (key, id)
+select 'maturity_question', public.add_maturity_question(
+  (select id from site_ids where key = 'maturity_model_version'),
+  (select section_id from public.maturity_pillars where id = (select id from site_ids where key = 'maturity_pillar')),
+  'score',
+  'Rate standard work',
+  1,
+  true
+);
+
+select lives_ok(
+  format(
+    'select public.link_criterion_question(%L::uuid, %L::uuid, true, ''{"type":"direct"}''::jsonb)',
+    (select id from site_ids where key = 'maturity_criterion'),
+    (select id from site_ids where key = 'maturity_question')
+  ),
+  'link scored question before maturity publish'
 );
 
 select ok(
