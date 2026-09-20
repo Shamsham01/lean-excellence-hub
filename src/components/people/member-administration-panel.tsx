@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -446,9 +447,9 @@ export function MemberAdministrationPanel({
         ) : profile.permissions.is_self ? (
           <p className="text-sm text-muted-foreground">
             Your organisation assignment is managed by an administrator. Visit{" "}
-            <a href="/platform/settings/profile" className="underline">
+            <AppLink href="/platform/settings/profile" className="underline">
               your profile settings
-            </a>{" "}
+            </AppLink>{" "}
             for personal details you can update yourself.
           </p>
         ) : (
@@ -464,12 +465,12 @@ export function MemberAdministrationPanel({
         <p className="text-sm text-muted-foreground">
           Training, skills, assessments, and improvement activity are managed on
           the{" "}
-          <a
+          <AppLink
             href={`/platform/people/${profile.membership_id}`}
             className="underline"
           >
             capability profile
-          </a>
+          </AppLink>
           .
         </p>
       </section>

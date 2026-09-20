@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { navigateTo } from "@/lib/navigation/navigate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -408,7 +409,7 @@ export function WorkforceImportWizard({
     setCredentialsExported(false);
     setMessage(null);
     setHydrated(false);
-    router.push("/platform/settings/people/import");
+    navigateTo("/platform/settings/people/import");
   }
 
   async function handleDownloadCredentials() {
