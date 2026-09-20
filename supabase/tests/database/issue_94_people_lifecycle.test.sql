@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(12);
 
 insert into auth.users (
   id,
@@ -277,6 +277,23 @@ select is(
   ) ->> 'notification_email',
   'notify@example.test',
   'administration profile exposes notification email'
+);
+
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      coalesce(
+        public.get_people_directory(null, 1, 50, false) -> 'people',
+        '[]'::jsonb
+      )
+    ) directory_person
+    where directory_person ->> 'membership_id' = (
+      select id::text from issue94_ids where key = 'workforce_membership'
+    )
+      and directory_person ->> 'display_name' = 'Workforce Member'
+  ),
+  'org owner people directory lists workforce member by display_name'
 );
 
 create temporary table issue94_export_session (
