@@ -13,35 +13,46 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-async function sourceTitle(
+async function resolveSourceLink(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  resourceType: string,
-  resourceId: string,
+  sourceResourceId: string,
 ) {
-  if (resourceType === "improvement_suggestion") {
-    const { data } = await supabase
-      .from("improvement_suggestions")
-      .select("title")
-      .eq("id", resourceId)
-      .maybeSingle();
-    return data?.title ?? null;
+  const { data: suggestion } = await supabase
+    .from("improvement_suggestions")
+    .select("id, title")
+    .eq("id", sourceResourceId)
+    .maybeSingle();
+  if (suggestion) {
+    return {
+      resourceType: "improvement_suggestion",
+      title: suggestion.title,
+    };
   }
-  if (resourceType === "ci_project") {
-    const { data } = await supabase
-      .from("ci_projects")
-      .select("title")
-      .eq("id", resourceId)
-      .maybeSingle();
-    return data?.title ?? null;
+
+  const { data: project } = await supabase
+    .from("ci_projects")
+    .select("id, title")
+    .eq("id", sourceResourceId)
+    .maybeSingle();
+  if (project) {
+    return {
+      resourceType: "ci_project",
+      title: project.title,
+    };
   }
-  if (resourceType === "action") {
-    const { data } = await supabase
-      .from("actions")
-      .select("title")
-      .eq("id", resourceId)
-      .maybeSingle();
-    return data?.title ?? null;
+
+  const { data: action } = await supabase
+    .from("actions")
+    .select("id, title")
+    .eq("id", sourceResourceId)
+    .maybeSingle();
+  if (action) {
+    return {
+      resourceType: "action",
+      title: action.title,
+    };
   }
+
   return null;
 }
 
@@ -51,7 +62,7 @@ export default async function RecognitionDetailPage({ params }: PageProps) {
   const { data: award } = await supabase
     .from("recognition_awards")
     .select(
-      "id, title, message, recognition_type_name_snapshot, awarded_at, status, source_resource_id, awarded_by_membership_id",
+      "id, title, message, recognition_type_name_snapshot, awarded_at, status, source_resource_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -64,12 +75,7 @@ export default async function RecognitionDetailPage({ params }: PageProps) {
     .eq("recognition_award_id", id);
 
   const membershipIds = [
-    ...new Set(
-      [
-        ...(recipients?.map((row) => row.membership_id) ?? []),
-        award.awarded_by_membership_id,
-      ].filter(Boolean),
-    ),
+    ...new Set(recipients?.map((row) => row.membership_id) ?? []),
   ];
 
   const { data: memberships } = membershipIds.length
@@ -83,28 +89,13 @@ export default async function RecognitionDetailPage({ params }: PageProps) {
     memberships?.find((row) => row.id === membershipId)?.display_name ??
     "Person";
 
-  const { data: sourceResource } = award.source_resource_id
-    ? await supabase
-        .from("resource_records")
-        .select("id, resource_type")
-        .eq("id", award.source_resource_id)
-        .maybeSingle()
-    : { data: null };
-
-  const sourceHref =
-    sourceResource && award.source_resource_id
-      ? recognitionSourceHref(
-          sourceResource.resource_type,
-          award.source_resource_id,
-        )
+  const source =
+    award.source_resource_id != null
+      ? await resolveSourceLink(supabase, award.source_resource_id)
       : null;
-  const sourceName =
-    sourceResource && award.source_resource_id
-      ? await sourceTitle(
-          supabase,
-          sourceResource.resource_type,
-          award.source_resource_id,
-        )
+  const sourceHref =
+    source && award.source_resource_id
+      ? recognitionSourceHref(source.resourceType, award.source_resource_id)
       : null;
 
   return (
@@ -158,14 +149,11 @@ export default async function RecognitionDetailPage({ params }: PageProps) {
               className="inline-flex text-primary hover:underline"
               data-testid="recognition-source-link"
               aria-label={recognitionSourceOpenLabel(
-                sourceResource?.resource_type,
-                sourceName,
+                source?.resourceType,
+                source?.title,
               )}
             >
-              {recognitionSourceOpenLabel(
-                sourceResource?.resource_type,
-                sourceName,
-              )}
+              {recognitionSourceOpenLabel(source?.resourceType, source?.title)}
             </AppLink>
           ) : null}
         </CardContent>

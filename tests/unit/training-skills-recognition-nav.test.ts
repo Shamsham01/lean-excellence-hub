@@ -139,6 +139,8 @@ describe("NAV-CLICK-001 Recognition navigation primitives", () => {
     expect(createPage).toContain('data-testid="recognition-new-back-link"');
     expect(detail).toContain('data-testid="recognition-detail-back-link"');
     expect(detail).toContain('data-testid="recognition-source-link"');
+    expect(detail).toContain("improvement_suggestions");
+    expect(detail).not.toContain("resource_records");
     expect(history).toContain("href={`/platform/recognition/${award.id}`}");
     expect(types).not.toMatch(/from ["']next\/link["']/);
     expect(createPage).not.toMatch(/from ["']next\/link["']/);
