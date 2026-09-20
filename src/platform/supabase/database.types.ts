@@ -11234,10 +11234,10 @@ export type Database = {
           target_display_name: string
           target_job_function_id: string | null
           target_job_title: string | null
+          target_membership_id: string | null
           target_notification_email: string | null
           target_organisational_unit_id: string | null
           target_role_version_id: string
-          target_membership_id: string | null
           target_scope_type: string
           target_scope_unit_id: string | null
           updated_at: string
@@ -11263,6 +11263,7 @@ export type Database = {
           target_display_name: string
           target_job_function_id?: string | null
           target_job_title?: string | null
+          target_membership_id?: string | null
           target_notification_email?: string | null
           target_organisational_unit_id?: string | null
           target_role_version_id: string
@@ -11291,6 +11292,7 @@ export type Database = {
           target_display_name?: string
           target_job_function_id?: string | null
           target_job_title?: string | null
+          target_membership_id?: string | null
           target_notification_email?: string | null
           target_organisational_unit_id?: string | null
           target_role_version_id?: string
@@ -11335,6 +11337,13 @@ export type Database = {
             referencedColumns: ["organisation_id", "id"]
           },
           {
+            foreignKeyName: "workforce_provision_intents_target_membership_fkey"
+            columns: ["organisation_id", "target_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
             foreignKeyName: "workforce_provision_intents_unit_fkey"
             columns: ["organisation_id", "target_organisational_unit_id"]
             isOneToOne: false
@@ -11355,6 +11364,10 @@ export type Database = {
       accept_organisation_invitation_signup_binding: {
         Args: { target_binding_id: string }
         Returns: string
+      }
+      ack_workforce_import_credentials_exported: {
+        Args: { target_export_session_id: string; target_import_job_id: string }
+        Returns: undefined
       }
       activate_problem_solving_case: {
         Args: { target_case_id: string; target_method_id: string }
@@ -11627,6 +11640,10 @@ export type Database = {
         Args: { target_category_id: string }
         Returns: boolean
       }
+      archive_workforce_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: boolean
+      }
       assign_ci_project_team_member: {
         Args: {
           target_membership_id: string
@@ -11688,6 +11705,10 @@ export type Database = {
       begin_suggestion_review: {
         Args: { target_suggestion_id: string }
         Returns: boolean
+      }
+      begin_workforce_import_credential_export: {
+        Args: { target_import_job_id: string }
+        Returns: Json
       }
       bulk_record_training_completions: {
         Args: {
@@ -12638,6 +12659,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      finalize_workforce_credential_reset: {
+        Args: { target_auth_user_id: string; target_intent_id: string }
+        Returns: string
+      }
       finalize_workforce_provision: {
         Args: { target_auth_user_id: string; target_intent_id: string }
         Returns: string
@@ -12792,15 +12817,24 @@ export type Database = {
           text_body: string
         }[]
       }
-      get_people_directory: {
-        Args: {
-          target_include_inactive?: boolean
-          target_page?: number
-          target_page_size?: number
-          target_search?: string
-        }
-        Returns: Json
-      }
+      get_people_directory:
+        | {
+            Args: {
+              target_page?: number
+              target_page_size?: number
+              target_search?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              target_include_inactive?: boolean
+              target_page?: number
+              target_page_size?: number
+              target_search?: string
+            }
+            Returns: Json
+          }
       get_potential_benefit_overlaps: {
         Args: { target_benefit_id: string }
         Returns: {
@@ -12878,28 +12912,6 @@ export type Database = {
       get_training_compliance_summary: {
         Args: { target_unit_id?: string }
         Returns: Json
-      }
-      ack_workforce_import_credentials_exported: {
-        Args: {
-          target_export_session_id: string
-          target_import_job_id: string
-        }
-        Returns: undefined
-      }
-      archive_workforce_import_job: {
-        Args: { target_import_job_id: string }
-        Returns: boolean
-      }
-      begin_workforce_import_credential_export: {
-        Args: { target_import_job_id: string }
-        Returns: Json
-      }
-      finalize_workforce_credential_reset: {
-        Args: {
-          target_auth_user_id: string
-          target_intent_id: string
-        }
-        Returns: string
       }
       get_workforce_import_credential_export_rows: {
         Args: {
