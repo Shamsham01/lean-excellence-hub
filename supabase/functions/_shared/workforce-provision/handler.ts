@@ -2,9 +2,11 @@ export type WorkforceProvisionIntent = {
   intent_id: string;
   organisation_id: string;
   organisation_code: string;
+  intent_kind: string;
   status: string;
   target_canonical_alias: string;
   target_display_name: string;
+  target_membership_id: string | null;
   sealed_internal_login_identifier: string;
   created_auth_user_id: string | null;
 };
@@ -204,10 +206,50 @@ export async function handleWorkforceProvisionRequest(
     );
   }
 
+  const isCredentialReset = intent.intent_kind === "credential_reset";
   let authUserId = intent.created_auth_user_id;
   const temporaryPassword = dependencies.generatePassword();
 
-  if (intent.status === "pending") {
+  if (isCredentialReset && intent.status === "pending") {
+    authUserId = await findWorkforceAuthUserForIntent(dependencies, intentId);
+    if (!authUserId) {
+      await service.rpc("fail_workforce_provision", {
+        target_intent_id: intentId,
+        target_failure_reason: "workforce auth identity unavailable",
+      });
+      return jsonResponse(
+        { error: "Unable to reset workforce credentials." },
+        500,
+      );
+    }
+
+    if (
+      !(await applyTemporaryPassword(
+        dependencies,
+        authUserId,
+        temporaryPassword,
+      ))
+    ) {
+      return jsonResponse(
+        { error: "Unable to reset workforce credentials." },
+        500,
+      );
+    }
+
+    if (
+      !(await ensureAuthCreatedRecorded(
+        dependencies,
+        intentId,
+        authUserId,
+        callerUserId,
+      ))
+    ) {
+      return jsonResponse(
+        { error: "Unable to reset workforce credentials." },
+        500,
+      );
+    }
+  } else if (intent.status === "pending") {
     const admin = dependencies.createAuthAdminClient();
     const { data: created, error: createError } =
       await admin.auth.admin.createUser({
@@ -293,8 +335,12 @@ export async function handleWorkforceProvisionRequest(
     );
   }
 
+  const finalizeRpc = isCredentialReset
+    ? "finalize_workforce_credential_reset"
+    : "finalize_workforce_provision";
+
   const { data: membershipId, error: finalizeError } = await service.rpc(
-    "finalize_workforce_provision",
+    finalizeRpc,
     {
       target_intent_id: intentId,
       target_auth_user_id: authUserId,

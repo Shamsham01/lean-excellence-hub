@@ -56,7 +56,11 @@ export async function handleWorkforceImportExportRequest(
     return jsonResponse({ error: "Unauthorized." }, 401);
   }
 
-  let body: { importJobId?: string; organisationCode?: string };
+  let body: {
+    importJobId?: string;
+    organisationCode?: string;
+    exportSessionId?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -65,9 +69,13 @@ export async function handleWorkforceImportExportRequest(
 
   const importJobId = body.importJobId?.trim();
   const organisationCode = body.organisationCode?.trim();
-  if (!importJobId || !organisationCode) {
+  const exportSessionId = body.exportSessionId?.trim();
+  if (!importJobId || !organisationCode || !exportSessionId) {
     return jsonResponse(
-      { error: "importJobId and organisationCode are required." },
+      {
+        error:
+          "importJobId, organisationCode, and exportSessionId are required.",
+      },
       400,
     );
   }
@@ -81,7 +89,10 @@ export async function handleWorkforceImportExportRequest(
   const service = dependencies.createServiceClient();
   const { data: exportRows, error: exportError } = await service.rpc(
     "get_workforce_import_credential_export_rows",
-    { target_import_job_id: importJobId },
+    {
+      target_import_job_id: importJobId,
+      target_export_session_id: exportSessionId,
+    },
   );
 
   if (exportError || !Array.isArray(exportRows) || exportRows.length === 0) {
@@ -126,18 +137,6 @@ export async function handleWorkforceImportExportRequest(
     });
 
     csvLines.push(values.join(","));
-  }
-
-  const { error: invalidateError } = await userClient.rpc(
-    "mark_workforce_import_credentials_exported",
-    { target_import_job_id: importJobId },
-  );
-
-  if (invalidateError) {
-    return jsonResponse(
-      { error: "Unable to finalise credential export." },
-      500,
-    );
   }
 
   return new Response(`${csvLines.join("\n")}\n`, {

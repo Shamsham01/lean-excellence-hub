@@ -61,7 +61,10 @@ export type WorkforceImportProgress = {
   remainingRows: number;
   credentialExportStatus: string;
   credentialExpiresAt: string | null;
+  credentialExportSessionId: string | null;
+  credentialExportSessionStartedAt: string | null;
   completedAt: string | null;
+  archivedFromRecentAt: string | null;
 };
 
 export function mapWorkforceImportProgressFromDatabase(
@@ -82,7 +85,19 @@ export function mapWorkforceImportProgressFromDatabase(
       typeof progress.credential_expires_at === "string"
         ? progress.credential_expires_at
         : null,
+    credentialExportSessionId:
+      typeof progress.credential_export_session_id === "string"
+        ? progress.credential_export_session_id
+        : null,
+    credentialExportSessionStartedAt:
+      typeof progress.credential_export_session_started_at === "string"
+        ? progress.credential_export_session_started_at
+        : null,
     completedAt:
       typeof progress.completed_at === "string" ? progress.completed_at : null,
+    archivedFromRecentAt:
+      typeof progress.archived_from_recent_at === "string"
+        ? progress.archived_from_recent_at
+        : null,
   };
 }

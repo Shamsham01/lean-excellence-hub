@@ -10,6 +10,8 @@ import {
 } from "@/modules/workforce-import/credential-export";
 import {
   invokeWorkforceImportCredentialExport,
+  invokeWorkforceImportCredentialExportAck,
+  invokeWorkforceImportCredentialExportBegin,
   invokeWorkforceImportFinalize,
 } from "@/modules/workforce-import/client";
 import { invokeWorkforceProvision } from "@/modules/workforce-provision/client";
@@ -337,9 +339,37 @@ export async function getImportProgress(
   };
 }
 
+export async function beginImportCredentialExport(
+  jobId: string,
+): Promise<
+  WorkforceImportActionResult<{
+    sessionId: string;
+    expiresAt: string;
+    resumed: boolean;
+  }>
+> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const result = await invokeWorkforceImportCredentialExportBegin(jobId);
+  if ("error" in result) {
+    return { error: result.error };
+  }
+
+  return {
+    ok: true,
+    data: {
+      sessionId: result.sessionId,
+      expiresAt: result.expiresAt,
+      resumed: result.resumed,
+    },
+  };
+}
+
 export async function exportImportCredentials(
   jobId: string,
   organisationCode: string,
+  exportSessionId: string,
 ): Promise<WorkforceImportActionResult<{ csv: string }>> {
   const denied = await assertCanImport();
   if (denied) return denied;
@@ -347,12 +377,62 @@ export async function exportImportCredentials(
   const result = await invokeWorkforceImportCredentialExport(
     jobId,
     organisationCode,
+    exportSessionId,
   );
   if ("error" in result) {
     return { error: result.error };
   }
 
   return { ok: true, data: { csv: result.csv } };
+}
+
+export async function ackImportCredentialExport(
+  jobId: string,
+  exportSessionId: string,
+): Promise<WorkforceImportActionResult<{ ok: true }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const result = await invokeWorkforceImportCredentialExportAck(
+    jobId,
+    exportSessionId,
+  );
+  if ("error" in result) {
+    return {
+      error: toCustomerErrorMessage(
+        result.error,
+        "Unable to confirm credential export receipt.",
+      ),
+    };
+  }
+
+  revalidatePath("/platform/settings/people/import");
+  revalidatePath(`/platform/settings/people/import/${jobId}`);
+
+  return { ok: true, data: { ok: true } };
+}
+
+export async function archiveImportJob(
+  jobId: string,
+): Promise<WorkforceImportActionResult<{ archived: boolean }>> {
+  const denied = await assertCanImport();
+  if (denied) return denied;
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("archive_workforce_import_job", {
+    target_import_job_id: jobId,
+  });
+
+  if (error) {
+    return {
+      error: toCustomerErrorMessage(error, "Unable to archive import job."),
+    };
+  }
+
+  revalidatePath("/platform/settings/people/import");
+  revalidatePath(`/platform/settings/people/import/${jobId}`);
+
+  return { ok: true, data: { archived: Boolean(data) } };
 }
 
 export async function retryFailedImportRows(
@@ -440,8 +520,9 @@ export async function listRecentImportJobs() {
   const { data, error } = await supabase
     .from("workforce_import_jobs")
     .select(
-      "id, original_filename, total_rows, status, provisioned_rows, failed_rows, remediation_rows, credential_export_status, created_at, created_by_membership_id",
+      "id, original_filename, total_rows, status, provisioned_rows, failed_rows, remediation_rows, credential_export_status, created_at, created_by_membership_id, archived_from_recent_at",
     )
+    .is("archived_from_recent_at", null)
     .order("created_at", { ascending: false })
     .limit(10);
 
