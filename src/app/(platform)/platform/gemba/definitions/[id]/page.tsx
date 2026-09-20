@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
@@ -12,6 +11,7 @@ import {
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -158,12 +158,12 @@ export default async function GembaDefinitionPage({
         ) : null}
         {canSchedule && publishedVersion ? (
           <Button variant="outline" className="min-h-11" asChild>
-            <Link
+            <AppLink
               href={`/platform/schedule/new?activityId=${id}&activityLabel=${encodeURIComponent(definition.display_name)}&returnTo=/platform/gemba/definitions/${id}`}
               data-testid="create-schedule-link"
             >
               Create schedule
-            </Link>
+            </AppLink>
           </Button>
         ) : null}
       </>
@@ -379,9 +379,12 @@ export default async function GembaDefinitionPage({
       ) : publishedVersion ? (
         <Card>
           <CardContent className="py-6">
-            <Link href="/platform/gemba/history" className="text-sm underline">
+            <AppLink
+              href="/platform/gemba/history"
+              className="text-sm underline"
+            >
               View walk history
-            </Link>
+            </AppLink>
           </CardContent>
         </Card>
       ) : null}

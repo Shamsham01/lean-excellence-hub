@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
@@ -12,6 +11,7 @@ import {
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -162,12 +162,12 @@ export default async function FiveSStandardDetailPage({
         ) : null}
         {canSchedule && publishedVersion ? (
           <Button variant="outline" className="min-h-11" asChild>
-            <Link
+            <AppLink
               href={`/platform/schedule/new?activityId=${id}&activityLabel=${encodeURIComponent(standard.display_name)}&returnTo=/platform/5s/standards/${id}`}
               data-testid="create-schedule-link"
             >
               Create schedule
-            </Link>
+            </AppLink>
           </Button>
         ) : null}
       </>
@@ -397,9 +397,9 @@ export default async function FiveSStandardDetailPage({
             <p className="text-sm text-muted-foreground">
               Published version {publishedVersion.version_number} is active for
               audits and schedules.{" "}
-              <Link href="/platform/5s/history" className="underline">
+              <AppLink href="/platform/5s/history" className="underline">
                 View audit history
-              </Link>
+              </AppLink>
             </p>
           </CardContent>
         </Card>
