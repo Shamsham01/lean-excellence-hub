@@ -7,6 +7,13 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
+import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
+import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  loadAccessibleOrganisationUnits,
+  loadActiveSiteContext,
+} from "@/modules/organisation/site-context-server";
+import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
 import {
   currentMemberHasDelegatableAccess,
   currentMemberHasPermission,
@@ -42,6 +49,13 @@ export default async function PeopleSettingsPage() {
   }
 
   const supabase = await createServerSupabaseClient();
+  const [allUnits, { context }] = await Promise.all([
+    loadAccessibleOrganisationUnits(),
+    loadActiveSiteContext(),
+  ]);
+  const siteUnits = buildSiteScopedUnitOptions(allUnits, context);
+  const visibleUnitIds = new Set(siteUnits.units.map((unit) => unit.id));
+  const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
   const [
     { data: offersData },
@@ -62,13 +76,7 @@ export default async function PeopleSettingsPage() {
           .eq("status", "pending")
           .order("expires_at", { ascending: true })
       : Promise.resolve({ data: null, error: null }),
-    canManageInvitations || canManageJobFunctions
-      ? supabase
-          .from("organisation_units")
-          .select("id, name, code, parent_unit_id")
-          .eq("status", "active")
-          .order("name")
-      : Promise.resolve({ data: [] }),
+    Promise.resolve({ data: visibleUnits }),
     canManageInvitations
       ? supabase
           .from("job_functions")
@@ -92,8 +100,12 @@ export default async function PeopleSettingsPage() {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const offers = ((offersData as { offers?: DelegatableAccessOffer[] } | null)
-    ?.offers ?? []) as DelegatableAccessOffer[];
+  const offers = filterDelegatableOffersForActiveSite(
+    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
+      []) as DelegatableAccessOffer[],
+    allUnits,
+    context,
+  );
 
   const roleNameByVersionId = new Map<string, string>();
   const roleIdToName = new Map(
@@ -106,22 +118,21 @@ export default async function PeopleSettingsPage() {
     }
   }
 
-  const unitNameById = new Map(
-    (units ?? []).map((unit) => [unit.id, unit.name]),
-  );
-
   const grantsByInvitation = new Map<
     string,
     { roleName: string; scopeLabel: string }
   >();
   for (const grant of invitationGrants ?? []) {
+    const scopeUnitId = grant.scope_unit_id ?? "";
     grantsByInvitation.set(grant.invitation_id, {
       roleName:
         roleNameByVersionId.get(grant.role_version_id) ?? "Application access",
       scopeLabel:
         grant.scope_type === "organisation"
           ? "Entire organisation"
-          : (unitNameById.get(grant.scope_unit_id ?? "") ?? "Scoped access"),
+          : scopeUnitId
+            ? `${formatUnitPath(scopeUnitId, allUnits)} subtree`
+            : "Scoped access",
     });
   }
 
@@ -181,9 +192,12 @@ export default async function PeopleSettingsPage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
-              Choose an application role and scope you are authorised to
-              delegate. You can also set an optional job function and primary
-              work area to apply when they accept.
+              Create a secure invitation link to copy and share. Email delivery
+              is not sent from this screen. Choose an application role and
+              scope you are authorised to delegate.
+              {context.mode === "site" && context.activeSiteId
+                ? " Scope options are filtered to your active site."
+                : null}
             </p>
             <InviteColleagueForm
               offers={offers}
@@ -191,7 +205,7 @@ export default async function PeopleSettingsPage() {
                 id: unit.id,
                 name: unit.name,
                 code: unit.code,
-                parent_unit_id: unit.parent_unit_id,
+                parent_unit_id: unit.parent_unit_id ?? null,
               }))}
               jobFunctions={jobFunctions ?? []}
               onInvite={inviteColleague}

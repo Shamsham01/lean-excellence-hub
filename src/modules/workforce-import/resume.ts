@@ -119,7 +119,8 @@ export function resolveImportJobHistoryAction(input: {
   if (
     (input.status === "completed" ||
       input.status === "completed_with_remediation") &&
-    input.credential_export_status === "available"
+    (input.credential_export_status === "available" ||
+      input.credential_export_status === "exporting")
   ) {
     return {
       label: "Download credentials",

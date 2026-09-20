@@ -117,7 +117,7 @@ export function InviteColleagueForm({
       setOrganisationalUnitId("");
       setSuccessUrl(result.invitationUrl ?? null);
       setMessage(
-        "Invitation created. Share this secure link with your colleague.",
+        "Invitation created. Copy the secure link below — email delivery is not sent from this screen.",
       );
     }
 
@@ -297,7 +297,7 @@ export function InviteColleagueForm({
       ) : null}
 
       <Button type="submit" disabled={loading} className="min-h-11 self-start">
-        {loading ? "Sending invitation…" : "Send invitation"}
+        {loading ? "Creating invitation…" : "Create invitation"}
       </Button>
     </form>
   );

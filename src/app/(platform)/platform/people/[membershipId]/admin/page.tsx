@@ -10,6 +10,12 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  loadAccessibleOrganisationUnits,
+  loadActiveSiteContext,
+} from "@/modules/organisation/site-context-server";
+import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
 import {
   currentMemberHasDelegatableAccess,
   currentMemberHasPermission,
@@ -19,7 +25,9 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 import {
   assignMemberJobFunction,
   grantMemberAccess,
+  resetMemberWorkforceCredentials,
   revokeMemberAccess,
+  setMemberMembershipStatus,
   updateMemberDisplayName,
 } from "./actions";
 
@@ -43,28 +51,33 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
   const profile = profileData as MemberAdministrationProfile;
   const canManageJobFunctions = profile.permissions.can_manage_job_functions;
   const canDelegateAccess = await currentMemberHasDelegatableAccess();
+  const [allUnits, { context }] = await Promise.all([
+    loadAccessibleOrganisationUnits(),
+    loadActiveSiteContext(),
+  ]);
+  const siteUnits = buildSiteScopedUnitOptions(allUnits, context);
+  const visibleUnitIds = new Set(siteUnits.units.map((unit) => unit.id));
+  const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
-  const [{ data: units }, { data: jobFunctions }, { data: offersData }] =
-    await Promise.all([
-      supabase
-        .from("organisation_units")
-        .select("id, name, code, parent_unit_id")
-        .eq("status", "active")
-        .order("name"),
-      canManageJobFunctions
-        ? supabase
-            .from("job_functions")
-            .select("id, name, code")
-            .eq("status", "active")
-            .order("name")
-        : Promise.resolve({ data: [] }),
-      canDelegateAccess
-        ? supabase.rpc("get_delegatable_access_offers")
-        : Promise.resolve({ data: null }),
-    ]);
+  const [{ data: jobFunctions }, { data: offersData }] = await Promise.all([
+    canManageJobFunctions
+      ? supabase
+          .from("job_functions")
+          .select("id, name, code")
+          .eq("status", "active")
+          .order("name")
+      : Promise.resolve({ data: [] }),
+    canDelegateAccess
+      ? supabase.rpc("get_delegatable_access_offers")
+      : Promise.resolve({ data: null }),
+  ]);
 
-  const offers = ((offersData as { offers?: DelegatableAccessOffer[] } | null)
-    ?.offers ?? []) as DelegatableAccessOffer[];
+  const offers = filterDelegatableOffersForActiveSite(
+    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
+      []) as DelegatableAccessOffer[],
+    allUnits,
+    context,
+  );
 
   const displayName = profile.display_name ?? "Person";
 
@@ -101,6 +114,22 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
     return revokeMemberAccess(membershipId, grantId);
   }
 
+  async function setMembershipStatusAction(input: {
+    status: "active" | "inactive";
+    changeReason?: string;
+  }) {
+    "use server";
+    return setMemberMembershipStatus({
+      membershipId,
+      ...input,
+    });
+  }
+
+  async function resetCredentialsAction() {
+    "use server";
+    return resetMemberWorkforceCredentials(membershipId);
+  }
+
   return (
     <div className="flex flex-col gap-8" data-testid="member-admin-page">
       <PageHeader
@@ -132,15 +161,17 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
         <CardContent className="pt-6">
           <MemberAdministrationPanel
             profile={profile}
-            units={(units ?? []).map((unit) => ({
+            units={visibleUnits.map((unit) => ({
               id: unit.id,
               name: unit.name,
               code: unit.code,
-              parent_unit_id: unit.parent_unit_id,
+              parent_unit_id: unit.parent_unit_id ?? null,
             }))}
             jobFunctions={jobFunctions ?? []}
             onUpdateDisplayName={updateDisplayNameAction}
             onAssignJobFunction={assignJobFunctionAction}
+            onSetMembershipStatus={setMembershipStatusAction}
+            onResetCredentials={resetCredentialsAction}
           />
           <section className="flex flex-col gap-3 border-t border-border pt-6">
             <h2 className="text-base font-semibold">
@@ -149,6 +180,9 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
             <p className="text-sm text-muted-foreground">
               Module responsibilities are scoped independently from organisation
               placement above.
+              {context.mode === "site" && context.activeSiteId
+                ? " Scope options are filtered to your active site."
+                : null}
             </p>
             <MemberAccessManagement
               grants={profile.access_grants}
@@ -156,7 +190,8 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
               canManage={
                 canDelegateAccess &&
                 profile.permissions.can_delegate_access &&
-                !profile.permissions.is_self
+                !profile.permissions.is_self &&
+                profile.status === "active"
               }
               onGrant={grantAccessAction}
               onRevoke={revokeAccessAction}

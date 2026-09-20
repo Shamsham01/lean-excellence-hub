@@ -39,13 +39,19 @@ export function responsibilityDisplayName(input: {
 export function responsibilityScopeLabel(input: {
   scope_type: string;
   scope_unit_name?: string | null;
+  scope_unit_path?: string | null;
 }): string {
   if (input.scope_type === "organisation") {
     return "Entire organisation";
   }
 
-  if (input.scope_type === "unit_subtree" && input.scope_unit_name) {
-    return `${input.scope_unit_name} subtree`;
+  if (input.scope_type === "unit_subtree") {
+    if (input.scope_unit_path) {
+      return `${input.scope_unit_path} subtree`;
+    }
+    if (input.scope_unit_name) {
+      return `${input.scope_unit_name} subtree`;
+    }
   }
 
   if (input.scope_type === "self") {

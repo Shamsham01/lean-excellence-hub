@@ -10989,10 +10989,14 @@ export type Database = {
       }
       workforce_import_jobs: {
         Row: {
+          archived_from_recent_at: string | null
           completed_at: string | null
           created_at: string
           created_by_membership_id: string
           credential_expires_at: string | null
+          credential_export_session_id: string | null
+          credential_export_session_started_at: string | null
+          credential_export_session_started_by_membership_id: string | null
           credential_export_status: string
           error_rows: number
           failed_rows: number
@@ -11010,10 +11014,14 @@ export type Database = {
           warning_rows: number
         }
         Insert: {
+          archived_from_recent_at?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_membership_id: string
           credential_expires_at?: string | null
+          credential_export_session_id?: string | null
+          credential_export_session_started_at?: string | null
+          credential_export_session_started_by_membership_id?: string | null
           credential_export_status?: string
           error_rows?: number
           failed_rows?: number
@@ -11031,10 +11039,14 @@ export type Database = {
           warning_rows?: number
         }
         Update: {
+          archived_from_recent_at?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_membership_id?: string
           credential_expires_at?: string | null
+          credential_export_session_id?: string | null
+          credential_export_session_started_at?: string | null
+          credential_export_session_started_by_membership_id?: string | null
           credential_export_status?: string
           error_rows?: number
           failed_rows?: number
@@ -11225,6 +11237,7 @@ export type Database = {
           target_notification_email: string | null
           target_organisational_unit_id: string | null
           target_role_version_id: string
+          target_membership_id: string | null
           target_scope_type: string
           target_scope_unit_id: string | null
           updated_at: string
@@ -12781,6 +12794,7 @@ export type Database = {
       }
       get_people_directory: {
         Args: {
+          target_include_inactive?: boolean
           target_page?: number
           target_page_size?: number
           target_search?: string
@@ -12865,8 +12879,33 @@ export type Database = {
         Args: { target_unit_id?: string }
         Returns: Json
       }
-      get_workforce_import_credential_export_rows: {
+      ack_workforce_import_credentials_exported: {
+        Args: {
+          target_export_session_id: string
+          target_import_job_id: string
+        }
+        Returns: undefined
+      }
+      archive_workforce_import_job: {
         Args: { target_import_job_id: string }
+        Returns: boolean
+      }
+      begin_workforce_import_credential_export: {
+        Args: { target_import_job_id: string }
+        Returns: Json
+      }
+      finalize_workforce_credential_reset: {
+        Args: {
+          target_auth_user_id: string
+          target_intent_id: string
+        }
+        Returns: string
+      }
+      get_workforce_import_credential_export_rows: {
+        Args: {
+          target_export_session_id?: string
+          target_import_job_id: string
+        }
         Returns: {
           credential_ciphertext: string
           credential_nonce: string
@@ -12925,12 +12964,14 @@ export type Database = {
         Returns: {
           created_auth_user_id: string
           intent_id: string
+          intent_kind: string
           organisation_code: string
           organisation_id: string
           sealed_internal_login_identifier: string
           status: string
           target_canonical_alias: string
           target_display_name: string
+          target_membership_id: string
         }[]
       }
       grant_role_version: {
@@ -13148,6 +13189,10 @@ export type Database = {
           target_rationale: string
           target_suggestion_id: string
         }
+        Returns: string
+      }
+      preauthorize_workforce_credential_reset: {
+        Args: { target_membership_id: string }
         Returns: string
       }
       preauthorize_workforce_provision: {
