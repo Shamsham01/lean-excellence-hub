@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { resolveImportJobHistoryAction } from "@/modules/workforce-import/resume";
@@ -71,9 +70,9 @@ export function WorkforceImportHistory({ jobs }: WorkforceImportHistoryProps) {
                   </p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={action.href} data-testid={action.testId}>
+                  <AppLink href={action.href} data-testid={action.testId}>
                     {action.label}
-                  </Link>
+                  </AppLink>
                 </Button>
               </div>
             );

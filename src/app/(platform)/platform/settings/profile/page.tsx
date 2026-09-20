@@ -1,9 +1,8 @@
-import Link from "next/link";
-
 import { ProfileAccessGrants } from "@/components/profile/profile-access-grants";
 import type { ProfileAccessGrant } from "@/components/profile/profile-access-grants";
 import { ProfileDisplayNameForm } from "@/components/profile/profile-display-name-form";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
@@ -53,7 +52,9 @@ export default async function ProfileSettingsPage() {
         description="Manage personal details you control yourself. Organisation-managed assignments are shown for reference."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/settings">Back to settings</Link>
+            <AppLink href="/platform/settings" data-testid="settings-back-link">
+              Back to settings
+            </AppLink>
           </Button>
         }
       />
@@ -102,12 +103,13 @@ export default async function ProfileSettingsPage() {
                 {" "}
                 As an administrator, you can update your own organisation
                 assignment from{" "}
-                <Link
+                <AppLink
                   href={`/platform/people/${currentMembershipId}/admin`}
                   className="underline"
+                  data-testid="profile-admin-link"
                 >
                   your administration profile
-                </Link>
+                </AppLink>
                 .
               </>
             ) : null}

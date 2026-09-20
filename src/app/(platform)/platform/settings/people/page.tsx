@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { InviteColleagueForm } from "@/components/people/invite-colleague-form";
 import { PendingInvitationsList } from "@/components/people/pending-invitations-list";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
@@ -132,7 +132,9 @@ export default async function PeopleSettingsPage() {
         description="Bring colleagues into your organisation with the right access and work assignments."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/settings">Back to settings</Link>
+            <AppLink href="/platform/settings" data-testid="settings-back-link">
+              Back to settings
+            </AppLink>
           </Button>
         }
       />
@@ -150,18 +152,21 @@ export default async function PeopleSettingsPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="w-fit">
-                <Link href="/platform/settings/people/create">
+                <AppLink
+                  href="/platform/settings/people/create"
+                  data-testid="people-settings-create-link"
+                >
                   Add employee
-                </Link>
+                </AppLink>
               </Button>
               {canImportWorkforce ? (
                 <Button variant="outline" asChild className="w-fit">
-                  <Link
+                  <AppLink
                     href="/platform/settings/people/import"
                     data-testid="import-workforce-link"
                   >
                     Import workforce
-                  </Link>
+                  </AppLink>
                 </Button>
               ) : null}
             </div>
@@ -243,7 +248,12 @@ export default async function PeopleSettingsPage() {
         </CardHeader>
         <CardContent>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/people">Open people directory</Link>
+            <AppLink
+              href="/platform/people"
+              data-testid="people-settings-directory-link"
+            >
+              Open people directory
+            </AppLink>
           </Button>
         </CardContent>
       </Card>

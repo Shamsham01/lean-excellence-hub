@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatGembaWalkStatus } from "@/modules/operational/gemba-display";
@@ -18,15 +17,16 @@ export default async function GembaHistoryPage() {
     .limit(50);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="gemba-history-page">
       <PageHeader title="Gemba history" description="Completed walks." />
       <Card>
         <CardContent className="flex flex-col gap-2 py-6">
           {walks?.map((walk) => (
-            <Link
+            <AppLink
               key={walk.id}
               href={`/platform/gemba/walks/${walk.id}`}
               className="rounded-md border border-border px-4 py-3 hover:bg-surface"
+              data-testid={`gemba-history-link-${walk.id}`}
             >
               <p className="font-medium">{walk.definition_name_snapshot}</p>
               <p className="text-sm text-muted-foreground">
@@ -42,7 +42,7 @@ export default async function GembaHistoryPage() {
                   </span>
                 ) : null}
               </div>
-            </Link>
+            </AppLink>
           ))}
         </CardContent>
       </Card>

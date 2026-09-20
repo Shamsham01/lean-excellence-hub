@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export type SettingsHubCard = {
@@ -28,12 +27,13 @@ export function SettingsHub({ cards }: { cards: SettingsHubCard[] }) {
           <CardContent className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">{card.description}</p>
             {card.available ? (
-              <Link
+              <AppLink
                 href={card.href}
                 className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                data-testid={`settings-hub-open${card.href.replaceAll("/", "-")}`}
               >
                 Open
-              </Link>
+              </AppLink>
             ) : (
               <p className="text-xs text-muted-foreground">
                 {card.unavailableMessage ??

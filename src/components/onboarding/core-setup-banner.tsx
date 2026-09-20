@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { setupStatusLabel } from "@/modules/organisation-setup/readiness";
 import type { CoreSetupState } from "@/modules/organisation-setup/types";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -33,9 +32,12 @@ export function CoreSetupBanner({
           </div>
           {nextActionHref ? (
             <Button variant="outline" size="sm" asChild>
-              <Link href={nextActionHref}>
+              <AppLink
+                href={nextActionHref}
+                data-testid="core-setup-next-action"
+              >
                 {nextActionLabel ?? "View setup"}
-              </Link>
+              </AppLink>
             </Button>
           ) : null}
         </CardContent>
@@ -81,9 +83,9 @@ export function CoreSetupBanner({
         </div>
         {nextActionHref && core.readyLabel !== "ready" ? (
           <Button asChild>
-            <Link href={nextActionHref}>
+            <AppLink href={nextActionHref} data-testid="core-setup-next-action">
               {nextActionLabel ?? "Continue setup"}
-            </Link>
+            </AppLink>
           </Button>
         ) : null}
       </CardContent>

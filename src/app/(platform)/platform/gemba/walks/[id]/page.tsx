@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { completeGembaWalk } from "@/app/(platform)/platform/gemba/actions";
 import { GembaWalkSummary } from "@/components/gemba/walk-summary";
 import { GembaWalkWorkspace } from "@/components/gemba/walk-workspace";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
@@ -113,7 +113,10 @@ export default async function GembaWalkPage({
 
   if (walk.status === "completed") {
     return (
-      <div className="flex flex-col gap-8">
+      <div
+        className="flex flex-col gap-8"
+        data-testid="gemba-walk-summary-page"
+      >
         <PageHeader
           title="Gemba walk summary"
           description={walk.definition_name_snapshot ?? ""}
@@ -132,7 +135,12 @@ export default async function GembaWalkPage({
               evidence={evidence}
             />
             <Button variant="outline" asChild>
-              <Link href="/platform/gemba/history">History</Link>
+              <AppLink
+                href="/platform/gemba/history"
+                data-testid="gemba-walk-back-link"
+              >
+                History
+              </AppLink>
             </Button>
           </CardContent>
         </Card>

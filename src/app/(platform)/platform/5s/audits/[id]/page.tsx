@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { completeFiveSAudit } from "@/app/(platform)/platform/5s/actions";
 import { FiveSAuditWorkspace } from "@/components/five-s/audit-workspace";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
@@ -112,7 +112,10 @@ export default async function FiveSAuditPage({
 
   if (audit.status === "completed") {
     return (
-      <div className="flex flex-col gap-8">
+      <div
+        className="flex flex-col gap-8"
+        data-testid="five-s-audit-result-page"
+      >
         <PageHeader
           title="5S audit result"
           description={audit.standard_name_snapshot ?? "Completed audit"}
@@ -127,7 +130,12 @@ export default async function FiveSAuditPage({
               {audit.unit_name_snapshot}
             </p>
             <Button variant="outline" asChild className="mt-4">
-              <Link href="/platform/5s/history">Back to history</Link>
+              <AppLink
+                href="/platform/5s/history"
+                data-testid="five-s-audit-back-link"
+              >
+                Back to history
+              </AppLink>
             </Button>
           </CardContent>
         </Card>

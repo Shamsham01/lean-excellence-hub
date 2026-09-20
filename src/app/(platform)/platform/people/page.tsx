@@ -1,9 +1,8 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -49,7 +48,12 @@ export default async function PeopleDirectoryPage() {
               Your access is limited to your own capability profile.
             </p>
             <Button asChild>
-              <Link href="/platform/people/me">View my capability profile</Link>
+              <AppLink
+                href="/platform/people/me"
+                data-testid="people-own-profile-link"
+              >
+                View my capability profile
+              </AppLink>
             </Button>
           </CardContent>
         </Card>
@@ -68,22 +72,24 @@ export default async function PeopleDirectoryPage() {
                   key={person.membership_id}
                   className="flex min-h-11 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <Link
+                  <AppLink
                     href={`/platform/people/${person.membership_id}`}
                     className="flex flex-1 flex-col gap-0.5 hover:underline"
+                    data-testid={`people-directory-link-${person.membership_id}`}
                   >
                     <span className="font-medium">{person.display_name}</span>
                     <span className="text-sm text-muted-foreground">
                       {person.job_function_name ?? "No job function"}
                     </span>
-                  </Link>
+                  </AppLink>
                   {canManageMemberships ? (
                     <Button variant="outline" size="sm" asChild>
-                      <Link
+                      <AppLink
                         href={`/platform/people/${person.membership_id}/admin`}
+                        data-testid={`people-manage-link-${person.membership_id}`}
                       >
                         Manage
-                      </Link>
+                      </AppLink>
                     </Button>
                   ) : null}
                 </div>

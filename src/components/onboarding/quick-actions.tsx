@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import type { QuickAction } from "@/modules/organisation-setup/types";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -17,9 +16,9 @@ export function QuickActions({ actions }: { actions: QuickAction[] }) {
       <CardContent className="flex flex-wrap gap-2">
         {actions.map((action) => (
           <Button key={action.href} variant="outline" size="sm" asChild>
-            <Link href={action.href} title={action.description}>
+            <AppLink href={action.href} title={action.description}>
               {action.label}
-            </Link>
+            </AppLink>
           </Button>
         ))}
       </CardContent>

@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { SetupChecklist } from "@/components/onboarding/setup-checklist";
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { loadOrganisationSetupSnapshot } from "@/modules/organisation-setup/queries";
 
@@ -16,7 +15,9 @@ export default async function SetupPage() {
         description={`Configure ${snapshot.organisationName} for Lean Excellence Hub.`}
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform">Return to workspace</Link>
+            <AppLink href="/platform" data-testid="setup-return-link">
+              Return to workspace
+            </AppLink>
           </Button>
         }
       />

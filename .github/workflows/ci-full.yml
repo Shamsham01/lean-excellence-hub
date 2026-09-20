@@ -216,6 +216,7 @@ jobs:
               tests/e2e/scheduling-journeys.spec.ts
               tests/e2e/schedule-lifecycle.spec.ts
               tests/e2e/schedule-nav-click.spec.ts
+              tests/e2e/core-platform-nav-click.spec.ts
               tests/e2e/milestone6-closure.spec.ts
               tests/e2e/five-s-gemba-authoring.spec.ts
               tests/e2e/site-security-boundary.spec.ts
