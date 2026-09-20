@@ -330,7 +330,7 @@ returns table (
   credential_nonce bytea
 )
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $$
@@ -549,7 +549,7 @@ create or replace function public.get_workforce_import_job_progress(
 )
 returns jsonb
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $$
@@ -735,7 +735,7 @@ declare
   membership_row public.organisation_memberships%rowtype;
   alias_row private.workforce_aliases%rowtype;
   auth_email text;
-  grant_row record;
+  grant_row public.access_grants%rowtype;
   new_intent_id uuid;
 begin
   if org_id is null or actor_membership_id is null then
@@ -773,16 +773,13 @@ begin
       using errcode = '55000';
   end if;
 
-  select
-    grant_row.role_version_id,
-    grant_row.scope_type,
-    grant_row.scope_unit_id
+  select grant_source.*
   into grant_row
-  from public.access_grants grant_row
-  where grant_row.organisation_id = org_id
-    and grant_row.grantee_membership_id = target_membership_id
-    and grant_row.status = 'active'
-  order by grant_row.created_at
+  from public.access_grants grant_source
+  where grant_source.organisation_id = org_id
+    and grant_source.grantee_membership_id = target_membership_id
+    and grant_source.status = 'active'
+  order by grant_source.created_at
   limit 1;
 
   if grant_row.role_version_id is null then
