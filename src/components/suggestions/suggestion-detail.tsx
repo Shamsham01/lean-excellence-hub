@@ -78,6 +78,10 @@ export function SuggestionDetail({
     id: string;
     title: string;
   } | null>(null);
+  const [createdProject, setCreatedProject] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [implementationSummary, setImplementationSummary] = useState(
     "Improvement completed on the floor.",
   );
@@ -115,8 +119,14 @@ export function SuggestionDetail({
     const result = await createProjectFromSuggestion(id);
     if (result.error) {
       setMessage(result.error);
+      setCreatedProject(null);
       return;
     }
+    setCreatedProject(
+      result.id
+        ? { id: result.id, title: (detail.title as string) ?? "Project" }
+        : null,
+    );
     setMessage("Project created");
     if (result.id) {
       navigateTo(`/platform/projects/${result.id}`);
@@ -516,6 +526,18 @@ export function SuggestionDetail({
                 data-testid="suggestion-open-created-action"
               >
                 Open action
+              </AppLink>
+            </>
+          ) : null}
+          {createdProject ? (
+            <>
+              {" "}
+              <AppLink
+                href={`/platform/projects/${createdProject.id}`}
+                className="text-primary hover:underline"
+                data-testid="suggestion-open-created-project"
+              >
+                Open project
               </AppLink>
             </>
           ) : null}

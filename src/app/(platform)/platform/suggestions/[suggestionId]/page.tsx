@@ -99,6 +99,7 @@ export default async function SuggestionDetailPage({
       <AppLink
         href="/platform/suggestions"
         className="text-sm text-muted-foreground hover:underline"
+        data-testid="suggestions-detail-back-link"
       >
         Back to suggestions
       </AppLink>
