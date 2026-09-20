@@ -264,8 +264,8 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page.getByTestId("recognition-feed")).toBeVisible();
 
     const awardRow = page
-      .getByRole("link", { name: new RegExp(DEMO_RECOGNITION_TITLE) })
-      .first();
+      .getByTestId("recognition-history")
+      .getByRole("link", { name: DEMO_RECOGNITION_TITLE, exact: true });
     await expect(awardRow).toBeVisible();
     const awardHref = await awardRow.getAttribute("href");
     expect(awardHref).toMatch(/\/platform\/recognition\/[0-9a-f-]{36}$/);
