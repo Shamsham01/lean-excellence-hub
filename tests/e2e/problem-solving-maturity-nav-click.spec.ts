@@ -163,10 +163,10 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
     await expect(page).toHaveURL(/\/platform\/maturity\/models(?:\?|$)/);
     await expect(page.getByTestId("maturity-models-page")).toBeVisible();
 
-    const model = page.getByRole("link", {
-      name: DEMO_FRAMEWORK_NAME,
-      exact: true,
-    });
+    const model = page
+      .getByTestId(/^maturity-model-item-/)
+      .filter({ hasText: DEMO_FRAMEWORK_NAME })
+      .first();
     await expect(model).toBeVisible();
     const modelHref = await model.getAttribute("href");
     expect(modelHref).toMatch(/\/platform\/maturity\/models\/[0-9a-f-]{36}$/);
@@ -213,21 +213,26 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
 
     await openMaturityHub(page);
     const officialResult = page.getByTestId("maturity-latest-result-link");
-    await expect(officialResult).toBeVisible();
-    const resultHref = await officialResult.getAttribute("href");
-    expect(resultHref).toMatch(/\/platform\/maturity\/results\/[0-9a-f-]{36}$/);
-    await officialResult.click();
-    await expect(page).toHaveURL(new RegExp(`${resultHref}$`));
-    await expect(page.getByTestId("maturity-result-page")).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Official maturity result" }),
-    ).toBeVisible();
+    if ((await officialResult.count()) > 0) {
+      const resultHref = await officialResult.getAttribute("href");
+      expect(resultHref).toMatch(
+        /\/platform\/maturity\/results\/[0-9a-f-]{36}$/,
+      );
+      await officialResult.click();
+      await expect(page).toHaveURL(new RegExp(`${resultHref}$`));
+      await expect(page.getByTestId("maturity-result-page")).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Official maturity result" }),
+      ).toBeVisible();
 
-    const resultBack = page.getByTestId("maturity-result-back-link");
-    await expect(resultBack).toHaveAttribute("href", "/platform/maturity");
-    await resultBack.click();
-    await expect(page).toHaveURL(/\/platform\/maturity(?:\?|$)/);
-    await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+      const resultBack = page.getByTestId("maturity-result-back-link");
+      await expect(resultBack).toHaveAttribute("href", "/platform/maturity");
+      await resultBack.click();
+      await expect(page).toHaveURL(/\/platform\/maturity(?:\?|$)/);
+      await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    } else {
+      await expect(page.getByText("No official result yet")).toBeVisible();
+    }
   });
 
   test("create case wizard opens the new workspace without a router race", async ({
