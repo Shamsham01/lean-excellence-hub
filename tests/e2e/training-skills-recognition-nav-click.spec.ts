@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import {
   DEMO_SKILLS,
@@ -40,10 +40,20 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
 
-  test("training hub, curriculum, courses, sessions, detail, and Back navigate", async ({
-    page,
-  }) => {
+  let context: BrowserContext;
+  let page: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext();
+    page = await context.newPage();
     await signInAsDemoUser(page, "admin");
+  });
+
+  test.afterAll(async () => {
+    await context?.close();
+  });
+
+  test("training hub, curriculum, courses, sessions, detail, and Back navigate", async () => {
     await openTrainingHub(page);
 
     const curriculum = page.getByTestId("training-curriculum-link");
@@ -142,8 +152,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page.getByTestId("training-sessions-page")).toBeVisible();
   });
 
-  test("keyboard Enter on Training matrix navigates", async ({ page }) => {
-    await signInAsDemoUser(page, "admin");
+  test("keyboard Enter on Training matrix navigates", async () => {
     await openTrainingHub(page);
 
     const matrix = page.getByTestId("training-matrix-link");
@@ -156,11 +165,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page.getByTestId("training-matrix")).toBeVisible();
   });
 
-  test("modified click on View all courses keeps the current document", async ({
-    page,
-    context,
-  }) => {
-    await signInAsDemoUser(page, "admin");
+  test("modified click on View all courses keeps the current document", async () => {
     await openTrainingHub(page);
     const currentUrl = page.url();
 
@@ -175,10 +180,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await popup.close();
   });
 
-  test("skills hub, catalogue row, matrix person/skill, and Back navigate", async ({
-    page,
-  }) => {
-    await signInAsDemoUser(page, "admin");
+  test("skills hub, catalogue row, matrix person/skill, and Back navigate", async () => {
     await openSkillsHub(page);
 
     const catalog = page.getByTestId("skills-catalog-link");
@@ -245,10 +247,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page).toHaveURL(/\/platform\/skills\/catalog(?:\?|$)/);
   });
 
-  test("recognition hub types, history/detail, recipient, source, and Back navigate", async ({
-    page,
-  }) => {
-    await signInAsDemoUser(page, "admin");
+  test("recognition hub types, history/detail, recipient, source, and Back navigate", async () => {
     await openRecognitionHub(page);
 
     const types = page.getByTestId("recognition-types-link");
@@ -311,8 +310,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page.getByTestId("recognition-feed")).toBeVisible();
   });
 
-  test("keyboard Enter on Award recognition navigates", async ({ page }) => {
-    await signInAsDemoUser(page, "admin");
+  test("keyboard Enter on Award recognition navigates", async () => {
     await openRecognitionHub(page);
 
     const award = page.getByTestId("recognition-award-link");
@@ -325,11 +323,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page.getByTestId("award-recognition-form")).toBeVisible();
   });
 
-  test("modified click on Types keeps the current document", async ({
-    page,
-    context,
-  }) => {
-    await signInAsDemoUser(page, "admin");
+  test("modified click on Types keeps the current document", async () => {
     await openRecognitionHub(page);
     const currentUrl = page.url();
 
@@ -344,10 +338,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await popup.close();
   });
 
-  test("award creation opens the resulting record without a router race", async ({
-    page,
-  }) => {
-    await signInAsDemoUser(page, "admin");
+  test("award creation opens the resulting record without a router race", async () => {
     await page.goto("/platform/recognition/new");
     await expect(page.getByTestId("award-recognition-page")).toBeVisible();
     await expect(page.getByTestId("award-recognition-form")).toBeVisible();

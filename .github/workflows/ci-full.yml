@@ -224,11 +224,11 @@ jobs:
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts
-              tests/e2e/training-skills-recognition-nav-click.spec.ts
               tests/e2e/milestone7-closure.spec.ts
               tests/e2e/invitation-lifecycle.spec.ts
               tests/e2e/workforce-provisioning.spec.ts
               tests/e2e/workforce-bulk-import.spec.ts
+              tests/e2e/training-skills-recognition-nav-click.spec.ts
           - label: improvement
             specs: >-
               tests/e2e/milestone8-closure.spec.ts

@@ -165,6 +165,16 @@ describe("NAV-CLICK-001 Recognition navigation primitives", () => {
     expect(actions).toContain('revalidatePath("/platform/recognition")');
   });
 
+  it("signs into the compiled nav-click spec once so the workforce shard stays under GoTrue limits", () => {
+    const source = readSource(
+      "tests/e2e/training-skills-recognition-nav-click.spec.ts",
+    );
+    const signIns = source.match(/signInAsDemoUser\(/g) ?? [];
+
+    expect(signIns).toHaveLength(1);
+    expect(source).toContain("test.beforeAll");
+  });
+
   it("keeps type create and revoke as same-page refreshes", () => {
     const types = readSource(
       "src/components/recognition/recognition-type-management.tsx",
