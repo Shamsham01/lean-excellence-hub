@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { createBenefitFromCiProject } from "@/app/(platform)/platform/benefits/actions";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import {
   type FinancialType,
   type NonFinancialType,
 } from "@/lib/benefits/classification";
+import { navigateTo } from "@/lib/navigation/navigate";
 
 type ProjectBenefitCreateFormProps = {
   projectId: string;
@@ -27,7 +27,6 @@ export function ProjectBenefitCreateForm({
   defaultTitle,
   canCreate,
 }: ProjectBenefitCreateFormProps) {
-  const router = useRouter();
   const [title, setTitle] = useState(defaultTitle);
   const [benefitClass, setBenefitClass] = useState<
     "financial" | "non_financial"
@@ -62,8 +61,7 @@ export function ProjectBenefitCreateForm({
       return;
     }
     if (result.id) {
-      router.push(`/platform/benefits/${result.id}`);
-      router.refresh();
+      navigateTo(`/platform/benefits/${result.id}`);
     }
   }
 

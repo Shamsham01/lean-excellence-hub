@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,7 +62,12 @@ export default async function ProjectMethodologiesPage() {
         description="Define phased improvement approaches for your CI projects."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/projects">Back to projects</Link>
+            <AppLink
+              href="/platform/projects"
+              data-testid="methodologies-hub-back-link"
+            >
+              Back to projects
+            </AppLink>
           </Button>
         }
       />
@@ -75,12 +80,13 @@ export default async function ProjectMethodologiesPage() {
               <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
                   <CardTitle className="text-base">
-                    <Link
+                    <AppLink
                       href={`/platform/projects/methodologies/${methodology.id}`}
                       className="hover:underline"
+                      data-testid={`methodology-link-${methodology.id}`}
                     >
                       {methodology.name}
-                    </Link>
+                    </AppLink>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {methodology.code}
@@ -104,11 +110,12 @@ export default async function ProjectMethodologiesPage() {
                 )}
                 {canManage ? (
                   <Button size="sm" variant="outline" className="mt-3" asChild>
-                    <Link
+                    <AppLink
                       href={`/platform/projects/methodologies/${methodology.id}`}
+                      data-testid={`methodology-open-${methodology.id}`}
                     >
                       Open editor
-                    </Link>
+                    </AppLink>
                   </Button>
                 ) : null}
               </CardContent>

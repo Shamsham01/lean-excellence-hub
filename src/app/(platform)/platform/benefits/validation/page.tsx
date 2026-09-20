@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,9 +97,12 @@ export default async function BenefitValidationQueuePage() {
                       {benefit.benefit_class}
                     </Badge>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/platform/benefits/${benefit.id}`}>
+                      <AppLink
+                        href={`/platform/benefits/${benefit.id}`}
+                        data-testid={`benefit-validation-open-${benefit.id}`}
+                      >
                         Open
-                      </Link>
+                      </AppLink>
                     </Button>
                   </div>
                 </div>
@@ -145,9 +148,12 @@ export default async function BenefitValidationQueuePage() {
                       </p>
                     </div>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/platform/benefits/${entry.benefit_id}`}>
+                      <AppLink
+                        href={`/platform/benefits/${entry.benefit_id}`}
+                        data-testid={`benefit-validation-entry-open-${entry.id}`}
+                      >
                         Open benefit
-                      </Link>
+                      </AppLink>
                     </Button>
                   </div>
                   <BenefitValidationActions

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { MetricCard } from "@/components/platform/metric-card";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -174,13 +174,13 @@ export function BenefitPortfolio({
               </p>
               {canCreate ? (
                 <Button size="sm" className="mt-4" asChild>
-                  <Link href="/platform/benefits/new">New benefit</Link>
+                  <AppLink href="/platform/benefits/new">New benefit</AppLink>
                 </Button>
               ) : null}
             </div>
           ) : (
             items.map((item) => (
-              <Link
+              <AppLink
                 key={item.id}
                 href={`/platform/benefits/${item.id}`}
                 className="flex flex-col gap-2 rounded-lg border border-border px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
@@ -228,7 +228,7 @@ export function BenefitPortfolio({
                     </span>
                   )}
                 </div>
-              </Link>
+              </AppLink>
             ))
           )}
         </CardContent>

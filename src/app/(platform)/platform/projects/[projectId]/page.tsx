@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import type { CommentRow } from "@/components/comments/resource-comments";
 import { ProjectWorkspace } from "@/components/projects/project-workspace";
+import { AppLink } from "@/components/ui/app-link";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
@@ -262,12 +262,13 @@ export default async function ProjectDetailPage({
         methodologies={methodologyOptions}
         requiresSiteSelection={selectorOptions.requiresSiteSelection}
       />
-      <Link
+      <AppLink
         href="/platform/projects"
         className="mt-6 inline-block text-sm text-muted-foreground hover:underline"
+        data-testid="projects-back-link"
       >
         Back to projects
-      </Link>
+      </AppLink>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { createBenefitWizardDraft } from "@/app/(platform)/platform/benefits/actions";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
@@ -30,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatProjectReference } from "@/lib/projects/status";
 import type { ProjectSelectorOption } from "@/lib/projects/types";
+import { navigateTo } from "@/lib/navigation/navigate";
 
 const WIZARD_STEPS = [
   "Basics",
@@ -57,7 +57,6 @@ export function CreateBenefitWizard({
   projects,
   requiresSiteSelection = false,
 }: CreateBenefitWizardProps) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -213,8 +212,7 @@ export function CreateBenefitWizard({
         throw new Error(result.error ?? "Draft creation failed");
       }
 
-      router.push(`/platform/benefits/${result.id}`);
-      router.refresh();
+      navigateTo(`/platform/benefits/${result.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Benefit creation failed");
     } finally {

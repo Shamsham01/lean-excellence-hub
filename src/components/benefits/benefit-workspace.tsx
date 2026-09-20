@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +22,7 @@ import {
   ResourceComments,
   type CommentRow,
 } from "@/components/comments/resource-comments";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -241,7 +241,7 @@ export function BenefitWorkspace({
                           className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                         >
                           {href ? (
-                            <Link
+                            <AppLink
                               href={href}
                               className="font-medium text-primary hover:underline"
                               data-testid={`benefit-source-link-${link.source_resource_id}`}
@@ -250,7 +250,7 @@ export function BenefitWorkspace({
                               {link.title && link.title !== label
                                 ? ` · ${link.title}`
                                 : ""}
-                            </Link>
+                            </AppLink>
                           ) : (
                             <span
                               data-testid={`benefit-source-label-${link.source_resource_id}`}
