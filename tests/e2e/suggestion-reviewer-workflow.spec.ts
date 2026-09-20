@@ -245,8 +245,9 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
       .selectOption("unassigned");
     await page.getByTestId("suggestion-portfolio-apply").click();
     await expect(page).toHaveURL(/reviewer=unassigned/);
+    await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
     const next = page.getByTestId("suggestion-portfolio-next");
-    if (await next.isEnabled()) {
+    if ((await next.count()) > 0 && (await next.isEnabled())) {
       await next.click();
       await expect(page).toHaveURL(/reviewer=unassigned/);
     }
