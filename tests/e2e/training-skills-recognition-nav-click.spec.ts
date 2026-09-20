@@ -359,9 +359,14 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await page
       .getByTestId("recognition-unit-select")
       .selectOption({ index: 1 });
-    await page.getByTestId("recognition-recipient-select").selectOption({
-      label: new RegExp(DEMO_USERS.operator.displayName),
-    });
+    const recipientSelect = page.getByTestId("recognition-recipient-select");
+    const recipientValue = await recipientSelect
+      .locator("option")
+      .filter({ hasText: DEMO_USERS.operator.displayName })
+      .first()
+      .getAttribute("value");
+    expect(recipientValue).toBeTruthy();
+    await recipientSelect.selectOption(recipientValue!);
     await page.getByTestId("award-recognition-submit").click();
 
     await expect(page).toHaveURL(/\/platform\/recognition\/[0-9a-f-]{36}/);
