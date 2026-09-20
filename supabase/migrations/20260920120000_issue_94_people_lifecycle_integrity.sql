@@ -312,6 +312,8 @@ begin
 end;
 $$;
 
+drop function if exists public.get_workforce_import_credential_export_rows(uuid);
+
 create or replace function public.get_workforce_import_credential_export_rows(
   target_import_job_id uuid,
   target_export_session_id uuid default null
@@ -937,6 +939,9 @@ as $$
     target_auth_user_id
   )
 $$;
+
+drop function if exists public.get_workforce_provision_intent_for_worker(uuid, uuid);
+drop function if exists private.get_workforce_provision_intent_for_worker(uuid, uuid);
 
 create or replace function private.get_workforce_provision_intent_for_worker(
   target_intent_id uuid,
