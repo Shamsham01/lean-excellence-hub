@@ -255,8 +255,8 @@ test.describe("S2b2 suggestion reviewer workflow", () => {
   test("parked assignment appears in my reviews queue", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
     await openReviewQueueForTitle(page, S2B2_WORKFLOW_FIXTURE_TITLES.parked);
-    await page.getByTestId("review-claim-button").click();
-    await page.getByTestId("review-begin-button").click();
+    await claimCurrentReview(page);
+    await beginCurrentReview(page);
     await parkCurrentReview(
       page,
       "Internal: need additional evidence.",
