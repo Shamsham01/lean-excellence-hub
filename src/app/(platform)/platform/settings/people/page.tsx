@@ -193,8 +193,8 @@ export default async function PeopleSettingsPage() {
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
               Create a secure invitation link to copy and share. Email delivery
-              is not sent from this screen. Choose an application role and
-              scope you are authorised to delegate.
+              is not sent from this screen. Choose an application role and scope
+              you are authorised to delegate.
               {context.mode === "site" && context.activeSiteId
                 ? " Scope options are filtered to your active site."
                 : null}

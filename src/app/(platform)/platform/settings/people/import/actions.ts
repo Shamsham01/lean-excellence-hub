@@ -339,9 +339,7 @@ export async function getImportProgress(
   };
 }
 
-export async function beginImportCredentialExport(
-  jobId: string,
-): Promise<
+export async function beginImportCredentialExport(jobId: string): Promise<
   WorkforceImportActionResult<{
     sessionId: string;
     expiresAt: string;

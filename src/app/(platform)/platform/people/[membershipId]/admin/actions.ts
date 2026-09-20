@@ -228,7 +228,9 @@ export async function setMemberMembershipStatus(input: {
 }
 
 export async function resetMemberWorkforceCredentials(membershipId: string) {
-  const canReset = await currentMemberHasPermission("workforce.credentials.reset");
+  const canReset = await currentMemberHasPermission(
+    "workforce.credentials.reset",
+  );
   if (!canReset) {
     return {
       error: "You do not have permission to reissue workforce credentials.",

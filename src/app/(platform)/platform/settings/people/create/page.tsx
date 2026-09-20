@@ -41,17 +41,17 @@ export default async function CreateWorkforceUserPage() {
   const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
   const [{ data: offersData }, { data: jobFunctions }] = await Promise.all([
-      canDelegateAccess
-        ? supabase.rpc("get_delegatable_access_offers")
-        : Promise.resolve({ data: null }),
-      canProvision
-        ? supabase
-            .from("job_functions")
-            .select("id, name, code")
-            .eq("status", "active")
-            .order("name")
-        : Promise.resolve({ data: [] }),
-    ]);
+    canDelegateAccess
+      ? supabase.rpc("get_delegatable_access_offers")
+      : Promise.resolve({ data: null }),
+    canProvision
+      ? supabase
+          .from("job_functions")
+          .select("id, name, code")
+          .eq("status", "active")
+          .order("name")
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const offers = filterDelegatableOffersForActiveSite(
     ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??

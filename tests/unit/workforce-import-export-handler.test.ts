@@ -13,9 +13,13 @@ async function encryptTestCredential(plaintext: string) {
       16,
     );
   }
-  const key = await crypto.subtle.importKey("raw", bytes, { name: "AES-GCM" }, false, [
-    "encrypt",
-  ]);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    bytes,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt"],
+  );
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce },
@@ -102,7 +106,9 @@ describe("workforce import export handler", () => {
       {
         readEnv: () => undefined,
         createUserClient: () => ({
-          auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+          auth: {
+            getUser: async () => ({ data: { user: null }, error: null }),
+          },
           rpc: vi.fn(),
         }),
         createServiceClient: () => ({ rpc: vi.fn() }),

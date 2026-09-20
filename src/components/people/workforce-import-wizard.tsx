@@ -91,9 +91,7 @@ type WorkforceImportWizardProps = {
       }
     | { error: string }
   >;
-  onBeginCredentialExport: (
-    jobId: string,
-  ) => Promise<
+  onBeginCredentialExport: (jobId: string) => Promise<
     | {
         ok: true;
         data: { sessionId: string; expiresAt: string; resumed: boolean };

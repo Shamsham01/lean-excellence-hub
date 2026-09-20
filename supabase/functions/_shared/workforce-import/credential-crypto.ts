@@ -1,5 +1,9 @@
 const ENCRYPTION_KEY_ENV = "CREDENTIAL_ENCRYPTION_KEY";
 
+function asBufferSource(bytes: Uint8Array): BufferSource {
+  return Uint8Array.from(bytes);
+}
+
 function decodeEncryptionKey(rawKey: string): Uint8Array {
   const trimmed = rawKey.trim();
   if (/^[0-9a-fA-F]{64}$/.test(trimmed)) {
@@ -38,7 +42,7 @@ export async function encryptCredential(
   const keyBytes = decodeEncryptionKey(rawKey);
   const key = await crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    asBufferSource(keyBytes),
     { name: "AES-GCM" },
     false,
     ["encrypt"],
@@ -71,16 +75,16 @@ export async function decryptCredential(
   const keyBytes = decodeEncryptionKey(rawKey);
   const key = await crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    asBufferSource(keyBytes),
     { name: "AES-GCM" },
     false,
     ["decrypt"],
   );
 
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: nonce },
+    { name: "AES-GCM", iv: asBufferSource(nonce) },
     key,
-    ciphertext,
+    asBufferSource(ciphertext),
   );
 
   return new TextDecoder().decode(decrypted);

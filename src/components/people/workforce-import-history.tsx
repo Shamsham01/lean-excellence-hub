@@ -120,7 +120,9 @@ export function WorkforceImportHistory({
                       disabled={archivingId === job.id}
                       onClick={() => void handleArchive(job.id)}
                     >
-                      {archivingId === job.id ? "Archiving…" : "Hide from recent"}
+                      {archivingId === job.id
+                        ? "Archiving…"
+                        : "Hide from recent"}
                     </Button>
                   ) : null}
                 </div>
