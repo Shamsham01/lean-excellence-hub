@@ -219,6 +219,8 @@ select
   'import_job',
   public.create_workforce_import_job('issue94.csv');
 
+set local role lean_hub_private_owner;
+
 update public.workforce_import_jobs
 set status = 'completed',
     provisioned_rows = 1,
@@ -252,22 +254,14 @@ from public.workforce_import_rows import_row
 where import_row.import_job_id = (select id from issue94_ids where key = 'import_job')
 limit 1;
 
-insert into public.workforce_import_row_credentials (
-  import_row_id,
-  import_job_id,
-  organisation_id,
-  credential_ciphertext,
-  credential_nonce,
-  expires_at
-)
-values (
+select public.store_workforce_import_row_credential(
   (select id from issue94_ids where key = 'import_row'),
-  (select id from issue94_ids where key = 'import_job'),
-  (select id from issue94_ids where key = 'org'),
   decode('001122', 'hex'),
   decode('aabbcc', 'hex'),
   statement_timestamp() + interval '1 day'
 );
+
+set local role authenticated;
 
 select is(
   public.get_membership_administration_profile(
