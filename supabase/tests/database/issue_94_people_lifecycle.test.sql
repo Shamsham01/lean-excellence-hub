@@ -257,7 +257,7 @@ limit 1;
 select public.store_workforce_import_row_credential(
   (select id from issue94_ids where key = 'import_row'),
   decode('001122', 'hex'),
-  decode('aabbcc', 'hex'),
+  decode('aabbccddeeff001122334455', 'hex'),
   statement_timestamp() + interval '1 day'
 );
 
