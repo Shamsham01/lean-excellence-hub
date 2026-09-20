@@ -7,6 +7,8 @@ import {
 } from "../../actions";
 import { PageHeader } from "@/components/platform/page-header";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
+import { PublishedFrameworkInspector } from "@/components/maturity/published-framework-inspector";
+import { sortMaturityQuestions } from "@/modules/maturity/framework-authoring";
 import { Badge } from "@/components/ui/badge";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -108,51 +110,85 @@ export default async function MaturityModelPage({
     ) ?? ["site"];
   }
 
-  if (draftVersion) {
+  async function loadFrameworkStructure(versionId: string) {
+    const loadedLevels: typeof levels = [];
+    const loadedPillars: typeof pillars = [];
+    const loadedCriteria: typeof criteria = [];
+    const loadedQuestions: typeof questions = [];
+
     const { data: levelRows } = await supabase
       .from("maturity_levels")
       .select("id, level_number, name, color_token, description, guidance")
-      .eq("model_version_id", draftVersion.id)
+      .eq("model_version_id", versionId)
       .order("level_number");
-    levels = levelRows ?? [];
+    loadedLevels.push(...(levelRows ?? []));
 
     const { data: pillarRows } = await supabase
       .from("maturity_pillars")
       .select("id, name, position, section_id, description, guidance")
-      .eq("model_version_id", draftVersion.id)
+      .eq("model_version_id", versionId)
       .order("position");
-    pillars = pillarRows ?? [];
+    loadedPillars.push(...(pillarRows ?? []));
 
-    for (const pillar of pillars) {
+    for (const pillar of loadedPillars) {
       const { data: criterionRows } = await supabase
         .from("maturity_criteria")
         .select("id, name, pillar_id, position, description, guidance")
         .eq("pillar_id", pillar.id)
         .order("position");
       for (const criterion of criterionRows ?? []) {
-        criteria.push(criterion);
+        loadedCriteria.push(criterion);
         const { data: links } = await supabase
           .from("maturity_criterion_questions")
           .select("question_id")
           .eq("criterion_id", criterion.id)
           .eq("contributes_to_score", true);
         for (const link of links ?? []) {
-          const { data: q } = await supabase
+          const { data: questionRow } = await supabase
             .from("template_questions")
             .select("id, prompt, position")
             .eq("id", link.question_id)
+            .order("position")
             .maybeSingle();
-          if (q) {
-            questions.push({
-              id: q.id,
-              prompt: q.prompt,
+          if (questionRow) {
+            loadedQuestions.push({
+              id: questionRow.id,
+              prompt: questionRow.prompt,
               criterion_id: criterion.id,
-              position: q.position,
+              position: questionRow.position,
             });
           }
         }
       }
     }
+
+    return {
+      levels: loadedLevels,
+      pillars: loadedPillars,
+      criteria: loadedCriteria,
+      questions: sortMaturityQuestions(loadedQuestions),
+    };
+  }
+
+  let publishedLevels: typeof levels = [];
+  let publishedPillars: typeof pillars = [];
+  let publishedCriteria: typeof criteria = [];
+  let publishedQuestions: typeof questions = [];
+
+  if (draftVersion) {
+    const draftStructure = await loadFrameworkStructure(draftVersion.id);
+    levels = draftStructure.levels;
+    pillars = draftStructure.pillars;
+    criteria.push(...draftStructure.criteria);
+    questions.push(...draftStructure.questions);
+  }
+
+  if (publishedVersion) {
+    const publishedStructure = await loadFrameworkStructure(publishedVersion.id);
+    publishedLevels = publishedStructure.levels;
+    publishedPillars = publishedStructure.pillars;
+    publishedCriteria = publishedStructure.criteria;
+    publishedQuestions = publishedStructure.questions;
   }
 
   let publishedScopes: MaturityAssessmentScopeType[] = ["site"];
@@ -230,46 +266,55 @@ export default async function MaturityModelPage({
       </div>
 
       {publishedVersion ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Active version {publishedVersion.version_number}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground">
-              Assessment scope: {publishedScopes.map(scopeTypeLabel).join(", ")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <AppLink
-                  href={`/platform/maturity/assessments/new?versionId=${publishedVersion.id}`}
-                  data-testid="maturity-model-start-assessment-link"
-                >
-                  Start assessment
-                </AppLink>
-              </Button>
-              {canManage ? (
-                <>
-                  <form action={createSuccessorAction}>
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      data-testid="create-successor-version"
-                    >
-                      Create new version
-                    </Button>
-                  </form>
-                  <form action={deactivateAction}>
-                    <Button type="submit" variant="outline">
-                      Deactivate
-                    </Button>
-                  </form>
-                </>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Active version {publishedVersion.version_number}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <p className="text-sm text-muted-foreground">
+                Assessment scope: {publishedScopes.map(scopeTypeLabel).join(", ")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                  <AppLink
+                    href={`/platform/maturity/assessments/new?versionId=${publishedVersion.id}`}
+                    data-testid="maturity-model-start-assessment-link"
+                  >
+                    Start assessment
+                  </AppLink>
+                </Button>
+                {canManage ? (
+                  <>
+                    <form action={createSuccessorAction}>
+                      <Button
+                        type="submit"
+                        variant="outline"
+                        data-testid="create-successor-version"
+                      >
+                        Create new version
+                      </Button>
+                    </form>
+                    <form action={deactivateAction}>
+                      <Button type="submit" variant="outline">
+                        Deactivate
+                      </Button>
+                    </form>
+                  </>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+          <PublishedFrameworkInspector
+            versionNumber={publishedVersion.version_number}
+            levels={publishedLevels}
+            pillars={publishedPillars}
+            criteria={publishedCriteria}
+            questions={publishedQuestions}
+          />
+        </>
       ) : null}
 
       {!publishedVersion && latestArchivedVersion && canManage ? (
