@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ function QueueItem({
         : reviewerLabel;
 
   return (
-    <Link
+    <AppLink
       href={suggestionReviewQueueHref({
         queue,
         suggestionId: item.id,
@@ -92,7 +92,7 @@ function QueueItem({
       <p className="mt-2 text-xs text-muted-foreground tabular-nums">
         Submitted {formatSubmittedDate(item.submitted_at)}
       </p>
-    </Link>
+    </AppLink>
   );
 }
 
@@ -155,7 +155,7 @@ export function ReviewQueueList({
                 data-testid="review-queue-previous"
               >
                 {page > 1 ? (
-                  <Link
+                  <AppLink
                     href={suggestionReviewQueueHref({
                       queue,
                       suggestionId: selectedSuggestionId,
@@ -163,7 +163,7 @@ export function ReviewQueueList({
                     })}
                   >
                     Previous
-                  </Link>
+                  </AppLink>
                 ) : (
                   <span>Previous</span>
                 )}
@@ -180,7 +180,7 @@ export function ReviewQueueList({
                 data-testid="review-queue-next"
               >
                 {page < totalPages ? (
-                  <Link
+                  <AppLink
                     href={suggestionReviewQueueHref({
                       queue,
                       suggestionId: selectedSuggestionId,
@@ -188,7 +188,7 @@ export function ReviewQueueList({
                     })}
                   >
                     Next
-                  </Link>
+                  </AppLink>
                 ) : (
                   <span>Next</span>
                 )}
@@ -230,7 +230,7 @@ export function ReviewQueueTabs({
             className="min-h-11"
             asChild
           >
-            <Link
+            <AppLink
               href={suggestionReviewQueueHref({
                 queue: tab.value,
                 suggestionId: active ? selectedSuggestionId : null,
@@ -241,7 +241,7 @@ export function ReviewQueueTabs({
               data-testid={`review-queue-tab-${tab.value}`}
             >
               {tab.label}
-            </Link>
+            </AppLink>
           </Button>
         );
       })}

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -119,7 +119,7 @@ export function ProjectHeader({
               <p className="text-muted-foreground">Source</p>
               {sourceLinks.map((link) =>
                 link.href ? (
-                  <Link
+                  <AppLink
                     key={link.id}
                     href={link.href}
                     className="font-medium text-primary hover:underline"
@@ -127,7 +127,7 @@ export function ProjectHeader({
                   >
                     {sourceLabel(link)}
                     {link.title ? ` · ${link.title}` : ""}
-                  </Link>
+                  </AppLink>
                 ) : (
                   <p key={link.id} className="font-medium">
                     {sourceLabel(link)}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -17,6 +16,7 @@ import {
   ResourceComments,
   type CommentRow,
 } from "@/components/comments/resource-comments";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,13 +137,13 @@ export function ActionWorkspace({
           <CardContent className="pt-6 text-sm">
             <p className="font-medium">Source</p>
             {source.href ? (
-              <Link
+              <AppLink
                 href={source.href}
                 className="mt-1 inline-flex text-sm text-primary hover:underline"
                 data-testid="action-source-link"
               >
                 {sourceLabel(source)}
-              </Link>
+              </AppLink>
             ) : (
               <p className="mt-1 text-muted-foreground">
                 {sourceLabel(source)}
@@ -469,12 +469,12 @@ export function ActionWorkspace({
         </p>
       ) : null}
 
-      <Link
+      <AppLink
         href="/platform/actions"
         className="text-sm text-muted-foreground hover:underline"
       >
         Back to actions
-      </Link>
+      </AppLink>
     </div>
   );
 }

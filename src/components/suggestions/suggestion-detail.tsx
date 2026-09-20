@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -15,6 +14,7 @@ import {
   type CommentRow,
 } from "@/components/comments/resource-comments";
 import { SuggestionEvidenceBlock } from "@/components/suggestions/suggestion-evidence-block";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +41,7 @@ import {
   projectStatusLabel,
 } from "@/lib/projects/status";
 import type { LinkedSuggestionProject } from "@/lib/projects/types";
+import { navigateTo } from "@/lib/navigation/navigate";
 import { suggestionStatusLabel } from "@/lib/suggestions/status";
 
 type StatusHistoryRow = {
@@ -118,8 +119,7 @@ export function SuggestionDetail({
     }
     setMessage("Project created");
     if (result.id) {
-      router.push(`/platform/projects/${result.id}`);
-      router.refresh();
+      navigateTo(`/platform/projects/${result.id}`);
     }
   }
 
@@ -217,7 +217,7 @@ export function SuggestionDetail({
                 </p>
               ) : (
                 benefits.map((benefit) => (
-                  <Link
+                  <AppLink
                     key={benefit.id}
                     href={`/platform/benefits/${benefit.id}`}
                     className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
@@ -274,7 +274,7 @@ export function SuggestionDetail({
                         </span>
                       )}
                     </div>
-                  </Link>
+                  </AppLink>
                 ))
               )}
             </CardContent>
@@ -510,13 +510,13 @@ export function SuggestionDetail({
           {createdAction ? (
             <>
               {" "}
-              <Link
+              <AppLink
                 href={`/platform/actions/${createdAction.id}`}
                 className="text-primary hover:underline"
                 data-testid="suggestion-open-created-action"
               >
                 Open action
-              </Link>
+              </AppLink>
             </>
           ) : null}
         </p>
@@ -547,14 +547,14 @@ function SuggestionLinkedProjectRow({
         </p>
       </div>
       {project.can_open ? (
-        <Link
+        <AppLink
           href={project.href}
           className="text-sm text-primary hover:underline"
           data-testid={`suggestion-open-project-${project.id}`}
           aria-label={`Open project ${reference}`}
         >
           Open project
-        </Link>
+        </AppLink>
       ) : (
         <span className="text-xs text-muted-foreground">
           Linked project is outside your current scope.
@@ -584,14 +584,14 @@ function SuggestionLinkedActionRow({
         </p>
       </div>
       {action.can_open ? (
-        <Link
+        <AppLink
           href={action.href}
           className="text-sm text-primary hover:underline"
           data-testid={`suggestion-open-action-${action.id}`}
           aria-label={`Open action ${label}`}
         >
           Open action
-        </Link>
+        </AppLink>
       ) : (
         <span className="text-xs text-muted-foreground">
           Linked action is outside your current scope.
