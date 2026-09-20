@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JobFunctionsList } from "@/components/job-functions/job-functions-list";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -35,7 +35,9 @@ export default async function JobFunctionsSettingsPage() {
         description="Define what people do at work. Job functions support training and capability — they do not control application permissions."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/settings">Back to settings</Link>
+            <AppLink href="/platform/settings" data-testid="settings-back-link">
+              Back to settings
+            </AppLink>
           </Button>
         }
       />

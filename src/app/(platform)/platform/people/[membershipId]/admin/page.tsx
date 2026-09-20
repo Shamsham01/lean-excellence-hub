@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MemberAccessManagement } from "@/components/people/member-access-management";
@@ -8,6 +7,7 @@ import {
 } from "@/components/people/member-administration-panel";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -109,12 +109,20 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/platform/people/${membershipId}`}>
+              <AppLink
+                href={`/platform/people/${membershipId}`}
+                data-testid="people-capability-profile-link"
+              >
                 Capability profile
-              </Link>
+              </AppLink>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/people">People directory</Link>
+              <AppLink
+                href="/platform/people"
+                data-testid="people-directory-back-link"
+              >
+                People directory
+              </AppLink>
             </Button>
           </div>
         }

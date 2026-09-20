@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CreateWorkforceUserForm } from "@/components/people/create-workforce-user-form";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -58,9 +58,12 @@ export default async function CreateWorkforceUserPage() {
         description="Add an employee with a system-generated temporary password for workforce sign-in."
         actions={
           <Button variant="outline" asChild>
-            <Link href="/platform/settings/people">
+            <AppLink
+              href="/platform/settings/people"
+              data-testid="people-settings-back-link"
+            >
               Back to people settings
-            </Link>
+            </AppLink>
           </Button>
         }
       />

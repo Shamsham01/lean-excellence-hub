@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { SetupChecklistItem } from "@/components/onboarding/setup-checklist-item";
 import type { SetupItem } from "@/modules/organisation-setup/types";
+import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function SetupChecklist({
@@ -51,12 +50,12 @@ export function SetupChecklistCompact({ items }: { items: SetupItem[] }) {
         >
           <span>{item.title}</span>
           {item.href && item.canPerform ? (
-            <Link
+            <AppLink
               href={item.href}
               className="text-primary underline-offset-4 hover:underline"
             >
               Continue
-            </Link>
+            </AppLink>
           ) : (
             <span className="text-xs text-muted-foreground">
               {item.helperMessage ?? "Pending"}

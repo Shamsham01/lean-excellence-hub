@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { OrganisationUnitTree } from "@/components/organisation/organisation-unit-tree";
 import { UnitCreateForm } from "@/components/organisation/unit-create-form";
 import { UnitLifecycleActions } from "@/components/organisation/unit-lifecycle-actions";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildOrganisationUnitTree } from "@/modules/organisation/unit-hierarchy";
@@ -117,7 +117,9 @@ export default async function StructureSettingsPage() {
         description="Manage units that reflect how your organisation operates. Units keep stable identifiers; archive instead of delete."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/settings">Back to settings</Link>
+            <AppLink href="/platform/settings" data-testid="settings-back-link">
+              Back to settings
+            </AppLink>
           </Button>
         }
       />

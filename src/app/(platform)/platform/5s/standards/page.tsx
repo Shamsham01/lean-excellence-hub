@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createFiveSStandard } from "@/app/(platform)/platform/5s/actions";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ export default async function FiveSStandardsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="five-s-standards-page">
       <PageHeader
         title="5S standards"
         description="Configurable audit templates per area."
@@ -84,16 +84,17 @@ export default async function FiveSStandardsPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {standards?.map((s) => (
-            <Link
+            <AppLink
               key={s.id}
               href={`/platform/5s/standards/${s.id}`}
               className="rounded-md border border-border px-4 py-3 hover:bg-surface"
+              data-testid={`five-s-standard-link-${s.id}`}
             >
               <p className="font-medium">{s.display_name}</p>
               {s.description ? (
                 <p className="text-sm text-muted-foreground">{s.description}</p>
               ) : null}
-            </Link>
+            </AppLink>
           ))}
         </CardContent>
       </Card>

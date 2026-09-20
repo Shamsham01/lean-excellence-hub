@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { QuickActions } from "@/components/onboarding/quick-actions";
 import { MetricCard } from "@/components/platform/metric-card";
@@ -12,6 +10,7 @@ import {
   ScoreBadge,
 } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
@@ -107,7 +106,7 @@ export default async function PlatformHomePage() {
   const benefitsRealising = benefitsOverview?.status_pipeline?.realising ?? 0;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="platform-home-page">
       <PageHeader
         title={<TimeGreeting />}
         description={
@@ -212,7 +211,9 @@ export default async function PlatformHomePage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>5S audits</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/5s">Open</Link>
+              <AppLink href="/platform/5s" data-testid="dashboard-open-5s">
+                Open
+              </AppLink>
             </Button>
           </CardHeader>
           <CardContent>
@@ -227,7 +228,12 @@ export default async function PlatformHomePage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Gemba walks</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/gemba">Open</Link>
+              <AppLink
+                href="/platform/gemba"
+                data-testid="dashboard-open-gemba"
+              >
+                Open
+              </AppLink>
             </Button>
           </CardHeader>
           <CardContent>
@@ -241,7 +247,12 @@ export default async function PlatformHomePage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Lean maturity</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/maturity">Open</Link>
+              <AppLink
+                href="/platform/maturity"
+                data-testid="dashboard-open-maturity"
+              >
+                Open
+              </AppLink>
             </Button>
           </CardHeader>
           <CardContent>
@@ -256,7 +267,12 @@ export default async function PlatformHomePage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>People & capability</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/people">Open</Link>
+              <AppLink
+                href="/platform/people"
+                data-testid="dashboard-open-people"
+              >
+                Open
+              </AppLink>
             </Button>
           </CardHeader>
           <CardContent>
@@ -272,7 +288,12 @@ export default async function PlatformHomePage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Suggestions</CardTitle>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/platform/suggestions">Open</Link>
+                <AppLink
+                  href="/platform/suggestions"
+                  data-testid="dashboard-open-suggestions"
+                >
+                  Open
+                </AppLink>
               </Button>
             </CardHeader>
             <CardContent className="space-y-1 text-sm text-muted-foreground">
@@ -292,7 +313,12 @@ export default async function PlatformHomePage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Benefits</CardTitle>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/platform/benefits">Open</Link>
+                <AppLink
+                  href="/platform/benefits"
+                  data-testid="dashboard-open-benefits"
+                >
+                  Open
+                </AppLink>
               </Button>
             </CardHeader>
             <CardContent className="space-y-1 text-sm text-muted-foreground">
@@ -313,16 +339,17 @@ export default async function PlatformHomePage() {
           <CardContent className="flex flex-col gap-2">
             {recentAssessments?.length ? (
               recentAssessments.map((a) => (
-                <Link
+                <AppLink
                   key={a.id}
                   href={`/platform/maturity/assessments/${a.id}`}
                   className="flex items-center justify-between text-sm"
+                  data-testid={`dashboard-assessment-link-${a.id}`}
                 >
                   <span className="capitalize">
                     {a.assessment_type.replace("_", " ")}
                   </span>
                   <AssessmentStatusBadge status={a.status} />
-                </Link>
+                </AppLink>
               ))
             ) : (
               <p className="text-sm text-muted-foreground">

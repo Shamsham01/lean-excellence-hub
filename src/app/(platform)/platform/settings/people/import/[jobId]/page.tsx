@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { WorkforceImportHistory } from "@/components/people/workforce-import-history";
 import { WorkforceImportWizard } from "@/components/people/workforce-import-wizard";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -67,10 +67,20 @@ export default async function WorkforceImportJobPage({
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/settings/people/import">New import</Link>
+              <AppLink
+                href="/platform/settings/people/import"
+                data-testid="people-import-new-link"
+              >
+                New import
+              </AppLink>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/platform/settings/people">Back to people</Link>
+              <AppLink
+                href="/platform/settings/people"
+                data-testid="people-settings-back-link"
+              >
+                Back to people
+              </AppLink>
             </Button>
           </div>
         }

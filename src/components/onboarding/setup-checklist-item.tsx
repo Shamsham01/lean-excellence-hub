@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { setupStatusLabel } from "@/modules/organisation-setup/readiness";
 import type { SetupItem } from "@/modules/organisation-setup/types";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 
 function statusVariant(status: SetupItem["status"]) {
@@ -42,9 +41,9 @@ export function SetupChecklistItem({ item }: { item: SetupItem }) {
       </div>
       {item.href && item.canPerform ? (
         <Button variant="outline" size="sm" asChild className="shrink-0">
-          <Link href={item.href}>
+          <AppLink href={item.href}>
             {item.status === "complete" ? "View" : "Set up"}
-          </Link>
+          </AppLink>
         </Button>
       ) : null}
     </div>

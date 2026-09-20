@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createGembaDefinition } from "@/app/(platform)/platform/gemba/actions";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,7 @@ export default async function GembaDefinitionsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="gemba-definitions-page">
       <PageHeader
         title="Gemba definitions"
         description="Templates for structured walks."
@@ -76,13 +76,14 @@ export default async function GembaDefinitionsPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {definitions?.map((d) => (
-            <Link
+            <AppLink
               key={d.id}
               href={`/platform/gemba/definitions/${d.id}`}
               className="rounded-md border border-border px-4 py-3 hover:bg-surface"
+              data-testid={`gemba-definition-link-${d.id}`}
             >
               <p className="font-medium">{d.display_name}</p>
-            </Link>
+            </AppLink>
           ))}
         </CardContent>
       </Card>

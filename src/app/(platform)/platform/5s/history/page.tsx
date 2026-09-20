@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -16,7 +15,7 @@ export default async function FiveSHistoryPage() {
     .limit(50);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="five-s-history-page">
       <PageHeader
         title="5S history"
         description="Completed audits with immutable scores."
@@ -25,10 +24,11 @@ export default async function FiveSHistoryPage() {
         <CardContent className="flex flex-col gap-2 py-6">
           {audits?.length ? (
             audits.map((audit) => (
-              <Link
+              <AppLink
                 key={audit.id}
                 href={`/platform/5s/audits/${audit.id}`}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-4 py-3 hover:bg-surface"
+                data-testid={`five-s-history-link-${audit.id}`}
               >
                 <div>
                   <p className="font-medium">
@@ -42,7 +42,7 @@ export default async function FiveSHistoryPage() {
                   <p className="font-medium">{audit.overall_score_percent}%</p>
                   <p className="text-muted-foreground">{audit.result_status}</p>
                 </div>
-              </Link>
+              </AppLink>
             ))
           ) : (
             <p className="text-sm text-muted-foreground">
