@@ -12473,10 +12473,6 @@ export type Database = {
         Args: { target_schedule_definition_id: string }
         Returns: boolean
       }
-      enqueue_due_schedule_occurrence_reminders: {
-        Args: never
-        Returns: number
-      }
       deactivate_suggestion_category: {
         Args: { target_category_id: string }
         Returns: boolean
@@ -12552,6 +12548,10 @@ export type Database = {
       end_membership_job_function_assignment: {
         Args: { target_assignment_id: string; target_valid_to?: string }
         Returns: boolean
+      }
+      enqueue_due_schedule_occurrence_reminders: {
+        Args: never
+        Returns: number
       }
       ensure_problem_solving_methods_provisioned: {
         Args: never
