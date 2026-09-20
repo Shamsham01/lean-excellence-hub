@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { PillarScoreList } from "@/components/maturity/maturity-charts";
 import { ScoreBadge } from "@/modules/maturity/status-badges";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -51,13 +51,18 @@ export default async function OfficialResultPage({
     : null;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="maturity-result-page">
       <PageHeader
         title="Official maturity result"
         description={`${frameworkLabel}${versionLabel ? ` · ${versionLabel}` : ""} · ${unitLabel}`}
         actions={
           <Button variant="outline" asChild>
-            <Link href="/platform/maturity">Back to overview</Link>
+            <AppLink
+              href="/platform/maturity"
+              data-testid="maturity-result-back-link"
+            >
+              Back to overview
+            </AppLink>
           </Button>
         }
       />

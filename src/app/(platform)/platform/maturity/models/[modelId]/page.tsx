@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -9,6 +8,7 @@ import {
 import { PageHeader } from "@/components/platform/page-header";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
 import { Badge } from "@/components/ui/badge";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -193,13 +193,21 @@ export default async function MaturityModelPage({
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="maturity-model-detail-page"
+    >
       <PageHeader
         title={model.display_name}
         description={model.description ?? "Framework configuration"}
         actions={
           <Button variant="outline" asChild>
-            <Link href="/platform/maturity/models">All frameworks</Link>
+            <AppLink
+              href="/platform/maturity/models"
+              data-testid="maturity-model-back-link"
+            >
+              All frameworks
+            </AppLink>
           </Button>
         }
       />
@@ -234,11 +242,12 @@ export default async function MaturityModelPage({
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild>
-                <Link
+                <AppLink
                   href={`/platform/maturity/assessments/new?versionId=${publishedVersion.id}`}
+                  data-testid="maturity-model-start-assessment-link"
                 >
                   Start assessment
-                </Link>
+                </AppLink>
               </Button>
               {canManage ? (
                 <>

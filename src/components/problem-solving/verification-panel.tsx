@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLink } from "@/components/ui/app-link";
 import { Input } from "@/components/ui/input";
 import {
   effectivenessResultBadgeVariant,
@@ -223,14 +224,15 @@ export function VerificationPanel({
             <p className="text-muted-foreground">No linked actions.</p>
           ) : (
             detail.actions.map((action) => (
-              <div
+              <AppLink
                 key={action.id}
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                href={`/platform/actions/${action.id}`}
+                className="flex items-center justify-between rounded-md border border-border px-3 py-2 hover:bg-muted/40"
                 data-testid={`related-action-${action.id}`}
               >
                 <span>{action.title}</span>
                 <Badge variant="outline">{action.status}</Badge>
-              </div>
+              </AppLink>
             ))
           )}
           <p className="text-xs text-muted-foreground">

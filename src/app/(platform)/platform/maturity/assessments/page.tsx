@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 
 export default async function AssessmentsListPage() {
@@ -29,25 +28,32 @@ export default async function AssessmentsListPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="maturity-assessments-page"
+    >
       <PageHeader
         title="Assessments"
         description="Formal and self assessments across organisational units."
         actions={
           <Button asChild>
-            <Link href="/platform/maturity/assessments/new">
+            <AppLink
+              href="/platform/maturity/assessments/new"
+              data-testid="maturity-start-assessment-link"
+            >
               Start assessment
-            </Link>
+            </AppLink>
           </Button>
         }
       />
 
       <div className="flex flex-col gap-2">
         {assessments?.map((a) => (
-          <Link
+          <AppLink
             key={a.id}
             href={`/platform/maturity/assessments/${a.id}`}
             className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted"
+            data-testid={`maturity-assessment-item-${a.id}`}
           >
             <div>
               <p className="text-sm font-medium capitalize">
@@ -59,7 +65,7 @@ export default async function AssessmentsListPage() {
               </p>
             </div>
             <AssessmentStatusBadge status={a.status} />
-          </Link>
+          </AppLink>
         ))}
       </div>
     </div>

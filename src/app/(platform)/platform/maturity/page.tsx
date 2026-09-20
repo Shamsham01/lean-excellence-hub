@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Layers, Plus } from "lucide-react";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
@@ -7,6 +6,7 @@ import {
   MaturityRadarChart,
   PillarScoreList,
 } from "@/components/maturity/maturity-charts";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -59,7 +59,7 @@ export default async function MaturityOverviewPage() {
 
   if (!models?.length) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
         <PageHeader
           title="Lean maturity"
           description="Measure and improve operational excellence across your organisation."
@@ -80,21 +80,39 @@ export default async function MaturityOverviewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
       <PageHeader
         title="Lean maturity"
         description="Current maturity position, trends, and improvement focus."
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link href="/platform/maturity/assessments">Assessments</Link>
+              <AppLink
+                href="/platform/maturity/assessments"
+                data-testid="maturity-assessments-link"
+              >
+                Assessments
+              </AppLink>
             </Button>
+            {latestResult ? (
+              <Button variant="outline" asChild>
+                <AppLink
+                  href={`/platform/maturity/results/${latestResult.id}`}
+                  data-testid="maturity-latest-result-link"
+                >
+                  Official result
+                </AppLink>
+              </Button>
+            ) : null}
             {canManage ? (
               <Button asChild>
-                <Link href="/platform/maturity/models">
+                <AppLink
+                  href="/platform/maturity/models"
+                  data-testid="maturity-framework-link"
+                >
                   <Plus className="size-4" />
                   Framework
-                </Link>
+                </AppLink>
               </Button>
             ) : null}
           </div>
@@ -164,16 +182,17 @@ export default async function MaturityOverviewPage() {
           <CardContent className="flex flex-col gap-2">
             {assessments?.length ? (
               assessments.map((assessment) => (
-                <Link
+                <AppLink
                   key={assessment.id}
                   href={`/platform/maturity/assessments/${assessment.id}`}
                   className="flex items-center justify-between rounded-md border border-border px-3 py-2 hover:bg-muted"
+                  data-testid={`maturity-recent-assessment-${assessment.id}`}
                 >
                   <span className="text-sm capitalize">
                     {assessment.assessment_type.replace("_", " ")}
                   </span>
                   <AssessmentStatusBadge status={assessment.status} />
-                </Link>
+                </AppLink>
               ))
             ) : (
               <p className="text-sm text-muted-foreground">

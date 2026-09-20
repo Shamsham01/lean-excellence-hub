@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CaseWorkspace } from "@/components/problem-solving/case-workspace";
+import { AppLink } from "@/components/ui/app-link";
 import {
   callProblemSolvingRpc,
   untypedFrom,
@@ -216,12 +216,13 @@ export default async function ProblemSolvingCaseDetailPage({
         canUseAi={canUseAi}
         providerAvailable={providerAvailable}
       />
-      <Link
+      <AppLink
         href="/platform/problem-solving"
         className="mt-6 inline-block text-sm text-muted-foreground hover:underline"
+        data-testid="problem-solving-back-link"
       >
         Back to problem solving
-      </Link>
+      </AppLink>
     </div>
   );
 }

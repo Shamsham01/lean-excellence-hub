@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type {
@@ -64,7 +64,12 @@ export default async function ProblemSolvingPortfolioPage({
         actions={
           canCreate ? (
             <Button size="sm" asChild>
-              <Link href="/platform/problem-solving/new">New case</Link>
+              <AppLink
+                href="/platform/problem-solving/new"
+                data-testid="problem-solving-new-link"
+              >
+                New case
+              </AppLink>
             </Button>
           ) : null
         }

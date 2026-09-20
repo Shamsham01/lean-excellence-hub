@@ -1,11 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { startAssessment } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { navigateTo } from "@/lib/navigation/navigate";
 import {
   scopeTypeLabel,
   type MaturityAssessmentScopeType,
@@ -35,7 +35,6 @@ export function StartAssessmentForm({
   versions,
   defaultVersionId,
 }: StartAssessmentFormProps) {
-  const router = useRouter();
   const [versionId, setVersionId] = useState(defaultVersionId ?? "");
   const [scopeType, setScopeType] = useState<MaturityAssessmentScopeType | "">(
     "",
@@ -107,7 +106,7 @@ export function StartAssessmentForm({
         return;
       }
       if (result.assessmentId) {
-        router.push(`/platform/maturity/assessments/${result.assessmentId}`);
+        navigateTo(`/platform/maturity/assessments/${result.assessmentId}`);
       }
     });
   }
