@@ -73,20 +73,10 @@ describe("maturity framework authoring helpers", () => {
     ];
 
     expect(
-      nextQuestionPositionForPillar(
-        "pillar-a",
-        pillars,
-        criteria,
-        questions,
-      ),
+      nextQuestionPositionForPillar("pillar-a", pillars, criteria, questions),
     ).toBe(2);
     expect(
-      nextQuestionPositionForPillar(
-        "pillar-b",
-        pillars,
-        criteria,
-        questions,
-      ),
+      nextQuestionPositionForPillar("pillar-b", pillars, criteria, questions),
     ).toBe(1);
   });
 

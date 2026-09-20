@@ -184,7 +184,9 @@ export default async function MaturityModelPage({
   }
 
   if (publishedVersion) {
-    const publishedStructure = await loadFrameworkStructure(publishedVersion.id);
+    const publishedStructure = await loadFrameworkStructure(
+      publishedVersion.id,
+    );
     publishedLevels = publishedStructure.levels;
     publishedPillars = publishedStructure.pillars;
     publishedCriteria = publishedStructure.criteria;
@@ -275,7 +277,8 @@ export default async function MaturityModelPage({
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <p className="text-sm text-muted-foreground">
-                Assessment scope: {publishedScopes.map(scopeTypeLabel).join(", ")}
+                Assessment scope:{" "}
+                {publishedScopes.map(scopeTypeLabel).join(", ")}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button asChild>

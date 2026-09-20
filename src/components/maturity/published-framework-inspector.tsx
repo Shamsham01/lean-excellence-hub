@@ -28,7 +28,8 @@ export function PublishedFrameworkInspector({
   questions,
 }: PublishedFrameworkInspectorProps) {
   const sortedPillars = [...pillars].sort(
-    (left, right) => left.position - right.position || left.id.localeCompare(right.id),
+    (left, right) =>
+      left.position - right.position || left.id.localeCompare(right.id),
   );
   const sortedLevels = [...levels].sort(
     (left, right) => left.level_number - right.level_number,

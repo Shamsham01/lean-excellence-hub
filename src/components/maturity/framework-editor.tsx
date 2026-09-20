@@ -646,7 +646,9 @@ export function FrameworkEditor({
                   name="criterionId"
                   required
                   value={selectedCriterionId}
-                  onChange={(event) => setSelectedCriterionId(event.target.value)}
+                  onChange={(event) =>
+                    setSelectedCriterionId(event.target.value)
+                  }
                   className="h-9 rounded-md border border-border bg-background px-3 text-sm"
                 >
                   {criteria.map((c) => (
@@ -657,8 +659,11 @@ export function FrameworkEditor({
                 </select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Question positions are unique within each pillar. Use 1, 2, 3
-                across criteria in the same pillar without reusing a position.
+                Positions are stored per pillar section (not per criterion).
+                Reusing position 1 for another criterion in the same pillar will
+                fail. The suggested value is the next free section position;
+                criterion order is determined by the link, not the number you
+                enter.
               </p>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="questionPrompt">Question prompt</Label>

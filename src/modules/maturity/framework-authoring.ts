@@ -1,3 +1,7 @@
+/**
+ * Maturity questions inherit template section position semantics: positions are
+ * unique per pillar section. Criterion association is via links only.
+ */
 export type MaturityAuthoringQuestion = {
   id: string;
   prompt: string;
