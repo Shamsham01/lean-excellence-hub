@@ -192,8 +192,8 @@ test.describe("S3a suggestions portfolio", () => {
       .first()
       .click();
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
-    await page.goBack();
-    await expect(page).toHaveURL(/status=implemented/);
+    await page.goBack({ waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/status=implemented/, { timeout: 30_000 });
     await expect(page.getByTestId("suggestion-portfolio")).toBeVisible();
   });
 

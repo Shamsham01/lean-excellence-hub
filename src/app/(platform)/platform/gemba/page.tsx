@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -47,7 +46,12 @@ export default async function GembaOverviewPage() {
         description="Capture observations and improvement opportunities on the floor."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/schedule">Upcoming</Link>
+            <AppLink
+              href="/platform/schedule"
+              data-testid="gemba-upcoming-link"
+            >
+              Upcoming
+            </AppLink>
           </Button>
         }
       />
@@ -61,10 +65,10 @@ export default async function GembaOverviewPage() {
         </CardHeader>
         <CardContent className="flex gap-3">
           <Button variant="outline" asChild>
-            <Link href="/platform/gemba/definitions">Definitions</Link>
+            <AppLink href="/platform/gemba/definitions">Definitions</AppLink>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/platform/gemba/history">History</Link>
+            <AppLink href="/platform/gemba/history">History</AppLink>
           </Button>
         </CardContent>
       </Card>

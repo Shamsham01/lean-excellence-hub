@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { ScheduleLifecycleActions } from "@/components/schedule/schedule-lifecycle-actions";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -65,12 +65,12 @@ export default async function ScheduleDetailPage({
             </Button>
             {canManage && schedule.status === "active" ? (
               <Button variant="outline" size="sm" asChild className="min-h-11">
-                <Link
+                <AppLink
                   href={`/platform/schedule/${id}/edit`}
                   data-testid="schedule-edit-link"
                 >
                   Edit schedule
-                </Link>
+                </AppLink>
               </Button>
             ) : null}
             {canManage ? (

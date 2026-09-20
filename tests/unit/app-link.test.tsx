@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 
 const hardNavigate = vi.fn();
 
@@ -62,6 +63,22 @@ describe("AppLink", () => {
     );
 
     fireEvent.click(screen.getByRole("link", { name: "Actions" }));
+    expect(hardNavigate).not.toHaveBeenCalled();
+  });
+
+  it("keeps a real href when composed with Button asChild", () => {
+    render(
+      <Button variant="outline" size="sm" asChild>
+        <AppLink href="/platform/schedule/abc/edit">Edit schedule</AppLink>
+      </Button>,
+    );
+
+    const link = screen.getByRole("link", { name: "Edit schedule" });
+    expect(link.tagName).toBe("A");
+    expect(link).toHaveAttribute("href", "/platform/schedule/abc/edit");
+
+    const allowed = fireEvent.click(link);
+    expect(allowed).toBe(true);
     expect(hardNavigate).not.toHaveBeenCalled();
   });
 });

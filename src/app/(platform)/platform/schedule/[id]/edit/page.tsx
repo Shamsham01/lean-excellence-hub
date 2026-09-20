@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { updateScheduleFromForm } from "@/app/(platform)/platform/schedule/actions";
 import { PageHeader } from "@/components/platform/page-header";
 import { ScheduleForm } from "@/components/schedule/schedule-form";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
   loadScheduleFormContext,
@@ -68,13 +68,18 @@ export default async function EditSchedulePage({
   const recurrence = parseRecurrenceJson(schedule.recurrence);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="schedule-edit-page">
       <PageHeader
         title="Edit schedule"
         description={schedule.title}
         actions={
           <Button variant="outline" size="sm" asChild className="min-h-11">
-            <Link href={`/platform/schedule/${id}`}>Back</Link>
+            <AppLink
+              href={`/platform/schedule/${id}`}
+              data-testid="schedule-editor-back-link"
+            >
+              Back
+            </AppLink>
           </Button>
         }
       />

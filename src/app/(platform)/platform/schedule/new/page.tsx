@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createScheduleFromForm } from "@/app/(platform)/platform/schedule/actions";
 import { PageHeader } from "@/components/platform/page-header";
 import { ScheduleForm } from "@/components/schedule/schedule-form";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
   loadScheduleFormContext,
@@ -61,13 +61,18 @@ export default async function NewSchedulePage({
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="schedule-new-page">
       <PageHeader
         title="Create schedule"
         description="Set up a recurring operational activity."
         actions={
           <Button variant="outline" size="sm" asChild className="min-h-11">
-            <Link href={params.returnTo ?? "/platform/schedule"}>Back</Link>
+            <AppLink
+              href={params.returnTo ?? "/platform/schedule"}
+              data-testid="schedule-new-back-link"
+            >
+              Back
+            </AppLink>
           </Button>
         }
       />

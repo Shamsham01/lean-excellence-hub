@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
@@ -67,7 +66,12 @@ export default async function FiveSOverviewPage() {
         description="Score, evidence, and trend your 5S programme."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/schedule">Upcoming</Link>
+            <AppLink
+              href="/platform/schedule"
+              data-testid="five-s-upcoming-link"
+            >
+              Upcoming
+            </AppLink>
           </Button>
         }
       />
@@ -97,13 +101,18 @@ export default async function FiveSOverviewPage() {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button variant="outline" asChild>
-            <Link href="/platform/5s/standards">Standards</Link>
+            <AppLink href="/platform/5s/standards">Standards</AppLink>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/platform/5s/history">History</Link>
+            <AppLink href="/platform/5s/history">History</AppLink>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/platform/schedule">Schedule</Link>
+            <AppLink
+              href="/platform/schedule"
+              data-testid="five-s-schedule-link"
+            >
+              Schedule
+            </AppLink>
           </Button>
         </CardContent>
       </Card>

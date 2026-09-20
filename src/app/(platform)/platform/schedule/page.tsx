@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,14 +50,19 @@ export default async function ScheduleOverviewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="schedule-list-page">
       <PageHeader
         title="Schedule"
         description="Recurring 5S audits and Gemba walks across your organisation."
         actions={
           canManage ? (
             <Button variant="outline" size="sm" asChild className="min-h-11">
-              <Link href="/platform/schedule/new">New schedule</Link>
+              <AppLink
+                href="/platform/schedule/new"
+                data-testid="schedule-new-link"
+              >
+                New schedule
+              </AppLink>
             </Button>
           ) : null
         }
@@ -99,10 +103,11 @@ export default async function ScheduleOverviewPage() {
             definitions.map((schedule) => {
               const recurrence = parseRecurrenceJson(schedule.recurrence);
               return (
-                <Link
+                <AppLink
                   key={schedule.id}
                   href={`/platform/schedule/${schedule.id}`}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-4 py-3 hover:bg-surface"
+                  data-testid={`schedule-definition-link-${schedule.id}`}
                 >
                   <div>
                     <p className="font-medium">{schedule.title}</p>
@@ -120,7 +125,7 @@ export default async function ScheduleOverviewPage() {
                   >
                     {schedule.status}
                   </Badge>
-                </Link>
+                </AppLink>
               );
             })
           ) : (
