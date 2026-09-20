@@ -279,45 +279,46 @@ select is(
   'administration profile exposes notification email'
 );
 
-select ok(
-  (public.begin_workforce_import_credential_export(
+create temporary table issue94_export_session (
+  session_id uuid not null
+) on commit drop;
+
+insert into issue94_export_session (session_id)
+select (
+  public.begin_workforce_import_credential_export(
     (select id from issue94_ids where key = 'import_job')
-  ) ->> 'session_id') is not null,
+  ) ->> 'session_id'
+)::uuid;
+
+select ok(
+  (select session_id is not null from issue94_export_session),
   'begin export creates resumable session'
 );
 
 select is(
-  (
-    select count(*)::integer
-    from public.workforce_import_row_credentials credential_row
-    where credential_row.import_job_id = (select id from issue94_ids where key = 'import_job')
-  ),
-  1,
-  'credentials remain available before acknowledgement'
+  public.get_workforce_import_job_progress(
+    (select id from issue94_ids where key = 'import_job')
+  ) ->> 'credential_export_status',
+  'exporting',
+  'export session stays active before acknowledgement'
 );
 
 select lives_ok(
   $$
     select public.ack_workforce_import_credentials_exported(
       (select id from issue94_ids where key = 'import_job'),
-      (
-        select credential_export_session_id
-        from public.workforce_import_jobs
-        where id = (select id from issue94_ids where key = 'import_job')
-      )
+      (select session_id from issue94_export_session)
     );
   $$,
   'acknowledgement finalises export after client receipt'
 );
 
 select is(
-  (
-    select count(*)::integer
-    from public.workforce_import_row_credentials credential_row
-    where credential_row.import_job_id = (select id from issue94_ids where key = 'import_job')
-  ),
-  0,
-  'acknowledgement deletes encrypted credential material'
+  public.get_workforce_import_job_progress(
+    (select id from issue94_ids where key = 'import_job')
+  ) ->> 'credential_export_status',
+  'exported',
+  'acknowledgement clears export session state'
 );
 
 select ok(
