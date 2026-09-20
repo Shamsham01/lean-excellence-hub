@@ -779,7 +779,7 @@ begin
   where grant_source.organisation_id = org_id
     and grant_source.grantee_membership_id = target_membership_id
     and grant_source.status = 'active'
-  order by grant_source.created_at
+  order by grant_source.granted_at
   limit 1;
 
   if grant_row.role_version_id is null then
