@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(10);
 
 insert into auth.users (
   id,
@@ -66,27 +66,26 @@ set local role lean_hub_private_owner;
 
 insert into public.organisation_units (
   organisation_id,
-  parent_unit_id,
   code,
   name,
   unit_type,
   status
 )
-select
-  (select id from issue94_ids where key = 'org'),
-  null,
-  'exeter',
-  'Exeter',
-  'site',
-  'active'
-union all
-select
-  (select id from issue94_ids where key = 'org'),
-  null,
-  'bodmin',
-  'Bodmin',
-  'site',
-  'active';
+values
+  (
+    (select id from issue94_ids where key = 'org'),
+    'exeter',
+    'Exeter',
+    'site',
+    'active'
+  ),
+  (
+    (select id from issue94_ids where key = 'org'),
+    'bodmin',
+    'Bodmin',
+    'site',
+    'active'
+  );
 
 insert into issue94_ids (key, id)
 select 'exeter_site', id
@@ -202,6 +201,19 @@ values (
   'manual'
 );
 
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"94000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"94000000-0000-0000-0000-000000000001","email":"issue94-owner@example.test"}',
+  true
+);
+
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from issue94_ids where key = 'org')),
+  'owner can switch into issue 94 organisation'
+);
+
 insert into issue94_ids (key, id)
 select
   'import_job',
@@ -215,14 +227,6 @@ set status = 'completed',
     completed_at = statement_timestamp()
 where id = (select id from issue94_ids where key = 'import_job');
 
-insert into issue94_ids (key, id)
-select
-  'import_row',
-  import_row.id
-from public.workforce_import_rows import_row
-where import_row.import_job_id = (select id from issue94_ids where key = 'import_job')
-limit 1;
-
 insert into public.workforce_import_rows (
   import_job_id,
   organisation_id,
@@ -231,17 +235,13 @@ insert into public.workforce_import_rows (
   resolved_payload,
   status
 )
-select
+values (
   (select id from issue94_ids where key = 'import_job'),
   (select id from issue94_ids where key = 'org'),
   1,
   jsonb_build_object('first_name', 'Work', 'last_name', 'Force'),
   jsonb_build_object('username', 'wf.member'),
   'completed'
-where not exists (
-  select 1
-  from issue94_ids
-  where key = 'import_row'
 );
 
 insert into issue94_ids (key, id)
@@ -250,7 +250,6 @@ select
   import_row.id
 from public.workforce_import_rows import_row
 where import_row.import_job_id = (select id from issue94_ids where key = 'import_job')
-  and not exists (select 1 from issue94_ids where key = 'import_row')
 limit 1;
 
 insert into public.workforce_import_row_credentials (
@@ -261,30 +260,13 @@ insert into public.workforce_import_row_credentials (
   credential_nonce,
   expires_at
 )
-select
+values (
   (select id from issue94_ids where key = 'import_row'),
   (select id from issue94_ids where key = 'import_job'),
   (select id from issue94_ids where key = 'org'),
   decode('001122', 'hex'),
   decode('aabbcc', 'hex'),
   statement_timestamp() + interval '1 day'
-where not exists (
-  select 1
-  from public.workforce_import_row_credentials credential_row
-  where credential_row.import_job_id = (select id from issue94_ids where key = 'import_job')
-);
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"94000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"94000000-0000-0000-0000-000000000001","email":"issue94-owner@example.test"}',
-  true
-);
-
-set local role authenticated;
-
-select ok(
-  public.switch_organisation((select id from issue94_ids where key = 'org')),
-  'owner can switch into issue 94 organisation'
 );
 
 select is(
