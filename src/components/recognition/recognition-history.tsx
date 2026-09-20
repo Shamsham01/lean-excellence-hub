@@ -6,6 +6,8 @@ import { useState } from "react";
 
 import { revokeRecognition } from "@/app/(platform)/platform/recognition/actions";
 
+import { AppLink } from "@/components/ui/app-link";
+
 import { Badge } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
@@ -116,7 +118,13 @@ export function RecognitionHistory({
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="font-medium">{award.title}</p>
+                <AppLink
+                  href={`/platform/recognition/${award.id}`}
+                  className="font-medium hover:underline"
+                  data-testid={`recognition-history-link-${award.id}`}
+                >
+                  {award.title}
+                </AppLink>
 
                 <p className="mt-1 text-muted-foreground">{award.message}</p>
 

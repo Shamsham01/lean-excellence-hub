@@ -23,7 +23,7 @@ export async function awardRecognition(input: {
 }): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await supabase.rpc("award_recognition", {
+  const { data, error } = await supabase.rpc("award_recognition", {
     target_recognition_type_id: input.recognitionTypeId,
 
     target_title: input.title,
@@ -44,8 +44,11 @@ export async function awardRecognition(input: {
   if (error) return { error: error.message };
 
   revalidatePath("/platform/recognition");
+  if (data) {
+    revalidatePath(`/platform/recognition/${data as string}`);
+  }
 
-  return { ok: true };
+  return { ok: true, id: data as string };
 }
 
 export async function revokeRecognition(

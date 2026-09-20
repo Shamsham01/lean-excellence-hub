@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -30,13 +29,18 @@ export default async function TrainingOverviewPage() {
     .limit(10);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="training-overview">
       <PageHeader
         title="Training"
         description="Catalogue, curriculum, sessions, and compliance tracking."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href="/platform/training/matrix">Training matrix</Link>
+            <AppLink
+              href="/platform/training/matrix"
+              data-testid="training-matrix-link"
+            >
+              Training matrix
+            </AppLink>
           </Button>
         }
       />
@@ -57,20 +61,22 @@ export default async function TrainingOverviewPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {courses?.map((course) => (
-              <Link
+              <AppLink
                 key={course.id}
                 href={`/platform/training/courses/${course.id}`}
                 className="block rounded-md px-2 py-2 text-sm hover:bg-surface"
+                data-testid={`training-hub-course-link-${course.id}`}
               >
                 {course.name}
-              </Link>
+              </AppLink>
             ))}
-            <Link
+            <AppLink
               href="/platform/training/courses"
               className="text-sm text-muted-foreground hover:text-foreground"
+              data-testid="training-courses-link"
             >
               View all courses
-            </Link>
+            </AppLink>
           </CardContent>
         </Card>
         <Card>
@@ -78,18 +84,20 @@ export default async function TrainingOverviewPage() {
             <CardTitle>Setup</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Link
+            <AppLink
               href="/platform/training/curriculum"
               className="text-sm hover:underline"
+              data-testid="training-curriculum-link"
             >
               Curriculum editor
-            </Link>
-            <Link
+            </AppLink>
+            <AppLink
               href="/platform/training/sessions"
               className="text-sm hover:underline"
+              data-testid="training-sessions-link"
             >
               Training sessions
-            </Link>
+            </AppLink>
           </CardContent>
         </Card>
       </div>

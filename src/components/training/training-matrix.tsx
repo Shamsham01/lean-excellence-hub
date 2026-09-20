@@ -1,3 +1,4 @@
+import { AppLink } from "@/components/ui/app-link";
 import {
   deriveTrainingCompletionValidityState,
   trainingMatrixCellLabel,
@@ -62,58 +63,90 @@ export function TrainingMatrix({
               </th>
               {courses.map((course) => (
                 <th key={course.id} className="px-3 py-3 text-left font-medium">
-                  {course.name}
+                  <AppLink
+                    href={`/platform/training/courses/${course.id}`}
+                    className="hover:underline"
+                    data-testid={`training-matrix-course-${course.id}`}
+                  >
+                    {course.name}
+                  </AppLink>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {memberships.map((membership) => (
-              <tr key={membership.id} className="border-b border-border">
-                <td className="sticky left-0 bg-card px-4 py-3 font-medium">
-                  {membership.display_name ?? membership.id}
-                </td>
-                {courses.map((course) => {
-                  const cell = cellFor(membership.id, course.id);
-                  return (
-                    <td key={course.id} className="px-3 py-3">
-                      <span
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs"
-                        aria-label={`${membership.display_name ?? "Person"} — ${course.name}: ${cell.label}`}
-                      >
-                        {cell.label}
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {memberships.map((membership) => {
+              const personName = membership.display_name ?? "Person";
+              return (
+                <tr key={membership.id} className="border-b border-border">
+                  <td className="sticky left-0 bg-card px-4 py-3 font-medium">
+                    <AppLink
+                      href={`/platform/people/${membership.id}`}
+                      className="hover:underline"
+                      data-testid={`training-matrix-person-${membership.id}`}
+                    >
+                      {personName}
+                    </AppLink>
+                  </td>
+                  {courses.map((course) => {
+                    const cell = cellFor(membership.id, course.id);
+                    return (
+                      <td key={course.id} className="px-3 py-3">
+                        <span
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs"
+                          aria-label={`${personName} — ${course.name}: ${cell.label}`}
+                        >
+                          {cell.label}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div className="space-y-3 md:hidden">
-        {memberships.map((membership) => (
-          <div
-            key={membership.id}
-            className="rounded-lg border border-border p-4"
-          >
-            <p className="font-medium">{membership.display_name}</p>
-            <ul className="mt-2 space-y-1 text-sm">
-              {courses
-                .filter((c) => requiredCourseIds.has(c.id))
-                .map((course) => {
-                  const cell = cellFor(membership.id, course.id);
-                  return (
-                    <li key={course.id} className="flex justify-between gap-2">
-                      <span>{course.name}</span>
-                      <span>{cell.label}</span>
-                    </li>
-                  );
-                })}
-            </ul>
-          </div>
-        ))}
+        {memberships.map((membership) => {
+          const personName = membership.display_name ?? "Person";
+          return (
+            <div
+              key={membership.id}
+              className="rounded-lg border border-border p-4"
+            >
+              <AppLink
+                href={`/platform/people/${membership.id}`}
+                className="font-medium hover:underline"
+                data-testid={`training-matrix-person-card-${membership.id}`}
+              >
+                {personName}
+              </AppLink>
+              <ul className="mt-2 space-y-1 text-sm">
+                {courses
+                  .filter((c) => requiredCourseIds.has(c.id))
+                  .map((course) => {
+                    const cell = cellFor(membership.id, course.id);
+                    return (
+                      <li
+                        key={course.id}
+                        className="flex justify-between gap-2"
+                      >
+                        <AppLink
+                          href={`/platform/training/courses/${course.id}`}
+                          className="hover:underline"
+                        >
+                          {course.name}
+                        </AppLink>
+                        <span>{cell.label}</span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

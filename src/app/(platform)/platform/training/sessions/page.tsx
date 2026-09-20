@@ -1,6 +1,8 @@
 import { PageHeader } from "@/components/platform/page-header";
-import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function TrainingSessionsPage() {
   const supabase = await createServerSupabaseClient();
@@ -11,24 +13,35 @@ export default async function TrainingSessionsPage() {
     .limit(20);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="training-sessions-page">
       <PageHeader
         title="Training sessions"
         description="Scheduled and completed training sessions."
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/training"
+              data-testid="training-sessions-back-link"
+            >
+              Back to training
+            </AppLink>
+          </Button>
+        }
       />
       <Card>
         <CardContent className="divide-y divide-border p-0">
           {sessions?.map((session) => (
-            <a
+            <AppLink
               key={session.id}
               href={`/platform/training/sessions/${session.id}`}
               className="flex min-h-11 items-center justify-between px-4 py-3 hover:bg-surface"
+              data-testid={`training-session-link-${session.id}`}
             >
               <span>{session.title}</span>
               <span className="text-sm text-muted-foreground">
                 {session.status}
               </span>
-            </a>
+            </AppLink>
           ))}
         </CardContent>
       </Card>

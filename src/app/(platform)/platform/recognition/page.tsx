@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { PageHeader } from "@/components/platform/page-header";
 import { RecognitionHistory } from "@/components/recognition/recognition-history";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -40,12 +39,22 @@ export default async function RecognitionPage() {
           <div className="flex gap-2">
             {canAward ? (
               <Button size="sm" asChild>
-                <Link href="/platform/recognition/new">Award recognition</Link>
+                <AppLink
+                  href="/platform/recognition/new"
+                  data-testid="recognition-award-link"
+                >
+                  Award recognition
+                </AppLink>
               </Button>
             ) : null}
             {canManage ? (
               <Button size="sm" variant="outline" asChild>
-                <Link href="/platform/recognition/types">Types</Link>
+                <AppLink
+                  href="/platform/recognition/types"
+                  data-testid="recognition-types-link"
+                >
+                  Types
+                </AppLink>
               </Button>
             ) : null}
           </div>
@@ -60,12 +69,16 @@ export default async function RecognitionPage() {
           </div>
         ) : (
           feedItems.map((item) => (
-            <div
+            <AppLink
               key={item.id}
-              className="rounded-lg border border-l-4 border-border border-l-primary/40 bg-card px-4 py-4 shadow-xs"
-              data-testid="recognition-feed-item"
+              href={`/platform/recognition/${item.id}`}
+              className="rounded-lg border border-l-4 border-border border-l-primary/40 bg-card px-4 py-4 shadow-xs hover:bg-surface"
+              data-testid={`recognition-feed-item-${item.id}`}
             >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div
+                className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                data-testid="recognition-feed-item"
+              >
                 <div className="min-w-0">
                   <p className="font-medium">{item.title}</p>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
@@ -77,7 +90,7 @@ export default async function RecognitionPage() {
                   <p>{new Date(item.awarded_at).toLocaleDateString("en-GB")}</p>
                 </div>
               </div>
-            </div>
+            </AppLink>
           ))
         )}
       </div>

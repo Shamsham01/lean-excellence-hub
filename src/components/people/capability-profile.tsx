@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { CapabilityActionDialog } from "@/components/people/capability-action-dialog";
 import { SkillAssessmentDialog } from "@/components/people/skill-assessment-dialog";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -154,7 +155,19 @@ export function CapabilityProfile({
                       key={`${req.course_name}-${index}`}
                       className="flex flex-wrap items-center justify-between gap-2 text-sm"
                     >
-                      <span>{req.course_name}</span>
+                      <span>
+                        {req.course_id ? (
+                          <AppLink
+                            href={`/platform/training/courses/${req.course_id}`}
+                            className="hover:underline"
+                            data-testid={`capability-course-link-${req.course_id}`}
+                          >
+                            {req.course_name}
+                          </AppLink>
+                        ) : (
+                          req.course_name
+                        )}
+                      </span>
                       <div className="flex items-center gap-2">
                         <Badge
                           variant={req.is_satisfied ? "default" : "outline"}
@@ -234,7 +247,14 @@ export function CapabilityProfile({
                       className="flex flex-wrap items-center justify-between gap-2 text-sm"
                     >
                       <span>
-                        {item.skill_name}: {item.gap.current_order ?? 0} /{" "}
+                        <AppLink
+                          href={`/platform/skills/${item.skill_id}`}
+                          className="hover:underline"
+                          data-testid={`capability-skill-link-${item.skill_id}`}
+                        >
+                          {item.skill_name}
+                        </AppLink>
+                        : {item.gap.current_order ?? 0} /{" "}
                         {item.gap.target_order}
                       </span>
                       {canCreateActions ? (

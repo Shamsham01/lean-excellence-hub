@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 
 import { createCourseSuccessorFromForm } from "@/app/(platform)/platform/training/actions";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
-import { Button } from "@/components/ui/button";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -34,10 +35,23 @@ export default async function TrainingCourseDetailPage({ params }: PageProps) {
   const hasDraft = versions?.some((v) => v.status === "draft");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="training-course-detail-page"
+    >
       <PageHeader
         title={course.name}
         description={course.description ?? course.code}
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/training/courses"
+              data-testid="training-course-back-link"
+            >
+              Back to courses
+            </AppLink>
+          </Button>
+        }
       />
       {canManageCatalog && hasPublished && !hasDraft ? (
         <form action={createCourseSuccessorFromForm}>

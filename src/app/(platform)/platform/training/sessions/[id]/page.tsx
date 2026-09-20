@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { SessionWorkspace } from "@/components/training/session-workspace";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -38,7 +40,7 @@ export default async function TrainingSessionDetailPage({ params }: PageProps) {
   const { data: course } = courseVersion
     ? await supabase
         .from("training_courses")
-        .select("name")
+        .select("id, name")
         .eq("id", courseVersion.course_id)
         .maybeSingle()
     : { data: null };
@@ -68,7 +70,7 @@ export default async function TrainingSessionDetailPage({ params }: PageProps) {
       return {
         id: row.id,
         membership_id: row.membership_id,
-        display_name: membership?.display_name ?? row.membership_id,
+        display_name: membership?.display_name ?? "Person",
         status: row.status,
       };
     }) ?? [];
@@ -77,14 +79,36 @@ export default async function TrainingSessionDetailPage({ params }: PageProps) {
   const availableMemberships =
     allMemberships
       ?.filter((m) => !existingIds.has(m.id))
-      .map((m) => ({ id: m.id, label: m.display_name ?? m.id })) ?? [];
+      .map((m) => ({ id: m.id, label: m.display_name ?? "Person" })) ?? [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="training-session-detail-page"
+    >
       <PageHeader
         title={session.title}
         description={`${course?.name ?? "Course"} · Version ${courseVersion?.version_number ?? "—"} · ${session.status}`}
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/training/sessions"
+              data-testid="training-session-back-link"
+            >
+              Back to sessions
+            </AppLink>
+          </Button>
+        }
       />
+      {course?.id ? (
+        <AppLink
+          href={`/platform/training/courses/${course.id}`}
+          className="text-sm text-primary hover:underline"
+          data-testid="training-session-course-link"
+        >
+          Open {course.name}
+        </AppLink>
+      ) : null}
       <SessionWorkspace
         sessionId={session.id}
         sessionTitle={session.title}

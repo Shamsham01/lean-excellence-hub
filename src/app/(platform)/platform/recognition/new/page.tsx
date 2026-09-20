@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { AwardRecognitionForm } from "@/components/recognition/award-recognition-form";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -44,6 +46,16 @@ export default async function NewRecognitionPage({
       <PageHeader
         title="Award recognition"
         description="Recognise meaningful improvement contribution."
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <AppLink
+              href="/platform/recognition"
+              data-testid="recognition-new-back-link"
+            >
+              Back to recognition
+            </AppLink>
+          </Button>
+        }
       />
       <AwardRecognitionForm
         types={types ?? []}

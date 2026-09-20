@@ -1,3 +1,5 @@
+import { AppLink } from "@/components/ui/app-link";
+
 export type SkillsMatrixGapRow = {
   membershipId: string;
   skillId: string;
@@ -51,67 +53,96 @@ export function SkillsMatrix({ memberships, skills, gaps }: SkillsMatrixProps) {
               </th>
               {skills.map((skill) => (
                 <th key={skill.id} className="px-3 py-3 text-left">
-                  {skill.name}
+                  <AppLink
+                    href={`/platform/skills/${skill.id}`}
+                    className="hover:underline"
+                    data-testid={`skills-matrix-skill-${skill.id}`}
+                  >
+                    {skill.name}
+                  </AppLink>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {memberships.map((membership) => (
-              <tr key={membership.id} className="border-b border-border">
-                <td className="sticky left-0 bg-card px-4 py-3 font-medium">
-                  {membership.display_name}
-                </td>
-                {skills.map((skill) => {
-                  const gap = gapFor(membership.id, skill.id);
-                  const label = cellLabel(gap);
-                  const current = gap?.current_order;
-                  const target = gap?.target_order;
-                  return (
-                    <td key={skill.id} className="px-3 py-3">
-                      <span
-                        className="inline-flex min-h-11 flex-col items-start justify-center"
-                        aria-label={`${membership.display_name} — ${skill.name}: ${label}`}
-                      >
-                        <span>{label}</span>
-                        {current != null && target != null ? (
-                          <span className="text-xs text-muted-foreground">
-                            {current} / {target}
-                          </span>
-                        ) : null}
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {memberships.map((membership) => {
+              const personName = membership.display_name ?? "Person";
+              return (
+                <tr key={membership.id} className="border-b border-border">
+                  <td className="sticky left-0 bg-card px-4 py-3 font-medium">
+                    <AppLink
+                      href={`/platform/people/${membership.id}`}
+                      className="hover:underline"
+                      data-testid={`skills-matrix-person-${membership.id}`}
+                    >
+                      {personName}
+                    </AppLink>
+                  </td>
+                  {skills.map((skill) => {
+                    const gap = gapFor(membership.id, skill.id);
+                    const label = cellLabel(gap);
+                    const current = gap?.current_order;
+                    const target = gap?.target_order;
+                    return (
+                      <td key={skill.id} className="px-3 py-3">
+                        <span
+                          className="inline-flex min-h-11 flex-col items-start justify-center"
+                          aria-label={`${personName} — ${skill.name}: ${label}`}
+                        >
+                          <span>{label}</span>
+                          {current != null && target != null ? (
+                            <span className="text-xs text-muted-foreground">
+                              {current} / {target}
+                            </span>
+                          ) : null}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div className="space-y-3 md:hidden">
-        {memberships.map((membership) => (
-          <div
-            key={membership.id}
-            className="rounded-lg border border-border p-4"
-            data-testid={`skills-matrix-card-${membership.id}`}
-          >
-            <p className="font-medium">{membership.display_name}</p>
-            <ul className="mt-2 space-y-2 text-sm">
-              {skills.map((skill) => {
-                const gap = gapFor(membership.id, skill.id);
-                if (gap?.status === "not_required") return null;
-                const label = cellLabel(gap);
-                return (
-                  <li key={skill.id} className="flex justify-between gap-2">
-                    <span>{skill.name}</span>
-                    <span className="text-muted-foreground">{label}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+        {memberships.map((membership) => {
+          const personName = membership.display_name ?? "Person";
+          return (
+            <div
+              key={membership.id}
+              className="rounded-lg border border-border p-4"
+              data-testid={`skills-matrix-card-${membership.id}`}
+            >
+              <AppLink
+                href={`/platform/people/${membership.id}`}
+                className="font-medium hover:underline"
+                data-testid={`skills-matrix-person-card-${membership.id}`}
+              >
+                {personName}
+              </AppLink>
+              <ul className="mt-2 space-y-2 text-sm">
+                {skills.map((skill) => {
+                  const gap = gapFor(membership.id, skill.id);
+                  if (gap?.status === "not_required") return null;
+                  const label = cellLabel(gap);
+                  return (
+                    <li key={skill.id} className="flex justify-between gap-2">
+                      <AppLink
+                        href={`/platform/skills/${skill.id}`}
+                        className="hover:underline"
+                      >
+                        {skill.name}
+                      </AppLink>
+                      <span className="text-muted-foreground">{label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
