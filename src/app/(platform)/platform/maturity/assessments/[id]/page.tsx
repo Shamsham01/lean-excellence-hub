@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
@@ -11,6 +10,7 @@ import {
 import { AssessmentWorkspace } from "@/components/maturity/assessment-workspace";
 import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { currentMemberHasScopedPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
@@ -203,7 +203,10 @@ export default async function AssessmentDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div
+      className="flex flex-col gap-8"
+      data-testid="maturity-assessment-detail-page"
+    >
       <PageHeader
         title="Assessment"
         description={`${unit?.name ?? "Unknown unit"} · Complete criterion responses and evidence.`}
@@ -211,7 +214,12 @@ export default async function AssessmentDetailPage({
           <div className="flex flex-wrap gap-2">
             {overall ? <ScoreBadge score={Number(overall.score)} /> : null}
             <Button variant="outline" asChild>
-              <Link href="/platform/maturity/assessments">All assessments</Link>
+              <AppLink
+                href="/platform/maturity/assessments"
+                data-testid="maturity-assessments-back-link"
+              >
+                All assessments
+              </AppLink>
             </Button>
           </div>
         }

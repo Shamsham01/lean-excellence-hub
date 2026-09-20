@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createMaturityModel } from "../actions";
 import { PageHeader } from "@/components/platform/page-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,13 +80,18 @@ export default async function MaturityModelsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="maturity-models-page">
       <PageHeader
         title="Maturity frameworks"
         description="Configure pillars, criteria, assessment scopes, and questions."
         actions={
           <Button variant="outline" asChild>
-            <Link href="/platform/maturity">Back to overview</Link>
+            <AppLink
+              href="/platform/maturity"
+              data-testid="maturity-models-back-link"
+            >
+              Back to overview
+            </AppLink>
           </Button>
         }
       />
@@ -122,10 +127,11 @@ export default async function MaturityModelsPage() {
             ? (scopesByVersion.get(published.id) ?? ["site"])
             : ["site"];
           return (
-            <Link
+            <AppLink
               key={model.id}
               href={`/platform/maturity/models/${model.id}`}
               className="rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted"
+              data-testid={`maturity-model-item-${model.id}`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-medium">{model.display_name}</p>
@@ -150,7 +156,7 @@ export default async function MaturityModelsPage() {
                   {model.description}
                 </p>
               ) : null}
-            </Link>
+            </AppLink>
           );
         })}
       </div>

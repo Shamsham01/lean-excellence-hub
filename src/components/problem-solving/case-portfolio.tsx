@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { MetricCard } from "@/components/platform/metric-card";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,13 +180,18 @@ export function CasePortfolio({
               )}
               {canCreate ? (
                 <Button size="sm" className="mt-4" asChild>
-                  <Link href="/platform/problem-solving/new">New case</Link>
+                  <AppLink
+                    href="/platform/problem-solving/new"
+                    data-testid="problem-solving-empty-new-link"
+                  >
+                    New case
+                  </AppLink>
                 </Button>
               ) : null}
             </div>
           ) : (
             items.map((item) => (
-              <Link
+              <AppLink
                 key={item.id}
                 href={`/platform/problem-solving/${item.id}`}
                 className="flex flex-col gap-2 rounded-lg border border-border px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
@@ -218,7 +223,7 @@ export function CasePortfolio({
                       : ""}
                   </span>
                 </div>
-              </Link>
+              </AppLink>
             ))
           )}
         </CardContent>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import {
   addProblemSolvingSourceLink,
@@ -26,6 +25,7 @@ import {
   severityLabel,
 } from "@/lib/problem-solving/status";
 import type { ProblemSolvingMethod } from "@/lib/problem-solving/types";
+import { navigateTo } from "@/lib/navigation/navigate";
 import { cn } from "@/lib/utils";
 
 const WIZARD_STEPS = [
@@ -50,7 +50,6 @@ export function CreateCaseWizard({
   methods,
   requiresSiteSelection = false,
 }: CreateCaseWizardProps) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,8 +157,7 @@ export function CreateCaseWizard({
         );
       }
 
-      router.push(`/platform/problem-solving/${caseId}`);
-      router.refresh();
+      navigateTo(`/platform/problem-solving/${caseId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Case creation failed");
     } finally {

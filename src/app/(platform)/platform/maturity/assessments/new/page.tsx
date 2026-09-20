@@ -42,7 +42,10 @@ export default async function NewAssessmentPage({
     })) ?? [];
 
   return (
-    <div className="flex max-w-lg flex-col gap-8">
+    <div
+      className="flex max-w-lg flex-col gap-8"
+      data-testid="start-assessment-page"
+    >
       <PageHeader
         title="Start assessment"
         description="Select a published framework version, assessment scope, and eligible entity."

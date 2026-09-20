@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLink } from "@/components/ui/app-link";
 import { closureOutcomeLabel } from "@/lib/problem-solving/closure";
+import { problemSolvingSourceHref } from "@/lib/problem-solving/source";
 import type {
   ProblemSolvingCaseDetail,
   ProblemSolvingSourceLinkSummary,
@@ -91,21 +93,35 @@ export function OverviewPanel({
               <p className="text-muted-foreground">No linked sources.</p>
             ) : (
               <div className="flex flex-col gap-2">
-                {sourceLinks.map((link) => (
-                  <div
-                    key={link.source_resource_id}
-                    className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-                  >
-                    <span>
-                      {link.source_resource_id.slice(0, 8)}
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {link.resource_type}
-                      </span>
-                    </span>
-                    <Badge variant="outline">{link.link_role}</Badge>
-                  </div>
-                ))}
+                {sourceLinks.map((link) => {
+                  const href = problemSolvingSourceHref(link);
+                  const label = `${link.source_resource_id.slice(0, 8)} · ${link.resource_type}`;
+                  return (
+                    <div
+                      key={link.source_resource_id}
+                      className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                    >
+                      {href ? (
+                        <AppLink
+                          href={href}
+                          className="font-medium text-primary hover:underline"
+                          data-testid={`problem-solving-source-link-${link.source_resource_id}`}
+                        >
+                          {label}
+                        </AppLink>
+                      ) : (
+                        <span>
+                          {link.source_resource_id.slice(0, 8)}
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · {link.resource_type}
+                          </span>
+                        </span>
+                      )}
+                      <Badge variant="outline">{link.link_role}</Badge>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
