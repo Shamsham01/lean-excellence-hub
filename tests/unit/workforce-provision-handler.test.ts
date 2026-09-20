@@ -16,9 +16,11 @@ const baseIntent: WorkforceProvisionIntent = {
   intent_id: intentId,
   organisation_id: "22222222-2222-4222-8222-222222222222",
   organisation_code: "tenant-a",
+  intent_kind: "manual_create",
   status: "pending",
   target_canonical_alias: "jsmith",
   target_display_name: "Jane Smith",
+  target_membership_id: null,
   sealed_internal_login_identifier:
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@workforce.invalid",
   created_auth_user_id: null,

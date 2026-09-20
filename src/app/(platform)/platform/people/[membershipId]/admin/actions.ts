@@ -8,6 +8,7 @@ import {
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
 } from "@/modules/platform-shell/permissions";
+import { invokeWorkforceProvision } from "@/modules/workforce-provision/client";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export async function updateMemberDisplayName(
@@ -173,4 +174,92 @@ export async function revokeMemberAccess(
 
   revalidatePath(`/platform/people/${membershipId}/admin`);
   return { ok: true as const };
+}
+
+export async function setMemberMembershipStatus(input: {
+  membershipId: string;
+  status: "active" | "inactive";
+  changeReason?: string;
+}) {
+  const canManage = await currentMemberHasPermission("memberships.manage");
+  if (!canManage) {
+    return {
+      error: "You do not have permission to change membership status.",
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: organisation } = await supabase
+    .from("organisations")
+    .select("id")
+    .maybeSingle();
+
+  if (!organisation?.id) {
+    return { error: "Unable to update membership status." };
+  }
+
+  const { error } = await supabase.rpc("set_membership_status", {
+    target_organisation_id: organisation.id,
+    target_membership_id: input.membershipId,
+    target_status: input.status,
+    change_reason: input.changeReason ?? "",
+  });
+
+  if (error) {
+    const normalised = error.message?.toLowerCase() ?? "";
+    if (normalised.includes("last active organisation owner")) {
+      return {
+        error:
+          "The last active Organisation Owner cannot be deactivated. Assign another owner first.",
+      };
+    }
+    return {
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to update membership status.",
+      ),
+    };
+  }
+
+  revalidatePath(`/platform/people/${input.membershipId}`);
+  revalidatePath(`/platform/people/${input.membershipId}/admin`);
+  revalidatePath("/platform/people");
+  return { ok: true as const };
+}
+
+export async function resetMemberWorkforceCredentials(membershipId: string) {
+  const canReset = await currentMemberHasPermission(
+    "workforce.credentials.reset",
+  );
+  if (!canReset) {
+    return {
+      error: "You do not have permission to reissue workforce credentials.",
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: intentId, error } = await supabase.rpc(
+    "preauthorize_workforce_credential_reset",
+    { target_membership_id: membershipId },
+  );
+
+  if (error || !intentId) {
+    return {
+      error: toCustomerErrorMessage(
+        error,
+        "Unable to reissue workforce credentials.",
+      ),
+    };
+  }
+
+  const provision = await invokeWorkforceProvision(intentId as string);
+  if ("error" in provision) {
+    return { error: provision.error };
+  }
+
+  return {
+    ok: true as const,
+    username: provision.username,
+    temporaryPassword: provision.temporaryPassword,
+  };
 }

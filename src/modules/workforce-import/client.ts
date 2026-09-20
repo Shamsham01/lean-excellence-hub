@@ -69,9 +69,62 @@ export async function invokeWorkforceImportFinalize(
   return { ok: true };
 }
 
+export async function invokeWorkforceImportCredentialExportBegin(
+  importJobId: string,
+): Promise<
+  | { ok: true; sessionId: string; expiresAt: string; resumed: boolean }
+  | { error: string }
+> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "begin_workforce_import_credential_export",
+    { target_import_job_id: importJobId },
+  );
+
+  if (error || !data) {
+    return {
+      error: "Credential export is not available.",
+    };
+  }
+
+  const payload = data as unknown as {
+    session_id: string;
+    expires_at: string;
+    resumed?: boolean;
+  };
+
+  return {
+    ok: true,
+    sessionId: payload.session_id,
+    expiresAt: payload.expires_at,
+    resumed: payload.resumed === true,
+  };
+}
+
+export async function invokeWorkforceImportCredentialExportAck(
+  importJobId: string,
+  exportSessionId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc(
+    "ack_workforce_import_credentials_exported",
+    {
+      target_import_job_id: importJobId,
+      target_export_session_id: exportSessionId,
+    },
+  );
+
+  if (error) {
+    return { error: "Unable to confirm credential export receipt." };
+  }
+
+  return { ok: true };
+}
+
 export async function invokeWorkforceImportCredentialExport(
   importJobId: string,
   organisationCode: string,
+  exportSessionId: string,
 ): Promise<{ ok: true; csv: string } | { error: string }> {
   const supabase = await createServerSupabaseClient();
   const { data: sessionData, error: sessionError } =
@@ -91,7 +144,7 @@ export async function invokeWorkforceImportCredentialExport(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ importJobId, organisationCode }),
+      body: JSON.stringify({ importJobId, organisationCode, exportSessionId }),
       cache: "no-store",
     },
   );

@@ -1,3 +1,8 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,19 +22,50 @@ export type WorkforceImportHistoryJob = {
 
 type WorkforceImportHistoryProps = {
   jobs: WorkforceImportHistoryJob[];
+  onArchiveJob?: (
+    jobId: string,
+  ) => Promise<{ ok: true; data: { archived: boolean } } | { error: string }>;
 };
 
 function formatJobStatus(status: string): string {
   return status.replaceAll("_", " ");
 }
 
-export function WorkforceImportHistory({ jobs }: WorkforceImportHistoryProps) {
+export function WorkforceImportHistory({
+  jobs,
+  onArchiveJob,
+}: WorkforceImportHistoryProps) {
+  const router = useRouter();
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function handleArchive(jobId: string) {
+    if (!onArchiveJob) {
+      return;
+    }
+
+    setArchivingId(jobId);
+    setMessage(null);
+    const result = await onArchiveJob(jobId);
+    if ("error" in result) {
+      setMessage(result.error);
+    } else {
+      router.refresh();
+    }
+    setArchivingId(null);
+  }
+
   return (
     <Card data-testid="workforce-import-history">
       <CardHeader>
         <CardTitle className="text-base">Recent workforce imports</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
+        {message ? (
+          <p className="text-sm text-destructive" role="status">
+            {message}
+          </p>
+        ) : null}
         {jobs.length === 0 ? (
           <p className="text-muted-foreground">No imports yet.</p>
         ) : (
@@ -69,11 +105,27 @@ export function WorkforceImportHistory({ jobs }: WorkforceImportHistoryProps) {
                       : null}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <AppLink href={action.href} data-testid={action.testId}>
-                    {action.label}
-                  </AppLink>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <AppLink href={action.href} data-testid={action.testId}>
+                      {action.label}
+                    </AppLink>
+                  </Button>
+                  {onArchiveJob ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      data-testid={`archive-import-job-${job.id}`}
+                      disabled={archivingId === job.id}
+                      onClick={() => void handleArchive(job.id)}
+                    >
+                      {archivingId === job.id
+                        ? "Archiving…"
+                        : "Hide from recent"}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             );
           })

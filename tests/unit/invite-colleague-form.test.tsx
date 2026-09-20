@@ -51,7 +51,7 @@ describe("InviteColleagueForm invitation link UX", () => {
         target: { value: "organisation::null" },
       },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Send invitation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create invitation" }));
 
     await waitFor(() => {
       expect(
@@ -60,10 +60,11 @@ describe("InviteColleagueForm invitation link UX", () => {
     });
 
     expect(
-      screen.getByText(
-        "Invitation created. Share this secure link with your colleague.",
-      ),
+      screen.getByText(/Invitation created\. Copy the secure link below/i),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Send invitation" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(`Invitation link: ${invitationUrl}`),
     ).toBeInTheDocument();

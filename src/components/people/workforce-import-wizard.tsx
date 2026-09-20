@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { navigateTo } from "@/lib/navigation/navigate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -90,10 +91,22 @@ type WorkforceImportWizardProps = {
       }
     | { error: string }
   >;
+  onBeginCredentialExport: (jobId: string) => Promise<
+    | {
+        ok: true;
+        data: { sessionId: string; expiresAt: string; resumed: boolean };
+      }
+    | { error: string }
+  >;
   onExportCredentials: (
     jobId: string,
     organisationCode: string,
+    exportSessionId: string,
   ) => Promise<{ ok: true; data: { csv: string } } | { error: string }>;
+  onAckCredentialExport: (
+    jobId: string,
+    exportSessionId: string,
+  ) => Promise<{ ok: true; data: { ok: true } } | { error: string }>;
   onExportErrorReport: (
     jobId: string,
   ) => Promise<{ ok: true; data: { csv: string } } | { error: string }>;
@@ -122,7 +135,9 @@ export function WorkforceImportWizard({
   onRunBatch,
   onGetProgress,
   onGetJobSnapshot,
+  onBeginCredentialExport,
   onExportCredentials,
+  onAckCredentialExport,
   onExportErrorReport,
   onRetryFailedRows,
 }: WorkforceImportWizardProps) {
@@ -380,28 +395,77 @@ export function WorkforceImportWizard({
     };
   }, [provisioning, jobId, onRunBatch, onGetProgress]);
 
+  function resetForNewImport() {
+    setStep(0);
+    setJobId(null);
+    setFilename("");
+    setRowCount(0);
+    setSummary(null);
+    setValidationRows([]);
+    setPreviewRows([]);
+    setProgress(null);
+    setCredentialsExported(false);
+    setMessage(null);
+    setHydrated(false);
+    navigateTo("/platform/settings/people/import");
+  }
+
   async function handleDownloadCredentials() {
     if (!jobId) return;
     setLoading(true);
     setMessage(null);
 
-    const exported = await onExportCredentials(jobId, organisationCode);
-    if ("error" in exported) {
-      setMessage(exported.error);
+    const session = await onBeginCredentialExport(jobId);
+    if ("error" in session) {
+      setMessage(session.error);
       setLoading(false);
       return;
     }
 
-    const blob = new Blob([exported.data.csv], {
-      type: "text/csv;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `workforce-credentials-${jobId}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setCredentialsExported(true);
+    const exported = await onExportCredentials(
+      jobId,
+      organisationCode,
+      session.data.sessionId,
+    );
+    if ("error" in exported) {
+      setMessage(
+        session.data.resumed
+          ? `${exported.error} You can retry while the export session is active.`
+          : exported.error,
+      );
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const blob = new Blob([exported.data.csv], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `workforce-credentials-${jobId}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+
+      const ack = await onAckCredentialExport(jobId, session.data.sessionId);
+      if ("error" in ack) {
+        setMessage(ack.error);
+        setLoading(false);
+        return;
+      }
+
+      setCredentialsExported(true);
+      const refreshed = await onGetProgress(jobId);
+      if ("ok" in refreshed) {
+        setProgress(refreshed.data);
+      }
+    } catch {
+      setMessage(
+        "Download was interrupted. Retry while the export session is still active.",
+      );
+    }
+
     setLoading(false);
   }
 
@@ -523,6 +587,18 @@ export function WorkforceImportWizard({
                 <p>Warnings: {summary.warningRows}</p>
               </div>
             ) : null}
+            {summary && !summary.canProvision ? (
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  data-testid="replace-import-file"
+                  onClick={resetForNewImport}
+                >
+                  Replace file / Start new import
+                </Button>
+              </div>
+            ) : null}
             {validationRows.length > 0 ? (
               <>
                 <Button
@@ -633,10 +709,17 @@ export function WorkforceImportWizard({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-amber-700">
-              Temporary passwords are available once. Store and distribute this
-              file securely. Employees must change their password at first
-              sign-in.
+              Temporary passwords are removed from Lean Excellence Hub after you
+              successfully download and confirm receipt. If the download is
+              interrupted, retry while the export session is active. Employees
+              must change their password at first sign-in.
             </p>
+            {progress?.credentialExportStatus === "exporting" ? (
+              <p className="text-sm text-muted-foreground">
+                An export session is active. Retry the download if your browser
+                blocked the file.
+              </p>
+            ) : null}
             <div className="grid gap-2 text-sm sm:grid-cols-3">
               <p data-testid="import-provisioned-count">
                 Provisioned: {progress?.provisionedRows ?? 0}
@@ -671,12 +754,16 @@ export function WorkforceImportWizard({
               disabled={
                 loading ||
                 credentialsExported ||
-                progress?.credentialExportStatus === "exported"
+                progress?.credentialExportStatus === "exported" ||
+                progress?.credentialExportStatus === "expired"
               }
             >
-              {credentialsExported
+              {credentialsExported ||
+              progress?.credentialExportStatus === "exported"
                 ? "Credentials exported"
-                : "Download credentials"}
+                : progress?.credentialExportStatus === "exporting"
+                  ? "Retry credential download"
+                  : "Download credentials"}
             </Button>
           </CardContent>
         </Card>

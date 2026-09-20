@@ -21,7 +21,10 @@ function progress(
     remainingRows: 10,
     credentialExportStatus: "none",
     credentialExpiresAt: null,
+    credentialExportSessionId: null,
+    credentialExportSessionStartedAt: null,
     completedAt: null,
+    archivedFromRecentAt: null,
     ...overrides,
   };
 }
@@ -81,6 +84,14 @@ describe("workforce import resume mapping", () => {
         id: "job-2",
         status: "completed",
         credential_export_status: "available",
+      }).label,
+    ).toBe("Download credentials");
+
+    expect(
+      resolveImportJobHistoryAction({
+        id: "job-3",
+        status: "completed",
+        credential_export_status: "exporting",
       }).label,
     ).toBe("Download credentials");
   });

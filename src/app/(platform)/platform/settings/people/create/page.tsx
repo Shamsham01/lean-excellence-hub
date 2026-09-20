@@ -6,6 +6,12 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
+import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  loadAccessibleOrganisationUnits,
+  loadActiveSiteContext,
+} from "@/modules/organisation/site-context-server";
 import {
   currentMemberHasDelegatableAccess,
   currentMemberHasPermission,
@@ -26,30 +32,33 @@ export default async function CreateWorkforceUserPage() {
   }
 
   const supabase = await createServerSupabaseClient();
+  const [allUnits, { context }] = await Promise.all([
+    loadAccessibleOrganisationUnits(),
+    loadActiveSiteContext(),
+  ]);
+  const siteUnits = buildSiteScopedUnitOptions(allUnits, context);
+  const visibleUnitIds = new Set(siteUnits.units.map((unit) => unit.id));
+  const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
-  const [{ data: offersData }, { data: units }, { data: jobFunctions }] =
-    await Promise.all([
-      canDelegateAccess
-        ? supabase.rpc("get_delegatable_access_offers")
-        : Promise.resolve({ data: null }),
-      canProvision || canManageJobFunctions
-        ? supabase
-            .from("organisation_units")
-            .select("id, name, code, parent_unit_id")
-            .eq("status", "active")
-            .order("name")
-        : Promise.resolve({ data: [] }),
-      canProvision
-        ? supabase
-            .from("job_functions")
-            .select("id, name, code")
-            .eq("status", "active")
-            .order("name")
-        : Promise.resolve({ data: [] }),
-    ]);
+  const [{ data: offersData }, { data: jobFunctions }] = await Promise.all([
+    canDelegateAccess
+      ? supabase.rpc("get_delegatable_access_offers")
+      : Promise.resolve({ data: null }),
+    canProvision
+      ? supabase
+          .from("job_functions")
+          .select("id, name, code")
+          .eq("status", "active")
+          .order("name")
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  const offers = ((offersData as { offers?: DelegatableAccessOffer[] } | null)
-    ?.offers ?? []) as DelegatableAccessOffer[];
+  const offers = filterDelegatableOffersForActiveSite(
+    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
+      []) as DelegatableAccessOffer[],
+    allUnits,
+    context,
+  );
 
   return (
     <div className="space-y-6">
@@ -89,7 +98,12 @@ export default async function CreateWorkforceUserPage() {
           <CardContent>
             <CreateWorkforceUserForm
               offers={offers}
-              units={units ?? []}
+              units={visibleUnits.map((unit) => ({
+                id: unit.id,
+                name: unit.name,
+                code: unit.code,
+                parent_unit_id: unit.parent_unit_id ?? null,
+              }))}
               jobFunctions={jobFunctions ?? []}
               onCreate={createWorkforceUser}
             />

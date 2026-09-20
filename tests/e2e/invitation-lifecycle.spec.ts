@@ -382,7 +382,7 @@ test.describe("Invitation lifecycle", () => {
     await page.getByLabel("Colleague email").fill(targetEmail);
     await page.locator("#invite-role").selectOption({ index: 1 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
-    await page.getByRole("button", { name: "Send invitation" }).click();
+    await page.getByRole("button", { name: "Create invitation" }).click();
     await expect(page.getByTestId("copy-invitation-link-button")).toBeVisible();
     const invitationUrl = await page
       .getByText(/Invitation link:/)
@@ -415,7 +415,7 @@ test.describe("Invitation lifecycle", () => {
     await page.getByLabel("Colleague email").fill(targetEmail);
     await page.locator("#invite-role").selectOption({ index: 1 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
-    await page.getByRole("button", { name: "Send invitation" }).click();
+    await page.getByRole("button", { name: "Create invitation" }).click();
     const oldInvitationUrl = await page
       .getByText(/Invitation link:/)
       .textContent();

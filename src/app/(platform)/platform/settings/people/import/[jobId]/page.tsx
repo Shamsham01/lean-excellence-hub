@@ -9,6 +9,9 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import {
+  ackImportCredentialExport,
+  archiveImportJob,
+  beginImportCredentialExport,
   buildImportErrorReport,
   createImportJob,
   exportImportCredentials,
@@ -98,12 +101,14 @@ export default async function WorkforceImportJobPage({
         onRunBatch={runImportBatch}
         onGetProgress={getImportProgress}
         onGetJobSnapshot={getImportJobSnapshot}
+        onBeginCredentialExport={beginImportCredentialExport}
         onExportCredentials={exportImportCredentials}
+        onAckCredentialExport={ackImportCredentialExport}
         onExportErrorReport={buildImportErrorReport}
         onRetryFailedRows={retryFailedImportRows}
       />
 
-      <WorkforceImportHistory jobs={history} />
+      <WorkforceImportHistory jobs={history} onArchiveJob={archiveImportJob} />
     </div>
   );
 }

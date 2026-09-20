@@ -134,7 +134,10 @@ describe("import progress mapping", () => {
       remainingRows: 2,
       credentialExportStatus: "none",
       credentialExpiresAt: null,
+      credentialExportSessionId: null,
+      credentialExportSessionStartedAt: null,
       completedAt: null,
+      archivedFromRecentAt: null,
     });
   });
 
