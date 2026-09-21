@@ -236,9 +236,12 @@ export async function loginAsOnboardingUser(
   await page.getByLabel("Email").fill(credentials.email);
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: /sign in/i }).click();
-  await page.waitForURL(/\/(platform|select-organisation|update-password)(?:\?|$)/, {
-    timeout: 30_000,
-  });
+  await page.waitForURL(
+    /\/(platform|select-organisation|update-password)(?:\?|$)/,
+    {
+      timeout: 30_000,
+    },
+  );
 
   if (page.url().includes("/select-organisation")) {
     await page.getByRole("button", { name: organisationName }).click();
