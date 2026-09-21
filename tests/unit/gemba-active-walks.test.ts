@@ -5,6 +5,7 @@ import {
   formatGembaWalkResumePrimaryLabel,
   formatGembaWalkResumeSecondaryLabel,
   formatGembaWalkStartedDate,
+  mapActiveWalkRow,
 } from "@/modules/operational/gemba-active-walks";
 
 describe("Gemba active walk labels", () => {
@@ -39,6 +40,28 @@ describe("Gemba active walk labels", () => {
       /20\/09\/2026/,
     );
     expect(formatGembaWalkStartedDate(null)).toBeNull();
+  });
+
+  it("prefers live definition and unit names when snapshots are missing", () => {
+    expect(
+      mapActiveWalkRow({
+        id: "walk-1",
+        definition_name_snapshot: null,
+        unit_name_snapshot: null,
+        started_at: "2026-09-20T12:00:00.000Z",
+        status: "in_progress",
+        gemba_definition_versions: {
+          gemba_definitions: { display_name: "Exeter production walk" },
+        },
+        organisation_units: { name: "Exeter · Packing" },
+      }),
+    ).toEqual({
+      id: "walk-1",
+      definition_name_snapshot: "Exeter production walk",
+      unit_name_snapshot: "Exeter · Packing",
+      started_at: "2026-09-20T12:00:00.000Z",
+      status: "in_progress",
+    });
   });
 });
 

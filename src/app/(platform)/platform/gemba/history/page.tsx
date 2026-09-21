@@ -3,18 +3,22 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GEMBA_ACTIVE_WALK_SELECT } from "@/modules/operational/gemba-active-walks";
+import {
+  GEMBA_ACTIVE_WALK_LIVE_SELECT,
+  mapActiveWalkRow,
+} from "@/modules/operational/gemba-active-walks";
 import { formatGembaWalkStatus } from "@/modules/operational/gemba-display";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaHistoryPage() {
   const supabase = await createServerSupabaseClient();
-  const { data: activeWalks } = await supabase
+  const { data: activeWalkRows } = await supabase
     .from("gemba_walks")
-    .select(GEMBA_ACTIVE_WALK_SELECT)
+    .select(GEMBA_ACTIVE_WALK_LIVE_SELECT)
     .eq("status", "in_progress")
     .order("started_at", { ascending: false })
     .limit(20);
+  const activeWalks = (activeWalkRows ?? []).map(mapActiveWalkRow);
   const { data: walks } = await supabase
     .from("gemba_walks")
     .select(

@@ -13,6 +13,47 @@ export type GembaActiveWalk = {
 export const GEMBA_ACTIVE_WALK_SELECT =
   "id, definition_name_snapshot, unit_name_snapshot, started_at, status";
 
+export const GEMBA_ACTIVE_WALK_LIVE_SELECT =
+  "id, definition_name_snapshot, unit_name_snapshot, started_at, status, gemba_definition_versions!inner(gemba_definitions(display_name)), organisation_units!gemba_walks_unit_fkey(name)";
+
+type GembaActiveWalkLiveRow = {
+  id: string;
+  definition_name_snapshot: string | null;
+  unit_name_snapshot: string | null;
+  started_at: string | null;
+  status: string;
+  gemba_definition_versions: {
+    gemba_definitions: { display_name: string } | null;
+  } | null;
+  organisation_units: { name: string } | null;
+};
+
+export function mapActiveWalkRow(row: GembaActiveWalkLiveRow): GembaActiveWalk {
+  const snapshotDefinitionName = row.definition_name_snapshot?.trim();
+  const liveDefinitionName =
+    row.gemba_definition_versions?.gemba_definitions?.display_name?.trim();
+  const snapshotUnitName = row.unit_name_snapshot?.trim();
+  const liveUnitName = row.organisation_units?.name?.trim();
+
+  return {
+    id: row.id,
+    definition_name_snapshot:
+      snapshotDefinitionName && snapshotDefinitionName.length > 0
+        ? snapshotDefinitionName
+        : liveDefinitionName && liveDefinitionName.length > 0
+          ? liveDefinitionName
+          : null,
+    unit_name_snapshot:
+      snapshotUnitName && snapshotUnitName.length > 0
+        ? snapshotUnitName
+        : liveUnitName && liveUnitName.length > 0
+          ? liveUnitName
+          : null,
+    started_at: row.started_at,
+    status: row.status,
+  };
+}
+
 export function formatGembaWalkResumePrimaryLabel(
   walk: Pick<GembaActiveWalk, "definition_name_snapshot" | "id">,
 ) {
@@ -91,7 +132,7 @@ export async function loadActiveGembaWalksForDefinitionVersions(
 
   const { data, error } = await supabase
     .from("gemba_walks")
-    .select(GEMBA_ACTIVE_WALK_SELECT)
+    .select(GEMBA_ACTIVE_WALK_LIVE_SELECT)
     .eq("status", "in_progress")
     .in("definition_version_id", versionIds)
     .order("started_at", { ascending: false })
@@ -101,5 +142,5 @@ export async function loadActiveGembaWalksForDefinitionVersions(
     throw new Error(error.message);
   }
 
-  return (data ?? []) as GembaActiveWalk[];
+  return ((data ?? []) as GembaActiveWalkLiveRow[]).map(mapActiveWalkRow);
 }

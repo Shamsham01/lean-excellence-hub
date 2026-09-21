@@ -129,13 +129,21 @@ test.describe("Milestone 6 Gemba journeys", () => {
 
     await page.goto("/platform/gemba");
     await expect(page.getByTestId("gemba-overview-page")).toBeVisible();
-    await expect(page.getByText(name)).toBeVisible();
-    await expect(page.getByText("Resume walk")).toBeVisible();
+    const overviewResumeLink = page
+      .getByTestId("gemba-active-walk-list")
+      .getByRole("link")
+      .filter({ hasText: name });
+    await expect(overviewResumeLink).toBeVisible();
+    await expect(overviewResumeLink).toContainText("Resume walk");
 
     await page.goto("/platform/gemba/history");
     await expect(page.getByTestId("gemba-history-page")).toBeVisible();
-    await expect(page.getByText(name)).toBeVisible();
-    await expect(page.getByText("Resume walk")).toBeVisible();
+    const historyResumeLink = page
+      .getByTestId("gemba-history-active-walk-list")
+      .getByRole("link")
+      .filter({ hasText: name });
+    await expect(historyResumeLink).toBeVisible();
+    await expect(historyResumeLink).toContainText("Resume walk");
 
     await page.goto(walkUrl);
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
