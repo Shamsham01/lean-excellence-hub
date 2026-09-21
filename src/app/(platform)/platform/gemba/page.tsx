@@ -1,9 +1,14 @@
+import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  GEMBA_ACTIVE_WALK_LIVE_SELECT,
+  mapActiveWalkRow,
+} from "@/modules/operational/gemba-active-walks";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Footprints } from "lucide-react";
 
@@ -17,6 +22,17 @@ export default async function GembaOverviewPage() {
     .from("gemba_walks")
     .select("id", { count: "exact", head: true })
     .eq("status", "completed");
+  const { count: activeWalkCount } = await supabase
+    .from("gemba_walks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "in_progress");
+  const { data: activeWalkRows } = await supabase
+    .from("gemba_walks")
+    .select(GEMBA_ACTIVE_WALK_LIVE_SELECT)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(20);
+  const activeWalks = (activeWalkRows ?? []).map(mapActiveWalkRow);
   const { count: observationCount } = await supabase
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
@@ -40,7 +56,7 @@ export default async function GembaOverviewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="gemba-overview-page">
       <PageHeader
         title="Gemba walks"
         description="Capture observations and improvement opportunities on the floor."
@@ -56,9 +72,18 @@ export default async function GembaOverviewPage() {
         }
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <MetricCard label="Walks in progress" value={activeWalkCount ?? 0} />
         <MetricCard label="Completed walks" value={walkCount ?? 0} />
         <MetricCard label="Observations" value={observationCount ?? 0} />
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Walks in progress</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <GembaActiveWalkList walks={activeWalks ?? []} />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Quick links</CardTitle>

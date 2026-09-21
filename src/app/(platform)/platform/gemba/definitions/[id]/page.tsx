@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import {
   collectUnitStatuses,
   formatApplicableUnitLabels,
@@ -25,6 +26,7 @@ import {
   requireQuerySuccess,
   splitApplicabilitySelection,
 } from "@/modules/operational/gemba-applicability";
+import { loadActiveGembaWalksForDefinitionVersions } from "@/modules/operational/gemba-active-walks";
 import { formatGembaVersionStatus } from "@/modules/operational/gemba-display";
 import {
   GEMBA_PERMISSIONS,
@@ -143,6 +145,10 @@ export default async function GembaDefinitionPage({
   const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
   const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
   const canPublish = canPublishQuestions && hasApplicableUnits;
+  const activeWalks = await loadActiveGembaWalksForDefinitionVersions(
+    supabase,
+    loadedVersions.map((version) => version.id),
+  );
 
   const managementActions =
     (publishedVersion && !draftVersion && canManage) ||
@@ -210,6 +216,21 @@ export default async function GembaDefinitionPage({
           </Badge>
         ))}
       </div>
+
+      {activeWalks.length > 0 ? (
+        <Card data-testid="gemba-definition-active-walks">
+          <CardHeader>
+            <CardTitle>Walks in progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GembaActiveWalkList
+              walks={activeWalks}
+              emptyMessage="No walks in progress for this definition."
+              listTestId="gemba-definition-active-walk-list"
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
