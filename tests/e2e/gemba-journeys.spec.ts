@@ -29,7 +29,9 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(
       page.getByRole("heading", { name: "Gemba walks" }),
     ).toBeVisible();
-    await expect(page.getByText("Walks in progress")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Walks in progress" }),
+    ).toBeVisible();
     await expect(page.getByText("Completed walks")).toBeVisible();
 
     await page.getByRole("link", { name: "Definitions" }).click();
