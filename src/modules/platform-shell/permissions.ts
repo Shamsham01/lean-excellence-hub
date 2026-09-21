@@ -3,45 +3,26 @@ import "server-only";
 import { cache } from "react";
 import { unstable_rethrow } from "next/navigation";
 
-import {
-  createPlatformBoundaryReference,
-  logPlatformBoundaryError,
-} from "@/platform/observability/platform-boundary";
+import { throwPlatformBoundaryError } from "@/platform/observability/platform-boundary";
 import { readRequestPathname } from "@/platform/http/request-path";
+import {
+  classifyPermissionProbeResult,
+  readSupabaseErrorFields,
+} from "@/platform/supabase/error-classification";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-function supabaseErrorFields(error: unknown): {
-  code: string | null;
-  message: string | null;
-} {
-  if (!error || typeof error !== "object") {
-    return {
-      code: null,
-      message: error instanceof Error ? error.message : null,
-    };
-  }
-
-  const record = error as { code?: unknown; message?: unknown };
-  return {
-    code: typeof record.code === "string" ? record.code : null,
-    message: typeof record.message === "string" ? record.message : null,
-  };
-}
-
-async function logPermissionFailure(
+async function throwPermissionProbeFailure(
   operation: string,
   permissionKey: string,
   error: unknown,
-) {
-  const { code, message } = supabaseErrorFields(error);
-  logPlatformBoundaryError({
-    category: "permission",
+): Promise<never> {
+  const { code, message } = readSupabaseErrorFields(error);
+  throwPlatformBoundaryError({
+    category: "organisation_access",
     operation,
-    reference: createPlatformBoundaryReference(),
     route: await readRequestPathname(),
-    permissionKey,
-    supabaseCode: code,
-    supabaseMessage: message,
+    supabaseError: { code, message },
+    cause: error,
   });
 }
 
@@ -52,19 +33,27 @@ export const currentMemberHasPermission = cache(
       const result = await supabase.rpc("member_has_permission", {
         target_permission_key: permissionKey,
       });
-      if (result.error) {
-        await logPermissionFailure(
+      const classified = classifyPermissionProbeResult(result);
+      if (!classified.ok) {
+        if (classified.denied) {
+          return false;
+        }
+
+        return throwPermissionProbeFailure(
           "member_has_permission",
           permissionKey,
-          result.error,
+          classified.error,
         );
-        return false;
       }
-      return result.data === true;
+
+      return classified.data === true;
     } catch (error) {
       unstable_rethrow(error);
-      await logPermissionFailure("member_has_permission", permissionKey, error);
-      return false;
+      return throwPermissionProbeFailure(
+        "member_has_permission",
+        permissionKey,
+        error,
+      );
     }
   },
 );
@@ -78,14 +67,20 @@ export const currentMemberHasScopedPermission = cache(
     try {
       const supabase = await createServerSupabaseClient();
       const orgId = await supabase.rpc("current_organisation_id");
-      if (orgId.error || !orgId.data) {
-        if (orgId.error) {
-          await logPermissionFailure(
-            "current_organisation_id",
-            permissionKey,
-            orgId.error,
-          );
+      const orgClassified = classifyPermissionProbeResult(orgId);
+      if (!orgClassified.ok) {
+        if (orgClassified.denied) {
+          return false;
         }
+
+        return throwPermissionProbeFailure(
+          "current_organisation_id",
+          permissionKey,
+          orgClassified.error,
+        );
+      }
+
+      if (!orgClassified.data) {
         return false;
       }
 
@@ -95,7 +90,7 @@ export const currentMemberHasScopedPermission = cache(
         target_membership_id?: string;
         target_unit_id?: string;
       } = {
-        target_organisation_id: orgId.data,
+        target_organisation_id: orgClassified.data,
         target_permission_key: permissionKey,
       };
 
@@ -108,20 +103,27 @@ export const currentMemberHasScopedPermission = cache(
       }
 
       const result = await supabase.rpc("has_scoped_permission", args);
-      if (result.error) {
-        await logPermissionFailure(
+      const classified = classifyPermissionProbeResult(result);
+      if (!classified.ok) {
+        if (classified.denied) {
+          return false;
+        }
+
+        return throwPermissionProbeFailure(
           "has_scoped_permission",
           permissionKey,
-          result.error,
+          classified.error,
         );
-        return false;
       }
 
-      return result.data === true;
+      return classified.data === true;
     } catch (error) {
       unstable_rethrow(error);
-      await logPermissionFailure("has_scoped_permission", permissionKey, error);
-      return false;
+      return throwPermissionProbeFailure(
+        "has_scoped_permission",
+        permissionKey,
+        error,
+      );
     }
   },
 );
@@ -132,30 +134,45 @@ export async function currentMemberHasOrganisationScopedPermission(
   return currentMemberHasScopedPermission(permissionKey);
 }
 
+export const currentMemberCanDelegateRoles = cache(async () =>
+  currentMemberHasPermission("roles.delegate"),
+);
+
+/** @deprecated Use currentMemberCanDelegateRoles for UI gates. */
 export async function currentMemberHasDelegatableAccess() {
+  return currentMemberCanDelegateRoles();
+}
+
+export type DelegatableAccessOffersPayload = {
+  offers: unknown[];
+};
+
+export const loadDelegatableAccessOffers = cache(async () => {
   try {
     const supabase = await createServerSupabaseClient();
     const result = await supabase.rpc("get_delegatable_access_offers");
-    if (result.error || !result.data) {
-      if (result.error) {
-        await logPermissionFailure(
-          "get_delegatable_access_offers",
-          "delegatable_access",
-          result.error,
-        );
+    const classified = classifyPermissionProbeResult(result);
+    if (!classified.ok) {
+      if (classified.denied) {
+        return { offers: [] } satisfies DelegatableAccessOffersPayload;
       }
-      return false;
+
+      return throwPermissionProbeFailure(
+        "get_delegatable_access_offers",
+        "delegatable_access",
+        classified.error,
+      );
     }
 
-    const offers = (result.data as { offers?: unknown[] } | null)?.offers ?? [];
-    return offers.length > 0;
+    const offers =
+      (classified.data as DelegatableAccessOffersPayload | null)?.offers ?? [];
+    return { offers } satisfies DelegatableAccessOffersPayload;
   } catch (error) {
     unstable_rethrow(error);
-    await logPermissionFailure(
+    return throwPermissionProbeFailure(
       "get_delegatable_access_offers",
       "delegatable_access",
       error,
     );
-    return false;
   }
-}
+});

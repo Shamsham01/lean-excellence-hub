@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import {
-  currentMemberHasDelegatableAccess,
+  currentMemberCanDelegateRoles,
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
 } from "@/modules/platform-shell/permissions";
@@ -98,7 +98,7 @@ export async function grantMemberAccess(input: {
   scopeType: string;
   scopeUnitId: string | null;
 }) {
-  const canDelegate = await currentMemberHasDelegatableAccess();
+  const canDelegate = await currentMemberCanDelegateRoles();
   if (!canDelegate) {
     return {
       error: "You do not have permission to delegate application access.",
@@ -140,7 +140,7 @@ export async function revokeMemberAccess(
   membershipId: string,
   grantId: string,
 ) {
-  const canDelegate = await currentMemberHasDelegatableAccess();
+  const canDelegate = await currentMemberCanDelegateRoles();
   if (!canDelegate) {
     return {
       error: "You do not have permission to revoke application access.",

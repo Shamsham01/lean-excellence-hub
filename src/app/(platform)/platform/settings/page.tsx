@@ -2,7 +2,7 @@ import { SettingsHub } from "@/components/settings/settings-hub";
 import { PageHeader } from "@/components/platform/page-header";
 import { buildSettingsHubCards } from "@/modules/settings/settings-hub-cards";
 import {
-  currentMemberHasDelegatableAccess,
+  currentMemberCanDelegateRoles,
   currentMemberHasOrganisationScopedPermission,
   currentMemberHasPermission,
 } from "@/modules/platform-shell/permissions";
@@ -15,7 +15,7 @@ export default async function SettingsPage() {
     canManageInvitations,
     canProvisionWorkforce,
     canImportWorkforce,
-    canDelegateAccess,
+    canDelegateRoles,
   ] = await Promise.all([
     currentMemberHasPermission("hierarchy.read"),
     currentMemberHasPermission("job_functions.read"),
@@ -23,7 +23,7 @@ export default async function SettingsPage() {
     currentMemberHasPermission("invitations.manage"),
     currentMemberHasPermission("workforce.provision"),
     currentMemberHasPermission("workforce.import"),
-    currentMemberHasDelegatableAccess(),
+    currentMemberCanDelegateRoles(),
   ]);
 
   return (
@@ -41,7 +41,7 @@ export default async function SettingsPage() {
           canManageInvitations,
           canProvisionWorkforce,
           canImportWorkforce,
-          canDelegateAccess,
+          canDelegateRoles,
         })}
       />
     </div>

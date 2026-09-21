@@ -5,13 +5,21 @@ import { loadActiveSiteContext } from "@/modules/organisation/site-context-serve
 import {
   listEligibleOrganisations,
   loadCurrentOrganisationId,
+  switchOrganisation,
 } from "@/modules/organisations/context";
 
 export async function loadPlatformWorkspaceContext() {
   await requirePlatformAccess();
-  const organisationId = await loadCurrentOrganisationId();
+  let organisationId = await loadCurrentOrganisationId();
+
   if (!organisationId) {
-    redirect("/select-organisation");
+    const organisations = await listEligibleOrganisations();
+    if (organisations.length === 1) {
+      await switchOrganisation(organisations[0]!.organisation_id);
+      organisationId = organisations[0]!.organisation_id;
+    } else {
+      redirect("/select-organisation");
+    }
   }
 
   const [organisations, { context: siteContext }] = await Promise.all([

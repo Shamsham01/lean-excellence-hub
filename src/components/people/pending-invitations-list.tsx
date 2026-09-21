@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 type PendingInvitation = {
   id: string;
   email: string;
-  expiresAt: string;
+  expiresAtLabel: string;
   roleName: string;
   scopeLabel: string;
 };
@@ -89,10 +89,7 @@ export function PendingInvitationsList({
                 {invitation.roleName} · {invitation.scopeLabel}
               </p>
               <p className="text-xs text-muted-foreground">
-                Expires{" "}
-                {new Date(invitation.expiresAt).toLocaleDateString("en-GB", {
-                  dateStyle: "long",
-                })}
+                Expires {invitation.expiresAtLabel}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

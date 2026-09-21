@@ -13,8 +13,9 @@ import {
   loadActiveSiteContext,
 } from "@/modules/organisation/site-context-server";
 import {
-  currentMemberHasDelegatableAccess,
+  currentMemberCanDelegateRoles,
   currentMemberHasPermission,
+  loadDelegatableAccessOffers,
 } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -22,12 +23,12 @@ import { createWorkforceUser } from "./actions";
 
 export default async function CreateWorkforceUserPage() {
   const canProvision = await currentMemberHasPermission("workforce.provision");
-  const canDelegateAccess = await currentMemberHasDelegatableAccess();
+  const canDelegateRoles = await currentMemberCanDelegateRoles();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
 
-  if (!canProvision || !canDelegateAccess) {
+  if (!canProvision || !canDelegateRoles) {
     notFound();
   }
 
@@ -40,10 +41,8 @@ export default async function CreateWorkforceUserPage() {
   const visibleUnitIds = new Set(siteUnits.units.map((unit) => unit.id));
   const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
-  const [{ data: offersData }, { data: jobFunctions }] = await Promise.all([
-    canDelegateAccess
-      ? supabase.rpc("get_delegatable_access_offers")
-      : Promise.resolve({ data: null }),
+  const [offersData, { data: jobFunctions }] = await Promise.all([
+    loadDelegatableAccessOffers(),
     canProvision
       ? supabase
           .from("job_functions")
@@ -54,8 +53,7 @@ export default async function CreateWorkforceUserPage() {
   ]);
 
   const offers = filterDelegatableOffersForActiveSite(
-    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
-      []) as DelegatableAccessOffer[],
+    (offersData.offers as DelegatableAccessOffer[]) ?? [],
     allUnits,
     context,
   );
@@ -83,7 +81,7 @@ export default async function CreateWorkforceUserPage() {
             You do not have permission to create workforce users.
           </CardContent>
         </Card>
-      ) : !canDelegateAccess ? (
+      ) : !canDelegateRoles ? (
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground">
             You need delegatable access authority before you can assign an

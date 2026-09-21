@@ -7,7 +7,7 @@ export type SettingsHubCardAccess = {
   canManageInvitations: boolean;
   canProvisionWorkforce: boolean;
   canImportWorkforce: boolean;
-  canDelegateAccess: boolean;
+  canDelegateRoles: boolean;
 };
 
 export function canAccessPeopleSettings(access: SettingsHubCardAccess) {
@@ -15,7 +15,7 @@ export function canAccessPeopleSettings(access: SettingsHubCardAccess) {
     access.canManageInvitations ||
     access.canProvisionWorkforce ||
     access.canImportWorkforce ||
-    access.canDelegateAccess
+    access.canDelegateRoles
   );
 }
 
