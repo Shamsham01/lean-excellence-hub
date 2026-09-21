@@ -14,7 +14,9 @@ export type SiteScopedProjectCandidate = {
  * get_ci_projects_portfolio(can_read_ci_project). Prefer target_site_unit_id on
  * the RPC; this helper supports tests and defensive client-side narrowing.
  */
-export function filterProjectsForActiveSite<T extends SiteScopedProjectCandidate>(
+export function filterProjectsForActiveSite<
+  T extends SiteScopedProjectCandidate,
+>(
   projects: T[],
   units: FlatOrganisationUnit[],
   context: ActiveSiteContext,
