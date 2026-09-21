@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   addMaturityCriterion,
@@ -21,6 +21,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  assessFrameworkPublishReadiness,
+  nextQuestionPositionForPillar,
+  sortMaturityQuestions,
+} from "@/modules/maturity/framework-authoring";
 import {
   MATURITY_ASSESSMENT_SCOPE_TYPES,
   scopeTypeLabel,
@@ -105,6 +110,9 @@ export function FrameworkEditor({
   const [selectedScopes, setSelectedScopes] = useState<
     MaturityAssessmentScopeType[]
   >(assessmentScopes.length > 0 ? assessmentScopes : ["site"]);
+  const [selectedCriterionId, setSelectedCriterionId] = useState(
+    criteria[0]?.id ?? "",
+  );
 
   async function run<T>(action: () => Promise<{ error?: string } | T>) {
     setBusy(true);
@@ -124,12 +132,31 @@ export function FrameworkEditor({
     return true;
   }
 
-  const linkedQuestionCount = questions.length;
-  const canPublish =
-    levels.length > 0 &&
-    pillars.length > 0 &&
-    criteria.length > 0 &&
-    linkedQuestionCount > 0;
+  const sortedQuestions = useMemo(
+    () => sortMaturityQuestions(questions),
+    [questions],
+  );
+  const publishReadiness = useMemo(
+    () =>
+      assessFrameworkPublishReadiness({
+        levels,
+        pillars,
+        criteria,
+        questions: sortedQuestions,
+      }),
+    [criteria, levels, pillars, sortedQuestions],
+  );
+  const selectedCriterion = criteria.find(
+    (criterion) => criterion.id === selectedCriterionId,
+  );
+  const suggestedQuestionPosition = selectedCriterion
+    ? nextQuestionPositionForPillar(
+        selectedCriterion.pillar_id,
+        pillars,
+        criteria,
+        sortedQuestions,
+      )
+    : 1;
 
   return (
     <Card data-testid="framework-editor">
@@ -618,6 +645,10 @@ export function FrameworkEditor({
                   id="criterionId"
                   name="criterionId"
                   required
+                  value={selectedCriterionId}
+                  onChange={(event) =>
+                    setSelectedCriterionId(event.target.value)
+                  }
                   className="h-9 rounded-md border border-border bg-background px-3 text-sm"
                 >
                   {criteria.map((c) => (
@@ -627,6 +658,13 @@ export function FrameworkEditor({
                   ))}
                 </select>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Positions are stored per pillar section (not per criterion).
+                Reusing position 1 for another criterion in the same pillar will
+                fail. The suggested value is the next free section position;
+                criterion order is determined by the link, not the number you
+                enter.
+              </p>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="questionPrompt">Question prompt</Label>
                 <Input
@@ -644,7 +682,8 @@ export function FrameworkEditor({
                   type="number"
                   min={1}
                   required
-                  defaultValue={questions.length + 1}
+                  key={`${selectedCriterionId}-${suggestedQuestionPosition}`}
+                  defaultValue={suggestedQuestionPosition}
                 />
               </div>
               <Button type="submit" disabled={busy || criteria.length === 0}>
@@ -652,7 +691,7 @@ export function FrameworkEditor({
               </Button>
             </form>
             <div className="flex flex-col gap-3">
-              {questions.map((question) => (
+              {sortedQuestions.map((question) => (
                 <form
                   key={question.id}
                   className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
@@ -716,7 +755,7 @@ export function FrameworkEditor({
             </div>
             <div>
               <dt className="font-medium">Scored questions</dt>
-              <dd>{linkedQuestionCount}</dd>
+              <dd>{sortedQuestions.length}</dd>
             </div>
           </dl>
         ) : null}
@@ -724,12 +763,22 @@ export function FrameworkEditor({
         {step === "publish" ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              Publishing locks this version for assessments. Requires at least
-              one level, pillar, criterion, and scored question.
+              Publishing locks this version for assessments. Every criterion
+              must have at least one scored question with a prompt.
             </p>
+            {!publishReadiness.ready ? (
+              <ul
+                className="list-disc pl-5 text-sm text-destructive"
+                data-testid="framework-publish-blockers"
+              >
+                {publishReadiness.blockers.map((blocker) => (
+                  <li key={blocker}>{blocker}</li>
+                ))}
+              </ul>
+            ) : null}
             <Button
               type="button"
-              disabled={!canPublish || busy}
+              disabled={!publishReadiness.ready || busy}
               data-testid="publish-framework"
               onClick={async () => {
                 const ok = await run(() =>

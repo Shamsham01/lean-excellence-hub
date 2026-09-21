@@ -14,6 +14,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { currentMemberHasScopedPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import { sortMaturityQuestions } from "@/modules/maturity/framework-authoring";
 import { ScoreBadge } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -82,7 +83,7 @@ export default async function AssessmentDetailPage({
         const { data: q } = await supabase
           .from("template_questions")
           .select(
-            "id, prompt, question_type, is_required, allows_not_applicable, help_text, options",
+            "id, prompt, question_type, is_required, allows_not_applicable, help_text, options, position",
           )
           .eq("id", link.question_id)
           .maybeSingle();
@@ -94,7 +95,10 @@ export default async function AssessmentDetailPage({
         }
       }
 
-      criteriaWithQuestions.push({ ...criterion, questions });
+      criteriaWithQuestions.push({
+        ...criterion,
+        questions: sortMaturityQuestions(questions),
+      });
     }
 
     pillarData.push({
