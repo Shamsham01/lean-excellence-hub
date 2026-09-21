@@ -5,6 +5,7 @@ export type ProjectPortfolioItem = {
   status: string;
   priority: string;
   unit_id: string;
+  site_unit_id?: string | null;
   methodology_version_id: string | null;
   planned_start_date: string | null;
   planned_end_date: string | null;
@@ -83,6 +84,7 @@ export type ProjectSelectorOption = {
   title: string;
   status: string;
   unit_id: string;
+  site_unit_id?: string | null;
 };
 
 export type ProjectDetail = {
