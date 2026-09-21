@@ -25,7 +25,9 @@ describe("GembaActiveWalkList", () => {
 
     expect(screen.getByTestId("gemba-active-walk-list")).toBeVisible();
     expect(
-      screen.getByTestId("gemba-active-walk-title-00000000-0000-0000-0000-0000000000aa"),
+      screen.getByTestId(
+        "gemba-active-walk-title-00000000-0000-0000-0000-0000000000aa",
+      ),
     ).toHaveTextContent("Exeter production walk");
     expect(screen.getByText("Exeter · Packing")).toBeVisible();
     expect(screen.getByText("Resume walk")).toBeVisible();
@@ -38,8 +40,8 @@ describe("GembaActiveWalkList", () => {
   it("renders an empty state when no walks are in progress", () => {
     render(<GembaActiveWalkList walks={[]} />);
 
-    expect(screen.getByTestId("gemba-active-walk-list-empty")).toHaveTextContent(
-      "No walks in progress in your current scope.",
-    );
+    expect(
+      screen.getByTestId("gemba-active-walk-list-empty"),
+    ).toHaveTextContent("No walks in progress in your current scope.");
   });
 });

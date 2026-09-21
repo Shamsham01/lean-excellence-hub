@@ -24,9 +24,7 @@ export function formatGembaWalkResumeSecondaryLabel(
   walk: Pick<GembaActiveWalk, "unit_name_snapshot">,
 ) {
   const label = walk.unit_name_snapshot?.trim();
-  return label && label.length > 0
-    ? label
-    : "Organisational unit not recorded";
+  return label && label.length > 0 ? label : "Organisational unit not recorded";
 }
 
 export function formatGembaWalkStartedDate(startedAt: string | null) {
@@ -58,7 +56,10 @@ export async function findResumableGembaWalkId(
   definitionId: string,
   unitId: string,
 ) {
-  const versionIds = await loadGembaDefinitionVersionIds(supabase, definitionId);
+  const versionIds = await loadGembaDefinitionVersionIds(
+    supabase,
+    definitionId,
+  );
   if (versionIds.length === 0) {
     return null;
   }

@@ -89,11 +89,7 @@ describe("findResumableGembaWalkId", () => {
     };
 
     await expect(
-      findResumableGembaWalkId(
-        supabase as never,
-        "definition-1",
-        "unit-1",
-      ),
+      findResumableGembaWalkId(supabase as never, "definition-1", "unit-1"),
     ).resolves.toBe("walk-existing");
   });
 });

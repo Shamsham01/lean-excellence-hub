@@ -21,7 +21,10 @@ export function GembaActiveWalkList({
 }: GembaActiveWalkListProps) {
   if (walks.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground" data-testid={`${listTestId}-empty`}>
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid={`${listTestId}-empty`}
+      >
         {emptyMessage}
       </p>
     );
