@@ -4,7 +4,10 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { computePortfolioMetrics } from "@/lib/projects/portfolio-metrics";
-import { withPortfolioSiteScope } from "@/lib/projects/site-scope";
+import {
+  resolvePortfolioOpenActionIds,
+  withPortfolioSiteScope,
+} from "@/lib/projects/site-scope";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
 import type {
   ProjectPortfolioItem,
@@ -58,25 +61,34 @@ export default async function ProjectsPortfolioPage({
   );
 
   const allItems = (metricsData?.items as ProjectPortfolioItem[]) ?? [];
+  const scopedProjectIds = allItems.map((item) => item.id);
 
-  const { data: actionContexts } = await untypedFrom(
-    supabase,
-    "ci_project_action_context",
-  ).select("action_id, project_id");
-
-  const actionIds =
-    (actionContexts as Array<{ action_id: string }> | null)?.map(
-      (row) => row.action_id,
-    ) ?? [];
   let openActions = 0;
 
-  if (actionIds.length > 0) {
-    const { data: openActionRows } = await supabase
-      .from("actions")
-      .select("id")
-      .in("id", actionIds)
-      .in("status", ["open", "in_progress"]);
-    openActions = openActionRows?.length ?? 0;
+  if (scopedProjectIds.length > 0) {
+    const { data: actionContexts } = await untypedFrom(
+      supabase,
+      "ci_project_action_context",
+    )
+      .select("action_id, project_id")
+      .in("project_id", scopedProjectIds);
+
+    const actionIds = resolvePortfolioOpenActionIds(
+      scopedProjectIds,
+      (actionContexts as Array<{
+        action_id: string;
+        project_id: string;
+      }> | null) ?? [],
+    );
+
+    if (actionIds.length > 0) {
+      const { data: openActionRows } = await supabase
+        .from("actions")
+        .select("id")
+        .in("id", actionIds)
+        .in("status", ["open", "in_progress"]);
+      openActions = openActionRows?.length ?? 0;
+    }
   }
 
   const activeProjectIds = allItems
