@@ -2,7 +2,9 @@ import { ProjectPortfolio } from "@/components/projects/project-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { computePortfolioMetrics } from "@/lib/projects/portfolio-metrics";
+import { withPortfolioSiteScope } from "@/lib/projects/site-scope";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
 import type {
   ProjectPortfolioItem,
@@ -19,17 +21,21 @@ export default async function ProjectsPortfolioPage({
   const params = await searchParams;
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission("projects.manage");
+  const selectorOptions = await loadSiteScopedSelectorOptions();
 
   const { data: portfolioData } =
     await callProjectRpc<ProjectPortfolioResponse>(
       supabase,
       "get_ci_projects_portfolio",
-      {
-        target_search: params.search ?? null,
-        target_status: params.status ?? null,
-        target_page: 1,
-        target_page_size: 25,
-      },
+      withPortfolioSiteScope(
+        {
+          target_search: params.search ?? null,
+          target_status: params.status ?? null,
+          target_page: 1,
+          target_page_size: 25,
+        },
+        selectorOptions.context,
+      ),
     );
 
   const portfolio = portfolioData ?? {
@@ -42,10 +48,13 @@ export default async function ProjectsPortfolioPage({
   const { data: metricsData } = await callProjectRpc<ProjectPortfolioResponse>(
     supabase,
     "get_ci_projects_portfolio",
-    {
-      target_page: 1,
-      target_page_size: 500,
-    },
+    withPortfolioSiteScope(
+      {
+        target_page: 1,
+        target_page_size: 500,
+      },
+      selectorOptions.context,
+    ),
   );
 
   const allItems = (metricsData?.items as ProjectPortfolioItem[]) ?? [];

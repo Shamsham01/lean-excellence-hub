@@ -4,6 +4,31 @@ import {
   type FlatOrganisationUnit,
 } from "@/modules/organisation/unit-hierarchy";
 
+export type PortfolioRpcArgs = {
+  target_search?: string | null;
+  target_status?: string | null;
+  target_unit_id?: string | null;
+  target_priority?: string | null;
+  target_page?: number;
+  target_page_size?: number;
+  target_site_unit_id?: string | null;
+};
+
+/**
+ * Applies active-site UX scope to get_ci_projects_portfolio args. Omits the
+ * filter for legacy/all-sites modes; RBAC remains authoritative on the RPC.
+ */
+export function withPortfolioSiteScope<T extends PortfolioRpcArgs>(
+  args: T,
+  context: ActiveSiteContext,
+): T {
+  if (context.mode === "site" && context.activeSiteId) {
+    return { ...args, target_site_unit_id: context.activeSiteId };
+  }
+
+  return args;
+}
+
 export type SiteScopedProjectCandidate = {
   unit_id: string;
   site_unit_id?: string | null;
