@@ -66,7 +66,9 @@ test.describe("People settings delegation gate stability", () => {
     await loginAs(page, onboardingE2eCredentials);
 
     await page.goto("/platform/settings");
-    await page.getByTestId("settings-hub-open-platform-settings-people").click();
+    await page
+      .getByTestId("settings-hub-open-platform-settings-people")
+      .click();
     await assertAuthorisedPeopleControls(page);
 
     await page.goto(PEOPLE_SETTINGS_PATH);

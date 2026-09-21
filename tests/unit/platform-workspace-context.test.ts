@@ -8,7 +8,9 @@ vi.mock("server-only", () => ({}));
 const requirePlatformAccess = vi.fn(async () => undefined);
 const loadCurrentOrganisationId = vi.fn();
 const listEligibleOrganisations = vi.fn();
-const switchOrganisationMock = vi.fn(async (_organisationId: string) => undefined);
+const switchOrganisationMock = vi.fn(
+  async (_organisationId: string) => undefined,
+);
 const loadActiveSiteContext = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw new Error(`REDIRECT:${path}`);

@@ -39,9 +39,9 @@ describe("platform permission checks", () => {
   it("throws a platform boundary error for transport failures", async () => {
     rpc.mockRejectedValueOnce(new TypeError("fetch failed"));
 
-    await expect(currentMemberHasPermission("gemba.read")).rejects.toBeInstanceOf(
-      PlatformBoundaryError,
-    );
+    await expect(
+      currentMemberHasPermission("gemba.read"),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
   });
 
   it("throws a platform boundary error for infrastructure RPC failures", async () => {
@@ -50,9 +50,9 @@ describe("platform permission checks", () => {
       error: { code: "57014", message: "canceling statement" },
     });
 
-    await expect(currentMemberHasPermission("gemba.read")).rejects.toBeInstanceOf(
-      PlatformBoundaryError,
-    );
+    await expect(
+      currentMemberHasPermission("gemba.read"),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
   });
 
   it("does not swallow Next.js dynamic-rendering control errors", async () => {
