@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { expect, type Page } from "@playwright/test";
 
 export const onboardingE2eCredentials = {
   email: "onboarding-e2e@example.test",
@@ -220,6 +221,40 @@ async function ensureOrganisationAdministratorAccess(
   if (acceptError) {
     throw acceptError;
   }
+}
+
+export async function loginAsOnboardingUser(
+  page: Page,
+  credentials: { email: string; password: string },
+  options: { organisationName?: string } = {},
+) {
+  const organisationName =
+    options.organisationName ?? onboardingE2eCredentials.organisationName;
+
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(credentials.email);
+  await page.getByLabel("Password").fill(credentials.password);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.waitForURL(/\/(platform|select-organisation|update-password)(?:\?|$)/, {
+    timeout: 30_000,
+  });
+
+  if (page.url().includes("/select-organisation")) {
+    await page.getByRole("button", { name: organisationName }).click();
+    await expect(page).toHaveURL(/\/platform(?:\?|$)/, { timeout: 30_000 });
+    return;
+  }
+
+  await expect(page).toHaveURL(/\/platform(?:\?|$)/, { timeout: 30_000 });
+}
+
+export async function loginAsOnboardingOwner(page: Page) {
+  return loginAsOnboardingUser(page, onboardingE2eCredentials);
+}
+
+export async function loginAsOnboardingOrgAdmin(page: Page) {
+  return loginAsOnboardingUser(page, onboardingOrgAdminCredentials);
 }
 
 export async function ensureOnboardingE2eOrganisation() {

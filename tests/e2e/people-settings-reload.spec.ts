@@ -6,26 +6,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   ensureOnboardingE2eOrganisation,
-  onboardingE2eCredentials,
-  onboardingOrgAdminCredentials,
+  loginAsOnboardingOrgAdmin,
+  loginAsOnboardingOwner,
 } from "./helpers/onboarding-auth";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { loginAsSiteBoundaryPeopleDelegate } from "./helpers/cookieworks-auth";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const PEOPLE_SETTINGS_PATH = "/platform/settings/people";
-
-async function loginAs(
-  page: Page,
-  credentials: { email: string; password: string },
-) {
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-}
 
 async function assertAuthorisedPeopleControls(page: Page) {
   const peoplePage = page.getByTestId("people-settings-page");
@@ -49,21 +37,12 @@ test.describe("People settings delegation gate stability", () => {
 
   test.beforeAll(async () => {
     await ensureOnboardingE2eOrganisation();
-    execSync("npm run qa:site-boundary:reset", {
-      cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
-      env: {
-        ...process.env,
-        LEANHUB_ALLOW_QA_TENANT: "1",
-      },
-      stdio: "pipe",
-      encoding: "utf8",
-    });
   });
 
   test("organisation owner retains invite and workforce controls across navigation modes", async ({
     page,
   }) => {
-    await loginAs(page, onboardingE2eCredentials);
+    await loginAsOnboardingOwner(page);
 
     await page.goto("/platform/settings");
     await page
@@ -86,7 +65,7 @@ test.describe("People settings delegation gate stability", () => {
   test("organisation administrator retains invite controls after repeated reloads", async ({
     page,
   }) => {
-    await loginAs(page, onboardingOrgAdminCredentials);
+    await loginAsOnboardingOrgAdmin(page);
     await page.goto(PEOPLE_SETTINGS_PATH);
     await assertAuthorisedPeopleControls(page);
 
@@ -121,6 +100,16 @@ test.describe("People settings delegation gate stability", () => {
   test("site-scoped people delegate sees scoped invite controls without org-wide authority", async ({
     page,
   }) => {
+    execSync("npm run qa:site-boundary:reset", {
+      cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
+      env: {
+        ...process.env,
+        LEANHUB_ALLOW_QA_TENANT: "1",
+      },
+      stdio: "pipe",
+      encoding: "utf8",
+    });
+
     await loginAsSiteBoundaryPeopleDelegate(page);
     await page.goto(PEOPLE_SETTINGS_PATH);
     await expect(page.getByTestId("invite-colleague-form")).toBeVisible({
