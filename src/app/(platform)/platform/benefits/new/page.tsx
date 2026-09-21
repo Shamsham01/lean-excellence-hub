@@ -26,19 +26,27 @@ export default async function NewBenefitPage() {
     .eq("status", "active")
     .order("display_order");
 
+  const portfolioArgs: Record<string, unknown> = {
+    target_page: 1,
+    target_page_size: 500,
+  };
+
+  if (
+    selectorOptions.context.mode === "site" &&
+    selectorOptions.context.activeSiteId
+  ) {
+    portfolioArgs.target_site_unit_id = selectorOptions.context.activeSiteId;
+  }
+
   const { data: portfolio } = await callProjectRpc<ProjectPortfolioResponse>(
     supabase,
     "get_ci_projects_portfolio",
-    {
-      target_page: 1,
-      target_page_size: 100,
-    },
+    portfolioArgs,
   );
 
-  const visibleUnitIds = new Set(selectorOptions.units.map((unit) => unit.id));
-  const projects = (portfolio?.items ?? []).filter((project) =>
-    visibleUnitIds.has(project.unit_id),
-  );
+  const projects = selectorOptions.requiresSiteSelection
+    ? []
+    : (portfolio?.items ?? []);
 
   return (
     <div

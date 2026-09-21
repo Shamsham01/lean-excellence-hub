@@ -12747,6 +12747,7 @@ export type Database = {
           target_page_size?: number
           target_priority?: string
           target_search?: string
+          target_site_unit_id?: string
           target_status?: string
           target_unit_id?: string
         }
