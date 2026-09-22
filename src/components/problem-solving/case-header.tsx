@@ -152,13 +152,23 @@ export function CaseHeader({
             {ownerName ? (
               <div>
                 <dt className="text-muted-foreground">Owner</dt>
-                <dd className="font-medium">{ownerName}</dd>
+                <dd
+                  className="font-medium"
+                  data-testid="problem-solving-owner-name"
+                >
+                  {ownerName}
+                </dd>
               </div>
             ) : null}
             {facilitatorName ? (
               <div>
                 <dt className="text-muted-foreground">Facilitator</dt>
-                <dd className="font-medium">{facilitatorName}</dd>
+                <dd
+                  className="font-medium"
+                  data-testid="problem-solving-facilitator-name"
+                >
+                  {facilitatorName}
+                </dd>
               </div>
             ) : null}
             {detail.current_stage ? (

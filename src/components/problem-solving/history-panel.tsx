@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { labelForMembershipId } from "@/lib/identity/membership-display-label";
 import { problemSolvingStatusLabel } from "@/lib/problem-solving/status";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
@@ -37,8 +38,10 @@ export function HistoryPanel({
                   {new Date(entry.changed_at).toLocaleString("en-GB")}
                   {entry.rationale ? ` · ${entry.rationale}` : ""}
                   {" · "}
-                  {membershipNameById[entry.changed_by_membership_id] ??
-                    entry.changed_by_membership_id.slice(0, 8)}
+                  {labelForMembershipId(
+                    membershipNameById,
+                    entry.changed_by_membership_id,
+                  )}
                 </span>
               </div>
             ))

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
+import {
+  DEMO_PROBLEM_SOLVING_CASE,
+  DEMO_USERS,
+} from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -10,6 +13,16 @@ async function assertFunctionalWorkspace(page: Page) {
   const workspace = page.getByTestId("problem-solving-workspace");
   await expect(workspace).toBeVisible();
   await expect(page.getByTestId("problem-solving-header")).toBeVisible();
+  const ownerName = page.getByTestId("problem-solving-owner-name");
+  await expect(ownerName).toBeVisible();
+  await expect(ownerName).toHaveText(DEMO_USERS.manager.displayName);
+  await expect(ownerName).not.toHaveText(/^[0-9a-f]{8}$/i);
+  await expect(ownerName).not.toHaveText(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+  );
+  const facilitatorName = page.getByTestId("problem-solving-facilitator-name");
+  await expect(facilitatorName).toBeVisible();
+  await expect(facilitatorName).toHaveText(DEMO_USERS.manager.displayName);
   await expect(
     page.getByRole("heading", { name: DEMO_PROBLEM_SOLVING_CASE.title }),
   ).toBeVisible();

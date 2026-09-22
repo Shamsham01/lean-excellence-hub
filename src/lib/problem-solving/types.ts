@@ -228,7 +228,10 @@ export type ProblemSolvingCaseDetail = {
   organisation_unit_id: string;
   unit_name: string | null;
   owner_membership_id: string;
+  owner_display_name?: string | null;
   facilitator_membership_id: string | null;
+  facilitator_display_name?: string | null;
+  membership_display_names?: Record<string, string | null> | null;
   method_version_id: string | null;
   current_method_stage_id: string | null;
   current_stage: ProblemSolvingCurrentStage;
