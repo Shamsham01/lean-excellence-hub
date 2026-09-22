@@ -8,6 +8,9 @@ vi.mock("server-only", () => ({}));
 const requirePlatformAccess = vi.fn(async () => undefined);
 const loadCurrentOrganisationId = vi.fn();
 const listEligibleOrganisations = vi.fn();
+const switchOrganisationMock = vi.fn(
+  async (_organisationId: string) => undefined,
+);
 const loadActiveSiteContext = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw new Error(`REDIRECT:${path}`);
@@ -24,6 +27,8 @@ vi.mock("@/modules/identity/session", () => ({
 vi.mock("@/modules/organisations/context", () => ({
   loadCurrentOrganisationId: () => loadCurrentOrganisationId(),
   listEligibleOrganisations: () => listEligibleOrganisations(),
+  switchOrganisation: (organisationId: string) =>
+    switchOrganisationMock(organisationId),
 }));
 
 vi.mock("@/modules/organisation/site-context-server", () => ({
@@ -75,11 +80,29 @@ describe("loadPlatformWorkspaceContext", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("redirects when organisation context is genuinely missing", async () => {
+  it("bootstraps a single eligible organisation when session org is unset", async () => {
     loadCurrentOrganisationId.mockResolvedValueOnce(null);
+    listEligibleOrganisations.mockResolvedValueOnce([organisation]);
+
+    await expect(loadPlatformWorkspaceContext()).resolves.toEqual({
+      current: organisation,
+      organisations: [organisation],
+      siteContext,
+    });
+    expect(switchOrganisationMock).toHaveBeenCalledWith("org-1");
+  });
+
+  it("redirects when organisation context is missing and multiple orgs exist", async () => {
+    loadCurrentOrganisationId.mockResolvedValueOnce(null);
+    listEligibleOrganisations.mockResolvedValueOnce([
+      organisation,
+      { ...organisation, organisation_id: "org-2", selected: false },
+    ]);
+
     await expect(loadPlatformWorkspaceContext()).rejects.toThrow(
       "REDIRECT:/select-organisation",
     );
+    expect(switchOrganisationMock).not.toHaveBeenCalled();
   });
 
   it("does not swallow organisation loader failures as empty access", async () => {

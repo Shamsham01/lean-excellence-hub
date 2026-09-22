@@ -96,6 +96,9 @@ test.describe("M2 workforce bulk import", () => {
       password: exportedPassword,
     });
 
+    await expect(page).toHaveURL(/\/update-password(?:\?|$)/, {
+      timeout: 30_000,
+    });
     await expect(
       page.getByRole("heading", { name: "Set a new password" }),
     ).toBeVisible({ timeout: 30_000 });

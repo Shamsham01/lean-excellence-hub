@@ -17,17 +17,20 @@ vi.mock("@/platform/http/request-path", () => ({
 }));
 
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { PlatformBoundaryError } from "@/platform/observability/platform-boundary";
+import * as platformBoundaryModule from "@/platform/observability/platform-boundary";
 
 describe("platform permission checks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(platformBoundaryModule, "throwPlatformBoundaryError");
   });
 
-  it("returns false on supabase error objects without throwing", async () => {
+  it("returns false for explicit database authorization denial", async () => {
     rpc.mockResolvedValueOnce({
       data: null,
-      error: { code: "PGRST301", message: "JWT expired" },
+      error: { code: "42501", message: "permission denied" },
     });
 
     await expect(
@@ -35,10 +38,53 @@ describe("platform permission checks", () => {
     ).resolves.toBe(false);
   });
 
-  it("contains thrown query failures so shared navigation cannot crash the layout", async () => {
+  it("throws an auth boundary error for expired JWT session failures", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "PGRST301", message: "JWT expired" },
+    });
+
+    await expect(
+      currentMemberHasPermission("people.capability.read"),
+    ).rejects.toMatchObject({
+      name: "PlatformBoundaryError",
+      category: "auth",
+    });
+  });
+
+  it("throws a platform boundary error for transport failures", async () => {
     rpc.mockRejectedValueOnce(new TypeError("fetch failed"));
 
-    await expect(currentMemberHasPermission("gemba.read")).resolves.toBe(false);
+    await expect(
+      currentMemberHasPermission("gemba.read"),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
+  it("throws a platform boundary error for infrastructure RPC failures", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "57014", message: "canceling statement" },
+    });
+
+    await expect(
+      currentMemberHasPermission("gemba.read"),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
+  it("does not double-wrap platform boundary errors from probe failure", async () => {
+    const boundarySpy = vi.spyOn(
+      platformBoundaryModule,
+      "throwPlatformBoundaryError",
+    );
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "57014", message: "canceling statement" },
+    });
+
+    await expect(
+      currentMemberHasPermission("gemba.read"),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+    expect(boundarySpy).toHaveBeenCalledTimes(1);
   });
 
   it("does not swallow Next.js dynamic-rendering control errors", async () => {
@@ -51,6 +97,9 @@ describe("platform permission checks", () => {
     await expect(currentMemberHasPermission("gemba.read")).rejects.toBe(
       dynamicError,
     );
+    expect(
+      platformBoundaryModule.throwPlatformBoundaryError,
+    ).not.toHaveBeenCalled();
   });
 
   it("returns true only when the RPC explicitly grants the permission", async () => {

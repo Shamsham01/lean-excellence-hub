@@ -14,9 +14,11 @@ import {
   loadActiveSiteContext,
 } from "@/modules/organisation/site-context-server";
 import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
+import { formatLongDate } from "@/lib/dates/format-long-date";
 import {
-  currentMemberHasDelegatableAccess,
+  currentMemberCanDelegateRoles,
   currentMemberHasPermission,
+  loadDelegatableAccessOffers,
 } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -34,7 +36,7 @@ export default async function PeopleSettingsPage() {
   );
   const canImportWorkforce =
     await currentMemberHasPermission("workforce.import");
-  const canDelegateAccess = await currentMemberHasDelegatableAccess();
+  const canDelegateRoles = await currentMemberCanDelegateRoles();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
@@ -43,7 +45,7 @@ export default async function PeopleSettingsPage() {
     !canManageInvitations &&
     !canProvisionWorkforce &&
     !canImportWorkforce &&
-    !canDelegateAccess
+    !canDelegateRoles
   ) {
     notFound();
   }
@@ -58,7 +60,7 @@ export default async function PeopleSettingsPage() {
   const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
   const [
-    { data: offersData },
+    offersData,
     { data: pendingInvitations, error: invitationsError },
     { data: units },
     { data: jobFunctions },
@@ -66,9 +68,7 @@ export default async function PeopleSettingsPage() {
     { data: roles },
     { data: roleVersions },
   ] = await Promise.all([
-    canDelegateAccess
-      ? supabase.rpc("get_delegatable_access_offers")
-      : Promise.resolve({ data: null }),
+    canDelegateRoles ? loadDelegatableAccessOffers() : Promise.resolve(null),
     canManageInvitations
       ? supabase
           .from("organisation_invitations")
@@ -101,8 +101,7 @@ export default async function PeopleSettingsPage() {
   ]);
 
   const offers = filterDelegatableOffersForActiveSite(
-    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
-      []) as DelegatableAccessOffer[],
+    (offersData?.offers ?? []) as DelegatableAccessOffer[],
     allUnits,
     context,
   );
@@ -150,7 +149,7 @@ export default async function PeopleSettingsPage() {
         }
       />
 
-      {canProvisionWorkforce && canDelegateAccess ? (
+      {canProvisionWorkforce && canDelegateRoles ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Create workforce user</CardTitle>
@@ -185,7 +184,7 @@ export default async function PeopleSettingsPage() {
         </Card>
       ) : null}
 
-      {canManageInvitations && canDelegateAccess ? (
+      {canManageInvitations && canDelegateRoles ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Invite a colleague</CardTitle>
@@ -243,7 +242,7 @@ export default async function PeopleSettingsPage() {
                   return {
                     id: invitation.id,
                     email: invitation.canonical_recipient,
-                    expiresAt: invitation.expires_at,
+                    expiresAtLabel: formatLongDate(invitation.expires_at),
                     roleName: grant?.roleName ?? "Application access",
                     scopeLabel: grant?.scopeLabel ?? "Scoped access",
                   };

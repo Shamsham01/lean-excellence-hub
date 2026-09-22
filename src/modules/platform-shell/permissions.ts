@@ -4,45 +4,74 @@ import { cache } from "react";
 import { unstable_rethrow } from "next/navigation";
 
 import {
-  createPlatformBoundaryReference,
-  logPlatformBoundaryError,
+  PlatformBoundaryError,
+  throwPlatformBoundaryError,
 } from "@/platform/observability/platform-boundary";
 import { readRequestPathname } from "@/platform/http/request-path";
+import {
+  classifyPermissionProbeResult,
+  readSupabaseErrorFields,
+  type PermissionProbeClassification,
+} from "@/platform/supabase/error-classification";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-function supabaseErrorFields(error: unknown): {
-  code: string | null;
-  message: string | null;
-} {
-  if (!error || typeof error !== "object") {
-    return {
-      code: null,
-      message: error instanceof Error ? error.message : null,
-    };
+function rethrowProbeControlErrors(error: unknown): void {
+  unstable_rethrow(error);
+  if (error instanceof PlatformBoundaryError) {
+    throw error;
   }
-
-  const record = error as { code?: unknown; message?: unknown };
-  return {
-    code: typeof record.code === "string" ? record.code : null,
-    message: typeof record.message === "string" ? record.message : null,
-  };
 }
 
-async function logPermissionFailure(
+async function throwAuthProbeFailure(
   operation: string,
   permissionKey: string,
   error: unknown,
-) {
-  const { code, message } = supabaseErrorFields(error);
-  logPlatformBoundaryError({
-    category: "permission",
+): Promise<never> {
+  const { code, message } = readSupabaseErrorFields(error);
+  throwPlatformBoundaryError({
+    category: "auth",
     operation,
-    reference: createPlatformBoundaryReference(),
     route: await readRequestPathname(),
-    permissionKey,
-    supabaseCode: code,
-    supabaseMessage: message,
+    supabaseError: { code, message },
+    cause: error,
   });
+}
+
+async function throwPermissionProbeFailure(
+  operation: string,
+  permissionKey: string,
+  error: unknown,
+): Promise<never> {
+  const { code, message } = readSupabaseErrorFields(error);
+  throwPlatformBoundaryError({
+    category: "organisation_access",
+    operation,
+    route: await readRequestPathname(),
+    supabaseError: { code, message },
+    cause: error,
+  });
+}
+
+async function throwClassifiedProbeFailure(
+  classified: Exclude<PermissionProbeClassification<unknown>, { ok: true }>,
+  operation: string,
+  permissionKey: string,
+): Promise<never> {
+  switch (classified.outcome) {
+    case "auth_failure":
+      return throwAuthProbeFailure(operation, permissionKey, classified.error);
+    case "infrastructure":
+      return throwPermissionProbeFailure(
+        operation,
+        permissionKey,
+        classified.error,
+      );
+    case "denied":
+    case "not_found":
+      throw new Error(
+        `Unexpected permission probe outcome "${classified.outcome}" for ${operation}.`,
+      );
+  }
 }
 
 export const currentMemberHasPermission = cache(
@@ -52,19 +81,30 @@ export const currentMemberHasPermission = cache(
       const result = await supabase.rpc("member_has_permission", {
         target_permission_key: permissionKey,
       });
-      if (result.error) {
-        await logPermissionFailure(
+      const classified = classifyPermissionProbeResult(result);
+      if (!classified.ok) {
+        if (
+          classified.outcome === "denied" ||
+          classified.outcome === "not_found"
+        ) {
+          return false;
+        }
+
+        return throwClassifiedProbeFailure(
+          classified,
           "member_has_permission",
           permissionKey,
-          result.error,
         );
-        return false;
       }
-      return result.data === true;
+
+      return classified.data === true;
     } catch (error) {
-      unstable_rethrow(error);
-      await logPermissionFailure("member_has_permission", permissionKey, error);
-      return false;
+      rethrowProbeControlErrors(error);
+      return throwPermissionProbeFailure(
+        "member_has_permission",
+        permissionKey,
+        error,
+      );
     }
   },
 );
@@ -78,14 +118,23 @@ export const currentMemberHasScopedPermission = cache(
     try {
       const supabase = await createServerSupabaseClient();
       const orgId = await supabase.rpc("current_organisation_id");
-      if (orgId.error || !orgId.data) {
-        if (orgId.error) {
-          await logPermissionFailure(
-            "current_organisation_id",
-            permissionKey,
-            orgId.error,
-          );
+      const orgClassified = classifyPermissionProbeResult(orgId);
+      if (!orgClassified.ok) {
+        if (
+          orgClassified.outcome === "denied" ||
+          orgClassified.outcome === "not_found"
+        ) {
+          return false;
         }
+
+        return throwClassifiedProbeFailure(
+          orgClassified,
+          "current_organisation_id",
+          permissionKey,
+        );
+      }
+
+      if (!orgClassified.data) {
         return false;
       }
 
@@ -95,7 +144,7 @@ export const currentMemberHasScopedPermission = cache(
         target_membership_id?: string;
         target_unit_id?: string;
       } = {
-        target_organisation_id: orgId.data,
+        target_organisation_id: orgClassified.data,
         target_permission_key: permissionKey,
       };
 
@@ -108,20 +157,30 @@ export const currentMemberHasScopedPermission = cache(
       }
 
       const result = await supabase.rpc("has_scoped_permission", args);
-      if (result.error) {
-        await logPermissionFailure(
+      const classified = classifyPermissionProbeResult(result);
+      if (!classified.ok) {
+        if (
+          classified.outcome === "denied" ||
+          classified.outcome === "not_found"
+        ) {
+          return false;
+        }
+
+        return throwClassifiedProbeFailure(
+          classified,
           "has_scoped_permission",
           permissionKey,
-          result.error,
         );
-        return false;
       }
 
-      return result.data === true;
+      return classified.data === true;
     } catch (error) {
-      unstable_rethrow(error);
-      await logPermissionFailure("has_scoped_permission", permissionKey, error);
-      return false;
+      rethrowProbeControlErrors(error);
+      return throwPermissionProbeFailure(
+        "has_scoped_permission",
+        permissionKey,
+        error,
+      );
     }
   },
 );
@@ -132,30 +191,48 @@ export async function currentMemberHasOrganisationScopedPermission(
   return currentMemberHasScopedPermission(permissionKey);
 }
 
+export const currentMemberCanDelegateRoles = cache(async () =>
+  currentMemberHasPermission("roles.delegate"),
+);
+
+/** @deprecated Use currentMemberCanDelegateRoles for UI gates. */
 export async function currentMemberHasDelegatableAccess() {
+  return currentMemberCanDelegateRoles();
+}
+
+export type DelegatableAccessOffersPayload = {
+  offers: unknown[];
+};
+
+export const loadDelegatableAccessOffers = cache(async () => {
   try {
     const supabase = await createServerSupabaseClient();
     const result = await supabase.rpc("get_delegatable_access_offers");
-    if (result.error || !result.data) {
-      if (result.error) {
-        await logPermissionFailure(
-          "get_delegatable_access_offers",
-          "delegatable_access",
-          result.error,
-        );
+    const classified = classifyPermissionProbeResult(result);
+    if (!classified.ok) {
+      if (
+        classified.outcome === "denied" ||
+        classified.outcome === "not_found"
+      ) {
+        return { offers: [] } satisfies DelegatableAccessOffersPayload;
       }
-      return false;
+
+      return throwClassifiedProbeFailure(
+        classified,
+        "get_delegatable_access_offers",
+        "delegatable_access",
+      );
     }
 
-    const offers = (result.data as { offers?: unknown[] } | null)?.offers ?? [];
-    return offers.length > 0;
+    const offers =
+      (classified.data as DelegatableAccessOffersPayload | null)?.offers ?? [];
+    return { offers } satisfies DelegatableAccessOffersPayload;
   } catch (error) {
-    unstable_rethrow(error);
-    await logPermissionFailure(
+    rethrowProbeControlErrors(error);
+    return throwPermissionProbeFailure(
       "get_delegatable_access_offers",
       "delegatable_access",
       error,
     );
-    return false;
   }
-}
+});

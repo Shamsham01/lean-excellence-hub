@@ -13,7 +13,7 @@ const financeValidatorAccess: SettingsHubCardAccess = {
   canManageInvitations: false,
   canProvisionWorkforce: false,
   canImportWorkforce: false,
-  canDelegateAccess: false,
+  canDelegateRoles: false,
 };
 
 const teamMemberAccess: SettingsHubCardAccess = {
@@ -23,7 +23,7 @@ const teamMemberAccess: SettingsHubCardAccess = {
   canManageInvitations: false,
   canProvisionWorkforce: false,
   canImportWorkforce: false,
-  canDelegateAccess: false,
+  canDelegateRoles: false,
 };
 
 const adminAccess: SettingsHubCardAccess = {
@@ -33,7 +33,7 @@ const adminAccess: SettingsHubCardAccess = {
   canManageInvitations: true,
   canProvisionWorkforce: true,
   canImportWorkforce: true,
-  canDelegateAccess: true,
+  canDelegateRoles: true,
 };
 
 function cardAvailability(

@@ -17,8 +17,9 @@ import {
 } from "@/modules/organisation/site-context-server";
 import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
 import {
-  currentMemberHasDelegatableAccess,
+  currentMemberCanDelegateRoles,
   currentMemberHasPermission,
+  loadDelegatableAccessOffers,
 } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -50,7 +51,7 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
 
   const profile = profileData as MemberAdministrationProfile;
   const canManageJobFunctions = profile.permissions.can_manage_job_functions;
-  const canDelegateAccess = await currentMemberHasDelegatableAccess();
+  const canDelegateRoles = await currentMemberCanDelegateRoles();
   const [allUnits, { context }] = await Promise.all([
     loadAccessibleOrganisationUnits(),
     loadActiveSiteContext(),
@@ -59,7 +60,7 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
   const visibleUnitIds = new Set(siteUnits.units.map((unit) => unit.id));
   const visibleUnits = allUnits.filter((unit) => visibleUnitIds.has(unit.id));
 
-  const [{ data: jobFunctions }, { data: offersData }] = await Promise.all([
+  const [{ data: jobFunctions }, offersData] = await Promise.all([
     canManageJobFunctions
       ? supabase
           .from("job_functions")
@@ -67,14 +68,13 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
           .eq("status", "active")
           .order("name")
       : Promise.resolve({ data: [] }),
-    canDelegateAccess
-      ? supabase.rpc("get_delegatable_access_offers")
-      : Promise.resolve({ data: null }),
+    canDelegateRoles
+      ? loadDelegatableAccessOffers()
+      : Promise.resolve({ offers: [] }),
   ]);
 
   const offers = filterDelegatableOffersForActiveSite(
-    ((offersData as { offers?: DelegatableAccessOffer[] } | null)?.offers ??
-      []) as DelegatableAccessOffer[],
+    (offersData.offers as DelegatableAccessOffer[]) ?? [],
     allUnits,
     context,
   );
@@ -188,7 +188,7 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
               grants={profile.access_grants}
               offers={offers}
               canManage={
-                canDelegateAccess &&
+                canDelegateRoles &&
                 profile.permissions.can_delegate_access &&
                 !profile.permissions.is_self &&
                 profile.status === "active"
