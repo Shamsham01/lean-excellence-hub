@@ -100,10 +100,7 @@ async function probeSingleMemberPermission(
   });
   const classified = classifyPermissionProbeResult(result);
   if (!classified.ok) {
-    if (
-      classified.outcome === "denied" ||
-      classified.outcome === "not_found"
-    ) {
+    if (classified.outcome === "denied" || classified.outcome === "not_found") {
       return false;
     }
 
@@ -126,10 +123,7 @@ async function probeBatchMemberPermissions(
   });
   const classified = classifyPermissionProbeResult(result);
   if (!classified.ok) {
-    if (
-      classified.outcome === "denied" ||
-      classified.outcome === "not_found"
-    ) {
+    if (classified.outcome === "denied" || classified.outcome === "not_found") {
       return Object.fromEntries(permissionKeys.map((key) => [key, false]));
     }
 
@@ -170,9 +164,8 @@ async function resolveMemberPermissions(
     const resolved =
       uncachedKeys.length === 1 && singlePermissionKey
         ? {
-            [singlePermissionKey]: await probeSingleMemberPermission(
-              singlePermissionKey,
-            ),
+            [singlePermissionKey]:
+              await probeSingleMemberPermission(singlePermissionKey),
           }
         : await probeBatchMemberPermissions(uncachedKeys);
 

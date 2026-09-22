@@ -74,10 +74,7 @@ describe("member permission batch resolution", () => {
       error: null,
     });
 
-    await prefetchMemberPermissions([
-      "suggestions.read",
-      "suggestions.manage",
-    ]);
+    await prefetchMemberPermissions(["suggestions.read", "suggestions.manage"]);
 
     await expect(currentMemberHasPermission("suggestions.read")).resolves.toBe(
       true,
