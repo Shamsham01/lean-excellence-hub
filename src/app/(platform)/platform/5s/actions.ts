@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { readApplicableUnitIds } from "@/modules/operational/five-s-applicability";
 import {
   loadTemplateAuthoringChildren,
@@ -90,6 +91,12 @@ export async function setFiveSStandardApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "applicability",
+    ),
+  );
 }
 
 export async function addFiveSSection(
@@ -319,7 +326,12 @@ export async function addFiveSSectionFromForm(formData: FormData) {
     authoring.nextSectionPosition,
   );
   throwIfActionError(result);
-  revalidatePath(`/platform/5s/standards/${standardId}`);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "section",
+    ),
+  );
 }
 
 export async function addFiveSQuestionFromForm(formData: FormData) {
@@ -354,7 +366,12 @@ export async function addFiveSQuestionFromForm(formData: FormData) {
     questionType,
   );
   throwIfActionError(result);
-  revalidatePath(`/platform/5s/standards/${standardId}`);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "question",
+    ),
+  );
 }
 
 export async function publishFiveSStandardFromForm(formData: FormData) {
@@ -362,6 +379,12 @@ export async function publishFiveSStandardFromForm(formData: FormData) {
   const standardId = String(formData.get("standardId"));
   const result = await publishFiveSStandard(versionId, standardId);
   throwIfActionError(result);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "publish",
+    ),
+  );
 }
 
 export async function completeFiveSAuditFromForm(formData: FormData) {

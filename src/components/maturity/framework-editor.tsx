@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
+import { useAuthoringStep } from "@/components/authoring/use-authoring-step";
+
 import {
   addMaturityCriterion,
   addMaturityLevel,
@@ -44,6 +47,7 @@ const STEPS = [
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
+const STEP_IDS: StepId[] = STEPS.map((step) => step.id);
 
 type LevelRow = {
   id: string;
@@ -102,8 +106,9 @@ export function FrameworkEditor({
   questions,
 }: FrameworkEditorProps) {
   const router = useRouter();
-  const [step, setStep] = useState<StepId>("details");
+  const [step, setStep] = useAuthoringStep(STEP_IDS, "details");
   const [error, setError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState(modelName);
   const [description, setDescription] = useState(modelDescription ?? "");
@@ -117,6 +122,7 @@ export function FrameworkEditor({
   async function run<T>(action: () => Promise<{ error?: string } | T>) {
     setBusy(true);
     setError(null);
+    setSaveMessage(null);
     const result = await action();
     setBusy(false);
     if (
@@ -128,6 +134,7 @@ export function FrameworkEditor({
       setError(result.error);
       return false;
     }
+    setSaveMessage("Saved.");
     router.refresh();
     return true;
   }
@@ -181,6 +188,7 @@ export function FrameworkEditor({
         </nav>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <AuthoringSaveFeedback message={saveMessage} />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
             {error}

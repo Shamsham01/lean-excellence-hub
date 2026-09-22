@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { findResumableGembaWalkId } from "@/modules/operational/gemba-active-walks";
 import { readApplicableUnitIds } from "@/modules/operational/gemba-applicability";
 import {
@@ -91,6 +92,12 @@ export async function setGembaDefinitionApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/gemba/definitions/${definitionId}`,
+      "applicability",
+    ),
+  );
 }
 
 export async function addGembaSection(
@@ -336,7 +343,12 @@ export async function addGembaSectionFromForm(formData: FormData) {
     authoring.nextSectionPosition,
   );
   throwIfActionError(result);
-  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/gemba/definitions/${definitionId}`,
+      "section",
+    ),
+  );
 }
 
 export async function addGembaQuestionFromForm(formData: FormData) {
@@ -369,7 +381,12 @@ export async function addGembaQuestionFromForm(formData: FormData) {
     nextQuestionPosition(section),
   );
   throwIfActionError(result);
-  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/gemba/definitions/${definitionId}`,
+      "question",
+    ),
+  );
 }
 
 export async function completeGembaWalkFromForm(formData: FormData) {
@@ -388,11 +405,18 @@ export async function createGembaObservationFromForm(formData: FormData) {
 }
 
 export async function publishGembaDefinitionFromForm(formData: FormData) {
+  const definitionId = String(formData.get("definitionId"));
   const result = await publishGembaDefinition(
     String(formData.get("versionId")),
-    String(formData.get("definitionId")),
+    definitionId,
   );
   throwIfActionError(result);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/gemba/definitions/${definitionId}`,
+      "publish",
+    ),
+  );
 }
 
 export async function initiateGembaEvidenceUpload(
