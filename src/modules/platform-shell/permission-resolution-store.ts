@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-type PermissionResolutionStore = Map<string, boolean>;
+export type PermissionResolutionStore = Map<string, boolean>;
 
 let vitestPermissionStore: PermissionResolutionStore | undefined;
 

@@ -98,6 +98,33 @@ describe("member permission batch resolution", () => {
     });
   });
 
+  it("returns granted single-key probes when the store is not request-shared (server action path)", async () => {
+    vi.doUnmock("@/modules/platform-shell/permission-resolution-store");
+    vi.resetModules();
+
+    const getPermissionResolutionStore = vi
+      .fn()
+      .mockImplementation(async () => new Map<string, boolean>());
+
+    vi.doMock("@/modules/platform-shell/permission-resolution-store", () => ({
+      getPermissionResolutionStore,
+    }));
+
+    const { currentMemberHasPermission: probePermission } =
+      await import("@/modules/platform-shell/permissions");
+
+    rpc.mockResolvedValueOnce({ data: true, error: null });
+
+    await expect(probePermission("workforce.provision")).resolves.toBe(true);
+    expect(rpc).toHaveBeenCalledWith("member_has_permission", {
+      target_permission_key: "workforce.provision",
+    });
+    expect(getPermissionResolutionStore).toHaveBeenCalledTimes(1);
+
+    vi.doUnmock("@/modules/platform-shell/permission-resolution-store");
+    vi.resetModules();
+  });
+
   it("merges a second batch request with only uncached keys", async () => {
     rpc
       .mockResolvedValueOnce({

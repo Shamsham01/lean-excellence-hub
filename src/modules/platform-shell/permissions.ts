@@ -13,7 +13,10 @@ import {
   readSupabaseErrorFields,
   type PermissionProbeClassification,
 } from "@/platform/supabase/error-classification";
-import { getPermissionResolutionStore } from "@/modules/platform-shell/permission-resolution-store";
+import {
+  getPermissionResolutionStore,
+  type PermissionResolutionStore,
+} from "@/modules/platform-shell/permission-resolution-store";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function rethrowProbeControlErrors(error: unknown): void {
@@ -75,22 +78,6 @@ async function throwClassifiedProbeFailure(
   }
 }
 
-async function readCachedPermission(
-  permissionKey: string,
-): Promise<boolean | undefined> {
-  const store = await getPermissionResolutionStore();
-  return store.get(permissionKey);
-}
-
-async function writeCachedPermissions(
-  resolved: Record<string, boolean>,
-): Promise<void> {
-  const store = await getPermissionResolutionStore();
-  for (const [permissionKey, granted] of Object.entries(resolved)) {
-    store.set(permissionKey, granted === true);
-  }
-}
-
 async function probeSingleMemberPermission(
   permissionKey: string,
 ): Promise<boolean> {
@@ -147,10 +134,19 @@ async function probeBatchMemberPermissions(
   );
 }
 
-async function resolveMemberPermissions(
+function writeResolvedPermissions(
+  store: PermissionResolutionStore,
+  resolved: Record<string, boolean>,
+): void {
+  for (const [permissionKey, granted] of Object.entries(resolved)) {
+    store.set(permissionKey, granted === true);
+  }
+}
+
+async function resolveMemberPermissionsIntoStore(
+  store: PermissionResolutionStore,
   permissionKeys: string[],
 ): Promise<void> {
-  const store = await getPermissionResolutionStore();
   const uncachedKeys = permissionKeys.filter(
     (permissionKey) => !store.has(permissionKey),
   );
@@ -169,7 +165,7 @@ async function resolveMemberPermissions(
           }
         : await probeBatchMemberPermissions(uncachedKeys);
 
-    await writeCachedPermissions(resolved);
+    writeResolvedPermissions(store, resolved);
   } catch (error) {
     rethrowProbeControlErrors(error);
     return throwPermissionProbeFailure(
@@ -185,18 +181,20 @@ async function resolveMemberPermissions(
 export async function prefetchMemberPermissions(
   permissionKeys: string[],
 ): Promise<void> {
-  await resolveMemberPermissions(permissionKeys);
+  const store = await getPermissionResolutionStore();
+  await resolveMemberPermissionsIntoStore(store, permissionKeys);
 }
 
 export const currentMemberHasPermission = cache(
   async (permissionKey: string) => {
-    const cached = await readCachedPermission(permissionKey);
+    const store = await getPermissionResolutionStore();
+    const cached = store.get(permissionKey);
     if (cached !== undefined) {
       return cached;
     }
 
-    await resolveMemberPermissions([permissionKey]);
-    return (await readCachedPermission(permissionKey)) ?? false;
+    await resolveMemberPermissionsIntoStore(store, [permissionKey]);
+    return store.get(permissionKey) ?? false;
   },
 );
 
