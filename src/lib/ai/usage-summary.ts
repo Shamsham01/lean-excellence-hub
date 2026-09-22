@@ -66,7 +66,9 @@ export function parseAiUsageSummary(
     cached_input_tokens: readNonNegativeInteger(value.cached_input_tokens),
     reasoning_tokens: readNonNegativeInteger(value.reasoning_tokens),
     tool_calls: readNonNegativeInteger(value.tool_calls),
-    provider_distribution: readProviderDistribution(value.provider_distribution),
+    provider_distribution: readProviderDistribution(
+      value.provider_distribution,
+    ),
   };
 }
 

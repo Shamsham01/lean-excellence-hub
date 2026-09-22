@@ -48,7 +48,9 @@ describe("parseAiUsageSummary", () => {
       cached_input_tokens: null,
       reasoning_tokens: 12.9,
       tool_calls: "x",
-      provider_distribution: [{ provider: "openai", model: "gpt", run_count: 2.7 }],
+      provider_distribution: [
+        { provider: "openai", model: "gpt", run_count: 2.7 },
+      ],
     });
 
     expect(summary).toEqual({
