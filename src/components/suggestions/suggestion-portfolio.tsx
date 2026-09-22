@@ -330,8 +330,7 @@ export function SuggestionPortfolio({
   showReviewerWorkflow = false,
 }: SuggestionPortfolioProps) {
   const filtersActive = hasActiveSuggestionPortfolioFilters(filters);
-  const filteredEmpty =
-    items.length === 0 && (filtersActive || totalCount > 0);
+  const filteredEmpty = items.length === 0 && (filtersActive || totalCount > 0);
 
   return (
     <Card data-testid="suggestion-portfolio">
