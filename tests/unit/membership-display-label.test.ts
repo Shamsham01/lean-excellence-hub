@@ -29,9 +29,9 @@ describe("membership display labels", () => {
   });
 
   it("never treats a UUID or UUID prefix as a display name", () => {
-    expect(
-      membershipDisplayLabel("33333333-3333-3333-3333-333333333333"),
-    ).toBe(UNAVAILABLE_MEMBER_LABEL);
+    expect(membershipDisplayLabel("33333333-3333-3333-3333-333333333333")).toBe(
+      UNAVAILABLE_MEMBER_LABEL,
+    );
     expect(membershipDisplayLabel("05057700")).toBe(UNAVAILABLE_MEMBER_LABEL);
     expect(
       isUsableMembershipDisplayName("05057700-aaaa-4bbb-8ccc-ddddeeeeffff"),

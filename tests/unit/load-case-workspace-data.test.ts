@@ -209,7 +209,9 @@ describe("loadCaseWorkspaceData", () => {
     });
 
     const supabase = {
-      from: vi.fn().mockImplementation(() => listQuery({ data: [], error: null })),
+      from: vi
+        .fn()
+        .mockImplementation(() => listQuery({ data: [], error: null })),
       rpc: vi.fn(),
     } as unknown as SupabaseClient<Database>;
 
