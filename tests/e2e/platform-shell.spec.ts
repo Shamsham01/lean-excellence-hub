@@ -121,6 +121,30 @@ test.describe("authenticated platform shell", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test("desktop sidebar remains visible after scrolling long main content", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signInAsDemoUser(page, "admin");
+
+    const sidebar = page.locator("aside").first();
+    const nav = sidebar.getByRole("navigation", { name: "Platform" });
+    await expect(nav).toBeVisible();
+
+    await page.evaluate(() => {
+      const main = document.querySelector("main");
+      if (main) {
+        main.style.minHeight = "300vh";
+      }
+    });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await expect(nav).toBeInViewport();
+    await expect(
+      sidebar.getByRole("button", { name: "Sign out", exact: true }),
+    ).toBeInViewport();
+  });
+
   for (const viewport of mobileViewports) {
     test(`mobile drawer scrolls to final navigation item at ${viewport.name}`, async ({
       page,
