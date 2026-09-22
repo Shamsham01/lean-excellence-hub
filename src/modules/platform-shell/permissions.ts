@@ -83,7 +83,10 @@ export const currentMemberHasPermission = cache(
       });
       const classified = classifyPermissionProbeResult(result);
       if (!classified.ok) {
-        if (classified.outcome === "denied" || classified.outcome === "not_found") {
+        if (
+          classified.outcome === "denied" ||
+          classified.outcome === "not_found"
+        ) {
           return false;
         }
 

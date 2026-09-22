@@ -81,9 +81,9 @@ describe("platform permission checks", () => {
       error: { code: "57014", message: "canceling statement" },
     });
 
-    await expect(currentMemberHasPermission("gemba.read")).rejects.toBeInstanceOf(
-      PlatformBoundaryError,
-    );
+    await expect(
+      currentMemberHasPermission("gemba.read"),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
     expect(boundarySpy).toHaveBeenCalledTimes(1);
   });
 
@@ -97,7 +97,9 @@ describe("platform permission checks", () => {
     await expect(currentMemberHasPermission("gemba.read")).rejects.toBe(
       dynamicError,
     );
-    expect(platformBoundaryModule.throwPlatformBoundaryError).not.toHaveBeenCalled();
+    expect(
+      platformBoundaryModule.throwPlatformBoundaryError,
+    ).not.toHaveBeenCalled();
   });
 
   it("returns true only when the RPC explicitly grants the permission", async () => {

@@ -47,7 +47,9 @@ function isTransportFailure(error: unknown, message: string | null): boolean {
   );
 }
 
-export function classifySupabaseError(error: unknown): SupabaseErrorKind | null {
+export function classifySupabaseError(
+  error: unknown,
+): SupabaseErrorKind | null {
   if (!error) {
     return null;
   }
