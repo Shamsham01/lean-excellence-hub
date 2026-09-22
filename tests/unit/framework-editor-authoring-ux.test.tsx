@@ -7,6 +7,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ComponentProps } from "react";
+
 import { updateMaturityModelMetadata } from "@/app/(platform)/platform/maturity/actions";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
 
@@ -35,7 +37,9 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
 
 const updateMetadata = vi.mocked(updateMaturityModelMetadata);
 
-function renderEditor() {
+function renderEditor(
+  props: Partial<ComponentProps<typeof FrameworkEditor>> = {},
+) {
   return render(
     <FrameworkEditor
       modelId="model-1"
@@ -48,6 +52,7 @@ function renderEditor() {
       pillars={[]}
       criteria={[]}
       questions={[]}
+      {...props}
     />,
   );
 }
@@ -78,12 +83,25 @@ describe("FrameworkEditor authoring UX", () => {
     );
 
     cleanup();
-    renderEditor();
+    renderEditor({ initialAuthoringStep: "levels" });
 
     expect(screen.getByLabelText("Level name")).toBeInTheDocument();
     expect(
       screen.queryByTestId("framework-details-form"),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders a server-derived initial step without reading window on mount", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/platform/maturity/models/model-1?step=levels",
+    );
+
+    renderEditor({ initialAuthoringStep: "details" });
+
+    expect(screen.getByTestId("framework-details-form")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Level name")).not.toBeInTheDocument();
   });
 
   it("shows explicit save confirmation after a successful save", async () => {

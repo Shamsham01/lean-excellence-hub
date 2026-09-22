@@ -44,10 +44,9 @@ function writeStepToLocation<T extends string>(next: T, defaultStep: T) {
 export function useAuthoringStep<T extends string>(
   validSteps: readonly T[],
   defaultStep: T,
+  initialStep: T = defaultStep,
 ) {
-  const [step, setStepState] = useState<T>(() =>
-    readStepFromLocation(validSteps, defaultStep),
-  );
+  const [step, setStepState] = useState<T>(initialStep);
 
   useEffect(() => {
     function onPopState() {

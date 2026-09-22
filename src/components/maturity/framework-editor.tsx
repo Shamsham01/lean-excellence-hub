@@ -86,6 +86,7 @@ type FrameworkEditorProps = {
   modelDescription: string | null;
   versionId: string;
   versionNumber: number;
+  initialAuthoringStep?: StepId;
   assessmentScopes: MaturityAssessmentScopeType[];
   levels: LevelRow[];
   pillars: PillarRow[];
@@ -99,6 +100,7 @@ export function FrameworkEditor({
   modelDescription,
   versionId,
   versionNumber,
+  initialAuthoringStep = "details",
   assessmentScopes,
   levels,
   pillars,
@@ -106,7 +108,11 @@ export function FrameworkEditor({
   questions,
 }: FrameworkEditorProps) {
   const router = useRouter();
-  const [step, setStep] = useAuthoringStep(STEP_IDS, "details");
+  const [step, setStep] = useAuthoringStep(
+    STEP_IDS,
+    "details",
+    initialAuthoringStep,
+  );
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
