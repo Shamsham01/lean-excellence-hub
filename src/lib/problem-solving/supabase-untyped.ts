@@ -15,11 +15,16 @@ export function untypedFrom(
   ).from(table);
 }
 
+export type SupabaseRpcError = {
+  code: string | null;
+  message: string;
+};
+
 export async function callProblemSolvingRpc<T = unknown>(
   supabase: SupabaseClient<Database>,
   fn: string,
   args?: Record<string, unknown>,
-): Promise<{ data: T | null; error: Error | null }> {
+): Promise<{ data: T | null; error: SupabaseRpcError | null }> {
   const client = supabase as SupabaseClient<Database> & {
     rpc: (
       name: string,
@@ -29,6 +34,11 @@ export async function callProblemSolvingRpc<T = unknown>(
   const { data, error } = await client.rpc(fn, args ?? {});
   return {
     data: data as T | null,
-    error: error ? new Error(error.message) : null,
+    error: error
+      ? {
+          code: typeof error.code === "string" ? error.code : null,
+          message: error.message,
+        }
+      : null,
   };
 }
