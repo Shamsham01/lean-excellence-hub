@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatProjectReference } from "@/lib/projects/status";
 import type { ProjectSelectorOption } from "@/lib/projects/types";
+import { AppLink } from "@/components/ui/app-link";
 import { navigateTo } from "@/lib/navigation/navigate";
 
 const WIZARD_STEPS = [
@@ -48,6 +49,7 @@ type CreateBenefitWizardProps = {
   categories: CategoryOption[];
   projects: ProjectSelectorOption[];
   requiresSiteSelection?: boolean;
+  canManageCategories?: boolean;
 };
 
 export function CreateBenefitWizard({
@@ -56,6 +58,7 @@ export function CreateBenefitWizard({
   categories,
   projects,
   requiresSiteSelection = false,
+  canManageCategories = false,
 }: CreateBenefitWizardProps) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -273,21 +276,48 @@ export function CreateBenefitWizard({
                 requiresSiteSelection={requiresSiteSelection}
                 testId="benefit-owner-select"
               />
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Category</span>
-                <select
-                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+              {categories.length === 0 ? (
+                <div
+                  className="flex flex-col gap-1 text-sm"
+                  data-testid="benefit-category-empty-state"
                 >
-                  <option value="">No category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <span>Category</span>
+                  <p className="text-muted-foreground">
+                    No benefit categories configured.
+                    {canManageCategories ? (
+                      <>
+                        {" "}
+                        <AppLink
+                          href="/platform/benefits/categories"
+                          className="text-primary underline-offset-4 hover:underline"
+                          data-testid="benefit-manage-categories-link"
+                        >
+                          Manage categories
+                        </AppLink>
+                      </>
+                    ) : (
+                      " Ask an administrator with category management permission to configure categories."
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <label className="flex flex-col gap-1 text-sm">
+                  <span>Category</span>
+                  <select
+                    className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    data-testid="benefit-category-select"
+                  >
+                    <option value="">No category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="flex flex-col gap-1 text-sm">
                 <span>Description</span>
                 <Textarea
