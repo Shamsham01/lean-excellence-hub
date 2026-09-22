@@ -56,6 +56,88 @@ export async function ensureIsolationCanaryTenant(admin: SupabaseClient) {
   }
 }
 
+async function assertIsolationCanaryPublishReady(
+  client: SupabaseClient,
+  versionId: string,
+) {
+  const { count: levelCount, error: levelError } = await client
+    .from("maturity_levels")
+    .select("id", { count: "exact", head: true })
+    .eq("model_version_id", versionId);
+
+  if (levelError) {
+    throw levelError;
+  }
+
+  const { count: pillarCount, error: pillarError } = await client
+    .from("maturity_pillars")
+    .select("id", { count: "exact", head: true })
+    .eq("model_version_id", versionId);
+
+  if (pillarError) {
+    throw pillarError;
+  }
+
+  const { data: pillars, error: pillarListError } = await client
+    .from("maturity_pillars")
+    .select("id")
+    .eq("model_version_id", versionId);
+
+  if (pillarListError) {
+    throw pillarListError;
+  }
+
+  const pillarIds = (pillars ?? []).map((pillar) => pillar.id);
+
+  const { count: criterionCount, error: criterionError } = await client
+    .from("maturity_criteria")
+    .select("id", { count: "exact", head: true })
+    .in("pillar_id", pillarIds);
+
+  if (criterionError) {
+    throw criterionError;
+  }
+
+  const { data: criteria, error: criteriaListError } = await client
+    .from("maturity_criteria")
+    .select("id")
+    .in("pillar_id", pillarIds);
+
+  if (criteriaListError) {
+    throw criteriaListError;
+  }
+
+  const criterionIds = (criteria ?? []).map((criterion) => criterion.id);
+
+  const { count: linkedQuestionCount, error: linkError } = await client
+    .from("maturity_criterion_questions")
+    .select("id", { count: "exact", head: true })
+    .in("criterion_id", criterionIds)
+    .eq("contributes_to_score", true);
+
+  if (linkError) {
+    throw linkError;
+  }
+
+  if ((levelCount ?? 0) < 1) {
+    throw new Error("Isolation canary maturity version requires a level.");
+  }
+
+  if ((pillarCount ?? 0) < 1) {
+    throw new Error("Isolation canary maturity version requires a pillar.");
+  }
+
+  if ((criterionCount ?? 0) < 1) {
+    throw new Error("Isolation canary maturity version requires a criterion.");
+  }
+
+  if ((linkedQuestionCount ?? 0) < 1) {
+    throw new Error(
+      "Isolation canary maturity version requires a scored linked question.",
+    );
+  }
+}
+
 export async function seedIsolationCanaryModuleRecord(
   apiUrl: string,
   publishableKey: string,
@@ -129,12 +211,42 @@ export async function seedIsolationCanaryModuleRecord(
     target_color_token: "slate",
   });
 
-  await expectRpc(client, "add_maturity_pillar", {
+  const pillarId = (await expectRpc(client, "add_maturity_pillar", {
     target_model_version_id: version.id,
     target_name: "Canary pillar",
     target_position: 1,
     target_section_title: "Canary pillar",
+  })) as string;
+
+  const { data: pillarRow } = await client
+    .from("maturity_pillars")
+    .select("section_id")
+    .eq("id", pillarId)
+    .single();
+
+  const criterionId = (await expectRpc(client, "add_maturity_criterion", {
+    target_pillar_id: pillarId,
+    target_name: "Canary criterion",
+    target_position: 1,
+  })) as string;
+
+  const questionId = (await expectRpc(client, "add_maturity_question", {
+    target_model_version_id: version.id,
+    target_section_id: pillarRow?.section_id,
+    target_question_type: "score",
+    target_prompt: "Rate canary standard work adherence",
+    target_position: 1,
+    target_allows_not_applicable: true,
+  })) as string;
+
+  await expectRpc(client, "link_criterion_question", {
+    target_criterion_id: criterionId,
+    target_question_id: questionId,
+    target_contributes_to_score: true,
+    target_scoring_metadata: { type: "direct" },
   });
+
+  await assertIsolationCanaryPublishReady(client, version.id);
 
   await expectRpc(client, "publish_maturity_model_version", {
     target_model_version_id: version.id,
