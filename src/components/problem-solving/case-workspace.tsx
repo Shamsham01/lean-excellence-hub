@@ -33,6 +33,7 @@ import type {
 
 type CaseWorkspaceProps = {
   detail: ProblemSolvingCaseDetail;
+  targetDueDateLabel?: string | null;
   currentConditionItems: ProblemSolvingCurrentConditionItem[];
   containments: ProblemSolvingContainment[];
   analyses: ProblemSolvingAnalysis[];
@@ -56,6 +57,7 @@ type CaseWorkspaceProps = {
 
 export function CaseWorkspace({
   detail,
+  targetDueDateLabel,
   currentConditionItems,
   containments,
   analyses,
@@ -88,6 +90,7 @@ export function CaseWorkspace({
         methodStages={methodStages}
         ownerName={ownerName ?? null}
         facilitatorName={facilitatorName ?? null}
+        targetDueDateLabel={targetDueDateLabel ?? null}
         canManage={canManage}
         canFacilitate={canFacilitate}
         canClose={canClose}

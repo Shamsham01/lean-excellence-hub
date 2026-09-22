@@ -33,6 +33,7 @@ type CaseHeaderProps = {
   methodStages: MethodStage[];
   ownerName?: string | null;
   facilitatorName?: string | null;
+  targetDueDateLabel?: string | null;
   canManage: boolean;
   canFacilitate: boolean;
   canClose: boolean;
@@ -46,6 +47,7 @@ export function CaseHeader({
   methodStages,
   ownerName,
   facilitatorName,
+  targetDueDateLabel,
   canManage,
   canFacilitate,
   canClose,
@@ -165,12 +167,10 @@ export function CaseHeader({
                 <dd className="font-medium">{detail.current_stage.title}</dd>
               </div>
             ) : null}
-            {detail.target_due_at ? (
+            {targetDueDateLabel ? (
               <div>
                 <dt className="text-muted-foreground">Target due</dt>
-                <dd className="font-medium">
-                  {new Date(detail.target_due_at).toLocaleDateString("en-GB")}
-                </dd>
+                <dd className="font-medium">{targetDueDateLabel}</dd>
               </div>
             ) : null}
           </dl>
