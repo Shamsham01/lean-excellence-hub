@@ -34,7 +34,31 @@ describe("AiUsageSummaryPanel", () => {
     expect(screen.getByText("gpt-4.1-mini")).toBeTruthy();
   });
 
-  it("shows an empty-state message when there is no usage", () => {
+  it("shows total tokens as input plus output only", () => {
+    render(
+      <AiUsageSummaryPanel
+        usageSummary={{
+          runs_this_month: 1,
+          input_tokens: 100,
+          output_tokens: 200,
+          cached_input_tokens: 50,
+          reasoning_tokens: 25,
+          tool_calls: 1,
+          provider_distribution: [],
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("ai-usage-total-tokens").textContent).toBe("300");
+    expect(screen.getByTestId("ai-usage-cached-input-tokens").textContent).toBe(
+      "50",
+    );
+    expect(screen.getByTestId("ai-usage-reasoning-tokens").textContent).toBe(
+      "25",
+    );
+  });
+
+  it("shows an empty-state message for valid zero usage", () => {
     render(
       <AiUsageSummaryPanel
         usageSummary={{
@@ -52,6 +76,17 @@ describe("AiUsageSummaryPanel", () => {
     expect(screen.getByTestId("ai-usage-empty").textContent).toContain(
       "No Lean AI usage recorded this month yet.",
     );
+  });
+
+  it("shows unavailable UI for malformed payloads instead of zero usage", () => {
+    render(<AiUsageSummaryPanel usageSummary={{}} />);
+
+    expect(screen.getByTestId("ai-usage-empty").textContent).toBe(
+      "Usage summary is unavailable.",
+    );
+    expect(
+      screen.queryByText("No Lean AI usage recorded this month yet."),
+    ).toBeNull();
   });
 
   it("shows a clear load error instead of an empty summary", () => {

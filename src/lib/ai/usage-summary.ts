@@ -14,61 +14,117 @@ export type AiUsageSummary = {
   provider_distribution: AiUsageProviderDistribution[];
 };
 
-function readNonNegativeInteger(value: unknown): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-    return 0;
+const REQUIRED_NUMERIC_FIELDS = [
+  "runs_this_month",
+  "input_tokens",
+  "output_tokens",
+  "cached_input_tokens",
+  "reasoning_tokens",
+  "tool_calls",
+] as const;
+
+const GENERIC_USAGE_LOAD_ERROR =
+  "Lean AI usage could not be loaded. Please try again or contact an administrator.";
+
+const AUTHZ_USAGE_LOAD_ERROR =
+  "You are not authorised to view Lean AI usage for this organisation.";
+
+function readRequiredNonNegativeInteger(
+  value: Record<string, unknown>,
+  key: (typeof REQUIRED_NUMERIC_FIELDS)[number],
+): number | null {
+  if (!Object.hasOwn(value, key)) {
+    return null;
   }
 
-  return Math.trunc(value);
+  const field = value[key];
+  if (typeof field !== "number" || !Number.isFinite(field) || field < 0) {
+    return null;
+  }
+
+  return Math.trunc(field);
 }
 
 function readProviderDistribution(
   value: unknown,
-): AiUsageProviderDistribution[] {
+): AiUsageProviderDistribution[] | null {
   if (!Array.isArray(value)) {
-    return [];
+    return null;
   }
 
-  return value.flatMap((entry) => {
+  const rows: AiUsageProviderDistribution[] = [];
+
+  for (const entry of value) {
     if (!entry || typeof entry !== "object") {
-      return [];
+      return null;
     }
 
     const row = entry as Record<string, unknown>;
-    const provider = typeof row.provider === "string" ? row.provider : "";
-    const model = typeof row.model === "string" ? row.model : "";
-
-    if (!provider && !model) {
-      return [];
+    if (typeof row.provider !== "string" || typeof row.model !== "string") {
+      return null;
     }
 
-    return [
-      {
-        provider: provider || "Unknown provider",
-        model: model || "Unknown model",
-        run_count: readNonNegativeInteger(row.run_count),
-      },
-    ];
-  });
+    if (!Object.hasOwn(row, "run_count")) {
+      return null;
+    }
+
+    const runCount = row.run_count;
+    if (
+      typeof runCount !== "number" ||
+      !Number.isFinite(runCount) ||
+      runCount < 0
+    ) {
+      return null;
+    }
+
+    if (!row.provider && !row.model) {
+      return null;
+    }
+
+    rows.push({
+      provider: row.provider || "Unknown provider",
+      model: row.model || "Unknown model",
+      run_count: Math.trunc(runCount),
+    });
+  }
+
+  return rows;
 }
 
 export function parseAiUsageSummary(
   value: Record<string, unknown> | null | undefined,
 ): AiUsageSummary | null {
-  if (!value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const numericFields: Partial<
+    Record<(typeof REQUIRED_NUMERIC_FIELDS)[number], number>
+  > = {};
+
+  for (const key of REQUIRED_NUMERIC_FIELDS) {
+    const parsed = readRequiredNonNegativeInteger(value, key);
+    if (parsed === null) {
+      return null;
+    }
+    numericFields[key] = parsed;
+  }
+
+  const providerDistribution = readProviderDistribution(
+    value.provider_distribution,
+  );
+  if (providerDistribution === null) {
     return null;
   }
 
   return {
-    runs_this_month: readNonNegativeInteger(value.runs_this_month),
-    input_tokens: readNonNegativeInteger(value.input_tokens),
-    output_tokens: readNonNegativeInteger(value.output_tokens),
-    cached_input_tokens: readNonNegativeInteger(value.cached_input_tokens),
-    reasoning_tokens: readNonNegativeInteger(value.reasoning_tokens),
-    tool_calls: readNonNegativeInteger(value.tool_calls),
-    provider_distribution: readProviderDistribution(
-      value.provider_distribution,
-    ),
+    runs_this_month: numericFields.runs_this_month!,
+    input_tokens: numericFields.input_tokens!,
+    output_tokens: numericFields.output_tokens!,
+    cached_input_tokens: numericFields.cached_input_tokens!,
+    reasoning_tokens: numericFields.reasoning_tokens!,
+    tool_calls: numericFields.tool_calls!,
+    provider_distribution: providerDistribution,
   };
 }
 
@@ -77,20 +133,31 @@ export function formatUsageCount(value: number): string {
 }
 
 export function totalAiUsageTokens(summary: AiUsageSummary): number {
-  return (
-    summary.input_tokens +
-    summary.output_tokens +
-    summary.cached_input_tokens +
-    summary.reasoning_tokens
-  );
+  return summary.input_tokens + summary.output_tokens;
 }
 
 export function isEmptyAiUsageSummary(summary: AiUsageSummary): boolean {
   return (
     summary.runs_this_month === 0 &&
-    totalAiUsageTokens(summary) === 0 &&
+    summary.input_tokens === 0 &&
+    summary.output_tokens === 0 &&
+    summary.cached_input_tokens === 0 &&
+    summary.reasoning_tokens === 0 &&
     summary.tool_calls === 0 &&
     summary.provider_distribution.length === 0
+  );
+}
+
+export function logAiUsageLoadError(error: {
+  code?: string;
+  message?: string;
+}): void {
+  console.warn(
+    "[lean-ai:usage-summary]",
+    JSON.stringify({
+      code: error.code ?? null,
+      message: error.message ?? null,
+    }),
   );
 }
 
@@ -104,12 +171,9 @@ export function formatAiUsageLoadError(error: {
     error.code === "42501" ||
     message.toLowerCase().includes("not authorised")
   ) {
-    return "You are not authorised to view Lean AI usage for this organisation.";
+    return AUTHZ_USAGE_LOAD_ERROR;
   }
 
-  if (message) {
-    return `Lean AI usage could not be loaded: ${message}`;
-  }
-
-  return "Lean AI usage could not be loaded. Please try again or contact an administrator.";
+  logAiUsageLoadError(error);
+  return GENERIC_USAGE_LOAD_ERROR;
 }
