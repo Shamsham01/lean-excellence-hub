@@ -69,17 +69,3 @@ export async function fetchSuggestionPortfolio(
     page_size: result.page_size ?? filters.pageSize,
   };
 }
-
-export async function countAllVisibleSuggestions(
-  supabase: ServerSupabaseClient,
-): Promise<number> {
-  const { count, error } = await supabase
-    .from("improvement_suggestions")
-    .select("id", { count: "exact", head: true });
-
-  if (error) {
-    throw new Error("Unable to count suggestions.");
-  }
-
-  return count ?? 0;
-}

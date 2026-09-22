@@ -6,7 +6,6 @@ import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfol
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
-  countAllVisibleSuggestions,
   fetchSuggestionPortfolio,
   loadSuggestionPortfolioFilterOptions,
 } from "@/lib/suggestions/fetch-suggestion-portfolio";
@@ -40,17 +39,15 @@ export default async function SuggestionsOverviewPage({
   const canManageReview =
     await currentMemberHasPermission("suggestions.manage");
 
-  const [{ data: overview }, portfolio, filterOptions, hasAnySuggestions] =
-    await Promise.all([
-      supabase.rpc("get_suggestions_overview"),
-      fetchSuggestionPortfolio(supabase, filters),
-      loadSuggestionPortfolioFilterOptions(supabase, {
-        programme: filters.programme,
-        category: filters.category,
-        originUnit: filters.originUnit,
-      }),
-      countAllVisibleSuggestions(supabase),
-    ]);
+  const [{ data: overview }, portfolio, filterOptions] = await Promise.all([
+    supabase.rpc("get_suggestions_overview"),
+    fetchSuggestionPortfolio(supabase, filters),
+    loadSuggestionPortfolioFilterOptions(supabase, {
+      programme: filters.programme,
+      category: filters.category,
+      originUnit: filters.originUnit,
+    }),
+  ]);
 
   const overviewObj = (overview as Record<string, unknown>) ?? {};
   const pipeline = (overviewObj.pipeline as Record<string, number>) ?? {};
@@ -149,7 +146,6 @@ export default async function SuggestionsOverviewPage({
         pageSize={portfolio.page_size}
         filters={filters}
         filterOptions={filterOptions}
-        hasAnySuggestions={hasAnySuggestions > 0}
         showReviewerWorkflow={canReview || canManageReview}
       />
     </div>
