@@ -19,10 +19,11 @@ import type {
   ProblemSolvingHypothesisTest,
   ProblemSolvingMethodsResponse,
 } from "@/lib/problem-solving/types";
+import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
+import type { CommentRow } from "@/components/comments/resource-comments";
+import { resolveMembershipNameById } from "@/lib/identity/membership-display-label";
 import type { MethodStage } from "@/lib/problem-solving/stages";
 import type { Database } from "@/platform/supabase/database.types";
-import type { CommentRow } from "@/components/comments/resource-comments";
-import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 
 export type CaseWorkspaceData = {
   currentConditionItems: ProblemSolvingCurrentConditionItem[];
@@ -37,19 +38,36 @@ export type CaseWorkspaceData = {
   membershipNameById: Record<string, string>;
 };
 
-function collectMembershipIds(detail: ProblemSolvingCaseDetail): string[] {
+export function collectMembershipIds(
+  detail: ProblemSolvingCaseDetail,
+): string[] {
   return [
     ...new Set([
       detail.owner_membership_id,
       detail.facilitator_membership_id,
       detail.created_by_membership_id,
+      detail.closed_by_membership_id,
+      detail.cancelled_by_membership_id,
       ...detail.status_history.map((entry) => entry.changed_by_membership_id),
       ...detail.stage_history.map((entry) => entry.changed_by_membership_id),
-      ...detail.hypotheses.map((row) => row.created_by_membership_id),
-      ...detail.countermeasures.map((row) => row.proposed_by_membership_id),
-      ...detail.sessions
-        .map((row) => row.facilitator_membership_id)
-        .filter(Boolean),
+      ...detail.hypotheses.flatMap((row) => [
+        row.created_by_membership_id,
+        row.verified_by_membership_id,
+        row.rejected_by_membership_id,
+      ]),
+      ...detail.countermeasures.flatMap((row) => [
+        row.proposed_by_membership_id,
+        row.selected_by_membership_id,
+        row.rejected_by_membership_id,
+      ]),
+      ...detail.sustainment_items.flatMap((row) => [
+        row.owner_membership_id,
+        row.created_by_membership_id,
+      ]),
+      ...detail.sessions.flatMap((row) => [
+        row.facilitator_membership_id,
+        ...row.participants.map((participant) => participant.membership_id),
+      ]),
     ]),
   ].filter((id): id is string => Boolean(id));
 }
@@ -146,64 +164,63 @@ export async function loadCaseWorkspaceData(
 
   const analysisIds = analyses.map((row) => row.id);
 
-  const [
-    analysisNodesResult,
-    hypothesisTestsResult,
-    attachmentsResult,
-    membershipsResult,
-  ] = await Promise.all([
-    analysisIds.length > 0
-      ? untypedFrom(supabase, "problem_solving_analysis_nodes")
-          .select("*")
-          .in("analysis_id", analysisIds)
-          .order("sort_order")
-      : Promise.resolve({ data: [], error: null }),
-    hypothesisIds.length > 0
-      ? untypedFrom(supabase, "problem_solving_hypothesis_tests")
-          .select("*")
-          .in("hypothesis_id", hypothesisIds)
-          .order("created_at")
-      : Promise.resolve({ data: [], error: null }),
-    attachmentIds.length > 0
-      ? supabase
-          .from("attachments")
-          .select("id, filename, mime_type, byte_size")
-          .in("id", attachmentIds)
-      : Promise.resolve({ data: [], error: null }),
-    membershipIds.length > 0
-      ? supabase
-          .from("organisation_memberships")
-          .select("id, display_name")
-          .in("id", membershipIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-
-  const [analysisNodes, hypothesisTests, attachmentRows, membershipRows] =
+  const [analysisNodesResult, hypothesisTestsResult, attachmentsResult] =
     await Promise.all([
-      resolveProblemSolvingListResult<ProblemSolvingAnalysisNode>(
-        analysisNodesResult,
-        "problem_solving_analysis_nodes",
-      ),
-      resolveProblemSolvingListResult<ProblemSolvingHypothesisTest>(
-        hypothesisTestsResult,
-        "problem_solving_hypothesis_tests",
-      ),
-      resolveProblemSolvingListResult<{
-        id: string;
-        filename: string;
-        mime_type: string;
-        byte_size: number | null;
-      }>(attachmentsResult, "attachments"),
-      resolveProblemSolvingListResult<{
-        id: string;
-        display_name: string | null;
-      }>(membershipsResult, "organisation_memberships"),
+      analysisIds.length > 0
+        ? untypedFrom(supabase, "problem_solving_analysis_nodes")
+            .select("*")
+            .in("analysis_id", analysisIds)
+            .order("sort_order")
+        : Promise.resolve({ data: [], error: null }),
+      hypothesisIds.length > 0
+        ? untypedFrom(supabase, "problem_solving_hypothesis_tests")
+            .select("*")
+            .in("hypothesis_id", hypothesisIds)
+            .order("created_at")
+        : Promise.resolve({ data: [], error: null }),
+      attachmentIds.length > 0
+        ? supabase
+            .from("attachments")
+            .select("id, filename, mime_type, byte_size")
+            .in("id", attachmentIds)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
-  const membershipNameById: Record<string, string> = {};
-  for (const row of membershipRows) {
-    membershipNameById[row.id] = row.display_name ?? row.id.slice(0, 8);
-  }
+  const [analysisNodes, hypothesisTests, attachmentRows] = await Promise.all([
+    resolveProblemSolvingListResult<ProblemSolvingAnalysisNode>(
+      analysisNodesResult,
+      "problem_solving_analysis_nodes",
+    ),
+    resolveProblemSolvingListResult<ProblemSolvingHypothesisTest>(
+      hypothesisTestsResult,
+      "problem_solving_hypothesis_tests",
+    ),
+    resolveProblemSolvingListResult<{
+      id: string;
+      filename: string;
+      mime_type: string;
+      byte_size: number | null;
+    }>(attachmentsResult, "attachments"),
+  ]);
+
+  const membershipNameById = resolveMembershipNameById({
+    membershipIds,
+    authorisedLabels: {
+      ...(detail.membership_display_names ?? {}),
+      [detail.owner_membership_id]:
+        detail.owner_display_name ??
+        detail.membership_display_names?.[detail.owner_membership_id],
+      ...(detail.facilitator_membership_id
+        ? {
+            [detail.facilitator_membership_id]:
+              detail.facilitator_display_name ??
+              detail.membership_display_names?.[
+                detail.facilitator_membership_id
+              ],
+          }
+        : {}),
+    },
+  });
 
   const evidence = attachmentRows
     .filter((row) => row.byte_size != null)

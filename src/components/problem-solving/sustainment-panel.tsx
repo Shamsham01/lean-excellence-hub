@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createSustainmentItem } from "@/app/(platform)/platform/problem-solving/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { labelForMembershipId } from "@/lib/identity/membership-display-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
@@ -107,8 +108,10 @@ export function SustainmentPanel({
                 <p className="text-muted-foreground">
                   Owner:{" "}
                   {item.owner_membership_id
-                    ? (membershipNameById[item.owner_membership_id] ??
-                      item.owner_membership_id.slice(0, 8))
+                    ? labelForMembershipId(
+                        membershipNameById,
+                        item.owner_membership_id,
+                      )
                     : "—"}
                   {item.follow_up_date
                     ? ` · Follow-up ${item.follow_up_date}`

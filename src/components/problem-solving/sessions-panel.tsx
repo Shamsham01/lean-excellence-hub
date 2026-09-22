@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { labelForMembershipId } from "@/lib/identity/membership-display-label";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type SessionsPanelProps = {
@@ -142,7 +143,10 @@ export function SessionsPanel({
                       {session.participants.length} participants ·{" "}
                       {session.entry_count} entries
                       {session.facilitator_membership_id
-                        ? ` · Facilitator ${membershipNameById[session.facilitator_membership_id] ?? "—"}`
+                        ? ` · Facilitator ${labelForMembershipId(
+                            membershipNameById,
+                            session.facilitator_membership_id,
+                          )}`
                         : ""}
                     </p>
                     {session.summary ? (

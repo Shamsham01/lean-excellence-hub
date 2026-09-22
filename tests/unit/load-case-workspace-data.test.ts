@@ -46,6 +46,7 @@ vi.mock("@/lib/problem-solving/supabase-untyped", () => ({
   callProblemSolvingRpc: (...args: unknown[]) => callProblemSolvingRpc(...args),
 }));
 
+import { UNAVAILABLE_MEMBER_LABEL } from "@/lib/identity/membership-display-label";
 import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace-data";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -151,8 +152,78 @@ describe("loadCaseWorkspaceData", () => {
       methods: [],
       comments: [],
       evidence: [],
-      membershipNameById: {},
+      membershipNameById: {
+        "33333333-3333-3333-3333-333333333333": UNAVAILABLE_MEMBER_LABEL,
+      },
     });
+    expect(commentsFrom).not.toHaveBeenCalledWith("organisation_memberships");
+  });
+
+  it("renders authorised owner and facilitator names without UUID prefixes", async () => {
+    untypedFrom.mockImplementation(() => listQuery({ data: [], error: null }));
+    callProblemSolvingRpc.mockResolvedValue({
+      data: { items: [] },
+      error: null,
+    });
+
+    const commentsFrom = vi
+      .fn()
+      .mockImplementation(() => listQuery({ data: [], error: null }));
+    const supabase = {
+      from: commentsFrom,
+      rpc: vi.fn(),
+    } as unknown as SupabaseClient<Database>;
+
+    const namedDetail: ProblemSolvingCaseDetail = {
+      ...detailFixture,
+      owner_display_name: "CookieWorks Admin",
+      facilitator_membership_id: "44444444-4444-4444-4444-444444444444",
+      facilitator_display_name: "Apex Facilitator",
+      membership_display_names: {
+        "33333333-3333-3333-3333-333333333333": "CookieWorks Admin",
+        "44444444-4444-4444-4444-444444444444": "Apex Facilitator",
+      },
+    };
+
+    const workspace = await loadCaseWorkspaceData(
+      supabase,
+      CASE_ID,
+      namedDetail,
+    );
+
+    expect(workspace.membershipNameById).toEqual({
+      "33333333-3333-3333-3333-333333333333": "CookieWorks Admin",
+      "44444444-4444-4444-4444-444444444444": "Apex Facilitator",
+    });
+    expect(Object.values(workspace.membershipNameById).join("|")).not.toMatch(
+      /05057700|[0-9a-f]{8}-[0-9a-f]{4}|^[0-9a-f]{8}$/i,
+    );
+    expect(commentsFrom).not.toHaveBeenCalledWith("organisation_memberships");
+  });
+
+  it("does not treat an opaque membership label as a display name", async () => {
+    untypedFrom.mockImplementation(() => listQuery({ data: [], error: null }));
+    callProblemSolvingRpc.mockResolvedValue({
+      data: { items: [] },
+      error: null,
+    });
+
+    const supabase = {
+      from: vi.fn().mockImplementation(() => listQuery({ data: [], error: null })),
+      rpc: vi.fn(),
+    } as unknown as SupabaseClient<Database>;
+
+    const workspace = await loadCaseWorkspaceData(supabase, CASE_ID, {
+      ...detailFixture,
+      owner_display_name: "05057700",
+      membership_display_names: {
+        "33333333-3333-3333-3333-333333333333": "05057700",
+      },
+    });
+
+    expect(
+      workspace.membershipNameById["33333333-3333-3333-3333-333333333333"],
+    ).toBe(UNAVAILABLE_MEMBER_LABEL);
   });
 
   it("raises a retryable boundary instead of partial empty workspace on infra failure", async () => {
