@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AiUsageSummaryPanel } from "@/components/settings/ai-usage-summary-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ type AiSettingsFormProps = {
   initialMonthlyTokenCeiling: number | null;
   providerAvailable: boolean;
   usageSummary: Record<string, unknown> | null;
+  usageLoadError?: string | null;
   onSave: (input: {
     aiEnabled: boolean;
     monthlyTokenCeiling?: number | null;
@@ -23,6 +25,7 @@ export function AiSettingsForm({
   initialMonthlyTokenCeiling,
   providerAvailable,
   usageSummary,
+  usageLoadError = null,
   onSave,
 }: AiSettingsFormProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
@@ -94,9 +97,10 @@ export function AiSettingsForm({
           <CardTitle>Usage this month</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          <pre className="overflow-x-auto rounded bg-muted p-3 text-xs">
-            {JSON.stringify(usageSummary ?? {}, null, 2)}
-          </pre>
+          <AiUsageSummaryPanel
+            usageSummary={usageSummary}
+            usageLoadError={usageLoadError}
+          />
         </CardContent>
       </Card>
     </div>
