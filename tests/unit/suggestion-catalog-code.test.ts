@@ -39,9 +39,9 @@ describe("resolveUniqueSuggestionCatalogCode", () => {
   });
 
   it("matches existing codes case-insensitively", () => {
-    expect(
-      resolveUniqueSuggestionCatalogCode("ci", ["CI", "quality"]),
-    ).toBe("ci-2");
+    expect(resolveUniqueSuggestionCatalogCode("ci", ["CI", "quality"])).toBe(
+      "ci-2",
+    );
   });
 });
 

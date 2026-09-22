@@ -367,8 +367,8 @@ export function ProgrammeManagement({
                   <Button
                     type="button"
                     size="sm"
-                    variant="link"
-                    className="h-auto self-start px-0"
+                    variant="ghost"
+                    className="text-primary h-auto self-start px-0 underline-offset-4 hover:underline"
                     disabled={loading}
                     onClick={() => {
                       setProgrammeUseCustomCode((current) => {
@@ -611,8 +611,8 @@ export function ProgrammeManagement({
                   <Button
                     type="button"
                     size="sm"
-                    variant="link"
-                    className="h-auto self-start px-0"
+                    variant="ghost"
+                    className="text-primary h-auto self-start px-0 underline-offset-4 hover:underline"
                     disabled={loading}
                     onClick={() => {
                       setCategoryUseCustomCode((current) => {

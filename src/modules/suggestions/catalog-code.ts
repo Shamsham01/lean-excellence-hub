@@ -9,7 +9,9 @@ export function generateSuggestionCatalogCode(name: string): string {
     .slice(0, 80);
 }
 
-export function validateSuggestionCatalogCode(code: string):
+export function validateSuggestionCatalogCode(
+  code: string,
+):
   | { ok: true; normalised: string }
   | { ok: false; normalised: string; message: string } {
   const normalised = code.trim().toLowerCase();
@@ -88,9 +90,7 @@ export function resolveSuggestionCatalogCreateCode(input: {
   name: string;
   customCode?: string;
   existingCodes: readonly string[];
-}):
-  | { ok: true; code: string }
-  | { ok: false; message: string } {
+}): { ok: true; code: string } | { ok: false; message: string } {
   const usingCustomCode = Boolean(input.customCode?.trim());
 
   const rawCode = usingCustomCode
@@ -106,7 +106,9 @@ export function resolveSuggestionCatalogCreateCode(input: {
     return { ok: false, message: validation.message };
   }
 
-  if (isSuggestionCatalogCodeTaken(validation.normalised, input.existingCodes)) {
+  if (
+    isSuggestionCatalogCodeTaken(validation.normalised, input.existingCodes)
+  ) {
     const label = usingCustomCode ? "code" : "name";
 
     return {
