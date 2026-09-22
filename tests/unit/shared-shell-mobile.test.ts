@@ -40,7 +40,7 @@ describe("shared Tabs mobile layout", () => {
   it("uses a width-constrained horizontally scrollable tab list", () => {
     const tabs = readComponent("src/components/ui/tabs.tsx");
 
-    expect(tabs).toContain("flex h-10 min-w-0 w-full max-w-full");
+    expect(tabs).toMatch(/flex h-10 w-full max-w-full min-w-0/);
     expect(tabs).toContain("overflow-x-auto");
     expect(tabs).toContain("shrink-0");
     expect(tabs).not.toContain("inline-flex h-10");
