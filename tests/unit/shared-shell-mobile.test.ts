@@ -22,7 +22,9 @@ describe("shared platform shell mobile layout", () => {
     const shell = readComponent("src/components/platform/platform-shell.tsx");
 
     expect(shell).toContain("min-h-dvh min-w-0 flex-col");
-    expect(shell).toContain("min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden");
+    expect(shell).toContain(
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden",
+    );
   });
 
   it("allows page header actions to wrap on narrow viewports", () => {
