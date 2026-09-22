@@ -40,10 +40,7 @@ describe("authoring query helpers", () => {
 
   it("builds redirect paths for server-side save confirmation", () => {
     expect(
-      buildAuthoringSavedRedirectPath(
-        "/platform/5s/standards/abc",
-        "question",
-      ),
+      buildAuthoringSavedRedirectPath("/platform/5s/standards/abc", "question"),
     ).toBe(`/platform/5s/standards/abc?${AUTHORING_SAVED_PARAM}=question`);
   });
 });

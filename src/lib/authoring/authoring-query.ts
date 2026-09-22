@@ -2,11 +2,7 @@ export const AUTHORING_STEP_PARAM = "step";
 export const AUTHORING_SAVED_PARAM = "saved";
 
 export type AuthoringSavedKey =
-  | "applicability"
-  | "section"
-  | "question"
-  | "publish"
-  | "framework";
+  "applicability" | "section" | "question" | "publish" | "framework";
 
 const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "applicability",

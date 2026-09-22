@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { updateMaturityModelMetadata } from "@/app/(platform)/platform/maturity/actions";
@@ -75,7 +81,9 @@ describe("FrameworkEditor authoring UX", () => {
     renderEditor();
 
     expect(screen.getByLabelText("Level name")).toBeInTheDocument();
-    expect(screen.queryByTestId("framework-details-form")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("framework-details-form"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows explicit save confirmation after a successful save", async () => {
@@ -84,7 +92,9 @@ describe("FrameworkEditor authoring UX", () => {
     fireEvent.change(screen.getByLabelText("Display name"), {
       target: { value: "Updated framework" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save framework details" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save framework details" }),
+    );
 
     await waitFor(() => {
       expect(updateMetadata).toHaveBeenCalled();
