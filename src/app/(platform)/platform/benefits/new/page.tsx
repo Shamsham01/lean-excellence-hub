@@ -10,7 +10,10 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function NewBenefitPage() {
-  const canCreate = await currentMemberHasPermission("benefits.create");
+  const [canCreate, canManageCategories] = await Promise.all([
+    currentMemberHasPermission("benefits.create"),
+    currentMemberHasPermission("benefits.categories.manage"),
+  ]);
   if (!canCreate) notFound();
 
   const supabase = await createServerSupabaseClient();
@@ -74,6 +77,7 @@ export default async function NewBenefitPage() {
             label: `${category.name} (${category.code})`,
           })) ?? []
         }
+        canManageCategories={canManageCategories}
       />
     </div>
   );
