@@ -29,7 +29,6 @@ type SuggestionPortfolioProps = {
   pageSize: number;
   filters: SuggestionPortfolioFilters;
   filterOptions: SuggestionPortfolioFilterOptions;
-  hasAnySuggestions: boolean;
   showReviewerWorkflow?: boolean;
 };
 
@@ -328,12 +327,11 @@ export function SuggestionPortfolio({
   pageSize,
   filters,
   filterOptions,
-  hasAnySuggestions,
   showReviewerWorkflow = false,
 }: SuggestionPortfolioProps) {
   const filtersActive = hasActiveSuggestionPortfolioFilters(filters);
   const filteredEmpty =
-    items.length === 0 && (filtersActive || hasAnySuggestions);
+    items.length === 0 && (filtersActive || totalCount > 0);
 
   return (
     <Card data-testid="suggestion-portfolio">
