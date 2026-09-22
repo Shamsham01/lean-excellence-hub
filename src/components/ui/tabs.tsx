@@ -14,7 +14,7 @@ export function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        "inline-flex h-10 w-full max-w-full [scrollbar-width:none] items-center justify-start gap-1 overflow-x-auto rounded-lg border border-border bg-muted/40 p-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+        "flex h-10 w-full max-w-full min-w-0 [scrollbar-width:none] items-center justify-start gap-1 overflow-x-auto rounded-lg border border-border bg-muted/40 p-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
         className,
       )}
       {...props}

@@ -39,7 +39,7 @@ export function MobilePlatformNavigation({
   const closeDrawer = () => setOpen(false);
 
   return (
-    <div className="flex items-center gap-2 border-b border-border bg-sidebar px-4 py-3 lg:hidden">
+    <div className="flex min-w-0 items-center gap-2 border-b border-border bg-sidebar px-4 py-3 lg:hidden">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button
@@ -71,7 +71,7 @@ export function MobilePlatformNavigation({
         </SheetContent>
       </Sheet>
       <span
-        className="truncate text-sm font-semibold"
+        className="min-w-0 flex-1 truncate text-sm font-semibold"
         data-testid="platform-mobile-org-name"
       >
         {organisationName}

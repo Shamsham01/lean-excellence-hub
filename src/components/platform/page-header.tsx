@@ -34,7 +34,7 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto [&>*]:max-w-full [&>*]:min-w-0">
           {actions}
         </div>
       ) : null}
