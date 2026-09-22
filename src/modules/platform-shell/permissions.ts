@@ -3,13 +3,39 @@ import "server-only";
 import { cache } from "react";
 import { unstable_rethrow } from "next/navigation";
 
-import { throwPlatformBoundaryError } from "@/platform/observability/platform-boundary";
+import {
+  PlatformBoundaryError,
+  throwPlatformBoundaryError,
+} from "@/platform/observability/platform-boundary";
 import { readRequestPathname } from "@/platform/http/request-path";
 import {
   classifyPermissionProbeResult,
   readSupabaseErrorFields,
+  type PermissionProbeClassification,
 } from "@/platform/supabase/error-classification";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+function rethrowProbeControlErrors(error: unknown): void {
+  unstable_rethrow(error);
+  if (error instanceof PlatformBoundaryError) {
+    throw error;
+  }
+}
+
+async function throwAuthProbeFailure(
+  operation: string,
+  permissionKey: string,
+  error: unknown,
+): Promise<never> {
+  const { code, message } = readSupabaseErrorFields(error);
+  throwPlatformBoundaryError({
+    category: "auth",
+    operation,
+    route: await readRequestPathname(),
+    supabaseError: { code, message },
+    cause: error,
+  });
+}
 
 async function throwPermissionProbeFailure(
   operation: string,
@@ -26,6 +52,28 @@ async function throwPermissionProbeFailure(
   });
 }
 
+async function throwClassifiedProbeFailure(
+  classified: Exclude<PermissionProbeClassification<unknown>, { ok: true }>,
+  operation: string,
+  permissionKey: string,
+): Promise<never> {
+  switch (classified.outcome) {
+    case "auth_failure":
+      return throwAuthProbeFailure(operation, permissionKey, classified.error);
+    case "infrastructure":
+      return throwPermissionProbeFailure(
+        operation,
+        permissionKey,
+        classified.error,
+      );
+    case "denied":
+    case "not_found":
+      throw new Error(
+        `Unexpected permission probe outcome "${classified.outcome}" for ${operation}.`,
+      );
+  }
+}
+
 export const currentMemberHasPermission = cache(
   async (permissionKey: string) => {
     try {
@@ -35,20 +83,20 @@ export const currentMemberHasPermission = cache(
       });
       const classified = classifyPermissionProbeResult(result);
       if (!classified.ok) {
-        if (classified.denied) {
+        if (classified.outcome === "denied" || classified.outcome === "not_found") {
           return false;
         }
 
-        return throwPermissionProbeFailure(
+        return throwClassifiedProbeFailure(
+          classified,
           "member_has_permission",
           permissionKey,
-          classified.error,
         );
       }
 
       return classified.data === true;
     } catch (error) {
-      unstable_rethrow(error);
+      rethrowProbeControlErrors(error);
       return throwPermissionProbeFailure(
         "member_has_permission",
         permissionKey,
@@ -69,14 +117,17 @@ export const currentMemberHasScopedPermission = cache(
       const orgId = await supabase.rpc("current_organisation_id");
       const orgClassified = classifyPermissionProbeResult(orgId);
       if (!orgClassified.ok) {
-        if (orgClassified.denied) {
+        if (
+          orgClassified.outcome === "denied" ||
+          orgClassified.outcome === "not_found"
+        ) {
           return false;
         }
 
-        return throwPermissionProbeFailure(
+        return throwClassifiedProbeFailure(
+          orgClassified,
           "current_organisation_id",
           permissionKey,
-          orgClassified.error,
         );
       }
 
@@ -105,20 +156,23 @@ export const currentMemberHasScopedPermission = cache(
       const result = await supabase.rpc("has_scoped_permission", args);
       const classified = classifyPermissionProbeResult(result);
       if (!classified.ok) {
-        if (classified.denied) {
+        if (
+          classified.outcome === "denied" ||
+          classified.outcome === "not_found"
+        ) {
           return false;
         }
 
-        return throwPermissionProbeFailure(
+        return throwClassifiedProbeFailure(
+          classified,
           "has_scoped_permission",
           permissionKey,
-          classified.error,
         );
       }
 
       return classified.data === true;
     } catch (error) {
-      unstable_rethrow(error);
+      rethrowProbeControlErrors(error);
       return throwPermissionProbeFailure(
         "has_scoped_permission",
         permissionKey,
@@ -153,14 +207,17 @@ export const loadDelegatableAccessOffers = cache(async () => {
     const result = await supabase.rpc("get_delegatable_access_offers");
     const classified = classifyPermissionProbeResult(result);
     if (!classified.ok) {
-      if (classified.denied) {
+      if (
+        classified.outcome === "denied" ||
+        classified.outcome === "not_found"
+      ) {
         return { offers: [] } satisfies DelegatableAccessOffersPayload;
       }
 
-      return throwPermissionProbeFailure(
+      return throwClassifiedProbeFailure(
+        classified,
         "get_delegatable_access_offers",
         "delegatable_access",
-        classified.error,
       );
     }
 
@@ -168,7 +225,7 @@ export const loadDelegatableAccessOffers = cache(async () => {
       (classified.data as DelegatableAccessOffersPayload | null)?.offers ?? [];
     return { offers } satisfies DelegatableAccessOffersPayload;
   } catch (error) {
-    unstable_rethrow(error);
+    rethrowProbeControlErrors(error);
     return throwPermissionProbeFailure(
       "get_delegatable_access_offers",
       "delegatable_access",

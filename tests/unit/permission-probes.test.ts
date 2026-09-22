@@ -50,6 +50,20 @@ describe("permission probes", () => {
     ).resolves.toBe(false);
   });
 
+  it("throws an auth boundary error for JWT session failures", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "PGRST301", message: "JWT expired" },
+    });
+
+    await expect(
+      currentMemberHasPermission("roles.delegate"),
+    ).rejects.toMatchObject({
+      name: "PlatformBoundaryError",
+      category: "auth",
+    });
+  });
+
   it("throws a platform boundary error for infrastructure RPC failures", async () => {
     rpc.mockResolvedValueOnce({
       data: null,
