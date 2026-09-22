@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createSuggestionCategory } from "@/app/(platform)/platform/suggestions/actions";
 import { ProgrammeManagement } from "@/components/suggestions/programme-management";
 
 vi.mock("next/navigation", () => ({
@@ -299,5 +300,55 @@ describe("ProgrammeManagement administration UX", () => {
     expect(
       screen.getAllByRole("button", { name: "Edit" }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("auto-generates programme code preview without manual code field", () => {
+    renderManagement();
+
+    fireEvent.click(screen.getByTestId("new-programme-button"));
+    expect(screen.queryByLabelText("Code")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "CI" },
+    });
+
+    expect(screen.getByTestId("programme-auto-code-preview")).toHaveTextContent(
+      "ci-2",
+    );
+  });
+
+  it("reveals custom programme code override from advanced toggle", () => {
+    renderManagement();
+
+    fireEvent.click(screen.getByTestId("new-programme-button"));
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Safety Ideas" },
+    });
+    fireEvent.click(screen.getByTestId("programme-custom-code-toggle"));
+
+    expect(screen.getByTestId("programme-custom-code-input")).toHaveValue(
+      "safety-ideas",
+    );
+  });
+
+  it("auto-generates category code preview and submits without manual entry", async () => {
+    vi.mocked(createSuggestionCategory).mockResolvedValue({ ok: true });
+
+    renderManagement();
+
+    fireEvent.click(screen.getByTestId("new-category-button"));
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Quality Improvements" },
+    });
+    expect(screen.getByTestId("category-auto-code-preview")).toHaveTextContent(
+      "quality-improvements",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create category" }));
+
+    expect(createSuggestionCategory).toHaveBeenCalledWith({
+      name: "Quality Improvements",
+      code: "quality-improvements",
+    });
   });
 });

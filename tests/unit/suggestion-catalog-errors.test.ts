@@ -24,4 +24,32 @@ describe("suggestion catalog customer errors", () => {
       ),
     ).toBe("Unable to delete this category.");
   });
+
+  it("maps duplicate programme code constraint to friendly guidance", () => {
+    expect(
+      toSuggestionCatalogErrorMessage(
+        {
+          message:
+            'duplicate key value violates unique constraint "suggestion_programmes_org_code_key"',
+        },
+        "Unable to create this programme.",
+      ),
+    ).toBe(
+      "A programme with this code already exists. Choose a different name or custom code.",
+    );
+  });
+
+  it("maps duplicate category code constraint to friendly guidance", () => {
+    expect(
+      toSuggestionCatalogErrorMessage(
+        {
+          message:
+            'duplicate key value violates unique constraint "suggestion_categories_org_code_key"',
+        },
+        "Unable to create this category.",
+      ),
+    ).toBe(
+      "A category with this code already exists. Choose a different name or custom code.",
+    );
+  });
 });

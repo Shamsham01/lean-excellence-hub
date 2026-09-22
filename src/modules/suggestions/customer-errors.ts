@@ -30,6 +30,20 @@ export function toSuggestionCatalogErrorMessage(
     return "This category has already been used by suggestions and cannot be deleted. Deactivate it instead to prevent future use.";
   }
 
+  if (
+    normalised.includes("duplicate key") &&
+    normalised.includes("suggestion_programmes_org_code_key")
+  ) {
+    return "A programme with this code already exists. Choose a different name or custom code.";
+  }
+
+  if (
+    normalised.includes("duplicate key") &&
+    normalised.includes("suggestion_categories_org_code_key")
+  ) {
+    return "A category with this code already exists. Choose a different name or custom code.";
+  }
+
   if (forbiddenPatterns.some((pattern) => pattern.test(raw))) {
     return fallback;
   }
