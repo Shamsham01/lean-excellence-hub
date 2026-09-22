@@ -1,6 +1,7 @@
 import "server-only";
 
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import {
   currentMemberHasOrganisationScopedPermission,
   currentMemberHasPermission,
@@ -21,7 +22,9 @@ export async function loadSetupPermissions(): Promise<SetupPermissionSnapshot> {
     canReadRoles,
     canManageJobFunctions,
     canReadJobFunctions,
-    canManageTraining,
+    canManageTrainingCatalog,
+    canManageTrainingCurriculum,
+    canManageTrainingSessions,
     canReadTraining,
     canReadHierarchy,
     canReadMemberships,
@@ -33,12 +36,19 @@ export async function loadSetupPermissions(): Promise<SetupPermissionSnapshot> {
     currentMemberHasPermission("roles.read"),
     currentMemberHasPermission("job_functions.manage"),
     currentMemberHasPermission("job_functions.read"),
-    currentMemberHasPermission("training.manage"),
-    currentMemberHasPermission("training.read"),
+    currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),
+    currentMemberHasPermission(TRAINING_PERMISSIONS.curriculumManage),
+    currentMemberHasPermission(TRAINING_PERMISSIONS.sessionsManage),
+    currentMemberHasPermission(TRAINING_PERMISSIONS.read),
     currentMemberHasPermission("hierarchy.read"),
     currentMemberHasPermission("memberships.read"),
     currentMemberHasPermission("projects.manage"),
   ]);
+
+  const canManageTraining =
+    canManageTrainingCatalog ||
+    canManageTrainingCurriculum ||
+    canManageTrainingSessions;
 
   return {
     canManageHierarchy,
