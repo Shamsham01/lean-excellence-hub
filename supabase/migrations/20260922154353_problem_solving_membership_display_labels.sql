@@ -1,3 +1,5 @@
+drop function if exists private.problem_solving_membership_display_names(uuid, uuid);
+
 -- Authorised Problem Solving identity labels.
 -- Case viewers already receive membership IDs from get_problem_solving_detail.
 -- Return tenant-contained human labels (membership then profile) without
@@ -44,14 +46,13 @@ as $$
     and membership_row.id = target_membership_id
 $$;
 
-create or replace function private.problem_solving_membership_display_names(
+create or replace function private.membership_public_display_names(
   target_organisation_id uuid,
-  target_case_id uuid
+  target_membership_ids uuid[]
 )
 returns jsonb
 language sql
 stable
-security definer
 set search_path = ''
 as $$
   select coalesce(
@@ -65,133 +66,7 @@ as $$
         target_organisation_id,
         referenced.membership_id
       ) as label
-    from (
-      select case_row.owner_membership_id as membership_id
-      from public.problem_solving_cases case_row
-      where case_row.organisation_id = target_organisation_id
-        and case_row.id = target_case_id
-      union
-      select case_row.facilitator_membership_id
-      from public.problem_solving_cases case_row
-      where case_row.organisation_id = target_organisation_id
-        and case_row.id = target_case_id
-      union
-      select case_row.created_by_membership_id
-      from public.problem_solving_cases case_row
-      where case_row.organisation_id = target_organisation_id
-        and case_row.id = target_case_id
-      union
-      select case_row.closed_by_membership_id
-      from public.problem_solving_cases case_row
-      where case_row.organisation_id = target_organisation_id
-        and case_row.id = target_case_id
-      union
-      select case_row.cancelled_by_membership_id
-      from public.problem_solving_cases case_row
-      where case_row.organisation_id = target_organisation_id
-        and case_row.id = target_case_id
-      union
-      select status_history.changed_by_membership_id
-      from public.problem_solving_status_history status_history
-      where status_history.organisation_id = target_organisation_id
-        and status_history.case_id = target_case_id
-      union
-      select stage_history.changed_by_membership_id
-      from public.problem_solving_stage_history stage_history
-      where stage_history.organisation_id = target_organisation_id
-        and stage_history.case_id = target_case_id
-      union
-      select hypothesis_row.created_by_membership_id
-      from public.problem_solving_hypotheses hypothesis_row
-      where hypothesis_row.organisation_id = target_organisation_id
-        and hypothesis_row.problem_solving_case_id = target_case_id
-      union
-      select hypothesis_row.verified_by_membership_id
-      from public.problem_solving_hypotheses hypothesis_row
-      where hypothesis_row.organisation_id = target_organisation_id
-        and hypothesis_row.problem_solving_case_id = target_case_id
-      union
-      select hypothesis_row.rejected_by_membership_id
-      from public.problem_solving_hypotheses hypothesis_row
-      where hypothesis_row.organisation_id = target_organisation_id
-        and hypothesis_row.problem_solving_case_id = target_case_id
-      union
-      select countermeasure_row.proposed_by_membership_id
-      from public.problem_solving_countermeasures countermeasure_row
-      where countermeasure_row.organisation_id = target_organisation_id
-        and countermeasure_row.problem_solving_case_id = target_case_id
-      union
-      select countermeasure_row.selected_by_membership_id
-      from public.problem_solving_countermeasures countermeasure_row
-      where countermeasure_row.organisation_id = target_organisation_id
-        and countermeasure_row.problem_solving_case_id = target_case_id
-      union
-      select countermeasure_row.rejected_by_membership_id
-      from public.problem_solving_countermeasures countermeasure_row
-      where countermeasure_row.organisation_id = target_organisation_id
-        and countermeasure_row.problem_solving_case_id = target_case_id
-      union
-      select effectiveness_row.created_by_membership_id
-      from public.problem_solving_effectiveness_checks effectiveness_row
-      where effectiveness_row.organisation_id = target_organisation_id
-        and effectiveness_row.case_id = target_case_id
-      union
-      select effectiveness_row.verified_by_membership_id
-      from public.problem_solving_effectiveness_checks effectiveness_row
-      where effectiveness_row.organisation_id = target_organisation_id
-        and effectiveness_row.case_id = target_case_id
-      union
-      select sustainment_row.owner_membership_id
-      from public.problem_solving_sustainment_items sustainment_row
-      where sustainment_row.organisation_id = target_organisation_id
-        and sustainment_row.case_id = target_case_id
-      union
-      select sustainment_row.created_by_membership_id
-      from public.problem_solving_sustainment_items sustainment_row
-      where sustainment_row.organisation_id = target_organisation_id
-        and sustainment_row.case_id = target_case_id
-      union
-      select lesson_row.created_by_membership_id
-      from public.problem_solving_lessons_learned lesson_row
-      where lesson_row.organisation_id = target_organisation_id
-        and lesson_row.case_id = target_case_id
-      union
-      select session_row.facilitator_membership_id
-      from public.problem_solving_sessions session_row
-      where session_row.organisation_id = target_organisation_id
-        and session_row.case_id = target_case_id
-      union
-      select participant_row.membership_id
-      from public.problem_solving_session_participants participant_row
-      join public.problem_solving_sessions session_row
-        on session_row.organisation_id = participant_row.organisation_id
-       and session_row.id = participant_row.session_id
-      where participant_row.organisation_id = target_organisation_id
-        and session_row.case_id = target_case_id
-      union
-      select evidence_row.created_by_membership_id
-      from public.problem_solving_evidence_links evidence_row
-      where evidence_row.organisation_id = target_organisation_id
-        and evidence_row.problem_solving_case_id = target_case_id
-      union
-      select action_row.created_by_membership_id
-      from public.problem_solving_action_context context_row
-      join public.actions action_row
-        on action_row.organisation_id = context_row.organisation_id
-       and action_row.id = context_row.action_id
-      where context_row.organisation_id = target_organisation_id
-        and context_row.problem_solving_case_id = target_case_id
-        and private.can_read_action(target_organisation_id, action_row.id)
-      union
-      select assignee_row.membership_id
-      from public.problem_solving_action_context context_row
-      join public.action_assignees assignee_row
-        on assignee_row.organisation_id = context_row.organisation_id
-       and assignee_row.action_id = context_row.action_id
-      where context_row.organisation_id = target_organisation_id
-        and context_row.problem_solving_case_id = target_case_id
-        and private.can_read_action(target_organisation_id, context_row.action_id)
-    ) referenced
+    from unnest(coalesce(target_membership_ids, '{}'::uuid[])) as referenced(membership_id)
     where referenced.membership_id is not null
   ) labeled
   where labeled.label is not null
@@ -633,9 +508,83 @@ begin
 
   -- Source links
   source_links := private.build_problem_solving_source_links_summary(org_id, target_case_id);
-  membership_display_names := private.problem_solving_membership_display_names(
+  membership_display_names := private.membership_public_display_names(
     org_id,
-    target_case_id
+    (
+      select coalesce(array_agg(distinct referenced.membership_id), '{}'::uuid[])
+      from (
+        select case_row.owner_membership_id as membership_id
+        union
+        select case_row.facilitator_membership_id
+        union
+        select case_row.created_by_membership_id
+        union
+        select case_row.closed_by_membership_id
+        union
+        select case_row.cancelled_by_membership_id
+        union
+        select (history_entry->>'changed_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(status_history, '[]'::jsonb)) history_entry
+        union
+        select (history_entry->>'changed_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(stage_history, '[]'::jsonb)) history_entry
+        union
+        select (hypothesis_entry->>'created_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(hypotheses, '[]'::jsonb)) hypothesis_entry
+        union
+        select (hypothesis_entry->>'verified_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(hypotheses, '[]'::jsonb)) hypothesis_entry
+        union
+        select (hypothesis_entry->>'rejected_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(hypotheses, '[]'::jsonb)) hypothesis_entry
+        union
+        select (countermeasure_entry->>'proposed_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(countermeasures, '[]'::jsonb)) countermeasure_entry
+        union
+        select (countermeasure_entry->>'selected_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(countermeasures, '[]'::jsonb)) countermeasure_entry
+        union
+        select (countermeasure_entry->>'rejected_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(countermeasures, '[]'::jsonb)) countermeasure_entry
+        union
+        select (effectiveness_entry->>'created_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(effectiveness_checks, '[]'::jsonb)) effectiveness_entry
+        union
+        select (effectiveness_entry->>'verified_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(effectiveness_checks, '[]'::jsonb)) effectiveness_entry
+        union
+        select (sustainment_entry->>'owner_membership_id')::uuid
+        from jsonb_array_elements(coalesce(sustainment_items, '[]'::jsonb)) sustainment_entry
+        union
+        select (sustainment_entry->>'created_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(sustainment_items, '[]'::jsonb)) sustainment_entry
+        union
+        select (lesson_entry->>'created_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(lessons_learned, '[]'::jsonb)) lesson_entry
+        union
+        select (session_entry->>'facilitator_membership_id')::uuid
+        from jsonb_array_elements(coalesce(sessions, '[]'::jsonb)) session_entry
+        union
+        select (participant_entry->>'membership_id')::uuid
+        from jsonb_array_elements(coalesce(sessions, '[]'::jsonb)) session_entry
+        cross join lateral jsonb_array_elements(
+          coalesce(session_entry->'participants', '[]'::jsonb)
+        ) participant_entry
+        union
+        select (evidence_entry->>'created_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(evidence_links, '[]'::jsonb)) evidence_entry
+        union
+        select (action_entry->>'created_by_membership_id')::uuid
+        from jsonb_array_elements(coalesce(actions, '[]'::jsonb)) action_entry
+        union
+        select (assignee_entry->>'membership_id')::uuid
+        from jsonb_array_elements(coalesce(actions, '[]'::jsonb)) action_entry
+        cross join lateral jsonb_array_elements(
+          coalesce(action_entry->'assignees', '[]'::jsonb)
+        ) assignee_entry
+      ) referenced
+      where referenced.membership_id is not null
+    )
   );
 
   return jsonb_build_object(
@@ -698,20 +647,20 @@ $$;
 
 alter function private.is_usable_public_display_name(text) owner to lean_hub_private_owner;
 alter function private.membership_public_display_name(uuid, uuid) owner to lean_hub_private_owner;
-alter function private.problem_solving_membership_display_names(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.membership_public_display_names(uuid, uuid[]) owner to lean_hub_private_owner;
 
 revoke all on function private.is_usable_public_display_name(text)
   from public, anon, authenticated, service_role;
 revoke all on function private.membership_public_display_name(uuid, uuid)
   from public, anon, authenticated, service_role;
-revoke all on function private.problem_solving_membership_display_names(uuid, uuid)
+revoke all on function private.membership_public_display_names(uuid, uuid[])
   from public, anon, authenticated, service_role;
 
 grant execute on function private.is_usable_public_display_name(text)
   to lean_hub_private_owner;
 grant execute on function private.membership_public_display_name(uuid, uuid)
   to lean_hub_private_owner;
-grant execute on function private.problem_solving_membership_display_names(uuid, uuid)
+grant execute on function private.membership_public_display_names(uuid, uuid[])
   to lean_hub_private_owner;
 
 grant execute on function public.get_problem_solving_detail(uuid) to authenticated;

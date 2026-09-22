@@ -123,7 +123,7 @@ describe("loadCaseWorkspaceData", () => {
   });
 
   it("returns genuinely empty subsidiary collections when queries succeed with no rows", async () => {
-    untypedFrom.mockImplementation((_supabase, table: string) => {
+    untypedFrom.mockImplementation(() => {
       return listQuery({ data: [], error: null });
     });
     callProblemSolvingRpc.mockResolvedValue({

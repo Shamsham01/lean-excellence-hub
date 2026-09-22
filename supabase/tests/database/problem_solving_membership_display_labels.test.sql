@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(13);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -69,8 +69,6 @@ values
   statement_timestamp(), statement_timestamp()
 );
 
-set local role lean_hub_private_owner;
-
 insert into public.organisation_memberships (
   organisation_id,
   user_id,
@@ -89,20 +87,13 @@ where not exists (
     and membership_row.user_id = 'a1700000-0000-0000-0000-000000000002'
 );
 
-insert into ps_identity_ids (key, id)
-select
-  'facilitator_membership',
-  membership_row.id
-from public.organisation_memberships membership_row
-where membership_row.organisation_id = (select id from ps_identity_ids where key = 'organisation')
-  and membership_row.user_id = 'a1700000-0000-0000-0000-000000000002';
-
 update public.organisation_memberships
 set display_name = null
-where id in (
-  (select id from ps_identity_ids where key = 'owner_membership'),
-  (select id from ps_identity_ids where key = 'facilitator_membership')
-);
+where user_id in (
+  'a1700000-0000-0000-0000-000000000001',
+  'a1700000-0000-0000-0000-000000000002'
+)
+and organisation_id = (select id from ps_identity_ids where key = 'organisation');
 
 insert into public.profiles (user_id, display_name)
 values
@@ -111,7 +102,13 @@ values
 on conflict (user_id) do update
 set display_name = excluded.display_name;
 
-reset role;
+insert into ps_identity_ids (key, id)
+select
+  'facilitator_membership',
+  membership_row.id
+from public.organisation_memberships membership_row
+where membership_row.organisation_id = (select id from ps_identity_ids where key = 'organisation')
+  and membership_row.user_id = 'a1700000-0000-0000-0000-000000000002';
 
 select is(
   private.membership_public_display_name(
@@ -122,13 +119,9 @@ select is(
   'profile display name is used when membership display name is blank'
 );
 
-set local role lean_hub_private_owner;
-
 update public.organisation_memberships
 set display_name = left((select id from ps_identity_ids where key = 'owner_membership')::text, 8)
 where id = (select id from ps_identity_ids where key = 'owner_membership');
-
-reset role;
 
 select is(
   private.membership_public_display_name(
