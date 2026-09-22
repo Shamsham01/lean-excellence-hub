@@ -35,6 +35,7 @@ import {
   prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
 import { collectPlatformShellPermissionKeys } from "@/modules/platform-shell/shell-permission-keys";
+import { PlatformBoundaryError } from "@/platform/observability/platform-boundary";
 
 describe("member permission batch resolution", () => {
   beforeEach(() => {
@@ -123,6 +124,85 @@ describe("member permission batch resolution", () => {
 
     vi.doUnmock("@/modules/platform-shell/permission-resolution-store");
     vi.resetModules();
+  });
+
+  it("throws a platform boundary error when a batch entry is null", async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        "suggestions.read": null,
+        "suggestions.manage": false,
+      },
+      error: null,
+    });
+
+    await expect(
+      prefetchMemberPermissions(["suggestions.read", "suggestions.manage"]),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
+  it("throws a platform boundary error when a requested batch key is missing", async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        "suggestions.read": true,
+      },
+      error: null,
+    });
+
+    await expect(
+      prefetchMemberPermissions(["suggestions.read", "suggestions.manage"]),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
+  it("throws a platform boundary error when a batch entry is non-boolean", async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        "suggestions.read": "true",
+        "suggestions.manage": false,
+      },
+      error: null,
+    });
+
+    await expect(
+      prefetchMemberPermissions(["suggestions.read", "suggestions.manage"]),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
+  it("throws a platform boundary error when the batch payload is not an object", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: null,
+    });
+
+    await expect(
+      prefetchMemberPermissions(["suggestions.read", "suggestions.manage"]),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
+  it("accepts a well-formed batch map with explicit true and false values", async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        "actions.read": true,
+        "projects.read": false,
+        "benefits.read": true,
+      },
+      error: null,
+    });
+
+    await prefetchMemberPermissions([
+      "actions.read",
+      "projects.read",
+      "benefits.read",
+    ]);
+
+    await expect(currentMemberHasPermission("actions.read")).resolves.toBe(
+      true,
+    );
+    await expect(currentMemberHasPermission("projects.read")).resolves.toBe(
+      false,
+    );
+    await expect(currentMemberHasPermission("benefits.read")).resolves.toBe(
+      true,
+    );
   });
 
   it("merges a second batch request with only uncached keys", async () => {

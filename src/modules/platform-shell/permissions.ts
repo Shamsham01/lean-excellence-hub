@@ -101,6 +101,59 @@ async function probeSingleMemberPermission(
   return classified.data === true;
 }
 
+async function throwMalformedBatchPermissionPayload(
+  permissionKeys: string[],
+  detail: string,
+): Promise<never> {
+  return throwPermissionProbeFailure(
+    "member_has_permissions",
+    permissionKeys.join(","),
+    new Error(`Malformed member_has_permissions payload: ${detail}`),
+  );
+}
+
+async function parseBatchMemberPermissionPayload(
+  permissionKeys: string[],
+  data: unknown,
+): Promise<Record<string, boolean>> {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    return throwMalformedBatchPermissionPayload(
+      permissionKeys,
+      "expected jsonb object",
+    );
+  }
+
+  const payload = data as Record<string, unknown>;
+  const resolved: Record<string, boolean> = {};
+
+  for (const permissionKey of permissionKeys) {
+    if (!(permissionKey in payload)) {
+      return throwMalformedBatchPermissionPayload(
+        permissionKeys,
+        `missing key "${permissionKey}"`,
+      );
+    }
+
+    const value = payload[permissionKey];
+    if (value === true) {
+      resolved[permissionKey] = true;
+      continue;
+    }
+
+    if (value === false) {
+      resolved[permissionKey] = false;
+      continue;
+    }
+
+    return throwMalformedBatchPermissionPayload(
+      permissionKeys,
+      `non-boolean value for "${permissionKey}"`,
+    );
+  }
+
+  return resolved;
+}
+
 async function probeBatchMemberPermissions(
   permissionKeys: string[],
 ): Promise<Record<string, boolean>> {
@@ -121,17 +174,7 @@ async function probeBatchMemberPermissions(
     );
   }
 
-  const payload =
-    classified.data && typeof classified.data === "object"
-      ? (classified.data as Record<string, unknown>)
-      : {};
-
-  return Object.fromEntries(
-    permissionKeys.map((permissionKey) => [
-      permissionKey,
-      payload[permissionKey] === true,
-    ]),
-  );
+  return parseBatchMemberPermissionPayload(permissionKeys, classified.data);
 }
 
 function writeResolvedPermissions(
