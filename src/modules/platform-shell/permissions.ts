@@ -13,6 +13,7 @@ import {
   readSupabaseErrorFields,
   type PermissionProbeClassification,
 } from "@/platform/supabase/error-classification";
+import { getPermissionResolutionStore } from "@/modules/platform-shell/permission-resolution-store";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function rethrowProbeControlErrors(error: unknown): void {
@@ -74,38 +75,135 @@ async function throwClassifiedProbeFailure(
   }
 }
 
+async function readCachedPermission(
+  permissionKey: string,
+): Promise<boolean | undefined> {
+  const store = await getPermissionResolutionStore();
+  return store.get(permissionKey);
+}
+
+async function writeCachedPermissions(
+  resolved: Record<string, boolean>,
+): Promise<void> {
+  const store = await getPermissionResolutionStore();
+  for (const [permissionKey, granted] of Object.entries(resolved)) {
+    store.set(permissionKey, granted === true);
+  }
+}
+
+async function probeSingleMemberPermission(
+  permissionKey: string,
+): Promise<boolean> {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_permission", {
+    target_permission_key: permissionKey,
+  });
+  const classified = classifyPermissionProbeResult(result);
+  if (!classified.ok) {
+    if (
+      classified.outcome === "denied" ||
+      classified.outcome === "not_found"
+    ) {
+      return false;
+    }
+
+    return throwClassifiedProbeFailure(
+      classified,
+      "member_has_permission",
+      permissionKey,
+    );
+  }
+
+  return classified.data === true;
+}
+
+async function probeBatchMemberPermissions(
+  permissionKeys: string[],
+): Promise<Record<string, boolean>> {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_permissions", {
+    target_permission_keys: permissionKeys,
+  });
+  const classified = classifyPermissionProbeResult(result);
+  if (!classified.ok) {
+    if (
+      classified.outcome === "denied" ||
+      classified.outcome === "not_found"
+    ) {
+      return Object.fromEntries(permissionKeys.map((key) => [key, false]));
+    }
+
+    return throwClassifiedProbeFailure(
+      classified,
+      "member_has_permissions",
+      permissionKeys.join(","),
+    );
+  }
+
+  const payload =
+    classified.data && typeof classified.data === "object"
+      ? (classified.data as Record<string, unknown>)
+      : {};
+
+  return Object.fromEntries(
+    permissionKeys.map((permissionKey) => [
+      permissionKey,
+      payload[permissionKey] === true,
+    ]),
+  );
+}
+
+async function resolveMemberPermissions(
+  permissionKeys: string[],
+): Promise<void> {
+  const store = await getPermissionResolutionStore();
+  const uncachedKeys = permissionKeys.filter(
+    (permissionKey) => !store.has(permissionKey),
+  );
+
+  if (uncachedKeys.length === 0) {
+    return;
+  }
+
+  try {
+    const [singlePermissionKey] = uncachedKeys;
+    const resolved =
+      uncachedKeys.length === 1 && singlePermissionKey
+        ? {
+            [singlePermissionKey]: await probeSingleMemberPermission(
+              singlePermissionKey,
+            ),
+          }
+        : await probeBatchMemberPermissions(uncachedKeys);
+
+    await writeCachedPermissions(resolved);
+  } catch (error) {
+    rethrowProbeControlErrors(error);
+    return throwPermissionProbeFailure(
+      uncachedKeys.length === 1
+        ? "member_has_permission"
+        : "member_has_permissions",
+      uncachedKeys.join(","),
+      error,
+    );
+  }
+}
+
+export async function prefetchMemberPermissions(
+  permissionKeys: string[],
+): Promise<void> {
+  await resolveMemberPermissions(permissionKeys);
+}
+
 export const currentMemberHasPermission = cache(
   async (permissionKey: string) => {
-    try {
-      const supabase = await createServerSupabaseClient();
-      const result = await supabase.rpc("member_has_permission", {
-        target_permission_key: permissionKey,
-      });
-      const classified = classifyPermissionProbeResult(result);
-      if (!classified.ok) {
-        if (
-          classified.outcome === "denied" ||
-          classified.outcome === "not_found"
-        ) {
-          return false;
-        }
-
-        return throwClassifiedProbeFailure(
-          classified,
-          "member_has_permission",
-          permissionKey,
-        );
-      }
-
-      return classified.data === true;
-    } catch (error) {
-      rethrowProbeControlErrors(error);
-      return throwPermissionProbeFailure(
-        "member_has_permission",
-        permissionKey,
-        error,
-      );
+    const cached = await readCachedPermission(permissionKey);
+    if (cached !== undefined) {
+      return cached;
     }
+
+    await resolveMemberPermissions([permissionKey]);
+    return (await readCachedPermission(permissionKey)) ?? false;
   },
 );
 

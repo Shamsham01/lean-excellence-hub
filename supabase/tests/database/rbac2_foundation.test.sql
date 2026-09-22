@@ -1,6 +1,6 @@
 begin;
 
-select plan(47);
+select plan(52);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -234,6 +234,39 @@ select ok(
 select ok(
   not public.member_has_permission('suggestions.manage'),
   'baseline: active member cannot manage suggestions without responsibility'
+);
+
+select is(
+  public.member_has_permissions(array['suggestions.read', 'suggestions.manage']),
+  jsonb_build_object(
+    'suggestions.read', true,
+    'suggestions.manage', false
+  ),
+  'batch probe returns baseline read and denies manage without responsibility'
+);
+
+select is(
+  public.member_has_permission('suggestions.read'),
+  (public.member_has_permissions(array['suggestions.read'])->>'suggestions.read')::boolean,
+  'batch probe matches single-key probe for granted permission'
+);
+
+select is(
+  public.member_has_permission('suggestions.manage'),
+  (public.member_has_permissions(array['suggestions.manage'])->>'suggestions.manage')::boolean,
+  'batch probe matches single-key probe for denied permission'
+);
+
+select is(
+  public.member_has_permissions(array[]::text[]),
+  '{}'::jsonb,
+  'empty batch returns empty object'
+);
+
+select is(
+  public.member_has_permissions(array['suggestions.read', 'suggestions.read']),
+  jsonb_build_object('suggestions.read', true),
+  'duplicate keys are deduplicated in batch probe'
 );
 
 select ok(

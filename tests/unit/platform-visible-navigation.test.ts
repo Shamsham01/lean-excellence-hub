@@ -7,22 +7,36 @@ vi.mock("server-only", () => ({}));
 
 const currentMemberHasPermission = vi.fn();
 const currentMemberHasScopedPermission = vi.fn();
+const prefetchMemberPermissions = vi.fn();
 
 vi.mock("@/modules/platform-shell/permissions", () => ({
   currentMemberHasPermission: (...args: unknown[]) =>
     currentMemberHasPermission(...args),
   currentMemberHasScopedPermission: (...args: unknown[]) =>
     currentMemberHasScopedPermission(...args),
+  prefetchMemberPermissions: (...args: unknown[]) =>
+    prefetchMemberPermissions(...args),
 }));
 
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import { platformNavigation } from "@/modules/platform-shell/navigation";
+import { collectPlatformShellPermissionKeys } from "@/modules/platform-shell/shell-permission-keys";
 
 describe("buildVisibleNavigation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentMemberHasPermission.mockResolvedValue(true);
     currentMemberHasScopedPermission.mockResolvedValue(true);
+    prefetchMemberPermissions.mockResolvedValue(undefined);
+  });
+
+  it("prefetches shell permission keys before nav probes", async () => {
+    await buildVisibleNavigation();
+
+    expect(prefetchMemberPermissions).toHaveBeenCalledTimes(1);
+    expect(prefetchMemberPermissions).toHaveBeenCalledWith(
+      collectPlatformShellPermissionKeys(),
+    );
   });
 
   it("keeps navigation available across repeated permission-check cycles", async () => {
