@@ -32,7 +32,7 @@ export async function PlatformShell({
     !navWithSetup.some((item) => item.href === settingsNavigationItem.href);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
+    <div className="flex min-h-dvh min-w-0 flex-col bg-background lg:flex-row">
       <PlatformSidebar
         items={navWithSetup}
         organisationName={organisationName}
