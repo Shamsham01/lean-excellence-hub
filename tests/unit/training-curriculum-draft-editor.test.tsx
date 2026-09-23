@@ -84,7 +84,7 @@ describe("CurriculumDraftEditor", () => {
     );
     expect(
       screen.getByTestId("training-requirement-deadline-input"),
-    ).toHaveValue("30");
+    ).toHaveValue(30);
     expect(publishTrainingCurriculumVersion).not.toHaveBeenCalled();
   });
 
@@ -146,6 +146,6 @@ describe("CurriculumDraftEditor", () => {
     expect(publishTrainingCurriculumVersion).not.toHaveBeenCalled();
     expect(
       screen.getByTestId("training-requirement-deadline-input"),
-    ).toHaveValue("14");
+    ).toHaveValue(14);
   });
 });

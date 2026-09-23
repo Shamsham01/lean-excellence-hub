@@ -193,9 +193,11 @@ describe("training curriculum server actions", () => {
         target_course_id: "course-1",
         target_applies_to_all_members: false,
         target_job_function_id: "jf-1",
-        target_organisational_unit_id: null,
         target_required_within_days: 30,
       }),
+    );
+    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty(
+      "target_organisational_unit_id",
     );
   });
 });

@@ -184,10 +184,10 @@ export function CurriculumRequirementForm({
         >
           {describeTrainingRequirementApplicability({
             appliesToAllMembers: values.applicabilityMode === "all_members",
-            jobFunctionName: selectedJobFunction?.name,
+            jobFunctionName: selectedJobFunction?.name ?? null,
             organisationalUnitName:
               values.applicabilityMode === "job_function_and_unit"
-                ? selectedUnit?.name
+                ? (selectedUnit?.name ?? null)
                 : null,
           })}
         </p>

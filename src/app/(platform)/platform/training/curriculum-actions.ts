@@ -81,20 +81,20 @@ function buildRequirementRpcArgs(input: {
     target_mandatory: input.mandatory,
     ...(input.jobFunctionId
       ? { target_job_function_id: input.jobFunctionId }
-      : { target_job_function_id: null }),
+      : {}),
     ...(input.organisationalUnitId
       ? { target_organisational_unit_id: input.organisationalUnitId }
-      : { target_organisational_unit_id: null }),
+      : {}),
     ...(input.requiredWithinDays != null
       ? { target_required_within_days: input.requiredWithinDays }
-      : { target_required_within_days: null }),
+      : {}),
     ...(input.validityDaysOverride != null
       ? { target_validity_days_override: input.validityDaysOverride }
-      : { target_validity_days_override: null }),
+      : {}),
     ...(input.gracePeriodDays != null
       ? { target_grace_period_days: input.gracePeriodDays }
-      : { target_grace_period_days: null }),
-    ...(input.notes ? { target_notes: input.notes } : { target_notes: null }),
+      : {}),
+    ...(input.notes ? { target_notes: input.notes } : {}),
   };
 }
 
@@ -108,8 +108,12 @@ async function resolveRequirementMutation(input: RequirementMutationInput) {
   const target = resolveTrainingRequirementTarget({
     courseId: input.courseId,
     applicabilityMode: input.applicabilityMode,
-    jobFunctionId: input.jobFunctionId,
-    organisationalUnitId: input.organisationalUnitId,
+    ...(input.jobFunctionId != null
+      ? { jobFunctionId: input.jobFunctionId }
+      : {}),
+    ...(input.organisationalUnitId != null
+      ? { organisationalUnitId: input.organisationalUnitId }
+      : {}),
   });
   if (!target.ok) {
     return { error: target.message };
@@ -155,7 +159,7 @@ async function resolveRequirementMutation(input: RequirementMutationInput) {
 
   const overlap = findOverlappingTrainingRequirement(
     {
-      id: input.requirementId,
+      ...(input.requirementId ? { id: input.requirementId } : {}),
       courseId: target.value.courseId,
       appliesToAllMembers: target.value.appliesToAllMembers,
       jobFunctionId: target.value.jobFunctionId,
@@ -261,7 +265,7 @@ export async function addTrainingRequirement(input: RequirementMutationInput) {
         requiredWithinDays: resolved.requiredWithinDays,
         validityDaysOverride: resolved.validityDaysOverride,
         gracePeriodDays: resolved.gracePeriodDays,
-        notes: resolved.notes,
+        ...(resolved.notes ? { notes: resolved.notes } : {}),
       }),
     },
   );
@@ -311,7 +315,7 @@ export async function updateTrainingRequirement(
       requiredWithinDays: resolved.requiredWithinDays,
       validityDaysOverride: resolved.validityDaysOverride,
       gracePeriodDays: resolved.gracePeriodDays,
-      notes: resolved.notes,
+      ...(resolved.notes ? { notes: resolved.notes } : {}),
     }),
   });
 

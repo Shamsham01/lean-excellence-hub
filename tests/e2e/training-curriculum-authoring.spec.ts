@@ -432,7 +432,7 @@ test.describe("Training curriculum authoring", () => {
       .selectOption({ label: DEMO_JOB_FUNCTIONS[1].name });
     await page
       .getByTestId("training-requirement-unit-input")
-      .selectOption({ label: /Operations/ });
+      .selectOption({ label: "Operations" });
     await page.getByTestId("training-requirement-optional").check();
     await page.getByTestId("training-requirement-save").click();
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
