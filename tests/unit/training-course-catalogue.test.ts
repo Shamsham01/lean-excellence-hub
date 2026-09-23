@@ -81,9 +81,28 @@ describe("training course catalogue presentation", () => {
     ).toBe("Published · successor draft");
   });
 
-  it("keeps evidence notes in the JSON object the RPC already accepts", () => {
+  it("merges notes into the existing evidence JSON without dropping other keys", () => {
     expect(buildTrainingEvidenceRequirements("  Signed register  ")).toEqual({
       notes: "Signed register",
+    });
+    expect(
+      buildTrainingEvidenceRequirements("Updated register", {
+        notes: "Old register",
+        required: ["photo"],
+        assessor: "supervisor",
+      }),
+    ).toEqual({
+      notes: "Updated register",
+      required: ["photo"],
+      assessor: "supervisor",
+    });
+    expect(
+      buildTrainingEvidenceRequirements("", {
+        required: ["photo"],
+        notes: "Temporary note",
+      }),
+    ).toEqual({
+      required: ["photo"],
     });
     expect(buildTrainingEvidenceRequirements("")).toBeNull();
     expect(parseTrainingEvidenceNotes({ notes: "Attendance sheet" })).toBe(

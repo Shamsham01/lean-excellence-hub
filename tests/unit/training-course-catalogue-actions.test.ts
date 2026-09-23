@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const currentMemberHasPermission = vi.fn();
 const rpc = vi.fn();
+const maybeSingle = vi.fn();
+const from = vi.fn(() => ({
+  select: () => ({
+    eq: () => ({
+      maybeSingle,
+    }),
+  }),
+}));
 
 vi.mock("@/modules/platform-shell/permissions", () => ({
   currentMemberHasPermission: (...args: unknown[]) =>
@@ -9,7 +17,7 @@ vi.mock("@/modules/platform-shell/permissions", () => ({
 }));
 
 vi.mock("@/platform/supabase/server", () => ({
-  createServerSupabaseClient: vi.fn(async () => ({ rpc })),
+  createServerSupabaseClient: vi.fn(async () => ({ rpc, from })),
 }));
 
 vi.mock("next/cache", () => ({
@@ -32,7 +40,13 @@ describe("training course catalogue server actions", () => {
   beforeEach(() => {
     currentMemberHasPermission.mockReset();
     rpc.mockReset();
+    maybeSingle.mockReset();
+    from.mockClear();
     currentMemberHasPermission.mockResolvedValue(true);
+    maybeSingle.mockResolvedValue({
+      data: { id: "version-1", evidence_requirements: null },
+      error: null,
+    });
   });
 
   it("denies create, update, publish, and successor without training.catalog.manage", async () => {
@@ -107,6 +121,65 @@ describe("training course catalogue server actions", () => {
       error:
         "A course with this code already exists. Choose a different name or custom code.",
     });
+  });
+
+  it("preserves existing evidence JSON keys when saving notes", async () => {
+    maybeSingle.mockResolvedValue({
+      data: {
+        id: "version-1",
+        evidence_requirements: {
+          required: ["photo"],
+          assessor: "supervisor",
+          notes: "Old register",
+        },
+      },
+      error: null,
+    });
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await expect(
+      updateTrainingCourseDraftVersion({
+        courseId: "course-1",
+        versionId: "version-1",
+        durationMinutes: "90",
+        validityDays: "365",
+        deliveryMethod: "classroom",
+        learningObjectives: "Operate safely",
+        evidenceNotes: "Signed register",
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    expect(rpc).toHaveBeenCalledWith("update_training_course_draft_version", {
+      target_course_version_id: "version-1",
+      target_duration_minutes: 90,
+      target_validity_days: 365,
+      target_delivery_method: "classroom",
+      target_learning_objectives: "Operate safely",
+      target_evidence_requirements: {
+        required: ["photo"],
+        assessor: "supervisor",
+        notes: "Signed register",
+      },
+    });
+  });
+
+  it("does not update a draft when the evidence query fails", async () => {
+    maybeSingle.mockResolvedValue({
+      data: null,
+      error: { code: "57014", message: "canceling statement" },
+    });
+
+    await expect(
+      updateTrainingCourseDraftVersion({
+        courseId: "course-1",
+        versionId: "version-1",
+        evidenceNotes: "Signed register",
+      }),
+    ).resolves.toEqual({
+      error:
+        "Unable to save this draft. Your entries were kept so you can try again.",
+    });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("updates and publishes only the selected draft version", async () => {

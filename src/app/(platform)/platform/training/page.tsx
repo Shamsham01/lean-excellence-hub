@@ -9,6 +9,7 @@ import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { TrainingCatalogueScopeNote } from "@/components/training/training-catalogue-scope-note";
+import { resolveTrainingCatalogListResult } from "@/modules/training/resolve-catalog-load";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function TrainingOverviewPage() {
@@ -32,12 +33,15 @@ export default async function TrainingOverviewPage() {
   const outstanding = summaryObj?.outstanding_required ?? 0;
   const expiring = summaryObj?.expiring_in_30_days ?? 0;
 
-  const { data: courses } = await supabase
-    .from("training_courses")
-    .select("id, name, code")
-    .eq("status", "active")
-    .order("name")
-    .limit(10);
+  const courses = await resolveTrainingCatalogListResult(
+    await supabase
+      .from("training_courses")
+      .select("id, name, code")
+      .eq("status", "active")
+      .order("name")
+      .limit(10),
+    "training_courses",
+  );
 
   const activeSiteName =
     context.mode === "site"
@@ -93,7 +97,7 @@ export default async function TrainingOverviewPage() {
             <CardTitle>Courses</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {(courses?.length ?? 0) === 0 ? (
+            {courses.length === 0 ? (
               <div
                 className="flex flex-col items-start gap-3 rounded-md border border-dashed border-border px-3 py-6"
                 data-testid="training-hub-empty-courses"
@@ -116,7 +120,7 @@ export default async function TrainingOverviewPage() {
                 ) : null}
               </div>
             ) : (
-              courses?.map((course) => (
+              courses.map((course) => (
                 <AppLink
                   key={course.id}
                   href={`/platform/training/courses/${course.id}`}

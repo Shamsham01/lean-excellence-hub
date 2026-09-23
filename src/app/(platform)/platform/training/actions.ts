@@ -131,10 +131,33 @@ export async function updateTrainingCourseDraftVersion(input: {
 
   const learningObjectives = input.learningObjectives?.trim() || undefined;
   const trainerRequirements = input.trainerRequirements?.trim() || undefined;
+  const supabase = await createServerSupabaseClient();
+  const { data: currentVersion, error: loadError } = await supabase
+    .from("training_course_versions")
+    .select("id, evidence_requirements")
+    .eq("id", versionId)
+    .maybeSingle();
+
+  if (loadError) {
+    return {
+      error: toTrainingCatalogErrorMessage(
+        loadError,
+        "Unable to save this draft. Your entries were kept so you can try again.",
+      ),
+    };
+  }
+
+  if (!currentVersion) {
+    return {
+      error:
+        "That draft is no longer editable. Reload the course and try again.",
+    };
+  }
+
   const evidenceRequirements = buildTrainingEvidenceRequirements(
     input.evidenceNotes,
+    currentVersion.evidence_requirements,
   );
-  const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("update_training_course_draft_version", {
     target_course_version_id: versionId,
     ...(duration.value != null
@@ -148,9 +171,7 @@ export async function updateTrainingCourseDraftVersion(input: {
     ...(trainerRequirements
       ? { target_trainer_requirements: trainerRequirements }
       : {}),
-    ...(evidenceRequirements
-      ? { target_evidence_requirements: evidenceRequirements }
-      : {}),
+    target_evidence_requirements: evidenceRequirements,
   });
 
   if (error) {

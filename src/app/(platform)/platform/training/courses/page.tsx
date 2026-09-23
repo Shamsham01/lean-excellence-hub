@@ -12,6 +12,7 @@ import {
   deriveTrainingCourseCatalogueStatus,
   trainingCourseCatalogueStatusLabel,
 } from "@/modules/training/catalog-admin";
+import { resolveTrainingCatalogListResult } from "@/modules/training/resolve-catalog-load";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = {
@@ -27,28 +28,33 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
     loadActiveSiteContext(),
   ]);
 
-  const { data: courses } = await supabase
-    .from("training_courses")
-    .select("id, name, code, category, status")
-    .order("name");
+  const courses = await resolveTrainingCatalogListResult(
+    await supabase
+      .from("training_courses")
+      .select("id, name, code, category, status")
+      .order("name"),
+    "training_courses",
+  );
 
-  const courseIds = courses?.map((course) => course.id) ?? [];
-  const { data: versions } =
+  const courseIds = courses.map((course) => course.id);
+  const versions = await resolveTrainingCatalogListResult(
     courseIds.length > 0
       ? await supabase
           .from("training_course_versions")
           .select("course_id, status")
           .in("course_id", courseIds)
-      : { data: [] };
+      : { data: [], error: null },
+    "training_course_versions",
+  );
 
   const versionsByCourse = new Map<string, string[]>();
-  for (const version of versions ?? []) {
+  for (const version of versions) {
     const existing = versionsByCourse.get(version.course_id) ?? [];
     existing.push(version.status);
     versionsByCourse.set(version.course_id, existing);
   }
 
-  const isEmpty = (courses?.length ?? 0) === 0;
+  const isEmpty = courses.length === 0;
   const showCreateForm = canManageCatalog && (isEmpty || newRequested === "1");
   const activeSiteName =
     context.mode === "site"
@@ -95,7 +101,7 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
 
       {canManageCatalog && showCreateForm ? (
         <CourseCreateForm
-          existingCodes={courses?.map((course) => course.code) ?? []}
+          existingCodes={courses.map((course) => course.code)}
           cancelHref="/platform/training/courses"
         />
       ) : null}
@@ -127,7 +133,7 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
       ) : (
         <Card>
           <CardContent className="divide-y divide-border p-0">
-            {courses?.map((course) => {
+            {courses.map((course) => {
               const status = deriveTrainingCourseCatalogueStatus({
                 courseStatus: course.status,
                 versionStatuses: versionsByCourse.get(course.id) ?? [],

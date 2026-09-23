@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-
 import { createCourseSuccessorFromForm } from "@/app/(platform)/platform/training/actions";
 import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { CourseDraftEditor } from "@/components/training/course-draft-editor";
@@ -16,6 +14,10 @@ import {
   trainingCourseVersionStatusLabel,
   trainingDeliveryMethodLabel,
 } from "@/modules/training/catalog-admin";
+import {
+  resolveTrainingCatalogListResult,
+  resolveTrainingCatalogRequiredData,
+} from "@/modules/training/resolve-catalog-load";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = {
@@ -45,21 +47,24 @@ export default async function TrainingCourseDetailPage({
     TRAINING_PERMISSIONS.catalogManage,
   );
 
-  const { data: course } = await supabase
-    .from("training_courses")
-    .select("id, name, code, description, category, status")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (!course) notFound();
-
-  const { data: versions } = await supabase
-    .from("training_course_versions")
-    .select(
-      "id, version_number, status, validity_days, duration_minutes, delivery_method, learning_objectives, trainer_requirements, evidence_requirements",
-    )
-    .eq("course_id", id)
-    .order("version_number", { ascending: false });
+  const course = await resolveTrainingCatalogRequiredData(
+    await supabase
+      .from("training_courses")
+      .select("id, name, code, description, category, status")
+      .eq("id", id)
+      .maybeSingle(),
+    "training_courses",
+  );
+  const versions = await resolveTrainingCatalogListResult(
+    await supabase
+      .from("training_course_versions")
+      .select(
+        "id, version_number, status, validity_days, duration_minutes, delivery_method, learning_objectives, trainer_requirements, evidence_requirements",
+      )
+      .eq("course_id", id)
+      .order("version_number", { ascending: false }),
+    "training_course_versions",
+  );
 
   const draftVersion = versions?.find((version) => version.status === "draft");
   const publishedVersion = versions?.find(
@@ -191,7 +196,7 @@ export default async function TrainingCourseDetailPage({
         </CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm">
-            {versions?.map((version) => (
+            {versions.map((version) => (
               <li
                 key={version.id}
                 className="rounded-md border border-border px-4 py-3"

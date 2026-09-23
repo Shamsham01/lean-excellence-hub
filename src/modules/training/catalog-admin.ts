@@ -1,3 +1,5 @@
+import type { Json } from "@/platform/supabase/database.types";
+
 export const TRAINING_DELIVERY_METHODS = [
   "classroom",
   "workshop",
@@ -99,16 +101,20 @@ export function trainingCoursePublishGuidance(): string {
   return "The existing publish contract does not require extra fields. Publishing makes this version available for sessions and curriculum. Published versions cannot be edited in place; create a successor draft to change them later.";
 }
 
+export function isTrainingEvidenceObject(
+  value: unknown,
+): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 export function parseTrainingEvidenceNotes(
   evidenceRequirements: unknown,
 ): string {
   if (
-    evidenceRequirements &&
-    typeof evidenceRequirements === "object" &&
-    !Array.isArray(evidenceRequirements) &&
+    isTrainingEvidenceObject(evidenceRequirements) &&
     "notes" in evidenceRequirements
   ) {
-    const notes = (evidenceRequirements as { notes?: unknown }).notes;
+    const notes = evidenceRequirements.notes;
     return typeof notes === "string" ? notes : "";
   }
 
@@ -117,9 +123,20 @@ export function parseTrainingEvidenceNotes(
 
 export function buildTrainingEvidenceRequirements(
   notes: string | null | undefined,
-): Record<string, string> | null {
+  existing?: unknown,
+): Json {
+  const current: Record<string, Json> = isTrainingEvidenceObject(existing)
+    ? { ...(existing as Record<string, Json>) }
+    : {};
   const trimmed = notes?.trim() ?? "";
-  return trimmed ? { notes: trimmed } : null;
+
+  if (trimmed) {
+    current.notes = trimmed;
+  } else {
+    delete current.notes;
+  }
+
+  return Object.keys(current).length > 0 ? current : null;
 }
 
 export function optionalPositiveInteger(
