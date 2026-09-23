@@ -8,26 +8,32 @@ const RELOAD_COUNT = 3;
 type AuthoringStep = "details" | "scopes" | "levels" | "pillars";
 
 function trackProductionRuntimeErrors(page: Page) {
-  const errors: string[] = [];
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
 
   page.on("console", (message) => {
-    if (message.type() !== "error") {
-      return;
+    if (message.type() === "error") {
+      consoleErrors.push(`[console.error] ${message.text()}`);
     }
-    errors.push(`[console.error] ${message.text()}`);
   });
 
   page.on("pageerror", (error) => {
-    errors.push(`[pageerror] ${error.message}`);
+    pageErrors.push(`[pageerror] ${error.message}`);
   });
 
   return () => {
-    const hydrationOrRuntimeErrors = errors.filter((entry) =>
-      /hydration|did not match|text content does not match|minified react error #418|minified react error #423|minified react error #425|recoverable error/i.test(
-        entry,
-      ),
-    );
-    expect(hydrationOrRuntimeErrors, errors.join("\n")).toEqual([]);
+    expect(
+      pageErrors,
+      pageErrors.length > 0
+        ? `Unexpected uncaught page errors:\n${pageErrors.join("\n")}`
+        : undefined,
+    ).toEqual([]);
+    expect(
+      consoleErrors,
+      consoleErrors.length > 0
+        ? `Unexpected console.error output:\n${consoleErrors.join("\n")}`
+        : undefined,
+    ).toEqual([]);
   };
 }
 
