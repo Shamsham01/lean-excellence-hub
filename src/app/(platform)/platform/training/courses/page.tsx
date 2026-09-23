@@ -64,9 +64,14 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog && !showCreateForm ? (
-              <CourseCreateForm
-                existingCodes={courses?.map((course) => course.code) ?? []}
-              />
+              <Button size="sm" asChild>
+                <AppLink
+                  href="/platform/training/courses?new=1"
+                  data-testid="training-course-new-button"
+                >
+                  New course
+                </AppLink>
+              </Button>
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink
@@ -91,7 +96,7 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
       {canManageCatalog && showCreateForm ? (
         <CourseCreateForm
           existingCodes={courses?.map((course) => course.code) ?? []}
-          defaultExpanded
+          cancelHref="/platform/training/courses"
         />
       ) : null}
 

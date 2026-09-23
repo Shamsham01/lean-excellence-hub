@@ -32,7 +32,7 @@ describe("CourseCreateForm", () => {
   });
 
   it("previews a generated code and blocks duplicate custom codes", () => {
-    render(<CourseCreateForm existingCodes={["lean-basic"]} defaultExpanded />);
+    render(<CourseCreateForm existingCodes={["lean-basic"]} />);
 
     fireEvent.change(screen.getByTestId("training-course-name-input"), {
       target: { value: "Forklift Safety" },
@@ -62,7 +62,7 @@ describe("CourseCreateForm", () => {
         }),
     );
 
-    render(<CourseCreateForm existingCodes={[]} defaultExpanded />);
+    render(<CourseCreateForm existingCodes={[]} />);
 
     fireEvent.change(screen.getByTestId("training-course-name-input"), {
       target: { value: "Forklift Safety" },
@@ -88,7 +88,7 @@ describe("CourseCreateForm", () => {
         "A course with this code already exists. Choose a different name or custom code.",
     });
 
-    render(<CourseCreateForm existingCodes={[]} defaultExpanded />);
+    render(<CourseCreateForm existingCodes={[]} />);
 
     fireEvent.change(screen.getByTestId("training-course-name-input"), {
       target: { value: "Lean Basic" },

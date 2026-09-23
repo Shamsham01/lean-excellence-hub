@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { createTrainingCourseDraft } from "@/app/(platform)/platform/training/actions";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,14 +18,13 @@ import {
 
 type CourseCreateFormProps = {
   existingCodes: readonly string[];
-  defaultExpanded?: boolean;
+  cancelHref?: string;
 };
 
 export function CourseCreateForm({
   existingCodes,
-  defaultExpanded = false,
+  cancelHref,
 }: CourseCreateFormProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -42,34 +42,13 @@ export function CourseCreateForm({
     [existingCodes, name],
   );
 
-  if (!expanded) {
-    return (
-      <Button
-        type="button"
-        className="min-h-11"
-        data-testid="training-course-new-button"
-        onClick={() => setExpanded(true)}
-      >
-        New course
-      </Button>
-    );
-  }
-
   return (
     <Card data-testid="training-course-create-card">
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <CardTitle>New course</CardTitle>
-        {!defaultExpanded ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setExpanded(false);
-              setError(null);
-            }}
-          >
-            Cancel
+        {cancelHref ? (
+          <Button variant="ghost" size="sm" asChild>
+            <AppLink href={cancelHref}>Cancel</AppLink>
           </Button>
         ) : null}
       </CardHeader>

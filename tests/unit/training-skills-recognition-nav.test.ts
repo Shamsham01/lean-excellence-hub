@@ -43,6 +43,8 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
 
     expect(courses).toContain('from "@/components/ui/app-link"');
     expect(courses).toContain('data-testid="training-courses-back-link"');
+    expect(courses).toContain('data-testid="training-course-new-button"');
+    expect(courses).toContain('href="/platform/training/courses?new=1"');
     expect(courseDetail).toContain('data-testid="training-course-back-link"');
     expect(sessions).toContain('data-testid="training-sessions-back-link"');
     expect(sessionDetail).toContain('data-testid="training-session-back-link"');
