@@ -5,46 +5,72 @@ import { signInAsDemoUser } from "./helpers/demo-auth";
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const RELOAD_COUNT = 3;
 
-function trackHydrationConsoleErrors(page: Page) {
+type AuthoringStep = "details" | "scopes" | "levels" | "pillars";
+
+function trackProductionRuntimeErrors(page: Page) {
   const errors: string[] = [];
+
   page.on("console", (message) => {
     if (message.type() !== "error") {
       return;
     }
-    const text = message.text();
-    if (
-      /hydration/i.test(text) ||
-      /did not match/i.test(text) ||
-      /Text content does not match/i.test(text)
-    ) {
-      errors.push(text);
-    }
+    errors.push(`[console.error] ${message.text()}`);
   });
+
+  page.on("pageerror", (error) => {
+    errors.push(`[pageerror] ${error.message}`);
+  });
+
   return () => {
-    expect(errors, errors.join("\n")).toEqual([]);
+    const hydrationOrRuntimeErrors = errors.filter((entry) =>
+      /hydration|did not match|text content does not match|minified react error #418|minified react error #423|minified react error #425|recoverable error/i.test(
+        entry,
+      ),
+    );
+    expect(hydrationOrRuntimeErrors, errors.join("\n")).toEqual([]);
   };
 }
 
-async function assertLevelsStepVisible(page: Page) {
+async function assertAuthoringStepVisible(page: Page, step: AuthoringStep) {
   await expect(page.getByTestId("framework-editor")).toBeVisible();
-  await expect(page.getByLabel("Level name")).toBeVisible();
-  await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
-  await expect(page.getByTestId("framework-step-levels")).toBeVisible();
+
+  switch (step) {
+    case "details":
+      await expect(page.getByTestId("framework-details-form")).toBeVisible();
+      await expect(page.getByLabel("Level name")).toHaveCount(0);
+      break;
+    case "scopes":
+      await expect(
+        page.getByRole("button", { name: "Save assessment scopes" }),
+      ).toBeVisible();
+      await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
+      break;
+    case "levels":
+      await expect(page.getByLabel("Level name")).toBeVisible();
+      await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
+      break;
+    case "pillars":
+      await expect(page.getByLabel("Pillar name")).toBeVisible();
+      await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
+      break;
+  }
+
+  await expect(page.getByTestId(`framework-step-${step}`)).toBeVisible();
 }
 
 test.describe("Maturity authoring step reload hydration", () => {
   test.describe.configure({ mode: "serial" });
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
 
   test.skip(
     !hasSupabaseE2e,
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied (npm run db:reset && npm run db:seed-demo)",
   );
 
-  test("direct ?step=levels URL survives hard reload without hydration errors", async ({
+  test("direct ?step= URL, reloads, tab changes, back/forward, and save confirmation stay hydration-safe", async ({
     page,
   }) => {
-    const assertNoHydrationErrors = trackHydrationConsoleErrors(page);
+    const assertNoProductionRuntimeErrors = trackProductionRuntimeErrors(page);
 
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/maturity/models");
@@ -58,16 +84,41 @@ test.describe("Maturity authoring step reload hydration", () => {
     expect(modelUrl).toMatch(/\/platform\/maturity\/models\//);
 
     await page.goto(`${modelUrl}?step=levels`);
-    await assertLevelsStepVisible(page);
+    await assertAuthoringStepVisible(page, "levels");
 
     await page.reload();
-    await assertLevelsStepVisible(page);
+    await assertAuthoringStepVisible(page, "levels");
 
     for (let reload = 0; reload < RELOAD_COUNT; reload += 1) {
       await page.reload();
-      await assertLevelsStepVisible(page);
+      await assertAuthoringStepVisible(page, "levels");
     }
 
-    assertNoHydrationErrors();
+    await page.getByTestId("framework-step-pillars").click();
+    await expect(page).toHaveURL(/\?step=pillars(?:$|&)/);
+    await assertAuthoringStepVisible(page, "pillars");
+
+    await page.goBack();
+    await assertAuthoringStepVisible(page, "levels");
+
+    await page.goForward();
+    await assertAuthoringStepVisible(page, "pillars");
+
+    await page.goto(`${modelUrl}?step=details`);
+    await assertAuthoringStepVisible(page, "details");
+
+    const updatedName = `${frameworkName} revised`;
+    await page.getByLabel("Display name").fill(updatedName);
+    await page.getByRole("button", { name: "Save framework details" }).click();
+    await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
+      "Saved.",
+    );
+    await expect(page.getByLabel("Display name")).toHaveValue(updatedName);
+
+    await page.getByTestId("framework-step-scopes").click();
+    await expect(page).toHaveURL(/\?step=scopes(?:$|&)/);
+    await assertAuthoringStepVisible(page, "scopes");
+
+    assertNoProductionRuntimeErrors();
   });
 });

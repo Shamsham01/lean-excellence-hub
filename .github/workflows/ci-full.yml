@@ -219,6 +219,7 @@ jobs:
               tests/e2e/core-platform-nav-click.spec.ts
               tests/e2e/milestone6-closure.spec.ts
               tests/e2e/five-s-gemba-authoring.spec.ts
+              tests/e2e/maturity-authoring-step-reload.spec.ts
               tests/e2e/site-security-boundary.spec.ts
               tests/e2e/cookieworks-execution-site-context.spec.ts
           - label: workforce
