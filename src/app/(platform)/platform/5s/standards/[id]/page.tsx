@@ -8,7 +8,9 @@ import {
   setFiveSStandardApplicableUnitsFromForm,
   startFiveSAuditFromForm,
 } from "@/app/(platform)/platform/5s/actions";
+import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -50,10 +52,16 @@ function fiveSQuestionTypeLabel(questionType: string): string {
 
 export default async function FiveSStandardDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  const savedKey = parseAuthoringSavedKey(
+    Array.isArray(query.saved) ? query.saved[0] : query.saved,
+  );
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
@@ -175,6 +183,7 @@ export default async function FiveSStandardDetailPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <AuthoringSaveFeedback savedKey={savedKey} />
       <PublishedExecutionHeader
         title={standard.display_name}
         description={standard.description ?? "5S standard configuration"}

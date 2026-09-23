@@ -8,7 +8,9 @@ import {
   setGembaDefinitionApplicableUnitsFromForm,
   startGembaWalkFromForm,
 } from "@/app/(platform)/platform/gemba/actions";
+import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
 import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -49,10 +51,16 @@ const APPLICABILITY_DESCRIPTION =
 
 export default async function GembaDefinitionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  const savedKey = parseAuthoringSavedKey(
+    Array.isArray(query.saved) ? query.saved[0] : query.saved,
+  );
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
@@ -177,6 +185,7 @@ export default async function GembaDefinitionPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <AuthoringSaveFeedback savedKey={savedKey} />
       <PublishedExecutionHeader
         title={definition.display_name}
         description={definition.description ?? "Gemba definition"}

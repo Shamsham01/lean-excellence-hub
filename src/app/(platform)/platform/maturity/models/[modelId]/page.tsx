@@ -19,14 +19,34 @@ import {
   scopeTypeLabel,
   type MaturityAssessmentScopeType,
 } from "@/modules/maturity/semantic-scope";
+import { parseAuthoringStep } from "@/lib/authoring/authoring-query";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+const FRAMEWORK_AUTHORING_STEPS = [
+  "details",
+  "scopes",
+  "levels",
+  "pillars",
+  "criteria",
+  "questions",
+  "review",
+  "publish",
+] as const;
 
 export default async function MaturityModelPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ modelId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { modelId } = await params;
+  const query = await searchParams;
+  const initialAuthoringStep = parseAuthoringStep(
+    Array.isArray(query.step) ? query.step[0] : query.step,
+    FRAMEWORK_AUTHORING_STEPS,
+    "details",
+  );
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     MATURITY_PERMISSIONS.modelsManage,
@@ -354,6 +374,7 @@ export default async function MaturityModelPage({
             modelDescription={versionDescription}
             versionId={draftVersion.id}
             versionNumber={draftVersion.version_number}
+            initialAuthoringStep={initialAuthoringStep}
             assessmentScopes={assessmentScopes}
             levels={levels}
             pillars={pillars}
