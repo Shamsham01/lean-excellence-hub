@@ -77,7 +77,6 @@ describe("SuggestionPortfolio pagination controls", () => {
         pageSize={50}
         filters={filteredPageOne}
         filterOptions={emptyFilterOptions}
-        hasAnySuggestions
       />,
     );
 
@@ -109,7 +108,6 @@ describe("SuggestionPortfolio pagination controls", () => {
         pageSize={50}
         filters={{ ...filteredPageOne, page: 2 }}
         filterOptions={emptyFilterOptions}
-        hasAnySuggestions
       />,
     );
 

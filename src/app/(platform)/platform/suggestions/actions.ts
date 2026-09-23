@@ -301,7 +301,14 @@ export async function createSuggestionProgrammeDraft(input: {
     },
   );
 
-  if (error) return { error: error.message };
+  if (error) {
+    return {
+      error: toSuggestionCatalogErrorMessage(
+        error,
+        "Unable to create this programme.",
+      ),
+    };
+  }
 
   revalidatePath("/platform/suggestions/programmes");
 
@@ -406,7 +413,14 @@ export async function createSuggestionCategory(input: {
       : {}),
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    return {
+      error: toSuggestionCatalogErrorMessage(
+        error,
+        "Unable to create this category.",
+      ),
+    };
+  }
 
   revalidatePath("/platform/suggestions/programmes");
 

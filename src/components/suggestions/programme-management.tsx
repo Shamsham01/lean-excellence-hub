@@ -41,6 +41,11 @@ import {
   programmeEmptyStateMessage,
   programmeHasPublishedHistory,
 } from "@/modules/suggestions/catalog-admin";
+import {
+  generateSuggestionCatalogCode,
+  resolveSuggestionCatalogCreateCode,
+  resolveUniqueSuggestionCatalogCode,
+} from "@/modules/suggestions/catalog-code";
 
 type ProgrammeVersion = {
   id: string;
@@ -159,11 +164,13 @@ export function ProgrammeManagement({
   const [showCategoryCreate, setShowCategoryCreate] = useState(false);
 
   const [programmeName, setProgrammeName] = useState("");
-  const [programmeCode, setProgrammeCode] = useState("");
+  const [programmeCustomCode, setProgrammeCustomCode] = useState("");
+  const [programmeUseCustomCode, setProgrammeUseCustomCode] = useState(false);
   const [programmeDescription, setProgrammeDescription] = useState("");
 
   const [categoryName, setCategoryName] = useState("");
-  const [categoryCode, setCategoryCode] = useState("");
+  const [categoryCustomCode, setCategoryCustomCode] = useState("");
+  const [categoryUseCustomCode, setCategoryUseCustomCode] = useState(false);
 
   const versionsByProgramme = useMemo(
     () =>
@@ -190,6 +197,34 @@ export function ProgrammeManagement({
     return filterCatalogueBySearch(byStatus, categorySearch);
   }, [categories, categorySearch, categoryStatusFilter]);
 
+  const existingProgrammeCodes = useMemo(
+    () => programmes.map((programme) => programme.code),
+    [programmes],
+  );
+
+  const existingCategoryCodes = useMemo(
+    () => categories.map((category) => category.code),
+    [categories],
+  );
+
+  const autoProgrammeCode = useMemo(
+    () =>
+      resolveUniqueSuggestionCatalogCode(
+        generateSuggestionCatalogCode(programmeName),
+        existingProgrammeCodes,
+      ),
+    [existingProgrammeCodes, programmeName],
+  );
+
+  const autoCategoryCode = useMemo(
+    () =>
+      resolveUniqueSuggestionCatalogCode(
+        generateSuggestionCatalogCode(categoryName),
+        existingCategoryCodes,
+      ),
+    [categoryName, existingCategoryCodes],
+  );
+
   async function runAction(
     action: () => Promise<{ error?: string; ok?: true }>,
     options?: { successMessage?: string; onSuccess?: () => void },
@@ -215,15 +250,32 @@ export function ProgrammeManagement({
 
   function resetProgrammeCreateForm() {
     setProgrammeName("");
-    setProgrammeCode("");
+    setProgrammeCustomCode("");
+    setProgrammeUseCustomCode(false);
     setProgrammeDescription("");
     setShowProgrammeCreate(false);
   }
 
   function resetCategoryCreateForm() {
     setCategoryName("");
-    setCategoryCode("");
+    setCategoryCustomCode("");
+    setCategoryUseCustomCode(false);
     setShowCategoryCreate(false);
+  }
+
+  function resolveCreateCodeOrSetError(input: {
+    name: string;
+    customCode?: string;
+    existingCodes: readonly string[];
+  }) {
+    const resolved = resolveSuggestionCatalogCreateCode(input);
+
+    if (!resolved.ok) {
+      setError(resolved.message);
+      return null;
+    }
+
+    return resolved.code;
   }
 
   return (
@@ -264,11 +316,23 @@ export function ProgrammeManagement({
                   onSubmit={(event) => {
                     event.preventDefault();
 
+                    const code = resolveCreateCodeOrSetError({
+                      name: programmeName,
+                      existingCodes: existingProgrammeCodes,
+                      ...(programmeUseCustomCode
+                        ? { customCode: programmeCustomCode }
+                        : {}),
+                    });
+
+                    if (!code) {
+                      return;
+                    }
+
                     runAction(
                       () =>
                         createSuggestionProgrammeDraft({
-                          name: programmeName,
-                          code: programmeCode,
+                          name: programmeName.trim(),
+                          code,
                           ...(programmeDescription
                             ? { description: programmeDescription }
                             : {}),
@@ -289,15 +353,56 @@ export function ProgrammeManagement({
                       onChange={(event) => setProgrammeName(event.target.value)}
                     />
                   </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <Label htmlFor="programme-code">Code</Label>
-                    <Input
-                      id="programme-code"
-                      required
-                      value={programmeCode}
-                      onChange={(event) => setProgrammeCode(event.target.value)}
-                    />
-                  </label>
+                  {!programmeUseCustomCode ? (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-testid="programme-auto-code-preview"
+                    >
+                      Code:{" "}
+                      <span className="font-medium text-foreground">
+                        {autoProgrammeCode || "Enter a name to generate a code"}
+                      </span>
+                    </p>
+                  ) : null}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-auto self-start px-0 text-primary underline-offset-4 hover:underline"
+                    disabled={loading}
+                    onClick={() => {
+                      setProgrammeUseCustomCode((current) => {
+                        const next = !current;
+
+                        if (next) {
+                          setProgrammeCustomCode(autoProgrammeCode);
+                        } else {
+                          setProgrammeCustomCode("");
+                        }
+
+                        return next;
+                      });
+                    }}
+                    data-testid="programme-custom-code-toggle"
+                  >
+                    {programmeUseCustomCode
+                      ? "Use auto-generated code"
+                      : "Advanced: custom code"}
+                  </Button>
+                  {programmeUseCustomCode ? (
+                    <label className="flex flex-col gap-1 text-sm">
+                      <Label htmlFor="programme-custom-code">Custom code</Label>
+                      <Input
+                        id="programme-custom-code"
+                        required
+                        value={programmeCustomCode}
+                        onChange={(event) =>
+                          setProgrammeCustomCode(event.target.value)
+                        }
+                        data-testid="programme-custom-code-input"
+                      />
+                    </label>
+                  ) : null}
                   <label className="flex flex-col gap-1 text-sm">
                     <Label htmlFor="programme-description">Description</Label>
                     <Textarea
@@ -458,11 +563,23 @@ export function ProgrammeManagement({
                   onSubmit={(event) => {
                     event.preventDefault();
 
+                    const code = resolveCreateCodeOrSetError({
+                      name: categoryName,
+                      existingCodes: existingCategoryCodes,
+                      ...(categoryUseCustomCode
+                        ? { customCode: categoryCustomCode }
+                        : {}),
+                    });
+
+                    if (!code) {
+                      return;
+                    }
+
                     runAction(
                       () =>
                         createSuggestionCategory({
-                          name: categoryName,
-                          code: categoryCode,
+                          name: categoryName.trim(),
+                          code,
                         }),
                       {
                         successMessage: "Category created.",
@@ -480,15 +597,56 @@ export function ProgrammeManagement({
                       onChange={(event) => setCategoryName(event.target.value)}
                     />
                   </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <Label htmlFor="category-code">Code</Label>
-                    <Input
-                      id="category-code"
-                      required
-                      value={categoryCode}
-                      onChange={(event) => setCategoryCode(event.target.value)}
-                    />
-                  </label>
+                  {!categoryUseCustomCode ? (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-testid="category-auto-code-preview"
+                    >
+                      Code:{" "}
+                      <span className="font-medium text-foreground">
+                        {autoCategoryCode || "Enter a name to generate a code"}
+                      </span>
+                    </p>
+                  ) : null}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-auto self-start px-0 text-primary underline-offset-4 hover:underline"
+                    disabled={loading}
+                    onClick={() => {
+                      setCategoryUseCustomCode((current) => {
+                        const next = !current;
+
+                        if (next) {
+                          setCategoryCustomCode(autoCategoryCode);
+                        } else {
+                          setCategoryCustomCode("");
+                        }
+
+                        return next;
+                      });
+                    }}
+                    data-testid="category-custom-code-toggle"
+                  >
+                    {categoryUseCustomCode
+                      ? "Use auto-generated code"
+                      : "Advanced: custom code"}
+                  </Button>
+                  {categoryUseCustomCode ? (
+                    <label className="flex flex-col gap-1 text-sm">
+                      <Label htmlFor="category-custom-code">Custom code</Label>
+                      <Input
+                        id="category-custom-code"
+                        required
+                        value={categoryCustomCode}
+                        onChange={(event) =>
+                          setCategoryCustomCode(event.target.value)
+                        }
+                        data-testid="category-custom-code-input"
+                      />
+                    </label>
+                  ) : null}
                   <Button
                     type="submit"
                     size="sm"

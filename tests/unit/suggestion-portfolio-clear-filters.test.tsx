@@ -78,7 +78,6 @@ describe("SuggestionPortfolio clear filters control", () => {
         pageSize={50}
         filters={activeFilters}
         filterOptions={emptyFilterOptions}
-        hasAnySuggestions
       />,
     );
 
@@ -101,7 +100,6 @@ describe("SuggestionPortfolio clear filters control", () => {
         pageSize={25}
         filters={parseSuggestionPortfolioSearchParams({})}
         filterOptions={emptyFilterOptions}
-        hasAnySuggestions
       />,
     );
 
@@ -119,7 +117,6 @@ describe("SuggestionPortfolio clear filters control", () => {
         pageSize={25}
         filters={activeFilters}
         filterOptions={emptyFilterOptions}
-        hasAnySuggestions
       />,
     );
 
