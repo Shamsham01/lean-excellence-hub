@@ -16,12 +16,14 @@ vi.mock("@/platform/http/request-path", () => ({
   readRequestPathname: () => readRequestPathname(),
 }));
 
+import { resetPermissionResolutionStoreForTests } from "@/modules/platform-shell/permission-resolution-store";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { PlatformBoundaryError } from "@/platform/observability/platform-boundary";
 import * as platformBoundaryModule from "@/platform/observability/platform-boundary";
 
 describe("platform permission checks", () => {
   beforeEach(() => {
+    resetPermissionResolutionStoreForTests();
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(platformBoundaryModule, "throwPlatformBoundaryError");

@@ -29,6 +29,7 @@ vi.mock("@/platform/supabase/server", () => ({
   createServerSupabaseClient: async () => ({ rpc }),
 }));
 
+import { resetPermissionResolutionStoreForTests } from "@/modules/platform-shell/permission-resolution-store";
 import {
   currentMemberCanDelegateRoles,
   currentMemberHasPermission,
@@ -38,6 +39,7 @@ import { PlatformBoundaryError } from "@/platform/observability/platform-boundar
 
 describe("permission probes", () => {
   beforeEach(() => {
+    resetPermissionResolutionStoreForTests();
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => {});
   });

@@ -1,6 +1,6 @@
 begin;
 
-select plan(35);
+select plan(38);
 
 create temporary table workforce_test_ids (
   key text primary key,
@@ -69,6 +69,30 @@ select ok(
 select ok(
   public.member_has_permission('workforce.provision'),
   'organisation owner has workforce.provision'
+);
+
+select is(
+  public.member_has_permission('workforce.provision'),
+  (public.member_has_permissions(array['workforce.provision'])->>'workforce.provision')::boolean,
+  'batch probe matches single-key probe for workforce.provision grant'
+);
+
+select is(
+  public.member_has_permissions(
+    array['workforce.provision', 'invitations.manage', 'memberships.manage']
+  ),
+  jsonb_build_object(
+    'workforce.provision', true,
+    'invitations.manage', true,
+    'memberships.manage', true
+  ),
+  'batch probe grants workforce and people-manage keys for organisation owner'
+);
+
+select is(
+  public.member_has_permission('invitations.manage'),
+  (public.member_has_permissions(array['invitations.manage'])->>'invitations.manage')::boolean,
+  'batch probe matches single-key probe for invitations.manage grant'
 );
 
 insert into workforce_test_ids (key, id)

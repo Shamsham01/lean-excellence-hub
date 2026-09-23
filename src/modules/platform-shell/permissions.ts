@@ -13,6 +13,10 @@ import {
   readSupabaseErrorFields,
   type PermissionProbeClassification,
 } from "@/platform/supabase/error-classification";
+import {
+  getPermissionResolutionStore,
+  type PermissionResolutionStore,
+} from "@/modules/platform-shell/permission-resolution-store";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function rethrowProbeControlErrors(error: unknown): void {
@@ -74,38 +78,166 @@ async function throwClassifiedProbeFailure(
   }
 }
 
-export const currentMemberHasPermission = cache(
-  async (permissionKey: string) => {
-    try {
-      const supabase = await createServerSupabaseClient();
-      const result = await supabase.rpc("member_has_permission", {
-        target_permission_key: permissionKey,
-      });
-      const classified = classifyPermissionProbeResult(result);
-      if (!classified.ok) {
-        if (
-          classified.outcome === "denied" ||
-          classified.outcome === "not_found"
-        ) {
-          return false;
-        }
+async function probeSingleMemberPermission(
+  permissionKey: string,
+): Promise<boolean> {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_permission", {
+    target_permission_key: permissionKey,
+  });
+  const classified = classifyPermissionProbeResult(result);
+  if (!classified.ok) {
+    if (classified.outcome === "denied" || classified.outcome === "not_found") {
+      return false;
+    }
 
-        return throwClassifiedProbeFailure(
-          classified,
-          "member_has_permission",
-          permissionKey,
-        );
-      }
+    return throwClassifiedProbeFailure(
+      classified,
+      "member_has_permission",
+      permissionKey,
+    );
+  }
 
-      return classified.data === true;
-    } catch (error) {
-      rethrowProbeControlErrors(error);
-      return throwPermissionProbeFailure(
-        "member_has_permission",
-        permissionKey,
-        error,
+  return classified.data === true;
+}
+
+async function throwMalformedBatchPermissionPayload(
+  permissionKeys: string[],
+  detail: string,
+): Promise<never> {
+  return throwPermissionProbeFailure(
+    "member_has_permissions",
+    permissionKeys.join(","),
+    new Error(`Malformed member_has_permissions payload: ${detail}`),
+  );
+}
+
+async function parseBatchMemberPermissionPayload(
+  permissionKeys: string[],
+  data: unknown,
+): Promise<Record<string, boolean>> {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    return throwMalformedBatchPermissionPayload(
+      permissionKeys,
+      "expected jsonb object",
+    );
+  }
+
+  const payload = data as Record<string, unknown>;
+  const resolved: Record<string, boolean> = {};
+
+  for (const permissionKey of permissionKeys) {
+    if (!(permissionKey in payload)) {
+      return throwMalformedBatchPermissionPayload(
+        permissionKeys,
+        `missing key "${permissionKey}"`,
       );
     }
+
+    const value = payload[permissionKey];
+    if (value === true) {
+      resolved[permissionKey] = true;
+      continue;
+    }
+
+    if (value === false) {
+      resolved[permissionKey] = false;
+      continue;
+    }
+
+    return throwMalformedBatchPermissionPayload(
+      permissionKeys,
+      `non-boolean value for "${permissionKey}"`,
+    );
+  }
+
+  return resolved;
+}
+
+async function probeBatchMemberPermissions(
+  permissionKeys: string[],
+): Promise<Record<string, boolean>> {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_permissions", {
+    target_permission_keys: permissionKeys,
+  });
+  const classified = classifyPermissionProbeResult(result);
+  if (!classified.ok) {
+    if (classified.outcome === "denied" || classified.outcome === "not_found") {
+      return Object.fromEntries(permissionKeys.map((key) => [key, false]));
+    }
+
+    return throwClassifiedProbeFailure(
+      classified,
+      "member_has_permissions",
+      permissionKeys.join(","),
+    );
+  }
+
+  return parseBatchMemberPermissionPayload(permissionKeys, classified.data);
+}
+
+function writeResolvedPermissions(
+  store: PermissionResolutionStore,
+  resolved: Record<string, boolean>,
+): void {
+  for (const [permissionKey, granted] of Object.entries(resolved)) {
+    store.set(permissionKey, granted === true);
+  }
+}
+
+async function resolveMemberPermissionsIntoStore(
+  store: PermissionResolutionStore,
+  permissionKeys: string[],
+): Promise<void> {
+  const uncachedKeys = permissionKeys.filter(
+    (permissionKey) => !store.has(permissionKey),
+  );
+
+  if (uncachedKeys.length === 0) {
+    return;
+  }
+
+  try {
+    const [singlePermissionKey] = uncachedKeys;
+    const resolved =
+      uncachedKeys.length === 1 && singlePermissionKey
+        ? {
+            [singlePermissionKey]:
+              await probeSingleMemberPermission(singlePermissionKey),
+          }
+        : await probeBatchMemberPermissions(uncachedKeys);
+
+    writeResolvedPermissions(store, resolved);
+  } catch (error) {
+    rethrowProbeControlErrors(error);
+    return throwPermissionProbeFailure(
+      uncachedKeys.length === 1
+        ? "member_has_permission"
+        : "member_has_permissions",
+      uncachedKeys.join(","),
+      error,
+    );
+  }
+}
+
+export async function prefetchMemberPermissions(
+  permissionKeys: string[],
+): Promise<void> {
+  const store = await getPermissionResolutionStore();
+  await resolveMemberPermissionsIntoStore(store, permissionKeys);
+}
+
+export const currentMemberHasPermission = cache(
+  async (permissionKey: string) => {
+    const store = await getPermissionResolutionStore();
+    const cached = store.get(permissionKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    await resolveMemberPermissionsIntoStore(store, [permissionKey]);
+    return store.get(permissionKey) ?? false;
   },
 );
 

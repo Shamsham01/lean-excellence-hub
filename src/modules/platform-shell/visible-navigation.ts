@@ -7,13 +7,14 @@ import {
 import {
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
+  prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
+import {
+  collectPlatformShellPermissionKeys,
+  setupNavigationPermissions,
+} from "@/modules/platform-shell/shell-permission-keys";
 
-const setupPermissions = [
-  "hierarchy.manage",
-  "invitations.manage",
-  "memberships.manage",
-] as const;
+const setupPermissions = setupNavigationPermissions;
 
 export async function canAccessSetupNavigation() {
   const results = await Promise.all(
@@ -25,6 +26,8 @@ export async function canAccessSetupNavigation() {
 }
 
 export async function buildVisibleNavigation() {
+  await prefetchMemberPermissions(collectPlatformShellPermissionKeys());
+
   const access = await Promise.all(
     platformNavigation.map(async (item) => {
       const canAccess = item.organisationScopeOnly
