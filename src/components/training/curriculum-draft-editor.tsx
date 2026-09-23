@@ -454,6 +454,15 @@ export function CurriculumDraftEditor({
                     jobFunctionName: requirement.jobFunctionName,
                     organisationalUnitName: requirement.organisationalUnitName,
                   })}
+                  {requirement.requiredWithinDays != null
+                    ? ` Complete within ${requirement.requiredWithinDays} days.`
+                    : ""}
+                  {requirement.validityDaysOverride != null
+                    ? ` Validity override ${requirement.validityDaysOverride} days.`
+                    : ""}
+                  {requirement.gracePeriodDays != null
+                    ? ` Grace period ${requirement.gracePeriodDays} days.`
+                    : ""}
                 </li>
               ))}
             </ul>
