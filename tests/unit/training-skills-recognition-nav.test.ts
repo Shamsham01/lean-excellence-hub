@@ -59,6 +59,29 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
     expect(matrix).not.toMatch(/from ["']next\/link["']/);
   });
 
+  it("opens a newly created training course with navigateTo instead of a push/refresh race", () => {
+    const createForm = readSource(
+      "src/components/training/course-create-form.tsx",
+    );
+    const draftEditor = readSource(
+      "src/components/training/course-draft-editor.tsx",
+    );
+    const actions = readSource(
+      "src/app/(platform)/platform/training/actions.ts",
+    );
+
+    expect(createForm).toContain('from "@/lib/navigation/navigate"');
+    expect(createForm).toContain("navigateTo(");
+    expect(createForm).toContain(
+      "`/platform/training/courses/${result.courseId}`",
+    );
+    expect(createForm).not.toMatch(/router\.push\(/);
+    expect(draftEditor).toContain("navigateTo(");
+    expect(actions).toContain("create_training_course_draft");
+    expect(actions).toContain("publish_training_course_version");
+    expect(actions).toContain("TRAINING_PERMISSIONS.catalogManage");
+  });
+
   it("keeps bulk completion as a same-page refresh rather than a create-and-open race", () => {
     const source = readSource(
       "src/components/training/bulk-completion-dialog.tsx",

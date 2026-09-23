@@ -130,6 +130,29 @@ describe("organisation setup readiness", () => {
     expect(lean?.status).toBe("setup_started");
   });
 
+  it("marks training configuration setup_started from catalogue count, not UI state", () => {
+    const notStarted = buildOrganisationSetupSnapshot(
+      baseQuery({ trainingCatalogCount: 0 }),
+      basePermissions,
+    );
+    const started = buildOrganisationSetupSnapshot(
+      baseQuery({ trainingCatalogCount: 1 }),
+      basePermissions,
+    );
+
+    const trainingNotStarted = notStarted.recommended.items.find(
+      (i) => i.id === "training_configuration",
+    );
+    const trainingStarted = started.recommended.items.find(
+      (i) => i.id === "training_configuration",
+    );
+
+    expect(trainingNotStarted?.status).toBe("not_started");
+    expect(trainingNotStarted?.href).toBe("/platform/training/courses");
+    expect(trainingStarted?.status).toBe("setup_started");
+    expect(trainingStarted?.href).toBe("/platform/training/courses");
+  });
+
   it("picks next core action when unit is missing", () => {
     const snapshot = buildOrganisationSetupSnapshot(
       baseQuery({ activeUnitCount: 0 }),
