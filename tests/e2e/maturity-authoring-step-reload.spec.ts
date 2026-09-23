@@ -98,9 +98,14 @@ test.describe("Maturity authoring step reload hydration", () => {
     await expect(page).toHaveURL(/\?step=pillars(?:$|&)/);
     await assertAuthoringStepVisible(page, "pillars");
 
+    // Step clicks use replaceState, so exercise back/forward with full navigations
+    // that create history entries and re-render from server-derived ?step= values.
+    await page.goto(`${modelUrl}?step=levels`);
+    await assertAuthoringStepVisible(page, "levels");
+    await page.goto(`${modelUrl}?step=pillars`);
+    await assertAuthoringStepVisible(page, "pillars");
     await page.goBack();
     await assertAuthoringStepVisible(page, "levels");
-
     await page.goForward();
     await assertAuthoringStepVisible(page, "pillars");
 
