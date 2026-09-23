@@ -7,27 +7,13 @@ const RELOAD_COUNT = 3;
 
 type AuthoringStep = "details" | "scopes" | "levels" | "pillars";
 
-/** Known benign console.error noise in local/CI Playwright runs. Keep narrow. */
-const ALLOWED_CONSOLE_ERROR_PATTERNS = [
-  /^Failed to load resource: the server responded with a status of 404/,
-  /^Failed to load resource: net::ERR_/,
-] as const;
-
-function isAllowedConsoleError(message: string) {
-  return ALLOWED_CONSOLE_ERROR_PATTERNS.some((pattern) => pattern.test(message));
-}
-
 function trackProductionRuntimeErrors(page: Page) {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
 
   page.on("console", (message) => {
-    if (message.type() !== "error") {
-      return;
-    }
-    const text = message.text();
-    if (!isAllowedConsoleError(text)) {
-      consoleErrors.push(`[console.error] ${text}`);
+    if (message.type() === "error") {
+      consoleErrors.push(`[console.error] ${message.text()}`);
     }
   });
 
