@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 
 import { createTrainingCourseAction } from "@/app/(platform)/platform/training/actions";
@@ -27,23 +27,22 @@ type FormState = {
 
 const initialState: FormState = {};
 
-export function CreateCourseForm({ existingCodes }: CreateCourseFormProps) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [name, setName] = useState("");
-  const [customCode, setCustomCode] = useState("");
-  const [state, formAction, pending] = useActionState(
-    createTrainingCourseAction,
-    initialState,
-  );
+type CreateCourseFormFieldsProps = {
+  existingCodes: readonly string[];
+  state: FormState;
+  formAction: (payload: FormData) => void;
+  pending: boolean;
+};
 
-  useEffect(() => {
-    if (state.name) {
-      setName(state.name);
-    }
-    if (state.customCode) {
-      setCustomCode(state.customCode);
-    }
-  }, [state.customCode, state.name]);
+function CreateCourseFormFields({
+  existingCodes,
+  state,
+  formAction,
+  pending,
+}: CreateCourseFormFieldsProps) {
+  const [showAdvanced, setShowAdvanced] = useState(Boolean(state.customCode));
+  const [name, setName] = useState(state.name ?? "");
+  const [customCode, setCustomCode] = useState(state.customCode ?? "");
 
   const generatedCode = useMemo(() => {
     if (showAdvanced && customCode.trim()) {
@@ -150,5 +149,29 @@ export function CreateCourseForm({ existingCodes }: CreateCourseFormProps) {
         {pending ? "Creating…" : "Create draft course"}
       </Button>
     </form>
+  );
+}
+
+export function CreateCourseForm({ existingCodes }: CreateCourseFormProps) {
+  const [state, formAction, pending] = useActionState(
+    createTrainingCourseAction,
+    initialState,
+  );
+  const preservedKey = [
+    state.error ?? "",
+    state.name ?? "",
+    state.category ?? "",
+    state.description ?? "",
+    state.customCode ?? "",
+  ].join("|");
+
+  return (
+    <CreateCourseFormFields
+      key={preservedKey}
+      existingCodes={existingCodes}
+      state={state}
+      formAction={formAction}
+      pending={pending}
+    />
   );
 }
