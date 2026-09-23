@@ -6,33 +6,22 @@ import { redirect } from "next/navigation";
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  buildTrainingCourseDraftUpdateArgs,
+  emptyTrainingCourseDraftFields,
+  mapTrainingCourseActionError,
+  parseTrainingCourseDraftFields,
+  resolveTrainingCourseDraftIntent,
+  type TrainingCourseDraftFormState,
+} from "@/modules/training/catalog-admin";
 import { resolveTrainingCourseCreateCode } from "@/modules/training/catalog-code";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-async function requireTrainingCatalogManagePermission() {
+async function trainingCatalogManageDenied(): Promise<string | null> {
   const canManage = await currentMemberHasPermission(
     TRAINING_PERMISSIONS.catalogManage,
   );
-  if (!canManage) {
-    throw new Error("Training catalogue management is not authorised.");
-  }
-}
-
-function mapTrainingCourseCreateError(message: string): string {
-  const normalised = message.toLowerCase();
-  if (
-    normalised.includes("duplicate key") &&
-    normalised.includes("training_courses_organisation_id_code_key")
-  ) {
-    return "A course with this code already exists. Choose a different code or name.";
-  }
-  if (normalised.includes("training_courses_code_check")) {
-    return "Use lowercase letters, numbers, dots, hyphens, or underscores. Start with a letter or number.";
-  }
-  if (normalised.includes("training course creation is not authorised")) {
-    return "Training catalogue management is not authorised.";
-  }
-  return message;
+  return canManage ? null : "Training catalogue management is not authorised.";
 }
 
 export async function updateSessionParticipantStatus(
@@ -154,7 +143,8 @@ export async function createCapabilityAction(input: {
 }
 
 export async function createCourseSuccessorVersion(courseId: string) {
-  await requireTrainingCatalogManagePermission();
+  const denied = await trainingCatalogManageDenied();
+  if (denied) return { error: denied };
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc(
     "create_training_course_successor_version",
@@ -162,14 +152,30 @@ export async function createCourseSuccessorVersion(courseId: string) {
       target_course_id: courseId,
     },
   );
-  if (error) return { error: error.message };
+  if (error) return { error: mapTrainingCourseActionError(error.message) };
   revalidatePath(`/platform/training/courses/${courseId}`);
   return { versionId: data as string };
 }
 
-export async function createCourseSuccessorFromForm(formData: FormData) {
-  const courseId = String(formData.get("courseId"));
-  await createCourseSuccessorVersion(courseId);
+export type CourseSuccessorFormState = {
+  error?: string;
+};
+
+export async function createCourseSuccessorAction(
+  _previousState: CourseSuccessorFormState,
+  formData: FormData,
+): Promise<CourseSuccessorFormState> {
+  const courseId = String(formData.get("courseId") ?? "").trim();
+  if (!courseId) {
+    return { error: "Course is required." };
+  }
+
+  const result = await createCourseSuccessorVersion(courseId);
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  redirect(`/platform/training/courses/${courseId}`);
 }
 
 export async function createTrainingCourseAction(
@@ -182,13 +188,16 @@ export async function createTrainingCourseAction(
   },
   formData: FormData,
 ) {
-  await requireTrainingCatalogManagePermission();
-
+  const denied = await trainingCatalogManageDenied();
   const name = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const customCode = String(formData.get("customCode") ?? "").trim();
   const preserved = { name, category, description, customCode };
+
+  if (denied) {
+    return { ...preserved, error: denied };
+  }
 
   if (!name) {
     return { ...preserved, error: "Course name is required." };
@@ -226,7 +235,7 @@ export async function createTrainingCourseAction(
   if (error) {
     return {
       ...preserved,
-      error: mapTrainingCourseCreateError(error.message),
+      error: mapTrainingCourseActionError(error.message),
     };
   }
 
@@ -236,99 +245,86 @@ export async function createTrainingCourseAction(
   redirect(`/platform/training/courses/${data as string}`);
 }
 
-export async function updateTrainingCourseDraftFromForm(formData: FormData) {
-  await requireTrainingCatalogManagePermission();
+export async function saveOrPublishTrainingCourseDraftAction(
+  _previousState: TrainingCourseDraftFormState,
+  formData: FormData,
+): Promise<TrainingCourseDraftFormState> {
+  const parsed = parseTrainingCourseDraftFields(formData);
+  const denied = await trainingCatalogManageDenied();
+  const fields = parsed.ok
+    ? parsed.fields
+    : {
+        ...emptyTrainingCourseDraftFields(),
+        ...parsed.fields,
+      };
 
-  const courseId = String(formData.get("courseId") ?? "").trim();
-  const versionId = String(formData.get("versionId") ?? "").trim();
-  const deliveryMethod = String(formData.get("deliveryMethod") ?? "").trim();
-  const learningObjectives = String(
-    formData.get("learningObjectives") ?? "",
-  ).trim();
-  const trainerRequirements = String(
-    formData.get("trainerRequirements") ?? "",
-  ).trim();
-  const durationRaw = String(formData.get("durationMinutes") ?? "").trim();
-  const validityRaw = String(formData.get("validityDays") ?? "").trim();
-
-  if (!courseId || !versionId) {
-    throw new Error("Course version is required.");
+  if (denied) {
+    return { ...fields, error: denied };
   }
 
-  const durationMinutes = durationRaw ? Number(durationRaw) : null;
-  const validityDays = validityRaw ? Number(validityRaw) : null;
-
-  if (
-    durationMinutes != null &&
-    (!Number.isFinite(durationMinutes) || durationMinutes <= 0)
-  ) {
-    throw new Error("Duration must be a positive number of minutes.");
+  if (!parsed.ok) {
+    return { ...fields, error: parsed.message };
   }
 
-  if (
-    validityDays != null &&
-    (!Number.isFinite(validityDays) || validityDays <= 0)
-  ) {
-    throw new Error("Validity must be a positive number of days.");
-  }
-
+  const intent = resolveTrainingCourseDraftIntent(formData);
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("update_training_course_draft_version", {
-    target_course_version_id: versionId,
-    ...(durationMinutes != null
-      ? { target_duration_minutes: durationMinutes }
-      : {}),
-    ...(learningObjectives
-      ? { target_learning_objectives: learningObjectives }
-      : {}),
-    ...(validityDays != null ? { target_validity_days: validityDays } : {}),
-    ...(deliveryMethod ? { target_delivery_method: deliveryMethod } : {}),
-    ...(trainerRequirements
-      ? { target_trainer_requirements: trainerRequirements }
-      : {}),
-  });
+  const { data: version, error: versionError } = await supabase
+    .from("training_course_versions")
+    .select("id, status, evidence_requirements")
+    .eq("id", fields.versionId)
+    .eq("course_id", fields.courseId)
+    .maybeSingle();
 
-  if (error) {
-    throw new Error(error.message);
+  if (versionError) {
+    return {
+      ...fields,
+      error: versionError.message,
+    };
   }
 
-  revalidatePath("/platform/training");
-  revalidatePath("/platform/training/courses");
-  revalidatePath(`/platform/training/courses/${courseId}`);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/training/courses/${courseId}`,
-      "course",
-    ),
+  if (!version || version.status !== "draft") {
+    return {
+      ...fields,
+      error:
+        "This draft can no longer be edited. Reload the course and try again.",
+    };
+  }
+
+  const { error: updateError } = await supabase.rpc(
+    "update_training_course_draft_version",
+    buildTrainingCourseDraftUpdateArgs(fields, version.evidence_requirements),
   );
-}
 
-export async function publishTrainingCourseFromForm(formData: FormData) {
-  await requireTrainingCatalogManagePermission();
-
-  const courseId = String(formData.get("courseId") ?? "").trim();
-  const versionId = String(formData.get("versionId") ?? "").trim();
-
-  if (!courseId || !versionId) {
-    throw new Error("Course version is required.");
+  if (updateError) {
+    return {
+      ...fields,
+      error: mapTrainingCourseActionError(updateError.message),
+    };
   }
 
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("publish_training_course_version", {
-    target_course_version_id: versionId,
-  });
+  if (intent === "publish") {
+    const { error: publishError } = await supabase.rpc(
+      "publish_training_course_version",
+      {
+        target_course_version_id: fields.versionId,
+      },
+    );
 
-  if (error) {
-    throw new Error(error.message);
+    if (publishError) {
+      return {
+        ...fields,
+        error: mapTrainingCourseActionError(publishError.message),
+      };
+    }
   }
 
   revalidatePath("/platform/training");
   revalidatePath("/platform/training/courses");
-  revalidatePath(`/platform/training/courses/${courseId}`);
+  revalidatePath(`/platform/training/courses/${fields.courseId}`);
   redirect(
     buildAuthoringSavedRedirectPath(
-      `/platform/training/courses/${courseId}`,
-      "publish",
+      `/platform/training/courses/${fields.courseId}`,
+      intent === "publish" ? "publish" : "course",
     ),
   );
 }

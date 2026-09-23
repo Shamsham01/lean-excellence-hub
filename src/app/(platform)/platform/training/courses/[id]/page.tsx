@@ -1,28 +1,22 @@
 import { notFound } from "next/navigation";
 
-import {
-  createCourseSuccessorFromForm,
-  publishTrainingCourseFromForm,
-  updateTrainingCourseDraftFromForm,
-} from "@/app/(platform)/platform/training/actions";
 import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
+import { CourseDraftEditor } from "@/components/training/course-draft-editor";
+import { CourseSuccessorForm } from "@/components/training/course-successor-form";
 import { OrganisationCatalogueScopeNotice } from "@/components/training/organisation-catalogue-scope-notice";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
+import { requireQuerySuccess } from "@/modules/organisation/applicability-selection";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import {
   formatTrainingCourseVersionStatus,
   formatTrainingDeliveryMethod,
-  TRAINING_DELIVERY_METHODS,
   trainingCoursePublishReadiness,
 } from "@/modules/training/catalog-admin";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -47,15 +41,16 @@ export default async function TrainingCourseDetailPage({
     currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),
   ]);
 
-  const { data: course } = await supabase
+  const { data: course, error: courseError } = await supabase
     .from("training_courses")
     .select("id, name, code, description, category")
     .eq("id", id)
     .maybeSingle();
 
+  requireQuerySuccess(courseError, course, "Failed to load training course");
   if (!course) notFound();
 
-  const { data: versions } = await supabase
+  const { data: versions, error: versionsError } = await supabase
     .from("training_course_versions")
     .select(
       "id, version_number, status, validity_days, duration_minutes, delivery_method, learning_objectives, trainer_requirements",
@@ -63,8 +58,16 @@ export default async function TrainingCourseDetailPage({
     .eq("course_id", id)
     .order("version_number", { ascending: false });
 
-  const draftVersion = versions?.find((version) => version.status === "draft");
-  const publishedVersion = versions?.find(
+  const loadedVersions = requireQuerySuccess(
+    versionsError,
+    versions ?? [],
+    "Failed to load training course versions",
+  );
+
+  const draftVersion = loadedVersions.find(
+    (version) => version.status === "draft",
+  );
+  const publishedVersion = loadedVersions.find(
     (version) => version.status === "published",
   );
   const publishReadiness = draftVersion
@@ -105,7 +108,7 @@ export default async function TrainingCourseDetailPage({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {versions?.map((version) => (
+        {loadedVersions.map((version) => (
           <Badge key={version.id} variant="outline">
             v{version.version_number} ·{" "}
             {formatTrainingCourseVersionStatus(
@@ -116,17 +119,7 @@ export default async function TrainingCourseDetailPage({
       </div>
 
       {canManageCatalog && publishedVersion && !draftVersion ? (
-        <form action={createCourseSuccessorFromForm}>
-          <input type="hidden" name="courseId" value={id} />
-          <Button
-            type="submit"
-            variant="outline"
-            className="min-h-11"
-            data-testid="create-course-successor"
-          >
-            Create successor version
-          </Button>
-        </form>
+        <CourseSuccessorForm courseId={id} />
       ) : null}
 
       {draftVersion && canManageCatalog ? (
@@ -134,127 +127,18 @@ export default async function TrainingCourseDetailPage({
           <CardHeader>
             <CardTitle>Draft version {draftVersion.version_number}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6">
-            <p className="text-sm text-muted-foreground">
-              Edit the draft below. Published content stays read-only until you
-              create a successor version.
-            </p>
-            <form
-              action={updateTrainingCourseDraftFromForm}
-              className="flex max-w-2xl flex-col gap-4"
-            >
-              <input type="hidden" name="courseId" value={id} />
-              <input type="hidden" name="versionId" value={draftVersion.id} />
-              <div>
-                <Label htmlFor="validityDays">
-                  Qualification validity (days)
-                </Label>
-                <Input
-                  id="validityDays"
-                  name="validityDays"
-                  type="number"
-                  min={1}
-                  defaultValue={draftVersion.validity_days ?? ""}
-                  placeholder="365"
-                  className="mt-2 min-h-11"
-                  data-testid="training-course-validity-input"
-                />
-              </div>
-              <div>
-                <Label htmlFor="durationMinutes">
-                  Estimated duration (minutes)
-                </Label>
-                <Input
-                  id="durationMinutes"
-                  name="durationMinutes"
-                  type="number"
-                  min={1}
-                  defaultValue={draftVersion.duration_minutes ?? ""}
-                  placeholder="240"
-                  className="mt-2 min-h-11"
-                  data-testid="training-course-duration-input"
-                />
-              </div>
-              <div>
-                <Label htmlFor="deliveryMethod">Delivery method</Label>
-                <select
-                  id="deliveryMethod"
-                  name="deliveryMethod"
-                  defaultValue={draftVersion.delivery_method ?? ""}
-                  className="mt-2 min-h-11 w-full rounded-md border border-border px-3"
-                  data-testid="training-course-delivery-select"
-                >
-                  <option value="">Select a delivery method</option>
-                  {TRAINING_DELIVERY_METHODS.map((method) => (
-                    <option key={method.value} value={method.value}>
-                      {method.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="learningObjectives">Learning objectives</Label>
-                <Textarea
-                  id="learningObjectives"
-                  name="learningObjectives"
-                  rows={4}
-                  defaultValue={draftVersion.learning_objectives ?? ""}
-                  className="mt-2"
-                  data-testid="training-course-objectives-input"
-                />
-              </div>
-              <div>
-                <Label htmlFor="trainerRequirements">
-                  Trainer requirements (optional)
-                </Label>
-                <Textarea
-                  id="trainerRequirements"
-                  name="trainerRequirements"
-                  rows={3}
-                  defaultValue={draftVersion.trainer_requirements ?? ""}
-                  className="mt-2"
-                  data-testid="training-course-trainer-input"
-                />
-              </div>
-              <Button
-                type="submit"
-                variant="outline"
-                className="min-h-11"
-                data-testid="training-course-save-draft"
-              >
-                Save draft details
-              </Button>
-            </form>
-
-            <div className="border-t border-border pt-6">
-              <h3 className="text-sm font-semibold">Publish course</h3>
-              {publishReadiness?.recommendations.length ? (
-                <ul
-                  className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground"
-                  data-testid="training-course-publish-recommendations"
-                >
-                  {publishReadiness.recommendations.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  This draft is ready to publish. Publishing makes the course
-                  available organisation-wide in the training catalogue.
-                </p>
-              )}
-              <form action={publishTrainingCourseFromForm} className="mt-4">
-                <input type="hidden" name="courseId" value={id} />
-                <input type="hidden" name="versionId" value={draftVersion.id} />
-                <Button
-                  type="submit"
-                  className="min-h-11"
-                  data-testid="training-course-publish"
-                >
-                  Publish course
-                </Button>
-              </form>
-            </div>
+          <CardContent>
+            <CourseDraftEditor
+              courseId={id}
+              versionId={draftVersion.id}
+              versionNumber={draftVersion.version_number}
+              initialValidityDays={draftVersion.validity_days}
+              initialDurationMinutes={draftVersion.duration_minutes}
+              initialDeliveryMethod={draftVersion.delivery_method}
+              initialLearningObjectives={draftVersion.learning_objectives}
+              initialTrainerRequirements={draftVersion.trainer_requirements}
+              recommendations={publishReadiness?.recommendations ?? []}
+            />
           </CardContent>
         </Card>
       ) : null}

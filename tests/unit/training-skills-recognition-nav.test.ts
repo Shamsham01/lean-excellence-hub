@@ -59,6 +59,25 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
     expect(matrix).not.toMatch(/from ["']next\/link["']/);
   });
 
+  it("fails catalogue loads instead of treating query errors as an empty catalogue", () => {
+    const courses = readSource(
+      "src/app/(platform)/platform/training/courses/page.tsx",
+    );
+    const overview = readSource(
+      "src/app/(platform)/platform/training/page.tsx",
+    );
+    const detail = readSource(
+      "src/app/(platform)/platform/training/courses/[id]/page.tsx",
+    );
+
+    expect(courses).toContain("requireQuerySuccess");
+    expect(overview).toContain("requireQuerySuccess");
+    expect(detail).toContain("requireQuerySuccess");
+    expect(courses).toContain("Failed to load training courses");
+    expect(overview).toContain("Failed to load training courses");
+    expect(detail).toContain("Failed to load training course");
+  });
+
   it("keeps bulk completion as a same-page refresh rather than a create-and-open race", () => {
     const source = readSource(
       "src/components/training/bulk-completion-dialog.tsx",

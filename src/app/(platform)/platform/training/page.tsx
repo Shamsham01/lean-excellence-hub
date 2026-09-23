@@ -5,6 +5,7 @@ import { OrganisationCatalogueScopeNotice } from "@/components/training/organisa
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireQuerySuccess } from "@/modules/organisation/applicability-selection";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -32,11 +33,16 @@ export default async function TrainingOverviewPage() {
   const outstanding = summaryObj?.outstanding_required ?? 0;
   const expiring = summaryObj?.expiring_in_30_days ?? 0;
 
-  const { data: courses } = await supabase
+  const { data: courses, error: coursesError } = await supabase
     .from("training_courses")
     .select("id, name, code")
     .eq("status", "active")
     .limit(10);
+  const loadedCourses = requireQuerySuccess(
+    coursesError,
+    courses ?? [],
+    "Failed to load training courses",
+  );
 
   const emptyState = trainingCourseEmptyStateMessage(canManageCatalog);
 
@@ -86,8 +92,8 @@ export default async function TrainingOverviewPage() {
             <CardTitle>Courses</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {courses && courses.length > 0 ? (
-              courses.map((course) => (
+            {loadedCourses.length > 0 ? (
+              loadedCourses.map((course) => (
                 <AppLink
                   key={course.id}
                   href={`/platform/training/courses/${course.id}`}

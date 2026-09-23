@@ -6,6 +6,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireQuerySuccess } from "@/modules/organisation/applicability-selection";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -23,28 +24,40 @@ export default async function TrainingCoursesPage() {
     currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),
   ]);
 
-  const { data: courses } = await supabase
+  const { data: courses, error: coursesError } = await supabase
     .from("training_courses")
     .select("id, name, code, category")
     .order("name");
 
-  const courseIds = courses?.map((course) => course.id) ?? [];
-  const { data: versions } =
+  const loadedCourses = requireQuerySuccess(
+    coursesError,
+    courses ?? [],
+    "Failed to load training courses",
+  );
+
+  const courseIds = loadedCourses.map((course) => course.id);
+  const { data: versions, error: versionsError } =
     courseIds.length > 0
       ? await supabase
           .from("training_course_versions")
           .select("course_id, version_number, status")
           .in("course_id", courseIds)
-      : { data: [] };
+      : { data: [], error: null };
+
+  const loadedVersions = requireQuerySuccess(
+    versionsError,
+    versions ?? [],
+    "Failed to load training course versions",
+  );
 
   const listItems = buildTrainingCourseListItems(
-    courses ?? [],
-    (versions ?? []).map((version) => ({
+    loadedCourses,
+    loadedVersions.map((version) => ({
       ...version,
       status: version.status as "draft" | "published" | "archived",
     })),
   );
-  const existingCodes = (courses ?? []).map((course) => course.code);
+  const existingCodes = loadedCourses.map((course) => course.code);
   const emptyState = trainingCourseEmptyStateMessage(canManageCatalog);
 
   return (
