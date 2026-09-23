@@ -7,27 +7,47 @@ const RELOAD_COUNT = 3;
 
 type AuthoringStep = "details" | "scopes" | "levels" | "pillars";
 
+/** Known benign console.error noise in local/CI Playwright runs. Keep narrow. */
+const ALLOWED_CONSOLE_ERROR_PATTERNS = [
+  /^Failed to load resource: the server responded with a status of 404/,
+  /^Failed to load resource: net::ERR_/,
+] as const;
+
+function isAllowedConsoleError(message: string) {
+  return ALLOWED_CONSOLE_ERROR_PATTERNS.some((pattern) => pattern.test(message));
+}
+
 function trackProductionRuntimeErrors(page: Page) {
-  const errors: string[] = [];
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
 
   page.on("console", (message) => {
     if (message.type() !== "error") {
       return;
     }
-    errors.push(`[console.error] ${message.text()}`);
+    const text = message.text();
+    if (!isAllowedConsoleError(text)) {
+      consoleErrors.push(`[console.error] ${text}`);
+    }
   });
 
   page.on("pageerror", (error) => {
-    errors.push(`[pageerror] ${error.message}`);
+    pageErrors.push(`[pageerror] ${error.message}`);
   });
 
   return () => {
-    const hydrationOrRuntimeErrors = errors.filter((entry) =>
-      /hydration|did not match|text content does not match|minified react error #418|minified react error #423|minified react error #425|recoverable error/i.test(
-        entry,
-      ),
-    );
-    expect(hydrationOrRuntimeErrors, errors.join("\n")).toEqual([]);
+    expect(
+      pageErrors,
+      pageErrors.length > 0
+        ? `Unexpected uncaught page errors:\n${pageErrors.join("\n")}`
+        : undefined,
+    ).toEqual([]);
+    expect(
+      consoleErrors,
+      consoleErrors.length > 0
+        ? `Unexpected console.error output:\n${consoleErrors.join("\n")}`
+        : undefined,
+    ).toEqual([]);
   };
 }
 
