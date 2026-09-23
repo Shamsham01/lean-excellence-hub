@@ -1,5 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const updateTrainingCourseDraftVersion = vi.fn();
 const publishTrainingCourseVersion = vi.fn();
@@ -28,6 +34,10 @@ const initialValues = {
 };
 
 describe("CourseDraftEditor", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     updateTrainingCourseDraftVersion.mockReset();
     publishTrainingCourseVersion.mockReset();

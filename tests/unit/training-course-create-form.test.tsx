@@ -1,5 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const createTrainingCourseDraft = vi.fn();
 const navigateTo = vi.fn();
@@ -16,6 +22,10 @@ vi.mock("@/lib/navigation/navigate", () => ({
 import { CourseCreateForm } from "@/components/training/course-create-form";
 
 describe("CourseCreateForm", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     createTrainingCourseDraft.mockReset();
     navigateTo.mockReset();
