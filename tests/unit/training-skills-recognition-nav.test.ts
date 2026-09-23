@@ -43,6 +43,8 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
 
     expect(courses).toContain('from "@/components/ui/app-link"');
     expect(courses).toContain('data-testid="training-courses-back-link"');
+    expect(courses).toContain('data-testid="training-course-new-button"');
+    expect(courses).toContain('href="/platform/training/courses?new=1"');
     expect(courseDetail).toContain('data-testid="training-course-back-link"');
     expect(sessions).toContain('data-testid="training-sessions-back-link"');
     expect(sessionDetail).toContain('data-testid="training-session-back-link"');
@@ -57,6 +59,29 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
     expect(sessionDetail).not.toMatch(/from ["']next\/link["']/);
     expect(curriculum).not.toMatch(/from ["']next\/link["']/);
     expect(matrix).not.toMatch(/from ["']next\/link["']/);
+  });
+
+  it("opens a newly created training course with navigateTo instead of a push/refresh race", () => {
+    const createForm = readSource(
+      "src/components/training/course-create-form.tsx",
+    );
+    const draftEditor = readSource(
+      "src/components/training/course-draft-editor.tsx",
+    );
+    const actions = readSource(
+      "src/app/(platform)/platform/training/actions.ts",
+    );
+
+    expect(createForm).toContain('from "@/lib/navigation/navigate"');
+    expect(createForm).toContain("navigateTo(");
+    expect(createForm).toContain(
+      "`/platform/training/courses/${result.courseId}`",
+    );
+    expect(createForm).not.toMatch(/router\.push\(/);
+    expect(draftEditor).toContain("navigateTo(");
+    expect(actions).toContain("create_training_course_draft");
+    expect(actions).toContain("publish_training_course_version");
+    expect(actions).toContain("TRAINING_PERMISSIONS.catalogManage");
   });
 
   it("keeps bulk completion as a same-page refresh rather than a create-and-open race", () => {
