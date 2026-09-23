@@ -223,7 +223,9 @@ test.describe("Training course catalogue bootstrap", () => {
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
       "Successor draft created.",
     );
-    await expect(page.getByText("Version 2")).toBeVisible();
+    await expect(page.getByTestId("training-course-version-2")).toContainText(
+      "Version 2",
+    );
     await expect(
       page.getByTestId("training-course-draft-editor"),
     ).toBeVisible();

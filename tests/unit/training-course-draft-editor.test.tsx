@@ -56,7 +56,6 @@ describe("CourseDraftEditor", () => {
       <CourseDraftEditor
         courseId="course-1"
         versionId="version-1"
-        versionNumber={1}
         initialValues={initialValues}
       />,
     );
@@ -80,7 +79,6 @@ describe("CourseDraftEditor", () => {
       <CourseDraftEditor
         courseId="course-1"
         versionId="version-1"
-        versionNumber={1}
         initialValues={initialValues}
       />,
     );

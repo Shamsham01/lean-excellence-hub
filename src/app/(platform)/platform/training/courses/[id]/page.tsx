@@ -122,7 +122,6 @@ export default async function TrainingCourseDetailPage({
         <CourseDraftEditor
           courseId={course.id}
           versionId={draftVersion.id}
-          versionNumber={draftVersion.version_number}
           initialValues={{
             durationMinutes: draftVersion.duration_minutes
               ? String(draftVersion.duration_minutes)

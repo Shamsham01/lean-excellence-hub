@@ -31,14 +31,12 @@ export type CourseDraftEditorValues = {
 type CourseDraftEditorProps = {
   courseId: string;
   versionId: string;
-  versionNumber: number;
   initialValues: CourseDraftEditorValues;
 };
 
 export function CourseDraftEditor({
   courseId,
   versionId,
-  versionNumber,
   initialValues,
 }: CourseDraftEditorProps) {
   const [values, setValues] = useState(initialValues);
@@ -123,7 +121,7 @@ export function CourseDraftEditor({
   return (
     <Card data-testid="training-course-draft-editor">
       <CardHeader>
-        <CardTitle>Edit draft version {versionNumber}</CardTitle>
+        <CardTitle>Edit draft</CardTitle>
       </CardHeader>
       <CardContent>
         <form
