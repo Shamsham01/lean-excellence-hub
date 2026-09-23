@@ -118,6 +118,18 @@ describe("organisation setup readiness", () => {
     expect(invite?.status).toBe("complete");
   });
 
+  it("marks training configuration as setup_started after the first catalogue record", () => {
+    const snapshot = buildOrganisationSetupSnapshot(
+      baseQuery({ trainingCatalogCount: 1 }),
+      basePermissions,
+    );
+
+    const training = snapshot.recommended.items.find(
+      (item) => item.id === "training_configuration",
+    );
+    expect(training?.status).toBe("setup_started");
+  });
+
   it("never auto-completes lean configuration from one signal", () => {
     const snapshot = buildOrganisationSetupSnapshot(
       baseQuery({ leanConfigSignalCount: 1 }),

@@ -2,7 +2,7 @@ export const AUTHORING_STEP_PARAM = "step";
 export const AUTHORING_SAVED_PARAM = "saved";
 
 export type AuthoringSavedKey =
-  "applicability" | "section" | "question" | "publish" | "framework";
+  "applicability" | "section" | "question" | "publish" | "framework" | "course";
 
 const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "applicability",
@@ -10,6 +10,7 @@ const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "question",
   "publish",
   "framework",
+  "course",
 ]);
 
 export function parseAuthoringStep<T extends string>(
@@ -63,6 +64,8 @@ export function authoringSaveMessage(key: AuthoringSavedKey): string {
       return "Published successfully.";
     case "framework":
       return "Saved.";
+    case "course":
+      return "Course details saved.";
   }
 }
 

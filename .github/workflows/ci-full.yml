@@ -226,6 +226,7 @@ jobs:
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts
+              tests/e2e/training-catalogue-bootstrap.spec.ts
               tests/e2e/milestone7-closure.spec.ts
               tests/e2e/invitation-lifecycle.spec.ts
               tests/e2e/people-settings-reload.spec.ts
