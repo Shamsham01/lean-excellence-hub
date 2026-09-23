@@ -51,7 +51,11 @@ function CourseDraftEditorFields({
   pending: boolean;
 }) {
   return (
-    <form action={formAction} className="flex max-w-2xl flex-col gap-6">
+    <form
+      action={formAction}
+      noValidate
+      className="flex max-w-2xl flex-col gap-6"
+    >
       <input type="hidden" name="courseId" value={defaults.courseId} />
       <input type="hidden" name="versionId" value={defaults.versionId} />
       <p className="text-sm text-muted-foreground">

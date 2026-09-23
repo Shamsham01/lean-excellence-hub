@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { createPublishableClient } from "./helpers/workforce-provisioning";
 import {
+  DEMO_ORGANISATION,
   DEMO_TRAINING_COURSES,
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
@@ -87,6 +88,32 @@ async function signInDemoSupabase(user: keyof typeof DEMO_USERS) {
   if (error) {
     throw error;
   }
+
+  const { data: organisations, error: organisationError } = await client.rpc(
+    "list_my_eligible_organisations",
+  );
+  if (organisationError) {
+    throw organisationError;
+  }
+
+  const organisation = (
+    organisations as Array<{
+      organisation_id: string;
+      organisation_code: string;
+    }> | null
+  )?.find((entry) => entry.organisation_code === DEMO_ORGANISATION.code);
+
+  if (!organisation) {
+    throw new Error("Demo organisation was not available after sign-in.");
+  }
+
+  const { error: switchError } = await client.rpc("switch_organisation", {
+    target_organisation_id: organisation.organisation_id,
+  });
+  if (switchError) {
+    throw switchError;
+  }
+
   return client;
 }
 
@@ -178,7 +205,7 @@ test.describe("Training course catalogue bootstrap", () => {
 
     await signInAsDemoUser(page, "admin");
     await createDraftCourse(page, courseName);
-    const courseId = page.url().split("/").pop()?.split("?")[0];
+    const courseId = page.url().match(/\/courses\/([^/?#]+)/)?.[1];
     expect(courseId).toBeTruthy();
 
     const admin = await signInDemoSupabase("admin");
