@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(35);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -316,6 +316,16 @@ select throws_ok(
   'non-author submitter cannot attach to another member idea without attachments.upload'
 );
 
+select throws_ok(
+  format(
+    'select public.withdraw_suggestion_evidence(%L::uuid)',
+    (select id from sug_evidence_ids where key = 'attachment')
+  ),
+  '42501',
+  'suggestion evidence withdraw is not authorised',
+  'peer cannot withdraw another member draft evidence'
+);
+
 reset role;
 
 select set_config(
@@ -351,6 +361,239 @@ select is(
   ),
   0::bigint,
   'cross-organisation readers cannot see suggestion evidence'
+);
+
+select throws_ok(
+  format(
+    'select public.withdraw_suggestion_evidence(%L::uuid)',
+    (select id from sug_evidence_ids where key = 'attachment')
+  ),
+  '42501',
+  'suggestion evidence withdraw is not authorised',
+  'cross-organisation withdraw is rejected without leaking the attachment'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000002","email":"sug-evidence-author@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from sug_evidence_ids where key = 'org_a')),
+  'author returns to organisation A'
+);
+
+select ok(
+  public.withdraw_suggestion_evidence(
+    (select id from sug_evidence_ids where key = 'attachment')
+  ),
+  'author can withdraw their own draft evidence'
+);
+
+select is(
+  (
+    select count(*)
+    from public.attachments attachment_row
+    where attachment_row.id = (select id from sug_evidence_ids where key = 'attachment')
+      and attachment_row.lifecycle = 'active'
+  ),
+  0::bigint,
+  'withdrawn draft evidence is no longer readable as active'
+);
+
+insert into sug_evidence_ids (key, id)
+select 'replacement', upload_row.attachment_id
+from public.initiate_attachment_upload(
+  (select id from sug_evidence_ids where key = 'suggestion'),
+  'floor-2.jpg',
+  'image/jpeg',
+  2048
+) upload_row;
+
+select ok(
+  public.confirm_attachment_upload((select id from sug_evidence_ids where key = 'replacement')),
+  'author can attach replacement evidence after withdraw'
+);
+
+select ok(
+  public.submit_suggestion((select id from sug_evidence_ids where key = 'suggestion')),
+  'author can submit the draft after evidence recovery'
+);
+
+select throws_ok(
+  format(
+    'select public.initiate_attachment_upload(%L::uuid, %L, %L, %s)',
+    (select id from sug_evidence_ids where key = 'suggestion'),
+    'after-submit.jpg',
+    'image/jpeg',
+    1024
+  ),
+  '42501',
+  'attachment upload is not authorised',
+  'author cannot attach evidence after submit without attachments.upload'
+);
+
+select throws_ok(
+  format(
+    'select public.withdraw_suggestion_evidence(%L::uuid)',
+    (select id from sug_evidence_ids where key = 'replacement')
+  ),
+  '42501',
+  'suggestion evidence withdraw is not authorised',
+  'author cannot withdraw evidence after submit'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000001","email":"sug-evidence-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from sug_evidence_ids where key = 'org_a')),
+  'owner selects organisation A for reviewer upload'
+);
+
+insert into sug_evidence_ids (key, id)
+select 'owner_after_submit', upload_row.attachment_id
+from public.initiate_attachment_upload(
+  (select id from sug_evidence_ids where key = 'suggestion'),
+  'reviewer.jpg',
+  'image/jpeg',
+  1024
+) upload_row;
+
+select ok(
+  (select id from sug_evidence_ids where key = 'owner_after_submit') is not null,
+  'attachments.upload holder can still add evidence after submit'
+);
+
+reset role;
+
+update public.improvement_suggestions
+set status = 'accepted'
+where id = (select id from sug_evidence_ids where key = 'suggestion');
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000002","email":"sug-evidence-author@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from sug_evidence_ids where key = 'org_a')),
+  'author selects organisation A after acceptance'
+);
+
+select throws_ok(
+  format(
+    'select public.initiate_attachment_upload(%L::uuid, %L, %L, %s)',
+    (select id from sug_evidence_ids where key = 'suggestion'),
+    'after-accept.jpg',
+    'image/jpeg',
+    1024
+  ),
+  '42501',
+  'attachment upload is not authorised',
+  'author cannot attach evidence after acceptance'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000001","email":"sug-evidence-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from sug_evidence_ids where key = 'org_a')),
+  'owner selects organisation A after acceptance'
+);
+
+insert into sug_evidence_ids (key, id)
+select 'owner_after_accept', upload_row.attachment_id
+from public.initiate_attachment_upload(
+  (select id from sug_evidence_ids where key = 'suggestion'),
+  'closed-reviewer.jpg',
+  'image/jpeg',
+  1024
+) upload_row;
+
+select ok(
+  (select id from sug_evidence_ids where key = 'owner_after_accept') is not null,
+  'attachments.upload holder can still add evidence after acceptance'
+);
+
+reset role;
+
+update public.improvement_suggestions
+set status = 'implemented'
+where id = (select id from sug_evidence_ids where key = 'suggestion');
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000002","email":"sug-evidence-author@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from sug_evidence_ids where key = 'org_a')),
+  'author selects organisation A after implementation'
+);
+
+select throws_ok(
+  format(
+    'select public.initiate_attachment_upload(%L::uuid, %L, %L, %s)',
+    (select id from sug_evidence_ids where key = 'suggestion'),
+    'after-implemented.jpg',
+    'image/jpeg',
+    1024
+  ),
+  '42501',
+  'attachment upload is not authorised',
+  'author cannot attach evidence after implementation'
+);
+
+reset role;
+
+update public.improvement_suggestions
+set status = 'rejected'
+where id = (select id from sug_evidence_ids where key = 'suggestion');
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000002","email":"sug-evidence-author@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from sug_evidence_ids where key = 'org_a')),
+  'author selects organisation A after rejection'
+);
+
+select throws_ok(
+  format(
+    'select public.initiate_attachment_upload(%L::uuid, %L, %L, %s)',
+    (select id from sug_evidence_ids where key = 'suggestion'),
+    'after-rejected.jpg',
+    'image/jpeg',
+    1024
+  ),
+  '42501',
+  'attachment upload is not authorised',
+  'author cannot attach evidence after rejection'
 );
 
 select * from finish();

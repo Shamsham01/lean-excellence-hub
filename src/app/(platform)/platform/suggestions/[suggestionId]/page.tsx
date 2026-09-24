@@ -7,6 +7,7 @@ import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { suggestionStatusAllowsAuthorEvidenceUpload } from "@/lib/suggestions/status";
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -40,11 +41,17 @@ export default async function SuggestionDetailPage({
             "",
         )
       : "";
+  const suggestionStatus =
+    detail && typeof detail === "object" && "status" in detail
+      ? String((detail as { status?: string }).status ?? "")
+      : "";
   const canUploadByPermission =
     await currentMemberHasPermission("attachments.upload");
   const canUploadEvidence =
     canUploadByPermission ||
-    (currentMembershipId != null && currentMembershipId === authorMembershipId);
+    (currentMembershipId != null &&
+      currentMembershipId === authorMembershipId &&
+      suggestionStatusAllowsAuthorEvidenceUpload(suggestionStatus));
 
   const { data: comments } = await supabase
 

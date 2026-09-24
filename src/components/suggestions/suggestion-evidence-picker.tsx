@@ -85,7 +85,7 @@ export function SuggestionEvidencePicker({
                     Retry
                   </Button>
                 ) : null}
-                {file.status !== "uploaded" ? (
+                {file.status !== "uploading" ? (
                   <Button
                     type="button"
                     size="sm"

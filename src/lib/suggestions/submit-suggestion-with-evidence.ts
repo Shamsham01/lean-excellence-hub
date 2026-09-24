@@ -43,6 +43,7 @@ export type SuggestionEvidenceClient = {
   }) => Promise<{ attachmentId: string; storagePath: string }>;
   uploadObject: (storagePath: string, file: File) => Promise<void>;
   confirmUpload: (attachmentId: string) => Promise<void>;
+  withdrawEvidence: (attachmentId: string) => Promise<void>;
 };
 
 export type SubmitSuggestionWithEvidenceInput = {
@@ -293,6 +294,12 @@ export function createBrowserSuggestionEvidenceClient(
     uploadObject,
     async confirmUpload(attachmentId) {
       const { error } = await rpc("confirm_attachment_upload", {
+        target_attachment_id: attachmentId,
+      });
+      if (error) throw error;
+    },
+    async withdrawEvidence(attachmentId) {
+      const { error } = await rpc("withdraw_suggestion_evidence", {
         target_attachment_id: attachmentId,
       });
       if (error) throw error;

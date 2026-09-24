@@ -29,6 +29,12 @@ as $$
     )
 $$;
 
+-- Author evidence-upload matrix (this helper only):
+--   draft: author + suggestions.submit on the origin unit
+--   submitted / under_review / parked / accepted / implementing /
+--   implemented / rejected / withdrawn: authors cannot upload here
+-- Reviewer / manager uploads keep the existing attachments.upload path
+-- in can_upload_attachments, including after approval or closure.
 create or replace function private.can_upload_suggestion_evidence(
   target_organisation_id uuid,
   target_resource_id uuid
@@ -49,6 +55,7 @@ as $$
       and resource_registry.id = target_resource_id
       and resource_registry.resource_type = 'improvement_suggestion'
       and resource_registry.retired_at is null
+      and suggestion_row.status = 'draft'
       and suggestion_row.author_membership_id =
         private.current_membership_id(target_organisation_id)
       and private.can_submit_suggestion_to_unit(
@@ -403,4 +410,99 @@ grant execute on function private.attachment_payload_is_allowed(text, text, bigi
 grant execute on function private.can_upload_suggestion_evidence(uuid, uuid)
   to authenticated;
 grant execute on function private.can_read_suggestion_evidence(uuid, uuid)
+  to authenticated;
+
+-- Pre-submit recovery only: archive the author's own draft evidence.
+-- Does not accept a storage path and does not delete storage objects.
+create or replace function private.withdraw_suggestion_evidence(
+  target_attachment_id uuid
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  attachment_row public.attachments%rowtype;
+  resource_type text;
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'suggestion evidence withdraw is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select attachment_table.*
+  into attachment_row
+  from public.attachments attachment_table
+  where attachment_table.organisation_id = org_id
+    and attachment_table.id = target_attachment_id
+  for update;
+
+  if not found then
+    raise exception 'suggestion evidence withdraw is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select resource_registry.resource_type
+  into resource_type
+  from public.resource_records resource_registry
+  where resource_registry.organisation_id = org_id
+    and resource_registry.id = attachment_row.target_resource_id
+    and resource_registry.retired_at is null;
+
+  if resource_type is distinct from 'improvement_suggestion' then
+    raise exception 'suggestion evidence withdraw is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if not private.can_upload_suggestion_evidence(
+    org_id,
+    attachment_row.target_resource_id
+  ) then
+    raise exception 'suggestion evidence withdraw is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if attachment_row.lifecycle not in ('pending_upload', 'active') then
+    raise exception 'suggestion evidence cannot be withdrawn'
+      using errcode = '55000';
+  end if;
+
+  update public.attachments attachment_table
+  set lifecycle = 'archived',
+      updated_at = statement_timestamp()
+  where attachment_table.organisation_id = org_id
+    and attachment_table.id = target_attachment_id
+    and attachment_table.lifecycle in ('pending_upload', 'active');
+
+  return found;
+end;
+$$;
+
+create or replace function public.withdraw_suggestion_evidence(
+  target_attachment_id uuid
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.withdraw_suggestion_evidence(target_attachment_id)
+$$;
+
+alter function private.withdraw_suggestion_evidence(uuid) owner to postgres;
+alter function public.withdraw_suggestion_evidence(uuid) owner to postgres;
+
+revoke all on function private.withdraw_suggestion_evidence(uuid)
+  from public, anon;
+revoke all on function public.withdraw_suggestion_evidence(uuid)
+  from public, anon;
+
+grant execute on function private.withdraw_suggestion_evidence(uuid)
+  to authenticated;
+grant execute on function public.withdraw_suggestion_evidence(uuid)
   to authenticated;

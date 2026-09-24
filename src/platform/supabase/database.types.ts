@@ -14194,6 +14194,10 @@ export type Database = {
         Args: { target_reason?: string; target_suggestion_id: string }
         Returns: boolean
       }
+      withdraw_suggestion_evidence: {
+        Args: { target_attachment_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

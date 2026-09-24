@@ -6,6 +6,7 @@ import {
 } from "@/lib/suggestions/review-sla";
 import {
   pipelineStatuses,
+  suggestionStatusAllowsAuthorEvidenceUpload,
   suggestionStatusLabel,
 } from "@/lib/suggestions/status";
 
@@ -36,5 +37,23 @@ describe("suggestion status presentation", () => {
 
   it("returns pipeline statuses", () => {
     expect(pipelineStatuses()).toContain("implemented");
+  });
+
+  it("allows author evidence upload only on draft", () => {
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("draft")).toBe(true);
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("submitted")).toBe(false);
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("under_review")).toBe(
+      false,
+    );
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("parked")).toBe(false);
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("accepted")).toBe(false);
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("implementing")).toBe(
+      false,
+    );
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("implemented")).toBe(
+      false,
+    );
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("rejected")).toBe(false);
+    expect(suggestionStatusAllowsAuthorEvidenceUpload("withdrawn")).toBe(false);
   });
 });

@@ -37,8 +37,12 @@ afterEach(() => {
 
 const programmeVersions = [
   { id: "programme-version-1", programme_name: "Everyday ideas" },
+  { id: "programme-version-2", programme_name: "Safety ideas" },
 ];
-const categories = [{ id: "category-1", name: "Quality" }];
+const categories = [
+  { id: "category-1", name: "Quality" },
+  { id: "category-2", name: "Cost" },
+];
 
 function renderForm() {
   return render(
@@ -192,6 +196,169 @@ describe("new suggestion form navigation", () => {
     expect(
       rpc.mock.calls.filter(([fn]) => fn === "submit_suggestion"),
     ).toHaveLength(2);
+  });
+
+  it("locks programme and category after a draft is created so retry cannot mismatch", async () => {
+    const draftId = "99999999-9999-4999-8999-999999999999";
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "create_suggestion_draft") {
+        return { data: draftId, error: null };
+      }
+      if (fn === "initiate_attachment_upload") {
+        return { error: { message: "attachment upload is not authorised" } };
+      }
+      return { error: null };
+    });
+
+    renderForm();
+    fillIdea();
+    fireEvent.change(screen.getByLabelText("Programme"), {
+      target: { value: "programme-version-2" },
+    });
+    fireEvent.change(screen.getByLabelText("Category"), {
+      target: { value: "category-2" },
+    });
+    expect(screen.getByLabelText("Programme")).toHaveValue(
+      "programme-version-2",
+    );
+
+    const file = new File(["photo"], "floor.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByTestId("suggestion-evidence-file-input"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit idea" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("suggestion-catalogue-locked"),
+      ).toHaveTextContent("Programme and category stay as first saved");
+    });
+
+    const programmeSelect = screen.getByLabelText("Programme");
+    const categorySelect = screen.getByLabelText("Category");
+    expect(programmeSelect).toBeDisabled();
+    expect(categorySelect).toBeDisabled();
+    expect(programmeSelect).toHaveValue("programme-version-2");
+    expect(categorySelect).toHaveValue("category-2");
+
+    fireEvent.change(programmeSelect, {
+      target: { value: "programme-version-1" },
+    });
+    fireEvent.change(categorySelect, { target: { value: "category-1" } });
+    expect(programmeSelect).toHaveValue("programme-version-2");
+    expect(categorySelect).toHaveValue("category-2");
+
+    expect(rpc).toHaveBeenCalledWith(
+      "create_suggestion_draft",
+      expect.objectContaining({
+        target_programme_version_id: "programme-version-2",
+        target_category_id: "category-2",
+      }),
+    );
+  });
+
+  it("withdraws already uploaded evidence instead of hiding it only in the UI", async () => {
+    const draftId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "create_suggestion_draft") {
+        return { data: draftId, error: null };
+      }
+      if (fn === "initiate_attachment_upload") {
+        return {
+          data: [
+            {
+              attachment_id: "att-ok",
+              storage_object_path: "path/ok.txt",
+            },
+          ],
+          error: null,
+        };
+      }
+      if (fn === "confirm_attachment_upload") {
+        return { error: { message: "forced confirm failure" } };
+      }
+      if (fn === "withdraw_suggestion_evidence") {
+        return { data: true, error: null };
+      }
+      return { error: null };
+    });
+    upload.mockResolvedValue({ error: null });
+
+    renderForm();
+    fillIdea();
+    const file = new File(["note"], "ok.txt", { type: "text/plain" });
+    fireEvent.change(screen.getByTestId("suggestion-evidence-file-input"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit idea" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("suggestion-submit-error")).toBeVisible();
+    });
+    expect(screen.getByText("ok.txt")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+
+    await waitFor(() => {
+      expect(rpc).toHaveBeenCalledWith(
+        "withdraw_suggestion_evidence",
+        expect.objectContaining({ target_attachment_id: "att-ok" }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("ok.txt")).not.toBeInTheDocument();
+    });
+  });
+
+  it("keeps uploaded evidence listed when withdraw is refused", async () => {
+    const draftId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "create_suggestion_draft") {
+        return { data: draftId, error: null };
+      }
+      if (fn === "initiate_attachment_upload") {
+        return {
+          data: [
+            {
+              attachment_id: "att-keep",
+              storage_object_path: "path/keep.txt",
+            },
+          ],
+          error: null,
+        };
+      }
+      if (fn === "confirm_attachment_upload") {
+        return { error: { message: "forced confirm failure" } };
+      }
+      if (fn === "withdraw_suggestion_evidence") {
+        return {
+          error: { message: "suggestion evidence withdraw is not authorised" },
+        };
+      }
+      return { error: null };
+    });
+    upload.mockResolvedValue({ error: null });
+
+    renderForm();
+    fillIdea();
+    const file = new File(["note"], "keep.txt", { type: "text/plain" });
+    fireEvent.change(screen.getByTestId("suggestion-evidence-file-input"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit idea" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("keep.txt")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("suggestion-submit-error")).toHaveTextContent(
+        "Unable to remove that file from the idea",
+      );
+    });
+    expect(screen.getByText("keep.txt")).toBeVisible();
   });
 
   it("ignores repeated submit clicks while a request is in flight", async () => {

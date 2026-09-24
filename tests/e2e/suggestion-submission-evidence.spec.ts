@@ -227,6 +227,7 @@ test.describe("Suggestion submission evidence", () => {
     await openEvidenceTab(page);
     await expect(page.getByText(`sug-evidence-${stamp}.png`)).toBeVisible();
     await expect(page.getByText(`sug-evidence-${stamp}.txt`)).toBeVisible();
+    await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
 
     const firstDownload = page.waitForEvent("download");
     await page
@@ -326,6 +327,9 @@ test.describe("Suggestion submission evidence", () => {
     );
     await expect(page.getByTestId("suggestion-submit-button")).toBeDisabled();
     await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+    await expect(page.getByTestId("suggestion-catalogue-locked")).toBeVisible();
+    await expect(page.getByLabel("Programme")).toBeDisabled();
+    await expect(page.getByLabel("Category")).toBeDisabled();
     expect(createDraftCalls).toBe(1);
 
     await page.getByRole("button", { name: "Retry" }).click();
@@ -334,6 +338,69 @@ test.describe("Suggestion submission evidence", () => {
     await openEvidenceTab(page);
     await expect(page.getByText(`retry-a-${stamp}.txt`)).toBeVisible();
     await expect(page.getByText(`retry-b-${stamp}.txt`)).toBeVisible();
+    assertNoProductionRuntimeErrors();
+  });
+
+  test("withdraws a successful upload before retry without leaving it attached", async ({
+    page,
+  }) => {
+    const assertNoProductionRuntimeErrors = trackProductionRuntimeErrors(page, {
+      allowForcedResourceFailure: true,
+    });
+    const stamp = Date.now();
+    const keepPath = writeFixture(`keep-${stamp}.txt`, "keep this file");
+    const dropPath = writeFixture(`drop-${stamp}.txt`, "withdraw this file");
+    let createDraftCalls = 0;
+    let failNextStorageUpload = true;
+
+    await page.route(
+      "**/rest/v1/rpc/create_suggestion_draft",
+      async (route) => {
+        createDraftCalls += 1;
+        await route.continue();
+      },
+    );
+    await page.route("**/storage/v1/object/**", async (route) => {
+      if (route.request().method() === "POST" && failNextStorageUpload) {
+        failNextStorageUpload = false;
+        await route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "forced upload failure" }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    await signInAsDemoUser(page, "operator");
+    await page.goto("/platform/suggestions/new");
+    await fillSuggestionIdea(
+      page,
+      `Withdraw upload ${stamp}`,
+      "Remove the successful file before retry",
+    );
+    await page
+      .getByTestId("suggestion-evidence-file-input")
+      .setInputFiles([dropPath, keepPath]);
+    await page.getByTestId("suggestion-submit-button").click();
+
+    await expect(page.getByTestId("suggestion-submit-error")).toContainText(
+      "Some evidence could not be attached",
+    );
+    await expect(page.getByText(`drop-${stamp}.txt`)).toBeVisible();
+    await expect(page.getByText(`keep-${stamp}.txt`)).toBeVisible();
+
+    const uploadedItem = page.locator('[data-status="uploaded"]');
+    await uploadedItem.getByRole("button", { name: "Remove" }).click();
+    await expect(uploadedItem).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Retry" }).click();
+    await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
+    expect(createDraftCalls).toBe(1);
+    await openEvidenceTab(page);
+    await expect(page.getByText(`keep-${stamp}.txt`)).toBeVisible();
+    await expect(page.getByText(`drop-${stamp}.txt`)).toHaveCount(0);
     assertNoProductionRuntimeErrors();
   });
 

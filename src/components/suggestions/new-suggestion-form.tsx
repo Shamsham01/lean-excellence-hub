@@ -86,6 +86,13 @@ function toSubmissionErrorMessage(error: unknown, fallback: string): string {
     return raw;
   }
 
+  if (
+    normalised.includes("suggestion evidence withdraw is not authorised") ||
+    normalised.includes("suggestion evidence cannot be withdrawn")
+  ) {
+    return "Unable to remove that file from the idea. It is still attached.";
+  }
+
   return toCustomerErrorMessage(error, fallback);
 }
 
@@ -125,6 +132,10 @@ export function NewSuggestionForm({
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const [files, setFiles] = useState<SuggestionEvidenceFile[]>([]);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [lockedCatalogue, setLockedCatalogue] = useState<{
+    programmeVersionId: string;
+    categoryId: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
 
@@ -167,7 +178,38 @@ export function NewSuggestionForm({
     setError(null);
   }
 
-  function removeFile(clientId: string) {
+  async function removeFile(clientId: string) {
+    const selected = files.find((file) => file.clientId === clientId);
+    if (!selected) {
+      return;
+    }
+
+    if (selected.attachmentId) {
+      const supabase = createBrowserSupabaseClient();
+      const client = createBrowserSuggestionEvidenceClient(
+        async (fn, args) => {
+          const { data, error } = await supabase.rpc(
+            fn as never,
+            args as never,
+          );
+          return { data, error };
+        },
+        async () => undefined,
+      );
+
+      try {
+        await client.withdrawEvidence(selected.attachmentId);
+      } catch (withdrawError) {
+        setError(
+          toSubmissionErrorMessage(
+            withdrawError,
+            "Unable to remove that file from the idea. It is still attached.",
+          ),
+        );
+        return;
+      }
+    }
+
     setFiles((current) => current.filter((file) => file.clientId !== clientId));
     setValidationMessages([]);
     setError(null);
@@ -212,11 +254,16 @@ export function NewSuggestionForm({
       },
     );
 
+    const catalogue = lockedCatalogue ?? {
+      programmeVersionId,
+      categoryId,
+    };
+
     try {
       const result = await submitSuggestionWithEvidence(client, {
         fields: readDraftFields(
-          programmeVersionId,
-          categoryId,
+          catalogue.programmeVersionId,
+          catalogue.categoryId,
           title,
           noticed,
           proposed,
@@ -227,7 +274,10 @@ export function NewSuggestionForm({
       });
 
       if (result.ok === false) {
-        setDraftId(result.draftId);
+        if (result.draftId) {
+          setDraftId(result.draftId);
+          setLockedCatalogue(catalogue);
+        }
         setFiles(result.files);
         setError(
           toSubmissionErrorMessage(
@@ -344,9 +394,14 @@ export function NewSuggestionForm({
             <select
               required
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              value={programmeVersionId}
+              value={lockedCatalogue?.programmeVersionId ?? programmeVersionId}
               onChange={(e) => setProgrammeVersionId(e.target.value)}
-              disabled={programmeVersions.length === 0 || !canSubmit || loading}
+              disabled={
+                programmeVersions.length === 0 ||
+                !canSubmit ||
+                loading ||
+                lockedCatalogue != null
+              }
             >
               {programmeVersions.length === 0 ? (
                 <option value="">No programmes available</option>
@@ -365,9 +420,14 @@ export function NewSuggestionForm({
             <select
               required
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              value={categoryId}
+              value={lockedCatalogue?.categoryId ?? categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              disabled={categories.length === 0 || !canSubmit || loading}
+              disabled={
+                categories.length === 0 ||
+                !canSubmit ||
+                loading ||
+                lockedCatalogue != null
+              }
             >
               {categories.length === 0 ? (
                 <option value="">No categories available</option>
@@ -392,11 +452,23 @@ export function NewSuggestionForm({
             />
           </label>
 
+          {lockedCatalogue ? (
+            <p
+              className="text-sm text-muted-foreground"
+              data-testid="suggestion-catalogue-locked"
+            >
+              Programme and category stay as first saved so a retry cannot
+              submit a different selection from the one shown.
+            </p>
+          ) : null}
+
           <SuggestionEvidencePicker
             files={files}
             disabled={!canSubmit || loading}
             onAddFiles={addSelectedFiles}
-            onRemove={removeFile}
+            onRemove={(clientId) => {
+              void removeFile(clientId);
+            }}
             onRetry={() => {
               void submitIdea();
             }}

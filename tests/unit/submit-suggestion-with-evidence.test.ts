@@ -42,6 +42,7 @@ function createClient(overrides: Partial<SuggestionEvidenceClient> = {}) {
     }));
   const uploadObject = vi.fn().mockResolvedValue(undefined);
   const confirmUpload = vi.fn().mockResolvedValue(undefined);
+  const withdrawEvidence = vi.fn().mockResolvedValue(undefined);
 
   const client: SuggestionEvidenceClient = {
     createDraft,
@@ -50,6 +51,7 @@ function createClient(overrides: Partial<SuggestionEvidenceClient> = {}) {
     initiateUpload,
     uploadObject,
     confirmUpload,
+    withdrawEvidence,
     ...overrides,
   };
 
@@ -61,6 +63,7 @@ function createClient(overrides: Partial<SuggestionEvidenceClient> = {}) {
     initiateUpload: overrides.initiateUpload ?? initiateUpload,
     uploadObject: overrides.uploadObject ?? uploadObject,
     confirmUpload: overrides.confirmUpload ?? confirmUpload,
+    withdrawEvidence: overrides.withdrawEvidence ?? withdrawEvidence,
   };
 }
 
