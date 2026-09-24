@@ -160,7 +160,9 @@ async function fillSuggestionIdea(
 
 async function openEvidenceTab(page: Page) {
   await page.getByRole("tab", { name: "Evidence" }).click();
-  await expect(page.getByRole("heading", { name: "Evidence" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Evidence", exact: true }),
+  ).toBeVisible();
 }
 
 test.describe("Suggestion submission evidence", () => {
