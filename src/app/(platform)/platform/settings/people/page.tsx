@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
 import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
+import { loadPendingInvitationGrants } from "@/modules/organisation/pending-invitation-grants";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import {
   loadAccessibleOrganisationUnits,
@@ -61,21 +62,46 @@ export default async function PeopleSettingsPage() {
 
   const [
     offersData,
-    { data: pendingInvitations, error: invitationsError },
+    invitationBundle,
     { data: units },
     { data: jobFunctions },
-    { data: invitationGrants },
     { data: roles },
     { data: roleVersions },
   ] = await Promise.all([
     canDelegateRoles ? loadDelegatableAccessOffers() : Promise.resolve(null),
     canManageInvitations
-      ? supabase
-          .from("organisation_invitations")
-          .select("id, status, canonical_recipient, expires_at")
-          .eq("status", "pending")
-          .order("expires_at", { ascending: true })
-      : Promise.resolve({ data: null, error: null }),
+      ? (async () => {
+          const pendingResult = await supabase
+            .from("organisation_invitations")
+            .select("id, status, canonical_recipient, expires_at")
+            .eq("status", "pending")
+            .order("expires_at", { ascending: true });
+          const pendingInvitationIds = (pendingResult.data ?? []).map(
+            (invitation) => invitation.id,
+          );
+          const grantsResult = await loadPendingInvitationGrants(
+            async (invitationIds) =>
+              supabase
+                .from("organisation_invitation_grants")
+                .select(
+                  "invitation_id, scope_type, scope_unit_id, role_version_id",
+                )
+                .in("invitation_id", [...invitationIds]),
+            pendingInvitationIds,
+          );
+          return {
+            pendingInvitations: pendingResult.data,
+            invitationsError: pendingResult.error,
+            invitationGrants: grantsResult.data,
+            grantsError: grantsResult.error,
+          };
+        })()
+      : Promise.resolve({
+          pendingInvitations: null,
+          invitationsError: null,
+          invitationGrants: [],
+          grantsError: null,
+        }),
     Promise.resolve({ data: visibleUnits }),
     canManageInvitations
       ? supabase
@@ -83,11 +109,6 @@ export default async function PeopleSettingsPage() {
           .select("id, name, code")
           .eq("status", "active")
           .order("name")
-      : Promise.resolve({ data: [] }),
-    canManageInvitations
-      ? supabase
-          .from("organisation_invitation_grants")
-          .select("invitation_id, scope_type, scope_unit_id, role_version_id")
       : Promise.resolve({ data: [] }),
     canManageInvitations
       ? supabase.from("roles").select("id, display_name")
@@ -99,6 +120,11 @@ export default async function PeopleSettingsPage() {
           .eq("status", "published")
       : Promise.resolve({ data: [] }),
   ]);
+
+  const pendingInvitations = invitationBundle.pendingInvitations;
+  const invitationsError = invitationBundle.invitationsError;
+  const invitationGrants = invitationBundle.invitationGrants;
+  const grantsError = invitationBundle.grantsError;
 
   const offers = filterDelegatableOffersForActiveSite(
     (offersData?.offers ?? []) as DelegatableAccessOffer[],
@@ -232,8 +258,18 @@ export default async function PeopleSettingsPage() {
           </CardHeader>
           <CardContent>
             {invitationsError ? (
-              <p className="text-sm text-muted-foreground">
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="pending-invitations-error"
+              >
                 Unable to load pending invitations.
+              </p>
+            ) : grantsError ? (
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="pending-invitation-grants-error"
+              >
+                Unable to load pending invitation access.
               </p>
             ) : (
               <PendingInvitationsList

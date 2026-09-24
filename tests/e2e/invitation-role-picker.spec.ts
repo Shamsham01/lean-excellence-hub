@@ -69,7 +69,7 @@ test.describe("Invitation application role picker", () => {
     const scopeSelect = page.locator("#invite-scope");
 
     await roleSelect.selectOption({ label: DEMO_ROLES.manager.displayName });
-    await scopeSelect.selectOption({ label: "Cornwall Plant" });
+    await scopeSelect.selectOption({ label: "Cornwall Plant subtree" });
     await expect(scopeSelect).not.toHaveValue("");
 
     await roleSelect.selectOption({ label: DEMO_ROLES.operator.displayName });

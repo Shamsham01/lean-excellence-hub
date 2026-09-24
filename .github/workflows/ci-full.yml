@@ -228,6 +228,7 @@ jobs:
               tests/e2e/training-journeys.spec.ts
               tests/e2e/milestone7-closure.spec.ts
               tests/e2e/invitation-lifecycle.spec.ts
+              tests/e2e/invitation-role-picker.spec.ts
               tests/e2e/people-settings-reload.spec.ts
               tests/e2e/workforce-provisioning.spec.ts
               tests/e2e/workforce-bulk-import.spec.ts
