@@ -27,6 +27,8 @@ const CURRICULUM_PATHS = [
   "/platform/setup",
 ] as const;
 
+type CurriculumActionError = { error: string };
+
 type RequirementMutationInput = {
   curriculumId: string;
   versionId: string;
@@ -241,7 +243,9 @@ export async function createTrainingCurriculumDraft(input: {
   return { curriculumId: data as string };
 }
 
-export async function addTrainingRequirement(input: RequirementMutationInput) {
+export async function addTrainingRequirement(
+  input: RequirementMutationInput,
+): Promise<CurriculumActionError | { requirementId: string }> {
   const denied = await requireTrainingCurriculumManage();
   if (denied) {
     return denied;
@@ -249,7 +253,7 @@ export async function addTrainingRequirement(input: RequirementMutationInput) {
 
   const resolved = await resolveRequirementMutation(input);
   if ("error" in resolved) {
-    return resolved;
+    return { error: resolved.error };
   }
 
   const { error, data } = await resolved.supabase.rpc(
@@ -285,7 +289,7 @@ export async function addTrainingRequirement(input: RequirementMutationInput) {
 
 export async function updateTrainingRequirement(
   input: RequirementMutationInput & { requirementId: string },
-) {
+): Promise<CurriculumActionError | { ok: true }> {
   const denied = await requireTrainingCurriculumManage();
   if (denied) {
     return denied;
@@ -301,7 +305,7 @@ export async function updateTrainingRequirement(
     requirementId,
   });
   if ("error" in resolved) {
-    return resolved;
+    return { error: resolved.error };
   }
 
   const { error } = await resolved.supabase.rpc("update_training_requirement", {

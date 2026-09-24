@@ -4,13 +4,17 @@ import {
   deriveTrainingCurriculumCatalogueStatus,
   describeTrainingCourseValidity,
   describeTrainingRequirementApplicability,
+  describeTrainingRequirementDeadlineGuidance,
+  describeTrainingRequirementGraceGuidance,
   findOverlappingTrainingRequirement,
   optionalNonNegativeInteger,
   resolveTrainingRequirementTarget,
   trainingCurriculumCatalogueStatusLabel,
+  trainingCurriculumPublishAfterSaveError,
   trainingCurriculumPublishGuidance,
   trainingCurriculumScopeMessage,
   trainingRequirementFormHasUnsavedContent,
+  trainingRequirementTimingLimitation,
 } from "@/modules/training/curriculum-admin";
 import {
   generateTrainingCurriculumCode,
@@ -98,25 +102,63 @@ describe("training curriculum presentation", () => {
     ).toMatch(/does not further restrict compliance|across the organisation/i);
   });
 
-  it("distinguishes course validity from a curriculum override", () => {
+  it("distinguishes course-version validity from a stored curriculum override", () => {
     expect(
       describeTrainingCourseValidity({
         courseValidityDays: 365,
         overrideDays: 180,
       }),
-    ).toMatch(/overrides that with 180 days/i);
+    ).toMatch(/course version is valid for 365 days/i);
+    expect(
+      describeTrainingCourseValidity({
+        courseValidityDays: 365,
+        overrideDays: 180,
+      }),
+    ).toMatch(/does not automatically load this curriculum override/i);
     expect(
       describeTrainingCourseValidity({
         courseValidityDays: null,
         overrideDays: null,
       }),
-    ).toMatch(/keep the course default/i);
+    ).toMatch(
+      /unless an override is supplied when the completion is recorded/i,
+    );
+    expect(describeTrainingRequirementDeadlineGuidance()).toMatch(
+      /does not use this field to mark training due/i,
+    );
+    expect(describeTrainingRequirementGraceGuidance()).toMatch(
+      /do not apply this field/i,
+    );
+    expect(trainingRequirementTimingLimitation()).toMatch(
+      /compliance does not currently use these timing fields/i,
+    );
   });
 
-  it("states organisation-wide curriculum scope when an active site is selected", () => {
-    expect(trainingCurriculumScopeMessage("Exeter")).toMatch(/Exeter/);
-    expect(trainingCurriculumScopeMessage("Exeter")).toMatch(
-      /does not change who a requirement applies to/i,
+  it("states organisation-wide curriculum scope without implying a unit changes compliance", () => {
+    const withSite = trainingCurriculumScopeMessage("Exeter");
+    expect(withSite).toMatch(/organisation-wide/i);
+    expect(withSite).toMatch(/Exeter/);
+    expect(withSite).toMatch(/does not filter who a requirement applies to/i);
+    expect(withSite).toMatch(/does not currently restrict compliance/i);
+    expect(withSite).not.toMatch(/unless you choose an organisational unit/i);
+
+    const withoutSite = trainingCurriculumScopeMessage();
+    expect(withoutSite).toMatch(/active site does not filter/i);
+    expect(withoutSite).toMatch(
+      /job-function requirements apply across the organisation/i,
+    );
+    expect(withoutSite).not.toMatch(
+      /unless you choose an organisational unit/i,
+    );
+  });
+
+  it("keeps the publish-after-save failure message accurate", () => {
+    expect(
+      trainingCurriculumPublishAfterSaveError(
+        "The draft is no longer available.",
+      ),
+    ).toBe(
+      "The requirement was saved, but the curriculum could not be published. The draft is no longer available.",
     );
   });
 

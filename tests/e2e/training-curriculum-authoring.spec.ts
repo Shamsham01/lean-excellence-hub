@@ -230,6 +230,17 @@ test.describe("Training curriculum authoring", () => {
     await expect(
       page.getByTestId("training-curriculum-draft-editor"),
     ).toBeVisible();
+    await expect(
+      page.getByTestId("training-curriculum-scope-note"),
+    ).toContainText("does not currently restrict compliance");
+    await expect(
+      page.getByTestId("training-requirement-validity-help"),
+    ).toContainText(
+      "unless an override is supplied when the completion is recorded",
+    );
+    await expect(
+      page.getByTestId("training-requirement-deadline-help"),
+    ).toContainText("does not use this field to mark training due");
 
     await page
       .getByTestId("training-requirement-course-input")
@@ -256,6 +267,11 @@ test.describe("Training curriculum authoring", () => {
     await expect(page.getByTestId("training-curriculum-review")).toContainText(
       "Everyone in the organisation",
     );
+    await expect(
+      page
+        .getByTestId("training-curriculum-review")
+        .getByTestId("training-requirement-timing-limitation"),
+    ).toContainText("Compliance does not currently use these timing fields");
 
     await page.getByRole("button", { name: "Edit" }).first().click();
     await expect(

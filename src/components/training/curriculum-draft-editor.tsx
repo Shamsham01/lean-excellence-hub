@@ -24,8 +24,10 @@ import { navigateTo } from "@/lib/navigation/navigate";
 import {
   describeTrainingRequirementApplicability,
   resolveTrainingRequirementApplicabilityMode,
+  trainingCurriculumPublishAfterSaveError,
   trainingCurriculumPublishGuidance,
   trainingRequirementFormHasUnsavedContent,
+  trainingRequirementTimingLimitation,
 } from "@/modules/training/curriculum-admin";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
 
@@ -131,7 +133,9 @@ export function CurriculumDraftEditor({
     setValues(emptyRequirementFormValues());
   }
 
-  async function persistOpenForm() {
+  async function persistOpenForm(): Promise<
+    { error: string } | { requirementId: string }
+  > {
     const payload = requirementPayload(curriculumId, versionId, values);
 
     if (editingRequirementId) {
@@ -142,10 +146,14 @@ export function CurriculumDraftEditor({
       if ("error" in result) {
         return result;
       }
-      return { ok: true as const };
+      return { requirementId: editingRequirementId };
     }
 
     return addTrainingRequirement(payload);
+  }
+
+  function reconcileSavedRequirement(requirementId: string) {
+    setEditingRequirementId(requirementId);
   }
 
   async function runSave() {
@@ -185,6 +193,7 @@ export function CurriculumDraftEditor({
 
     setBusyAction("publish");
     setError(null);
+    let savedRequirementThisAttempt = false;
 
     try {
       const hasUnsaved = trainingRequirementFormHasUnsavedContent(values);
@@ -201,6 +210,9 @@ export function CurriculumDraftEditor({
           setError(saved.error);
           return;
         }
+
+        reconcileSavedRequirement(saved.requirementId);
+        savedRequirementThisAttempt = true;
       }
 
       const published = await publishTrainingCurriculumVersion({
@@ -208,7 +220,11 @@ export function CurriculumDraftEditor({
         versionId,
       });
       if ("error" in published) {
-        setError(published.error);
+        setError(
+          savedRequirementThisAttempt
+            ? trainingCurriculumPublishAfterSaveError(published.error)
+            : published.error,
+        );
         return;
       }
 
@@ -219,7 +235,11 @@ export function CurriculumDraftEditor({
         ),
       );
     } catch {
-      setError("Unable to publish this curriculum. Try again.");
+      setError(
+        savedRequirementThisAttempt
+          ? trainingCurriculumPublishAfterSaveError("Try publishing again.")
+          : "Unable to publish this curriculum. Try again.",
+      );
     } finally {
       setBusyAction(null);
     }
@@ -373,7 +393,10 @@ export function CurriculumDraftEditor({
         </section>
 
         <section className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">
+          <h3
+            className="text-sm font-semibold"
+            data-testid="training-requirement-editor-heading"
+          >
             {editingRequirementId ? "Edit requirement" : "Add requirement"}
           </h3>
           <form
@@ -467,6 +490,19 @@ export function CurriculumDraftEditor({
               ))}
             </ul>
           )}
+          {requirements.some(
+            (requirement) =>
+              requirement.requiredWithinDays != null ||
+              requirement.validityDaysOverride != null ||
+              requirement.gracePeriodDays != null,
+          ) ? (
+            <p
+              className="text-xs text-muted-foreground"
+              data-testid="training-requirement-timing-limitation"
+            >
+              {trainingRequirementTimingLimitation()}
+            </p>
+          ) : null}
           <p
             className="text-sm text-muted-foreground"
             data-testid="training-curriculum-publish-guidance"

@@ -148,4 +148,119 @@ describe("CurriculumDraftEditor", () => {
       screen.getByTestId("training-requirement-deadline-input"),
     ).toHaveValue(14);
   });
+
+  it("reconciles a saved requirement when publish fails so retry updates instead of inserting", async () => {
+    addTrainingRequirement.mockResolvedValue({ requirementId: "req-1" });
+    publishTrainingCurriculumVersion
+      .mockResolvedValueOnce({
+        error: "Another administrator is publishing this draft.",
+      })
+      .mockResolvedValueOnce({ ok: true });
+    updateTrainingRequirement.mockResolvedValue({ ok: true });
+
+    render(
+      <CurriculumDraftEditor
+        curriculumId="curr-1"
+        versionId="ver-1"
+        requirements={[]}
+        courses={courses}
+        jobFunctions={jobFunctions}
+        units={units}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("training-requirement-course-input"), {
+      target: { value: "course-1" },
+    });
+    fireEvent.change(
+      screen.getByTestId("training-requirement-deadline-input"),
+      {
+        target: { value: "30" },
+      },
+    );
+    fireEvent.click(screen.getByTestId("training-curriculum-publish"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("training-curriculum-draft-error"),
+      ).toHaveTextContent(
+        "The requirement was saved, but the curriculum could not be published. Another administrator is publishing this draft.",
+      );
+    });
+    expect(addTrainingRequirement).toHaveBeenCalledTimes(1);
+    expect(updateTrainingRequirement).not.toHaveBeenCalled();
+    expect(publishTrainingCurriculumVersion).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByTestId("training-requirement-editor-heading"),
+    ).toHaveTextContent("Edit requirement");
+    expect(screen.getByTestId("training-requirement-course-input")).toHaveValue(
+      "course-1",
+    );
+    expect(
+      screen.getByTestId("training-requirement-deadline-input"),
+    ).toHaveValue(30);
+
+    fireEvent.change(
+      screen.getByTestId("training-requirement-deadline-input"),
+      {
+        target: { value: "45" },
+      },
+    );
+    fireEvent.click(screen.getByTestId("training-curriculum-publish"));
+
+    await waitFor(() => {
+      expect(updateTrainingRequirement).toHaveBeenCalledTimes(1);
+      expect(navigateTo).toHaveBeenCalled();
+    });
+    expect(addTrainingRequirement).toHaveBeenCalledTimes(1);
+    expect(updateTrainingRequirement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requirementId: "req-1",
+        courseId: "course-1",
+        requiredWithinDays: "45",
+      }),
+    );
+    expect(publishTrainingCurriculumVersion).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries publish after a saved requirement without creating a duplicate", async () => {
+    addTrainingRequirement.mockResolvedValue({ requirementId: "req-2" });
+    publishTrainingCurriculumVersion
+      .mockResolvedValueOnce({ error: "Unable to publish this curriculum." })
+      .mockResolvedValueOnce({ ok: true });
+    updateTrainingRequirement.mockResolvedValue({ ok: true });
+
+    render(
+      <CurriculumDraftEditor
+        curriculumId="curr-1"
+        versionId="ver-1"
+        requirements={[]}
+        courses={courses}
+        jobFunctions={jobFunctions}
+        units={units}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("training-requirement-course-input"), {
+      target: { value: "course-1" },
+    });
+    fireEvent.click(screen.getByTestId("training-curriculum-publish"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("training-curriculum-draft-error"),
+      ).toHaveTextContent("The requirement was saved");
+    });
+
+    fireEvent.click(screen.getByTestId("training-curriculum-publish"));
+
+    await waitFor(() => {
+      expect(updateTrainingRequirement).toHaveBeenCalledWith(
+        expect.objectContaining({ requirementId: "req-2" }),
+      );
+      expect(navigateTo).toHaveBeenCalled();
+    });
+    expect(addTrainingRequirement).toHaveBeenCalledTimes(1);
+    expect(publishTrainingCurriculumVersion).toHaveBeenCalledTimes(2);
+  });
 });

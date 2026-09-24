@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   describeTrainingCourseValidity,
   describeTrainingRequirementApplicability,
+  describeTrainingRequirementDeadlineGuidance,
+  describeTrainingRequirementGraceGuidance,
+  trainingRequirementTimingLimitation,
   type TrainingRequirementApplicabilityMode,
 } from "@/modules/training/curriculum-admin";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
@@ -108,7 +111,10 @@ export function CurriculumRequirementForm({
             </option>
           ))}
         </select>
-        <p className="text-xs text-muted-foreground">
+        <p
+          className="text-xs text-muted-foreground"
+          data-testid="training-requirement-validity-help"
+        >
           {describeTrainingCourseValidity({
             courseValidityDays: selectedCourse?.validityDays ?? null,
             overrideDays:
@@ -175,7 +181,8 @@ export function CurriculumRequirementForm({
             data-testid="training-requirement-applicability-job-function-and-unit"
           />
           <span>
-            Job function, with an organisational unit recorded for applicability
+            Job function, with a recorded organisational unit. This does not
+            currently restrict compliance.
           </span>
         </label>
         <p
@@ -276,6 +283,12 @@ export function CurriculumRequirementForm({
             }
             data-testid="training-requirement-deadline-input"
           />
+          <p
+            className="text-xs text-muted-foreground"
+            data-testid="training-requirement-deadline-help"
+          >
+            {describeTrainingRequirementDeadlineGuidance()}
+          </p>
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="training-requirement-validity-override">
@@ -308,8 +321,20 @@ export function CurriculumRequirementForm({
             onChange={(event) => update("gracePeriodDays", event.target.value)}
             data-testid="training-requirement-grace-input"
           />
+          <p
+            className="text-xs text-muted-foreground"
+            data-testid="training-requirement-grace-help"
+          >
+            {describeTrainingRequirementGraceGuidance()}
+          </p>
         </div>
       </div>
+      <p
+        className="text-xs text-muted-foreground"
+        data-testid="training-requirement-timing-limitation"
+      >
+        {trainingRequirementTimingLimitation()}
+      </p>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="training-requirement-notes">

@@ -65,11 +65,11 @@ export function trainingCurriculumVersionStatusLabel(status: string): string {
 }
 
 export function trainingCurriculumScopeMessage(siteName?: string | null) {
-  if (siteName?.trim()) {
-    return `Curriculum management is organisation-wide. Selecting ${siteName.trim()} does not change who a requirement applies to unless you choose an organisational unit on that requirement.`;
-  }
+  const siteClause = siteName?.trim()
+    ? `Selecting ${siteName.trim()} does not filter who a requirement applies to.`
+    : "The active site does not filter who a requirement applies to.";
 
-  return "Curriculum management is organisation-wide. The active site does not change who a requirement applies to unless you choose an organisational unit on that requirement.";
+  return `Curriculum management is organisation-wide. ${siteClause} A recorded organisational unit does not currently restrict compliance; job-function requirements apply across the organisation.`;
 }
 
 export function trainingCurriculumPublishGuidance() {
@@ -117,14 +117,30 @@ export function describeTrainingCourseValidity(input: {
 }): string {
   const courseLabel =
     input.courseValidityDays != null
-      ? `This course is valid for ${input.courseValidityDays} days after completion.`
-      : "This course does not expire unless a curriculum override is set.";
+      ? `This course version is valid for ${input.courseValidityDays} days after completion.`
+      : "This course version does not set an expiry.";
 
   if (input.overrideDays != null) {
-    return `${courseLabel} This requirement overrides that with ${input.overrideDays} days when a completion is recorded.`;
+    return `${courseLabel} A curriculum override of ${input.overrideDays} days is stored on this requirement. Completion recording uses an explicitly supplied override or the course-version validity; it does not automatically load this curriculum override.`;
   }
 
-  return `${courseLabel} Leave the override blank to keep the course default.`;
+  return `${courseLabel} Leave the override blank to store no curriculum-specific value. Completions still use the course-version validity unless an override is supplied when the completion is recorded.`;
+}
+
+export function describeTrainingRequirementDeadlineGuidance() {
+  return "Stored on this requirement as a planned completion deadline. Current compliance does not use this field to mark training due.";
+}
+
+export function describeTrainingRequirementGraceGuidance() {
+  return "Stored on this requirement as a planned grace period. Current compliance and completion recording do not apply this field.";
+}
+
+export function trainingRequirementTimingLimitation() {
+  return "Deadline, validity override, and grace period are stored on the requirement. Completions today use an explicitly supplied override or the course-version validity. Compliance does not currently use these timing fields.";
+}
+
+export function trainingCurriculumPublishAfterSaveError(publishError: string) {
+  return `The requirement was saved, but the curriculum could not be published. ${publishError}`;
 }
 
 export function optionalNonNegativeInteger(
