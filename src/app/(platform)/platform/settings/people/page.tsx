@@ -61,21 +61,43 @@ export default async function PeopleSettingsPage() {
 
   const [
     offersData,
-    { data: pendingInvitations, error: invitationsError },
+    invitationBundle,
     { data: units },
     { data: jobFunctions },
-    { data: invitationGrants },
     { data: roles },
     { data: roleVersions },
   ] = await Promise.all([
     canDelegateRoles ? loadDelegatableAccessOffers() : Promise.resolve(null),
     canManageInvitations
-      ? supabase
-          .from("organisation_invitations")
-          .select("id, status, canonical_recipient, expires_at")
-          .eq("status", "pending")
-          .order("expires_at", { ascending: true })
-      : Promise.resolve({ data: null, error: null }),
+      ? (async () => {
+          const pendingResult = await supabase
+            .from("organisation_invitations")
+            .select("id, status, canonical_recipient, expires_at")
+            .eq("status", "pending")
+            .order("expires_at", { ascending: true });
+          const pendingInvitationIds = (pendingResult.data ?? []).map(
+            (invitation) => invitation.id,
+          );
+          const grantsResult =
+            pendingInvitationIds.length > 0
+              ? await supabase
+                  .from("organisation_invitation_grants")
+                  .select(
+                    "invitation_id, scope_type, scope_unit_id, role_version_id",
+                  )
+                  .in("invitation_id", pendingInvitationIds)
+              : { data: [] as const, error: null };
+          return {
+            pendingInvitations: pendingResult.data,
+            invitationsError: pendingResult.error,
+            invitationGrants: grantsResult.data,
+          };
+        })()
+      : Promise.resolve({
+          pendingInvitations: null,
+          invitationsError: null,
+          invitationGrants: [],
+        }),
     Promise.resolve({ data: visibleUnits }),
     canManageInvitations
       ? supabase
@@ -83,11 +105,6 @@ export default async function PeopleSettingsPage() {
           .select("id, name, code")
           .eq("status", "active")
           .order("name")
-      : Promise.resolve({ data: [] }),
-    canManageInvitations
-      ? supabase
-          .from("organisation_invitation_grants")
-          .select("invitation_id, scope_type, scope_unit_id, role_version_id")
       : Promise.resolve({ data: [] }),
     canManageInvitations
       ? supabase.from("roles").select("id, display_name")
@@ -99,6 +116,10 @@ export default async function PeopleSettingsPage() {
           .eq("status", "published")
       : Promise.resolve({ data: [] }),
   ]);
+
+  const pendingInvitations = invitationBundle.pendingInvitations;
+  const invitationsError = invitationBundle.invitationsError;
+  const invitationGrants = invitationBundle.invitationGrants;
 
   const offers = filterDelegatableOffersForActiveSite(
     (offersData?.offers ?? []) as DelegatableAccessOffer[],
