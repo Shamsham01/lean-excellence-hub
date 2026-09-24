@@ -20,14 +20,28 @@ const PNG_BYTES = Buffer.from(
   "base64",
 );
 
-function trackProductionRuntimeErrors(page: Page) {
+function trackProductionRuntimeErrors(
+  page: Page,
+  options?: { allowForcedResourceFailure?: boolean },
+) {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
 
   page.on("console", (message) => {
-    if (message.type() === "error") {
-      consoleErrors.push(`[console.error] ${message.text()}`);
+    if (message.type() !== "error") {
+      return;
     }
+
+    const text = message.text();
+    if (
+      options?.allowForcedResourceFailure &&
+      text.includes("Failed to load resource") &&
+      text.includes("400")
+    ) {
+      return;
+    }
+
+    consoleErrors.push(`[console.error] ${text}`);
   });
 
   page.on("pageerror", (error) => {
@@ -196,7 +210,9 @@ test.describe("Suggestion submission evidence", () => {
       .setInputFiles([imagePath, notePath]);
     await expect(page.getByText(`sug-evidence-${stamp}.png`)).toBeVisible();
     await expect(page.getByText(`sug-evidence-${stamp}.txt`)).toBeVisible();
-    await expect(page.getByText(/B|KB/)).toBeVisible();
+    await expect(page.getByTestId("suggestion-evidence-list")).toContainText(
+      /\d+(\.\d+)?\s(?:B|KB)/,
+    );
 
     await page.getByTestId("suggestion-submit-button").click();
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
@@ -264,7 +280,9 @@ test.describe("Suggestion submission evidence", () => {
   test("partial upload failure retries the same draft without silent submit", async ({
     page,
   }) => {
-    const assertNoProductionRuntimeErrors = trackProductionRuntimeErrors(page);
+    const assertNoProductionRuntimeErrors = trackProductionRuntimeErrors(page, {
+      allowForcedResourceFailure: true,
+    });
     const stamp = Date.now();
     const firstPath = writeFixture(`retry-a-${stamp}.txt`, "first file");
     const secondPath = writeFixture(`retry-b-${stamp}.txt`, "second file");
@@ -322,7 +340,9 @@ test.describe("Suggestion submission evidence", () => {
   test("successful upload then failed submit retries the same draft", async ({
     page,
   }) => {
-    const assertNoProductionRuntimeErrors = trackProductionRuntimeErrors(page);
+    const assertNoProductionRuntimeErrors = trackProductionRuntimeErrors(page, {
+      allowForcedResourceFailure: true,
+    });
     const stamp = Date.now();
     const notePath = writeFixture(
       `submit-retry-${stamp}.txt`,
