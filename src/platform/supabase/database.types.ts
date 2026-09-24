@@ -13521,16 +13521,16 @@ export type Database = {
         }
         Returns: boolean
       }
-      remove_training_requirement: {
-        Args: { target_requirement_id: string }
-        Returns: boolean
-      }
       remove_benefit_source_link: {
         Args: { target_benefit_id: string; target_source_resource_id: string }
         Returns: boolean
       }
       remove_problem_solving_source_link: {
         Args: { target_link_id: string }
+        Returns: boolean
+      }
+      remove_training_requirement: {
+        Args: { target_requirement_id: string }
         Returns: boolean
       }
       remove_training_session_participant: {
