@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { SuggestionDetail } from "@/components/suggestions/suggestion-detail";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
+import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -28,8 +29,22 @@ export default async function SuggestionDetailPage({
 
   const canCreateProject = await currentMemberHasPermission("projects.manage");
 
-  const canUploadEvidence =
+  const organisations = await listEligibleOrganisations();
+  const currentMembershipId = organisations.find(
+    (organisation) => organisation.selected,
+  )?.membership_id;
+  const authorMembershipId =
+    detail && typeof detail === "object" && "author_membership_id" in detail
+      ? String(
+          (detail as { author_membership_id?: string }).author_membership_id ??
+            "",
+        )
+      : "";
+  const canUploadByPermission =
     await currentMemberHasPermission("attachments.upload");
+  const canUploadEvidence =
+    canUploadByPermission ||
+    (currentMembershipId != null && currentMembershipId === authorMembershipId);
 
   const { data: comments } = await supabase
 
@@ -55,7 +70,7 @@ export default async function SuggestionDetailPage({
 
     .from("attachments")
 
-    .select("id, filename, mime_type, byte_size")
+    .select("id, filename, mime_type, byte_size, storage_object_path")
 
     .eq("target_resource_id", suggestionId)
 
@@ -86,6 +101,7 @@ export default async function SuggestionDetailPage({
             filename: item.filename,
             mime_type: item.mime_type,
             byte_size: item.byte_size as number,
+            storage_object_path: item.storage_object_path,
           }))}
         benefits={benefits}
 

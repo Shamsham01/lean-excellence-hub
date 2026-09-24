@@ -1,11 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  SuggestionEvidencePicker,
+  SuggestionEvidenceValidationAlert,
+} from "@/components/suggestions/suggestion-evidence-picker";
+import { EVIDENCE_BUCKET } from "@/lib/attachments/evidence-file-rules";
 import { navigateTo } from "@/lib/navigation/navigate";
+import {
+  createBrowserSuggestionEvidenceClient,
+  createSuggestionEvidenceFile,
+  submitSuggestionWithEvidence,
+  type SuggestionDraftFields,
+  type SuggestionEvidenceFile,
+} from "@/lib/suggestions/submit-suggestion-with-evidence";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
@@ -44,6 +56,57 @@ function buildConfigurationMessage(
   return "Suggestion submission is not available yet because your organisation has not configured suggestion categories.";
 }
 
+function toSubmissionErrorMessage(error: unknown, fallback: string): string {
+  const raw =
+    error && typeof error === "object" && "message" in error
+      ? String((error as { message: string }).message)
+      : typeof error === "string"
+        ? error
+        : "";
+  const normalised = raw.toLowerCase();
+
+  if (normalised.includes("file type or size is not allowed")) {
+    return "That file type or size is not allowed. Use a PDF, JPEG, PNG, WebP, or plain-text file up to 10 MB.";
+  }
+
+  if (
+    normalised.includes("attachment upload is not authorised") ||
+    normalised.includes("attachment confirmation is not authorised")
+  ) {
+    return "You do not have permission to attach evidence to this idea.";
+  }
+
+  if (normalised.includes("some evidence could not be attached")) {
+    return raw;
+  }
+
+  if (
+    normalised.includes("your idea was saved, but it could not be submitted")
+  ) {
+    return raw;
+  }
+
+  return toCustomerErrorMessage(error, fallback);
+}
+
+function readDraftFields(
+  programmeVersionId: string,
+  categoryId: string,
+  title: string,
+  noticed: string,
+  proposed: string,
+  benefit: string,
+): SuggestionDraftFields {
+  return {
+    programmeVersionId,
+    categoryId,
+    title,
+    noticed,
+    proposed,
+    benefit,
+  };
+}
+
 export function NewSuggestionForm({
   programmeVersions,
   categories,
@@ -59,11 +122,16 @@ export function NewSuggestionForm({
   const [benefit, setBenefit] = useState("");
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
+  const [files, setFiles] = useState<SuggestionEvidenceFile[]>([]);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   const hasProgrammeConfiguration =
     programmeVersions.length > 0 && categories.length > 0;
   const canSubmit = hasProgrammeConfiguration && primaryUnit.hasPrimaryUnit;
+  const hasFailedEvidence = files.some((file) => file.status === "failed");
 
   const blockedMessage = !primaryUnit.hasPrimaryUnit
     ? primaryUnit.canManageAssignment && primaryUnit.membershipId
@@ -75,8 +143,40 @@ export function NewSuggestionForm({
     ? buildConfigurationMessage(programmeVersions, categories)
     : null;
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  function addSelectedFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const nextMessages: string[] = [];
+    const accepted: SuggestionEvidenceFile[] = [];
+
+    Array.from(fileList).forEach((file) => {
+      const created = createSuggestionEvidenceFile(file);
+      if ("error" in created) {
+        nextMessages.push(created.error);
+        return;
+      }
+      accepted.push(created);
+    });
+
+    if (accepted.length > 0) {
+      setFiles((current) => [...current, ...accepted]);
+    }
+    setValidationMessages(nextMessages);
+    setError(null);
+  }
+
+  function removeFile(clientId: string) {
+    setFiles((current) => current.filter((file) => file.clientId !== clientId));
+    setValidationMessages([]);
+    setError(null);
+  }
+
+  async function submitIdea() {
+    if (submittingRef.current) {
+      return;
+    }
 
     if (!primaryUnit.hasPrimaryUnit) {
       setError(blockedMessage);
@@ -93,45 +193,70 @@ export function NewSuggestionForm({
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
+    setValidationMessages([]);
+
+    const supabase = createBrowserSupabaseClient();
+    const client = createBrowserSuggestionEvidenceClient(
+      async (fn, args) => {
+        const { data, error } = await supabase.rpc(fn as never, args as never);
+        return { data, error };
+      },
+      async (storagePath, file) => {
+        const { error: storageError } = await supabase.storage
+          .from(EVIDENCE_BUCKET)
+          .upload(storagePath, file, { upsert: false });
+        if (storageError) throw storageError;
+      },
+    );
 
     try {
-      const supabase = createBrowserSupabaseClient();
-
-      const { data: draftId, error: draftError } = await supabase.rpc(
-        "create_suggestion_draft",
-        {
-          target_programme_version_id: programmeVersionId,
-          target_category_id: categoryId,
-          target_title: title || proposed.slice(0, 80),
-          target_problem_or_opportunity: noticed,
-          target_proposed_idea: proposed,
-          ...(benefit ? { target_expected_benefit_summary: benefit } : {}),
-        },
-      );
-
-      if (draftError) throw draftError;
-
-      const { error: submitError } = await supabase.rpc("submit_suggestion", {
-        target_suggestion_id: draftId as string,
+      const result = await submitSuggestionWithEvidence(client, {
+        fields: readDraftFields(
+          programmeVersionId,
+          categoryId,
+          title,
+          noticed,
+          proposed,
+          benefit,
+        ),
+        draftId,
+        files,
       });
 
-      if (submitError) throw submitError;
+      if (result.ok === false) {
+        setDraftId(result.draftId);
+        setFiles(result.files);
+        setError(
+          toSubmissionErrorMessage(
+            { message: result.error },
+            "Unable to submit your idea. Check your details and try again.",
+          ),
+        );
+        return;
+      }
 
       // NAV-CLICK-001: do not pair router.push with router.refresh — the
       // refresh cancels the in-flight destination on compiled/hosted servers.
-      navigateTo(`/platform/suggestions/${draftId as string}`);
+      navigateTo(`/platform/suggestions/${result.suggestionId}`);
     } catch (err) {
       setError(
-        toCustomerErrorMessage(
+        toSubmissionErrorMessage(
           err,
           "Unable to submit your idea. Check your details and try again.",
         ),
       );
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    await submitIdea();
   }
 
   return (
@@ -188,7 +313,7 @@ export function NewSuggestionForm({
               className="border-input min-h-[88px] rounded-md border bg-background px-3 py-2"
               value={noticed}
               onChange={(e) => setNoticed(e.target.value)}
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading}
             />
           </label>
 
@@ -200,7 +325,7 @@ export function NewSuggestionForm({
               className="border-input min-h-[88px] rounded-md border bg-background px-3 py-2"
               value={proposed}
               onChange={(e) => setProposed(e.target.value)}
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading}
             />
           </label>
 
@@ -210,7 +335,7 @@ export function NewSuggestionForm({
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading}
             />
           </label>
 
@@ -221,7 +346,7 @@ export function NewSuggestionForm({
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               value={programmeVersionId}
               onChange={(e) => setProgrammeVersionId(e.target.value)}
-              disabled={programmeVersions.length === 0 || !canSubmit}
+              disabled={programmeVersions.length === 0 || !canSubmit || loading}
             >
               {programmeVersions.length === 0 ? (
                 <option value="">No programmes available</option>
@@ -242,7 +367,7 @@ export function NewSuggestionForm({
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              disabled={categories.length === 0 || !canSubmit}
+              disabled={categories.length === 0 || !canSubmit || loading}
             >
               {categories.length === 0 ? (
                 <option value="">No categories available</option>
@@ -263,20 +388,44 @@ export function NewSuggestionForm({
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
               value={benefit}
               onChange={(e) => setBenefit(e.target.value)}
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading}
             />
           </label>
 
+          <SuggestionEvidencePicker
+            files={files}
+            disabled={!canSubmit || loading}
+            onAddFiles={addSelectedFiles}
+            onRemove={removeFile}
+            onRetry={() => {
+              void submitIdea();
+            }}
+          />
+
+          <SuggestionEvidenceValidationAlert messages={validationMessages} />
+
           {error ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p
+              className="text-sm text-destructive"
+              role="alert"
+              data-testid="suggestion-submit-error"
+            >
               {error}
+            </p>
+          ) : null}
+
+          {hasFailedEvidence ? (
+            <p className="text-sm text-muted-foreground">
+              Remove a failed file to continue without it, or retry the upload.
+              The idea will not be submitted while a selected file has failed.
             </p>
           ) : null}
 
           <Button
             type="submit"
-            disabled={loading || !canSubmit}
+            disabled={loading || !canSubmit || hasFailedEvidence}
             className="min-h-11"
+            data-testid="suggestion-submit-button"
           >
             {loading ? "Submitting…" : "Submit idea"}
           </Button>
