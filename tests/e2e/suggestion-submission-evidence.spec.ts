@@ -388,10 +388,11 @@ test.describe("Suggestion submission evidence", () => {
     await expect(page.getByTestId("suggestion-submit-error")).toContainText(
       "Some evidence could not be attached",
     );
-    await expect(page.getByText(`drop-${stamp}.txt`)).toBeVisible();
-    await expect(page.getByText(`keep-${stamp}.txt`)).toBeVisible();
+    const evidenceList = page.getByTestId("suggestion-evidence-list");
+    await expect(evidenceList.getByText(`drop-${stamp}.txt`)).toBeVisible();
+    await expect(evidenceList.getByText(`keep-${stamp}.txt`)).toBeVisible();
 
-    const uploadedItem = page.locator('[data-status="uploaded"]');
+    const uploadedItem = evidenceList.locator('[data-status="uploaded"]');
     await uploadedItem.getByRole("button", { name: "Remove" }).click();
     await expect(uploadedItem).toHaveCount(0);
 
@@ -399,8 +400,12 @@ test.describe("Suggestion submission evidence", () => {
     await expect(page.getByTestId("suggestion-detail-page")).toBeVisible();
     expect(createDraftCalls).toBe(1);
     await openEvidenceTab(page);
-    await expect(page.getByText(`keep-${stamp}.txt`)).toBeVisible();
-    await expect(page.getByText(`drop-${stamp}.txt`)).toHaveCount(0);
+    await expect(
+      page.getByTestId("evidence-uploader").getByText(`drop-${stamp}.txt`),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("evidence-uploader").getByText(`keep-${stamp}.txt`),
+    ).toHaveCount(0);
     assertNoProductionRuntimeErrors();
   });
 
