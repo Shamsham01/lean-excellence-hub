@@ -7,6 +7,7 @@ const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const mobileViewports = [
   { name: "390x844", width: 390, height: 844 },
   { name: "360x640", width: 360, height: 640 },
+  { name: "320x700", width: 320, height: 700 },
 ] as const;
 
 const representativeRoutes = [
@@ -109,18 +110,49 @@ test.describe("MOBILE-001 shared shell and tabs", () => {
         scrollWidth: element.scrollWidth,
         clientWidth: element.clientWidth,
         overflowX: style.overflowX,
+        scrollbarWidth: style.scrollbarWidth,
+        overflowEnd: element.getAttribute("data-overflow-end"),
       };
     });
 
     expect(["auto", "scroll"]).toContain(tabMetrics.overflowX);
+    expect(tabMetrics.scrollbarWidth).not.toBe("none");
+    expect(tabMetrics.overflowEnd).toBe("true");
     expect(tabMetrics.width).toBeLessThanOrEqual(390);
-    expect(tabMetrics.scrollWidth).toBeGreaterThanOrEqual(
-      tabMetrics.clientWidth,
-    );
+    expect(tabMetrics.scrollWidth).toBeGreaterThan(tabMetrics.clientWidth);
 
     const discussionTab = page.getByRole("tab", { name: "Discussion" });
     await discussionTab.scrollIntoViewIfNeeded();
     await expect(discussionTab).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("shared workspace tabs are keyboard-reachable when they overflow", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/benefits");
+    await expect(page.getByTestId("benefits-portfolio-page")).toBeVisible();
+
+    const benefitLink = page
+      .getByRole("link", { name: /Packaging Waste Reduction Savings/ })
+      .first();
+    await benefitLink.scrollIntoViewIfNeeded();
+    await benefitLink.click();
+    await expect(page.getByTestId("benefit-workspace")).toBeVisible();
+
+    const overviewTab = page.getByRole("tab", { name: "Overview" });
+    await overviewTab.focus();
+    await expect(overviewTab).toBeFocused();
+
+    for (let i = 0; i < 6; i += 1) {
+      await page.keyboard.press("ArrowRight");
+    }
+
+    const discussionTab = page.getByRole("tab", { name: "Discussion" });
+    await expect(discussionTab).toBeFocused();
+    await expect(discussionTab).toBeInViewport();
     await expectNoHorizontalOverflow(page);
   });
 });

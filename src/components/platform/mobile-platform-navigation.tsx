@@ -39,7 +39,10 @@ export function MobilePlatformNavigation({
   const closeDrawer = () => setOpen(false);
 
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b border-border bg-sidebar px-4 py-3 lg:hidden">
+    <div
+      data-testid="platform-mobile-chrome"
+      className="sticky top-0 z-40 flex min-w-0 items-center gap-2 border-b border-border bg-sidebar/95 px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] backdrop-blur-sm lg:hidden"
+    >
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button
@@ -61,6 +64,7 @@ export function MobilePlatformNavigation({
             organisationName={organisationName}
             organisations={organisations}
             siteContext={siteContext}
+            closeGutter
           />
           <PlatformNavigation items={items} onNavigate={closeDrawer} />
           <PlatformSidebarFooter

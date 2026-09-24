@@ -41,6 +41,8 @@ describe("platform sidebar layout", () => {
     expect(mobile).toContain("max-h-dvh");
     expect(mobile).toContain("min-h-0");
     expect(mobile).toContain("overflow-hidden");
+    expect(mobile).toContain("sticky top-0 z-40");
+    expect(mobile).toContain("closeGutter");
     expect(mobile).toContain("PlatformSidebarHeader");
     expect(mobile).toContain("siteContext={siteContext}");
     expect(mobile).toContain("PlatformNavigation");

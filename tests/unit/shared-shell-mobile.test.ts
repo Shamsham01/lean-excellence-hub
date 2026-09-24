@@ -12,9 +12,8 @@ describe("shared platform shell mobile layout", () => {
       "src/components/platform/mobile-platform-navigation.tsx",
     );
 
-    expect(mobile).toMatch(
-      /className="flex min-w-0 items-center gap-2 border-b border-border bg-sidebar px-4 py-3 lg:hidden"/,
-    );
+    expect(mobile).toContain("sticky top-0 z-40");
+    expect(mobile).toContain('data-testid="platform-mobile-chrome"');
     expect(mobile).toContain("min-w-0 flex-1 truncate");
   });
 
@@ -22,8 +21,9 @@ describe("shared platform shell mobile layout", () => {
     const shell = readComponent("src/components/platform/platform-shell.tsx");
 
     expect(shell).toContain("min-h-dvh min-w-0 flex-col");
+    expect(shell).toContain("lg:h-dvh lg:flex-row lg:overflow-hidden");
     expect(shell).toContain(
-      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden",
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto",
     );
   });
 
@@ -40,9 +40,13 @@ describe("shared Tabs mobile layout", () => {
   it("uses a width-constrained horizontally scrollable tab list", () => {
     const tabs = readComponent("src/components/ui/tabs.tsx");
 
-    expect(tabs).toMatch(/flex h-10 w-full max-w-full min-w-0/);
+    expect(tabs).toContain("tabs-scroll");
     expect(tabs).toContain("overflow-x-auto");
+    expect(tabs).toContain("overscroll-x-contain");
     expect(tabs).toContain("shrink-0");
+    expect(tabs).toContain("scrollIntoView");
+    expect(tabs).not.toContain("scrollbar-width:none");
+    expect(tabs).not.toContain("[&::-webkit-scrollbar]:hidden");
     expect(tabs).not.toContain("inline-flex h-10");
   });
 });

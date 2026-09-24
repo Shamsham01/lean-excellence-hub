@@ -11,5 +11,8 @@ describe("PlatformSidebar desktop layout", () => {
     expect(source).toContain("lg:sticky");
     expect(source).toContain("lg:top-0");
     expect(source).toContain("lg:self-start");
+    expect(source).toContain("lg:h-dvh");
+    expect(source).toContain("lg:max-h-dvh");
+    expect(source).toContain('data-testid="platform-desktop-sidebar"');
   });
 });

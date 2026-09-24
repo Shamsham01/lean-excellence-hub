@@ -13,7 +13,7 @@ export function ThemeToggle() {
       type="button"
       variant="ghost"
       size="sm"
-      className="w-full justify-start gap-2 text-sidebar-foreground"
+      className="min-h-11 w-full justify-start gap-2 text-sidebar-foreground"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
     >
