@@ -142,12 +142,21 @@ test.describe("MOBILE-001 shared shell and tabs", () => {
     await benefitLink.click();
     await expect(page.getByTestId("benefit-workspace")).toBeVisible();
 
+    const tabNames = [
+      "Overview",
+      "Forecast",
+      "Realisation",
+      "Validation",
+      "Evidence",
+      "Discussion",
+    ] as const;
     const overviewTab = page.getByRole("tab", { name: "Overview" });
     await overviewTab.focus();
     await expect(overviewTab).toBeFocused();
 
-    for (let i = 0; i < 6; i += 1) {
+    for (const name of tabNames.slice(1)) {
       await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("tab", { name })).toBeFocused();
     }
 
     const discussionTab = page.getByRole("tab", { name: "Discussion" });

@@ -50,6 +50,10 @@ export function TabsList({
 
     measure();
 
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
     const observer = new ResizeObserver(measure);
     observer.observe(element);
 
