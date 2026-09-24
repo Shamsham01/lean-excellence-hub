@@ -85,10 +85,26 @@ export default async function TrainingOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
           label="Training compliance"
-          value={compliance != null ? `${compliance}%` : "—"}
+          value={
+            <span data-testid="training-compliance-percent">
+              {compliance != null ? `${compliance}%` : "—"}
+            </span>
+          }
         />
-        <MetricCard label="Outstanding required" value={outstanding} />
-        <MetricCard label="Expiring in 30 days" value={expiring} />
+        <MetricCard
+          label="Outstanding required"
+          value={
+            <span data-testid="training-outstanding-required">
+              {outstanding}
+            </span>
+          }
+        />
+        <MetricCard
+          label="Expiring in 30 days"
+          value={
+            <span data-testid="training-expiring-required">{expiring}</span>
+          }
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

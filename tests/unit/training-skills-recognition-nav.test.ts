@@ -52,6 +52,10 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
       'data-testid="training-session-course-link"',
     );
     expect(curriculum).toContain('data-testid="training-curriculum-back-link"');
+    expect(curriculum).toContain(
+      'data-testid="training-curriculum-new-button"',
+    );
+    expect(curriculum).toContain('href="/platform/training/curriculum?new=1"');
     expect(matrix).toContain('data-testid="training-matrix-back-link"');
     expect(courses).not.toMatch(/from ["']next\/link["']/);
     expect(courseDetail).not.toMatch(/from ["']next\/link["']/);
@@ -82,6 +86,33 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
     expect(actions).toContain("create_training_course_draft");
     expect(actions).toContain("publish_training_course_version");
     expect(actions).toContain("TRAINING_PERMISSIONS.catalogManage");
+
+    const curriculumCreate = readSource(
+      "src/components/training/curriculum-create-form.tsx",
+    );
+    const curriculumDraft = readSource(
+      "src/components/training/curriculum-draft-editor.tsx",
+    );
+    const curriculumActions = readSource(
+      "src/app/(platform)/platform/training/curriculum-actions.ts",
+    );
+    const curriculumDetail = readSource(
+      "src/app/(platform)/platform/training/curriculum/[id]/page.tsx",
+    );
+
+    expect(curriculumCreate).toContain("navigateTo(");
+    expect(curriculumCreate).toContain(
+      "`/platform/training/curriculum/${result.curriculumId}`",
+    );
+    expect(curriculumCreate).not.toMatch(/router\.push\(/);
+    expect(curriculumDraft).toContain("navigateTo(");
+    expect(curriculumDetail).toContain('from "@/components/ui/app-link"');
+    expect(curriculumDetail).not.toMatch(/from ["']next\/link["']/);
+    expect(curriculumActions).toContain("create_training_curriculum_draft");
+    expect(curriculumActions).toContain("publish_training_curriculum_version");
+    expect(curriculumActions).toContain(
+      "TRAINING_PERMISSIONS.curriculumManage",
+    );
   });
 
   it("keeps bulk completion as a same-page refresh rather than a create-and-open race", () => {

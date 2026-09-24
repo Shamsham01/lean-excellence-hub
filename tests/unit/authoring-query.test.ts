@@ -39,6 +39,10 @@ describe("authoring query helpers", () => {
     expect(parseAuthoringSavedKey("course")).toBe("course");
     expect(authoringSaveMessage("course")).toBe("Draft saved.");
     expect(authoringSaveMessage("successor")).toBe("Successor draft created.");
+    expect(parseAuthoringSavedKey("curriculum")).toBe("curriculum");
+    expect(authoringSaveMessage("curriculum")).toBe("Curriculum draft saved.");
+    expect(parseAuthoringSavedKey("requirement")).toBe("requirement");
+    expect(authoringSaveMessage("requirement")).toBe("Requirement saved.");
   });
 
   it("builds redirect paths for server-side save confirmation", () => {

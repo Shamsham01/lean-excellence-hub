@@ -8,7 +8,9 @@ export type AuthoringSavedKey =
   | "publish"
   | "framework"
   | "course"
-  | "successor";
+  | "successor"
+  | "curriculum"
+  | "requirement";
 
 const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "applicability",
@@ -18,6 +20,8 @@ const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "framework",
   "course",
   "successor",
+  "curriculum",
+  "requirement",
 ]);
 
 export function parseAuthoringStep<T extends string>(
@@ -75,6 +79,10 @@ export function authoringSaveMessage(key: AuthoringSavedKey): string {
       return "Draft saved.";
     case "successor":
       return "Successor draft created.";
+    case "curriculum":
+      return "Curriculum draft saved.";
+    case "requirement":
+      return "Requirement saved.";
   }
 }
 

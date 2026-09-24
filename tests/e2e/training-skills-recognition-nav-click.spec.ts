@@ -64,6 +64,10 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await curriculum.click();
     await expect(page).toHaveURL(/\/platform\/training\/curriculum(?:\?|$)/);
     await expect(page.getByTestId("training-curriculum-page")).toBeVisible();
+    await page.getByRole("link", { name: "Apex Training Curriculum" }).click();
+    await expect(
+      page.getByTestId("training-curriculum-detail-page"),
+    ).toBeVisible();
     const curriculumCourse = page
       .getByRole("link", { name: DEMO_COURSE_NAME })
       .first();

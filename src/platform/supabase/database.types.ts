@@ -12468,6 +12468,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_training_curriculum_successor_version: {
+        Args: { target_curriculum_id: string }
+        Returns: string
+      }
       create_training_session: {
         Args: {
           target_capacity?: number
@@ -13525,6 +13529,10 @@ export type Database = {
         Args: { target_link_id: string }
         Returns: boolean
       }
+      remove_training_requirement: {
+        Args: { target_requirement_id: string }
+        Returns: boolean
+      }
       remove_training_session_participant: {
         Args: { target_participant_id: string; target_session_id: string }
         Returns: boolean
@@ -14073,6 +14081,21 @@ export type Database = {
           target_learning_objectives?: string
           target_trainer_requirements?: string
           target_validity_days?: number
+        }
+        Returns: boolean
+      }
+      update_training_requirement: {
+        Args: {
+          target_applies_to_all_members?: boolean
+          target_course_id: string
+          target_grace_period_days?: number
+          target_job_function_id?: string
+          target_mandatory?: boolean
+          target_notes?: string
+          target_organisational_unit_id?: string
+          target_required_within_days?: number
+          target_requirement_id: string
+          target_validity_days_override?: number
         }
         Returns: boolean
       }
