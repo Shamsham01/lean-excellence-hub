@@ -5,6 +5,13 @@ import { useCallback, useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { downloadEvidenceObject } from "@/lib/attachments/download-evidence";
+import {
+  EVIDENCE_ACCEPT,
+  EVIDENCE_FILE_HELP,
+  formatEvidenceFileSize,
+  validateEvidenceFile,
+} from "@/lib/attachments/evidence-file-rules";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
 export type EvidenceItem = {
@@ -12,6 +19,7 @@ export type EvidenceItem = {
   filename: string;
   mime_type: string;
   byte_size: number;
+  storage_object_path?: string | null;
   question_id?: string | null;
   section_id?: string | null;
   finding_id?: string | null;
@@ -50,16 +58,38 @@ export function EvidenceUploader({
     ? existingEvidence.filter(filter)
     : existingEvidence;
 
+  const downloadFile = useCallback(async (item: EvidenceItem) => {
+    if (!item.storage_object_path) return;
+    setError(null);
+    try {
+      await downloadEvidenceObject(item.storage_object_path, item.filename);
+    } catch (downloadError) {
+      setState("error");
+      setError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "Unable to open this evidence file.",
+      );
+    }
+  }, []);
+
   const uploadFile = useCallback(
     async (file: File) => {
       if (!canEdit) return;
       setState("uploading");
       setError(null);
 
+      const validation = validateEvidenceFile(file);
+      if (!validation.ok) {
+        setState("error");
+        setError(validation.error);
+        return;
+      }
+
       const init = await onInitiate(
-        file.name,
-        file.type || "application/octet-stream",
-        file.size,
+        validation.filename,
+        validation.mimeType,
+        validation.byteSize,
       );
       if (init.error || !init.attachmentId || !init.storagePath) {
         setState("error");
@@ -117,13 +147,25 @@ export function EvidenceUploader({
           {filteredEvidence.map((item) => (
             <li
               key={item.id}
-              className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm"
+              className="flex flex-col gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm sm:flex-row sm:items-center"
             >
               <FileText className="size-4 shrink-0 text-muted-foreground" />
               <span className="flex-1 truncate">{item.filename}</span>
               <span className="text-xs text-muted-foreground">
-                {(item.byte_size / 1024).toFixed(1)} KB
+                {formatEvidenceFileSize(item.byte_size)}
               </span>
+              {item.storage_object_path ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="min-h-11"
+                  onClick={() => void downloadFile(item)}
+                  data-testid={`evidence-download-${item.id}`}
+                >
+                  Open
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -149,14 +191,14 @@ export function EvidenceUploader({
             <Upload className="size-5 text-muted-foreground" />
             <p>Drag and drop a photo or file, or select one to upload.</p>
             <p className="text-xs text-muted-foreground">
-              PDF, images, or plain text up to 10 MB
+              {EVIDENCE_FILE_HELP}
             </p>
             <label className="cursor-pointer">
               <span className="sr-only">Select evidence file</span>
               <input
                 type="file"
                 className="hidden"
-                accept="image/jpeg,image/png,image/webp,application/pdf,text/plain"
+                accept={EVIDENCE_ACCEPT}
                 capture="environment"
                 onChange={(e) => onFileChange(e.target.files)}
                 data-testid="evidence-file-input"

@@ -1,3 +1,16 @@
+export const SUGGESTION_AUTHOR_EVIDENCE_UPLOAD_STATUSES = ["draft"] as const;
+
+export function suggestionStatusAllowsAuthorEvidenceUpload(
+  status: string | null | undefined,
+): boolean {
+  return (
+    status != null &&
+    (SUGGESTION_AUTHOR_EVIDENCE_UPLOAD_STATUSES as readonly string[]).includes(
+      status,
+    )
+  );
+}
+
 export const SUGGESTION_STATUSES = [
   "draft",
   "submitted",

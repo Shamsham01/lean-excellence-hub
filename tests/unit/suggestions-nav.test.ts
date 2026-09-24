@@ -49,7 +49,7 @@ describe("NAV-CLICK-001 Suggestions navigation primitives", () => {
 
     expect(source).toContain('from "@/lib/navigation/navigate"');
     expect(source).toContain(
-      "navigateTo(`/platform/suggestions/${draftId as string}`)",
+      "navigateTo(`/platform/suggestions/${result.suggestionId}`)",
     );
     expect(source).not.toMatch(/router\.push\(/);
     expect(source).not.toMatch(/router\.refresh\(/);
