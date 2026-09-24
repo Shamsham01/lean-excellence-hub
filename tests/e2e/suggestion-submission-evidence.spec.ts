@@ -440,7 +440,29 @@ test.describe("Suggestion submission evidence", () => {
       .from("attachments")
       .select("id")
       .eq("target_resource_id", suggestionId);
-    expect(financeRows ?? []).toEqual([]);
+    expect(financeRows ?? []).toHaveLength(1);
+
+    const contributorClient = await signInRpcClient(
+      DEMO_USERS.psContributor.email,
+      DEMO_USERS.psContributor.password,
+      "apex-manufacturing",
+    );
+    const { error: contributorUploadError } = await contributorClient.rpc(
+      "initiate_attachment_upload",
+      {
+        target_resource_id: suggestionId,
+        target_filename: "denied-contributor.txt",
+        target_mime_type: "text/plain",
+        target_byte_size: 12,
+      },
+    );
+    expect(contributorUploadError).toBeTruthy();
+
+    const { data: contributorRows } = await contributorClient
+      .from("attachments")
+      .select("id")
+      .eq("target_resource_id", suggestionId);
+    expect(contributorRows ?? []).toEqual([]);
 
     await ensureOnboardingE2eOrganisation();
     const foreignClient = await signInRpcClient(
