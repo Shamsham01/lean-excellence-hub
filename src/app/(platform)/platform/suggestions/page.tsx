@@ -10,11 +10,15 @@ import {
   loadSuggestionPortfolioFilterOptions,
 } from "@/lib/suggestions/fetch-suggestion-portfolio";
 import { parseSuggestionPortfolioSearchParams } from "@/lib/suggestions/suggestion-portfolio-query";
+import { suggestionsOverviewPermissionKeys } from "@/lib/suggestions/suggestion-page-permission-keys";
 import {
   pipelineStatuses,
   suggestionStatusLabel,
 } from "@/lib/suggestions/status";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  currentMemberHasPermission,
+  prefetchMemberPermissions,
+} from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -23,6 +27,7 @@ export default async function SuggestionsOverviewPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await prefetchMemberPermissions([...suggestionsOverviewPermissionKeys]);
   const canView = await currentMemberHasPermission("suggestions.read");
   if (!canView) {
     notFound();

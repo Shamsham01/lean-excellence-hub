@@ -10,7 +10,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { fetchSuggestionPortfolio } from "@/lib/suggestions/fetch-suggestion-portfolio";
 import { fetchSuggestionReviewContext } from "@/lib/suggestions/fetch-suggestion-review-context";
 import { parseSuggestionReviewQueueSearchParams } from "@/lib/suggestions/review-queue-query";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { suggestionsReviewPermissionKeys } from "@/lib/suggestions/suggestion-page-permission-keys";
+import {
+  currentMemberHasPermission,
+  prefetchMemberPermissions,
+} from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function SuggestionReviewQueuePage({
@@ -18,6 +22,7 @@ export default async function SuggestionReviewQueuePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await prefetchMemberPermissions([...suggestionsReviewPermissionKeys]);
   const canReview = await currentMemberHasPermission("suggestions.review");
   const canManage = await currentMemberHasPermission("suggestions.manage");
 

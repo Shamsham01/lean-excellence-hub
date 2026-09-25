@@ -14,5 +14,7 @@ describe("Suggestions overview page data loading", () => {
     );
     expect(source).toContain('supabase.rpc("get_suggestions_overview")');
     expect(source).toContain("fetchSuggestionPortfolio(supabase, filters)");
+    expect(source).toContain("prefetchMemberPermissions");
+    expect(source).toContain("suggestionsOverviewPermissionKeys");
   });
 });
