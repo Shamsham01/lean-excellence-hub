@@ -13,8 +13,25 @@ const mobileViewports = [
   { name: "390x844", width: 390, height: 844 },
   { name: "375x667", width: 375, height: 667 },
   { name: "360x640", width: 360, height: 640 },
+  { name: "320x700", width: 320, height: 700 },
   { name: "844x390", width: 844, height: 390 },
   { name: "768x1024", width: 768, height: 1024 },
+] as const;
+
+const representativeRoutes = [
+  { path: "/platform", testId: "platform-home-page", label: "Home" },
+  {
+    path: "/platform/people",
+    testId: "people-directory-page",
+    label: "People",
+  },
+  {
+    path: "/platform/suggestions",
+    testId: "suggestions-overview",
+    label: "Suggestions",
+  },
+  { path: "/platform/actions", testId: "actions-page", label: "Actions" },
+  { path: "/platform/settings", testId: "settings-page", label: "Settings" },
 ] as const;
 
 async function loginPlatformE2e(page: Page) {
@@ -38,6 +55,20 @@ async function expectNoHorizontalOverflow(page: Page) {
     clientWidth: document.documentElement.clientWidth,
   }));
   expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
+}
+
+async function scrollWorkspace(page: Page) {
+  await page.evaluate(() => {
+    const main = document.querySelector("main");
+    const inner = main?.firstElementChild as HTMLElement | null;
+    if (inner) {
+      inner.style.minHeight = "300vh";
+    }
+    if (main) {
+      main.scrollTop = main.scrollHeight;
+    }
+    window.scrollTo(0, document.body.scrollHeight);
+  });
 }
 
 async function expectFinalNavItemReachable(
@@ -131,18 +162,30 @@ test.describe("authenticated platform shell", () => {
     const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
 
-    await page.evaluate(() => {
-      const main = document.querySelector("main");
-      if (main) {
-        main.style.minHeight = "300vh";
-      }
-    });
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await scrollWorkspace(page);
 
     await expect(nav).toBeInViewport();
     await expect(
       sidebar.getByRole("button", { name: "Sign out", exact: true }),
     ).toBeInViewport();
+    await expect(
+      sidebar.getByRole("link", { name: "Settings", exact: true }),
+    ).toBeInViewport();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("desktop sidebar independently reaches lower navigation items", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signInAsDemoUser(page, "admin");
+
+    const nav = page.getByRole("navigation", { name: "Platform" });
+    for (const label of ["Skills", "Recognition"] as const) {
+      const link = nav.getByRole("link", { name: label, exact: true });
+      await link.scrollIntoViewIfNeeded();
+      await expect(link).toBeVisible();
+    }
   });
 
   for (const viewport of mobileViewports) {
@@ -164,6 +207,39 @@ test.describe("authenticated platform shell", () => {
 
       const { lastLink } = await expectFinalNavItemReachable(page, nav);
       await expect(lastLink).toBeInViewport();
+      await expectNoHorizontalOverflow(page);
+    });
+  }
+
+  test("mobile chrome stays reachable after scrolling a long page", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/people");
+    await expect(page.getByTestId("people-directory-page")).toBeVisible();
+
+    await scrollWorkspace(page);
+
+    const chrome = page.getByTestId("platform-mobile-chrome");
+    await expect(chrome).toBeInViewport();
+    await expect(
+      page.getByRole("button", { name: "Open navigation menu" }),
+    ).toBeInViewport();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  for (const route of representativeRoutes) {
+    test(`mobile chrome stays usable on ${route.label} at 390x844`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await signInAsDemoUser(page, "admin");
+      await page.goto(route.path);
+      await expect(page.getByTestId(route.testId)).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Open navigation menu" }),
+      ).toBeInViewport();
       await expectNoHorizontalOverflow(page);
     });
   }
@@ -205,5 +281,39 @@ test.describe("authenticated platform shell", () => {
         .getByRole("button", { name: "Sign out", exact: true }),
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
+  });
+
+  test("restricted operator does not see privileged setup navigation", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signInAsDemoUser(page, "operator");
+
+    await expect(
+      page.getByRole("link", { name: "Setup", exact: true }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Settings", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("restricted finance user keeps authorised entries only", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signInAsDemoUser(page, "finance");
+
+    await expect(
+      page.getByRole("link", { name: "Benefits", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Settings", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Setup", exact: true }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Lean AI", exact: true }),
+    ).not.toBeVisible();
   });
 });

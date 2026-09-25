@@ -132,10 +132,12 @@
 
 html {
   background: var(--background);
+  overflow-x: clip;
 }
 
 body {
   min-height: 100dvh;
+  overflow-x: clip;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
@@ -243,5 +245,24 @@ body {
 }
 
 .sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tabs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 28%, transparent)
+    transparent;
+}
+
+.tabs-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tabs-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: color-mix(in oklch, var(--foreground) 28%, transparent);
+}
+
+.tabs-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
