@@ -1,6 +1,6 @@
 begin;
 
-select plan(40);
+select plan(41);
 
 -- Privilege inventory after SEC-RPC-001. Signatures match hosted/local catalogs.
 create temporary table sec_rpc_restricted_sigs (
@@ -146,10 +146,19 @@ select ok(
 select ok(
   not pg_catalog.has_function_privilege(
     'anon',
-    'public.accept_organisation_invitation(bytea)',
+    'public.issue_organisation_member_invitation(text,text,bytea,timestamp with time zone,uuid,text,uuid,text,uuid,uuid)',
     'EXECUTE'
   ),
-  'anon cannot accept invitations'
+  'anon cannot issue member invitations'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'public.member_has_permission(text)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on member_has_permission for recognition RLS helpers'
 );
 
 select is(
@@ -259,6 +268,13 @@ select throws_ok(
   '42501',
   null,
   'anonymous callers cannot read workforce provision worker intents'
+);
+
+select throws_ok(
+  $$ select public.accept_organisation_invitation(decode(repeat('ff', 32), 'hex')) $$,
+  '42501',
+  null,
+  'anonymous callers cannot accept invitations'
 );
 
 select is(

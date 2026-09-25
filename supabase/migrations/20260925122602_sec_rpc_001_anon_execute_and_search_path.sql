@@ -232,7 +232,7 @@ grant execute on function public.link_five_s_evidence(uuid, uuid, uuid, uuid, uu
 revoke all on function public.member_has_permission(text)
   from public, anon;
 grant execute on function public.member_has_permission(text)
-  to authenticated;
+  to authenticated, lean_hub_private_owner;
 
 revoke all on function public.publish_five_s_standard_version(uuid)
   from public, anon;
