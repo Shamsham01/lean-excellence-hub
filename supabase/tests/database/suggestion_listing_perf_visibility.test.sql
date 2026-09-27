@@ -1,6 +1,6 @@
 begin;
 
-select plan(57);
+select plan(72);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -46,6 +46,12 @@ values
 (
   'e4000000-0000-0000-0000-000000000007',
   'list-self-reviewer@example.test',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'e4000000-0000-0000-0000-000000000008',
+  'list-jurisdiction-reviewer@example.test',
   statement_timestamp(), statement_timestamp(), statement_timestamp(),
   '{"provider":"email","providers":["email"]}', '{}', false, false
 );
@@ -121,6 +127,11 @@ values
 (
   'e4100000-0000-0000-0000-000000000007',
   'e4000000-0000-0000-0000-000000000007',
+  statement_timestamp(), statement_timestamp()
+),
+(
+  'e4100000-0000-0000-0000-000000000008',
+  'e4000000-0000-0000-0000-000000000008',
   statement_timestamp(), statement_timestamp()
 );
 
@@ -216,6 +227,22 @@ with inserted_membership as (
 insert into list_ids (key, id)
 select 'self_reviewer_membership', id from inserted_membership;
 
+with inserted_membership as (
+  insert into public.organisation_memberships (
+    organisation_id, user_id, status, activated_at
+  )
+  values
+    (
+      (select id from list_ids where key = 'organisation'),
+      'e4000000-0000-0000-0000-000000000008',
+      'active',
+      statement_timestamp()
+    )
+  returning id
+)
+insert into list_ids (key, id)
+select 'jurisdiction_reviewer_membership', id from inserted_membership;
+
 update private.identity_controls
 set status = 'active',
     enrolment_status = 'complete',
@@ -225,7 +252,8 @@ where user_id in (
   'e4000000-0000-0000-0000-000000000003',
   'e4000000-0000-0000-0000-000000000004',
   'e4000000-0000-0000-0000-000000000006',
-  'e4000000-0000-0000-0000-000000000007'
+  'e4000000-0000-0000-0000-000000000007',
+  'e4000000-0000-0000-0000-000000000008'
 );
 
 select set_config(
@@ -328,6 +356,16 @@ select ok(
   'self-only reviewer primary placement at Bodmin'
 );
 
+select ok(
+  public.assign_membership_job_function(
+    (select id from list_ids where key = 'jurisdiction_reviewer_membership'),
+    (select id from list_ids where key = 'job_function'),
+    true,
+    (select id from list_ids where key = 'bodmin_site')
+  ) is not null,
+  'jurisdictional reviewer primary placement at Bodmin'
+);
+
 insert into list_ids (key, id)
 select 'programme', public.create_suggestion_programme_draft(
   'Listing Ideas', 'listing-ideas', 'listing programme'
@@ -418,6 +456,31 @@ select ok(
 );
 
 insert into list_ids (key, id)
+select 'review_role', public.create_role_draft(
+  (select id from list_ids where key = 'organisation'),
+  'list-jurisdiction-reviewer',
+  'List Jurisdiction Reviewer',
+  'Unit-scoped suggestion review without unit read'
+);
+
+select ok(
+  public.add_role_permission(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'review_role'),
+    'suggestions.review'
+  ),
+  'jurisdiction reviewer role receives suggestions.review'
+);
+
+select ok(
+  public.publish_role_version(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'review_role')
+  ),
+  'jurisdiction reviewer role publishes'
+);
+
+insert into list_ids (key, id)
 select 'bodmin_grant', public.grant_role_version(
   (select id from list_ids where key = 'organisation'),
   (select id from list_ids where key = 'bodmin_membership'),
@@ -460,6 +523,24 @@ select 'self_reviewer_grant', public.grant_role_version(
   (select id from list_ids where key = 'self_role'),
   'self',
   null
+);
+
+insert into list_ids (key, id)
+select 'jurisdiction_reviewer_self_grant', public.grant_role_version(
+  (select id from list_ids where key = 'organisation'),
+  (select id from list_ids where key = 'jurisdiction_reviewer_membership'),
+  (select id from list_ids where key = 'self_role'),
+  'self',
+  null
+);
+
+insert into list_ids (key, id)
+select 'jurisdiction_reviewer_review_grant', public.grant_role_version(
+  (select id from list_ids where key = 'organisation'),
+  (select id from list_ids where key = 'jurisdiction_reviewer_membership'),
+  (select id from list_ids where key = 'review_role'),
+  'unit_subtree',
+  (select id from list_ids where key = 'bodmin_site')
 );
 
 select set_config(
@@ -594,6 +675,32 @@ select ok(
 
 select set_config(
   'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000008","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000008","email":"list-jurisdiction-reviewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'jurisdictional reviewer selects organisation'
+);
+
+insert into list_ids (key, id)
+select 'jurisdiction_reviewer_own', public.create_suggestion_draft(
+  (select id from list_ids where key = 'programme_version'),
+  (select id from list_ids where key = 'category'),
+  'Jurisdiction reviewer own idea',
+  'Problem from jurisdiction reviewer',
+  'Idea from jurisdiction reviewer',
+  'Benefit from jurisdiction reviewer'
+);
+
+select ok(
+  public.submit_suggestion((select id from list_ids where key = 'jurisdiction_reviewer_own')),
+  'jurisdictional reviewer own suggestion submits'
+);
+
+select set_config(
+  'request.jwt.claims',
   '{"sub":"e4000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000001","email":"list-owner@example.test"}',
   true
 );
@@ -610,6 +717,14 @@ select ok(
     'co_contributor'
   ) is not null,
   'self-only member is added as active contributor on Bodmin suggestion'
+);
+
+select ok(
+  public.assign_suggestion_reviewer(
+    (select id from list_ids where key = 'bodmin_suggestion'),
+    (select id from list_ids where key = 'jurisdiction_reviewer_membership')
+  ) is not null,
+  'jurisdictional reviewer is assigned to Bodmin suggestion'
 );
 
 reset role;
@@ -863,6 +978,16 @@ select ok(
   'self-scoped member sees only own authored suggestion'
 );
 
+insert into list_actor_visibility (actor_key, membership_key, portfolio, overview)
+values (
+  'self_author',
+  'self_membership',
+  public.get_suggestion_portfolio(
+    null, null, null, null, null, 'newest', 1, 25, 'all'
+  ),
+  public.get_suggestions_overview()
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"e4000000-0000-0000-0000-000000000006","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000006","email":"list-self-contributor@example.test"}',
@@ -899,6 +1024,27 @@ insert into list_actor_visibility (actor_key, membership_key, portfolio, overvie
 values (
   'self_reviewer',
   'self_reviewer_membership',
+  public.get_suggestion_portfolio(
+    null, null, null, null, null, 'newest', 1, 25, 'all'
+  ),
+  public.get_suggestions_overview()
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000008","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000008","email":"list-jurisdiction-reviewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'jurisdictional reviewer re-selects organisation'
+);
+
+insert into list_actor_visibility (actor_key, membership_key, portfolio, overview)
+values (
+  'jurisdiction_reviewer',
+  'jurisdiction_reviewer_membership',
   public.get_suggestion_portfolio(
     null, null, null, null, null, 'newest', 1, 25, 'all'
   ),
@@ -1094,6 +1240,172 @@ select ok(
 )
 from list_actor_visibility visibility
 where visibility.actor_key = 'self_reviewer';
+
+select is(
+  (
+    select array_agg(item_row ->> 'id' order by item_row ->> 'id')
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+  ),
+  (
+    select array_agg(suggestion_row.id::text order by suggestion_row.id::text)
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'self-authored member portfolio ids match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_author';
+
+select is(
+  visibility.overview,
+  (
+    select jsonb_build_object(
+      'submitted_this_month', count(*) filter (
+        where suggestion_row.submitted_at >= date_trunc('month', statement_timestamp())
+      ),
+      'awaiting_review', count(*) filter (
+        where suggestion_row.status in ('submitted', 'under_review')
+      ),
+      'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+      'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+      'implemented', count(*) filter (where suggestion_row.status = 'implemented'),
+      'pipeline', jsonb_build_object(
+        'submitted', count(*) filter (where suggestion_row.status = 'submitted'),
+        'under_review', count(*) filter (where suggestion_row.status = 'under_review'),
+        'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+        'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+        'implemented', count(*) filter (where suggestion_row.status = 'implemented')
+      )
+    )
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'self-authored member overview counts match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_author';
+
+select ok(
+  private.is_active_suggestion_reviewer(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'bodmin_suggestion'),
+    (select id from list_ids where key = 'jurisdiction_reviewer_membership')
+  ),
+  'jurisdictional reviewer remains active on the Bodmin suggestion'
+);
+
+select ok(
+  private.membership_can_read_improvement_suggestion(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'bodmin_suggestion'),
+    (select id from list_ids where key = 'jurisdiction_reviewer_membership')
+  ),
+  'canonical helper allows jurisdictional reviewer read of assigned Bodmin suggestion'
+);
+
+select ok(
+  not private.membership_can_read_improvement_suggestion(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'exeter_suggestion'),
+    (select id from list_ids where key = 'jurisdiction_reviewer_membership')
+  ),
+  'canonical helper denies jurisdictional reviewer read of Exeter suggestion'
+);
+
+select is(
+  (
+    select array_agg(item_row ->> 'id' order by item_row ->> 'id')
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+  ),
+  (
+    select array_agg(suggestion_row.id::text order by suggestion_row.id::text)
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'jurisdictional reviewer portfolio ids match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'jurisdiction_reviewer';
+
+select is(
+  visibility.overview,
+  (
+    select jsonb_build_object(
+      'submitted_this_month', count(*) filter (
+        where suggestion_row.submitted_at >= date_trunc('month', statement_timestamp())
+      ),
+      'awaiting_review', count(*) filter (
+        where suggestion_row.status in ('submitted', 'under_review')
+      ),
+      'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+      'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+      'implemented', count(*) filter (where suggestion_row.status = 'implemented'),
+      'pipeline', jsonb_build_object(
+        'submitted', count(*) filter (where suggestion_row.status = 'submitted'),
+        'under_review', count(*) filter (where suggestion_row.status = 'under_review'),
+        'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+        'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+        'implemented', count(*) filter (where suggestion_row.status = 'implemented')
+      )
+    )
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'jurisdictional reviewer overview counts match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'jurisdiction_reviewer';
+
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'jurisdiction_reviewer_own')
+  )
+  and exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'bodmin_suggestion')
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'exeter_suggestion')
+  ),
+  'jurisdictional reviewer sees own and assigned Bodmin rows, not Exeter'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'jurisdiction_reviewer';
 
 set local role anon;
 
