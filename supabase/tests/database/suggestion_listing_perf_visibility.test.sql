@@ -1,6 +1,6 @@
 begin;
 
-select plan(37);
+select plan(57);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -36,6 +36,18 @@ values
   'list-other-org@example.test',
   statement_timestamp(), statement_timestamp(), statement_timestamp(),
   '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'e4000000-0000-0000-0000-000000000006',
+  'list-self-contributor@example.test',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'e4000000-0000-0000-0000-000000000007',
+  'list-self-reviewer@example.test',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
 );
 
 create temporary table list_ids (
@@ -43,7 +55,16 @@ create temporary table list_ids (
   id uuid not null
 ) on commit drop;
 
-grant select, insert on list_ids to authenticated;
+grant select, insert on list_ids to authenticated, lean_hub_private_owner;
+
+create temporary table list_actor_visibility (
+  actor_key text primary key,
+  membership_key text not null,
+  portfolio jsonb not null,
+  overview jsonb not null
+) on commit drop;
+
+grant select, insert on list_actor_visibility to authenticated;
 
 insert into list_ids (key, id)
 values (
@@ -90,6 +111,16 @@ values
 (
   'e4100000-0000-0000-0000-000000000005',
   'e4000000-0000-0000-0000-000000000005',
+  statement_timestamp(), statement_timestamp()
+),
+(
+  'e4100000-0000-0000-0000-000000000006',
+  'e4000000-0000-0000-0000-000000000006',
+  statement_timestamp(), statement_timestamp()
+),
+(
+  'e4100000-0000-0000-0000-000000000007',
+  'e4000000-0000-0000-0000-000000000007',
   statement_timestamp(), statement_timestamp()
 );
 
@@ -153,6 +184,38 @@ with inserted_membership as (
 insert into list_ids (key, id)
 select 'self_membership', id from inserted_membership;
 
+with inserted_membership as (
+  insert into public.organisation_memberships (
+    organisation_id, user_id, status, activated_at
+  )
+  values
+    (
+      (select id from list_ids where key = 'organisation'),
+      'e4000000-0000-0000-0000-000000000006',
+      'active',
+      statement_timestamp()
+    )
+  returning id
+)
+insert into list_ids (key, id)
+select 'self_contributor_membership', id from inserted_membership;
+
+with inserted_membership as (
+  insert into public.organisation_memberships (
+    organisation_id, user_id, status, activated_at
+  )
+  values
+    (
+      (select id from list_ids where key = 'organisation'),
+      'e4000000-0000-0000-0000-000000000007',
+      'active',
+      statement_timestamp()
+    )
+  returning id
+)
+insert into list_ids (key, id)
+select 'self_reviewer_membership', id from inserted_membership;
+
 update private.identity_controls
 set status = 'active',
     enrolment_status = 'complete',
@@ -160,7 +223,9 @@ set status = 'active',
 where user_id in (
   'e4000000-0000-0000-0000-000000000002',
   'e4000000-0000-0000-0000-000000000003',
-  'e4000000-0000-0000-0000-000000000004'
+  'e4000000-0000-0000-0000-000000000004',
+  'e4000000-0000-0000-0000-000000000006',
+  'e4000000-0000-0000-0000-000000000007'
 );
 
 select set_config(
@@ -241,6 +306,26 @@ select ok(
     (select id from list_ids where key = 'bodmin_site')
   ) is not null,
   'self-scoped member primary placement at Bodmin'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from list_ids where key = 'self_contributor_membership'),
+    (select id from list_ids where key = 'job_function'),
+    true,
+    (select id from list_ids where key = 'bodmin_site')
+  ) is not null,
+  'self-only contributor primary placement at Bodmin'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from list_ids where key = 'self_reviewer_membership'),
+    (select id from list_ids where key = 'job_function'),
+    true,
+    (select id from list_ids where key = 'bodmin_site')
+  ) is not null,
+  'self-only reviewer primary placement at Bodmin'
 );
 
 insert into list_ids (key, id)
@@ -359,6 +444,24 @@ select 'self_grant', public.grant_role_version(
   null
 );
 
+insert into list_ids (key, id)
+select 'self_contributor_grant', public.grant_role_version(
+  (select id from list_ids where key = 'organisation'),
+  (select id from list_ids where key = 'self_contributor_membership'),
+  (select id from list_ids where key = 'self_role'),
+  'self',
+  null
+);
+
+insert into list_ids (key, id)
+select 'self_reviewer_grant', public.grant_role_version(
+  (select id from list_ids where key = 'organisation'),
+  (select id from list_ids where key = 'self_reviewer_membership'),
+  (select id from list_ids where key = 'self_role'),
+  'self',
+  null
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"e4000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000002","email":"list-bodmin@example.test"}',
@@ -436,6 +539,101 @@ select ok(
   public.submit_suggestion((select id from list_ids where key = 'self_suggestion')),
   'self-authored suggestion submits'
 );
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000006","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000006","email":"list-self-contributor@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'self-only contributor selects organisation'
+);
+
+insert into list_ids (key, id)
+select 'self_contributor_own', public.create_suggestion_draft(
+  (select id from list_ids where key = 'programme_version'),
+  (select id from list_ids where key = 'category'),
+  'Self contributor own idea',
+  'Problem from self contributor',
+  'Idea from self contributor',
+  'Benefit from self contributor'
+);
+
+select ok(
+  public.submit_suggestion((select id from list_ids where key = 'self_contributor_own')),
+  'self-only contributor own suggestion submits'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000007","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000007","email":"list-self-reviewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'self-only reviewer selects organisation'
+);
+
+insert into list_ids (key, id)
+select 'self_reviewer_own', public.create_suggestion_draft(
+  (select id from list_ids where key = 'programme_version'),
+  (select id from list_ids where key = 'category'),
+  'Self reviewer own idea',
+  'Problem from self reviewer',
+  'Idea from self reviewer',
+  'Benefit from self reviewer'
+);
+
+select ok(
+  public.submit_suggestion((select id from list_ids where key = 'self_reviewer_own')),
+  'self-only reviewer own suggestion submits'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000001","email":"list-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'owner selects organisation to assign contributor'
+);
+
+select ok(
+  public.add_suggestion_contributor(
+    (select id from list_ids where key = 'bodmin_suggestion'),
+    (select id from list_ids where key = 'self_contributor_membership'),
+    'co_contributor'
+  ) is not null,
+  'self-only member is added as active contributor on Bodmin suggestion'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+insert into public.suggestion_review_assignments (
+  organisation_id,
+  suggestion_id,
+  reviewer_membership_id,
+  assigned_by_membership_id,
+  assignment_kind,
+  status
+)
+values (
+  (select id from list_ids where key = 'organisation'),
+  (select id from list_ids where key = 'exeter_suggestion'),
+  (select id from list_ids where key = 'self_reviewer_membership'),
+  (select id from list_ids where key = 'owner_membership'),
+  'assigned',
+  'active'
+);
+
+reset role;
+set local role authenticated;
 
 select set_config(
   'request.jwt.claims',
@@ -665,7 +863,238 @@ select ok(
   'self-scoped member sees only own authored suggestion'
 );
 
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000006","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000006","email":"list-self-contributor@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'self-only contributor re-selects organisation'
+);
+
+insert into list_actor_visibility (actor_key, membership_key, portfolio, overview)
+values (
+  'self_contributor',
+  'self_contributor_membership',
+  public.get_suggestion_portfolio(
+    null, null, null, null, null, 'newest', 1, 25, 'all'
+  ),
+  public.get_suggestions_overview()
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e4000000-0000-0000-0000-000000000007","role":"authenticated","session_id":"e4100000-0000-0000-0000-000000000007","email":"list-self-reviewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from list_ids where key = 'organisation')),
+  'self-only reviewer re-selects organisation'
+);
+
+insert into list_actor_visibility (actor_key, membership_key, portfolio, overview)
+values (
+  'self_reviewer',
+  'self_reviewer_membership',
+  public.get_suggestion_portfolio(
+    null, null, null, null, null, 'newest', 1, 25, 'all'
+  ),
+  public.get_suggestions_overview()
+);
+
 reset role;
+
+select ok(
+  private.is_active_suggestion_contributor(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'bodmin_suggestion'),
+    (select id from list_ids where key = 'self_contributor_membership')
+  ),
+  'self-only member remains an active contributor on someone else''s suggestion'
+);
+
+select ok(
+  private.is_active_suggestion_reviewer(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'exeter_suggestion'),
+    (select id from list_ids where key = 'self_reviewer_membership')
+  ),
+  'self-only member remains an active reviewer on someone else''s suggestion'
+);
+
+select ok(
+  not private.membership_can_read_improvement_suggestion(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'bodmin_suggestion'),
+    (select id from list_ids where key = 'self_contributor_membership')
+  ),
+  'canonical helper denies self-only contributor read of foreign suggestion'
+);
+
+select ok(
+  not private.membership_can_read_improvement_suggestion(
+    (select id from list_ids where key = 'organisation'),
+    (select id from list_ids where key = 'exeter_suggestion'),
+    (select id from list_ids where key = 'self_reviewer_membership')
+  ),
+  'canonical helper denies self-only reviewer read of foreign suggestion'
+);
+
+select is(
+  (
+    select array_agg(item_row ->> 'id' order by item_row ->> 'id')
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+  ),
+  (
+    select array_agg(suggestion_row.id::text order by suggestion_row.id::text)
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'self-only contributor portfolio ids match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_contributor';
+
+select is(
+  visibility.overview,
+  (
+    select jsonb_build_object(
+      'submitted_this_month', count(*) filter (
+        where suggestion_row.submitted_at >= date_trunc('month', statement_timestamp())
+      ),
+      'awaiting_review', count(*) filter (
+        where suggestion_row.status in ('submitted', 'under_review')
+      ),
+      'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+      'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+      'implemented', count(*) filter (where suggestion_row.status = 'implemented'),
+      'pipeline', jsonb_build_object(
+        'submitted', count(*) filter (where suggestion_row.status = 'submitted'),
+        'under_review', count(*) filter (where suggestion_row.status = 'under_review'),
+        'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+        'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+        'implemented', count(*) filter (where suggestion_row.status = 'implemented')
+      )
+    )
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'self-only contributor overview counts match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_contributor';
+
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'self_contributor_own')
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'bodmin_suggestion')
+  ),
+  'self-only contributor sees own suggestion and not the foreign contributed row'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_contributor';
+
+select is(
+  (
+    select array_agg(item_row ->> 'id' order by item_row ->> 'id')
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+  ),
+  (
+    select array_agg(suggestion_row.id::text order by suggestion_row.id::text)
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'self-only reviewer portfolio ids match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_reviewer';
+
+select is(
+  visibility.overview,
+  (
+    select jsonb_build_object(
+      'submitted_this_month', count(*) filter (
+        where suggestion_row.submitted_at >= date_trunc('month', statement_timestamp())
+      ),
+      'awaiting_review', count(*) filter (
+        where suggestion_row.status in ('submitted', 'under_review')
+      ),
+      'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+      'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+      'implemented', count(*) filter (where suggestion_row.status = 'implemented'),
+      'pipeline', jsonb_build_object(
+        'submitted', count(*) filter (where suggestion_row.status = 'submitted'),
+        'under_review', count(*) filter (where suggestion_row.status = 'under_review'),
+        'accepted', count(*) filter (where suggestion_row.status = 'accepted'),
+        'implementing', count(*) filter (where suggestion_row.status = 'implementing'),
+        'implemented', count(*) filter (where suggestion_row.status = 'implemented')
+      )
+    )
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.organisation_id = (select id from list_ids where key = 'organisation')
+      and private.membership_can_read_improvement_suggestion(
+        suggestion_row.organisation_id,
+        suggestion_row.id,
+        (select id from list_ids where key = visibility.membership_key)
+      )
+  ),
+  'self-only reviewer overview counts match membership_can_read oracle'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_reviewer';
+
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'self_reviewer_own')
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      visibility.portfolio -> 'items'
+    ) item_row
+    where item_row ->> 'id' = (select id::text from list_ids where key = 'exeter_suggestion')
+  ),
+  'self-only reviewer sees own suggestion and not the foreign reviewed row'
+)
+from list_actor_visibility visibility
+where visibility.actor_key = 'self_reviewer';
+
 set local role anon;
 
 select throws_ok(
