@@ -64,7 +64,7 @@ describe("Suggestions overview keeps unfiltered metrics beside filtered totals",
       "utf8",
     );
 
-    expect(source).toContain('supabase.rpc("get_suggestions_overview")');
+    expect(source).toContain("fetchSuggestionsOverview(supabase)");
     expect(source).toContain("fetchSuggestionPortfolio(supabase, filters)");
     expect(source).not.toContain("countAllVisibleSuggestions");
   });

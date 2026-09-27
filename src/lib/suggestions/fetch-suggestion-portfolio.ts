@@ -5,6 +5,7 @@ import type { SuggestionPortfolioFilters } from "@/lib/suggestions/suggestion-po
 import type {
   SuggestionPortfolioItem,
   SuggestionPortfolioListResult,
+  SuggestionsOverview,
 } from "@/lib/suggestions/types";
 import type { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -13,6 +14,27 @@ type ServerSupabaseClient = Awaited<
 >;
 
 export { loadSuggestionPortfolioFilterOptions };
+
+export async function fetchSuggestionsOverview(
+  supabase: ServerSupabaseClient,
+): Promise<SuggestionsOverview> {
+  const { data, error } = await supabase.rpc("get_suggestions_overview");
+
+  if (error) {
+    throw new Error("Unable to load suggestions overview.");
+  }
+
+  const result = (data ?? {}) as SuggestionsOverview;
+
+  return {
+    submitted_this_month: result.submitted_this_month ?? 0,
+    awaiting_review: result.awaiting_review ?? 0,
+    accepted: result.accepted ?? 0,
+    implementing: result.implementing ?? 0,
+    implemented: result.implemented ?? 0,
+    pipeline: result.pipeline ?? {},
+  };
+}
 
 export async function fetchSuggestionPortfolio(
   supabase: ServerSupabaseClient,

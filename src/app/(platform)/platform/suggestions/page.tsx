@@ -7,6 +7,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
   fetchSuggestionPortfolio,
+  fetchSuggestionsOverview,
   loadSuggestionPortfolioFilterOptions,
 } from "@/lib/suggestions/fetch-suggestion-portfolio";
 import { parseSuggestionPortfolioSearchParams } from "@/lib/suggestions/suggestion-portfolio-query";
@@ -44,8 +45,8 @@ export default async function SuggestionsOverviewPage({
   const canManageReview =
     await currentMemberHasPermission("suggestions.manage");
 
-  const [{ data: overview }, portfolio, filterOptions] = await Promise.all([
-    supabase.rpc("get_suggestions_overview"),
+  const [overview, portfolio, filterOptions] = await Promise.all([
+    fetchSuggestionsOverview(supabase),
     fetchSuggestionPortfolio(supabase, filters),
     loadSuggestionPortfolioFilterOptions(supabase, {
       programme: filters.programme,
@@ -54,8 +55,7 @@ export default async function SuggestionsOverviewPage({
     }),
   ]);
 
-  const overviewObj = (overview as Record<string, unknown>) ?? {};
-  const pipeline = (overviewObj.pipeline as Record<string, number>) ?? {};
+  const pipeline = overview.pipeline;
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
@@ -91,20 +91,11 @@ export default async function SuggestionsOverviewPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label="Submitted this month"
-          value={(overviewObj.submitted_this_month as number) ?? 0}
+          value={overview.submitted_this_month}
         />
-        <MetricCard
-          label="Awaiting review"
-          value={(overviewObj.awaiting_review as number) ?? 0}
-        />
-        <MetricCard
-          label="Implementing"
-          value={(overviewObj.implementing as number) ?? 0}
-        />
-        <MetricCard
-          label="Implemented"
-          value={(overviewObj.implemented as number) ?? 0}
-        />
+        <MetricCard label="Awaiting review" value={overview.awaiting_review} />
+        <MetricCard label="Implementing" value={overview.implementing} />
+        <MetricCard label="Implemented" value={overview.implemented} />
       </div>
 
       <Card>
