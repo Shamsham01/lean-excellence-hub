@@ -1,6 +1,8 @@
 -- PERF-001: Suggestions listing/overview. Keep PostgREST contracts and
--- can_read_improvement_suggestion semantics. Evaluate actor coverage once,
--- then filter with set membership instead of per-row permission probes.
+-- membership_can_read_improvement_suggestion semantics. Evaluate actor
+-- coverage once, then filter with set membership instead of per-row
+-- permission probes. Self-scoped read matches only the actor's own
+-- authored rows; contributor/reviewer status does not widen self-read.
 -- Combine portfolio COUNT + SELECT into one windowed scan.
 
 create or replace function private.suggestion_listing_actor_coverage(
@@ -161,19 +163,7 @@ as $$
     or target_jurisdiction_unit_id = any (readable_unit_ids)
     or (
       has_self_read
-      and (
-        target_author_membership_id = target_actor_membership_id
-        or private.is_active_suggestion_contributor(
-          target_organisation_id,
-          target_suggestion_id,
-          target_actor_membership_id
-        )
-        or private.is_active_suggestion_reviewer(
-          target_organisation_id,
-          target_suggestion_id,
-          target_actor_membership_id
-        )
-      )
+      and target_author_membership_id = target_actor_membership_id
     )
     or (
       private.is_active_suggestion_reviewer(
