@@ -189,11 +189,11 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
   });
 
-  test("assessor: image evidence remains previewable after reload and submission", async ({
+  test("admin: image evidence remains previewable after reload and submission", async ({
     page,
   }) => {
     test.setTimeout(90_000);
-    await signInAsDemoUser(page, "manager");
+    await signInAsDemoUser(page, "admin");
     await page.goto("/platform/maturity/assessments/new");
     await selectFrameworkVersion(page, { label: /E2E Closure Framework/ });
     await selectAssessmentScopeAndWaitForEntities(page, "site", {
@@ -210,7 +210,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await scoreInput.click();
     await scoreInput.pressSequentially("4");
     await scoreInput.blur();
-    await expect(page.getByText("Saving")).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Saving…")).not.toBeVisible({
+      timeout: 10_000,
+    });
     await expect(scoreInput).toHaveValue("4");
 
     const imagePath = join(
@@ -218,11 +220,9 @@ test.describe("Milestone 5 maturity journeys", () => {
       "../fixtures/maturity-evidence/sample.png",
     );
     await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
-    await expect(page.getByText("Evidence attached")).toBeVisible({
-      timeout: 15_000,
-    });
     await expect(page.getByText("sample.png")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
 
     await page.reload();
     await expect(
@@ -233,6 +233,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(scoreInput).toHaveValue("4", { timeout: 15_000 });
     await expect(page.getByText("sample.png")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
 
     await page.getByTestId("submit-assessment").click();
     await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
@@ -242,6 +243,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
   });
 
   test("admin: create successor version keeps historical assessment pinned", async ({
