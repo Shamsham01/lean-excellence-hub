@@ -125,10 +125,12 @@ test.describe("Milestone 6 5S journeys", () => {
     await expect(page.getByTestId("five-s-audit-result")).toBeVisible();
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
     await expect(page.getByTestId("five-s-complete-audit")).toHaveCount(0);
 
     await page.reload();
     await expect(page.getByTestId("five-s-audit-result")).toBeVisible();
     await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
   });
 });

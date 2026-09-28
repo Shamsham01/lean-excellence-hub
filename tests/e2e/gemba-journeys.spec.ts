@@ -486,6 +486,8 @@ test.describe("Milestone 6 Gemba journeys", () => {
     );
     await expect(page.getByText(observationText)).toBeVisible();
     await expect(page.getByText("sample.webp")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
     await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
 
@@ -494,6 +496,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-walk-summary")).toBeVisible();
     await expect(page.getByTestId("gemba-walk-status")).toHaveText("Completed");
     await expect(page.getByText("sample.webp")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
     await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
     expect(new URL(page.url()).searchParams.has("prompt")).toBe(false);
   });
