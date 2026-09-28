@@ -29,8 +29,11 @@ import {
 import { loadLocalSupabaseEnv } from "../../scripts/qa-tenant/local-env";
 import {
   assertModuleFixturesPresent,
+  assertSuggestionWorkflowAbsent,
   collectCookieWorksModuleFixtureSnapshot,
+  collectCookieWorksSuggestionWorkflowSnapshot,
   seedCookieWorksModuleFixtures,
+  seedCookieWorksSuggestionWorkflowFixture,
 } from "../../scripts/qa-tenant/module-fixtures";
 import { signInUser } from "../../scripts/qa-tenant/shared/auth";
 import { countCookieWorksStorageObjects } from "../../scripts/qa-tenant/storage-cleanup";
@@ -232,6 +235,147 @@ describe.skipIf(!hasLocalSupabase)(
       if (storageBefore > 0) {
         expect(storageAfter).toBeLessThan(storageBefore);
       }
+
+      const cookieInventory = collectCookieWorksInventory(env.databaseUrl);
+      expect(
+        isFoundationOnlyInventory(cookieInventory, {
+          databaseUrl: env.databaseUrl,
+        }),
+      ).toBe(true);
+    }, 300_000);
+
+    it("purges CookieWorks suggestion/action/project history without touching other tenants", async () => {
+      const { organisationId } = await seedCookieWorksFoundation({
+        admin,
+        apiUrl: env.apiUrl,
+        publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
+      });
+
+      await ensureIsolationCanaryTenant(admin);
+      await seedIsolationCanaryModuleRecord(env.apiUrl, env.publishableKey);
+
+      const adminClient = await signInUser(
+        env.apiUrl,
+        env.publishableKey,
+        "admin",
+      );
+      const operatorClient = await signInUser(
+        env.apiUrl,
+        env.publishableKey,
+        "operator",
+      );
+      const teamLeaderClient = await signInUser(
+        env.apiUrl,
+        env.publishableKey,
+        "teamLeader",
+      );
+      const productionManagerClient = await signInUser(
+        env.apiUrl,
+        env.publishableKey,
+        "productionManager",
+      );
+
+      const beforeWorkflow = await seedCookieWorksSuggestionWorkflowFixture({
+        adminClient,
+        operatorClient,
+        teamLeaderClient,
+        productionManagerClient,
+        organisationId,
+      });
+
+      const apexSuggestionsBefore = countOrganisationModuleRows(
+        env.databaseUrl,
+        DEMO_ORGANISATION.code,
+        "improvement_suggestions",
+      );
+      const apexActionsBefore = countOrganisationModuleRows(
+        env.databaseUrl,
+        DEMO_ORGANISATION.code,
+        "actions",
+      );
+      const apexReviewsBefore = countOrganisationModuleRows(
+        env.databaseUrl,
+        DEMO_ORGANISATION.code,
+        "suggestion_reviews",
+      );
+      const isolationMaturityBefore = countOrganisationMaturityModels(
+        env.databaseUrl,
+        QA_ISOLATION_ORGANISATION.code,
+      );
+
+      expect(beforeWorkflow.suggestions).toBeGreaterThan(0);
+      expect(beforeWorkflow.reviews).toBeGreaterThan(0);
+      expect(beforeWorkflow.actions).toBeGreaterThan(0);
+      expect(beforeWorkflow.projects).toBeGreaterThan(0);
+      expect(apexSuggestionsBefore).toBeGreaterThan(0);
+
+      await purgeCookieWorksTenantModules(env.databaseUrl, {
+        storageAdmin: admin,
+      });
+      await seedCookieWorksFoundation({
+        admin,
+        apiUrl: env.apiUrl,
+        publishableKey: env.publishableKey,
+        databaseUrl: env.databaseUrl,
+      });
+
+      const postReset = assertCookieWorksResetVerified(env.databaseUrl);
+      expect(postReset.isFoundationOnly).toBe(true);
+
+      const afterWorkflow =
+        await collectCookieWorksSuggestionWorkflowSnapshot(adminClient);
+      assertSuggestionWorkflowAbsent(afterWorkflow);
+
+      expect(
+        countOrganisationModuleRows(
+          env.databaseUrl,
+          QA_ORGANISATION.code,
+          "suggestion_programmes",
+        ),
+      ).toBe(0);
+      expect(
+        countOrganisationModuleRows(
+          env.databaseUrl,
+          QA_ORGANISATION.code,
+          "suggestion_status_history",
+        ),
+      ).toBe(0);
+      expect(
+        countOrganisationModuleRows(
+          env.databaseUrl,
+          QA_ORGANISATION.code,
+          "action_status_transitions",
+        ),
+      ).toBe(0);
+
+      expect(
+        countOrganisationModuleRows(
+          env.databaseUrl,
+          DEMO_ORGANISATION.code,
+          "improvement_suggestions",
+        ),
+      ).toBe(apexSuggestionsBefore);
+      expect(
+        countOrganisationModuleRows(
+          env.databaseUrl,
+          DEMO_ORGANISATION.code,
+          "actions",
+        ),
+      ).toBe(apexActionsBefore);
+      expect(
+        countOrganisationModuleRows(
+          env.databaseUrl,
+          DEMO_ORGANISATION.code,
+          "suggestion_reviews",
+        ),
+      ).toBe(apexReviewsBefore);
+      expect(
+        countOrganisationMaturityModels(
+          env.databaseUrl,
+          QA_ISOLATION_ORGANISATION.code,
+        ),
+      ).toBe(isolationMaturityBefore);
 
       const cookieInventory = collectCookieWorksInventory(env.databaseUrl);
       expect(

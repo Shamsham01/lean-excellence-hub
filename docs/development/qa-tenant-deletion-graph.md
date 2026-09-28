@@ -38,13 +38,23 @@ Almost every LEH module table carries `organisation_id`. The reset discovers the
 
 Deletion uses a deterministic multi-pass sweep (max 160 passes):
 
-1. Pre-delete private operational envelopes/outbox rows for the organisation.
-2. Pre-delete known indirect children (see below).
-3. For each pass, attempt `DELETE FROM public.<table> WHERE organisation_id = $org`.
-4. `foreign_key_violation` is tolerated temporarily to allow parent/child ordering.
-5. Any other SQL error aborts the reset with table context.
-6. If passes exhaust with rows still deleted on the final pass, the reset fails.
-7. After passes complete, remaining module rows for the organisation fail the reset.
+1. Fail closed if unclassified append-only DELETE/UPDATE protections are discovered.
+2. Pre-delete private operational envelopes/outbox rows for the organisation.
+3. Pre-delete known indirect children (see below).
+4. Explicitly unlock and delete the maturity subgraph.
+5. Controlled-retirement-delete approved module-stage append-only history
+   (`suggestion_reviews`, `suggestion_status_history`, `action_status_transitions`,
+   and the other tables in `MODULE_STAGE_CONTROLLED_RETIREMENT_TABLES`) by
+   disabling only those named DELETE triggers, deleting `organisation_id`-scoped
+   rows, then re-enabling the triggers. Production FKs and triggers are not
+   changed.
+6. For each pass, attempt `DELETE FROM public.<table> WHERE organisation_id = $org`
+   on ordinary-deletable module tables.
+7. `foreign_key_violation` is tolerated temporarily to allow parent/child ordering.
+8. Any other SQL error aborts the reset with table context.
+9. If passes exhaust with rows still deleted on the final pass, the reset fails.
+10. After passes complete, remaining module rows (including module-stage history)
+    for the organisation fail the reset.
 
 This approach removes deep graphs such as:
 
@@ -102,34 +112,41 @@ categories; verification is the authoritative fail-closed gate.
 The reset aborts on:
 
 - Unexpected SQL errors (anything other than transient `foreign_key_violation` or documented immutability/append-only conflicts during ordering)
-- Remaining deletable module rows after the final purge pass
+- Remaining deletable module rows after the final purge pass, including
+  module-stage append-only history that controlled retirement should have cleared
 - Residual indirect rows (signup bindings, storage objects)
 - Failed post-reset verification
+- Unclassified append-only tables discovered before mutation
 
 Silent `WHEN OTHERS THEN NULL` handling is not used.
 
-## Known limitations (no migration in QA1a)
+## Append-only history during CookieWorks reset (CW-RESET-001)
 
-LEH retains append-only workflow history (for example `maturity_assessment_transitions`,
-`suggestion_status_history`, `action_status_transitions`) and immutable published template
-subgraphs. Records that create these histories cannot be deleted with the current Supabase CLI
-connection role. The harness therefore:
+CookieWorks `qa:cookie:reset` is `module-foundation-only`. It must return the tenant
+to foundation-only, including after integrated smoke has created published
+programmes, reviews, actions, and projects.
+
+Module-stage append-only tables are **not** retained. They are retired with the
+same named-trigger disable/delete/enable sequence already used for
+`full-tenant-removal`. Foundation-stage ledgers (`security_audit_events`,
+`business_audit_events`) stay on the foundation allowlist.
+
+The harness therefore:
 
 - archives published template versions and reopens completed template submissions before purge
-- tolerates documented immutability/append-only SQLSTATE `55000` conflicts during ordering passes
-- excludes append-only DELETE-protected tables and template/resource registry infrastructure tables
-  from verification failure counts during CookieWorks module purge (`module-foundation-only`)
-- performs controlled append-only retirement deletes during legacy full tenant removal
-  (`full-tenant-removal`), including `ai_usage_events`
+- retires approved module-stage history in a deterministic order before the generic DELETE loop
+- excludes only template/resource registry infrastructure tables from remaining-row
+  failure counts during CookieWorks module purge (`module-foundation-only`)
 - discovers custom append-only triggers (`prevent_ai_usage_event_mutation`,
   `guard_benefit_overlap_allocation_history_mutation`) in addition to
   `prevent_update_or_delete`
-- proves purge correctness with draft-level module fixtures that do not enter irreversible workflow
-  states
+- fails closed on unclassified append-only protections instead of skipping them
+- does **not** add `ON DELETE CASCADE` to product tables, disable RLS, or weaken
+  production append-only rules
 
-A future maintainer-only `SECURITY DEFINER` purge RPC (migration) would be required for destructive
-cleanup of workflow-completed module data. Until then, hosted destructive reset must not be used
-for tenants that have entered those irreversible states.
+Hosted destructive CookieWorks reset still requires explicit confirmation and
+must not be used from implementation PRs. Full physical `organisations` row
+deletion remains out of scope for module purge.
 
 ## Cross-stage FK dependencies (QA2e)
 
@@ -160,6 +177,18 @@ Deleting `resource_records` during module purge therefore fails with
 `business_audit_events_resource_fkey` whenever audit evidence references a resource record.
 `security_audit_events` does not reference `resource_records`; the cross-stage edge is specific
 to the business audit ledger.
+
+### CookieWorks module purge order (`module-foundation-only`)
+
+```text
+MODULE PURGE
+  append-only unknown guard
+  private notification infrastructure
+  maturity explicit unlock deletes
+  controlled module append-only retirement
+  generic module DELETE loop
+  retain templates, security_audit_events, business_audit_events, resource_records
+```
 
 ### Full tenant removal order
 

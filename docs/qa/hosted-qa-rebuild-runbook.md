@@ -234,8 +234,9 @@ LEANHUB_QA_RESET_CONFIRM=DELETE_COOKIEWORKS_ONLY \
 npm run qa:cookie:hosted-reset -- --destructive
 ```
 
-See `docs/development/qa-tenant-deletion-graph.md` for purge limits (append-only
-workflow history, published template immutability).
+See `docs/development/qa-tenant-deletion-graph.md` for the CookieWorks purge
+graph (module-stage history is retired with named-trigger disable/delete/enable;
+foundation audit ledgers and production FKs stay intact).
 
 This scoped reset does **not** remove Apex or other tenants. Use
 `npx supabase db reset --linked` when a full hosted wipe is required.

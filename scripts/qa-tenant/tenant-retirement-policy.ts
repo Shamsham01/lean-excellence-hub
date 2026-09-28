@@ -17,9 +17,10 @@ export type AppendOnlyLifecycleClassification =
 /**
  * A. ordinary-deletable — generic organisation-scoped DELETE loop.
  * B. controlled-retirement-delete (module stage) — append-only/immutable module
- *    history deleted during module purge via narrowly scoped trigger disable.
- * C. append-only-module-retained — workflow/audit history retained during
- *    CookieWorks module purge; excluded from generic DELETE and verification.
+ *    history deleted during CookieWorks module purge and full tenant removal
+ *    via narrowly scoped trigger disable, then DELETE WHERE organisation_id.
+ * C. append-only-module-retained — unused for CookieWorks foundation reset;
+ *    module-stage history is retired in (B) so parents can be deleted.
  * D. foundation-foundation-stage — foundation append-only audit ledgers deleted
  *    only during foundation/organisation deletion.
  * E. infrastructure-explicit — template/resource registry handled explicitly.
@@ -636,61 +637,57 @@ where row_count > 0;
 
 export function buildAppendOnlyUnknownGuardStatements(options?: {
   indent?: string;
-  retentionVar?: string;
 }) {
   const indent = options?.indent ?? "  ";
-  const retentionVar = options?.retentionVar ?? "purge_retention";
 
   return `
-${indent}if ${retentionVar} = 'full-tenant-removal' then
-${indent}  select coalesce(
-${indent}    array_agg(
-${indent}      format(
-${indent}        'public.%s (trigger=%s, function=%s)',
-${indent}        discovered.event_object_table,
-${indent}        discovered.trigger_name,
-${indent}        discovered.trigger_function
-${indent}      )
-${indent}      order by discovered.event_object_table, discovered.trigger_name
-${indent}    ),
-${indent}    array[]::text[]
-${indent}  )
-${indent}  into unknown_append_only_tables
-${indent}  from (
-${indent}    select distinct
-${indent}      event_object_table,
-${indent}      trigger_name,
-${indent}      'prevent_update_or_delete'::text as trigger_function
-${indent}    from information_schema.triggers
-${indent}    where trigger_schema = 'public'
-${indent}      and event_manipulation = 'DELETE'
-${indent}      and action_statement ilike '%prevent_update_or_delete%'
-${indent}    union
-${indent}    select distinct
-${indent}      event_object_table,
-${indent}      trigger_name,
-${indent}      case
-${indent}        when action_statement ilike '%prevent_ai_usage_event_mutation%'
-${indent}          then 'prevent_ai_usage_event_mutation'
-${indent}        when action_statement ilike '%guard_benefit_overlap_allocation_history_mutation%'
-${indent}          then 'guard_benefit_overlap_allocation_history_mutation'
-${indent}        else 'custom'
-${indent}      end as trigger_function
-${indent}    from information_schema.triggers
-${indent}    where trigger_schema = 'public'
-${indent}      and event_manipulation in ('DELETE', 'UPDATE')
-${indent}      and (
-${indent}        action_statement ilike '%prevent_ai_usage_event_mutation%'
-${indent}        or action_statement ilike '%guard_benefit_overlap_allocation_history_mutation%'
-${indent}      )
-${indent}  ) discovered
-${indent}  where discovered.event_object_table not in (${approvedAppendOnlyTableSqlList()});
+${indent}select coalesce(
+${indent}  array_agg(
+${indent}    format(
+${indent}      'public.%s (trigger=%s, function=%s)',
+${indent}      discovered.event_object_table,
+${indent}      discovered.trigger_name,
+${indent}      discovered.trigger_function
+${indent}    )
+${indent}    order by discovered.event_object_table, discovered.trigger_name
+${indent}  ),
+${indent}  array[]::text[]
+${indent})
+${indent}into unknown_append_only_tables
+${indent}from (
+${indent}  select distinct
+${indent}    event_object_table,
+${indent}    trigger_name,
+${indent}    'prevent_update_or_delete'::text as trigger_function
+${indent}  from information_schema.triggers
+${indent}  where trigger_schema = 'public'
+${indent}    and event_manipulation = 'DELETE'
+${indent}    and action_statement ilike '%prevent_update_or_delete%'
+${indent}  union
+${indent}  select distinct
+${indent}    event_object_table,
+${indent}    trigger_name,
+${indent}    case
+${indent}      when action_statement ilike '%prevent_ai_usage_event_mutation%'
+${indent}        then 'prevent_ai_usage_event_mutation'
+${indent}      when action_statement ilike '%guard_benefit_overlap_allocation_history_mutation%'
+${indent}        then 'guard_benefit_overlap_allocation_history_mutation'
+${indent}      else 'custom'
+${indent}    end as trigger_function
+${indent}  from information_schema.triggers
+${indent}  where trigger_schema = 'public'
+${indent}    and event_manipulation in ('DELETE', 'UPDATE')
+${indent}    and (
+${indent}      action_statement ilike '%prevent_ai_usage_event_mutation%'
+${indent}      or action_statement ilike '%guard_benefit_overlap_allocation_history_mutation%'
+${indent}    )
+${indent}) discovered
+${indent}where discovered.event_object_table not in (${approvedAppendOnlyTableSqlList()});
 ${indent}
-${indent}  if coalesce(array_length(unknown_append_only_tables, 1), 0) > 0 then
-${indent}    raise exception
-${indent}      'Tenant module purge blocked: unclassified append-only tables discovered: %',
-${indent}      array_to_string(unknown_append_only_tables, ', ');
-${indent}  end if;
+${indent}if coalesce(array_length(unknown_append_only_tables, 1), 0) > 0 then
+${indent}  raise exception
+${indent}    'Tenant module purge blocked: unclassified append-only tables discovered: %',
+${indent}    array_to_string(unknown_append_only_tables, ', ');
 ${indent}end if;
 `;
 }
@@ -703,7 +700,13 @@ export function buildControlledRetirementDeleteStatements(
   const lines: string[] = [];
 
   lines.push(
-    `${indent}-- Module-stage controlled append-only retirement deletes (full tenant removal only).`,
+    `${indent}-- Module-stage controlled append-only retirement deletes.`,
+  );
+  lines.push(
+    `${indent}-- CookieWorks foundation reset and full tenant removal both retire`,
+  );
+  lines.push(
+    `${indent}-- tenant-owned history here so parent module rows can be deleted.`,
   );
   lines.push(
     `${indent}-- Only explicitly approved module tables are deleted here.`,
@@ -903,21 +906,17 @@ export function collectAppendOnlyInventoryFailures(
   rows: AppendOnlyInventoryRow[],
   scope: AppendOnlyInventoryVerificationScope,
 ) {
-  if (scope === "module-foundation-only") {
-    return [];
-  }
-
   const relevantRows =
-    scope === "module-purge"
+    scope === "full-absence"
       ? rows.filter(
           (row) =>
             (row.lifecycleStage ??
-              classifyDiscoveredAppendOnlyTable(row.table)) === "module",
+              classifyDiscoveredAppendOnlyTable(row.table)) !== "unknown",
         )
       : rows.filter(
           (row) =>
             (row.lifecycleStage ??
-              classifyDiscoveredAppendOnlyTable(row.table)) !== "unknown",
+              classifyDiscoveredAppendOnlyTable(row.table)) === "module",
         );
 
   return relevantRows

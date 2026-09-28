@@ -14,11 +14,10 @@ import {
   buildOrganisationScopeCte,
   foundationTableSqlList,
   INDIRECT_TENANT_CHECKS,
-  listAppendOnlyDeleteTablesSql,
   PURGE_INFRASTRUCTURE_TABLES,
 } from "./deletion-graph";
 import { runSupabaseDbQueryJson, SupabaseDbQueryError } from "./db-cli";
-import { CUSTOM_APPEND_ONLY_DELETE_TABLES } from "./tenant-retirement-policy";
+import { isFoundationStageAppendOnlyTable } from "./tenant-retirement-policy";
 
 export type TenantVerificationRow = {
   resource: string;
@@ -134,39 +133,20 @@ function discoverTableLists(databaseUrl: string) {
     sql: listFoundationTablesSql(),
   });
 
-  const appendOnlyRows = runSupabaseDbQueryJson<{
-    tables: Array<{ table: string; trigger: string }>;
-  }>({
-    databaseUrl,
-    outputFormat: "json",
-    heavy: true,
-    retryTransientConnection: true,
-    sql: listAppendOnlyDeleteTablesSql(),
-  });
-
   const moduleTables = (moduleRows[0]?.tables ?? []) as string[];
   const foundationTables = (foundationRows[0]?.tables ?? []) as string[];
-  const appendOnlyTables = new Set<string>([
-    ...((appendOnlyRows[0]?.tables ?? []) as Array<{ table: string }>).map(
-      (entry) => entry.table,
-    ),
-    ...CUSTOM_APPEND_ONLY_DELETE_TABLES.map((policy) => policy.table),
-  ]);
 
-  return { moduleTables, foundationTables, appendOnlyTables };
+  return { moduleTables, foundationTables };
 }
 
-function parseVerificationPayload(
-  payload: {
-    organisation: CookieWorksVerificationResult["organisation"];
-    rows: Array<{
-      resource: string;
-      count: number | string;
-      category: "module" | "foundation" | "indirect";
-    }>;
-  },
-  appendOnlyTables: Set<string>,
-): CookieWorksVerificationResult {
+function parseVerificationPayload(payload: {
+  organisation: CookieWorksVerificationResult["organisation"];
+  rows: Array<{
+    resource: string;
+    count: number | string;
+    category: "module" | "foundation" | "indirect";
+  }>;
+}): CookieWorksVerificationResult {
   const foundationCounts: TenantVerificationRow[] = [];
   const moduleTableCounts: TenantVerificationRow[] = [];
   const indirectCounts: TenantVerificationRow[] = [];
@@ -192,7 +172,7 @@ function parseVerificationPayload(
     moduleTableCounts.push(entry);
     const tableName = row.resource.replace(/^public\./, "");
     if (
-      appendOnlyTables.has(tableName) ||
+      isFoundationStageAppendOnlyTable(tableName) ||
       PURGE_INFRASTRUCTURE_TABLES.includes(
         tableName as (typeof PURGE_INFRASTRUCTURE_TABLES)[number],
       )
@@ -227,8 +207,7 @@ function parseVerificationPayload(
 }
 
 export function verifyCookieWorksTenant(databaseUrl: string) {
-  const { moduleTables, foundationTables, appendOnlyTables } =
-    discoverTableLists(databaseUrl);
+  const { moduleTables, foundationTables } = discoverTableLists(databaseUrl);
 
   if (moduleTables.length === 0) {
     throw new Error(
@@ -261,7 +240,7 @@ export function verifyCookieWorksTenant(databaseUrl: string) {
     throw new Error("CookieWorks verification query returned no payload.");
   }
 
-  return parseVerificationPayload(verification, appendOnlyTables);
+  return parseVerificationPayload(verification);
 }
 
 export function assertCookieWorksOrganisationContract(databaseUrl: string) {

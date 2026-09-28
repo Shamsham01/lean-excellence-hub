@@ -65,6 +65,21 @@ describe("tenant private infrastructure purge SQL", () => {
     expect(genericLoopIndex).toBeGreaterThan(controlledDeleteIndex);
   });
 
+  it("classifies append-only tables before the CookieWorks generic delete loop", () => {
+    const modulePurgeSql = buildPurgeTenantModuleDataSql(
+      "cookieworks-manufacturing",
+    );
+    const controlledDeleteIndex = modulePurgeSql.indexOf(
+      "disable trigger suggestion_reviews_prevent_delete",
+    );
+    const genericLoopIndex = modulePurgeSql.indexOf(
+      "foreach purge_table_name in array deletable_tables loop",
+    );
+
+    expect(controlledDeleteIndex).toBeGreaterThanOrEqual(0);
+    expect(genericLoopIndex).toBeGreaterThan(controlledDeleteIndex);
+  });
+
   it("counts pre-cutover skip rows through tenant outbox relationship", () => {
     const countSql = buildTenantPrivateInfrastructureCountSql(
       "402811bb-aa05-4128-b7e5-a1e3b359b92e",

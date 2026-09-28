@@ -15,6 +15,19 @@ export type CookieWorksModuleFixtureSnapshot = {
   attachments: number;
 };
 
+export type CookieWorksSuggestionWorkflowSnapshot = {
+  programmes: number;
+  programmeVersions: number;
+  categories: number;
+  suggestions: number;
+  reviewAssignments: number;
+  reviews: number;
+  statusHistory: number;
+  actions: number;
+  actionStatusTransitions: number;
+  projects: number;
+};
+
 async function countRows(client: SupabaseClient, table: string, column = "id") {
   const { count, error } = await client
     .from(table)
@@ -41,6 +54,66 @@ export async function collectCookieWorksModuleFixtureSnapshot(
     comments: await countRows(client, "comments"),
     attachments: await countRows(client, "attachments"),
   };
+}
+
+export async function collectCookieWorksSuggestionWorkflowSnapshot(
+  client: SupabaseClient,
+): Promise<CookieWorksSuggestionWorkflowSnapshot> {
+  return {
+    programmes: await countRows(client, "suggestion_programmes"),
+    programmeVersions: await countRows(client, "suggestion_programme_versions"),
+    categories: await countRows(client, "suggestion_categories"),
+    suggestions: await countRows(client, "improvement_suggestions"),
+    reviewAssignments: await countRows(client, "suggestion_review_assignments"),
+    reviews: await countRows(client, "suggestion_reviews"),
+    statusHistory: await countRows(client, "suggestion_status_history"),
+    actions: await countRows(client, "actions"),
+    actionStatusTransitions: await countRows(
+      client,
+      "action_status_transitions",
+    ),
+    projects: await countRows(client, "ci_projects"),
+  };
+}
+
+export function assertSuggestionWorkflowPresent(
+  snapshot: CookieWorksSuggestionWorkflowSnapshot,
+) {
+  const required: Array<[keyof CookieWorksSuggestionWorkflowSnapshot, number]> =
+    [
+      ["programmes", 1],
+      ["programmeVersions", 1],
+      ["categories", 1],
+      ["suggestions", 1],
+      ["reviewAssignments", 1],
+      ["reviews", 1],
+      ["statusHistory", 1],
+      ["actions", 1],
+      ["actionStatusTransitions", 1],
+      ["projects", 1],
+    ];
+
+  for (const [key, minimum] of required) {
+    if (snapshot[key] < minimum) {
+      throw new Error(
+        `CookieWorks suggestion workflow fixture missing ${String(key)} (expected >= ${minimum}, got ${snapshot[key]})`,
+      );
+    }
+  }
+}
+
+export function assertSuggestionWorkflowAbsent(
+  snapshot: CookieWorksSuggestionWorkflowSnapshot,
+) {
+  for (const [key, count] of Object.entries(snapshot) as Array<
+    [keyof CookieWorksSuggestionWorkflowSnapshot, number]
+  >) {
+    if (count !== 0) {
+      throw new Error(
+        `CookieWorks suggestion workflow fixture remained after reset: ${String(key)}=${count}`,
+      );
+    }
+  }
 }
 
 export function assertModuleFixturesPresent(
@@ -435,5 +508,126 @@ export async function seedCookieWorksModuleFixtures(options: {
   );
   assertModuleFixturesPresent(snapshot);
 
+  return snapshot;
+}
+
+export async function seedCookieWorksSuggestionWorkflowFixture(options: {
+  adminClient: SupabaseClient;
+  operatorClient: SupabaseClient;
+  teamLeaderClient: SupabaseClient;
+  productionManagerClient: SupabaseClient;
+  organisationId: string;
+}): Promise<CookieWorksSuggestionWorkflowSnapshot> {
+  for (const client of [
+    options.adminClient,
+    options.operatorClient,
+    options.teamLeaderClient,
+    options.productionManagerClient,
+  ]) {
+    await switchOrganisation(client, options.organisationId);
+  }
+
+  const fixtureSuffix = `${Date.now()}`;
+  const programmeCode = `cw-reset-${fixtureSuffix}`.slice(0, 80);
+  const categoryCode = `cw-reset-cat-${fixtureSuffix}`.slice(0, 80);
+
+  const programmeId = (await expectRpc(
+    options.adminClient,
+    "create_suggestion_programme_draft",
+    {
+      target_name: `CW reset programme ${fixtureSuffix}`,
+      target_code: programmeCode,
+      target_description: "QA reset dependency-chain fixture.",
+    },
+  )) as string;
+
+  const { data: programmeVersion, error: programmeVersionError } =
+    await options.adminClient
+      .from("suggestion_programme_versions")
+      .select("id")
+      .eq("programme_id", programmeId)
+      .eq("version_number", 1)
+      .single();
+
+  if (programmeVersionError || !programmeVersion?.id) {
+    throw (
+      programmeVersionError ??
+      new Error("Suggestion programme version missing for QA reset fixture.")
+    );
+  }
+
+  await expectRpc(options.adminClient, "publish_suggestion_programme_version", {
+    target_programme_version_id: programmeVersion.id,
+  });
+
+  const categoryId = (await expectRpc(
+    options.adminClient,
+    "create_suggestion_category",
+    {
+      target_name: `CW reset category ${fixtureSuffix}`,
+      target_code: categoryCode,
+    },
+  )) as string;
+
+  const suggestionId = (await expectRpc(
+    options.operatorClient,
+    "create_suggestion_draft",
+    {
+      target_programme_version_id: programmeVersion.id,
+      target_category_id: categoryId,
+      target_title: `CW reset idea ${fixtureSuffix}`,
+      target_problem_or_opportunity:
+        "Packing labels smudge after washdown during QA reset fixture.",
+      target_proposed_idea:
+        "Add a sealed holder at the pack-out bench during QA reset fixture.",
+      target_expected_benefit_summary: "Fewer reprint loops after washdown.",
+    },
+  )) as string;
+
+  await expectRpc(options.operatorClient, "submit_suggestion", {
+    target_suggestion_id: suggestionId,
+  });
+
+  await expectRpc(options.teamLeaderClient, "claim_suggestion_for_review", {
+    target_suggestion_id: suggestionId,
+  });
+  await expectRpc(options.teamLeaderClient, "begin_suggestion_review", {
+    target_suggestion_id: suggestionId,
+  });
+  await expectRpc(options.teamLeaderClient, "record_suggestion_review", {
+    target_suggestion_id: suggestionId,
+    target_decision: "accept",
+    target_impact_level: "medium",
+    target_effort_level: "low",
+    target_rationale: "Approved so QA reset can exercise the dependency chain.",
+    target_employee_feedback:
+      "We will raise an action and a project from this idea.",
+  });
+
+  await expectRpc(
+    options.productionManagerClient,
+    "begin_suggestion_implementation",
+    {
+      target_suggestion_id: suggestionId,
+    },
+  );
+  await expectRpc(options.productionManagerClient, "create_suggestion_action", {
+    target_suggestion_id: suggestionId,
+    target_title: `CW reset action ${fixtureSuffix}`,
+    target_description:
+      "Follow-up action created from the QA reset suggestion.",
+  });
+  await expectRpc(
+    options.productionManagerClient,
+    "create_improvement_project_from_suggestion",
+    {
+      target_suggestion_id: suggestionId,
+    },
+  );
+
+  const snapshot = await collectCookieWorksSuggestionWorkflowSnapshot(
+    options.adminClient,
+  );
+  assertSuggestionWorkflowPresent(snapshot);
   return snapshot;
 }

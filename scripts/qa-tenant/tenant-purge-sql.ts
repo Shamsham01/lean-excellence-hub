@@ -227,9 +227,7 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
   from unnest(append_only_tables) as append_only_table_name
   where append_only_table_name in (${moduleStageAppendOnlyTableSqlList()});
 
-  if purge_retention = 'full-tenant-removal' then
-${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })}
-  end if;
+${buildControlledRetirementDeleteStatements("target_org_id", { indent: "  " })}
 
   select coalesce(
     array_agg(module_table_name order by module_table_name),
@@ -278,11 +276,6 @@ ${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })
   end if;
 
   foreach purge_table_name in array tables loop
-    if purge_retention = 'module-foundation-only'
-      and purge_table_name = any(append_only_tables) then
-      continue;
-    end if;
-
     if purge_table_name in (${modulePurgeInfrastructureTableSqlList()})
       or purge_table_name in (${foundationStageDependencyTableSqlList()}) then
       continue;
@@ -323,23 +316,21 @@ ${buildControlledRetirementDeleteStatements("target_org_id", { indent: "    " })
     where organisation_id = target_org_id;
   end if;
 
-  if purge_retention = 'full-tenant-removal' then
-    foreach append_only_table in array module_stage_append_only_tables loop
-      execute format(
-        'select count(*)::bigint from public.%I where organisation_id = $1',
-        append_only_table
-      )
-      into remaining_count
-      using target_org_id;
+  foreach append_only_table in array module_stage_append_only_tables loop
+    execute format(
+      'select count(*)::bigint from public.%I where organisation_id = $1',
+      append_only_table
+    )
+    into remaining_count
+    using target_org_id;
 
-      if remaining_count > 0 then
-        raise exception
-          'Tenant module purge left module-stage append-only rows after controlled retirement delete: public.%=%',
-          append_only_table,
-          remaining_count;
-      end if;
-    end loop;
-  end if;
+    if remaining_count > 0 then
+      raise exception
+        'Tenant module purge left module-stage append-only rows after controlled retirement delete: public.%=%',
+        append_only_table,
+        remaining_count;
+    end if;
+  end loop;
 
   select count(*)::bigint
   into indirect_remaining
