@@ -9,6 +9,7 @@ import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
 import type { ProjectDetail } from "@/lib/projects/types";
+import { resolvePersonDisplayName } from "@/modules/organisation/site-context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -110,16 +111,24 @@ export default async function ProjectDetailPage({
   const membershipIds = [
     ...new Set(detail.team_members.map((member) => member.membership_id)),
   ];
-  const membershipNameById = new Map<string, string>();
+  const membershipNameById = new Map<string, string>(
+    selectorOptions.people.map((person) => [person.id, person.name]),
+  );
+  const unresolvedMembershipIds = membershipIds.filter(
+    (membershipId) => !membershipNameById.has(membershipId),
+  );
 
-  if (membershipIds.length > 0) {
+  if (unresolvedMembershipIds.length > 0) {
     const { data: membershipRows } = await supabase
       .from("organisation_memberships")
       .select("id, display_name")
-      .in("id", membershipIds);
+      .in("id", unresolvedMembershipIds);
 
     for (const row of membershipRows ?? []) {
-      membershipNameById.set(row.id, row.display_name ?? row.id.slice(0, 8));
+      membershipNameById.set(
+        row.id,
+        resolvePersonDisplayName(row.display_name),
+      );
     }
   }
 
@@ -127,7 +136,7 @@ export default async function ProjectDetailPage({
     (member) => member.team_role === "owner" && member.valid_to == null,
   );
   const ownerName = activeOwner
-    ? (membershipNameById.get(activeOwner.membership_id) ?? null)
+    ? (membershipNameById.get(activeOwner.membership_id) ?? "Colleague")
     : null;
 
   const currentPhase =
@@ -232,9 +241,7 @@ export default async function ProjectDetailPage({
 
   const enrichedTeam = detail.team_members.map((member) => ({
     ...member,
-    display_name:
-      membershipNameById.get(member.membership_id) ??
-      member.membership_id.slice(0, 8),
+    display_name: membershipNameById.get(member.membership_id) ?? "Colleague",
   }));
 
   const { data: projectBenefitsData } = await callBenefitRpc<{
