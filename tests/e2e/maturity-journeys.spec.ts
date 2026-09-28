@@ -281,9 +281,11 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("submit-assessment").click();
     await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Submitted");
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
