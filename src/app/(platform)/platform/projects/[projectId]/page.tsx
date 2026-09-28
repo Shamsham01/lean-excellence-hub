@@ -125,10 +125,7 @@ export default async function ProjectDetailPage({
       .in("id", unresolvedMembershipIds);
 
     for (const row of membershipRows ?? []) {
-      membershipNameById.set(
-        row.id,
-        resolvePersonDisplayName(row.display_name),
-      );
+      membershipNameById.set(row.id, resolvePersonDisplayName(row.display_name));
     }
   }
 
