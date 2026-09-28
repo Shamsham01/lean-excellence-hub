@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 import {
   selectAssessmentScopeAndWaitForEntities,
+  selectAssessmentType,
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./maturity-assessment";
@@ -157,7 +158,7 @@ export async function startFormalAssessmentForBodmin(
     expectedEntityName: BODMIN_FACTORY_LABEL,
   });
   await selectFirstScopeEntity(page);
-  await page.getByLabel("Assessment type").selectOption("formal");
+  await selectAssessmentType(page, "formal");
   await page.getByRole("button", { name: "Start assessment" }).click();
   await expect(page).toHaveURL(
     /\/platform\/maturity\/assessments\/[0-9a-f-]{36}/,

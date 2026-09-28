@@ -1,18 +1,26 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import {
   saveAssessmentAnswer,
   saveCriterionNote,
 } from "@/app/(platform)/platform/maturity/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
+import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
+import { FormalLifecycleIndicator } from "@/components/maturity/formal-lifecycle-indicator";
 import { EvidenceUploader } from "@/components/maturity/evidence-uploader";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  actionStatusLabel,
+  formatActionReference,
+  formatDueDate,
+} from "@/lib/actions/status";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
 
 type Question = {
@@ -46,6 +54,21 @@ type LevelGuidance = {
   guidance: string | null;
 };
 
+type LinkedAssessmentAction = {
+  id: string;
+  action_number: string | null;
+  title: string;
+  status: string;
+  due_at: string | null;
+  assignee_name: string | null;
+  pillar_id: string;
+  criterion_id: string;
+  question_id: string | null;
+  pillar_name: string;
+  criterion_name: string;
+  question_prompt: string | null;
+};
+
 type AssessmentWorkspaceProps = {
   assessmentId: string;
   status: string;
@@ -63,7 +86,9 @@ type AssessmentWorkspaceProps = {
   criterionNotes: Record<string, string>;
   evidence: EvidenceItem[];
   canEdit: boolean;
-  actionSlot?: ReactNode;
+  linkedActions?: LinkedAssessmentAction[];
+  leadAssessorName?: string | null;
+  submittedByName?: string | null;
 };
 
 export function AssessmentWorkspace({
@@ -76,7 +101,9 @@ export function AssessmentWorkspace({
   criterionNotes,
   evidence,
   canEdit,
-  actionSlot,
+  linkedActions = [],
+  leadAssessorName,
+  submittedByName,
 }: AssessmentWorkspaceProps) {
   const flatCriteria = pillars.flatMap((p) =>
     p.criteria.map((c) => ({ pillar: p, criterion: c })),
@@ -145,6 +172,25 @@ export function AssessmentWorkspace({
             {assessmentType.replace("_", " ")}
           </span>
         </div>
+        {assessmentType === "formal" ? (
+          <FormalLifecycleIndicator status={status} />
+        ) : null}
+        {leadAssessorName || submittedByName ? (
+          <dl className="grid gap-1 text-sm sm:grid-cols-2">
+            {leadAssessorName ? (
+              <div>
+                <dt className="text-muted-foreground">Lead assessor</dt>
+                <dd data-testid="lead-assessor-name">{leadAssessorName}</dd>
+              </div>
+            ) : null}
+            {submittedByName ? (
+              <div>
+                <dt className="text-muted-foreground">Submitted by</dt>
+                <dd data-testid="submitted-by-name">{submittedByName}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
         <Progress value={progress} aria-label="Assessment progress" />
         <div>
           <p className="typography-section-title">{pillar.name}</p>
@@ -180,11 +226,27 @@ export function AssessmentWorkspace({
           })}
         </div>
 
-        {actionSlot ? (
+        {canEdit ? (
           <div className="max-w-lg rounded-lg border border-border bg-card p-4">
-            {actionSlot}
+            <AssessmentActionForm
+              assessmentId={assessmentId}
+              pillarId={pillar.id}
+              criterionId={criterion.id}
+              questions={criterion.questions.map((question) => ({
+                id: question.id,
+                prompt: question.prompt,
+              }))}
+            />
           </div>
         ) : null}
+
+        <LinkedActionsList
+          actions={linkedActions.filter(
+            (action) => action.criterion_id === criterion.id,
+          )}
+          heading="Actions for this criterion"
+          emptyLabel="No actions have been created from this criterion yet."
+        />
 
         <div className="sticky bottom-4 flex gap-2 rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
           <Button
@@ -203,6 +265,13 @@ export function AssessmentWorkspace({
             Next
           </Button>
         </div>
+
+        <LinkedActionsList
+          actions={linkedActions}
+          heading="All assessment actions"
+          emptyLabel="No actions have been created from this assessment yet."
+          testId="assessment-actions-summary"
+        />
       </div>
 
       <aside className="rounded-lg border border-border bg-surface p-4 text-sm">
@@ -230,6 +299,50 @@ export function AssessmentWorkspace({
           </div>
         ) : null}
       </aside>
+    </div>
+  );
+}
+
+function LinkedActionsList({
+  actions,
+  heading,
+  emptyLabel,
+  testId,
+}: {
+  actions: LinkedAssessmentAction[];
+  heading: string;
+  emptyLabel: string;
+  testId?: string;
+}) {
+  return (
+    <div
+      className="rounded-lg border border-border bg-card p-4"
+      data-testid={testId ?? "criterion-linked-actions"}
+    >
+      <p className="font-medium">{heading}</p>
+      {actions.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {actions.map((action) => (
+            <li key={action.id} className="text-sm">
+              <AppLink
+                href={`/platform/actions/${action.id}`}
+                className="font-medium underline"
+              >
+                {formatActionReference(action.action_number, action.title)}
+              </AppLink>
+              <p className="text-muted-foreground">
+                {actionStatusLabel(action.status)}
+                {action.assignee_name ? ` · ${action.assignee_name}` : ""}
+                {action.due_at ? ` · Due ${formatDueDate(action.due_at)}` : ""}
+                {` · ${action.pillar_name} / ${action.criterion_name}`}
+                {action.question_prompt ? ` / ${action.question_prompt}` : ""}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

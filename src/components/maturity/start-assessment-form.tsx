@@ -26,13 +26,20 @@ type ScopeEntity = {
   unit_type: string;
 };
 
+type LeadAssessorOption = {
+  id: string;
+  label: string;
+};
+
 type StartAssessmentFormProps = {
   versions: FrameworkVersion[];
+  people: LeadAssessorOption[];
   defaultVersionId?: string;
 };
 
 export function StartAssessmentForm({
   versions,
+  people,
   defaultVersionId,
 }: StartAssessmentFormProps) {
   const [versionId, setVersionId] = useState(defaultVersionId ?? "");
@@ -42,6 +49,9 @@ export function StartAssessmentForm({
   const [unitId, setUnitId] = useState("");
   const [assessmentType, setAssessmentType] = useState<"self" | "formal">(
     "formal",
+  );
+  const [leadAssessorMembershipId, setLeadAssessorMembershipId] = useState(
+    people[0]?.id ?? "",
   );
   const [entities, setEntities] = useState<ScopeEntity[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -92,12 +102,19 @@ export function StartAssessmentForm({
       setError("Select framework, scope, and eligible entity.");
       return;
     }
+    if (assessmentType === "formal" && !leadAssessorMembershipId) {
+      setError("Select a lead assessor for a formal assessment.");
+      return;
+    }
 
     const formData = new FormData();
     formData.set("modelVersionId", versionId);
     formData.set("assessmentScopeType", effectiveScopeType);
     formData.set("unitId", unitId);
     formData.set("assessmentType", assessmentType);
+    if (assessmentType === "formal" && leadAssessorMembershipId) {
+      formData.set("leadAssessorMembershipId", leadAssessorMembershipId);
+    }
 
     startTransition(async () => {
       const result = await startAssessment(formData);
@@ -202,24 +219,86 @@ export function StartAssessmentForm({
         </select>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="assessmentType">Assessment type</Label>
-        <select
-          id="assessmentType"
-          name="assessmentType"
-          required
-          className="min-h-11 rounded-md border border-border bg-elevated px-3 text-sm"
-          value={assessmentType}
-          onChange={(event) =>
-            setAssessmentType(event.target.value as "self" | "formal")
-          }
-        >
-          <option value="self">Self assessment</option>
-          <option value="formal">Formal assessment</option>
-        </select>
-      </div>
+      <fieldset className="flex flex-col gap-3 rounded-lg border border-border p-3">
+        <legend className="px-1 text-sm font-medium">Assessment type</legend>
+        <label className="flex cursor-pointer flex-col gap-1 rounded-md border border-border p-3 has-[:checked]:border-accent">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="radio"
+              name="assessmentType"
+              value="self"
+              checked={assessmentType === "self"}
+              onChange={() => setAssessmentType("self")}
+              aria-label="Self assessment"
+              data-testid="assessment-type-self"
+            />
+            Self assessment
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Internal maturity snapshot. Complete directly; does not create an
+            official published result.
+          </span>
+        </label>
+        <label className="flex cursor-pointer flex-col gap-1 rounded-md border border-border p-3 has-[:checked]:border-accent">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="radio"
+              name="assessmentType"
+              value="formal"
+              checked={assessmentType === "formal"}
+              onChange={() => setAssessmentType("formal")}
+              aria-label="Formal assessment"
+              data-testid="assessment-type-formal"
+            />
+            Formal assessment
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Controlled assessment with assessor review, approval and optional
+            official publication.
+          </span>
+        </label>
+      </fieldset>
 
-      <Button type="submit" disabled={pending || !unitId}>
+      {assessmentType === "formal" ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="leadAssessorMembershipId">Lead assessor</Label>
+          <select
+            id="leadAssessorMembershipId"
+            name="leadAssessorMembershipId"
+            required
+            className="min-h-11 rounded-md border border-border bg-elevated px-3 text-sm"
+            value={leadAssessorMembershipId}
+            onChange={(event) =>
+              setLeadAssessorMembershipId(event.target.value)
+            }
+            data-testid="lead-assessor-select"
+          >
+            <option value="" disabled>
+              {people.length === 0
+                ? "No people available in the current site scope"
+                : "Select lead assessor"}
+            </option>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Assigned from the site/organisation People directory. Self
+            assessments do not require a lead assessor.
+          </p>
+        </div>
+      ) : null}
+
+      <Button
+        type="submit"
+        disabled={
+          pending ||
+          !unitId ||
+          (assessmentType === "formal" && !leadAssessorMembershipId)
+        }
+      >
         {pending ? "Starting…" : "Start assessment"}
       </Button>
     </form>

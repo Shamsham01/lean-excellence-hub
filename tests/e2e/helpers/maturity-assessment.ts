@@ -167,6 +167,36 @@ export async function selectAssessmentScopeAndWaitForEntities(
   }
 }
 
+export async function selectAssessmentType(
+  page: Page,
+  type: "self" | "formal",
+) {
+  const testId =
+    type === "self" ? "assessment-type-self" : "assessment-type-formal";
+  await page.getByTestId(testId).check();
+
+  if (type === "formal") {
+    const leadSelect = page.getByTestId("lead-assessor-select");
+    await expect(leadSelect).toBeVisible();
+    const currentValue = await leadSelect.inputValue();
+    if (!currentValue) {
+      const firstValue = await leadSelect
+        .locator("option:not([disabled])")
+        .first()
+        .getAttribute("value");
+      if (!firstValue) {
+        throw new Error(
+          "No lead assessor is available for a formal assessment.",
+        );
+      }
+      await leadSelect.selectOption(firstValue);
+    }
+    await expect(leadSelect).not.toHaveValue("");
+  } else {
+    await expect(page.getByTestId("lead-assessor-select")).toHaveCount(0);
+  }
+}
+
 export async function selectFirstScopeEntity(page: Page) {
   const entitySelect = page.getByTestId("scope-entity-select");
   await expect(entitySelect).toBeEnabled({ timeout: 5_000 });

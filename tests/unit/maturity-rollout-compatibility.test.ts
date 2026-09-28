@@ -22,11 +22,11 @@ describe("maturity rollout compatibility", () => {
 
     expect(startAssessmentSource).toContain("target_assessment_scope_type");
     expect(startAssessmentSource).toContain('"start_maturity_assessment"');
-    expect(startAssessmentSource).not.toContain(
+    expect(startAssessmentSource).toContain(
       "target_lead_assessor_membership_id",
     );
     expect(startAssessmentSource).toMatch(
-      /rpc\("start_maturity_assessment",\s*\{[\s\S]*target_assessment_scope_type[\s\S]*\}\s*\)/,
+      /rpc\(\s*"start_maturity_assessment",\s*rpcArgs/,
     );
   });
 });
