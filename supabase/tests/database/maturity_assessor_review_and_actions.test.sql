@@ -1,6 +1,6 @@
 begin;
 
-select plan(46);
+select plan(47);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -391,6 +391,17 @@ select is(
   ),
   0::bigint,
   'self assessment does not create an official result'
+);
+
+select throws_ok(
+  format(
+    'select public.start_maturity_assessment(%L::uuid, %L::uuid, ''formal'', ''site'')',
+    (select id from review_ids where key = 'version'),
+    (select id from review_ids where key = 'unit')
+  ),
+  '22023',
+  'formal assessment requires a lead assessor',
+  'formal assessment cannot start without a lead assessor'
 );
 
 insert into review_ids (key, id)
