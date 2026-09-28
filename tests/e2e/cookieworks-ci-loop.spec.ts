@@ -235,7 +235,9 @@ test.describe("CookieWorks suggestion-action-project smoke loop", () => {
     );
     await page.getByRole("tab", { name: "Team" }).click();
     await expect(
-      page.getByText("CookieWorks Production Manager", { exact: true }),
+      page
+        .getByText("CookieWorks Production Manager", { exact: true })
+        .last(),
     ).toBeVisible();
     await expect(page.getByTestId("project-detail-page")).not.toContainText(
       ownerMembershipId!.slice(0, 8),
