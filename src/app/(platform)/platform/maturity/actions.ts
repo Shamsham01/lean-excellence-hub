@@ -54,6 +54,10 @@ export async function startAssessment(formData: FormData) {
     formData.get("leadAssessorMembershipId") ?? "",
   ).trim();
 
+  if (assessmentType === "formal" && !leadAssessorMembershipId) {
+    return { error: "Select a lead assessor for formal assessment." };
+  }
+
   const supabase = await createServerSupabaseClient();
   const rpcArgs: {
     target_model_version_id: string;
