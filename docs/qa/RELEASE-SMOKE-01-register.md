@@ -1,18 +1,20 @@
 # RELEASE-SMOKE-01 — CookieWorks master register (reconciled)
 
 Canonical GitHub tracker: **[#67](https://github.com/Shamsham01/lean-excellence-hub/issues/67)**.
-This file is the repository snapshot after reconciling the stale issue body against `main` at **PR #150** (`4538c80`). **PR #151 is not merged** and is tracked as in-flight PERF work only.
+This file is the repository snapshot after reconciling the register against `main` at **PR #151** (`e399f79`). PR **#151 is merged** and is part of the code release train. Hosted Supabase has **not** yet applied `20260925160321_perf_suggestion_listing`.
 
-Do **not** reopen items below that are `VERIFIED` or `IMPLEMENTED / NEEDS HOSTED RETEST` from their original 2026-09-11 smoke wording. Hosted CookieWorks browser retest is still outstanding because Netlify publication has been paused.
+Do **not** reopen items below that are `VERIFIED` or `IMPLEMENTED / NEEDS HOSTED RETEST` from their original 2026-09-11 smoke wording. Hosted CookieWorks browser retest is still outstanding because production publication on the intended SHA is not confirmed.
 
-Baseline:
+Baseline (read-only inspection 2026-09-28):
 
 | Item | Value |
 | --- | --- |
-| Code `main` | `4538c80` — `SEC-RPC-001: restrict anonymous privileged RPCs… (#150)` |
-| Hosted DB (read-only) | Latest applied migration `20260925122602_sec_rpc_001_anon_execute_and_search_path` — **matches `main`** |
-| PR #151 | Open, not on `main`. Migration `20260925160321_perf_suggestion_listing` **not** hosted |
+| Code `main` | `e399f79` — `perf(suggestions): batch page permissions and set-based listing (PERF-001) (#151)` |
+| Hosted DB (read-only) | Latest applied migration `20260925122602_sec_rpc_001_anon_execute_and_search_path`. Outstanding: `20260925160321_perf_suggestion_listing` |
+| PR #151 | **Merged** into `main`. Preserve listing/security parity evidence; do **not** apply the hosted migration without explicit approval |
 | CookieWorks tenant | Foundation-only QA tenant; do not mutate hosted without explicit approval |
+| Netlify Deploy Preview | **Available** for PR #153: https://deploy-preview-153--lean-excellence-hub.netlify.app |
+| Netlify production | `https://leanexcellencehub.com` returns **HTTP 200** sign-in (not 503 `usage_exceeded`). Exact production git SHA is **not** exposed in public headers/HTML. Account/credit state is **not** readable from this environment. Do not publish production. |
 
 Finding states: `OPEN`, `PROMOTED → #issue`, `IN PR → #pr`, `IMPLEMENTED / NEEDS HOSTED RETEST`, `VERIFIED`, `DEFERRED`, `EXPECTED`.
 
@@ -26,8 +28,8 @@ Historical P1 workflow blockers (Actions, Projects, Benefits lineage, 5S/Gemba a
 
 Integrated **hosted** CookieWorks smoke is still the first-customer gate:
 
-1. Restore / publish the hosted app (operator — Netlify currently paused).
-2. Confirm hosted SHA matches `main`.
+1. Confirm production publication on the intended SHA (Deploy Preview ≠ production).
+2. Apply `20260925160321_perf_suggestion_listing` to hosted **only with explicit approval**, then keep app and DB paired.
 3. Run `docs/qa/RELEASE-SMOKE-01-protocol.md` on CookieWorks (disposable credentials; no shared-fixture mutation unless approved).
 4. Only then promote newly **reproduced** P0/P1 defects.
 
@@ -39,7 +41,7 @@ Integrated **hosted** CookieWorks smoke is still the first-customer gate:
 | --- | --- | --- | --- |
 | **SEC-RPC-001** | **IMPLEMENTED / NEEDS HOSTED RETEST** | #149 / PR **#150**. Migration `20260925122602` is on `main` **and** applied hosted. Advisor now: 3 anon SECURITY DEFINER (`preview_organisation_invitation`, `prepare_organisation_invitation_signup_binding`, `rls_auto_enable`); 0 mutable `search_path`; 261 authenticated SECURITY DEFINER (deferred). | DB applied. App publication + invitation bootstrap smoke still required. |
 | **Auth leaked-password protection** | **OPEN (operator Auth setting)** | Hosted Security Advisor `auth_leaked_password_protection`. Not an LEH code defect. Enable HaveIBeenPwned in hosted Auth **only with explicit approval**. Tracked on #149 deferred checklist. | Do not toggle from this PR. |
-| **Cross-site / tenant leak** | **VERIFIED locally; hosted spot-check required** | `tests/e2e/cookieworks-ci-loop.spec.ts` (isolation + Exeter denial of Bodmin action/project), `cookieworks-two-site-hostile.spec.ts` (standalone), `site-security-boundary.spec.ts`, `cookieworks-execution-site-context.spec.ts`. Historical hosted: SEC-ORG-01 VERIFIED. | Repeat ISO-01 in the protocol after publish. |
+| **Cross-site / tenant leak** | **VERIFIED locally; hosted spot-check required** | `tests/e2e/cookieworks-ci-loop.spec.ts` (isolation + Exeter denial of Bodmin action/project), `cookieworks-two-site-hostile.spec.ts` (Full Regression cookieworks shard; own reset), `site-security-boundary.spec.ts`, `cookieworks-execution-site-context.spec.ts`. Historical hosted: SEC-ORG-01 VERIFIED. | Repeat ISO-01 in the protocol after publish. |
 
 No other P0 product defects are open on `main`.
 
@@ -78,18 +80,18 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 | MOBILE-001 form overflow | **OPEN** | Programme/benefit/admin forms — later pass. |
 | PERF-001 P0 nav probes | **IMPLEMENTED** | PR #137 / #138; hosted `20260922190000` + `20260923120000`. |
 | PERF-001 People offers | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #145; hosted `20260924111211`. |
-| PERF-001 Suggestions listing | **IN PR → #151** | Not on `main`. Do not apply `20260925160321` hosted until merge + approval. |
+| PERF-001 Suggestions listing | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR **#151** merged (`e399f79`). Code is in the release train. Hosted migration `20260925160321_perf_suggestion_listing` is **outstanding** — apply only with explicit approval before the final hosted smoke. Listing/security parity: batch `member_has_permissions`, set-based overview/portfolio, self-read remains author-only. |
 | SUG-UX-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #128. Auto-generated programme/category codes. |
 | SUG-UX-002 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #146 / PR #147; hosted `20260924190446`. Optional submission evidence. |
 | BEN-UX-003 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #125. |
 | MAT-UX-001 / MAT-UX-002 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #132 / PR #135. |
 | MAT-UX-003 / 006 / 007 polish / MAT-ASSESS-UX-001 | **OPEN (feature gap)** | Not P1. |
 | UX-002 remainder / UX-004..007 / UX-008 | **OPEN (P2 IA)** | Scale hierarchy + Settings/People naming. |
-| UX-026 | **EXPECTED / operator** | Netlify “Powered by” badge + account quota. Not a repo CSS fix. |
+| UX-026 | **EXPECTED / operator** | Netlify “Powered by” badge. Production URL currently serves HTTP 200; exact SHA and account/credit state are not verified from public responses. |
 | SCHED-REACTIVATE-001 | **OPEN (P2)** | Reactivate not exposed. |
 | THEME-SELECT-001 | **OPEN (P2)** | Dark-mode select contrast if reproduced. |
-| CW-CI-MGR-001 | **PROMOTED → #154** | CookieWorks CI Manager lacks `suggestions.programmes.manage`. Protocol uses Admin for SUG-01. |
-| CW-RESET-001 | **PROMOTED → #155** | `qa:cookie:reset` cannot purge suggestion/action rows. Workaround: one reset per E2E process. |
+| CW-CI-MGR-001 | **PROMOTED → #154** | CookieWorks CI Manager lacks `suggestions.programmes.manage`. Protocol uses Admin for SUG-01. P2 / role-playbook alignment — **not** a first-customer product-code blocker. Do before or after hosted smoke; not required to start hosted smoke. |
+| CW-RESET-001 | **IN PR → #153** | CookieWorks module purge now retires suggestion/action history in a dependency-aware order. Two CookieWorks Playwright files can each reset in one `--workers=1` process. |
 
 ---
 
@@ -115,10 +117,10 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 | #123 | BEN-UX-003 — merged #125; close after hosted retest |
 | #127 | SUG-UX-001 — merged #128; close after hosted retest |
 | #129 | Lean AI usage copy — merged #130; close after hosted retest |
-| #134 | PERF-001 umbrella; remaining listing slice = PR #151 |
+| #134 | PERF-001 umbrella; listing slice merged as PR **#151**; hosted apply of `20260925160321` still required with approval |
 | #140 / #143 | Training slices merged (#142 / #144); hosted DB applied; app unpublished |
 | #149 | SEC-RPC-001 merged + hosted DB applied; leftover = leaked-password toggle + authenticated DEFINER volume |
-| #154 | CW-CI-MGR-001 — CookieWorks CI Manager cannot manage suggestion programmes |
-| #155 | CW-RESET-001 — CookieWorks module purge cannot clear suggestions/actions |
+| #154 | CW-CI-MGR-001 — CookieWorks CI Manager cannot manage suggestion programmes (P2; Admin workaround in SUG-01) |
+| #155 | CW-RESET-001 — CookieWorks module purge; **fixed in PR #153** |
 
-Larger remaining work (P2 IA, assessor UX, form overflow, PERF listing) already has homes. Do not open a combined “fix everything” PR.
+Larger remaining work (P2 IA, assessor UX, form overflow) already has homes. Do not open a combined “fix everything” PR.

@@ -4,9 +4,12 @@
 
 Inspected read-only on 2026-09-28:
 
-- GitHub `main` = `4538c80` (PR **#150** merged; PR **#151** open / not merged)
+- GitHub `main` = `e399f79` (PR **#151** squash-merged; PR **#150** is in history)
 - Hosted project `zsadfvjtknbbfomlmttv` (eu-west-1, `ACTIVE_HEALTHY`)
 - Hosted migration list matches `main` through `20260925122602_sec_rpc_001_anon_execute_and_search_path`
+- Outstanding hosted migration: `20260925160321_perf_suggestion_listing` (code is on `main`; **not** applied hosted)
+- Netlify Deploy Preview for PR #153: https://deploy-preview-153--lean-excellence-hub.netlify.app (**available**)
+- Production `https://leanexcellencehub.com`: HTTP **200** sign-in, `server: Netlify`, not 503 `usage_exceeded`. Exact production git SHA is **not** in public response headers/HTML. Account/credit state is **not** readable here. Do not publish or change Netlify config.
 
 ---
 
@@ -15,14 +18,15 @@ Inspected read-only on 2026-09-28:
 | Gate | Status | Stopper? |
 | --- | --- | --- |
 | P0/P1 **code** blockers on `main` | **None** (register reconciled) | — |
-| Hosted schema vs `main` | **In sync** through SEC-RPC-001 | No extra LEH migration required for `main` |
-| Hosted **application publication** | **Not ready** — Netlify has been paused; last recorded production symptom was `usage_exceeded` 503 (2026-09-23) | **YES** |
+| Hosted schema vs `main` | **Behind by one**: `20260925160321_perf_suggestion_listing` | **YES** for a SHA-paired hosted smoke of current `main` until explicitly applied |
+| Hosted **application publication** | Deploy Preview **exists** for PR #153. Production URL is **up** (HTTP 200) but the **exact production SHA is unverified**. Historical pause/`usage_exceeded` is no longer the observed production symptom. | **YES** until production is confirmed on the intended SHA |
 | Hosted CookieWorks **integrated smoke** on current SHA | **Not done** | **YES** until protocol PASS on isolation + CI loop + one module each side of 5S/Gemba/Maturity |
 | Auth leaked-password protection | **Disabled** (Advisor WARN) | **Recommended YES** for first customer; operator Auth toggle — not a code change |
-| PR #151 suggestions listing | Optional perf; **do not block** shipping `main` | No |
+| PR #151 suggestions listing | **In the code release train.** Hosted apply of `20260925160321` still needs approval. | Yes for SHA-paired DB/app; not a product-code defect |
+| #154 CI Manager programme grant | P2 / role-playbook. Protocol SUG-01 uses **Admin**. | No |
 | Remaining P2 IA / mobile forms / assessor UX | Open by design | No |
 
-**Verdict: NO-GO for first-customer hosted release** until (1) the app is published on the intended SHA, (2) leaked-password protection is decided, and (3) the CookieWorks protocol in `RELEASE-SMOKE-01-protocol.md` is executed with evidence.
+**Verdict: NO-GO for first-customer hosted release** until (1) production is confirmed on the intended SHA, (2) `20260925160321_perf_suggestion_listing` is applied hosted **with explicit approval** (or the smoke explicitly uses a pre-#151 app/DB pair), (3) leaked-password protection is decided, and (4) the CookieWorks protocol in `RELEASE-SMOKE-01-protocol.md` is executed with evidence.
 
 ---
 
@@ -30,9 +34,9 @@ Inspected read-only on 2026-09-28:
 
 ### A. Pre-flight (read-only)
 
-- [ ] `git fetch origin main && git log -1 --oneline origin/main` — record SHA
-- [ ] Confirm PR #151 is **in or out** of the release train (default: **out**)
-- [ ] `supabase migration list` against hosted `zsadfvjtknbbfomlmttv` — expected latest on `main`: `20260925122602`
+- [ ] `git fetch origin main && git log -1 --oneline origin/main` — record SHA (baseline `e399f79` unless `main` advanced)
+- [ ] Confirm PR **#151 is in** the code release train
+- [ ] `supabase migration list` against hosted `zsadfvjtknbbfomlmttv` — expected latest applied: `20260925122602`; outstanding: `20260925160321`
 - [ ] **Do not replay** already-applied hosted migrations (`20260924190446`, `20260924111211`, `20260923233254`, `20260925122602`, …)
 - [ ] Fast CI + Full Regression green on that SHA
 - [ ] Dry-run only: `npm run qa:cookie:hosted-replacement -- --dry-run` (read-only)
@@ -44,16 +48,24 @@ Inspected read-only on 2026-09-28:
 | `20260925122602` | `sec_rpc_001_anon_execute_and_search_path` | **Yes** | Do not replay |
 | `20260924190446` | `suggestion_submission_evidence` | **Yes** | Do not replay |
 | `20260924111211` | `perf_delegatable_access_offers` | **Yes** | Do not replay |
-| `20260925160321` | `perf_suggestion_listing` | **No** | Only after **#151 merge + explicit approval** |
+| `20260925160321` | `perf_suggestion_listing` | **No** | **Outstanding.** Explicit approval required before the final hosted smoke of current `main`. Do not apply from this PR. |
 
 No other `main` migrations are pending hosted apply.
 
 ### C. Application publication
 
-- [ ] Restore Netlify account quota / disable pause (**operator**)
+Distinguish **Deploy Preview** from **production**:
+
+| Surface | Verified 2026-09-28 |
+| --- | --- |
+| Deploy Preview (PR #153) | **Ready** — https://deploy-preview-153--lean-excellence-hub.netlify.app (Netlify bot; commit on the PR head) |
+| Production URL | `https://leanexcellencehub.com` **HTTP 200**, `server: Netlify`, sign-in renders. **Not** 503 `usage_exceeded` |
+| Exact production SHA | **Unverified** (not in public headers/HTML; no GitHub deployment records) |
+| Account / credit / pause | **Unverified** from this environment. Historical pause/`usage_exceeded` is no longer the observed production HTTP symptom |
+
 - [ ] Confirm auto-publish policy (historically **disabled** — keep disabled unless approved)
-- [ ] Publish the **exact** release SHA
-- [ ] Confirm `leanexcellencehub.com` (or staging URL) serves that SHA — not 503 `usage_exceeded`
+- [ ] Publish the **exact** release SHA to production when authorised — **not** from this PR
+- [ ] Confirm `leanexcellencehub.com` (or staging URL) serves that SHA
 - [ ] UX-026: hide Netlify “Powered by” badge in site settings (**operator**, not CSS)
 
 ### D. Supabase Auth / security (operator; do not change from this PR)
@@ -87,7 +99,7 @@ Post-apply Security Advisor expectation (already observed hosted after #150):
 | `20260924190446` (evidence) | Forward-only. Rolling back the app without DB is OK; rolling back DB is not | Do not drop columns/storage policies |
 | CookieWorks tenant | Restore from backup / re-seed foundation only with approval | Destructive reset deletes QA tenant data only, not the whole project |
 | Auth leaked-password toggle | Turn the setting off | Does not rewrite data |
-| PR #151 if applied later | Forward-only listing helper | Keep app and DB paired |
+| `20260925160321` (PERF listing, #151) | Forward-only listing helper. Keep app and DB paired after apply. | Do not apply without approval |
 
 If a hosted migration apply fails part-way: **stop**. Dry-run inventory. Do not re-run blindly.
 
@@ -97,9 +109,10 @@ If a hosted migration apply fails part-way: **stop**. Dry-run inventory. Do not 
 
 | Check | Where |
 | --- | --- |
-| CookieWorks isolation + CI loop E2E | Full Regression shard `cookieworks` (`cookieworks-ci-loop.spec.ts` only until #155) |
-| Local compiled-production (this pack) | **8/8 passed** in 45.9s, `PLAYWRIGHT_EXIT=0` — `/opt/cursor/artifacts/cookieworks-e2e.log` |
-| Fast CI / Quality | Green on PR #153 (`c216fa2` and follow-up head) |
-| Existing demo happy paths | platform / workforce / improvement / ai-closure shards (Full Regression skipped while draft) |
+| CookieWorks isolation + CI loop E2E | Full Regression shard `cookieworks` (`cookieworks-ci-loop.spec.ts` then `cookieworks-two-site-hostile.spec.ts`, `--workers=1`, each spec resets) |
+| Local compiled-production (this pack) | Re-run after CW-RESET-001; previous head **8/8 passed** in 45.9s for the one-spec workaround |
+| Fast CI / Quality | Re-run on this head |
+| Existing demo happy paths | platform / workforce / improvement / ai-closure shards |
 | pgTAP + types | Database CI / Full Regression database core |
+| QA hosted-replacement integration | Local vitest only — **not** a hosted apply |
 | Hosted mutation | **None** from this PR |

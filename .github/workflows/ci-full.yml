@@ -252,7 +252,9 @@ jobs:
               tests/e2e/milestone10-closure.spec.ts
               tests/e2e/milestone11-closure.spec.ts
           - label: cookieworks
-            specs: tests/e2e/cookieworks-ci-loop.spec.ts
+            specs: >-
+              tests/e2e/cookieworks-ci-loop.spec.ts
+              tests/e2e/cookieworks-two-site-hostile.spec.ts
           - label: ai-closure
             specs: tests/e2e/milestone12-closure.spec.ts
     steps:

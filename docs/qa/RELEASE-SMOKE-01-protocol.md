@@ -19,7 +19,7 @@ Companion files:
 | Check | Pass if |
 | --- | --- |
 | Hosted app is the intended SHA | About/commit or Netlify deploy SHA = `main` (or explicitly recorded exception) |
-| Hosted DB | `supabase migration list` shows `20260925122602` applied; **do not replay** it |
+| Hosted DB | `20260925122602` applied; **do not replay**. `20260925160321_perf_suggestion_listing` is **outstanding** until explicitly approved |
 | CookieWorks foundation | 1 org, 2 site roots, 16 units, 8 personas, 8 role grants, 3 job functions, 4 placements |
 | Module data | Foundation-only **or** a recorded existing-smoke dataset (do not wipe without approval) |
 | Credentials | Hosted disposable passwords — **not** the local `docs/development/qa-tenant.md` values unless this is local |
@@ -38,11 +38,9 @@ export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
 export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY"
 export SUPABASE_SECRET_KEY="$SERVICE_ROLE_KEY"
 export CREDENTIAL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-npx playwright test tests/e2e/cookieworks-ci-loop.spec.ts --workers=1
-# Until #155 is fixed, do not chain a second CookieWorks spec that calls
-# qa:cookie:reset in the same database after suggestions/actions exist.
-# Isolated local extras (fresh db:reset or a clean foundation tenant):
-#   tests/e2e/cookieworks-two-site-hostile.spec.ts
+npx playwright test tests/e2e/cookieworks-ci-loop.spec.ts tests/e2e/cookieworks-two-site-hostile.spec.ts --workers=1
+# Each spec performs its own qa:cookie:reset (CW-RESET-001 / #155).
+# Extra (already in the Full Regression platform shard):
 #   tests/e2e/cookieworks-execution-site-context.spec.ts
 ```
 
@@ -182,7 +180,7 @@ Exeter spot-check: Exeter PM must not open the Bodmin project/benefit as a writa
 
 | Area | Automated on CookieWorks | Human still required |
 | --- | --- | --- |
-| Two-site structure isolation | `cookieworks-ci-loop.spec.ts` (Full Regression cookieworks shard). Standalone `cookieworks-two-site-hostile.spec.ts` remains for isolated local runs. | ISO-04 reparent, hosted SHA |
+| Two-site structure isolation | `cookieworks-ci-loop.spec.ts` and `cookieworks-two-site-hostile.spec.ts` (Full Regression cookieworks shard; each file resets). | ISO-04 reparent, hosted SHA |
 | 5S/Gemba execution site context | `cookieworks-execution-site-context.spec.ts` | Foundation empty→publish on hosted |
 | Suggestion → action → project loop | Same `cookieworks-ci-loop.spec.ts` after isolation | Evidence upload, charter complete, benefit finance |
 | Maturity full MAT0 | `cookieworks-maturity-smoke.spec.ts` (local; not in CI duration budget) | Hosted official result |
