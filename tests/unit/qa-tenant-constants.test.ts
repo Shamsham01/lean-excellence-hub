@@ -9,6 +9,7 @@ import {
   QA_ORGANISATION,
   QA_ORGANISATION_CODE,
   QA_HOSTED_RESET_CONFIRM_TOKEN,
+  QA_ROLES,
   QA_SITE_ROOT_CODES,
   QA_UNITS,
   QA_USERS,
@@ -86,6 +87,18 @@ describe("CookieWorks QA constants", () => {
     expect(
       Object.values(QA_USERS).map((user) => user.id as string),
     ).not.toContain(SITE_BOUNDARY_PEOPLE_DELEGATE.id);
+  });
+
+  it("gives programme authoring only to the CookieWorks CI Manager among restricted QA roles", () => {
+    expect(QA_ROLES.ciManager.permissions).toContain(
+      "suggestions.programmes.manage",
+    );
+    expect(QA_ROLES.operator.permissions).not.toContain(
+      "suggestions.programmes.manage",
+    );
+    expect(QA_ROLES.financeValidator.permissions).not.toContain(
+      "suggestions.programmes.manage",
+    );
   });
 
   it("exposes the exact hosted confirmation token contract", () => {
