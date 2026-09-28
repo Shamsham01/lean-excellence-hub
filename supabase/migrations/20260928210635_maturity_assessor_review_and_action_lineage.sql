@@ -128,10 +128,11 @@ begin
   resolved_lead_assessor_id := target_lead_assessor_membership_id;
   if target_assessment_type = 'self' then
     resolved_lead_assessor_id := null;
-  elsif resolved_lead_assessor_id is null then
-    raise exception 'formal assessment requires a lead assessor'
-      using errcode = '22023';
   else
+    resolved_lead_assessor_id := coalesce(
+      resolved_lead_assessor_id,
+      actor_membership_id
+    );
     if not exists (
       select 1
       from public.organisation_memberships membership_row
