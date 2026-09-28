@@ -224,11 +224,19 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByRole("button", { name: "Start assessment" }).click();
 
     const scoreInput = page.locator('input[type="number"]').first();
-    await scoreInput.fill("3");
+    await expect(scoreInput).toBeVisible();
+    await scoreInput.click();
+    await scoreInput.pressSequentially("3");
     await scoreInput.blur();
-    await expect(page.getByText("Saving")).not.toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Saving…")).not.toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(scoreInput).toHaveValue("3");
 
     await page.getByTestId("complete-self-assessment").click();
+    await expect(page.getByTestId("complete-self-assessment")).not.toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByText("Completed").first()).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
   });
