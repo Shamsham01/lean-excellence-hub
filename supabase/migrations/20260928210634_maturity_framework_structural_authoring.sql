@@ -233,7 +233,6 @@ declare
   contributes_to_score boolean;
   scoring_metadata jsonb;
   resolved_position integer;
-  existing_link_id uuid;
 begin
   select
     question_row.section_id,
@@ -241,16 +240,14 @@ begin
     model_version.model_id,
     question_link.criterion_id,
     question_link.contributes_to_score,
-    question_link.scoring_metadata,
-    question_link.id
+    question_link.scoring_metadata
   into
     source_section_id,
     source_model_version_id,
     target_model_id,
     source_criterion_id,
     contributes_to_score,
-    scoring_metadata,
-    existing_link_id
+    scoring_metadata
   from public.template_questions question_row
   join public.maturity_model_versions model_version
     on model_version.organisation_id = question_row.organisation_id
