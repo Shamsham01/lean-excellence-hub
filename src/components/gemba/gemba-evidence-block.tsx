@@ -36,6 +36,11 @@ export function GembaEvidenceBlock({
           ? item.observation_id === observationId
           : item.question_id === questionId
       }
+      createdItemExtras={{
+        ...(sectionId ? { section_id: sectionId } : {}),
+        ...(questionId ? { question_id: questionId } : {}),
+        ...(observationId ? { observation_id: observationId } : {}),
+      }}
       onInitiate={(filename, mimeType, byteSize) =>
         initiateGembaEvidenceUpload(walkId, filename, mimeType, byteSize)
       }

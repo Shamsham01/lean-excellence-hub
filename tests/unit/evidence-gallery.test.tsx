@@ -11,7 +11,10 @@ import {
   EvidenceGallery,
   canAttemptEvidencePreview,
 } from "@/components/attachments/evidence-gallery";
-import { EvidenceUploader } from "@/components/attachments/evidence-uploader";
+import {
+  EvidenceUploader,
+  evidenceMatchesQuestion,
+} from "@/components/attachments/evidence-uploader";
 import { createEvidenceObjectUrl } from "@/lib/attachments/download-evidence";
 
 vi.mock("next/navigation", () => ({
@@ -129,5 +132,56 @@ describe("EvidenceGallery", () => {
       expect(screen.getByTestId("evidence-preview-att-image")).toBeVisible();
     });
     expect(screen.getByText("standard.pdf")).toBeVisible();
+  });
+});
+
+describe("evidenceMatchesQuestion", () => {
+  it("keeps question-linked and criterion-level evidence visible", () => {
+    expect(
+      evidenceMatchesQuestion(
+        { ...imageItem, question_id: "q-1", criterion_id: "c-1" },
+        "q-1",
+        "c-1",
+      ),
+    ).toBe(true);
+    expect(
+      evidenceMatchesQuestion(
+        { ...imageItem, question_id: "q-2", criterion_id: "c-1" },
+        "q-1",
+        "c-1",
+      ),
+    ).toBe(false);
+    expect(
+      evidenceMatchesQuestion(
+        { ...imageItem, question_id: null, criterion_id: "c-1" },
+        "q-1",
+        "c-1",
+      ),
+    ).toBe(true);
+    expect(
+      evidenceMatchesQuestion(
+        { ...imageItem, question_id: null, criterion_id: "c-2" },
+        "q-1",
+        "c-1",
+      ),
+    ).toBe(false);
+  });
+
+  it("still displays matching evidence when the uploader is read-only", () => {
+    render(
+      <EvidenceUploader
+        existingEvidence={[
+          { ...imageItem, question_id: null, criterion_id: "c-1" },
+        ]}
+        canEdit={false}
+        filter={(item) => evidenceMatchesQuestion(item, "q-1", "c-1")}
+        onInitiate={async () => ({})}
+        onConfirm={async () => ({})}
+        onLink={async () => ({})}
+      />,
+    );
+
+    expect(screen.getByText("Worm NFT Design.webp")).toBeVisible();
+    expect(screen.getByTestId("evidence-gallery")).toBeVisible();
   });
 });

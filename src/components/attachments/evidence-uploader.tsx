@@ -26,10 +26,20 @@ export type EvidenceItem = {
   criterion_id?: string | null;
 };
 
+type EvidenceAssociation = Pick<
+  EvidenceItem,
+  | "question_id"
+  | "section_id"
+  | "finding_id"
+  | "observation_id"
+  | "criterion_id"
+>;
+
 type EvidenceUploaderProps = {
   existingEvidence: EvidenceItem[];
   canEdit: boolean;
   filter?: (item: EvidenceItem) => boolean;
+  createdItemExtras?: EvidenceAssociation;
   onInitiate: (
     filename: string,
     mimeType: string,
@@ -39,12 +49,27 @@ type EvidenceUploaderProps = {
   onLink: (attachmentId: string) => Promise<{ error?: string }>;
 };
 
+export function evidenceMatchesQuestion(
+  item: EvidenceItem,
+  questionId: string | undefined,
+  criterionId?: string,
+) {
+  if (questionId && item.question_id) {
+    return item.question_id === questionId;
+  }
+  if (criterionId && !item.question_id) {
+    return item.criterion_id === criterionId;
+  }
+  return Boolean(questionId) && item.question_id === questionId;
+}
+
 type UploadState = "idle" | "uploading" | "success" | "error";
 
 export function EvidenceUploader({
   existingEvidence,
   canEdit,
   filter,
+  createdItemExtras,
   onInitiate,
   onConfirm,
   onLink,
@@ -53,10 +78,17 @@ export function EvidenceUploader({
   const [state, setState] = useState<UploadState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [pendingEvidence, setPendingEvidence] = useState<EvidenceItem[]>([]);
 
   const filteredEvidence = filter
     ? existingEvidence.filter(filter)
     : existingEvidence;
+  const visibleEvidence = [
+    ...filteredEvidence,
+    ...pendingEvidence.filter(
+      (item) => !filteredEvidence.some((existing) => existing.id === item.id),
+    ),
+  ];
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -107,11 +139,22 @@ export function EvidenceUploader({
         return;
       }
 
+      setPendingEvidence((current) => [
+        ...current.filter((item) => item.id !== init.attachmentId),
+        {
+          id: init.attachmentId,
+          filename: validation.filename,
+          mime_type: validation.mimeType,
+          byte_size: validation.byteSize,
+          storage_object_path: init.storagePath,
+          ...createdItemExtras,
+        },
+      ]);
       setState("success");
       router.refresh();
       setTimeout(() => setState("idle"), 2000);
     },
-    [canEdit, onInitiate, onConfirm, onLink, router],
+    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink, router],
   );
 
   function onFileChange(files: FileList | null) {
@@ -119,7 +162,7 @@ export function EvidenceUploader({
     if (file) uploadFile(file);
   }
 
-  if (!canEdit && filteredEvidence.length === 0) {
+  if (!canEdit && visibleEvidence.length === 0) {
     return null;
   }
 
@@ -128,7 +171,7 @@ export function EvidenceUploader({
       <p className="text-sm font-medium">Evidence</p>
 
       <EvidenceGallery
-        items={filteredEvidence}
+        items={visibleEvidence}
         onError={(message) => {
           setState("error");
           setError(message);

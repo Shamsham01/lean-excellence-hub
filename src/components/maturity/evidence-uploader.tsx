@@ -7,6 +7,7 @@ import {
 } from "@/app/(platform)/platform/maturity/actions";
 import {
   EvidenceUploader as SharedEvidenceUploader,
+  evidenceMatchesQuestion,
   type EvidenceItem,
 } from "@/components/attachments/evidence-uploader";
 
@@ -29,7 +30,11 @@ export function EvidenceUploader({
     <SharedEvidenceUploader
       existingEvidence={existingEvidence}
       canEdit={canEdit}
-      filter={(item) => item.question_id === questionId}
+      filter={(item) => evidenceMatchesQuestion(item, questionId, criterionId)}
+      createdItemExtras={{
+        criterion_id: criterionId,
+        ...(questionId ? { question_id: questionId } : {}),
+      }}
       onInitiate={(filename, mimeType, byteSize) =>
         initiateEvidenceUpload(assessmentId, filename, mimeType, byteSize)
       }
