@@ -1,10 +1,7 @@
 import { EVIDENCE_BUCKET } from "@/lib/attachments/evidence-file-rules";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
-export async function downloadEvidenceObject(
-  storagePath: string,
-  filename: string,
-): Promise<void> {
+export async function fetchEvidenceBlob(storagePath: string): Promise<Blob> {
   const supabase = createBrowserSupabaseClient();
   const { data, error } = await supabase.storage
     .from(EVIDENCE_BUCKET)
@@ -14,7 +11,22 @@ export async function downloadEvidenceObject(
     throw error ?? new Error("Unable to download evidence.");
   }
 
-  const objectUrl = URL.createObjectURL(data);
+  return data;
+}
+
+export async function createEvidenceObjectUrl(
+  storagePath: string,
+): Promise<string> {
+  const blob = await fetchEvidenceBlob(storagePath);
+  return URL.createObjectURL(blob);
+}
+
+export async function downloadEvidenceObject(
+  storagePath: string,
+  filename: string,
+): Promise<void> {
+  const blob = await fetchEvidenceBlob(storagePath);
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = objectUrl;
   link.download = filename;

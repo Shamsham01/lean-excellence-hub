@@ -26,8 +26,20 @@ import {
 } from "@/components/gemba/walk-workspace";
 import { gembaWalkPromptStorageKey } from "@/modules/operational/gemba-walk-prompt";
 
+const routerMocks = vi.hoisted(() => ({
+  refresh: vi.fn(),
+  replace: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({
+    refresh: routerMocks.refresh,
+    push: vi.fn(),
+    replace: routerMocks.replace,
+  }),
+  unstable_rethrow: (error: unknown) => {
+    throw error;
+  },
 }));
 
 vi.mock("@/app/(platform)/platform/gemba/actions", () => ({
@@ -149,6 +161,8 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  routerMocks.refresh.mockReset();
+  routerMocks.replace.mockReset();
   saveAnswer.mockReset();
   saveAnswer.mockResolvedValue({ ok: true });
   completeWalk.mockReset();
@@ -832,6 +846,76 @@ describe("GembaWalkWorkspace answer state", () => {
         "Line is stable after the standard work refresh.",
       );
     });
+    expect(routerMocks.replace).toHaveBeenCalledWith(
+      "/platform/gemba/walks/walk-1",
+    );
+    expect(routerMocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("replaces a prompt-scoped URL with the canonical completed walk path", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/platform/gemba/walks/walk-1?prompt=q-second",
+    );
+    const onComplete = vi.fn().mockResolvedValue({ ok: true });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      initialPromptId: SECOND_ID,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "What help does the team need?" }),
+      ).toBeVisible();
+    });
+
+    confirmCompleteWalk();
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith("walk-1");
+    });
+    expect(routerMocks.replace).toHaveBeenCalledWith(
+      "/platform/gemba/walks/walk-1",
+    );
+    expect(routerMocks.refresh).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(gembaWalkPromptStorageKey("walk-1"))).toBe(
+      null,
+    );
+  });
+
+  it("stays in the workspace when completion fails", async () => {
+    const onComplete = vi.fn().mockResolvedValue({ error: "RPC failed" });
+    renderWorkspace({
+      canComplete: true,
+      onComplete,
+      questions: [
+        question(FIRST_ID, "What did you observe on the operations floor?", {
+          is_required: false,
+        }),
+        question(SECOND_ID, "What help does the team need?", {
+          is_required: false,
+        }),
+      ],
+    });
+
+    confirmCompleteWalk();
+    await waitFor(() => {
+      expect(screen.getByTestId("gemba-complete-error")).toHaveTextContent(
+        "RPC failed",
+      );
+    });
+    expect(routerMocks.replace).not.toHaveBeenCalled();
+    expect(screen.getByTestId("gemba-walk-workspace")).toBeVisible();
+    expect(screen.getByTestId("gemba-complete-walk")).toBeVisible();
   });
 
   it("does not expose observation edit controls when the walk cannot be edited", () => {

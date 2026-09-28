@@ -30,6 +30,10 @@ export function FiveSEvidenceBlock({
       existingEvidence={evidence}
       canEdit={canEdit}
       filter={(item) => item.question_id === questionId}
+      createdItemExtras={{
+        section_id: sectionId,
+        question_id: questionId,
+      }}
       onInitiate={(filename, mimeType, byteSize) =>
         initiateFiveSEvidenceUpload(auditId, filename, mimeType, byteSize)
       }

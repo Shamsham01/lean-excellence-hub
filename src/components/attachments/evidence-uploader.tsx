@@ -2,14 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { FileText, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 
+import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
 import { Button } from "@/components/ui/button";
-import { downloadEvidenceObject } from "@/lib/attachments/download-evidence";
 import {
   EVIDENCE_ACCEPT,
   EVIDENCE_FILE_HELP,
-  formatEvidenceFileSize,
   validateEvidenceFile,
 } from "@/lib/attachments/evidence-file-rules";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
@@ -24,12 +23,23 @@ export type EvidenceItem = {
   section_id?: string | null;
   finding_id?: string | null;
   observation_id?: string | null;
+  criterion_id?: string | null;
 };
+
+type EvidenceAssociation = Pick<
+  EvidenceItem,
+  | "question_id"
+  | "section_id"
+  | "finding_id"
+  | "observation_id"
+  | "criterion_id"
+>;
 
 type EvidenceUploaderProps = {
   existingEvidence: EvidenceItem[];
   canEdit: boolean;
   filter?: (item: EvidenceItem) => boolean;
+  createdItemExtras?: EvidenceAssociation;
   onInitiate: (
     filename: string,
     mimeType: string,
@@ -39,12 +49,27 @@ type EvidenceUploaderProps = {
   onLink: (attachmentId: string) => Promise<{ error?: string }>;
 };
 
+export function evidenceMatchesQuestion(
+  item: EvidenceItem,
+  questionId: string | undefined,
+  criterionId?: string,
+) {
+  if (questionId && item.question_id) {
+    return item.question_id === questionId;
+  }
+  if (criterionId && !item.question_id) {
+    return item.criterion_id === criterionId;
+  }
+  return Boolean(questionId) && item.question_id === questionId;
+}
+
 type UploadState = "idle" | "uploading" | "success" | "error";
 
 export function EvidenceUploader({
   existingEvidence,
   canEdit,
   filter,
+  createdItemExtras,
   onInitiate,
   onConfirm,
   onLink,
@@ -53,25 +78,17 @@ export function EvidenceUploader({
   const [state, setState] = useState<UploadState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [pendingEvidence, setPendingEvidence] = useState<EvidenceItem[]>([]);
 
   const filteredEvidence = filter
     ? existingEvidence.filter(filter)
     : existingEvidence;
-
-  const downloadFile = useCallback(async (item: EvidenceItem) => {
-    if (!item.storage_object_path) return;
-    setError(null);
-    try {
-      await downloadEvidenceObject(item.storage_object_path, item.filename);
-    } catch (downloadError) {
-      setState("error");
-      setError(
-        downloadError instanceof Error
-          ? downloadError.message
-          : "Unable to open this evidence file.",
-      );
-    }
-  }, []);
+  const visibleEvidence = [
+    ...filteredEvidence,
+    ...pendingEvidence.filter(
+      (item) => !filteredEvidence.some((existing) => existing.id === item.id),
+    ),
+  ];
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -122,11 +139,40 @@ export function EvidenceUploader({
         return;
       }
 
+      const attachmentId = init.attachmentId;
+      const storagePath = init.storagePath;
+      const pendingItem: EvidenceItem = {
+        id: attachmentId,
+        filename: validation.filename,
+        mime_type: validation.mimeType,
+        byte_size: validation.byteSize,
+        storage_object_path: storagePath,
+      };
+      if (createdItemExtras?.question_id !== undefined) {
+        pendingItem.question_id = createdItemExtras.question_id;
+      }
+      if (createdItemExtras?.section_id !== undefined) {
+        pendingItem.section_id = createdItemExtras.section_id;
+      }
+      if (createdItemExtras?.finding_id !== undefined) {
+        pendingItem.finding_id = createdItemExtras.finding_id;
+      }
+      if (createdItemExtras?.observation_id !== undefined) {
+        pendingItem.observation_id = createdItemExtras.observation_id;
+      }
+      if (createdItemExtras?.criterion_id !== undefined) {
+        pendingItem.criterion_id = createdItemExtras.criterion_id;
+      }
+
+      setPendingEvidence((current) => [
+        ...current.filter((item) => item.id !== attachmentId),
+        pendingItem,
+      ]);
       setState("success");
       router.refresh();
       setTimeout(() => setState("idle"), 2000);
     },
-    [canEdit, onInitiate, onConfirm, onLink, router],
+    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink, router],
   );
 
   function onFileChange(files: FileList | null) {
@@ -134,7 +180,7 @@ export function EvidenceUploader({
     if (file) uploadFile(file);
   }
 
-  if (!canEdit && filteredEvidence.length === 0) {
+  if (!canEdit && visibleEvidence.length === 0) {
     return null;
   }
 
@@ -142,34 +188,13 @@ export function EvidenceUploader({
     <div className="mt-4 flex flex-col gap-3" data-testid="evidence-uploader">
       <p className="text-sm font-medium">Evidence</p>
 
-      {filteredEvidence.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {filteredEvidence.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm sm:flex-row sm:items-center"
-            >
-              <FileText className="size-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1 truncate">{item.filename}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatEvidenceFileSize(item.byte_size)}
-              </span>
-              {item.storage_object_path ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="min-h-11"
-                  onClick={() => void downloadFile(item)}
-                  data-testid={`evidence-download-${item.id}`}
-                >
-                  Open
-                </Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <EvidenceGallery
+        items={visibleEvidence}
+        onError={(message) => {
+          setState("error");
+          setError(message);
+        }}
+      />
 
       {canEdit ? (
         <div

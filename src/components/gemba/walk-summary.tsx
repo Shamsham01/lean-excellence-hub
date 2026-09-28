@@ -1,3 +1,4 @@
+import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,12 +124,10 @@ export function GembaWalkSummary({
                     <p className="mt-2 text-sm whitespace-pre-wrap">
                       {observation.observation_text}
                     </p>
-                    {linkedEvidence.length > 0 ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Evidence:{" "}
-                        {linkedEvidence.map((item) => item.filename).join(", ")}
-                      </p>
-                    ) : null}
+                    <EvidenceGallery
+                      items={linkedEvidence}
+                      contextLabel={observation.observation_text}
+                    />
                   </li>
                 );
               })}
@@ -150,18 +149,16 @@ export function GembaWalkSummary({
                 : answer?.text_value?.trim() || "No notes recorded.";
               const linkedEvidence = evidenceByQuestion.get(question.id) ?? [];
               return (
-                <div key={question.id} className="flex flex-col gap-1">
+                <div key={question.id} className="flex flex-col gap-2">
                   <p className="text-sm text-muted-foreground">
                     {section.title}
                   </p>
                   <p className="font-medium">{question.prompt}</p>
                   <p className="text-sm">{display}</p>
-                  {linkedEvidence.length > 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      Evidence:{" "}
-                      {linkedEvidence.map((item) => item.filename).join(", ")}
-                    </p>
-                  ) : null}
+                  <EvidenceGallery
+                    items={linkedEvidence}
+                    contextLabel={question.prompt}
+                  />
                 </div>
               );
             }),

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { completeFiveSAudit } from "@/app/(platform)/platform/5s/actions";
+import { FiveSAuditResult } from "@/components/five-s/audit-result";
 import { FiveSAuditWorkspace } from "@/components/five-s/audit-workspace";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -90,19 +91,39 @@ export default async function FiveSAuditPage({
     .select("section_id, question_id, finding_id, attachment_id")
     .eq("audit_id", id);
 
+  const attachmentIds = [
+    ...new Set((evidenceLinks ?? []).map((link) => link.attachment_id)),
+  ];
+  const attachmentsById = new Map<
+    string,
+    {
+      id: string;
+      filename: string;
+      mime_type: string;
+      byte_size: number | null;
+      storage_object_path: string;
+    }
+  >();
+  if (attachmentIds.length > 0) {
+    const { data: attachments } = await supabase
+      .from("attachments")
+      .select("id, filename, mime_type, byte_size, storage_object_path")
+      .in("id", attachmentIds);
+    for (const attachment of attachments ?? []) {
+      attachmentsById.set(attachment.id, attachment);
+    }
+  }
+
   const evidence = [];
   for (const link of evidenceLinks ?? []) {
-    const { data: attachment } = await supabase
-      .from("attachments")
-      .select("id, filename, mime_type, byte_size")
-      .eq("id", link.attachment_id)
-      .maybeSingle();
+    const attachment = attachmentsById.get(link.attachment_id);
     if (attachment) {
       evidence.push({
         id: attachment.id,
         filename: attachment.filename,
         mime_type: attachment.mime_type,
         byte_size: attachment.byte_size ?? 0,
+        storage_object_path: attachment.storage_object_path,
         question_id: link.question_id,
         section_id: link.section_id,
         finding_id: link.finding_id,
@@ -139,6 +160,11 @@ export default async function FiveSAuditPage({
             </Button>
           </CardContent>
         </Card>
+        <FiveSAuditResult
+          sections={sections}
+          answers={answers}
+          evidence={evidence}
+        />
       </div>
     );
   }

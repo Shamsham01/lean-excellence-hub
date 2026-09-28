@@ -1,6 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { expect, test } from "@playwright/test";
 
@@ -398,5 +399,105 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.getByRole("link", { name }).click();
     await expect(page.getByText(editedText)).toBeVisible();
     await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  });
+
+  test("admin: completing a prompt-scoped walk shows the summary and image evidence", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/gemba/definitions");
+
+    const name = `E2E Gemba Prompt Complete ${Date.now()}`;
+    const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
+    const secondPrompt = `What help does the team need? ${Date.now()}`;
+    const observationText = "Visual standard missing on the packing lane.";
+    const summaryNotes =
+      "Completed from the second prompt with photo evidence.";
+    const fixtureDirectory = join(
+      fileURLToPath(new URL(".", import.meta.url)),
+      "../fixtures/maturity-evidence",
+    );
+    const imagePath = join(fixtureDirectory, "sample.webp");
+
+    await page.getByLabel("Name").fill(name);
+    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await page.getByRole("button", { name: "Create draft" }).click();
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+
+    await page.getByLabel("Section title").fill("Safety");
+    await page.getByRole("button", { name: "Add section" }).click();
+    await expect(page.getByTestId("authoring-section")).toContainText("Safety");
+
+    await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
+    await page.getByRole("button", { name: "Add prompt" }).click();
+    await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
+    await page.getByRole("button", { name: "Add prompt" }).click();
+    await page.getByTestId("publish-gemba-definition").click();
+    await expect(page.getByText(/v1 · published/i)).toBeVisible();
+
+    await selectFirstExecutionUnit(page, "gemba-unit-select");
+    await page.getByRole("button", { name: "Start walk" }).click();
+    await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
+
+    await page.getByTestId("gemba-walk-notes").fill("First prompt notes.");
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: secondPrompt }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/prompt=/);
+
+    await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
+    await expect(page.getByText("Evidence attached")).toBeVisible();
+    await expect(page.getByText("sample.webp")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+
+    await page.getByTestId("gemba-capture-observation").click();
+    await page
+      .getByTestId("gemba-observation-type-improvement_opportunity")
+      .click();
+    await page.getByTestId("gemba-observation-text").fill(observationText);
+    await page.getByTestId("gemba-observation-save").click();
+    await expect(page.getByTestId("gemba-observation-list")).toContainText(
+      observationText,
+    );
+
+    await page.getByTestId("gemba-complete-walk").click();
+    await expect(
+      page.getByTestId("gemba-completion-required-unanswered"),
+    ).toHaveText("Required prompts unanswered: 0");
+    await page.getByTestId("gemba-summary-notes").fill(summaryNotes);
+    await page.getByTestId("gemba-confirm-complete").click();
+
+    await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
+    await expect(page.getByTestId("gemba-walk-summary")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Gemba walk summary" }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/platform\/gemba\/walks\/[0-9a-f-]+$/i);
+    expect(new URL(page.url()).searchParams.has("prompt")).toBe(false);
+    await expect(page.getByTestId("gemba-walk-status")).toHaveText("Completed");
+    await expect(page.getByTestId("gemba-summary-notes")).toHaveText(
+      summaryNotes,
+    );
+    await expect(page.getByText(observationText)).toBeVisible();
+    await expect(page.getByText("sample.webp")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
+    await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
+    await expect(page.getByTestId("gemba-walk-summary")).toBeVisible();
+    await expect(page.getByTestId("gemba-walk-status")).toHaveText("Completed");
+    await expect(page.getByText("sample.webp")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
+    await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.has("prompt")).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -53,6 +53,7 @@ import {
 import {
   buildGembaWalkPromptSearch,
   clearStoredGembaWalkPromptId,
+  gembaWalkPath,
   readGembaWalkPromptIdFromSearch,
   readStoredGembaWalkPromptId,
   resolveGembaWalkPromptIndex,
@@ -254,7 +255,7 @@ export function GembaWalkWorkspace({
 
   useEffect(() => {
     const questionId = flatQuestions[safeIndex]?.question.id;
-    if (!questionId || status !== "in_progress") return;
+    if (!questionId || status !== "in_progress" || completing) return;
     writeStoredGembaWalkPromptId(walkId, questionId);
     const nextSearch = buildGembaWalkPromptSearch(questionId);
     if (window.location.search !== nextSearch) {
@@ -264,7 +265,7 @@ export function GembaWalkWorkspace({
         `${window.location.pathname}${nextSearch}`,
       );
     }
-  }, [flatQuestions, safeIndex, status, walkId]);
+  }, [flatQuestions, safeIndex, status, walkId, completing]);
 
   async function moveTo(nextIndex: number) {
     if (!current) return;
@@ -297,6 +298,7 @@ export function GembaWalkWorkspace({
     if (!canComplete || completing) return;
     setCompleting(true);
     setCompleteError(null);
+    let shouldUnlock = true;
     try {
       if (observationIntegrityRef.current.dirty) {
         setCompleteError(DIRTY_OBSERVATION_COMPLETE_MESSAGE);
@@ -342,10 +344,13 @@ export function GembaWalkWorkspace({
         return;
       }
       const trimmedSummary = summary.trim();
+      clearStoredGembaWalkPromptId(walkId);
+      shouldUnlock = false;
       const result = trimmedSummary
         ? await onComplete(walkId, trimmedSummary)
         : await onComplete(walkId);
       if (!isCompleteSuccess(result)) {
+        shouldUnlock = true;
         const record = result as { error?: unknown } | null | undefined;
         setCompleteError(
           typeof record?.error === "string"
@@ -355,16 +360,19 @@ export function GembaWalkWorkspace({
         setCompleteOpen(false);
         return;
       }
-      clearStoredGembaWalkPromptId(walkId);
       setCompleteOpen(false);
-      router.refresh();
+      router.replace(gembaWalkPath(walkId));
     } catch (error) {
+      unstable_rethrow(error);
+      shouldUnlock = true;
       setCompleteError(
         error instanceof Error ? error.message : "Couldn't complete this walk.",
       );
       setCompleteOpen(false);
     } finally {
-      setCompleting(false);
+      if (shouldUnlock) {
+        setCompleting(false);
+      }
     }
   }
 

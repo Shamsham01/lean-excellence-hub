@@ -1,3 +1,6 @@
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
@@ -84,5 +87,50 @@ test.describe("Milestone 6 5S journeys", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  test("admin: completed audit result shows uploaded image evidence", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/5s/standards");
+    await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
+    await selectFirstExecutionUnit(page, "five-s-unit-select");
+    await page.getByRole("button", { name: "Start audit" }).click();
+    await expect(page.getByLabel("Audit progress")).toBeVisible();
+
+    const imagePath = join(
+      fileURLToPath(new URL(".", import.meta.url)),
+      "../fixtures/maturity-evidence/sample.png",
+    );
+    await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
+    await expect(page.getByText("Evidence attached")).toBeVisible();
+    await expect(page.getByText("sample.png")).toBeVisible();
+
+    while (
+      await page.getByRole("button", { name: "Next", exact: true }).isEnabled()
+    ) {
+      await page.getByRole("button", { name: "Yes" }).click();
+      await expect(page.getByTestId("answer-save-status")).toContainText(
+        "Saved",
+      );
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+    }
+    await page.getByRole("button", { name: "Yes" }).click();
+    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+
+    await page.getByTestId("five-s-complete-audit").click();
+    await expect(page.getByTestId("five-s-audit-result-page")).toBeVisible();
+    await expect(page.getByTestId("five-s-audit-result")).toBeVisible();
+    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
+    await expect(page.getByTestId("five-s-complete-audit")).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId("five-s-audit-result")).toBeVisible();
+    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
   });
 });
