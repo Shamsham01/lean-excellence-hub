@@ -139,16 +139,34 @@ export function EvidenceUploader({
         return;
       }
 
+      const attachmentId = init.attachmentId;
+      const storagePath = init.storagePath;
+      const pendingItem: EvidenceItem = {
+        id: attachmentId,
+        filename: validation.filename,
+        mime_type: validation.mimeType,
+        byte_size: validation.byteSize,
+        storage_object_path: storagePath,
+      };
+      if (createdItemExtras?.question_id !== undefined) {
+        pendingItem.question_id = createdItemExtras.question_id;
+      }
+      if (createdItemExtras?.section_id !== undefined) {
+        pendingItem.section_id = createdItemExtras.section_id;
+      }
+      if (createdItemExtras?.finding_id !== undefined) {
+        pendingItem.finding_id = createdItemExtras.finding_id;
+      }
+      if (createdItemExtras?.observation_id !== undefined) {
+        pendingItem.observation_id = createdItemExtras.observation_id;
+      }
+      if (createdItemExtras?.criterion_id !== undefined) {
+        pendingItem.criterion_id = createdItemExtras.criterion_id;
+      }
+
       setPendingEvidence((current) => [
-        ...current.filter((item) => item.id !== init.attachmentId),
-        {
-          id: init.attachmentId,
-          filename: validation.filename,
-          mime_type: validation.mimeType,
-          byte_size: validation.byteSize,
-          storage_object_path: init.storagePath,
-          ...createdItemExtras,
-        },
+        ...current.filter((item) => item.id !== attachmentId),
+        pendingItem,
       ]);
       setState("success");
       router.refresh();
