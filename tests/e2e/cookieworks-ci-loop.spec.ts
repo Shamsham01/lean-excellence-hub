@@ -101,10 +101,10 @@ test.describe("CookieWorks suggestion-action-project smoke loop", () => {
     await expect(unitTreeNode(page, EXETER_FACTORY_LABEL)).toBeVisible();
   });
 
-  test("Admin publishes a programme and category from empty foundation", async ({
+  test("CI manager publishes a programme and category from empty foundation", async ({
     page,
   }) => {
-    await loginAsCookieWorksPersona(page, "admin");
+    await loginAsCookieWorksPersona(page, "ciManager");
     await page.goto("/platform/suggestions/new");
     await expect(
       page.getByTestId("suggestion-configuration-block"),

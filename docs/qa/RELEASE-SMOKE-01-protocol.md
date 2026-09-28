@@ -53,7 +53,7 @@ Scope: **Org** = whole CookieWorks; **Bodmin Ops** = Operations subtree; **Exete
 | Persona | Email key | Scope | Typical smoke jobs | Must not |
 | --- | --- | --- | --- | --- |
 | **Admin** | `admin` | Org owner | Structure, People, site switcher, Auth/settings, Lean AI settings | None within tenant; still cannot see other tenants |
-| **CI Manager** | `ciManager` | Org | Maturity/5S/Gemba authoring, projects, benefits (CI), training/skills catalog, PS create/facilitate, Lean AI use | Programme/category **authoring** (`suggestions.programmes.manage` is not on the CookieWorks CI Manager role — use Admin until that seed gap is closed); not site-locked |
+| **CI Manager** | `ciManager` | Org | Maturity/5S/Gemba authoring, Suggestions programme/category setup, projects, benefits (CI), training/skills catalog, PS create/facilitate, Lean AI use | Not site-locked; still cannot cross tenant boundaries |
 | **Bodmin PM** | `productionManager` | Bodmin Ops | 5S/Gemba execute, schedules, suggestion review, actions, projects, PS | Enumerate/manage Exeter units |
 | **Exeter PM** | `exeterProductionManager` | Exeter Ops | Same as Bodmin PM on Exeter | Enumerate/manage Bodmin operational units |
 | **Team Leader** | `teamLeader` | Bodmin Ops | 5S audit, Gemba walk, complete schedules, claim/review suggestions, recognition read | Programme admin, publish frameworks, finance validate |
@@ -149,7 +149,7 @@ Foundation has **no** programmes. Configure once, then run the loop.
 
 | ID | Persona | Action | Expected |
 | --- | --- | --- | --- |
-| SUG-01 | **Admin** (owner) | Programmes: New programme (auto-code) → Publish; New category | Operator can submit; no manual code required. CookieWorks CI Manager currently lacks `suggestions.programmes.manage` (#154). |
+| SUG-01 | **CI Manager** | Programmes: New programme (auto-code) → Publish; New category | Operator can submit; no manual code required; Operator and Finance remain unable to manage programmes. |
 | SUG-02 | Operator | New suggestion, optional evidence, submit | Detail URL; evidence accessible after reload |
 | SUG-03 | Team Leader | Unassigned queue → claim → begin → approve | Status Accepted; no UUID-primary labels |
 | SUG-04 | Bodmin PM | Implementation → Create action → **Open action** | Action workspace; start → complete; History after refresh |

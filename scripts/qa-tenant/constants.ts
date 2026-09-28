@@ -236,6 +236,7 @@ export const QA_ROLES = {
       "skills.requirements.manage",
       "suggestions.read",
       "suggestions.manage",
+      "suggestions.programmes.manage",
       "recognition.read",
       "recognition.award",
       "projects.read",
