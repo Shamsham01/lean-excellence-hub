@@ -393,15 +393,22 @@ select is(
   'self assessment does not create an official result'
 );
 
-select throws_ok(
-  format(
-    'select public.start_maturity_assessment(%L::uuid, %L::uuid, ''formal'', ''site'')',
-    (select id from review_ids where key = 'version'),
-    (select id from review_ids where key = 'unit')
+insert into review_ids (key, id)
+select 'formal_default_lead', public.start_maturity_assessment(
+  (select id from review_ids where key = 'version'),
+  (select id from review_ids where key = 'unit'),
+  'formal',
+  'site'
+);
+
+select is(
+  (
+    select assessment_row.lead_assessor_membership_id
+    from public.maturity_assessments assessment_row
+    where assessment_row.id = (select id from review_ids where key = 'formal_default_lead')
   ),
-  '22023',
-  'formal assessment requires a lead assessor',
-  'formal assessment cannot start without a lead assessor'
+  (select id from review_ids where key = 'owner_membership'),
+  'legacy formal start defaults lead assessor to the current actor'
 );
 
 insert into review_ids (key, id)
