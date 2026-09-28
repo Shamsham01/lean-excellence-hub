@@ -110,9 +110,9 @@ If a hosted migration apply fails part-way: **stop**. Dry-run inventory. Do not 
 | Check | Where |
 | --- | --- |
 | CookieWorks isolation + CI loop E2E | Full Regression shard `cookieworks` (`cookieworks-ci-loop.spec.ts` then `cookieworks-two-site-hostile.spec.ts`, `--workers=1`, each spec resets) |
-| Local compiled-production (this pack) | Re-run after CW-RESET-001; previous head **8/8 passed** in 45.9s for the one-spec workaround |
-| Fast CI / Quality | Re-run on this head |
+| Local compiled-production (this pack) | **11/11 passed** in 1.5m on `960e5a8` (`CI=1 E2E_WITH_SUPABASE=1`, `--workers=1 --retries=0`): `cookieworks-ci-loop.spec.ts` (8) then `cookieworks-two-site-hostile.spec.ts` (3), each spec `qa:cookie:reset` in `beforeAll` |
+| Fast CI / Quality | GitHub **success** on `960e5a8` (https://github.com/Shamsham01/lean-excellence-hub/actions/runs/36421448481) |
 | Existing demo happy paths | platform / workforce / improvement / ai-closure shards |
-| pgTAP + types | Database CI / Full Regression database core |
+| pgTAP + types | Local `test:db` **PASS** Files=121 Tests=2247. GitHub Database CI **success** on `960e5a8` (https://github.com/Shamsham01/lean-excellence-hub/actions/runs/36421448467) |
 | QA hosted-replacement integration | Local vitest only — **not** a hosted apply |
 | Hosted mutation | **None** from this PR |

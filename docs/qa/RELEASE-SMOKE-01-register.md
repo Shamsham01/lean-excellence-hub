@@ -91,7 +91,7 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 | SCHED-REACTIVATE-001 | **OPEN (P2)** | Reactivate not exposed. |
 | THEME-SELECT-001 | **OPEN (P2)** | Dark-mode select contrast if reproduced. |
 | CW-CI-MGR-001 | **PROMOTED → #154** | CookieWorks CI Manager lacks `suggestions.programmes.manage`. Protocol uses Admin for SUG-01. P2 / role-playbook alignment — **not** a first-customer product-code blocker. Do before or after hosted smoke; not required to start hosted smoke. |
-| CW-RESET-001 | **IN PR → #153** | CookieWorks module purge now retires suggestion/action history in a dependency-aware order. Two CookieWorks Playwright files can each reset in one `--workers=1` process. |
+| CW-RESET-001 | **IN PR → #153** | CookieWorks module purge now retires suggestion/action history in a dependency-aware order. Local compiled-production: **11/11** (`--workers=1`, each spec resets). GitHub Fast CI and Database CI green on `960e5a8`. |
 
 ---
 
