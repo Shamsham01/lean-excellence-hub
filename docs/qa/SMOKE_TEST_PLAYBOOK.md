@@ -2,6 +2,8 @@
 
 Manual acceptance tracker for the CookieWorks Manufacturing (`cookieworks-manufacturing`) QA tenant.
 
+**Current first-customer protocol:** `docs/qa/RELEASE-SMOKE-01-protocol.md`. Historical module tables below remain available as an expanded worksheet; do not treat empty result columns as open product defects.
+
 ## Preconditions
 
 - CookieWorks tenant reset to foundation-only (`npm run qa:cookie:reset` locally, or hosted maintainer reset).
