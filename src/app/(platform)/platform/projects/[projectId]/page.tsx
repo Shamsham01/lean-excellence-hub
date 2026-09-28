@@ -241,8 +241,7 @@ export default async function ProjectDetailPage({
 
   const enrichedTeam = detail.team_members.map((member) => ({
     ...member,
-    display_name:
-      membershipNameById.get(member.membership_id) ?? "Colleague",
+    display_name: membershipNameById.get(member.membership_id) ?? "Colleague",
   }));
 
   const { data: projectBenefitsData } = await callBenefitRpc<{
