@@ -101,7 +101,9 @@ export function ProjectHeader({
             {ownerName ? (
               <div>
                 <dt className="text-muted-foreground">Owner</dt>
-                <dd className="font-medium">{ownerName}</dd>
+                <dd className="font-medium" data-testid="project-owner-name">
+                  {ownerName}
+                </dd>
               </div>
             ) : null}
             {detail.planned_end_date ? (
