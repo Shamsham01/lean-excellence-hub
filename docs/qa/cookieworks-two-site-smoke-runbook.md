@@ -3,6 +3,8 @@
 Manual smoke checklist for hosted CookieWorks Manufacturing after PR4 merge.
 This runbook prepares the maintainer handoff only — **do not execute hosted destructive steps from a development PR**.
 
+**First-customer pack:** use `docs/qa/RELEASE-SMOKE-01-protocol.md` together with the reconciled register `docs/qa/RELEASE-SMOKE-01-register.md` and go-live checklist `docs/qa/RELEASE-SMOKE-01-go-live.md`. This file remains the foundation contract and hosted-reset warning.
+
 ## Final foundation contract
 
 | Item | Expected value |

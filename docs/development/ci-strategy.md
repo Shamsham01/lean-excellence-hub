@@ -92,6 +92,7 @@ Pure docs, CSS, or UI-only changes **do not** start this workflow.
 - `Full Regression / E2E platform`
 - `Full Regression / E2E workforce`
 - `Full Regression / E2E improvement`
+- `Full Regression / E2E cookieworks`
 - `Full Regression / E2E ai-closure`
 
 **Quality gate behaviour:**
@@ -103,7 +104,7 @@ Pure docs, CSS, or UI-only changes **do not** start this workflow.
 
 - `Full Regression / Database core` runs `db:lint`, complete pgTAP, and generated type drift checks.
 - QA hosted replacement runs in a dedicated job when QA paths change (or on `main` / manual dispatch).
-- Supabase-backed Playwright coverage is split into **four parallel shards**. Each shard starts its **own** local Supabase stack, seeds demo data, and runs a bounded spec list with `--workers=1` inside the shard.
+- Supabase-backed Playwright coverage is split into **five parallel shards**. Each shard starts its **own** local Supabase stack, seeds demo data, and runs a bounded spec list with `--workers=1` inside the shard. The **cookieworks** shard runs `cookieworks-ci-loop.spec.ts` then `cookieworks-two-site-hostile.spec.ts` sequentially. Each spec performs its own `qa:cookie:reset` in `beforeAll`.
 - `Full Regression / Database` is a lightweight gate that succeeds only when database core, required QA recovery (if triggered), and all E2E shards succeed.
 
 **Target wall-clock:** ideally under 15 minutes for ready PRs through parallelism (versus the former ~40–90 minute serial database path).

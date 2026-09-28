@@ -48,8 +48,10 @@ test.describe("CookieWorks two-site hostile E2E", () => {
     await loginAsCookieWorksPersona(page, "productionManager");
     await page.goto("/platform/settings/structure");
     await expect(page.getByTestId("structure-settings-page")).toBeVisible();
-    await expect(unitTreeNode(page, BODMIN_FACTORY_LABEL)).toBeVisible();
+    await expect(page.getByTestId("organisation-unit-tree")).toBeVisible();
     await expect(unitTreeNode(page, "Operations")).toBeVisible();
+    await expect(unitTreeNode(page, "Packing")).toBeVisible();
+    await expect(unitTreeNode(page, "Decorating")).toBeVisible();
     await expect(page.getByText(EXETER_FACTORY_LABEL)).toHaveCount(0);
     await expect(page.getByTestId("platform-sidebar-org-name")).toHaveText(
       COOKIEWORKS_ORGANISATION.name,
@@ -62,7 +64,10 @@ test.describe("CookieWorks two-site hostile E2E", () => {
     await loginAsCookieWorksPersona(page, "exeterProductionManager");
     await page.goto("/platform/settings/structure");
     await expect(page.getByTestId("structure-settings-page")).toBeVisible();
-    await expect(unitTreeNode(page, EXETER_FACTORY_LABEL)).toBeVisible();
+    await expect(page.getByTestId("organisation-unit-tree")).toBeVisible();
+    await expect(unitTreeNode(page, "Operations")).toBeVisible();
+    await expect(unitTreeNode(page, "Packing")).toBeVisible();
+    await expect(page.getByText("Decorating")).toHaveCount(0);
     await expect(page.getByText(BODMIN_FACTORY_LABEL)).toHaveCount(0);
   });
 

@@ -158,6 +158,7 @@ npm run qa:cookie:hosted-seed
 ### Deletion implementation notes
 
 - Reset purges **module/business tables** for the CookieWorks organisation using repeated FK-safe SQL passes.
+- Module-stage append-only history (suggestion reviews/status, action transitions, and the rest of the approved controlled-retirement list) is deleted in a named-trigger disable/delete/enable sequence before parent rows. Production FKs, RLS, and append-only rules are not weakened.
 - See `docs/development/qa-tenant-deletion-graph.md` for the full deletion graph, indirect child handling, storage cleanup, and fail-closed verification rules.
 - Foundation tables (organisation, memberships, units, RBAC grants, builtin problem-solving catalogue, append-only audit ledgers) are preserved by allowlist.
 - `provision_organisation` bootstrap artefacts and append-only audit events remain as documented exceptions.

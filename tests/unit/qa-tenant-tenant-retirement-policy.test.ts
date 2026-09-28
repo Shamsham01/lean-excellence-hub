@@ -132,6 +132,30 @@ describe("tenant retirement policy", () => {
     expect(failures).toEqual(["public.ai_usage_events=2"]);
   });
 
+  it("flags module-stage append-only rows during CookieWorks foundation purge verification", () => {
+    const failures = collectAppendOnlyInventoryFailures(
+      [
+        { table: "suggestion_reviews", count: 1, lifecycleStage: "module" },
+        {
+          table: "suggestion_status_history",
+          count: 2,
+          lifecycleStage: "module",
+        },
+        {
+          table: "security_audit_events",
+          count: 3,
+          lifecycleStage: "foundation",
+        },
+      ],
+      "module-foundation-only",
+    );
+
+    expect(failures).toEqual([
+      "public.suggestion_reviews=1",
+      "public.suggestion_status_history=2",
+    ]);
+  });
+
   it("flags all append-only rows during full absence verification", () => {
     const failures = collectAppendOnlyInventoryFailures(
       [
@@ -151,9 +175,20 @@ describe("tenant retirement policy", () => {
     ]);
   });
 
-  it("does not flag append-only rows during module foundation purge verification", () => {
+  it("does not flag foundation-stage audit ledgers during module foundation purge verification", () => {
     const failures = collectAppendOnlyInventoryFailures(
-      [{ table: "ai_usage_events", count: 2, lifecycleStage: "module" }],
+      [
+        {
+          table: "security_audit_events",
+          count: 2,
+          lifecycleStage: "foundation",
+        },
+        {
+          table: "business_audit_events",
+          count: 1,
+          lifecycleStage: "foundation",
+        },
+      ],
       "module-foundation-only",
     );
 
@@ -180,6 +215,46 @@ describe("tenant purge SQL classification", () => {
     expect(sql).toContain("deletable_tables");
     expect(sql).toContain("table_name <> all(append_only_tables)");
     expect(sql).not.toContain("SQLERRM like '%is append-only%'");
+  });
+
+  it("runs module-stage controlled retirement before CookieWorks generic deletes", () => {
+    const sql = buildPurgeTenantModuleDataSql("cookieworks-manufacturing");
+    const controlledDeleteIndex = sql.indexOf(
+      "disable trigger suggestion_reviews_prevent_delete",
+    );
+    const historyDeleteIndex = sql.indexOf(
+      "disable trigger suggestion_status_history_prevent_delete",
+    );
+    const actionHistoryIndex = sql.indexOf(
+      "disable trigger action_status_transitions_prevent_delete",
+    );
+    const genericLoopIndex = sql.indexOf(
+      "foreach purge_table_name in array deletable_tables loop",
+    );
+
+    expect(controlledDeleteIndex).toBeGreaterThanOrEqual(0);
+    expect(historyDeleteIndex).toBeGreaterThanOrEqual(0);
+    expect(actionHistoryIndex).toBeGreaterThanOrEqual(0);
+    expect(genericLoopIndex).toBeGreaterThan(controlledDeleteIndex);
+    expect(sql).not.toContain(
+      "and purge_table_name = any(append_only_tables) then",
+    );
+    expect(sql).toContain(
+      "left module-stage append-only rows after controlled retirement delete",
+    );
+  });
+
+  it("contains a pre-mutation unknown append-only guard for CookieWorks foundation reset", () => {
+    const sql = buildPurgeTenantModuleDataSql("cookieworks-manufacturing");
+    const guardIndex = sql.indexOf(
+      "Tenant module purge blocked: unclassified append-only tables discovered",
+    );
+    const privatePurgeIndex = sql.indexOf(
+      "delete from private.notification_projector_pre_cutover_skips",
+    );
+
+    expect(guardIndex).toBeGreaterThanOrEqual(0);
+    expect(privatePurgeIndex).toBeGreaterThan(guardIndex);
   });
 
   it("runs module-stage controlled append-only retirement deletes for legacy full removal", () => {
