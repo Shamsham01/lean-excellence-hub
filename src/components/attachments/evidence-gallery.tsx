@@ -59,20 +59,17 @@ function EvidencePreviewCard({
   const canPreviewImage =
     isEvidenceImageMimeType(item.mime_type) && Boolean(authorisedPath);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadedPath, setLoadedPath] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     if (!canPreviewImage || !authorisedPath) {
-      setPreviewUrl(null);
-      setPreviewError(false);
       return;
     }
 
     let cancelled = false;
     let objectUrl: string | null = null;
-    setPreviewUrl(null);
-    setPreviewError(false);
 
     void createEvidenceObjectUrl(authorisedPath)
       .then((url) => {
@@ -82,6 +79,8 @@ function EvidencePreviewCard({
         }
         objectUrl = url;
         setPreviewUrl(url);
+        setLoadedPath(authorisedPath);
+        setPreviewError(false);
       })
       .catch(() => {
         if (!cancelled) {
@@ -111,7 +110,11 @@ function EvidencePreviewCard({
   }, [authorisedPath, item.filename, onError]);
 
   const altText = evidencePreviewAltText(item.filename, contextLabel);
-  const showImagePreview = canPreviewImage && previewUrl && !previewError;
+  const showImagePreview =
+    canPreviewImage &&
+    Boolean(previewUrl) &&
+    loadedPath === authorisedPath &&
+    !previewError;
 
   return (
     <li
@@ -130,7 +133,7 @@ function EvidencePreviewCard({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={previewUrl}
+              src={previewUrl ?? undefined}
               alt={altText}
               className="aspect-[4/3] h-28 w-full object-cover sm:h-32"
             />
@@ -179,7 +182,7 @@ function EvidencePreviewCard({
             </DialogHeader>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={previewUrl}
+              src={previewUrl ?? undefined}
               alt={altText}
               className="max-h-[75vh] w-full rounded-md object-contain"
             />
@@ -216,8 +219,8 @@ export function EvidenceGallery({
           <EvidencePreviewCard
             key={item.id}
             item={item}
-            contextLabel={contextLabel}
-            onError={onError}
+            {...(contextLabel !== undefined ? { contextLabel } : {})}
+            {...(onError ? { onError } : {})}
           />
         ))}
       </ul>
