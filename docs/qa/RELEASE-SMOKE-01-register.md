@@ -90,7 +90,7 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 | UX-026 | **EXPECTED / operator** | Netlify “Powered by” badge. Production URL currently serves HTTP 200; exact SHA and account/credit state are not verified from public responses. |
 | SCHED-REACTIVATE-001 | **OPEN (P2)** | Reactivate not exposed. |
 | THEME-SELECT-001 | **OPEN (P2)** | Dark-mode select contrast if reproduced. |
-| CW-CI-MGR-001 | **PROMOTED → #154** | CookieWorks CI Manager lacks `suggestions.programmes.manage`. Protocol uses Admin for SUG-01. P2 / role-playbook alignment — **not** a first-customer product-code blocker. Do before or after hosted smoke; not required to start hosted smoke. |
+| CW-CI-MGR-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #154. CookieWorks CI Manager QA role now includes `suggestions.programmes.manage`; SUG-01 uses CI Manager. Operator and Finance remain denied. |
 | CW-RESET-001 | **IN PR → #153** | CookieWorks module purge now retires suggestion/action history in a dependency-aware order. Local compiled-production: **11/11** (`--workers=1`, each spec resets). GitHub Fast CI and Database CI green on `960e5a8`. |
 
 ---
@@ -120,7 +120,7 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 | #134 | PERF-001 umbrella; listing slice merged as PR **#151**; hosted apply of `20260925160321` still required with approval |
 | #140 / #143 | Training slices merged (#142 / #144); hosted DB applied; app unpublished |
 | #149 | SEC-RPC-001 merged + hosted DB applied; leftover = leaked-password toggle + authenticated DEFINER volume |
-| #154 | CW-CI-MGR-001 — CookieWorks CI Manager cannot manage suggestion programmes (P2; Admin workaround in SUG-01) |
+| #154 | CW-CI-MGR-001 — QA role alignment implemented; close on merge, then include in hosted SUG-01 retest |
 | #155 | CW-RESET-001 — CookieWorks module purge; **fixed in PR #153** |
 
 Larger remaining work (P2 IA, assessor UX, form overflow) already has homes. Do not open a combined “fix everything” PR.
