@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   GEMBA_WALK_PROMPT_PARAM,
   buildGembaWalkPromptSearch,
+  gembaWalkPath,
   readGembaWalkPromptIdFromSearch,
   resolveGembaWalkPromptIndex,
 } from "@/modules/operational/gemba-walk-prompt";
@@ -45,5 +46,9 @@ describe("Gemba walk prompt restore", () => {
     expect(readGembaWalkPromptIdFromSearch("?prompt=q-2&other=nope")).toBe(
       "q-2",
     );
+  });
+
+  it("builds the canonical walk path without a prompt query", () => {
+    expect(gembaWalkPath("walk-1")).toBe("/platform/gemba/walks/walk-1");
   });
 });

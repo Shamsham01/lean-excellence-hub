@@ -7,6 +7,7 @@ import { signInAsDemoUser } from "./helpers/demo-auth";
 import { expect, test } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -186,6 +187,47 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("complete-self-assessment").click();
     await expect(page.getByText("Completed").first()).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
+  });
+
+  test("self assessor: image evidence remains previewable after reload and completion", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await signInAsDemoUser(page, "operator");
+    await page.goto("/platform/maturity/assessments/new");
+    await selectFrameworkVersion(page, { label: /E2E Closure Framework/ });
+    await selectAssessmentScopeAndWaitForEntities(page, "site", {
+      expectedEntityName: CORNWALL_PLANT_LABEL,
+    });
+    await selectFirstScopeEntity(page);
+    await page.getByLabel("Assessment type").selectOption("self");
+    await page.getByRole("button", { name: "Start assessment" }).click();
+
+    const scoreInput = page.locator('input[type="number"]').first();
+    await scoreInput.fill("3");
+    await scoreInput.blur();
+    await expect(page.getByText("Saving")).not.toBeVisible({ timeout: 10_000 });
+
+    const imagePath = join(
+      fileURLToPath(new URL(".", import.meta.url)),
+      "../fixtures/maturity-evidence/sample.png",
+    );
+    await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
+    await expect(page.getByText("Evidence attached")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+
+    await page.getByTestId("complete-self-assessment").click();
+    await expect(page.getByText("Completed").first()).toBeVisible();
+    await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
+    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
   });
 
   test("admin: create successor version keeps historical assessment pinned", async ({

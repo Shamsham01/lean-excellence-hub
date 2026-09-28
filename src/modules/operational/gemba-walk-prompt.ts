@@ -1,6 +1,10 @@
 export const GEMBA_WALK_PROMPT_STORAGE_PREFIX = "gemba-walk-prompt:";
 export const GEMBA_WALK_PROMPT_PARAM = "prompt";
 
+export function gembaWalkPath(walkId: string) {
+  return `/platform/gemba/walks/${walkId}`;
+}
+
 export function gembaWalkPromptStorageKey(walkId: string) {
   return `${GEMBA_WALK_PROMPT_STORAGE_PREFIX}${walkId}`;
 }

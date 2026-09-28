@@ -130,19 +130,39 @@ export default async function AssessmentDetailPage({
     .select("criterion_id, question_id, attachment_id")
     .eq("assessment_id", id);
 
+  const attachmentIds = [
+    ...new Set((evidenceLinks ?? []).map((link) => link.attachment_id)),
+  ];
+  const attachmentsById = new Map<
+    string,
+    {
+      id: string;
+      filename: string;
+      mime_type: string;
+      byte_size: number | null;
+      storage_object_path: string;
+    }
+  >();
+  if (attachmentIds.length > 0) {
+    const { data: attachments } = await supabase
+      .from("attachments")
+      .select("id, filename, mime_type, byte_size, storage_object_path")
+      .in("id", attachmentIds);
+    for (const attachment of attachments ?? []) {
+      attachmentsById.set(attachment.id, attachment);
+    }
+  }
+
   const evidence = [];
   for (const link of evidenceLinks ?? []) {
-    const { data: attachment } = await supabase
-      .from("attachments")
-      .select("id, filename, mime_type, byte_size")
-      .eq("id", link.attachment_id)
-      .maybeSingle();
+    const attachment = attachmentsById.get(link.attachment_id);
     if (attachment) {
       evidence.push({
         id: attachment.id,
         filename: attachment.filename,
         mime_type: attachment.mime_type,
         byte_size: attachment.byte_size ?? 0,
+        storage_object_path: attachment.storage_object_path,
         question_id: link.question_id,
         criterion_id: link.criterion_id,
       });

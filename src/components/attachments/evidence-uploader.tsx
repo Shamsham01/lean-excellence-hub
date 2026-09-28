@@ -2,14 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { FileText, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 
+import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
 import { Button } from "@/components/ui/button";
-import { downloadEvidenceObject } from "@/lib/attachments/download-evidence";
 import {
   EVIDENCE_ACCEPT,
   EVIDENCE_FILE_HELP,
-  formatEvidenceFileSize,
   validateEvidenceFile,
 } from "@/lib/attachments/evidence-file-rules";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
@@ -24,6 +23,7 @@ export type EvidenceItem = {
   section_id?: string | null;
   finding_id?: string | null;
   observation_id?: string | null;
+  criterion_id?: string | null;
 };
 
 type EvidenceUploaderProps = {
@@ -57,21 +57,6 @@ export function EvidenceUploader({
   const filteredEvidence = filter
     ? existingEvidence.filter(filter)
     : existingEvidence;
-
-  const downloadFile = useCallback(async (item: EvidenceItem) => {
-    if (!item.storage_object_path) return;
-    setError(null);
-    try {
-      await downloadEvidenceObject(item.storage_object_path, item.filename);
-    } catch (downloadError) {
-      setState("error");
-      setError(
-        downloadError instanceof Error
-          ? downloadError.message
-          : "Unable to open this evidence file.",
-      );
-    }
-  }, []);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -142,34 +127,13 @@ export function EvidenceUploader({
     <div className="mt-4 flex flex-col gap-3" data-testid="evidence-uploader">
       <p className="text-sm font-medium">Evidence</p>
 
-      {filteredEvidence.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {filteredEvidence.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm sm:flex-row sm:items-center"
-            >
-              <FileText className="size-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1 truncate">{item.filename}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatEvidenceFileSize(item.byte_size)}
-              </span>
-              {item.storage_object_path ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="min-h-11"
-                  onClick={() => void downloadFile(item)}
-                  data-testid={`evidence-download-${item.id}`}
-                >
-                  Open
-                </Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <EvidenceGallery
+        items={filteredEvidence}
+        onError={(message) => {
+          setState("error");
+          setError(message);
+        }}
+      />
 
       {canEdit ? (
         <div

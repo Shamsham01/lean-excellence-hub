@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { findResumableGembaWalkId } from "@/modules/operational/gemba-active-walks";
 import { readApplicableUnitIds } from "@/modules/operational/gemba-applicability";
+import { gembaWalkPath } from "@/modules/operational/gemba-walk-prompt";
 import {
   loadTemplateAuthoringChildren,
   nextQuestionPosition,
@@ -304,7 +305,10 @@ export async function deleteGembaObservations(
   return { ok: true };
 }
 
-export async function completeGembaWalk(walkId: string, summary?: string) {
+export async function completeGembaWalk(
+  walkId: string,
+  summary?: string,
+): Promise<{ ok?: true; error?: string }> {
   const supabase = await createServerSupabaseClient();
   const rpcArgs: { target_walk_id: string; target_summary_notes?: string } = {
     target_walk_id: walkId,
@@ -315,9 +319,9 @@ export async function completeGembaWalk(walkId: string, summary?: string) {
 
   const { error } = await supabase.rpc("complete_gemba_walk", rpcArgs);
   if (error) return { error: error.message };
-  revalidatePath(`/platform/gemba/walks/${walkId}`);
+  revalidatePath(gembaWalkPath(walkId));
   revalidatePath("/platform/gemba");
-  return { ok: true };
+  redirect(gembaWalkPath(walkId), RedirectType.replace);
 }
 
 export async function addGembaSectionFromForm(formData: FormData) {

@@ -6,6 +6,7 @@ import {
   saveAssessmentAnswer,
   saveCriterionNote,
 } from "@/app/(platform)/platform/maturity/actions";
+import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { EvidenceUploader } from "@/components/maturity/evidence-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,15 +38,6 @@ type Pillar = {
   id: string;
   name: string;
   criteria: Criterion[];
-};
-
-type EvidenceItem = {
-  id: string;
-  filename: string;
-  mime_type: string;
-  byte_size: number;
-  question_id: string | null;
-  criterion_id: string;
 };
 
 type LevelGuidance = {
