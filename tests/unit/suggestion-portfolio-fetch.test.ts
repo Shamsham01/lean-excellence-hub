@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { fetchSuggestionPortfolio } from "@/lib/suggestions/fetch-suggestion-portfolio";
+import {
+  fetchSuggestionPortfolio,
+  fetchSuggestionsOverview,
+} from "@/lib/suggestions/fetch-suggestion-portfolio";
 
 describe("fetchSuggestionPortfolio", () => {
   it("requests the canonical portfolio RPC with pagination parameters", async () => {
@@ -40,5 +43,42 @@ describe("fetchSuggestionPortfolio", () => {
     expect(result.page_size).toBe(25);
     expect(result.total_count).toBe(75);
     expect(result.items).toHaveLength(1);
+  });
+});
+
+describe("fetchSuggestionsOverview", () => {
+  it("throws when the overview RPC fails instead of returning zero metrics", async () => {
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { message: "boom" },
+    }));
+
+    await expect(fetchSuggestionsOverview({ rpc } as never)).rejects.toThrow(
+      "Unable to load suggestions overview.",
+    );
+    expect(rpc).toHaveBeenCalledWith("get_suggestions_overview");
+  });
+
+  it("returns successful overview metrics without inventing a zero payload on error", async () => {
+    const rpc = vi.fn(async () => ({
+      data: {
+        submitted_this_month: 4,
+        awaiting_review: 2,
+        accepted: 1,
+        implementing: 0,
+        implemented: 1,
+        pipeline: { submitted: 2 },
+      },
+      error: null,
+    }));
+
+    await expect(fetchSuggestionsOverview({ rpc } as never)).resolves.toEqual({
+      submitted_this_month: 4,
+      awaiting_review: 2,
+      accepted: 1,
+      implementing: 0,
+      implemented: 1,
+      pipeline: { submitted: 2 },
+    });
   });
 });

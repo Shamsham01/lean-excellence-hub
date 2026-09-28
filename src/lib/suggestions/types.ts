@@ -25,6 +25,15 @@ export type SuggestionPortfolioListResult = {
   page_size: number;
 };
 
+export type SuggestionsOverview = {
+  submitted_this_month: number;
+  awaiting_review: number;
+  accepted: number;
+  implementing: number;
+  implemented: number;
+  pipeline: Record<string, number>;
+};
+
 export type SuggestionPortfolioProgrammeOption = {
   id: string;
   name: string;

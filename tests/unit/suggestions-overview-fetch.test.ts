@@ -12,7 +12,9 @@ describe("Suggestions overview page data loading", () => {
     expect(source).not.toMatch(
       /\.from\(["']improvement_suggestions["']\)[\s\S]*count:\s*["']exact["']/,
     );
-    expect(source).toContain('supabase.rpc("get_suggestions_overview")');
+    expect(source).toContain("fetchSuggestionsOverview(supabase)");
     expect(source).toContain("fetchSuggestionPortfolio(supabase, filters)");
+    expect(source).toContain("prefetchMemberPermissions");
+    expect(source).toContain("suggestionsOverviewPermissionKeys");
   });
 });
