@@ -8,10 +8,12 @@ import {
   submitAssessment,
 } from "../../actions";
 import { AssessmentWorkspace } from "@/components/maturity/assessment-workspace";
-import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
+import { ReturnForCorrectionForm } from "@/components/maturity/return-for-correction-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { assessmentActionsHref } from "@/lib/actions/action-filters";
+import { canEditMaturityAssessment } from "@/modules/maturity/formal-lifecycle";
 import { currentMemberHasScopedPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { sortMaturityQuestions } from "@/modules/maturity/framework-authoring";
@@ -29,7 +31,7 @@ export default async function AssessmentDetailPage({
   const { data: assessment } = await supabase
     .from("maturity_assessments")
     .select(
-      "id, status, assessment_type, model_version_id, submission_id, unit_id",
+      "id, status, assessment_type, model_version_id, submission_id, unit_id, lead_assessor_membership_id, created_by_membership_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -64,7 +66,12 @@ export default async function AssessmentDetailPage({
     .order("position");
 
   const pillarData = [];
+  const criterionNameById = new Map<string, string>();
+  const pillarNameById = new Map<string, string>();
+  const questionPromptById = new Map<string, string>();
+
   for (const pillar of pillars ?? []) {
+    pillarNameById.set(pillar.id, pillar.name);
     const { data: criteria } = await supabase
       .from("maturity_criteria")
       .select("id, name, description, guidance, position")
@@ -73,6 +80,7 @@ export default async function AssessmentDetailPage({
 
     const criteriaWithQuestions = [];
     for (const criterion of criteria ?? []) {
+      criterionNameById.set(criterion.id, criterion.name);
       const { data: links } = await supabase
         .from("maturity_criterion_questions")
         .select("question_id, contributes_to_score")
@@ -88,6 +96,7 @@ export default async function AssessmentDetailPage({
           .eq("id", link.question_id)
           .maybeSingle();
         if (q) {
+          questionPromptById.set(q.id, q.prompt);
           questions.push({
             ...q,
             contributes_to_score: link.contributes_to_score,
@@ -190,13 +199,126 @@ export default async function AssessmentDetailPage({
     criterionNotes[row.criterion_id] = row.comment_text;
   }
 
+  const membershipIds = [
+    assessment.lead_assessor_membership_id,
+    assessment.created_by_membership_id,
+  ].filter((value): value is string => Boolean(value));
+
+  const { data: transitionRows } = await supabase
+    .from("maturity_assessment_transitions")
+    .select("to_status, actor_membership_id, created_at")
+    .eq("assessment_id", id)
+    .eq("to_status", "submitted")
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const submittedByMembershipId = transitionRows?.[0]?.actor_membership_id;
+  if (submittedByMembershipId) {
+    membershipIds.push(submittedByMembershipId);
+  }
+
+  const uniqueMembershipIds = [...new Set(membershipIds)];
+  const membershipNameById = new Map<string, string>();
+  if (uniqueMembershipIds.length > 0) {
+    const { data: memberships } = await supabase
+      .from("organisation_memberships")
+      .select("id, display_name")
+      .in("id", uniqueMembershipIds);
+    for (const membership of memberships ?? []) {
+      membershipNameById.set(
+        membership.id,
+        membership.display_name ?? "Unknown person",
+      );
+    }
+  }
+
+  const { data: actionContexts } = await supabase
+    .from("maturity_action_context")
+    .select("action_id, pillar_id, criterion_id, question_id")
+    .eq("assessment_id", id);
+
+  const actionIds = [
+    ...new Set((actionContexts ?? []).map((row) => row.action_id)),
+  ];
+  const actionsById = new Map<
+    string,
+    {
+      id: string;
+      action_number: string | null;
+      title: string;
+      status: string;
+      due_at: string | null;
+    }
+  >();
+  const assigneeNameByActionId = new Map<string, string>();
+  if (actionIds.length > 0) {
+    const { data: actionRows } = await supabase
+      .from("actions")
+      .select("id, action_number, title, status, due_at")
+      .in("id", actionIds);
+    for (const action of actionRows ?? []) {
+      actionsById.set(action.id, action);
+    }
+
+    const { data: assignees } = await supabase
+      .from("action_assignees")
+      .select("action_id, membership_id")
+      .in("action_id", actionIds);
+    const assigneeMembershipIds = [
+      ...new Set((assignees ?? []).map((row) => row.membership_id)),
+    ];
+    const assigneeNames = new Map<string, string>();
+    if (assigneeMembershipIds.length > 0) {
+      const { data: assigneeMemberships } = await supabase
+        .from("organisation_memberships")
+        .select("id, display_name")
+        .in("id", assigneeMembershipIds);
+      for (const membership of assigneeMemberships ?? []) {
+        assigneeNames.set(
+          membership.id,
+          membership.display_name ?? "Unknown person",
+        );
+      }
+    }
+    for (const assignee of assignees ?? []) {
+      if (!assigneeNameByActionId.has(assignee.action_id)) {
+        assigneeNameByActionId.set(
+          assignee.action_id,
+          assigneeNames.get(assignee.membership_id) ?? "Unknown person",
+        );
+      }
+    }
+  }
+
+  const linkedActions = (actionContexts ?? [])
+    .map((context) => {
+      const action = actionsById.get(context.action_id);
+      if (!action) return null;
+      return {
+        id: action.id,
+        action_number: action.action_number,
+        title: action.title,
+        status: action.status,
+        due_at: action.due_at,
+        assignee_name: assigneeNameByActionId.get(action.id) ?? null,
+        pillar_id: context.pillar_id,
+        criterion_id: context.criterion_id,
+        question_id: context.question_id,
+        pillar_name: pillarNameById.get(context.pillar_id) ?? "Unknown pillar",
+        criterion_name:
+          criterionNameById.get(context.criterion_id) ?? "Unknown criterion",
+        question_prompt: context.question_id
+          ? (questionPromptById.get(context.question_id) ?? null)
+          : null,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null);
+
   const overall = scores?.find((s) => s.score_level === "overall");
-
-  const canEdit =
-    assessment.status === "draft" || assessment.status === "in_progress";
-
-  const firstCriterion = pillarData[0]?.criteria[0];
-  const firstQuestion = firstCriterion?.questions[0];
+  const canEdit = canEditMaturityAssessment({
+    status: assessment.status,
+    canReview,
+  });
 
   async function submitAction() {
     "use server";
@@ -208,22 +330,34 @@ export default async function AssessmentDetailPage({
 
   async function beginReviewAction() {
     "use server";
-    await beginAssessorReview(id);
+    const result = await beginAssessorReview(id);
+    if (result && "error" in result && result.error) {
+      throw new Error(result.error);
+    }
   }
 
   async function approveAction() {
     "use server";
-    await approveAssessment(id);
+    const result = await approveAssessment(id);
+    if (result && "error" in result && result.error) {
+      throw new Error(result.error);
+    }
   }
 
   async function publishAction() {
     "use server";
-    await publishOfficialResult(id);
+    const result = await publishOfficialResult(id);
+    if (result && "error" in result && result.error) {
+      throw new Error(result.error);
+    }
   }
 
   async function completeSelfAction() {
     "use server";
-    await completeSelfAssessment(id);
+    const result = await completeSelfAssessment(id);
+    if (result && "error" in result && result.error) {
+      throw new Error(result.error);
+    }
   }
 
   return (
@@ -237,6 +371,14 @@ export default async function AssessmentDetailPage({
         actions={
           <div className="flex flex-wrap gap-2">
             {overall ? <ScoreBadge score={Number(overall.score)} /> : null}
+            <Button variant="outline" asChild>
+              <AppLink
+                href={assessmentActionsHref(id)}
+                data-testid="view-assessment-actions"
+              >
+                View assessment actions
+              </AppLink>
+            </Button>
             <Button variant="outline" asChild>
               <AppLink
                 href="/platform/maturity/assessments"
@@ -259,55 +401,68 @@ export default async function AssessmentDetailPage({
         criterionNotes={criterionNotes}
         evidence={evidence}
         canEdit={canEdit}
-        actionSlot={
-          canEdit && firstCriterion && pillarData[0] ? (
-            <AssessmentActionForm
-              assessmentId={id}
-              pillarId={pillarData[0].id}
-              criterionId={firstCriterion.id}
-              {...(firstQuestion ? { questionId: firstQuestion.id } : {})}
-            />
-          ) : undefined
+        linkedActions={linkedActions}
+        leadAssessorName={
+          assessment.lead_assessor_membership_id
+            ? (membershipNameById.get(assessment.lead_assessor_membership_id) ??
+              null)
+            : null
+        }
+        submittedByName={
+          submittedByMembershipId
+            ? (membershipNameById.get(submittedByMembershipId) ?? null)
+            : null
         }
       />
 
-      <div className="flex flex-wrap gap-2 border-t border-border pt-6">
-        {canEdit && assessment.assessment_type === "formal" ? (
-          <form action={submitAction}>
-            <Button type="submit" data-testid="submit-assessment">
-              Submit for review
-            </Button>
-          </form>
-        ) : null}
-        {canEdit && assessment.assessment_type === "self" ? (
-          <form action={completeSelfAction}>
-            <Button type="submit" data-testid="complete-self-assessment">
-              Complete self assessment
-            </Button>
-          </form>
-        ) : null}
-        {canReview &&
-        assessment.status === "submitted" &&
-        assessment.assessment_type === "formal" ? (
-          <form action={beginReviewAction}>
-            <Button type="submit" data-testid="begin-assessor-review">
-              Begin assessor review
-            </Button>
-          </form>
-        ) : null}
-        {canApprove && assessment.status === "assessor_review" ? (
-          <form action={approveAction}>
-            <Button type="submit" data-testid="approve-assessment">
-              Approve assessment
-            </Button>
-          </form>
-        ) : null}
-        {canPublish && assessment.status === "approved" ? (
-          <form action={publishAction}>
-            <Button type="submit" data-testid="publish-official-result">
-              Publish official result
-            </Button>
-          </form>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <div className="flex flex-wrap gap-2">
+          {canEdit &&
+          assessment.assessment_type === "formal" &&
+          (assessment.status === "draft" ||
+            assessment.status === "in_progress") ? (
+            <form action={submitAction}>
+              <Button type="submit" data-testid="submit-assessment">
+                Submit for assessor review
+              </Button>
+            </form>
+          ) : null}
+          {canEdit &&
+          assessment.assessment_type === "self" &&
+          (assessment.status === "draft" ||
+            assessment.status === "in_progress") ? (
+            <form action={completeSelfAction}>
+              <Button type="submit" data-testid="complete-self-assessment">
+                Complete self assessment
+              </Button>
+            </form>
+          ) : null}
+          {canReview &&
+          assessment.status === "submitted" &&
+          assessment.assessment_type === "formal" ? (
+            <form action={beginReviewAction}>
+              <Button type="submit" data-testid="begin-assessor-review">
+                Begin assessor review
+              </Button>
+            </form>
+          ) : null}
+          {canApprove && assessment.status === "assessor_review" ? (
+            <form action={approveAction}>
+              <Button type="submit" data-testid="approve-assessment">
+                Approve assessment
+              </Button>
+            </form>
+          ) : null}
+          {canPublish && assessment.status === "approved" ? (
+            <form action={publishAction}>
+              <Button type="submit" data-testid="publish-official-result">
+                Publish official result
+              </Button>
+            </form>
+          ) : null}
+        </div>
+        {canReview && assessment.status === "assessor_review" ? (
+          <ReturnForCorrectionForm assessmentId={id} />
         ) : null}
       </div>
     </div>

@@ -50,14 +50,35 @@ export async function startAssessment(formData: FormData) {
   const unitId = String(formData.get("unitId"));
   const assessmentType = String(formData.get("assessmentType"));
   const assessmentScopeType = String(formData.get("assessmentScopeType"));
+  const leadAssessorMembershipId = String(
+    formData.get("leadAssessorMembershipId") ?? "",
+  ).trim();
+
+  if (assessmentType === "formal" && !leadAssessorMembershipId) {
+    return { error: "Select a lead assessor for formal assessment." };
+  }
 
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.rpc("start_maturity_assessment", {
+  const rpcArgs: {
+    target_model_version_id: string;
+    target_unit_id: string;
+    target_assessment_type: string;
+    target_assessment_scope_type: string;
+    target_lead_assessor_membership_id?: string;
+  } = {
     target_model_version_id: modelVersionId,
     target_unit_id: unitId,
     target_assessment_type: assessmentType,
     target_assessment_scope_type: assessmentScopeType,
-  });
+  };
+  if (assessmentType === "formal" && leadAssessorMembershipId) {
+    rpcArgs.target_lead_assessor_membership_id = leadAssessorMembershipId;
+  }
+
+  const { data, error } = await supabase.rpc(
+    "start_maturity_assessment",
+    rpcArgs,
+  );
 
   if (error) {
     return { error: error.message };
@@ -235,6 +256,23 @@ export async function beginAssessorReview(assessmentId: string) {
   return { ok: true };
 }
 
+export async function returnAssessmentForCorrection(
+  assessmentId: string,
+  reason: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc(
+    "return_maturity_assessment_for_correction",
+    {
+      target_assessment_id: assessmentId,
+      target_reason: reason,
+    },
+  );
+  if (error) return { error: error.message };
+  revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
+  return { ok: true };
+}
+
 export async function updateMaturityModelMetadata(
   versionId: string,
   displayName: string,
@@ -361,6 +399,73 @@ export async function updateMaturityQuestion(
     target_question_id: questionId,
     target_prompt: prompt,
     target_position: position,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function moveMaturityCriterion(
+  criterionId: string,
+  pillarId: string,
+  position: number,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("move_maturity_criterion", {
+    target_criterion_id: criterionId,
+    target_pillar_id: pillarId,
+    target_position: position,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function moveMaturityQuestion(
+  questionId: string,
+  criterionId: string,
+  position?: number,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_question_id: string;
+    target_criterion_id: string;
+    target_position?: number;
+  } = {
+    target_question_id: questionId,
+    target_criterion_id: criterionId,
+  };
+  if (position != null) {
+    rpcArgs.target_position = position;
+  }
+  const { error } = await supabase.rpc("move_maturity_question", rpcArgs);
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function deleteMaturityCriterion(
+  criterionId: string,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("delete_maturity_criterion", {
+    target_criterion_id: criterionId,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function deleteMaturityQuestion(
+  questionId: string,
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("delete_maturity_question", {
+    target_question_id: questionId,
   });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
@@ -539,7 +644,7 @@ export async function createMaturityAction(formData: FormData) {
     target_priority: String(formData.get("priority") || "normal"),
   };
 
-  if (questionId) {
+  if (questionId && String(questionId).trim()) {
     rpcArgs.target_question_id = String(questionId);
   }
   if (description) {
@@ -549,5 +654,8 @@ export async function createMaturityAction(formData: FormData) {
   const { data, error } = await supabase.rpc("create_maturity_action", rpcArgs);
   if (error) return { error: error.message };
   revalidatePath("/platform/actions");
+  revalidatePath(
+    `/platform/maturity/assessments/${rpcArgs.target_assessment_id}`,
+  );
   return { actionId: data as string };
 }

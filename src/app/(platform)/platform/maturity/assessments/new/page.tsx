@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/platform/page-header";
 import { StartAssessmentForm } from "@/components/maturity/start-assessment-form";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import type { MaturityAssessmentScopeType } from "@/modules/maturity/semantic-scope";
 
@@ -10,6 +11,7 @@ export default async function NewAssessmentPage({
 }) {
   const { versionId } = await searchParams;
   const supabase = await createServerSupabaseClient();
+  const selectorOptions = await loadSiteScopedSelectorOptions();
 
   const { data: versionRows } = await supabase
     .from("maturity_model_versions")
@@ -48,10 +50,11 @@ export default async function NewAssessmentPage({
     >
       <PageHeader
         title="Start assessment"
-        description="Select a published framework version, assessment scope, and eligible entity."
+        description="Choose a Self snapshot or a Formal review with assessor control. Select a published framework, scope, and eligible entity."
       />
       <StartAssessmentForm
         versions={versions}
+        people={selectorOptions.people}
         {...(versionId ? { defaultVersionId: versionId } : {})}
       />
     </div>

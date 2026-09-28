@@ -169,9 +169,7 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
     await page.goto(`/platform/maturity/assessments/${journey.assessmentId}`);
 
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "Submit for review" }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("submit-assessment")).toHaveCount(0);
   });
 
   test("MAT0-11: submit completed formal assessment", async ({ page }) => {
@@ -180,16 +178,22 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
 
     await answerAllAssessmentCriteria(page, 4);
     await page.getByTestId("submit-assessment").click();
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Submitted");
   });
 
   test("MAT0-12: assessor begins formal review", async ({ page }) => {
     await loginAsCookieWorksPersona(page, "assessor");
     await openLatestFormalAssessment(page);
 
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Submitted");
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
     await expect(page.getByTestId("submit-assessment")).toHaveCount(0);
@@ -205,12 +209,16 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
     await openLatestFormalAssessment(page);
 
     await page.getByTestId("approve-assessment").click();
-    await expect(page.getByText("Approved")).toBeVisible();
+    await expect(page.getByTestId("approve-assessment")).not.toBeVisible();
+    await expect(page.getByTestId("publish-official-result")).toBeVisible();
 
     await page.getByTestId("publish-official-result").click();
-    await expect(page.getByText("Published").first()).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Published");
   });
 
   test("MAT0-15..16: official result and immutability", async ({ page }) => {
@@ -225,7 +233,11 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
     ).toBeVisible();
 
     await openLatestFormalAssessment(page);
-    await expect(page.getByText("Published").first()).toBeVisible();
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Published");
     await expect(page.getByTestId("submit-assessment")).toHaveCount(0);
     await expect(page.locator('input[type="number"]').first()).toBeDisabled();
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);

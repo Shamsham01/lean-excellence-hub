@@ -12541,8 +12541,16 @@ export type Database = {
         Args: { target_observation_ids: string[]; target_walk_id: string }
         Returns: number
       }
+      delete_maturity_criterion: {
+        Args: { target_criterion_id: string }
+        Returns: boolean
+      }
       delete_maturity_model_draft_version: {
         Args: { target_model_version_id: string }
+        Returns: boolean
+      }
+      delete_maturity_question: {
+        Args: { target_question_id: string }
         Returns: boolean
       }
       delete_suggestion_category: {
@@ -13185,6 +13193,22 @@ export type Database = {
         Args: { target_permission_keys: string[] }
         Returns: Json
       }
+      move_maturity_criterion: {
+        Args: {
+          target_criterion_id: string
+          target_pillar_id: string
+          target_position?: number
+        }
+        Returns: boolean
+      }
+      move_maturity_question: {
+        Args: {
+          target_criterion_id: string
+          target_position?: number
+          target_question_id: string
+        }
+        Returns: boolean
+      }
       move_organisation_unit: {
         Args: {
           target_organisation_id: string
@@ -13583,6 +13607,10 @@ export type Database = {
       }
       return_benefit_to_draft: {
         Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
+      }
+      return_maturity_assessment_for_correction: {
+        Args: { target_assessment_id: string; target_reason: string }
         Returns: boolean
       }
       return_project_to_draft: {

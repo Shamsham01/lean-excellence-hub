@@ -11,7 +11,11 @@ import {
   addMaturityLevel,
   addMaturityPillar,
   addMaturityQuestion,
+  deleteMaturityCriterion,
+  deleteMaturityQuestion,
   linkCriterionQuestion,
+  moveMaturityCriterion,
+  moveMaturityQuestion,
   publishMaturityModel,
   setFrameworkAssessmentScopes,
   updateMaturityCriterion,
@@ -565,55 +569,124 @@ export function FrameworkEditor({
               </Button>
             </form>
             <div className="flex flex-col gap-3">
-              {criteria.map((criterion) => (
-                <form
-                  key={criterion.id}
-                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
-                  data-testid={`edit-criterion-${criterion.id}`}
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    await run(() =>
-                      updateMaturityCriterion(
-                        criterion.id,
-                        form.criterionName.value.trim(),
-                        Number(form.criterionPosition.value),
-                        form.criterionDescription.value.trim() || null,
-                        form.criterionGuidance.value.trim() || null,
-                        modelId,
-                      ),
-                    );
-                  }}
-                >
-                  <Input
-                    name="criterionName"
-                    defaultValue={criterion.name}
-                    aria-label="Criterion name"
-                  />
-                  <Input
-                    name="criterionPosition"
-                    type="number"
-                    min={1}
-                    defaultValue={criterion.position}
-                    aria-label="Criterion position"
-                  />
-                  <Input
-                    name="criterionDescription"
-                    defaultValue={criterion.description ?? ""}
-                    placeholder="Description"
-                    aria-label="Criterion description"
-                  />
-                  <Input
-                    name="criterionGuidance"
-                    defaultValue={criterion.guidance ?? ""}
-                    placeholder="Guidance"
-                    aria-label="Criterion guidance"
-                  />
-                  <Button type="submit" size="sm" disabled={busy}>
-                    Save criterion
-                  </Button>
-                </form>
-              ))}
+              {criteria.map((criterion) => {
+                const pillarName =
+                  pillars.find((pillar) => pillar.id === criterion.pillar_id)
+                    ?.name ?? "Unknown pillar";
+                const questionCount = questions.filter(
+                  (question) => question.criterion_id === criterion.id,
+                ).length;
+                return (
+                  <form
+                    key={criterion.id}
+                    className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+                    data-testid={`edit-criterion-${criterion.id}`}
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const payload = new FormData(form);
+                      const nextPillarId = String(
+                        payload.get("criterionPillarId") ?? "",
+                      );
+                      const position = Number(payload.get("criterionPosition"));
+                      if (nextPillarId !== criterion.pillar_id) {
+                        await run(() =>
+                          moveMaturityCriterion(
+                            criterion.id,
+                            nextPillarId,
+                            position,
+                            modelId,
+                          ),
+                        );
+                        return;
+                      }
+                      await run(() =>
+                        updateMaturityCriterion(
+                          criterion.id,
+                          String(payload.get("criterionName") ?? "").trim(),
+                          position,
+                          String(
+                            payload.get("criterionDescription") ?? "",
+                          ).trim() || null,
+                          String(
+                            payload.get("criterionGuidance") ?? "",
+                          ).trim() || null,
+                          modelId,
+                        ),
+                      );
+                    }}
+                  >
+                    <p className="text-xs text-muted-foreground sm:col-span-2">
+                      {pillarName}
+                    </p>
+                    <Input
+                      name="criterionName"
+                      defaultValue={criterion.name}
+                      aria-label="Criterion name"
+                    />
+                    <Input
+                      name="criterionPosition"
+                      type="number"
+                      min={1}
+                      defaultValue={criterion.position}
+                      aria-label="Criterion position"
+                    />
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-muted-foreground">Pillar</span>
+                      <select
+                        name="criterionPillarId"
+                        defaultValue={criterion.pillar_id}
+                        aria-label="Criterion pillar"
+                        className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                      >
+                        {pillars.map((pillar) => (
+                          <option key={pillar.id} value={pillar.id}>
+                            {pillar.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <Input
+                      name="criterionDescription"
+                      defaultValue={criterion.description ?? ""}
+                      placeholder="Description"
+                      aria-label="Criterion description"
+                    />
+                    <Input
+                      name="criterionGuidance"
+                      defaultValue={criterion.guidance ?? ""}
+                      placeholder="Guidance"
+                      aria-label="Criterion guidance"
+                      className="sm:col-span-2"
+                    />
+                    <div className="flex flex-wrap gap-2 sm:col-span-2">
+                      <Button type="submit" size="sm" disabled={busy}>
+                        Save criterion
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={busy}
+                        data-testid={`delete-criterion-${criterion.id}`}
+                        onClick={async () => {
+                          const confirmed = window.confirm(
+                            questionCount > 0
+                              ? `Delete criterion “${criterion.name}” and its ${questionCount} question(s) from this draft? This cannot be undone.`
+                              : `Delete criterion “${criterion.name}” from this draft? This cannot be undone.`,
+                          );
+                          if (!confirmed) return;
+                          await run(() =>
+                            deleteMaturityCriterion(criterion.id, modelId),
+                          );
+                        }}
+                      >
+                        Delete criterion
+                      </Button>
+                    </div>
+                  </form>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -705,42 +778,108 @@ export function FrameworkEditor({
               </Button>
             </form>
             <div className="flex flex-col gap-3">
-              {sortedQuestions.map((question) => (
-                <form
-                  key={question.id}
-                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
-                  data-testid={`edit-question-${question.id}`}
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    await run(() =>
-                      updateMaturityQuestion(
-                        question.id,
-                        form.questionPrompt.value.trim(),
-                        Number(form.questionPosition.value),
-                        modelId,
-                      ),
-                    );
-                  }}
-                >
-                  <Input
-                    name="questionPrompt"
-                    defaultValue={question.prompt}
-                    className="sm:col-span-2"
-                    aria-label="Question prompt"
-                  />
-                  <Input
-                    name="questionPosition"
-                    type="number"
-                    min={1}
-                    defaultValue={question.position}
-                    aria-label="Question position"
-                  />
-                  <Button type="submit" size="sm" disabled={busy}>
-                    Save question
-                  </Button>
-                </form>
-              ))}
+              {sortedQuestions.map((question) => {
+                const criterion = criteria.find(
+                  (entry) => entry.id === question.criterion_id,
+                );
+                const pillar = pillars.find(
+                  (entry) => entry.id === criterion?.pillar_id,
+                );
+                return (
+                  <form
+                    key={question.id}
+                    className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+                    data-testid={`edit-question-${question.id}`}
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const payload = new FormData(form);
+                      const nextCriterionId = String(
+                        payload.get("questionCriterionId") ?? "",
+                      );
+                      const position = Number(payload.get("questionPosition"));
+                      const prompt = String(
+                        payload.get("questionPrompt") ?? "",
+                      ).trim();
+                      if (nextCriterionId !== question.criterion_id) {
+                        await run(() =>
+                          moveMaturityQuestion(
+                            question.id,
+                            nextCriterionId,
+                            position,
+                            modelId,
+                          ),
+                        );
+                        return;
+                      }
+                      await run(() =>
+                        updateMaturityQuestion(
+                          question.id,
+                          prompt,
+                          position,
+                          modelId,
+                        ),
+                      );
+                    }}
+                  >
+                    <p className="text-xs text-muted-foreground sm:col-span-2">
+                      {pillar?.name ?? "Unknown pillar"} →{" "}
+                      {criterion?.name ?? "Unknown criterion"}
+                    </p>
+                    <Input
+                      name="questionPrompt"
+                      defaultValue={question.prompt}
+                      className="sm:col-span-2"
+                      aria-label="Question prompt"
+                    />
+                    <Input
+                      name="questionPosition"
+                      type="number"
+                      min={1}
+                      defaultValue={question.position}
+                      aria-label="Question position"
+                    />
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-muted-foreground">Criterion</span>
+                      <select
+                        name="questionCriterionId"
+                        defaultValue={question.criterion_id}
+                        aria-label="Question criterion"
+                        className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                      >
+                        {criteria.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {entry.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="flex flex-wrap gap-2 sm:col-span-2">
+                      <Button type="submit" size="sm" disabled={busy}>
+                        Save question
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={busy}
+                        data-testid={`delete-question-${question.id}`}
+                        onClick={async () => {
+                          const confirmed = window.confirm(
+                            `Delete question “${question.prompt}” from this draft? This cannot be undone.`,
+                          );
+                          if (!confirmed) return;
+                          await run(() =>
+                            deleteMaturityQuestion(question.id, modelId),
+                          );
+                        }}
+                      >
+                        Delete question
+                      </Button>
+                    </div>
+                  </form>
+                );
+              })}
             </div>
           </div>
         ) : null}

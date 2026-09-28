@@ -8,6 +8,7 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   selectAssessmentScopeAndWaitForEntities,
+  selectAssessmentType,
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
@@ -273,7 +274,7 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
       expectedEntityName: CORNWALL_PLANT_LABEL,
     });
     await selectFirstScopeEntity(page);
-    await page.getByLabel("Assessment type").selectOption("formal");
+    await selectAssessmentType(page, "formal");
     await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(page).toHaveURL(
       /\/platform\/maturity\/assessments\/[0-9a-f-]{36}/,

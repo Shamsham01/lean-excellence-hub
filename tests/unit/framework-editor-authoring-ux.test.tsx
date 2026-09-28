@@ -9,7 +9,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ComponentProps } from "react";
 
-import { updateMaturityModelMetadata } from "@/app/(platform)/platform/maturity/actions";
+import {
+  deleteMaturityCriterion,
+  deleteMaturityQuestion,
+  moveMaturityCriterion,
+  moveMaturityQuestion,
+  updateMaturityModelMetadata,
+} from "@/app/(platform)/platform/maturity/actions";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
 
 const refresh = vi.fn();
@@ -25,7 +31,11 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
   addMaturityLevel: vi.fn(),
   addMaturityPillar: vi.fn(),
   addMaturityQuestion: vi.fn(),
+  deleteMaturityCriterion: vi.fn(),
+  deleteMaturityQuestion: vi.fn(),
   linkCriterionQuestion: vi.fn(),
+  moveMaturityCriterion: vi.fn(),
+  moveMaturityQuestion: vi.fn(),
   publishMaturityModel: vi.fn(),
   setFrameworkAssessmentScopes: vi.fn(),
   updateMaturityCriterion: vi.fn(),
@@ -36,6 +46,10 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
 }));
 
 const updateMetadata = vi.mocked(updateMaturityModelMetadata);
+const moveCriterion = vi.mocked(moveMaturityCriterion);
+const moveQuestion = vi.mocked(moveMaturityQuestion);
+const deleteCriterion = vi.mocked(deleteMaturityCriterion);
+const deleteQuestion = vi.mocked(deleteMaturityQuestion);
 
 function renderEditor(
   props: Partial<ComponentProps<typeof FrameworkEditor>> = {},
@@ -60,6 +74,11 @@ function renderEditor(
 describe("FrameworkEditor authoring UX", () => {
   beforeEach(() => {
     refresh.mockReset();
+    updateMetadata.mockReset();
+    moveCriterion.mockReset();
+    moveQuestion.mockReset();
+    deleteCriterion.mockReset();
+    deleteQuestion.mockReset();
     updateMetadata.mockResolvedValue({ ok: true });
     window.history.replaceState({}, "", "/platform/maturity/models/model-1");
   });
@@ -122,5 +141,171 @@ describe("FrameworkEditor authoring UX", () => {
     expect(screen.getByTestId("authoring-save-feedback")).toHaveTextContent(
       "Saved.",
     );
+  });
+
+  it("reparents a draft criterion to another pillar", async () => {
+    moveCriterion.mockResolvedValue({ ok: true });
+    renderEditor({
+      initialAuthoringStep: "criteria",
+      pillars: [
+        {
+          id: "pillar-safety",
+          name: "Safety",
+          position: 1,
+          section_id: "section-safety",
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "pillar-ps",
+          name: "Problem Solving",
+          position: 2,
+          section_id: "section-ps",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-wrong",
+          name: "Wrong place",
+          pillar_id: "pillar-safety",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    fireEvent.change(screen.getByLabelText("Criterion pillar"), {
+      target: { value: "pillar-ps" },
+    });
+    fireEvent.submit(screen.getByTestId("edit-criterion-criterion-wrong"));
+
+    await waitFor(() => {
+      expect(moveCriterion).toHaveBeenCalledWith(
+        "criterion-wrong",
+        "pillar-ps",
+        1,
+        "model-1",
+      );
+    });
+  });
+
+  it("reparents a draft question and confirms criterion deletion", async () => {
+    moveQuestion.mockResolvedValue({ ok: true });
+    deleteCriterion.mockResolvedValue({ ok: true });
+    deleteQuestion.mockResolvedValue({ ok: true });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderEditor({
+      initialAuthoringStep: "questions",
+      pillars: [
+        {
+          id: "pillar-safety",
+          name: "Safety",
+          position: 1,
+          section_id: "section-safety",
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "pillar-ps",
+          name: "Problem Solving",
+          position: 2,
+          section_id: "section-ps",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-safety",
+          name: "Safety criterion",
+          pillar_id: "pillar-safety",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "criterion-ps",
+          name: "Problem Solving",
+          pillar_id: "pillar-ps",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+      questions: [
+        {
+          id: "question-1",
+          prompt: "Rate problem solving",
+          criterion_id: "criterion-safety",
+          position: 1,
+        },
+      ],
+    });
+
+    fireEvent.change(screen.getByLabelText("Question criterion"), {
+      target: { value: "criterion-ps" },
+    });
+    fireEvent.submit(screen.getByTestId("edit-question-question-1"));
+
+    await waitFor(() => {
+      expect(moveQuestion).toHaveBeenCalledWith(
+        "question-1",
+        "criterion-ps",
+        1,
+        "model-1",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete question" }));
+    await waitFor(() => {
+      expect(deleteQuestion).toHaveBeenCalledWith("question-1", "model-1");
+    });
+
+    cleanup();
+    renderEditor({
+      initialAuthoringStep: "criteria",
+      pillars: [
+        {
+          id: "pillar-safety",
+          name: "Safety",
+          position: 1,
+          section_id: "section-safety",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-safety",
+          name: "Safety criterion",
+          pillar_id: "pillar-safety",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+      questions: [
+        {
+          id: "question-1",
+          prompt: "Rate problem solving",
+          criterion_id: "criterion-safety",
+          position: 1,
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete criterion" }));
+    await waitFor(() => {
+      expect(deleteCriterion).toHaveBeenCalledWith(
+        "criterion-safety",
+        "model-1",
+      );
+    });
+    expect(confirm).toHaveBeenCalled();
+    confirm.mockRestore();
   });
 });

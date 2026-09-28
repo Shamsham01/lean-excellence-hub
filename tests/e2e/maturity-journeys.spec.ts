@@ -1,5 +1,6 @@
 import {
   selectAssessmentScopeAndWaitForEntities,
+  selectAssessmentType,
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
@@ -104,7 +105,7 @@ test.describe("Milestone 5 maturity journeys", () => {
       expectedEntityName: CORNWALL_PLANT_LABEL,
     });
     await selectFirstScopeEntity(page);
-    await page.getByLabel("Assessment type").selectOption("formal");
+    await selectAssessmentType(page, "formal");
     await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/assessments\//);
 
@@ -132,12 +133,26 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByLabel("Create action").fill("Improve Gemba cadence");
     await page.getByRole("button", { name: "Create action" }).click();
+    await expect(page.getByTestId("action-created")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("view-assessment-actions")).toBeVisible();
 
     await page.getByTestId("submit-assessment").click();
     await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
+    await expect(page.getByTestId("begin-assessor-review")).toBeVisible({
       timeout: 15000,
     });
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Submitted");
+
+    await page.getByTestId("view-assessment-actions").click();
+    await expect(page).toHaveURL(/source=maturity_assessment/);
+    await expect(page.getByTestId("actions-filters")).toBeVisible();
+    await expect(page.getByText("Improve Gemba cadence")).toBeVisible();
   });
 
   test("approver: review → approve → publish official result", async ({
@@ -156,14 +171,43 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("begin-assessor-review").click();
     await expect(page.getByText("In review")).toBeVisible();
+    await expect(page.getByTestId("formal-lifecycle-indicator")).toBeVisible();
+    await expect(page.getByTestId("lead-assessor-name")).toBeVisible();
+    await expect(page.getByTestId("submitted-by-name")).toBeVisible();
+    const reviewScore = page.locator('input[type="number"]').first();
+    await expect(reviewScore).toBeEnabled();
+    await reviewScore.fill("5");
+    await reviewScore.blur();
+    await expect(page.getByText("Saving…")).not.toBeVisible({
+      timeout: 10_000,
+    });
+
+    await page
+      .getByLabel("Return for correction")
+      .fill("Please add shop-floor evidence before approval.");
+    await page.getByTestId("return-for-correction").click();
+    await expect(page.getByTestId("submit-assessment")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("submit-assessment").click();
+    await expect(page.getByTestId("begin-assessor-review")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("begin-assessor-review").click();
+    await expect(page.getByText("In review")).toBeVisible();
 
     await page.getByTestId("approve-assessment").click();
-    await expect(page.getByText("Approved")).toBeVisible();
+    await expect(page.getByTestId("approve-assessment")).not.toBeVisible();
+    await expect(page.getByTestId("publish-official-result")).toBeVisible();
 
     await page.getByTestId("publish-official-result").click();
-    await expect(page.getByText("Published").first()).toBeVisible({
-      timeout: 15000,
-    });
+    await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Published");
+    await expect(reviewScore).toBeDisabled();
   });
 
   test("self assessor: complete self assessment without official result", async ({
@@ -176,15 +220,23 @@ test.describe("Milestone 5 maturity journeys", () => {
       expectedEntityName: CORNWALL_PLANT_LABEL,
     });
     await selectFirstScopeEntity(page);
-    await page.getByLabel("Assessment type").selectOption("self");
+    await selectAssessmentType(page, "self");
     await page.getByRole("button", { name: "Start assessment" }).click();
 
     const scoreInput = page.locator('input[type="number"]').first();
-    await scoreInput.fill("3");
+    await expect(scoreInput).toBeVisible();
+    await scoreInput.click();
+    await scoreInput.pressSequentially("3");
     await scoreInput.blur();
-    await expect(page.getByText("Saving")).not.toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Saving…")).not.toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(scoreInput).toHaveValue("3");
 
     await page.getByTestId("complete-self-assessment").click();
+    await expect(page.getByTestId("complete-self-assessment")).not.toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByText("Completed").first()).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
   });
@@ -200,7 +252,7 @@ test.describe("Milestone 5 maturity journeys", () => {
       expectedEntityName: CORNWALL_PLANT_LABEL,
     });
     await selectFirstScopeEntity(page);
-    await page.getByLabel("Assessment type").selectOption("formal");
+    await selectAssessmentType(page, "formal");
     await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(
       page.getByTestId("maturity-assessment-detail-page"),
@@ -237,9 +289,11 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("submit-assessment").click();
     await expect(page.getByTestId("submit-assessment")).not.toBeVisible();
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(
+      page
+        .getByTestId("formal-lifecycle-indicator")
+        .locator('[data-current="true"]'),
+    ).toHaveText("Submitted");
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
@@ -260,6 +314,46 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByText("Draft version 2")).toBeVisible({
       timeout: 15000,
     });
+
+    await page.getByTestId("framework-step-pillars").click();
+    const addPillarForm = page.locator("form").filter({
+      has: page.getByRole("button", { name: "Add pillar" }),
+    });
+    await addPillarForm.getByLabel("Pillar name").fill("Safety");
+    await addPillarForm.getByRole("button", { name: "Add pillar" }).click();
+    await expect(page.getByRole("button", { name: "Save pillar" })).toHaveCount(
+      2,
+    );
+
+    await page.getByTestId("framework-step-criteria").click();
+    const addCriterionForm = page.locator("form").filter({
+      has: page.getByRole("button", { name: "Add criterion" }),
+    });
+    await addCriterionForm
+      .getByLabel("Pillar")
+      .selectOption({ label: "Safety" });
+    await addCriterionForm.getByLabel("Criterion name").fill("Problem Solving");
+    await addCriterionForm
+      .getByRole("button", { name: "Add criterion" })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Delete criterion" }),
+    ).toHaveCount(2);
+    await expect(
+      page.getByRole("button", { name: "Delete criterion" }).first(),
+    ).toBeVisible();
+
+    await page.getByTestId("framework-step-questions").click();
+    await page.getByLabel("Question criterion").selectOption({
+      label: "Problem Solving",
+    });
+    await page.getByRole("button", { name: "Save question" }).click();
+    await expect(page.getByText(/Safety → Problem Solving/)).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByRole("button", { name: "Delete question" }).first(),
+    ).toBeVisible();
   });
 
   test("unauthorised scope access is denied", async ({ page }) => {
