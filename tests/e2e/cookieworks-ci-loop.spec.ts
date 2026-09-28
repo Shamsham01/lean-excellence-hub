@@ -212,6 +212,35 @@ test.describe("CookieWorks suggestion-action-project smoke loop", () => {
     );
     projectPath = new URL(page.url()).pathname;
 
+    await page.getByRole("tab", { name: "Team" }).click();
+    const personSelect = page.getByTestId("project-team-person");
+    await expect(personSelect).toBeVisible();
+    const ownerOption = personSelect
+      .locator("option")
+      .filter({ hasText: "CookieWorks Production Manager" })
+      .first();
+    await expect(ownerOption).toHaveCount(1);
+    const ownerMembershipId = await ownerOption.getAttribute("value");
+    expect(ownerMembershipId).toBeTruthy();
+    await personSelect.selectOption(ownerMembershipId!);
+    await page.getByTestId("project-team-role").selectOption("owner");
+    await page.getByTestId("project-assign-team-button").click();
+    await expect(page.getByTestId("project-workspace-message")).toContainText(
+      "Team member assigned",
+    );
+
+    await page.reload();
+    await expect(page.getByTestId("project-owner-name")).toHaveText(
+      "CookieWorks Production Manager",
+    );
+    await page.getByRole("tab", { name: "Team" }).click();
+    await expect(
+      page.getByText("CookieWorks Production Manager", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByTestId("project-detail-page")).not.toContainText(
+      ownerMembershipId!.slice(0, 8),
+    );
+
     await page.goto(suggestionPath);
     await page.getByRole("tab", { name: "Activity" }).click();
     const openProject = page.getByTestId(/^suggestion-open-project-/).first();
