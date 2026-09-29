@@ -1,37 +1,60 @@
 # RELEASE-SMOKE-01 — CookieWorks master register (reconciled)
 
 Canonical GitHub tracker: **[#67](https://github.com/Shamsham01/lean-excellence-hub/issues/67)**.
-This file is the repository snapshot after reconciling the register against `main` at **PR #151** (`e399f79`). PR **#151 is merged** and is part of the code release train. Hosted Supabase has **not** yet applied `20260925160321_perf_suggestion_listing`.
+This file is the repository snapshot for **FIRST-CUSTOMER-READINESS-01**, reconciled against current `main` on 2026-09-29.
 
-Do **not** reopen items below that are `VERIFIED` or `IMPLEMENTED / NEEDS HOSTED RETEST` from their original 2026-09-11 smoke wording. Hosted CookieWorks browser retest is still outstanding because production publication on the intended SHA is not confirmed.
+Companion files:
 
-Baseline (read-only inspection 2026-09-28):
+- Protocol / remaining human smoke: `docs/qa/RELEASE-SMOKE-01-protocol.md`
+- Go-live and billing boundary: `docs/qa/RELEASE-SMOKE-01-go-live.md`
+
+Do **not** reopen items below that are `VERIFIED` or `IMPLEMENTED` from older issue text that still says `OPEN` or `NEEDS HOSTED RETEST`. Hosted human smoke of the current protocol is still outstanding as evidence. It is not a product-code defect and it does not block billing/onboarding development.
+
+Baseline (read-only inspection 2026-09-29):
 
 | Item | Value |
 | --- | --- |
-| Code `main` | `e399f79` — `perf(suggestions): batch page permissions and set-based listing (PERF-001) (#151)` |
-| Hosted DB (read-only) | Latest applied migration `20260925122602_sec_rpc_001_anon_execute_and_search_path`. Outstanding: `20260925160321_perf_suggestion_listing` |
-| PR #151 | **Merged** into `main`. Preserve listing/security parity evidence; do **not** apply the hosted migration without explicit approval |
-| CookieWorks tenant | Foundation-only QA tenant; do not mutate hosted without explicit approval |
-| Netlify Deploy Preview | **Available** for PR #153: https://deploy-preview-153--lean-excellence-hub.netlify.app |
-| Netlify production | `https://leanexcellencehub.com` returns **HTTP 200** sign-in (not 503 `usage_exceeded`). Exact production git SHA is **not** exposed in public headers/HTML. Account/credit state is **not** readable from this environment. Do not publish production. |
+| Code `main` | `ad6edcec5972fba6a9c5d51a0bc9ee8bedcedd98` — `fix(maturity): preview draft hierarchy during framework review (#168)` |
+| Confirmed on `main` | #153 CookieWorks smoke/reset, #156 CI Manager programme permission, #158 project owner/team names, #161 Gemba completion + shared evidence, #166 maturity structural authoring / assessor review / action lineage, #168 draft Review hierarchy. Also previously merged: #142 training catalogue, #144 training curriculum, #150 SEC-RPC-001, #151 suggestion listing. |
+| Hosted DB (read-only `list_migrations`) | Project `zsadfvjtknbbfomlmttv` (`ACTIVE_HEALTHY`). Latest applied = `20260928210635_maturity_assessor_review_and_action_lineage`. Includes `20260928210634_maturity_framework_structural_authoring`, `20260925160321_perf_suggestion_listing`, and `20260925122602_sec_rpc_001_anon_execute_and_search_path`. **Nothing later is committed. Do not replay.** |
+| Production app | `https://leanexcellencehub.com` returned **HTTP 200** (`server: Netlify`, `x-powered-by: Next.js`) on 2026-09-29. Exact git SHA is **not** in public headers. Operator exercise of the recent Maturity authoring changes is the production behaviour evidence for MAT-UX-003. Do not publish from this reconciliation. |
+| CookieWorks tenant | Do not reset or mutate hosted fixtures from this reconciliation. |
 
-Finding states: `OPEN`, `PROMOTED → #issue`, `IN PR → #pr`, `IMPLEMENTED / NEEDS HOSTED RETEST`, `VERIFIED`, `DEFERRED`, `EXPECTED`.
+Finding states: `OPEN`, `PROMOTED → #issue`, `IMPLEMENTED`, `VERIFIED`, `DEFERRED`, `EXPECTED`.
 
 ---
 
-## Current smoke position
+## Release decision
+
+**READY FOR BILLING/ONBOARDING DEVELOPMENT**
 
 **P0/P1 product-code blockers on `main`: none.**
 
-Historical P1 workflow blockers (Actions, Projects, Benefits lineage, 5S/Gemba authoring, Maturity integrity, site context, People settings reload) are implemented with automated tests. They must not be re-filed from stale #67 body text.
+Historical workflow blockers are implemented. Training catalogue and curriculum are merged. PERF-001 code and hosted migrations are applied. SEC-RPC-001 is applied. Supabase leaked-password protection stays a Free-plan operator action immediately before the first real customer, after the organisation upgrades to Pro. It is not a development blocker.
 
-Integrated **hosted** CookieWorks smoke is still the first-customer gate:
+The remaining hosted human-smoke checklist in the protocol is evidence to record. It does not have to finish before Stripe sandbox and organisation-onboarding implementation starts.
 
-1. Confirm production publication on the intended SHA (Deploy Preview ≠ production).
-2. Apply `20260925160321_perf_suggestion_listing` to hosted **only with explicit approval**, then keep app and DB paired.
-3. Run `docs/qa/RELEASE-SMOKE-01-protocol.md` on CookieWorks (disposable credentials; no shared-fixture mutation unless approved).
-4. Only then promote newly **reproduced** P0/P1 defects.
+---
+
+## Open issue reconciliation
+
+Classifications: `COMPLETE` (can close), `IMPLEMENTED` (hosted/human verification still useful), `DEFERRED` (does not block billing), `ACTIVE P0/P1 BLOCKER`, `P2/P3 backlog`.
+
+Issues were **not** closed from this reconciliation. Close only the rows marked **can close**, and only after a human confirms the recommendation.
+
+| Issue | Current reality on `main` / hosted | Classification | Recommended action |
+| --- | --- | --- | --- |
+| **#67** master register | Body and 2026-09-28 comments stop at `0de567a` / “listing migration outstanding” / #153 still in PR. Those statements are stale. #153, #156, and later product PRs are merged. This file replaces that snapshot. | **DEFERRED** (living register) | **Keep open.** Post this snapshot when convenient. Close only after the protocol checklist is recorded with PASS/FAIL evidence. |
+| **#134** PERF-001 | Slices merged: nav batch (#137/#138), redundant suggestion count (#136), `get_delegatable_access_offers` (#145), suggestion listing (#151). Hosted `20260924111211` and `20260925160321` are applied. Last issue comment already says no further code is indicated. | **IMPLEMENTED** | **Keep open** until Suggestions and People/Manage are noted during human smoke. Not a code blocker. Do not reopen the profiling write-up. |
+| **#140** Training catalogue | PR **#142** merged (`1fda646`). No migration. Workforce shard includes `training-course-authoring.spec.ts`. Issue checkboxes were never ticked after merge; the written acceptance criteria are satisfied in code and CI. | **IMPLEMENTED** | **Can close.** Hosted catalogue click-through remains TRN-01 in the protocol, not an open defect. |
+| **#143** Training curriculum | PR **#144** merged (`179bb2c`). Acceptance criteria on the issue are checked. Hosted `20260923233254` applied and previously verified. Do not replay. | **COMPLETE** | **Can close.** TRN-02 in the protocol is confirmation, not a reason to keep the feature issue open. |
+| **#149** SEC-RPC-001 | PR **#150** merged. Hosted `20260925122602` applied. Expected advisor baseline stands: 3 anon `SECURITY DEFINER` (invitation preview, invitation prepare, platform `rls_auto_enable`), 0 mutable `search_path`, authenticated `SECURITY DEFINER` volume deferred. Maturity migrations #166 revoke anon on the new RPCs; no new anonymous exposure was found. | **IMPLEMENTED** (code) + **DEFERRED** (leftovers) | **Can close** the implementation issue. Carry leaked-password (Pro, pre-first-real-customer) and the authenticated `SECURITY DEFINER` audit on this register. Do not globally revoke authenticated definer functions. |
+| **#123** BEN-UX-003 | PR **#125** merged. Unit coverage for empty-category guidance. | **P2/P3 backlog** (done) | **Can close.** Optional hosted glance in BEN-01. |
+| **#124** UX-001 sticky sidebar | PR **#126** then **#148** merged. Unit + platform-shell E2E. | **P2/P3 backlog** (done) | **Can close.** |
+| **#127** SUG-UX-001 auto codes | PR **#128** merged. Protocol SUG-01 already uses generated codes. | **P2/P3 backlog** (done) | **Can close.** |
+| **#129** Lean AI usage summary | PR **#130** merged. Human-readable summary; raw JSON dump removed. | **P2/P3 backlog** (done) | **Can close.** AI-01 still validates current behaviour only. |
+
+No open issue is an **ACTIVE P0/P1 BLOCKER**.
 
 ---
 
@@ -39,35 +62,31 @@ Integrated **hosted** CookieWorks smoke is still the first-customer gate:
 
 | ID | Status | Evidence | Hosted |
 | --- | --- | --- | --- |
-| **SEC-RPC-001** | **IMPLEMENTED / NEEDS HOSTED RETEST** | #149 / PR **#150**. Migration `20260925122602` is on `main` **and** applied hosted. Advisor now: 3 anon SECURITY DEFINER (`preview_organisation_invitation`, `prepare_organisation_invitation_signup_binding`, `rls_auto_enable`); 0 mutable `search_path`; 261 authenticated SECURITY DEFINER (deferred). | DB applied. App publication + invitation bootstrap smoke still required. |
-| **Auth leaked-password protection** | **OPEN (operator Auth setting)** | Hosted Security Advisor `auth_leaked_password_protection`. Not an LEH code defect. Enable HaveIBeenPwned in hosted Auth **only with explicit approval**. Tracked on #149 deferred checklist. | Do not toggle from this PR. |
-| **Cross-site / tenant leak** | **VERIFIED locally; hosted spot-check required** | `tests/e2e/cookieworks-ci-loop.spec.ts` (isolation + Exeter denial of Bodmin action/project), `cookieworks-two-site-hostile.spec.ts` (Full Regression cookieworks shard; own reset), `site-security-boundary.spec.ts`, `cookieworks-execution-site-context.spec.ts`. Historical hosted: SEC-ORG-01 VERIFIED. | Repeat ISO-01 in the protocol after publish. |
-
-No other P0 product defects are open on `main`.
+| **SEC-RPC-001** | **IMPLEMENTED** | #149 / PR **#150**. Migration `20260925122602` applied hosted. Invitation bootstrap anon RPCs are intentional. Last hosted advisor reading (2026-09-28, before the maturity migrations): 3 anon definer, 0 mutable `search_path`, 261 authenticated definer, leaked-password disabled. This reconciliation did not re-query the advisor. | Do not replay. Invitation smoke remains a protocol step, not a code fix. |
+| **Auth leaked-password protection** | **DEFERRED** (operator, Supabase Pro) | Free-plan HaveIBeenPwned toggle. Not an LEH code defect. Enable when the organisation upgrades to Pro, immediately before the first real customer. | Do not toggle from a docs PR. Not a billing-development blocker. |
+| **Authenticated SECURITY DEFINER volume** | **DEFERRED** | Authenticated definer warnings after #150 stay deferred. Must not be globally revoked. `20260928210634` and `20260928210635` revoke `anon` on the new maturity RPCs. No new anonymous EXECUTE grant was found in those files. | Code inspection only. Advisor not re-run on 2026-09-29. |
+| **Cross-site / tenant leak** | **VERIFIED locally; protocol spot-check remains** | `cookieworks-ci-loop.spec.ts`, `cookieworks-two-site-hostile.spec.ts`, `site-security-boundary.spec.ts`, `cookieworks-execution-site-context.spec.ts`. | Repeat ISO-01..05 when the human checklist is run. |
 
 ---
 
 ## P1 — architecture / core workflow
 
-All original P1 smoke blockers are **implemented on `main`**. Status is hosted retest, not re-implementation.
+All original P1 smoke blockers are **implemented on `main`**. Do not re-file them from stale #67 wording.
 
 | ID | Status | Implementation | Do not reopen as |
 | --- | --- | --- | --- |
-| ADM-ARCH-001 | **VERIFIED** (hosted 2026-09-23) + retest after publish | #68 / PR #69 | Missing active-site switcher |
+| ADM-ARCH-001 | **VERIFIED** | #68 / PR #69 | Missing active-site switcher |
 | PEOPLE-UX-001 | **VERIFIED** | #68 / PR #69 | Raw UUID people selectors |
 | BEN-UX-001 / BEN-UX-002 | **VERIFIED** | #68 / PR #69; #111 / PR #112 | Raw IDs / mixed-site unit lists |
-| ROUTE-001 | **VERIFIED** locally (`people-settings-reload.spec.ts`, PR #117) | 404 was delegation-gate race | Intermittent `/settings/people` 404 unless newly reproduced |
-| ACT-BLK-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #91 / PR #96; `action-lifecycle.spec.ts` | “Actions created but unusable” |
-| SUG-INT-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #96; Activity “Open action” | Missing action traceability |
-| SUG-INT-002 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #96 / #97; `suggestions-nav-click.spec.ts` | Raw UUID / no Open project |
-| PROJ-BLK-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #92 / PR #97; `project-charter-benefits-lineage.spec.ts` | Read-only draft charter |
-| PROJ-VAL-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #97 / #100; charter readiness gate | Submit enabled while incomplete |
-| BEN-ARCH-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #97 / #112; project selector | Raw Project/Suggestion resource IDs |
-| 5S-BLK-001 / 5S-VAL-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #70 / PR #72; `five-s-gemba-authoring.spec.ts` | Child questions vanish; publish-before-ready |
-| GEMBA-BLK-001 / GEMBA-VAL-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #70 / PR #72 | Child sections vanish; publish-before-ready |
-| MAT-BLK-001 / MAT-ARCH-001 / MAT-VAL-001 / MAT-UX-004 / MAT-UX-005 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #71 / PR #109; `maturity-authoring-step-reload.spec.ts` | Duplicate position key; in-place published edit; empty-criterion publish |
-
-Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142**, curriculum **#143 / PR #144** — merged, hosted migration applied, **frontend unpublished**.
+| ROUTE-001 | **VERIFIED** locally | PR #117 | Intermittent `/settings/people` 404 unless newly reproduced |
+| ACT-BLK-001 / SUG-INT-001 / SUG-INT-002 | **IMPLEMENTED** | #91 / PR #96 / #97 | Unusable actions; missing Open action/project; UUID-primary labels |
+| PROJ-BLK-001 / PROJ-VAL-001 / BEN-ARCH-001 | **IMPLEMENTED** | #92 / PR #97 / #100 / #112 | Read-only charter; submit-while-incomplete; raw resource IDs |
+| Project owner/team labels | **IMPLEMENTED** | PR **#158** | Raw membership UUIDs on project owner/team |
+| 5S-BLK-001 / 5S-VAL-001 / GEMBA-BLK-001 / GEMBA-VAL-001 | **IMPLEMENTED** | #70 / PR #72 | Child questions/sections vanish; publish-before-ready |
+| Gemba completion / evidence | **IMPLEMENTED** | PR **#161**. `gemba-journeys.spec.ts` asserts canonical completed URL without `?prompt=` and image evidence after reload. Shared `EvidenceGallery`. | Stale prompt query; lost completed image |
+| MAT-BLK / MAT-ARCH / MAT-VAL / MAT-UX-004 / MAT-UX-005 | **IMPLEMENTED** | #71 / PR #109 | Duplicate position; in-place published edit; empty-criterion publish |
+| Maturity structural authoring, assessor review, action lineage | **IMPLEMENTED** | PR **#166**. Migrations `20260928210634` and `20260928210635` applied hosted. `maturity-journeys.spec.ts` covers formal submit, Lead Assessor review, score edit, return for correction, resubmit, approve, publish, and assessment-linked action filters. | Silent published mutation; broken assessor loop |
+| MAT-UX-003 draft Review hierarchy | **VERIFIED** (operator, 2026-09-29) | PR **#168**. Questions group under the draft hierarchy; Review shows the new version; published structure stays separate. E2E: successor review preview in `maturity-journeys.spec.ts`. | Flat or stale draft Review |
 
 ---
 
@@ -75,23 +94,20 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 
 | ID | Status | Notes |
 | --- | --- | --- |
-| UX-001 / NAV-UX-002 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #126 then #148 (`ec42d8a`). `ux1-platform-shell.spec.ts`. Close #124 after hosted sticky-sidebar check. |
-| MOBILE-001 shared chrome | **IMPLEMENTED / NEEDS HOSTED RETEST** | #131 / PR #133 / #148. `mobile-shell-tabs.spec.ts`. |
-| MOBILE-001 form overflow | **OPEN** | Programme/benefit/admin forms — later pass. |
-| PERF-001 P0 nav probes | **IMPLEMENTED** | PR #137 / #138; hosted `20260922190000` + `20260923120000`. |
-| PERF-001 People offers | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #145; hosted `20260924111211`. |
-| PERF-001 Suggestions listing | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR **#151** merged (`e399f79`). Code is in the release train. Hosted migration `20260925160321_perf_suggestion_listing` is **outstanding** — apply only with explicit approval before the final hosted smoke. Listing/security parity: batch `member_has_permissions`, set-based overview/portfolio, self-read remains author-only. |
-| SUG-UX-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #128. Auto-generated programme/category codes. |
-| SUG-UX-002 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #146 / PR #147; hosted `20260924190446`. Optional submission evidence. |
-| BEN-UX-003 | **IMPLEMENTED / NEEDS HOSTED RETEST** | PR #125. |
-| MAT-UX-001 / MAT-UX-002 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #132 / PR #135. |
-| MAT-UX-003 / 006 / 007 polish / MAT-ASSESS-UX-001 | **OPEN (feature gap)** | Not P1. |
-| UX-002 remainder / UX-004..007 / UX-008 | **OPEN (P2 IA)** | Scale hierarchy + Settings/People naming. |
-| UX-026 | **EXPECTED / operator** | Netlify “Powered by” badge. Production URL currently serves HTTP 200; exact SHA and account/credit state are not verified from public responses. |
-| SCHED-REACTIVATE-001 | **OPEN (P2)** | Reactivate not exposed. |
-| THEME-SELECT-001 | **OPEN (P2)** | Dark-mode select contrast if reproduced. |
-| CW-CI-MGR-001 | **IMPLEMENTED / NEEDS HOSTED RETEST** | #154. CookieWorks CI Manager QA role now includes `suggestions.programmes.manage`; SUG-01 uses CI Manager. Operator and Finance remain denied. |
-| CW-RESET-001 | **IN PR → #153** | CookieWorks module purge now retires suggestion/action history in a dependency-aware order. Local compiled-production: **11/11** (`--workers=1`, each spec resets). GitHub Fast CI and Database CI green on `960e5a8`. |
+| UX-001 / NAV-UX-002 | **IMPLEMENTED** | #124 / PR #148. Recommend close #124. |
+| MOBILE-001 shared chrome | **IMPLEMENTED** | PR #133 / #148. `mobile-shell-tabs.spec.ts`. |
+| MOBILE-001 form overflow | **P2/P3 backlog** | Programme/benefit/admin forms. Does not block billing. |
+| PERF-001 | **IMPLEMENTED** | Hosted migrations applied. #134 stays open only for a human performance note. |
+| SUG-UX-001 / SUG-UX-002 | **IMPLEMENTED** | PR #128 / #147. Evidence migration `20260924190446` applied hosted. |
+| BEN-UX-003 | **IMPLEMENTED** | PR #125. Recommend close #123. |
+| MAT-UX-001 / MAT-UX-002 | **IMPLEMENTED** | #132 / PR #135. |
+| UX-002 remainder / UX-004..008 | **P2/P3 backlog** | Information architecture. |
+| UX-026 | **EXPECTED / operator** | Netlify “Powered by” badge. Production currently serves HTTP 200. |
+| SCHED-REACTIVATE-001 | **P2/P3 backlog** | Reactivate not exposed. |
+| THEME-SELECT-001 | **P2/P3 backlog** | Dark-mode select contrast if reproduced. |
+| CW-CI-MGR-001 | **IMPLEMENTED** | #154 closed via PR **#156**. CI Manager includes `suggestions.programmes.manage`. SUG-01 uses CI Manager. Operator and Finance stay denied. |
+| CW-RESET-001 | **IMPLEMENTED** | #155 closed via PR **#153**. |
+| Training TRN-01 / TRN-02 | **IMPLEMENTED** | #142 / #144 merged. Curriculum migration applied hosted. Recommend close #140 and #143. |
 
 ---
 
@@ -101,26 +117,9 @@ Promoted feature slices (not smoke defects): Training catalogue **#140 / PR #142
 | --- | --- |
 | SHELL-02 theme persistence | VERIFIED |
 | ORG-01 / ORG-02 / ORG-BLK-001 / SEC-ORG-01 | VERIFIED |
-| Suggestions core review (demo + historical CookieWorks) | VERIFIED; re-run on current SHA after publish |
-| Suggestion → Project **record creation** | VERIFIED; draft lifecycle now implemented (PROJ-BLK-001) |
+| Suggestions core review (historical) | VERIFIED; protocol still walks the current loop once |
+| Suggestion → Project record creation | VERIFIED; draft lifecycle implemented |
 | DATA-001 missing job functions on Admin/Assessor/CI/Finance | EXPECTED seed state |
 | Notification centre UI (NOTIF-UI-001) | EXPECTED product scope unless promoted |
 
----
-
-## Dedicated issues still open (do not duplicate)
-
-| Issue | Disposition |
-| --- | --- |
-| #67 | Master register (this snapshot) |
-| #124 | UX-001 — code merged via #148; close after hosted retest |
-| #123 | BEN-UX-003 — merged #125; close after hosted retest |
-| #127 | SUG-UX-001 — merged #128; close after hosted retest |
-| #129 | Lean AI usage copy — merged #130; close after hosted retest |
-| #134 | PERF-001 umbrella; listing slice merged as PR **#151**; hosted apply of `20260925160321` still required with approval |
-| #140 / #143 | Training slices merged (#142 / #144); hosted DB applied; app unpublished |
-| #149 | SEC-RPC-001 merged + hosted DB applied; leftover = leaked-password toggle + authenticated DEFINER volume |
-| #154 | CW-CI-MGR-001 — QA role alignment implemented; close on merge, then include in hosted SUG-01 retest |
-| #155 | CW-RESET-001 — CookieWorks module purge; **fixed in PR #153** |
-
-Larger remaining work (P2 IA, assessor UX, form overflow) already has homes. Do not open a combined “fix everything” PR.
+Larger P2 information-architecture and form-overflow work already has homes. Do not open a combined “fix everything” PR before billing.
