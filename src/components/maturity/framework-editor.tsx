@@ -24,14 +24,17 @@ import {
   updateMaturityPillar,
   updateMaturityQuestion,
 } from "@/app/(platform)/platform/maturity/actions";
+import { FrameworkStructurePreview } from "@/components/maturity/framework-structure-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   assessFrameworkPublishReadiness,
+  buildFrameworkHierarchy,
+  formatFrameworkStructureChangeLines,
   nextQuestionPositionForPillar,
-  sortMaturityQuestions,
+  summarizeFrameworkStructureChanges,
 } from "@/modules/maturity/framework-authoring";
 import {
   MATURITY_ASSESSMENT_SCOPE_TYPES,
@@ -52,6 +55,10 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 const STEP_IDS: StepId[] = STEPS.map((step) => step.id);
+
+const QUESTION_ORDER_LABEL = "Order within pillar";
+const QUESTION_ORDER_HELP =
+  "Determines question order within this pillar. Criterion membership is controlled separately.";
 
 type LevelRow = {
   id: string;
@@ -84,6 +91,13 @@ type QuestionRow = {
   position: number;
 };
 
+type ActiveVersionReference = {
+  versionNumber: number;
+  pillars: PillarRow[];
+  criteria: CriterionRow[];
+  questions: QuestionRow[];
+};
+
 type FrameworkEditorProps = {
   modelId: string;
   modelName: string;
@@ -96,7 +110,104 @@ type FrameworkEditorProps = {
   pillars: PillarRow[];
   criteria: CriterionRow[];
   questions: QuestionRow[];
+  activeVersion?: ActiveVersionReference | null;
 };
+
+function QuestionEditorCard({
+  question,
+  pillarName,
+  criterionName,
+  criteria,
+  busy,
+  onSave,
+  onDelete,
+}: {
+  question: QuestionRow;
+  pillarName: string;
+  criterionName: string;
+  criteria: CriterionRow[];
+  busy: boolean;
+  onSave: (input: {
+    prompt: string;
+    position: number;
+    criterionId: string;
+  }) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const helpId = `question-order-help-${question.id}`;
+
+  return (
+    <form
+      className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+      data-testid={`edit-question-${question.id}`}
+      onSubmit={async (event) => {
+        event.preventDefault();
+        const payload = new FormData(event.currentTarget);
+        await onSave({
+          prompt: String(payload.get("questionPrompt") ?? "").trim(),
+          position: Number(payload.get("questionPosition")),
+          criterionId: String(payload.get("questionCriterionId") ?? ""),
+        });
+      }}
+    >
+      <p className="text-xs text-muted-foreground sm:col-span-2">
+        {pillarName} → {criterionName}
+      </p>
+      <Input
+        name="questionPrompt"
+        defaultValue={question.prompt}
+        className="sm:col-span-2"
+        aria-label="Question prompt"
+      />
+      <div className="flex flex-col gap-1">
+        <Label htmlFor={`question-order-${question.id}`}>
+          {QUESTION_ORDER_LABEL}
+        </Label>
+        <Input
+          id={`question-order-${question.id}`}
+          name="questionPosition"
+          type="number"
+          min={1}
+          defaultValue={question.position}
+          aria-describedby={helpId}
+        />
+        <p id={helpId} className="text-xs text-muted-foreground">
+          {QUESTION_ORDER_HELP}
+        </p>
+      </div>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="text-muted-foreground">Criterion</span>
+        <select
+          name="questionCriterionId"
+          defaultValue={question.criterion_id}
+          aria-label="Question criterion"
+          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+        >
+          {criteria.map((entry) => (
+            <option key={entry.id} value={entry.id}>
+              {entry.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex flex-wrap gap-2 sm:col-span-2">
+        <Button type="submit" size="sm" disabled={busy}>
+          Save question
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          data-testid={`delete-question-${question.id}`}
+          onClick={() => void onDelete()}
+        >
+          Delete question
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 export function FrameworkEditor({
   modelId,
@@ -110,6 +221,7 @@ export function FrameworkEditor({
   pillars,
   criteria,
   questions,
+  activeVersion = null,
 }: FrameworkEditorProps) {
   const router = useRouter();
   const [step, setStep] = useAuthoringStep(
@@ -149,9 +261,9 @@ export function FrameworkEditor({
     return true;
   }
 
-  const sortedQuestions = useMemo(
-    () => sortMaturityQuestions(questions),
-    [questions],
+  const questionHierarchy = useMemo(
+    () => buildFrameworkHierarchy({ pillars, criteria, questions }),
+    [criteria, pillars, questions],
   );
   const publishReadiness = useMemo(
     () =>
@@ -159,9 +271,20 @@ export function FrameworkEditor({
         levels,
         pillars,
         criteria,
-        questions: sortedQuestions,
+        questions,
       }),
-    [criteria, levels, pillars, sortedQuestions],
+    [criteria, levels, pillars, questions],
+  );
+  const structureChanges = useMemo(
+    () =>
+      activeVersion
+        ? summarizeFrameworkStructureChanges(activeVersion, {
+            pillars,
+            criteria,
+            questions,
+          })
+        : null,
+    [activeVersion, criteria, pillars, questions],
   );
   const selectedCriterion = criteria.find(
     (criterion) => criterion.id === selectedCriterionId,
@@ -171,14 +294,53 @@ export function FrameworkEditor({
         selectedCriterion.pillar_id,
         pillars,
         criteria,
-        sortedQuestions,
+        questions,
       )
     : 1;
+
+  async function saveQuestion(
+    question: QuestionRow,
+    input: {
+      prompt: string;
+      position: number;
+      criterionId: string;
+    },
+  ) {
+    if (input.criterionId !== question.criterion_id) {
+      await run(() =>
+        moveMaturityQuestion(
+          question.id,
+          input.criterionId,
+          input.position,
+          modelId,
+        ),
+      );
+      return;
+    }
+    await run(() =>
+      updateMaturityQuestion(
+        question.id,
+        input.prompt,
+        input.position,
+        modelId,
+      ),
+    );
+  }
+
+  async function removeQuestion(question: QuestionRow) {
+    const confirmed = window.confirm(
+      `Delete question “${question.prompt}” from this draft? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    await run(() => deleteMaturityQuestion(question.id, modelId));
+  }
 
   return (
     <Card data-testid="framework-editor">
       <CardHeader>
-        <CardTitle>Draft version {versionNumber}</CardTitle>
+        <CardTitle data-testid="draft-version-heading">
+          Draft version {versionNumber} — Editing
+        </CardTitle>
         <nav
           className="flex flex-wrap gap-2"
           aria-label="Framework setup steps"
@@ -745,13 +907,6 @@ export function FrameworkEditor({
                   ))}
                 </select>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Positions are stored per pillar section (not per criterion).
-                Reusing position 1 for another criterion in the same pillar will
-                fail. The suggested value is the next free section position;
-                criterion order is determined by the link, not the number you
-                enter.
-              </p>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="questionPrompt">Question prompt</Label>
                 <Input
@@ -762,7 +917,7 @@ export function FrameworkEditor({
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="questionPosition">Position</Label>
+                <Label htmlFor="questionPosition">{QUESTION_ORDER_LABEL}</Label>
                 <Input
                   id="questionPosition"
                   name="questionPosition"
@@ -771,154 +926,164 @@ export function FrameworkEditor({
                   required
                   key={`${selectedCriterionId}-${suggestedQuestionPosition}`}
                   defaultValue={suggestedQuestionPosition}
+                  aria-describedby="question-order-help"
                 />
+                <p
+                  id="question-order-help"
+                  className="text-xs text-muted-foreground"
+                >
+                  {QUESTION_ORDER_HELP}
+                </p>
               </div>
               <Button type="submit" disabled={busy || criteria.length === 0}>
                 Add scored question
               </Button>
             </form>
-            <div className="flex flex-col gap-3">
-              {sortedQuestions.map((question) => {
-                const criterion = criteria.find(
-                  (entry) => entry.id === question.criterion_id,
-                );
-                const pillar = pillars.find(
-                  (entry) => entry.id === criterion?.pillar_id,
-                );
-                return (
-                  <form
-                    key={question.id}
-                    className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
-                    data-testid={`edit-question-${question.id}`}
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const form = e.currentTarget;
-                      const payload = new FormData(form);
-                      const nextCriterionId = String(
-                        payload.get("questionCriterionId") ?? "",
-                      );
-                      const position = Number(payload.get("questionPosition"));
-                      const prompt = String(
-                        payload.get("questionPrompt") ?? "",
-                      ).trim();
-                      if (nextCriterionId !== question.criterion_id) {
-                        await run(() =>
-                          moveMaturityQuestion(
-                            question.id,
-                            nextCriterionId,
-                            position,
-                            modelId,
-                          ),
-                        );
-                        return;
-                      }
-                      await run(() =>
-                        updateMaturityQuestion(
-                          question.id,
-                          prompt,
-                          position,
-                          modelId,
-                        ),
-                      );
-                    }}
-                  >
-                    <p className="text-xs text-muted-foreground sm:col-span-2">
-                      {pillar?.name ?? "Unknown pillar"} →{" "}
-                      {criterion?.name ?? "Unknown criterion"}
-                    </p>
-                    <Input
-                      name="questionPrompt"
-                      defaultValue={question.prompt}
-                      className="sm:col-span-2"
-                      aria-label="Question prompt"
-                    />
-                    <Input
-                      name="questionPosition"
-                      type="number"
-                      min={1}
-                      defaultValue={question.position}
-                      aria-label="Question position"
-                    />
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="text-muted-foreground">Criterion</span>
-                      <select
-                        name="questionCriterionId"
-                        defaultValue={question.criterion_id}
-                        aria-label="Question criterion"
-                        className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-                      >
-                        {criteria.map((entry) => (
-                          <option key={entry.id} value={entry.id}>
-                            {entry.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <div className="flex flex-wrap gap-2 sm:col-span-2">
-                      <Button type="submit" size="sm" disabled={busy}>
-                        Save question
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy}
-                        data-testid={`delete-question-${question.id}`}
-                        onClick={async () => {
-                          const confirmed = window.confirm(
-                            `Delete question “${question.prompt}” from this draft? This cannot be undone.`,
-                          );
-                          if (!confirmed) return;
-                          await run(() =>
-                            deleteMaturityQuestion(question.id, modelId),
-                          );
-                        }}
-                      >
-                        Delete question
-                      </Button>
+            <div
+              className="flex flex-col gap-4"
+              data-testid="question-authoring-hierarchy"
+            >
+              {questionHierarchy.pillars.map((pillar) => (
+                <section
+                  key={pillar.id}
+                  className="flex flex-col gap-3 rounded-md border border-border p-4"
+                  data-testid={`question-pillar-${pillar.id}`}
+                >
+                  <h3 className="font-medium">
+                    {pillar.position}. {pillar.name}
+                  </h3>
+                  {pillar.criteria.map((criterion) => (
+                    <div
+                      key={criterion.id}
+                      className="flex flex-col gap-3 pl-3"
+                      data-testid={`question-criterion-${criterion.id}`}
+                    >
+                      <p className="text-sm font-medium">
+                        {criterion.position}. {criterion.name}
+                      </p>
+                      {criterion.questions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No scored questions linked.
+                        </p>
+                      ) : (
+                        criterion.questions.map((question) => (
+                          <QuestionEditorCard
+                            key={question.id}
+                            question={question}
+                            pillarName={pillar.name}
+                            criterionName={criterion.name}
+                            criteria={criteria}
+                            busy={busy}
+                            onSave={(input) => saveQuestion(question, input)}
+                            onDelete={() => removeQuestion(question)}
+                          />
+                        ))
+                      )}
                     </div>
-                  </form>
-                );
-              })}
+                  ))}
+                  {pillar.criteria.length === 0 ? (
+                    <p className="pl-3 text-sm text-muted-foreground">
+                      No criteria configured.
+                    </p>
+                  ) : null}
+                </section>
+              ))}
+              {questionHierarchy.unlinkedQuestions.map((question) => (
+                <QuestionEditorCard
+                  key={question.id}
+                  question={question}
+                  pillarName="Unknown pillar"
+                  criterionName="Unknown criterion"
+                  criteria={criteria}
+                  busy={busy}
+                  onSave={(input) => saveQuestion(question, input)}
+                  onDelete={() => removeQuestion(question)}
+                />
+              ))}
             </div>
           </div>
         ) : null}
 
         {step === "review" ? (
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="font-medium">Display name</dt>
-              <dd>{name}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Assessment scopes</dt>
-              <dd>{selectedScopes.map(scopeTypeLabel).join(", ")}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Levels</dt>
-              <dd>{levels.length}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Pillars</dt>
-              <dd>{pillars.length}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Criteria</dt>
-              <dd>{criteria.length}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Scored questions</dt>
-              <dd>{sortedQuestions.length}</dd>
-            </div>
-          </dl>
+          <div
+            className="flex flex-col gap-6"
+            data-testid="framework-draft-review"
+          >
+            <FrameworkStructurePreview
+              mode="draft"
+              versionNumber={versionNumber}
+              displayName={name}
+              assessmentScopeLabels={selectedScopes.map(scopeTypeLabel)}
+              levels={levels}
+              pillars={pillars}
+              criteria={criteria}
+              questions={questions}
+              testId="draft-structure-preview"
+            />
+            {activeVersion && structureChanges ? (
+              <section data-testid="draft-change-summary">
+                <h3 className="font-medium text-foreground">
+                  Changes from Active v{activeVersion.versionNumber}
+                </h3>
+                <ul className="mt-2 list-disc pl-5 text-muted-foreground">
+                  {formatFrameworkStructureChangeLines(structureChanges).map(
+                    (line) => (
+                      <li key={line}>{line}</li>
+                    ),
+                  )}
+                </ul>
+              </section>
+            ) : null}
+          </div>
         ) : null}
 
         {step === "publish" ? (
-          <div className="flex flex-col gap-3">
+          <div
+            className="flex flex-col gap-3"
+            data-testid="framework-publish-step"
+          >
             <p className="text-sm text-muted-foreground">
-              Publishing locks this version for assessments. Every criterion
-              must have at least one scored question with a prompt.
+              {activeVersion
+                ? `Publishing makes Draft version ${versionNumber} the active immutable version and archives the previously published version. Historical assessments remain pinned to their original version.`
+                : `Publishing makes Draft version ${versionNumber} the active immutable version. Historical assessments remain pinned to the version they were started against.`}
             </p>
+            <p className="text-sm text-muted-foreground">
+              Every criterion must have at least one scored question with a
+              prompt.
+            </p>
+            <dl
+              className="grid gap-2 text-sm sm:grid-cols-2"
+              data-testid="framework-publish-summary"
+            >
+              <div>
+                <dt className="font-medium">Draft version</dt>
+                <dd>{versionNumber}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Levels</dt>
+                <dd>{levels.length}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Pillars</dt>
+                <dd>{pillars.length}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Criteria</dt>
+                <dd>{criteria.length}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Scored questions</dt>
+                <dd>{questions.length}</dd>
+              </div>
+            </dl>
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="review-structure"
+              onClick={() => setStep("review")}
+            >
+              Review structure
+            </Button>
             {!publishReadiness.ready ? (
               <ul
                 className="list-disc pl-5 text-sm text-destructive"

@@ -5,7 +5,7 @@ import {
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
 import { signInAsDemoUser } from "./helpers/demo-auth";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,20 @@ import { tmpdir } from "node:os";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const CORNWALL_PLANT_LABEL = /Cornwall Plant/i;
+const QUESTION_ORDER_HELP =
+  "Determines question order within this pillar. Criterion membership is controlled separately.";
+
+async function pillarSignature(preview: Locator) {
+  const pillars = preview.locator('[data-testid^="framework-preview-pillar-"]');
+  const count = await pillars.count();
+  const lines: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    lines.push(
+      (await pillars.nth(index).innerText()).replace(/\s+/g, " ").trim(),
+    );
+  }
+  return lines.join("\n");
+}
 
 test.describe("Milestone 5 maturity journeys", () => {
   test.describe.configure({ mode: "serial" });
@@ -72,7 +86,10 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("framework-step-publish").click();
     await page.getByTestId("publish-framework").click();
-    await expect(page.getByText("Active version")).toBeVisible();
+    await expect(page.getByTestId("framework-editor")).toHaveCount(0);
+    await expect(page.getByTestId("active-version-heading")).toContainText(
+      /Active version \d+ — Published/,
+    );
   });
 
   test("MAT1a: start assessment shows eligible site entities only", async ({
@@ -300,9 +317,10 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
   });
 
-  test("admin: create successor version keeps historical assessment pinned", async ({
+  test("admin: successor review previews the draft hierarchy before publish", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/maturity/models");
     await page
@@ -311,7 +329,9 @@ test.describe("Milestone 5 maturity journeys", () => {
       .click();
 
     await page.getByTestId("create-successor-version").click();
-    await expect(page.getByText("Draft version 2")).toBeVisible({
+    await expect(
+      page.getByRole("heading", { name: "Draft version 2 — Editing" }),
+    ).toBeVisible({
       timeout: 15000,
     });
 
@@ -351,9 +371,96 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByText(/Safety → Problem Solving/)).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByText("Order within pillar").first()).toBeVisible();
+    await expect(page.getByText(QUESTION_ORDER_HELP).first()).toBeVisible();
+
+    const safetyQuestions = page
+      .locator('[data-testid^="question-pillar-"]')
+      .filter({
+        has: page.getByRole("heading", { name: "2. Safety", exact: true }),
+      });
+    const leadershipQuestions = page
+      .locator('[data-testid^="question-pillar-"]')
+      .filter({
+        has: page.getByRole("heading", { name: "1. Leadership", exact: true }),
+      });
+    await expect(safetyQuestions.getByLabel("Question prompt")).toHaveValue(
+      "Rate Gemba walks",
+    );
+    await expect(leadershipQuestions.getByLabel("Question prompt")).toHaveCount(
+      0,
+    );
+
+    await page.locator("#criterionId").selectOption({ label: "Gemba walks" });
+    await page.locator("#questionPrompt").fill("Rate remaining Gemba");
+    await page.getByRole("button", { name: "Add scored question" }).click();
+    await expect(leadershipQuestions.getByLabel("Question prompt")).toHaveValue(
+      "Rate remaining Gemba",
+      { timeout: 15_000 },
+    );
+    await expect(safetyQuestions.getByLabel("Question prompt")).toHaveValue(
+      "Rate Gemba walks",
+    );
+
+    await expect(page.getByTestId("active-version-heading")).toHaveText(
+      "Active version 1 — Published",
+    );
+    const activeDisclosure = page.getByTestId("active-version-disclosure");
+    await expect(activeDisclosure).not.toHaveAttribute("open");
+    await expect(page.getByTestId("published-structure-preview")).toBeHidden();
+    await activeDisclosure.locator("summary").click();
+    const activePreview = page.getByTestId("published-structure-preview");
+    await expect(activePreview).toBeVisible();
+    await expect(activePreview.getByText("Safety")).toHaveCount(0);
+    const activeLeadership = activePreview
+      .locator('[data-testid^="framework-preview-pillar-"]')
+      .filter({ hasText: "Leadership" });
+    await expect(activeLeadership.getByText("Rate Gemba walks")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Delete question" }).first(),
+      activeLeadership.getByText("Rate remaining Gemba"),
+    ).toHaveCount(0);
+
+    await page.getByTestId("framework-step-review").click();
+    const draftPreview = page.getByTestId("draft-structure-preview");
+    await expect(
+      draftPreview.getByRole("heading", { name: "Draft version 2 preview" }),
     ).toBeVisible();
+    const draftSafety = draftPreview
+      .locator('[data-testid^="framework-preview-pillar-"]')
+      .filter({ hasText: "Safety" });
+    const draftLeadership = draftPreview
+      .locator('[data-testid^="framework-preview-pillar-"]')
+      .filter({ hasText: "Leadership" });
+    await expect(draftSafety.getByText("Rate Gemba walks")).toBeVisible();
+    await expect(draftSafety.getByText("Problem Solving")).toBeVisible();
+    await expect(draftLeadership.getByText("Rate Gemba walks")).toHaveCount(0);
+    await expect(
+      draftLeadership.getByText("Rate remaining Gemba"),
+    ).toBeVisible();
+    const draftSignature = await pillarSignature(draftPreview);
+
+    await page.getByTestId("framework-step-publish").click();
+    await expect(page.getByTestId("framework-publish-summary")).toContainText(
+      "Draft version",
+    );
+    await expect(
+      page.getByText(/archives the previously published version/),
+    ).toBeVisible();
+    await page.getByTestId("review-structure").click();
+    await expect(page.getByTestId("draft-structure-preview")).toBeVisible();
+    await page.getByTestId("framework-step-publish").click();
+    await expect(page.getByTestId("publish-framework")).toBeEnabled();
+    await page.getByTestId("publish-framework").click();
+    await expect(page.getByTestId("framework-editor")).toHaveCount(0, {
+      timeout: 20_000,
+    });
+    await expect(page.getByTestId("active-version-heading")).toHaveText(
+      "Active version 2 — Published",
+    );
+    await expect(page.getByTestId("active-version-disclosure")).toHaveCount(0);
+    const publishedPreview = page.getByTestId("published-structure-preview");
+    await expect(publishedPreview).toBeVisible();
+    expect(await pillarSignature(publishedPreview)).toBe(draftSignature);
   });
 
   test("unauthorised scope access is denied", async ({ page }) => {

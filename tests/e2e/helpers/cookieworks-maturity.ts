@@ -143,9 +143,12 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
 
   await page.getByTestId("framework-step-publish").click();
   await page.getByTestId("publish-framework").click();
-  await expect(page.getByText("Active version")).toBeVisible({
+  await expect(page.getByTestId("framework-editor")).toHaveCount(0, {
     timeout: 15_000,
   });
+  await expect(page.getByTestId("active-version-heading")).toContainText(
+    /Active version \d+ — Published/,
+  );
 }
 
 export async function startFormalAssessmentForBodmin(

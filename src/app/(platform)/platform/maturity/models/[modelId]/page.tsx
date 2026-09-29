@@ -287,12 +287,52 @@ export default async function MaturityModelPage({
         ))}
       </div>
 
+      {draftVersion && canManage ? (
+        <>
+          <FrameworkEditor
+            modelId={modelId}
+            modelName={versionDisplayName}
+            modelDescription={versionDescription}
+            versionId={draftVersion.id}
+            versionNumber={draftVersion.version_number}
+            initialAuthoringStep={initialAuthoringStep}
+            assessmentScopes={assessmentScopes}
+            levels={levels}
+            pillars={pillars}
+            criteria={criteria}
+            questions={questions}
+            activeVersion={
+              publishedVersion
+                ? {
+                    versionNumber: publishedVersion.version_number,
+                    pillars: publishedPillars,
+                    criteria: publishedCriteria,
+                    questions: publishedQuestions,
+                  }
+                : null
+            }
+          />
+          <form action={deleteDraftAction}>
+            <Button
+              type="submit"
+              variant="destructive"
+              data-testid="delete-draft-version"
+            >
+              Delete draft version
+            </Button>
+          </form>
+        </>
+      ) : null}
+
       {publishedVersion ? (
         <>
-          <Card>
+          <Card
+            className={draftVersion && canManage ? "border-dashed" : undefined}
+            data-testid="active-published-version"
+          >
             <CardHeader>
-              <CardTitle>
-                Active version {publishedVersion.version_number}
+              <CardTitle data-testid="active-version-heading">
+                Active version {publishedVersion.version_number} — Published
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -300,6 +340,13 @@ export default async function MaturityModelPage({
                 Assessment scope:{" "}
                 {publishedScopes.map(scopeTypeLabel).join(", ")}
               </p>
+              {draftVersion && canManage ? (
+                <p className="text-sm text-muted-foreground">
+                  Historical reference for version{" "}
+                  {publishedVersion.version_number}. Editing happens in Draft
+                  version {draftVersion.version_number}.
+                </p>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 <Button asChild>
                   <AppLink
@@ -330,13 +377,30 @@ export default async function MaturityModelPage({
               </div>
             </CardContent>
           </Card>
-          <PublishedFrameworkInspector
-            versionNumber={publishedVersion.version_number}
-            levels={publishedLevels}
-            pillars={publishedPillars}
-            criteria={publishedCriteria}
-            questions={publishedQuestions}
-          />
+          {draftVersion && canManage ? (
+            <details data-testid="active-version-disclosure">
+              <summary className="cursor-pointer text-sm font-medium">
+                View active version
+              </summary>
+              <div className="mt-4">
+                <PublishedFrameworkInspector
+                  versionNumber={publishedVersion.version_number}
+                  levels={publishedLevels}
+                  pillars={publishedPillars}
+                  criteria={publishedCriteria}
+                  questions={publishedQuestions}
+                />
+              </div>
+            </details>
+          ) : (
+            <PublishedFrameworkInspector
+              versionNumber={publishedVersion.version_number}
+              levels={publishedLevels}
+              pillars={publishedPillars}
+              criteria={publishedCriteria}
+              questions={publishedQuestions}
+            />
+          )}
         </>
       ) : null}
 
@@ -364,33 +428,6 @@ export default async function MaturityModelPage({
             </form>
           </CardContent>
         </Card>
-      ) : null}
-
-      {draftVersion && canManage ? (
-        <>
-          <FrameworkEditor
-            modelId={modelId}
-            modelName={versionDisplayName}
-            modelDescription={versionDescription}
-            versionId={draftVersion.id}
-            versionNumber={draftVersion.version_number}
-            initialAuthoringStep={initialAuthoringStep}
-            assessmentScopes={assessmentScopes}
-            levels={levels}
-            pillars={pillars}
-            criteria={criteria}
-            questions={questions}
-          />
-          <form action={deleteDraftAction}>
-            <Button
-              type="submit"
-              variant="destructive"
-              data-testid="delete-draft-version"
-            >
-              Delete draft version
-            </Button>
-          </form>
-        </>
       ) : null}
 
       {!draftVersion && !publishedVersion ? (

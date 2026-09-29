@@ -1,6 +1,10 @@
 /**
  * Maturity questions inherit template section position semantics: positions are
  * unique per pillar section. Criterion association is via links only.
+ *
+ * Authoring and publication preview order is pillar position, then criterion
+ * position, then question position. `sortMaturityQuestions` compares question
+ * position alone and is not the hierarchy presentation order.
  */
 export type MaturityAuthoringQuestion = {
   id: string;
@@ -46,6 +50,221 @@ export function sortMaturityQuestions<
   T extends { id: string; position: number },
 >(questions: T[]): T[] {
   return [...questions].sort(compareByPositionThenId);
+}
+
+export type FrameworkHierarchy<
+  TPillar extends MaturityAuthoringPillar,
+  TCriterion extends MaturityAuthoringCriterion,
+  TQuestion extends MaturityAuthoringQuestion,
+> = {
+  pillars: Array<
+    TPillar & {
+      criteria: Array<TCriterion & { questions: TQuestion[] }>;
+    }
+  >;
+  unlinkedQuestions: TQuestion[];
+};
+
+export function buildFrameworkHierarchy<
+  TPillar extends MaturityAuthoringPillar,
+  TCriterion extends MaturityAuthoringCriterion,
+  TQuestion extends MaturityAuthoringQuestion,
+>(input: {
+  pillars: readonly TPillar[];
+  criteria: readonly TCriterion[];
+  questions: readonly TQuestion[];
+}): FrameworkHierarchy<TPillar, TCriterion, TQuestion> {
+  const criteriaByPillar = new Map<string, TCriterion[]>();
+  for (const criterion of input.criteria) {
+    const group = criteriaByPillar.get(criterion.pillar_id) ?? [];
+    group.push(criterion);
+    criteriaByPillar.set(criterion.pillar_id, group);
+  }
+  for (const group of criteriaByPillar.values()) {
+    group.sort(compareByPositionThenId);
+  }
+
+  const knownCriterionIds = new Set(
+    input.criteria.map((criterion) => criterion.id),
+  );
+  const questionsByCriterion = new Map<string, TQuestion[]>();
+  const unlinkedQuestions: TQuestion[] = [];
+  for (const question of input.questions) {
+    if (!knownCriterionIds.has(question.criterion_id)) {
+      unlinkedQuestions.push(question);
+      continue;
+    }
+    const group = questionsByCriterion.get(question.criterion_id) ?? [];
+    group.push(question);
+    questionsByCriterion.set(question.criterion_id, group);
+  }
+  for (const group of questionsByCriterion.values()) {
+    group.sort(compareByPositionThenId);
+  }
+  unlinkedQuestions.sort(compareByPositionThenId);
+
+  return {
+    pillars: [...input.pillars].sort(compareByPositionThenId).map((pillar) => ({
+      ...pillar,
+      criteria: (criteriaByPillar.get(pillar.id) ?? []).map((criterion) => ({
+        ...criterion,
+        questions: questionsByCriterion.get(criterion.id) ?? [],
+      })),
+    })),
+    unlinkedQuestions,
+  };
+}
+
+export type FrameworkStructureSnapshot = {
+  pillars: readonly MaturityAuthoringPillar[];
+  criteria: readonly MaturityAuthoringCriterion[];
+  questions: readonly MaturityAuthoringQuestion[];
+};
+
+export type FrameworkStructureChangeSummary = {
+  questionsMoved: number;
+  questionsAdded: number;
+  questionsDeleted: number;
+  criteriaAdded: number;
+  criteriaDeleted: number;
+};
+
+type NamedPlacement = {
+  prompt: string;
+  path: string;
+};
+
+function placementForQuestion(
+  question: MaturityAuthoringQuestion,
+  path: string,
+): NamedPlacement[] {
+  if (!isUsableMaturityPrompt(question.prompt)) {
+    return [];
+  }
+  return [{ prompt: question.prompt.trim(), path }];
+}
+
+function questionPlacements(
+  snapshot: FrameworkStructureSnapshot,
+): NamedPlacement[] {
+  const hierarchy = buildFrameworkHierarchy(snapshot);
+  return [
+    ...hierarchy.pillars.flatMap((pillar) =>
+      pillar.criteria.flatMap((criterion) =>
+        criterion.questions.flatMap((question) =>
+          placementForQuestion(
+            question,
+            `${pillar.name}\u0000${criterion.name}`,
+          ),
+        ),
+      ),
+    ),
+    ...hierarchy.unlinkedQuestions.flatMap((question) =>
+      placementForQuestion(question, "\u0000unlinked"),
+    ),
+  ];
+}
+
+function criterionPaths(snapshot: FrameworkStructureSnapshot): string[] {
+  const hierarchy = buildFrameworkHierarchy({
+    ...snapshot,
+    questions: [],
+  });
+  return hierarchy.pillars.flatMap((pillar) =>
+    pillar.criteria.map((criterion) => `${pillar.name}\u0000${criterion.name}`),
+  );
+}
+
+function countMultisetDelta(
+  activeKeys: readonly string[],
+  draftKeys: readonly string[],
+): { added: number; deleted: number } {
+  const remaining = new Map<string, number>();
+  for (const key of draftKeys) {
+    remaining.set(key, (remaining.get(key) ?? 0) + 1);
+  }
+
+  let deleted = 0;
+  for (const key of activeKeys) {
+    const available = remaining.get(key) ?? 0;
+    if (available > 0) {
+      remaining.set(key, available - 1);
+    } else {
+      deleted += 1;
+    }
+  }
+
+  let added = 0;
+  for (const available of remaining.values()) {
+    added += available;
+  }
+  return { added, deleted };
+}
+
+export function summarizeFrameworkStructureChanges(
+  active: FrameworkStructureSnapshot,
+  draft: FrameworkStructureSnapshot,
+): FrameworkStructureChangeSummary {
+  const draftPlacements = questionPlacements(draft);
+  const remainingByPrompt = new Map<string, NamedPlacement[]>();
+  for (const placement of draftPlacements) {
+    const bucket = remainingByPrompt.get(placement.prompt) ?? [];
+    bucket.push(placement);
+    remainingByPrompt.set(placement.prompt, bucket);
+  }
+
+  let questionsMoved = 0;
+  let questionsDeleted = 0;
+  for (const placement of questionPlacements(active)) {
+    const bucket = remainingByPrompt.get(placement.prompt) ?? [];
+    const samePathIndex = bucket.findIndex(
+      (candidate) => candidate.path === placement.path,
+    );
+    if (samePathIndex >= 0) {
+      bucket.splice(samePathIndex, 1);
+      continue;
+    }
+    if (bucket.length > 0) {
+      bucket.shift();
+      questionsMoved += 1;
+      continue;
+    }
+    questionsDeleted += 1;
+  }
+
+  let questionsAdded = 0;
+  for (const bucket of remainingByPrompt.values()) {
+    questionsAdded += bucket.length;
+  }
+
+  const criteriaDelta = countMultisetDelta(
+    criterionPaths(active),
+    criterionPaths(draft),
+  );
+
+  return {
+    questionsMoved,
+    questionsAdded,
+    questionsDeleted,
+    criteriaAdded: criteriaDelta.added,
+    criteriaDeleted: criteriaDelta.deleted,
+  };
+}
+
+export function formatFrameworkStructureChangeLines(
+  summary: FrameworkStructureChangeSummary,
+): string[] {
+  const questionLine = (count: number, verb: string) =>
+    `${count} ${count === 1 ? "question" : "questions"} ${verb}`;
+  const criterionLine = (count: number, verb: string) =>
+    `${count} ${count === 1 ? "criterion" : "criteria"} ${verb}`;
+
+  return [
+    questionLine(summary.questionsMoved, "moved"),
+    questionLine(summary.questionsAdded, "added"),
+    questionLine(summary.questionsDeleted, "deleted"),
+    `${criterionLine(summary.criteriaAdded, "added")}, ${criterionLine(summary.criteriaDeleted, "deleted")}`,
+  ];
 }
 
 export function nextQuestionPositionForPillar(
