@@ -22,4 +22,8 @@ describe("parseAiEnvironment", () => {
   it("defaults max output tokens to the safe structured budget", () => {
     expect(AI_DEFAULTS.maxOutputTokens).toBe(6000);
   });
+
+  it("treats AI_ENABLED=0 as a disabled application provider", () => {
+    expect(parseAiEnvironment({ AI_ENABLED: "0" }).AI_ENABLED).toBe("0");
+  });
 });
