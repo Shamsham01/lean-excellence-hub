@@ -81,6 +81,7 @@ export default defineConfig({
           ? "fake"
           : (process.env.AI_PROVIDER ?? "openai"),
       AI_ALLOW_FAKE_PROVIDER: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
+      BILLING_PROVIDER: process.env.BILLING_PROVIDER ?? "fake",
     },
     reuseExistingServer: !isCi,
     url: baseURL,

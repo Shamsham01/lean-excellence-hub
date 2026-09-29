@@ -10,6 +10,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    env: {
+      BILLING_PROVIDER: process.env.BILLING_PROVIDER ?? "fake",
+    },
     include: [
       "tests/unit/**/*.test.{ts,tsx}",
       "tests/integration/**/*.test.ts",
