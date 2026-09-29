@@ -4,6 +4,12 @@ Manual acceptance tracker for the CookieWorks Manufacturing (`cookieworks-manufa
 
 **Current first-customer protocol:** `docs/qa/RELEASE-SMOKE-01-protocol.md`. Historical module tables below remain available as an expanded worksheet; do not treat empty result columns as open product defects.
 
+Clean-organisation billing smoke (do not wipe CookieWorks):
+
+- Sandbox configuration: `docs/qa/STRIPE-SANDBOX-ONBOARDING-SMOKE.md`
+- Runbook: `docs/qa/QA-NEW-ORG-001-runbook.md`
+- Operator report: `docs/qa/BILLING-001-operator-report.md`
+
 ## Preconditions
 
 - CookieWorks tenant reset to foundation-only (`npm run qa:cookie:reset` locally, or hosted maintainer reset).
