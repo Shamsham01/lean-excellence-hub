@@ -1952,6 +1952,77 @@ export type Database = {
           },
         ]
       }
+      billing_runtime_policy: {
+        Row: {
+          created_at: string
+          grace_period_days: number
+          id: boolean
+          retention_days: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grace_period_days?: number
+          id?: boolean
+          retention_days?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grace_period_days?: number
+          id?: boolean
+          retention_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      billing_webhook_events: {
+        Row: {
+          diagnostic: Json
+          event_type: string
+          id: string
+          last_error: string | null
+          organisation_id: string | null
+          processed_at: string | null
+          processing_state: string
+          provider: string
+          provider_event_id: string
+          received_at: string
+        }
+        Insert: {
+          diagnostic?: Json
+          event_type: string
+          id?: string
+          last_error?: string | null
+          organisation_id?: string | null
+          processed_at?: string | null
+          processing_state?: string
+          provider: string
+          provider_event_id: string
+          received_at?: string
+        }
+        Update: {
+          diagnostic?: Json
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          organisation_id?: string | null
+          processed_at?: string | null
+          processing_state?: string
+          provider?: string
+          provider_event_id?: string
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_webhook_events_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_audit_events: {
         Row: {
           actor_membership_id: string | null
@@ -5849,6 +5920,47 @@ export type Database = {
           },
         ]
       }
+      organisation_billing_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          open_checkout_expires_at: string | null
+          open_checkout_session_id: string | null
+          organisation_id: string
+          provider: string
+          provider_customer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          open_checkout_expires_at?: string | null
+          open_checkout_session_id?: string | null
+          organisation_id: string
+          provider?: string
+          provider_customer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          open_checkout_expires_at?: string | null
+          open_checkout_session_id?: string | null
+          organisation_id?: string
+          provider?: string
+          provider_customer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_billing_accounts_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_document_sequences: {
         Row: {
           last_value: number
@@ -6179,6 +6291,90 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      organisation_subscriptions: {
+        Row: {
+          billing_account_id: string
+          billing_interval: string
+          billing_state: string
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          ended_at: string | null
+          grace_expires_at: string | null
+          id: string
+          last_provider_event_at: string | null
+          organisation_id: string
+          plan_code: string
+          provider: string
+          provider_price_id: string | null
+          provider_status: string | null
+          provider_subscription_id: string | null
+          retention_eligible_at: string | null
+          site_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          billing_account_id: string
+          billing_interval: string
+          billing_state?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          ended_at?: string | null
+          grace_expires_at?: string | null
+          id?: string
+          last_provider_event_at?: string | null
+          organisation_id: string
+          plan_code: string
+          provider?: string
+          provider_price_id?: string | null
+          provider_status?: string | null
+          provider_subscription_id?: string | null
+          retention_eligible_at?: string | null
+          site_quantity: number
+          updated_at?: string
+        }
+        Update: {
+          billing_account_id?: string
+          billing_interval?: string
+          billing_state?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          ended_at?: string | null
+          grace_expires_at?: string | null
+          id?: string
+          last_provider_event_at?: string | null
+          organisation_id?: string
+          plan_code?: string
+          provider?: string
+          provider_price_id?: string | null
+          provider_status?: string | null
+          provider_subscription_id?: string | null
+          retention_eligible_at?: string | null
+          site_quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_subscriptions_account_fkey"
+            columns: ["organisation_id", "billing_account_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_billing_accounts"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "organisation_subscriptions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -11616,6 +11812,27 @@ export type Database = {
         Args: { target_membership_id: string; target_session_id: string }
         Returns: string
       }
+      apply_organisation_subscription_snapshot: {
+        Args: {
+          clear_grace?: boolean
+          target_billing_interval: string
+          target_billing_state: string
+          target_cancel_at_period_end: boolean
+          target_current_period_end: string
+          target_current_period_start: string
+          target_customer_id: string
+          target_event_at: string
+          target_grace_expires_at?: string
+          target_organisation_id: string
+          target_plan_code: string
+          target_price_id: string
+          target_provider: string
+          target_provider_status: string
+          target_site_quantity: number
+          target_subscription_id: string
+        }
+        Returns: string
+      }
       approve_benefit_forecast: {
         Args: { target_forecast_version_id: string }
         Returns: boolean
@@ -11751,6 +11968,20 @@ export type Database = {
       cancel_project: {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
+      }
+      claim_billing_webhook_event: {
+        Args: {
+          target_diagnostic?: Json
+          target_event_id: string
+          target_event_type: string
+          target_organisation_id?: string
+          target_provider: string
+        }
+        Returns: {
+          event_id: string
+          processing_state: string
+          should_process: boolean
+        }[]
       }
       claim_domain_events_for_worker: {
         Args: { batch_size?: number; lease_seconds?: number }
@@ -12603,6 +12834,14 @@ export type Database = {
         Args: never
         Returns: number
       }
+      ensure_organisation_billing_account: {
+        Args: {
+          target_customer_id?: string
+          target_organisation_id: string
+          target_provider: string
+        }
+        Returns: string
+      }
       ensure_problem_solving_methods_provisioned: {
         Args: never
         Returns: boolean
@@ -12708,6 +12947,16 @@ export type Database = {
         }
         Returns: string
       }
+      finish_billing_webhook_event: {
+        Args: {
+          target_diagnostic?: Json
+          target_error?: string
+          target_event_id: string
+          target_organisation_id?: string
+          target_state: string
+        }
+        Returns: boolean
+      }
       get_action_detail: { Args: { target_action_id: string }; Returns: Json }
       get_ai_session_detail: {
         Args: { target_ai_session_id: string }
@@ -12766,6 +13015,27 @@ export type Database = {
         Returns: Json
       }
       get_current_membership_primary_unit: { Args: never; Returns: Json }
+      get_current_organisation_billing: {
+        Args: never
+        Returns: {
+          active_site_count: number
+          billing_interval: string
+          billing_state: string
+          cancel_at_period_end: boolean
+          current_period_end: string
+          current_period_start: string
+          ended_at: string
+          grace_expires_at: string
+          organisation_id: string
+          paid_site_limit: number
+          plan_code: string
+          provider: string
+          provider_customer_id: string
+          provider_status: string
+          retention_eligible_at: string
+          site_quantity: number
+        }[]
+      }
       get_delegatable_access_offers: { Args: never; Returns: Json }
       get_eligible_benefit_validators: {
         Args: { target_benefit_id: string }
@@ -13675,6 +13945,14 @@ export type Database = {
           target_membership_id: string
           target_organisation_id: string
           target_status: string
+        }
+        Returns: boolean
+      }
+      set_organisation_open_checkout_session: {
+        Args: {
+          target_expires_at: string
+          target_organisation_id: string
+          target_session_id: string
         }
         Returns: boolean
       }
