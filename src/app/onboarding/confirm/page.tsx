@@ -1,18 +1,15 @@
-import { redirect } from "next/navigation";
-
-import { requirePlatformAccess } from "@/modules/identity/session";
-import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
+import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import {
   listEligibleOrganisations,
   loadCurrentOrganisationId,
   switchOrganisation,
 } from "@/modules/organisations/context";
+import { redirect } from "next/navigation";
 
-export async function loadPlatformWorkspaceContext() {
-  await requirePlatformAccess();
+export default async function OnboardingConfirmPage() {
+  await requireClaims();
   let organisationId = await loadCurrentOrganisationId();
-
   if (!organisationId) {
     const organisations = await listEligibleOrganisations();
     if (organisations.length === 1) {
@@ -31,19 +28,10 @@ export async function loadPlatformWorkspaceContext() {
     redirect("/select-organisation");
   }
 
-  const accessPath = pathForOrganisationStatus(
-    current.organisation_status,
-    current.onboarding_required,
+  redirect(
+    pathForOrganisationStatus(
+      current.organisation_status,
+      current.onboarding_required,
+    ),
   );
-  if (accessPath !== "/platform") {
-    redirect(accessPath);
-  }
-
-  const { context: siteContext } = await loadActiveSiteContext();
-
-  return {
-    current,
-    organisations,
-    siteContext,
-  };
 }

@@ -10,6 +10,7 @@ export type EligibleOrganisation = {
   organisation_id: string;
   organisation_name: string;
   organisation_status: string;
+  onboarding_required: boolean;
   selected: boolean;
 };
 

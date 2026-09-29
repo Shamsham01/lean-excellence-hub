@@ -42,6 +42,7 @@ const organisation = {
   organisation_id: "org-1",
   organisation_name: "Apex Manufacturing",
   organisation_status: "active",
+  onboarding_required: false,
   selected: true,
 };
 
@@ -152,6 +153,17 @@ describe("loadPlatformWorkspaceContext", () => {
 
     await expect(loadPlatformWorkspaceContext()).rejects.toThrow(
       "REDIRECT:/billing",
+    );
+    expect(loadActiveSiteContext).not.toHaveBeenCalled();
+  });
+
+  it("redirects active organisations that still require onboarding to the wizard", async () => {
+    listEligibleOrganisations.mockResolvedValueOnce([
+      { ...organisation, onboarding_required: true },
+    ]);
+
+    await expect(loadPlatformWorkspaceContext()).rejects.toThrow(
+      "REDIRECT:/onboarding/setup",
     );
     expect(loadActiveSiteContext).not.toHaveBeenCalled();
   });

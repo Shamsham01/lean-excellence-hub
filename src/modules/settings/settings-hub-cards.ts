@@ -8,6 +8,7 @@ export type SettingsHubCardAccess = {
   canProvisionWorkforce: boolean;
   canImportWorkforce: boolean;
   canDelegateRoles: boolean;
+  canManageBilling: boolean;
 };
 
 export function canAccessPeopleSettings(access: SettingsHubCardAccess) {
@@ -29,6 +30,12 @@ export function buildSettingsHubCards(
         "View your organisation identity, locale, and reporting settings.",
       href: "/platform/settings/organisation",
       available: access.canReadHierarchy,
+    },
+    {
+      title: "Billing",
+      description: "View plan, site quantity, and manage billing in Stripe.",
+      href: "/platform/settings/billing",
+      available: access.canManageBilling,
     },
     {
       title: "Your profile",

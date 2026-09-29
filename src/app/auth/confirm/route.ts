@@ -13,7 +13,10 @@ import {
 } from "@/platform/application-origin";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
-import { finaliseIdentityEnrolment } from "@/platform/supabase/secret";
+import {
+  finaliseFoundingSignup,
+  finaliseIdentityEnrolment,
+} from "@/platform/supabase/secret";
 import type { Database } from "@/platform/supabase/database.types";
 
 const OTP_TYPES = new Set<EmailOtpType>([
@@ -64,6 +67,10 @@ async function resolvePostConfirmRedirect(
   const eligible = organisations.data ?? [];
 
   if (eligible.length === 0) {
+    const founding = await supabase.rpc("current_can_found_organisation");
+    if (founding.data === true) {
+      return "/create-organisation";
+    }
     return "/no-access";
   }
 
@@ -71,7 +78,10 @@ async function resolvePostConfirmRedirect(
     await supabase.rpc("switch_organisation", {
       target_organisation_id: eligible[0]!.organisation_id,
     });
-    return pathForOrganisationStatus(eligible[0]!.organisation_status);
+    return pathForOrganisationStatus(
+      eligible[0]!.organisation_status,
+      eligible[0]!.onboarding_required,
+    );
   }
 
   return "/select-organisation";
@@ -146,6 +156,15 @@ export async function GET(request: NextRequest) {
       if (userId) {
         const finalised = await finaliseIdentityEnrolment(userId);
         if (!finalised.error) {
+          const foundingBinding =
+            typeof userData.user?.user_metadata?.founding_signup_binding ===
+            "string"
+              ? userData.user.user_metadata.founding_signup_binding
+              : null;
+          if (foundingBinding) {
+            await finaliseFoundingSignup(foundingBinding, userId);
+          }
+
           const metadataBinding =
             typeof userData.user?.user_metadata?.invitation_signup_binding ===
             "string"

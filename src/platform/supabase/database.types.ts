@@ -3715,6 +3715,33 @@ export type Database = {
           },
         ]
       }
+      founding_signup_bindings: {
+        Row: {
+          canonical_email: string
+          consumed_at: string | null
+          consumed_user_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          canonical_email: string
+          consumed_at?: string | null
+          consumed_user_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          canonical_email?: string
+          consumed_at?: string | null
+          consumed_user_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       gemba_action_context: {
         Row: {
           action_id: string
@@ -5924,6 +5951,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          intended_site_quantity: number
+          open_checkout_context: Json | null
           open_checkout_expires_at: string | null
           open_checkout_session_id: string | null
           organisation_id: string
@@ -5934,6 +5963,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          intended_site_quantity?: number
+          open_checkout_context?: Json | null
           open_checkout_expires_at?: string | null
           open_checkout_session_id?: string | null
           organisation_id: string
@@ -5944,6 +5975,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          intended_site_quantity?: number
+          open_checkout_context?: Json | null
           open_checkout_expires_at?: string | null
           open_checkout_session_id?: string | null
           organisation_id?: string
@@ -6500,10 +6533,12 @@ export type Database = {
       organisations: {
         Row: {
           code: string
+          country_code: string
           created_at: string
           id: string
           locale: string
           name: string
+          onboarding_required: boolean
           reporting_currency: string
           status: string
           status_changed_at: string
@@ -6515,10 +6550,12 @@ export type Database = {
         }
         Insert: {
           code: string
+          country_code?: string
           created_at?: string
           id?: string
           locale?: string
           name: string
+          onboarding_required?: boolean
           reporting_currency?: string
           status?: string
           status_changed_at?: string
@@ -6530,10 +6567,12 @@ export type Database = {
         }
         Update: {
           code?: string
+          country_code?: string
           created_at?: string
           id?: string
           locale?: string
           name?: string
+          onboarding_required?: boolean
           reporting_currency?: string
           status?: string
           status_changed_at?: string
@@ -12068,6 +12107,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      complete_organisation_onboarding: { Args: never; Returns: boolean }
       complete_problem_solving_session: {
         Args: { target_session_id: string; target_summary?: string }
         Returns: boolean
@@ -12365,6 +12405,19 @@ export type Database = {
       }
       create_five_s_standard_successor_version: {
         Args: { target_standard_id: string }
+        Returns: string
+      }
+      create_founding_organisation: {
+        Args: {
+          billing_provider?: string
+          first_site_name: string
+          organisation_country_code: string
+          organisation_locale: string
+          organisation_name: string
+          organisation_reporting_currency: string
+          organisation_time_zone: string
+          site_quantity: number
+        }
         Returns: string
       }
       create_gemba_action: {
@@ -12724,6 +12777,7 @@ export type Database = {
         Args: { target_original_filename: string }
         Returns: string
       }
+      current_can_found_organisation: { Args: never; Returns: boolean }
       current_can_manage_billing: { Args: never; Returns: boolean }
       current_identity_state: {
         Args: never
@@ -12911,6 +12965,10 @@ export type Database = {
         Args: { target_failure_reason: string; target_intent_id: string }
         Returns: boolean
       }
+      finalise_founding_signup: {
+        Args: { target_binding_id: string; target_user_id: string }
+        Returns: boolean
+      }
       finalise_identity_enrolment: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -13027,6 +13085,9 @@ export type Database = {
           current_period_start: string
           ended_at: string
           grace_expires_at: string
+          intended_site_quantity: number
+          onboarding_required: boolean
+          open_checkout_session_id: string
           organisation_id: string
           organisation_status: string
           paid_site_limit: number
@@ -13425,11 +13486,22 @@ export type Database = {
         Args: never
         Returns: {
           membership_id: string
+          onboarding_required: boolean
           organisation_code: string
           organisation_id: string
           organisation_name: string
           organisation_status: string
           selected: boolean
+        }[]
+      }
+      lookup_open_checkout_session: {
+        Args: { target_session_id: string }
+        Returns: {
+          billing_interval: string
+          organisation_id: string
+          plan_code: string
+          provider_customer_id: string
+          site_quantity: number
         }[]
       }
       lookup_suggestion_author_membership_id_for_worker: {
@@ -13522,6 +13594,10 @@ export type Database = {
           target_scope_type: string
           target_scope_unit_id?: string
         }
+        Returns: string
+      }
+      prepare_founding_signup_binding: {
+        Args: { target_email: string }
         Returns: string
       }
       prepare_organisation_invitation_signup_binding: {
@@ -13953,6 +14029,7 @@ export type Database = {
       }
       set_organisation_open_checkout_session: {
         Args: {
+          target_checkout_context?: Json
           target_expires_at: string
           target_organisation_id: string
           target_session_id: string

@@ -25,5 +25,10 @@ export async function selectOrganisation(formData: FormData) {
   const current = organisations.find(
     (organisation) => organisation.organisation_id === parsed.data,
   );
-  redirect(pathForOrganisationStatus(current?.organisation_status));
+  redirect(
+    pathForOrganisationStatus(
+      current?.organisation_status,
+      current?.onboarding_required,
+    ),
+  );
 }

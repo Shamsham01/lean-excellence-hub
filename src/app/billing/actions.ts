@@ -40,13 +40,22 @@ export async function createCustomerPortalSession() {
   const billing = await supabase.rpc("get_current_organisation_billing");
   const customerId = billing.data?.[0]?.provider_customer_id;
   if (!customerId) {
-    redirect(pathForOrganisationStatus(current.organisation_status));
+    redirect(
+      pathForOrganisationStatus(
+        current.organisation_status,
+        current.onboarding_required,
+      ),
+    );
   }
 
   const origin = getServerEnvironment().APP_ORIGIN;
+  const returnPath =
+    current.organisation_status === "suspended"
+      ? "/billing"
+      : "/platform/settings/billing";
   const session = await getBillingProvider().createCustomerPortalSession({
     customerId,
-    returnUrl: `${origin}${pathForOrganisationStatus(current.organisation_status)}`,
+    returnUrl: `${origin}${returnPath}`,
   });
   redirect(session.url);
 }
