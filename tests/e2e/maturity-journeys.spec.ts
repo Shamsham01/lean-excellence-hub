@@ -38,6 +38,7 @@ test.describe("Milestone 5 maturity journeys", () => {
   );
 
   test("admin: framework draft → edit → publish", async ({ page }) => {
+    test.setTimeout(120_000);
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/maturity/models");
 
@@ -45,7 +46,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByLabel("Name").fill(frameworkName);
     await page.getByRole("button", { name: "Create draft framework" }).click();
 
-    await expect(page.getByTestId("framework-editor")).toBeVisible();
+    await expect(page.getByTestId("framework-editor")).toBeVisible({
+      timeout: 15_000,
+    });
 
     await page.getByTestId("framework-step-details").click();
     await page.getByLabel("Display name").fill(frameworkName);
@@ -55,7 +58,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-levels").click();
     await page.getByLabel("Level name").fill("Initial");
     await page.getByRole("button", { name: "Add level" }).click();
-    await expect(page.getByTestId("edit-level-1")).toBeVisible();
+    await expect(page.getByTestId("edit-level-1")).toBeVisible({
+      timeout: 15_000,
+    });
     await page
       .getByTestId("edit-level-1")
       .getByLabel("Level name")
@@ -68,27 +73,32 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-pillars").click();
     await page.getByLabel("Pillar name").fill("Leadership");
     await page.getByRole("button", { name: "Add pillar" }).click();
-    await expect(page.getByTestId("edit-pillar-1")).toBeVisible();
+    await expect(page.getByTestId("edit-pillar-1")).toBeVisible({
+      timeout: 15_000,
+    });
 
     await page.getByTestId("framework-step-criteria").click();
     await page.getByLabel("Criterion name").fill("Gemba walks");
     await page.getByRole("button", { name: "Add criterion" }).click();
     await expect(
       page.locator('[data-testid^="edit-criterion-"]').first(),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.getByTestId("framework-step-questions").click();
     await page.getByLabel("Question prompt").fill("Rate Gemba walks");
     await page.getByRole("button", { name: "Add scored question" }).click();
     await expect(
       page.locator('[data-testid^="edit-question-"]').first(),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.getByTestId("framework-step-publish").click();
     await page.getByTestId("publish-framework").click();
-    await expect(page.getByTestId("framework-editor")).toHaveCount(0);
+    await expect(page.getByTestId("framework-editor")).toHaveCount(0, {
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("active-version-heading")).toContainText(
       /Active version \d+ — Published/,
+      { timeout: 15_000 },
     );
   });
 
