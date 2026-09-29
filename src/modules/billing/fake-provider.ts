@@ -127,6 +127,14 @@ export function createFakeBillingProvider(
 ): BillingProvider & {
   store: FakeBillingStore;
   simulateCheckoutCompletion(sessionId: string): VerifiedWebhookEvent;
+  hydrateCheckoutSession(input: {
+    sessionId: string;
+    customerId: string;
+    organisationId: string;
+    planCode: CheckoutPlanCode;
+    interval: BillingInterval;
+    siteQuantity: number;
+  }): void;
   simulateSubscriptionEvent(
     subscriptionId: string,
     eventType: string,
@@ -345,6 +353,36 @@ export function createFakeBillingProvider(
         subscriptionId,
         snapshot,
       };
+    },
+    hydrateCheckoutSession(input) {
+      const existing = store.checkouts.get(input.sessionId);
+      if (existing?.open) {
+        return;
+      }
+
+      store.checkouts.set(input.sessionId, {
+        sessionId: input.sessionId,
+        customerId: input.customerId,
+        organisationId: input.organisationId,
+        planCode: input.planCode,
+        interval: input.interval,
+        siteQuantity: Math.max(MIN_SITE_QUANTITY, input.siteQuantity),
+        url: `/onboarding/confirm?session_id=${input.sessionId}`,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        open: true,
+      });
+      if (!store.customers.has(input.customerId)) {
+        store.customers.set(input.customerId, {
+          customerId: input.customerId,
+          organisationId: input.organisationId,
+          organisationName: input.organisationId,
+          email: null,
+        });
+        store.customersByOrganisation.set(
+          input.organisationId,
+          input.customerId,
+        );
+      }
     },
     simulateCheckoutCompletion(sessionId) {
       const checkout = store.checkouts.get(sessionId);

@@ -11,7 +11,11 @@ describe("pathForOrganisationStatus", () => {
     expect(pathForOrganisationStatus("suspended")).toBe("/billing");
   });
 
-  it("keeps active organisations on the platform", () => {
+  it("sends active organisations that still require onboarding to the wizard", () => {
+    expect(pathForOrganisationStatus("active", true)).toBe("/onboarding/setup");
+  });
+
+  it("keeps active organisations on the platform once onboarding is complete", () => {
     expect(pathForOrganisationStatus("active")).toBe("/platform");
   });
 

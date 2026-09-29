@@ -57,6 +57,8 @@ export class BillingProviderError extends Error {
     readonly code:
       | "invalid_webhook"
       | "not_found"
+      | "unauthorized"
+      | "forbidden"
       | "conflict"
       | "misconfigured"
       | "unsupported" = "misconfigured",

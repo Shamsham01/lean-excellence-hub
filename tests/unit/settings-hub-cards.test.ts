@@ -14,6 +14,7 @@ const financeValidatorAccess: SettingsHubCardAccess = {
   canProvisionWorkforce: false,
   canImportWorkforce: false,
   canDelegateRoles: false,
+  canManageBilling: false,
 };
 
 const teamMemberAccess: SettingsHubCardAccess = {
@@ -24,6 +25,7 @@ const teamMemberAccess: SettingsHubCardAccess = {
   canProvisionWorkforce: false,
   canImportWorkforce: false,
   canDelegateRoles: false,
+  canManageBilling: false,
 };
 
 const adminAccess: SettingsHubCardAccess = {
@@ -34,6 +36,7 @@ const adminAccess: SettingsHubCardAccess = {
   canProvisionWorkforce: true,
   canImportWorkforce: true,
   canDelegateRoles: true,
+  canManageBilling: true,
 };
 
 function cardAvailability(
@@ -70,6 +73,11 @@ describe("settings hub card access", () => {
     expect(cardAvailability(adminAccess, "People and invitations")).toBe(true);
     expect(cardAvailability(adminAccess, "Job functions")).toBe(true);
     expect(cardAvailability(adminAccess, "Lean AI")).toBe(true);
+    expect(cardAvailability(adminAccess, "Billing")).toBe(true);
+  });
+
+  it("hides billing without billing.manage", () => {
+    expect(cardAvailability(teamMemberAccess, "Billing")).toBe(false);
   });
 
   it("hides organisation cards without hierarchy.read", () => {

@@ -34,7 +34,10 @@ export default async function BillingRecoveryPage() {
     redirect("/select-organisation");
   }
 
-  const accessPath = pathForOrganisationStatus(current.organisation_status);
+  const accessPath = pathForOrganisationStatus(
+    current.organisation_status,
+    current.onboarding_required,
+  );
   if (accessPath !== "/billing") {
     redirect(accessPath);
   }
