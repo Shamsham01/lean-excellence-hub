@@ -2,6 +2,7 @@ import { cache } from "react";
 import { redirect, unstable_rethrow } from "next/navigation";
 
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import {
   isNextNavigationError,
   throwPlatformBoundaryError,
@@ -99,7 +100,7 @@ export async function resolvePostAuthenticationRedirectPath(
     if (switched.error || switched.data !== true) {
       throw new Error("Organisation selection was not authorised.");
     }
-    return "/platform";
+    return pathForOrganisationStatus(organisations[0]!.organisation_status);
   }
 
   return "/select-organisation";

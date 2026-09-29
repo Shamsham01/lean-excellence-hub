@@ -11,6 +11,7 @@ import {
   normalizeApplicationOrigin,
   resolveApplicationOrigin,
 } from "@/platform/application-origin";
+import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
 import { finaliseIdentityEnrolment } from "@/platform/supabase/secret";
 import type { Database } from "@/platform/supabase/database.types";
@@ -70,7 +71,7 @@ async function resolvePostConfirmRedirect(
     await supabase.rpc("switch_organisation", {
       target_organisation_id: eligible[0]!.organisation_id,
     });
-    return "/platform";
+    return pathForOrganisationStatus(eligible[0]!.organisation_status);
   }
 
   return "/select-organisation";

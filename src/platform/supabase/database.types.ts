@@ -12724,6 +12724,7 @@ export type Database = {
         Args: { target_original_filename: string }
         Returns: string
       }
+      current_can_manage_billing: { Args: never; Returns: boolean }
       current_identity_state: {
         Args: never
         Returns: {
@@ -13027,6 +13028,7 @@ export type Database = {
           ended_at: string
           grace_expires_at: string
           organisation_id: string
+          organisation_status: string
           paid_site_limit: number
           plan_code: string
           provider: string
@@ -13426,6 +13428,7 @@ export type Database = {
           organisation_code: string
           organisation_id: string
           organisation_name: string
+          organisation_status: string
           selected: boolean
         }[]
       }

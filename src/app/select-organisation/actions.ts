@@ -3,7 +3,11 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { switchOrganisation } from "@/modules/organisations/context";
+import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
+import {
+  listEligibleOrganisations,
+  switchOrganisation,
+} from "@/modules/organisations/context";
 
 export async function selectOrganisation(formData: FormData) {
   const parsed = z.uuid().safeParse(formData.get("organisationId"));
@@ -16,5 +20,10 @@ export async function selectOrganisation(formData: FormData) {
   } catch {
     redirect("/select-organisation?error=invalid");
   }
-  redirect("/platform");
+
+  const organisations = await listEligibleOrganisations();
+  const current = organisations.find(
+    (organisation) => organisation.organisation_id === parsed.data,
+  );
+  redirect(pathForOrganisationStatus(current?.organisation_status));
 }

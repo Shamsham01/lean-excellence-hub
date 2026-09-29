@@ -43,8 +43,21 @@ setup fees as catalogue metadata and does not collect them automatically.
 
 Browser Checkout success means only that Checkout returned. Signed webhook
 events persist subscription snapshots idempotently. Organisation activation and
-suspension are a later lifecycle mapping onto existing organisation status
-values; they are not inferred from redirects.
+suspension map onto existing organisation status values; they are not inferred
+from redirects.
+
+Operational billing states (`trialing`, `active`, `cancel_at_period_end`, and
+`past_due` within the configured grace window) activate or reactivate a
+`provisioning` or `suspended` organisation. Ended, suspended, or unrecovered
+`past_due` billing suspends an `active` organisation. A `provisioning`
+organisation that never becomes operational stays `provisioning`. LEH never
+auto-closes a tenant; `closed` remains an operator action.
+
+`current_membership_id` still requires `organisations.status = active`, so
+operational RLS stays closed for provisioning and suspended tenants. Listing
+and switching include those statuses so `/onboarding` and `/billing` can load
+without a redirect loop, and a member can still select a different active
+organisation.
 
 ### Site capacity
 

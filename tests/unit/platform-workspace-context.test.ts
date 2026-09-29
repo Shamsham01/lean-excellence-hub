@@ -8,9 +8,7 @@ vi.mock("server-only", () => ({}));
 const requirePlatformAccess = vi.fn(async () => undefined);
 const loadCurrentOrganisationId = vi.fn();
 const listEligibleOrganisations = vi.fn();
-const switchOrganisationMock = vi.fn(
-  async (_organisationId: string) => undefined,
-);
+const switchOrganisationMock = vi.fn();
 const loadActiveSiteContext = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw new Error(`REDIRECT:${path}`);
@@ -43,6 +41,7 @@ const organisation = {
   organisation_code: "apex",
   organisation_id: "org-1",
   organisation_name: "Apex Manufacturing",
+  organisation_status: "active",
   selected: true,
 };
 
@@ -133,5 +132,27 @@ describe("loadPlatformWorkspaceContext", () => {
       PlatformBoundaryError,
     );
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects provisioning organisations away from the platform shell", async () => {
+    listEligibleOrganisations.mockResolvedValueOnce([
+      { ...organisation, organisation_status: "provisioning" },
+    ]);
+
+    await expect(loadPlatformWorkspaceContext()).rejects.toThrow(
+      "REDIRECT:/onboarding",
+    );
+    expect(loadActiveSiteContext).not.toHaveBeenCalled();
+  });
+
+  it("redirects suspended organisations to billing recovery", async () => {
+    listEligibleOrganisations.mockResolvedValueOnce([
+      { ...organisation, organisation_status: "suspended" },
+    ]);
+
+    await expect(loadPlatformWorkspaceContext()).rejects.toThrow(
+      "REDIRECT:/billing",
+    );
+    expect(loadActiveSiteContext).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ export type EligibleOrganisation = {
   organisation_code: string;
   organisation_id: string;
   organisation_name: string;
+  organisation_status: string;
   selected: boolean;
 };
 
