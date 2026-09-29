@@ -73,4 +73,21 @@ describe("fake billing provider", () => {
       "11111111-1111-4111-8111-111111111111",
     );
   });
+
+  it("creates a Customer Portal session for an existing fake customer", async () => {
+    const provider = createFakeBillingProvider(createFakeBillingStore());
+    const created = await provider.createOrRetrieveCustomer({
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      organisationName: "Northwind",
+    });
+
+    const portal = await provider.createCustomerPortalSession({
+      customerId: created.customerId,
+      returnUrl: "http://127.0.0.1:3000/billing",
+    });
+
+    expect(portal.url).toBe(
+      `http://127.0.0.1:3000/billing?portal=fake&customer=${created.customerId}`,
+    );
+  });
 });
