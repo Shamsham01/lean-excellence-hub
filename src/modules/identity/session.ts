@@ -91,6 +91,10 @@ export async function resolvePostAuthenticationRedirectPath(
 
   const organisations = await listEligibleOrganisations();
   if (organisations.length === 0) {
+    const founding = await supabase.rpc("current_can_found_organisation");
+    if (founding.data === true) {
+      return "/create-organisation";
+    }
     return "/no-access";
   }
   if (organisations.length === 1) {
@@ -100,7 +104,10 @@ export async function resolvePostAuthenticationRedirectPath(
     if (switched.error || switched.data !== true) {
       throw new Error("Organisation selection was not authorised.");
     }
-    return pathForOrganisationStatus(organisations[0]!.organisation_status);
+    return pathForOrganisationStatus(
+      organisations[0]!.organisation_status,
+      organisations[0]!.onboarding_required,
+    );
   }
 
   return "/select-organisation";

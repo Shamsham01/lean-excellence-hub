@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("exposes email and workforce sign-in without public signup", async ({
+test("exposes email and workforce sign-in without public workforce signup", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -12,6 +12,21 @@ test("exposes email and workforce sign-in without public signup", async ({
     page.getByRole("link", { name: /Forgot password/i }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /sign up/i })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Create your organisation" }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Create your organisation" }).click();
+  await expect(page).toHaveURL(/\/signup/);
+  await expect(
+    page.getByRole("heading", { name: "Create your organisation" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("founding-signup-form")).toBeVisible();
+  await expect(
+    page.getByText(
+      /joining an existing organisation still requires an invitation/i,
+    ),
+  ).toBeVisible();
 
   await page.goto("/workforce-login");
   await expect(

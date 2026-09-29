@@ -48,6 +48,9 @@ export async function setOrganisationOpenCheckoutSession(input: {
   organisationId: string;
   sessionId: string | null;
   expiresAt: string | null;
+  planCode?: string;
+  interval?: string;
+  siteQuantity?: number;
 }) {
   const { error } = await createSecretClient().rpc(
     "set_organisation_open_checkout_session",
@@ -55,12 +58,34 @@ export async function setOrganisationOpenCheckoutSession(input: {
       target_organisation_id: input.organisationId,
       target_session_id: input.sessionId ?? (null as unknown as string),
       target_expires_at: input.expiresAt ?? (null as unknown as string),
+      ...(input.sessionId && input.planCode && input.interval
+        ? {
+            target_checkout_context: {
+              planCode: input.planCode,
+              interval: input.interval,
+              siteQuantity: input.siteQuantity ?? 1,
+            },
+          }
+        : {}),
     },
   );
 
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function lookupOpenCheckoutSession(sessionId: string) {
+  const { data, error } = await createSecretClient().rpc(
+    "lookup_open_checkout_session",
+    { target_session_id: sessionId },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.[0] ?? null;
 }
 
 export async function claimBillingWebhookEvent(input: {

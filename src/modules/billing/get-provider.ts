@@ -5,18 +5,22 @@ import { createFakeBillingProvider } from "./fake-provider";
 import type { BillingProvider } from "./provider";
 import { createStripeBillingProvider } from "./stripe-provider";
 
-let fakeProvider: ReturnType<typeof createFakeBillingProvider> | null = null;
+type FakeProvider = ReturnType<typeof createFakeBillingProvider>;
+
+const globalForFakeBilling = globalThis as typeof globalThis & {
+  leanHubFakeBillingProvider?: FakeProvider;
+};
+
+export function getFakeBillingProvider() {
+  globalForFakeBilling.leanHubFakeBillingProvider ??=
+    createFakeBillingProvider();
+  return globalForFakeBilling.leanHubFakeBillingProvider;
+}
 
 export function getBillingProvider(): BillingProvider {
   const environment = getBillingEnvironment();
   if (environment.BILLING_PROVIDER === "fake") {
-    fakeProvider ??= createFakeBillingProvider();
-    return fakeProvider;
+    return getFakeBillingProvider();
   }
   return createStripeBillingProvider(environment);
-}
-
-export function getFakeBillingProvider() {
-  fakeProvider ??= createFakeBillingProvider();
-  return fakeProvider;
 }

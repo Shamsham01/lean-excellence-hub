@@ -16,6 +16,7 @@ export default async function SettingsPage() {
     canProvisionWorkforce,
     canImportWorkforce,
     canDelegateRoles,
+    canManageBilling,
   ] = await Promise.all([
     currentMemberHasPermission("hierarchy.read"),
     currentMemberHasPermission("job_functions.read"),
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
     currentMemberHasPermission("workforce.provision"),
     currentMemberHasPermission("workforce.import"),
     currentMemberCanDelegateRoles(),
+    currentMemberHasPermission("billing.manage"),
   ]);
 
   return (
@@ -42,6 +44,7 @@ export default async function SettingsPage() {
           canProvisionWorkforce,
           canImportWorkforce,
           canDelegateRoles,
+          canManageBilling,
         })}
       />
     </div>

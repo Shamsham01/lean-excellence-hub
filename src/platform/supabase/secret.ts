@@ -100,6 +100,22 @@ export async function finaliseIdentityEnrolment(userId: string) {
   });
 }
 
+export async function finaliseFoundingSignup(
+  bindingId: string,
+  userId: string,
+) {
+  return createSecretClient().rpc("finalise_founding_signup", {
+    target_binding_id: bindingId,
+    target_user_id: userId,
+  });
+}
+
+export async function prepareFoundingSignupBinding(email: string) {
+  return createSecretClient().rpc("prepare_founding_signup_binding", {
+    target_email: email,
+  });
+}
+
 export async function provisionWorkforceIdentity(input: {
   aliasType: "username" | "workforce_id";
   canonicalAlias: string;

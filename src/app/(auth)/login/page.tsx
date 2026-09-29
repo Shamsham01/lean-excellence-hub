@@ -38,6 +38,9 @@ export default async function LoginPage({
               Create an account from your invitation
             </Link>
           ) : null}
+          <Link href="/signup" className="text-primary hover:underline">
+            Create your organisation
+          </Link>
           <Link
             href="/workforce-login"
             className="text-primary hover:underline"

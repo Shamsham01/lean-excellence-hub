@@ -74,6 +74,34 @@ describe("fake billing provider", () => {
     );
   });
 
+  it("hydrates a persisted Checkout session when the in-memory store is empty", async () => {
+    const writer = createFakeBillingProvider(createFakeBillingStore());
+    const checkout = await writer.createCheckoutSession({
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      organisationName: "Northwind",
+      planCode: "essentials",
+      interval: "annual",
+      siteQuantity: 2,
+      successUrl: "http://127.0.0.1:3000/onboarding/confirm",
+      cancelUrl: "http://127.0.0.1:3000/onboarding/plan",
+    });
+
+    const reader = createFakeBillingProvider(createFakeBillingStore());
+    reader.hydrateCheckoutSession({
+      sessionId: checkout.sessionId,
+      customerId: checkout.customerId,
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      planCode: "essentials",
+      interval: "annual",
+      siteQuantity: 2,
+    });
+
+    const completed = reader.simulateCheckoutCompletion(checkout.sessionId);
+    expect(completed.snapshot?.planCode).toBe("essentials");
+    expect(completed.snapshot?.billingInterval).toBe("annual");
+    expect(completed.snapshot?.siteQuantity).toBe(2);
+  });
+
   it("creates a Customer Portal session for an existing fake customer", async () => {
     const provider = createFakeBillingProvider(createFakeBillingStore());
     const created = await provider.createOrRetrieveCustomer({
