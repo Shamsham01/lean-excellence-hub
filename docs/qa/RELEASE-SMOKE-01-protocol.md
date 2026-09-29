@@ -1,16 +1,17 @@
 # RELEASE-SMOKE-01 — CookieWorks human-smoke protocol
 
-Executable first-customer pack for **CookieWorks Manufacturing** (Bodmin + Exeter).
-Use this instead of restarting the historical paused Benefits wizard.
+Executable checklist for **CookieWorks Manufacturing** (Bodmin + Exeter) against current `main` (`ad6edce`, FIRST-CUSTOMER-READINESS-01).
+
+This checklist records hosted evidence. It is **not** a gate that must finish before organisation-onboarding and Stripe sandbox work starts. A FAIL that matches a release-stopping condition below is a new P0/P1. A PASS/FAIL log by itself is not.
 
 Companion files:
 
 - Register: `docs/qa/RELEASE-SMOKE-01-register.md`
-- Deploy / rollback: `docs/qa/RELEASE-SMOKE-01-go-live.md`
+- Deploy / billing boundary: `docs/qa/RELEASE-SMOKE-01-go-live.md`
 - Personas: `docs/development/qa-tenant.md`
 - Isolation contract: `docs/qa/cookieworks-two-site-smoke-runbook.md`
 
-**Do not** run hosted destructive reset, apply migrations, send invitation email, publish Netlify, or change Auth/billing from an implementation PR.
+**Do not** run a hosted destructive reset, apply or replay migrations, send invitation email, publish Netlify, or change Auth/billing while executing this pack from an implementation or docs PR.
 
 ---
 
@@ -18,8 +19,8 @@ Companion files:
 
 | Check | Pass if |
 | --- | --- |
-| Hosted app is the intended SHA | About/commit or Netlify deploy SHA = `main` (or explicitly recorded exception) |
-| Hosted DB | `20260925122602` applied; **do not replay**. `20260925160321_perf_suggestion_listing` is **outstanding** until explicitly approved |
+| Hosted app | Sign-in at the intended URL responds. Record the SHA if the deployment UI shows it. Public HTML does not expose the git SHA. |
+| Hosted DB | Latest applied migration is `20260928210635_maturity_assessor_review_and_action_lineage`. `20260928210634`, `20260925160321`, and `20260925122602` are already applied. **Do not replay. Nothing later is outstanding.** |
 | CookieWorks foundation | 1 org, 2 site roots, 16 units, 8 personas, 8 role grants, 3 job functions, 4 placements |
 | Module data | Foundation-only **or** a recorded existing-smoke dataset (do not wipe without approval) |
 | Credentials | Hosted disposable passwords — **not** the local `docs/development/qa-tenant.md` values unless this is local |
@@ -39,10 +40,9 @@ export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY"
 export SUPABASE_SECRET_KEY="$SERVICE_ROLE_KEY"
 export CREDENTIAL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 npx playwright test tests/e2e/cookieworks-ci-loop.spec.ts tests/e2e/cookieworks-two-site-hostile.spec.ts --workers=1
-# Each spec performs its own qa:cookie:reset (CW-RESET-001 / #155).
-# Extra (already in the Full Regression platform shard):
-#   tests/e2e/cookieworks-execution-site-context.spec.ts
 ```
+
+Each CookieWorks spec performs its own `qa:cookie:reset` (CW-RESET-001 / #155, merged in #153).
 
 ---
 
@@ -58,10 +58,12 @@ Scope: **Org** = whole CookieWorks; **Bodmin Ops** = Operations subtree; **Exete
 | **Exeter PM** | `exeterProductionManager` | Exeter Ops | Same as Bodmin PM on Exeter | Enumerate/manage Bodmin operational units |
 | **Team Leader** | `teamLeader` | Bodmin Ops | 5S audit, Gemba walk, complete schedules, claim/review suggestions, recognition read | Programme admin, publish frameworks, finance validate |
 | **Operator** | `operator` | Self (Packing) | Submit suggestion (+ optional evidence), self-assess, perform assigned 5S/Gemba, view own training/skills | Admin routes, other-site data, award recognition, create projects |
-| **Assessor** | `assessor` | Org | Formal maturity review | Configure frameworks, finance, CI project manage |
+| **Assessor** | `assessor` | Org | Formal maturity review (Lead Assessor) | Configure frameworks, finance, CI project manage |
 | **Finance** | `finance` | Org | Benefits finance validation / realisation | Unrelated admin modules |
 
-Active-site switcher: **Admin** and **CI Manager** use it to disambiguate duplicate unit names (Packing × 2). Security remains RLS/RPC — the switcher is UX context only.
+CI Manager **has** `suggestions.programmes.manage` (CW-CI-MGR-001 / #156). Operator and Finance do not.
+
+Active-site switcher: **Admin** and **CI Manager** use it to disambiguate duplicate unit names (Packing × 2). Security remains RLS/RPC. The switcher is UX context only.
 
 ---
 
@@ -74,115 +76,148 @@ Record each step as **PASS / FAIL / BLOCKED / PRODUCT GAP**.
 - URL + persona + active site
 - Screenshot of the control and the resulting record (business reference, not raw UUID)
 - Browser console errors / network 4xx–5xx on the failing action
-- Time and approximate hosted SHA
+- Time and approximate hosted SHA if known
 
 **Error checks on every page:**
 
 - No unexpected `console.error` / page crash
-- No raw UUID as the primary user-visible label
+- No raw UUID as the primary user-visible label (people, project owner, team)
 - Forbidden routes hide or 403 — they do not leak the other site’s records
 - Refresh retains the created record
 
 ### Release-stopping conditions (pause immediately)
 
-Stop and file a **P0/P1** issue if any of these occur on hosted CookieWorks:
+Stop and file a **new** P0/P1 issue if any of these occur on hosted CookieWorks:
 
 1. Cross-site or cross-tenant data visible or writable (Bodmin PM sees Exeter units/records, or the reverse).
 2. Privilege escalation (Operator reaches admin/config; Finance reaches unrelated admin).
 3. A create action yields an **unusable** record (cannot open, edit, or progress it).
 4. Publish/submit succeeds while server-side readiness should have blocked it.
-5. Silent data loss after save/refresh in authoring (5S question, Gemba section, Maturity question).
-6. Authentication lockout / session corruption affecting multiple personas.
-7. Hosted app 5xx / `usage_exceeded` / wrong SHA so the pack cannot run.
+5. Silent data loss after save/refresh in authoring or completed visual evidence (5S question, Gemba section/summary, Maturity question, image preview).
+6. A published Maturity framework version changes in place, or draft Review shows the old published structure as if it were the draft.
+7. A completed Gemba walk stays on `?prompt=` or loses its summary after reload.
+8. Authentication lockout / session corruption affecting multiple personas.
+9. Hosted app 5xx so the pack cannot run.
 
-P2/P3 (slow, sticky-nav, IA, mobile overflow): **log and continue**.
+P2/P3 (slow pages, information architecture, mobile form overflow, dark-mode select contrast): **log and continue**.
+
+Do not file a P0/P1 because an older GitHub issue still says OPEN.
 
 ---
 
-## 3. Execution order
+## 3. Ordered hosted checklist
 
-Run **ISO** first. Then **ORG/PEOPLE**. Then modules in the table. Do not skip isolation because demo E2E passed.
+Run in this order. Do not skip isolation because demo E2E passed.
 
-### A. Isolation and organisation
-
-| ID | Persona | Action | Expected | Evidence |
-| --- | --- | --- | --- | --- |
-| ISO-01 | Bodmin PM | `/platform/settings/structure` | Bodmin tree only; **no** “Exeter Cookie Factory” | Screenshot of tree |
-| ISO-02 | Exeter PM | Same | Exeter tree only; **no** Bodmin factory | Screenshot |
-| ISO-03 | CI Manager | Same | Both site roots | Screenshot |
-| ISO-04 | Admin | Attempt reparent Exeter unit under Bodmin | Rejected | Error copy |
-| ISO-05 | Admin | Site switcher Bodmin → Exeter → All sites | Selectors follow site; All-sites warns/gates execution modules | Site chip + unit picker |
-| ORG-01 | Admin | Structure CRUD on a **new disposable** Bodmin child: create, rename, move, archive, reactivate | Persists after refresh | Unit name in tree |
-| PPL-01 | Admin | `/platform/settings/people` load + **5× hard refresh** | Page stable; invite form visible; **no 404** | Network + screenshot |
-| PPL-02 | Operator | People directory / settings admin URLs | Hidden or forbidden | Screenshot |
-| PPL-03 | Admin | People selectors (Benefits owner later, Recognition recipient) | Human names, not membership UUIDs | Selector open state |
-
-### B. 5S → Gemba → Scheduling
-
-Use **Bodmin** first, then one Exeter spot-check.
+### A. Organisation / People / isolation
 
 | ID | Persona | Action | Expected |
 | --- | --- | --- | --- |
-| 5S-01 | CI Manager | 5S empty/list → new draft → add category + question → refresh | Question still present; Publish disabled until ready |
-| 5S-02 | CI Manager | Publish when ready | v1 published; create-schedule link appears |
-| 5S-03 | Bodmin PM or Team Leader | Start/complete audit on Bodmin applicable unit | Score saved; answers survive refresh |
-| 5S-04 | Exeter PM | With Bodmin-only standard: cannot execute on Exeter unit | Empty/blocked unit picker — not a mixed list |
-| GEM-01 | CI Manager | Gemba draft → section + prompt → refresh → publish | Same persistence/readiness as 5S |
-| GEM-02 | Team Leader | Start walk, add observation, complete | Walk listed; resume works if left in progress |
-| SCH-01 | Bodmin PM | Recurring schedule against published 5S/Gemba, Bodmin unit | Occurrences listed; Exeter unit absent from picker |
-| SCH-02 | Operator or Team Leader | Complete one occurrence | Completion recorded |
+| ISO-01 | Bodmin PM | `/platform/settings/structure` | Bodmin tree only; **no** “Exeter Cookie Factory” |
+| ISO-02 | Exeter PM | Same | Exeter tree only; **no** Bodmin factory |
+| ISO-03 | CI Manager | Same | Both site roots |
+| ISO-04 | Admin | Attempt reparent Exeter unit under Bodmin | Rejected |
+| ISO-05 | Admin | Site switcher Bodmin → Exeter → All sites | Selectors follow site; All-sites warns/gates execution modules |
+| ORG-01 | Admin | Structure CRUD on a **new disposable** Bodmin child: create, rename, move, archive, reactivate | Persists after refresh |
+| PPL-01 | Admin | `/platform/settings/people` load + **5× hard refresh** | Page stable; invite form visible; **no 404** |
+| PPL-02 | Operator | People directory / settings admin URLs | Hidden or forbidden |
+| PPL-03 | Admin | People selectors (role labels, Benefits owner, Recognition recipient, project owner/team) | Human names, not membership UUIDs |
 
-### C. Maturity
+### B. 5S
 
-| ID | Persona | Action | Expected |
-| --- | --- | --- | --- |
-| MAT-01 | CI Manager | Create draft framework, levels, pillar, criterion, question | Save confirmation; tab/step survives refresh (`?step=`) |
-| MAT-02 | CI Manager | Publish blocked while a criterion has 0 questions; publish when ready | Server-side rejection if forced; UI disabled until ready |
-| MAT-03 | CI Manager | Published version not silently editable; successor draft | Historical assessments stay on published version |
-| MAT-04 | CI Manager / Assessor | Formal assessment for **Bodmin**, evidence upload, submit, review, approve/publish official result | Official snapshot; Operator cannot configure |
-
-If a **pre-existing** CookieWorks published framework is dirty, use successor-draft — do not mutate the published version in place.
-
-### D. Suggestions → Actions → Projects → Benefits
-
-Foundation has **no** programmes. Configure once, then run the loop.
+Use a published Bodmin-applicable standard. Author a disposable standard first if none is suitable (draft → question → publish). Do not edit a published version in place.
 
 | ID | Persona | Action | Expected |
 | --- | --- | --- | --- |
-| SUG-01 | **CI Manager** | Programmes: New programme (auto-code) → Publish; New category | Operator can submit; no manual code required; Operator and Finance remain unable to manage programmes. |
+| 5S-01 | Bodmin PM or Team Leader | Start audit on a Bodmin applicable unit | Audit workspace opens for that unit only |
+| 5S-02 | Same | Record answers and at least one finding | Answers and finding text persist |
+| 5S-03 | Same | Attach an image | Image appears in the visual evidence gallery |
+| 5S-04 | Same | Complete the audit | Completed state; score/result visible |
+| 5S-05 | Same | Reload the completed audit | Image evidence and result still visible |
+| 5S-06 | Exeter PM | With a Bodmin-only standard | Cannot execute on an Exeter unit |
+
+### C. Gemba
+
+| ID | Persona | Action | Expected |
+| --- | --- | --- | --- |
+| GEM-01 | Team Leader | Start a walk, leave it in progress on a specific prompt, then resume from overview/history | Prompt-scoped walk resumes; URL may include `?prompt=` while in progress |
+| GEM-02 | Same | Add an observation and an image on a prompt | Observation text and image gallery visible before completion |
+| GEM-03 | Same | Complete the walk | Summary visible. URL is the canonical walk path **without** `?prompt=` |
+| GEM-04 | Same | Reload the completed walk | Summary, observation, and image survive. `?prompt=` does not return |
+
+### D. Maturity
+
+If a published CookieWorks framework already exists, create a **successor draft**. Do not mutate the published version in place.
+
+| ID | Persona | Action | Expected |
+| --- | --- | --- | --- |
+| MAT-01 | CI Manager | Open the published version | Structure is read-only. Published preview is separate from the draft editor |
+| MAT-02 | CI Manager | Create a successor draft | New draft version; published version unchanged |
+| MAT-03 | CI Manager | Move a question onto another criterion (structural move) | Question appears under the destination pillar/criterion. Published preview does not gain it |
+| MAT-04 | CI Manager | Open draft **Review** | Preview groups questions in the **new** hierarchy. Old published structure stays in the published disclosure |
+| MAT-05 | Operator | Self assessment on Bodmin: score, complete | Completes without an official published result |
+| MAT-06 | Assessor (Lead Assessor) | Formal assessment: answer, comment, image evidence, submit | Status Submitted. Lead Assessor name is human-readable |
+| MAT-07 | Assessor | Begin assessor review. Change score, comment, and evidence | Edits save during review |
+| MAT-08 | Assessor | Create a contextual action from the assessment | Action opens. Actions list filtered by this assessment shows it |
+| MAT-09 | Assessor | Return for correction | Submitter can edit again |
+| MAT-10 | Assessor or submitter | Resubmit | Returns to Submitted |
+| MAT-11 | Assessor | Approve, then publish official result | Published. Scores lock. Official result is recorded |
+| MAT-12 | Operator | Framework configuration URLs | Cannot configure or publish frameworks |
+
+### E. Suggestions → Actions → Projects → Benefits
+
+Foundation may have **no** programmes. Configure once, then run the loop. Preserve lineage across reload.
+
+| ID | Persona | Action | Expected |
+| --- | --- | --- | --- |
+| SUG-01 | **CI Manager** | Programmes: New programme (auto-code) → Publish; New category | Operator can submit. Operator and Finance cannot manage programmes |
 | SUG-02 | Operator | New suggestion, optional evidence, submit | Detail URL; evidence accessible after reload |
 | SUG-03 | Team Leader | Unassigned queue → claim → begin → approve | Status Accepted; no UUID-primary labels |
-| SUG-04 | Bodmin PM | Implementation → Create action → **Open action** | Action workspace; start → complete; History after refresh |
-| SUG-05 | Bodmin PM | Implementation → Create project | Lands on project workspace with `PROJ-…` reference — **not** a raw UUID toast |
-| SUG-06 | Bodmin PM | Suggestion Activity | “Open action” and “Open project” links |
+| SUG-04 | Bodmin PM | Implementation → Create action → **Open action** | Action workspace; start → complete; history after refresh |
+| SUG-05 | Bodmin PM | Implementation → Create project | Lands on project workspace with `PROJ-…` reference. Owner and team show **names** |
+| SUG-06 | Bodmin PM | Suggestion Activity | “Open action” and “Open project” links still resolve after reload |
 | PRJ-01 | Bodmin PM | Draft charter: edit fields, assign team owner, pick published methodology | Fields persist; Submit disabled until ready; then submit succeeds |
-| BEN-01 | CI Manager / Bodmin PM | Benefit **from project** (canonical). Global New benefit uses project selector, not resource IDs | Inherited site/unit; owner names not UUIDs |
-| BEN-02 | Finance | Validation queue for submitted benefit | Approve/reject recorded; no unrelated admin |
+| BEN-01 | CI Manager / Bodmin PM | Benefit **from project**. Global New benefit uses the project selector | Inherited site/unit; owner names not UUIDs. Benefit still linked after reload |
+| BEN-02 | Finance | Validation queue for the submitted benefit | Approve/reject recorded; no unrelated admin |
+| BEN-03 | Exeter PM | Open the Bodmin project/benefit | Not a writable Bodmin record |
 
-Exeter spot-check: Exeter PM must not open the Bodmin project/benefit as a writable Bodmin record.
+### F. Training / Skills / Recognition
 
-### E. Problem Solving, Training, Skills, Recognition, Lean AI
+Validate the current administration and normal-user journeys. Do not expand scope.
 
 | ID | Persona | Action | Expected |
 | --- | --- | --- | --- |
-| PS-01 | Bodmin PM | Create + activate case (builtin method) | Portfolio row; owner/facilitator show **names** |
-| PS-02 | Operator | Contribute only | Cannot manage/close |
-| TRN-01 | CI Manager / Admin | Catalogue: draft course → publish | Appears in catalogue; Operator cannot manage |
-| TRN-02 | CI Manager | Curricula: requirements with named course / job function / unit → publish | Published immutable; successor if needed |
-| SKL-01 | CI Manager | Skill + scale; PM records operator assessment | Matrix updates |
-| REC-01 | Bodmin PM or Team Leader if permitted | Award operator; recipient picker shows name | Operator sees award; cannot award others |
-| AI-01 | Admin | Settings: enable AI if entitled; usage summary **human-readable** (not raw JSON) | Operator blocked from AI settings |
-| AI-02 | CI Manager | On a PS case, Lean AI (fake/live per env) in **that case’s** context | Proposals stay on the case; no other-tenant/site leakage |
+| TRN-01 | CI Manager / Admin | Catalogue: draft course → publish | Appears in the catalogue. Operator cannot manage courses |
+| TRN-02 | CI Manager | Curricula: requirements with named course / job function / unit → publish | Published version immutable; successor if a change is required |
+| TRN-03 | Operator | Own training view | Sees assigned/published training. Cannot open catalogue admin |
+| SKL-01 | CI Manager | Skill + scale; PM records an operator assessment | Matrix updates and survives reload |
+| REC-01 | Bodmin PM or Team Leader if permitted | Award operator | Recipient picker shows a name. Operator sees the award and cannot award others |
+
+### G. Lean AI
+
+Validate current functionality only. Do not expand Lean AI scope.
+
+| ID | Persona | Action | Expected |
+| --- | --- | --- | --- |
+| AI-01 | Admin | Settings: usage summary is human-readable (runs, tokens, tool calls). Empty state if none | Operator cannot open AI settings |
+| AI-02 | CI Manager | On one Problem Solving case, use Lean AI in **that case’s** context | Proposals stay on the case. No other-tenant or other-site leakage |
+
+Scheduling (recurring 5S/Gemba occurrence, Exeter unit absent from the Bodmin picker) may be logged if time remains. It is not required to call this checklist complete.
 
 ---
 
 ## 4. Coverage vs automation
 
-| Area | Automated on CookieWorks | Human still required |
+| Area | Automated on current `main` | Human still required |
 | --- | --- | --- |
-| Two-site structure isolation | `cookieworks-ci-loop.spec.ts` and `cookieworks-two-site-hostile.spec.ts` (Full Regression cookieworks shard; each file resets). | ISO-04 reparent, hosted SHA |
-| 5S/Gemba execution site context | `cookieworks-execution-site-context.spec.ts` | Foundation empty→publish on hosted |
-| Suggestion → action → project loop | Same `cookieworks-ci-loop.spec.ts` after isolation | Evidence upload, charter complete, benefit finance |
-| Maturity full MAT0 | `cookieworks-maturity-smoke.spec.ts` (local; not in CI duration budget) | Hosted official result |
-| People settings reload | `people-settings-reload.spec.ts` (demo + CW delegate) | Hosted 5× refresh as Admin |
-| Demo module happy paths | Full Regression platform/workforce/improvement/ai-closure | Do **not** treat Apex demo PASS as CookieWorks PASS |
+| Two-site structure isolation | Full Regression `cookieworks` shard: `cookieworks-ci-loop.spec.ts`, `cookieworks-two-site-hostile.spec.ts` | ISO-04 reparent on hosted |
+| 5S/Gemba execution site context | `cookieworks-execution-site-context.spec.ts` (platform shard) | Hosted image evidence on a completed 5S audit |
+| Gemba prompt completion | `gemba-journeys.spec.ts` (platform shard): observation, image, canonical URL without `?prompt=`, reload | Hosted CookieWorks persona |
+| Suggestion → action → project loop | `cookieworks-ci-loop.spec.ts`; improvement shard lineage specs | Hosted evidence upload, charter, finance validation |
+| Maturity authoring, draft Review, formal assessor loop | `maturity-journeys.spec.ts` and `maturity-authoring-step-reload.spec.ts` (platform shard) | Hosted CookieWorks official result on the successor draft |
+| People settings reload | `people-settings-reload.spec.ts` (workforce shard) | Hosted 5× refresh as Admin |
+| Training catalogue and curriculum | `training-course-authoring.spec.ts`, `training-curriculum-authoring.spec.ts` (workforce shard) | One hosted admin pass (TRN-01, TRN-02) |
+| Lean AI closure | `milestone12-closure.spec.ts` (`ai-closure` shard) | AI-01 / AI-02 on hosted if AI is entitled |
+| Demo module happy paths | platform / workforce / improvement / ai-closure shards | Do **not** treat an Apex demo PASS as a CookieWorks PASS |
+
+`cookieworks-maturity-smoke.spec.ts` remains a local MAT0 smoke and is outside the CI duration budget. The platform shard already covers the formal assessor and draft-Review paths, so no extra CookieWorks suite was added for this reconciliation.
