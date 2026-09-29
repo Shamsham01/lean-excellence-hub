@@ -6,9 +6,21 @@ import { getServerEnvironment } from "@/platform/env";
 import { STRIPE_PRICE_ENV_KEYS } from "./catalogue";
 import type { BillingInterval, CheckoutPlanCode } from "./types";
 
+export class BillingConfigurationError extends Error {
+  constructor(message = "Billing is unavailable.") {
+    super(message);
+    this.name = "BillingConfigurationError";
+  }
+}
+
+const BILLING_PROVIDER_UNAVAILABLE =
+  "Billing is unavailable: BILLING_PROVIDER must be set to 'fake' or 'stripe'.";
+
 const billingEnvironmentSchema = z
   .object({
-    BILLING_PROVIDER: z.enum(["fake", "stripe"]).optional(),
+    BILLING_PROVIDER: z.enum(["fake", "stripe"], {
+      error: BILLING_PROVIDER_UNAVAILABLE,
+    }),
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     STRIPE_PRICE_ESSENTIALS_MONTHLY: z.string().optional(),
@@ -19,12 +31,6 @@ const billingEnvironmentSchema = z
     STRIPE_PRICE_FOUNDER_ANNUAL: z.string().optional(),
   })
   .superRefine((value, context) => {
-    const provider =
-      value.BILLING_PROVIDER ??
-      (process.env.NODE_ENV === "test" || !value.STRIPE_SECRET_KEY
-        ? "fake"
-        : "stripe");
-
     if (value.STRIPE_SECRET_KEY?.startsWith("sk_live")) {
       context.addIssue({
         code: "custom",
@@ -33,7 +39,7 @@ const billingEnvironmentSchema = z
       });
     }
 
-    if (provider === "stripe") {
+    if (value.BILLING_PROVIDER === "stripe") {
       if (!value.STRIPE_SECRET_KEY) {
         context.addIssue({
           code: "custom",
@@ -65,19 +71,46 @@ export type BillingEnvironment = {
   STRIPE_PRICE_FOUNDER_ANNUAL?: string | undefined;
 };
 
+function configurationErrorFromIssues(
+  issues: readonly { message: string }[],
+): BillingConfigurationError {
+  const liveKeyIssue = issues.find((issue) =>
+    issue.message.includes("Live Stripe keys"),
+  );
+  if (liveKeyIssue) {
+    return new BillingConfigurationError(liveKeyIssue.message);
+  }
+
+  const stripeSecretIssue = issues.find((issue) =>
+    issue.message.includes("STRIPE_SECRET_KEY is required"),
+  );
+  if (stripeSecretIssue) {
+    return new BillingConfigurationError(stripeSecretIssue.message);
+  }
+
+  const webhookIssue = issues.find((issue) =>
+    issue.message.includes("STRIPE_WEBHOOK_SECRET is required"),
+  );
+  if (webhookIssue) {
+    return new BillingConfigurationError(webhookIssue.message);
+  }
+
+  return new BillingConfigurationError(
+    issues[0]?.message ?? BILLING_PROVIDER_UNAVAILABLE,
+  );
+}
+
 export function parseBillingEnvironment(
   environment: Record<string, string | undefined>,
 ): BillingEnvironment {
-  const parsed = billingEnvironmentSchema.parse(environment);
-  const provider =
-    parsed.BILLING_PROVIDER ??
-    (process.env.NODE_ENV === "test" || !parsed.STRIPE_SECRET_KEY
-      ? "fake"
-      : "stripe");
+  const parsed = billingEnvironmentSchema.safeParse(environment);
+  if (!parsed.success) {
+    throw configurationErrorFromIssues(parsed.error.issues);
+  }
 
   return {
-    ...parsed,
-    BILLING_PROVIDER: provider,
+    ...parsed.data,
+    BILLING_PROVIDER: parsed.data.BILLING_PROVIDER,
   };
 }
 
@@ -96,6 +129,21 @@ export function getBillingEnvironment(): BillingEnvironment {
     STRIPE_PRICE_FOUNDER_MONTHLY: process.env.STRIPE_PRICE_FOUNDER_MONTHLY,
     STRIPE_PRICE_FOUNDER_ANNUAL: process.env.STRIPE_PRICE_FOUNDER_ANNUAL,
   });
+}
+
+export function tryGetBillingEnvironment(): BillingEnvironment | null {
+  try {
+    return getBillingEnvironment();
+  } catch (cause) {
+    if (cause instanceof BillingConfigurationError) {
+      return null;
+    }
+    throw cause;
+  }
+}
+
+export function isFakeBillingEnabled() {
+  return tryGetBillingEnvironment()?.BILLING_PROVIDER === "fake";
 }
 
 export function requireStripePriceId(

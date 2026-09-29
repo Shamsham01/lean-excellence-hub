@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { BillingConfigurationError } from "@/modules/billing/env";
 import { getBillingProvider } from "@/modules/billing/get-provider";
 import { BillingProviderError } from "@/modules/billing/provider";
 import { processBillingWebhook } from "@/modules/billing/webhook";
@@ -18,6 +19,13 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ received: true, ...result });
   } catch (cause) {
+    if (cause instanceof BillingConfigurationError) {
+      return NextResponse.json(
+        { error: "billing_unavailable" },
+        { status: 503 },
+      );
+    }
+
     if (
       cause instanceof BillingProviderError &&
       cause.code === "invalid_webhook"

@@ -29,9 +29,12 @@ Stable plan codes are `essentials`, `professional`, `enterprise`, and
 
 ### Provider boundary
 
-All Stripe SDK calls live behind `BillingProvider`. Tests and CI use the fake
-provider. The Stripe implementation is Sandbox-only: live secret keys
-(`sk_live…`) are rejected.
+All Stripe SDK calls live behind `BillingProvider`. The fake provider is used
+only when `BILLING_PROVIDER=fake` is set explicitly (local, CI, and tests).
+Missing Stripe secrets must not select fake. A deployed environment without
+`BILLING_PROVIDER` or without Stripe Sandbox secrets fails closed and reports
+billing unavailable. The Stripe implementation is Sandbox-only: live secret
+keys (`sk_live…`) are rejected.
 
 Checkout may mix a recurring price with a one-time setup fee, but LEH v1 keeps
 setup fees as catalogue metadata and does not collect them automatically.
