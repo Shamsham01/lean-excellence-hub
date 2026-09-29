@@ -4688,6 +4688,181 @@ export type Database = {
           },
         ]
       }
+      leanai_intervention_states: {
+        Row: {
+          intervention_key: string
+          last_accepted_at: string | null
+          last_dismissed_at: string | null
+          last_event_key: string
+          last_shown_at: string | null
+          membership_id: string
+          organisation_id: string
+          snoozed_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          intervention_key: string
+          last_accepted_at?: string | null
+          last_dismissed_at?: string | null
+          last_event_key: string
+          last_shown_at?: string | null
+          membership_id: string
+          organisation_id: string
+          snoozed_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          intervention_key?: string
+          last_accepted_at?: string | null
+          last_dismissed_at?: string | null
+          last_event_key?: string
+          last_shown_at?: string | null
+          membership_id?: string
+          organisation_id?: string
+          snoozed_until?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leanai_intervention_states_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "leanai_intervention_states_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leanai_journey_contexts: {
+        Row: {
+          last_intervention_at: string | null
+          last_intervention_event_key: string | null
+          last_intervention_key: string | null
+          last_onboarding_at: string | null
+          last_onboarding_event_key: string | null
+          last_onboarding_step_key: string | null
+          membership_id: string
+          onboarding_status: string
+          organisation_id: string
+          recent_module_key: string | null
+          recent_module_opened_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          last_intervention_at?: string | null
+          last_intervention_event_key?: string | null
+          last_intervention_key?: string | null
+          last_onboarding_at?: string | null
+          last_onboarding_event_key?: string | null
+          last_onboarding_step_key?: string | null
+          membership_id: string
+          onboarding_status?: string
+          organisation_id: string
+          recent_module_key?: string | null
+          recent_module_opened_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_intervention_at?: string | null
+          last_intervention_event_key?: string | null
+          last_intervention_key?: string | null
+          last_onboarding_at?: string | null
+          last_onboarding_event_key?: string | null
+          last_onboarding_step_key?: string | null
+          membership_id?: string
+          onboarding_status?: string
+          organisation_id?: string
+          recent_module_key?: string | null
+          recent_module_opened_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leanai_journey_contexts_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: true
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "leanai_journey_contexts_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leanai_semantic_events: {
+        Row: {
+          created_at: string
+          event_key: string
+          event_version: number
+          id: string
+          intervention_key: string | null
+          membership_id: string
+          metadata: Json
+          module_key: string | null
+          occurred_at: string
+          organisation_id: string
+          site_unit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_key: string
+          event_version?: number
+          id?: string
+          intervention_key?: string | null
+          membership_id: string
+          metadata?: Json
+          module_key?: string | null
+          occurred_at?: string
+          organisation_id: string
+          site_unit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_key?: string
+          event_version?: number
+          id?: string
+          intervention_key?: string | null
+          membership_id?: string
+          metadata?: Json
+          module_key?: string | null
+          occurred_at?: string
+          organisation_id?: string
+          site_unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leanai_semantic_events_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "leanai_semantic_events_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leanai_semantic_events_site_fkey"
+            columns: ["organisation_id", "site_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       maturity_action_context: {
         Row: {
           action_id: string
@@ -5918,22 +6093,28 @@ export type Database = {
       organisation_ai_settings: {
         Row: {
           ai_enabled: boolean
+          journey_event_retention_days: number
           monthly_token_ceiling: number | null
           organisation_id: string
+          proactive_assistance_enabled: boolean
           updated_at: string
           updated_by_membership_id: string | null
         }
         Insert: {
           ai_enabled?: boolean
+          journey_event_retention_days?: number
           monthly_token_ceiling?: number | null
           organisation_id: string
+          proactive_assistance_enabled?: boolean
           updated_at?: string
           updated_by_membership_id?: string | null
         }
         Update: {
           ai_enabled?: boolean
+          journey_event_retention_days?: number
           monthly_token_ceiling?: number | null
           organisation_id?: string
+          proactive_assistance_enabled?: boolean
           updated_at?: string
           updated_by_membership_id?: string | null
         }
@@ -13104,6 +13285,8 @@ export type Database = {
         Args: { target_benefit_id: string }
         Returns: Json
       }
+      get_leanai_contextual_snapshot: { Args: never; Returns: Json }
+      get_leanai_journey_context: { Args: never; Returns: Json }
       get_membership_administration_profile: {
         Args: { target_membership_id: string }
         Returns: Json
@@ -13167,6 +13350,7 @@ export type Database = {
           text_body: string
         }[]
       }
+      get_organisation_setup_readiness: { Args: never; Returns: Json }
       get_people_directory: {
         Args: {
           target_include_inactive?: boolean
@@ -13751,6 +13935,18 @@ export type Database = {
           target_verification_rationale?: string
         }
         Returns: boolean
+      }
+      record_leanai_semantic_event: {
+        Args: {
+          target_event_key: string
+          target_event_version?: number
+          target_intervention_key?: string
+          target_metadata?: Json
+          target_module_key?: string
+          target_occurred_at?: string
+          target_site_unit_id?: string
+        }
+        Returns: string
       }
       record_metric_measurement: {
         Args: {
