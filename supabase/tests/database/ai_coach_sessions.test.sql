@@ -428,7 +428,7 @@ select ok(
 reset role;
 create or replace function private.can_view_ai_history(target_organisation_id uuid)
 returns boolean language sql stable security definer set search_path = ''
-as $ select true $;
+as $coach_privacy_test$ select true $coach_privacy_test$;
 select set_config(
   'request.jwt.claims',
   '{"sub":"c1950000-0000-4000-8000-000000000002","role":"authenticated","session_id":"c1951000-0000-4000-8000-000000000002","email":"ai-coach-unprivileged@example.test"}',
