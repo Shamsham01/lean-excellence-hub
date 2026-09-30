@@ -103,3 +103,5 @@ Soft (recommended order, not blocking): `maturity/suggestions → sites`; `train
 - Route handler: `GET/POST /api/leanai/context` (one read-model boundary; POST does not accept organisation IDs)
 
 This slice does not implement the intervention UI. `module.opened` is not globally instrumented on every route.
+
+See [LEANAI-CONTEXT-03](./leanai-intervention-engine.md) for the intervention engine and coach UI that consume this snapshot.

@@ -1,4 +1,6 @@
 import { Layers, Plus } from "lucide-react";
+
+import { LeanAiCoachCard } from "@/components/leanai/leanai-coach-card";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
@@ -11,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import { loadLeanAiCoachRecommendation } from "@/modules/leanai-context/interventions/load";
 import {
   AssessmentStatusBadge,
   ScoreBadge,
@@ -58,23 +61,31 @@ export default async function MaturityOverviewPage() {
     .limit(5);
 
   if (!models?.length) {
+    const recommendation = await loadLeanAiCoachRecommendation("maturity");
     return (
       <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
         <PageHeader
           title="Lean maturity"
           description="Measure and improve operational excellence across your organisation."
         />
-        <EmptyState
-          title="No Lean maturity framework yet"
-          description="Create your organisation's Lean / Operational Excellence framework to begin measuring maturity across sites and teams."
-          {...(canManage
-            ? {
-                actionLabel: "Create framework",
-                actionHref: "/platform/maturity/models",
-              }
-            : {})}
-          icon={<Layers className="size-5" />}
-        />
+        {recommendation ? (
+          <LeanAiCoachCard
+            recommendation={recommendation}
+            presentation="empty_state"
+          />
+        ) : (
+          <EmptyState
+            title="No Lean maturity framework yet"
+            description="Create your organisation's Lean / Operational Excellence framework to begin measuring maturity across sites and teams."
+            {...(canManage
+              ? {
+                  actionLabel: "Create framework",
+                  actionHref: "/platform/maturity/models",
+                }
+              : {})}
+            icon={<Layers className="size-5" />}
+          />
+        )}
       </div>
     );
   }

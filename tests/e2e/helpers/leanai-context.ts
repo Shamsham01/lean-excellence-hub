@@ -14,7 +14,7 @@ export type LeanAiContextE2eUser = {
   organisationBCode: string;
 };
 
-function resolveSupabaseEnv() {
+export function resolveSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SECRET_KEY;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;

@@ -21,6 +21,23 @@ export {
   isLeanAiSemanticEventKey,
   validateLeanAiSemanticEventInput,
 } from "./taxonomy";
+export {
+  LEANAI_INTERVENTION_CATALOGUE,
+  LEANAI_INTERVENTION_KEYS,
+  LEANAI_INTERVENTION_PERMISSION_KEYS,
+  leanAiInterventionByKey,
+} from "./interventions/catalogue";
+export {
+  selectLeanAiInterventions,
+  selectPrimaryLeanAiIntervention,
+} from "./interventions/engine";
+export type {
+  LeanAiCoachPresentation,
+  LeanAiCoachSurface,
+  LeanAiInterventionCandidate,
+  LeanAiInterventionDefinition,
+} from "./interventions/types";
+export { LEANAI_COACH_SURFACES } from "./interventions/types";
 export type {
   LeanAiContextualSnapshot,
   LeanAiJourneyContext,
