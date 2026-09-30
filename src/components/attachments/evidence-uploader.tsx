@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { Upload, X } from "lucide-react";
 
@@ -74,7 +73,6 @@ export function EvidenceUploader({
   onConfirm,
   onLink,
 }: EvidenceUploaderProps) {
-  const router = useRouter();
   const [state, setState] = useState<UploadState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -169,10 +167,11 @@ export function EvidenceUploader({
         pendingItem,
       ]);
       setState("success");
-      router.refresh();
+      // Link actions already revalidate. A delayed router.refresh() can collide
+      // with a later answer save and blank Saving/Saved feedback.
       setTimeout(() => setState("idle"), 2000);
     },
-    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink, router],
+    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink],
   );
 
   function onFileChange(files: FileList | null) {
