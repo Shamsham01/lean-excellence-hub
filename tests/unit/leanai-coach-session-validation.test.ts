@@ -75,10 +75,7 @@ describe("Coach session validation", () => {
   it("rejects malformed or inactive detail", () => {
     expect(readTrustedCoachConversation(null, expected)).toBeNull();
     expect(
-      readTrustedCoachConversation(
-        { session: detail().session },
-        expected,
-      ),
+      readTrustedCoachConversation({ session: detail().session }, expected),
     ).toBeNull();
     expect(
       readTrustedCoachConversation(
