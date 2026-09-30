@@ -1,5 +1,22 @@
 # RELEASE-SMOKE-01 — Go-live blockers and deployment checklist
 
+> **Release-state notice (30 September 2026):** The original checklist below
+> is a historical gate review from 29 September, not a current declaration
+> of hosted schema state. For the maintained merge/migration/CI status and
+> remaining customer-release gates, see
+> [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md).
+>
+> The original report predates merged Stripe/onboarding and LeanAI work.
+> Its claims that billing was not implemented and no migrations existed
+> after `20260928210635` must **not** be used for deployment decisions.
+> Check the actual hosted migration ledger and current `main` before every
+> migration push; never replay historical files.
+
+---
+
+## Historical go-live checkpoint (29 September 2026)
+
+
 **This document is planning only.** Automated agents and implementation PRs must not mutate hosted Supabase, CookieWorks fixtures, Auth, Netlify, or billing.
 
 Inspected read-only on 2026-09-29 (FIRST-CUSTOMER-READINESS-01):
