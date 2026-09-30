@@ -73,9 +73,8 @@ export default defineConfig({
         localSupabaseEnv.SUPABASE_SECRET_KEY ??
         "sb_secret_playwright_placeholder",
       AI_ENABLED:
-        process.env.E2E_WITH_SUPABASE === "1"
-          ? "1"
-          : (process.env.AI_ENABLED ?? "0"),
+        process.env.AI_ENABLED ??
+        (process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0"),
       AI_PROVIDER:
         process.env.E2E_WITH_SUPABASE === "1"
           ? "fake"
