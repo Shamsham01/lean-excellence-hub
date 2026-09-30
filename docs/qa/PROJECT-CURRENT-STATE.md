@@ -24,10 +24,14 @@ similarity must search *only readable* suggestions, cases and other records.
 
 ## Release checkpoint after hosted Coach-04 migration
 
-- Inspected git `main`:
-  `74aa551c3e3166599de60f76175517bec203daf0` (squash-merge of docs PR
-  #198). Coach application code is in parent
-  `70f41c4a4f41cfd46bf3f052597f8414cda36246` (#197), itself parented by
+- Current git `main`:
+  `4ae04302adae5640a1dfc0bbf9890a88da28d56f` (squash-merge of PR #201,
+  the 5S answer-save/evidence-refresh race fix). Its post-merge Full
+  Regression
+  ([#36753152549](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/36753152549))
+  is green. The prior docs merge is
+  `74aa551c3e3166599de60f76175517bec203daf0` (#198); Coach application
+  code is in `70f41c4a4f41cfd46bf3f052597f8414cda36246` (#197), parented by
   `591aaa2ba8c067be0e544664d2ae9231b6d15dfb` (#196).
 - Hosted project `zsadfvjtknbbfomlmttv` (`eu-west-1`, `ACTIVE_HEALTHY`) now
   has **217/217** migration versions *and names* matching the repository.
@@ -58,17 +62,18 @@ similarity must search *only readable* suggestions, cases and other records.
   DEFINER warnings, leaked-password protection disabled. Unchanged from the
   pre-Coach audit. Intentional invitation bootstrap remains public; no
   global revocation. `public.create_ai_coach_session` is not flagged.
-- **There is still no operator-approved published application SHA.** Do not
-  treat `74aa551c` or `70f41c4a` as live until a coordinated Netlify deploy
-  happens after this schema change.
+- **There is still no operator-approved published application SHA.**
+  `4ae04302adae5640a1dfc0bbf9890a88da28d56f` is the current green
+  application release candidate, but it is not live until a coordinated
+  Netlify deploy is explicitly approved.
 - Code-gate CI: PR #197 Full Regression
   ([#36729672720](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/36729672720))
-  is green. The later docs-only `main` push `74aa551c` Full Regression
-  ([#36733771089](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/36733771089))
-  failed on E2E platform `five-s-journeys.spec.ts` (image-evidence
-  save-status timeout). Quality, Database core, Windows QA and the other
-  E2E shards on that run were green. That flake does not undo the hosted
-  schema apply; it does block treating `74aa551c` as a publish SHA.
+  is green. The docs-only `main` push `74aa551c` later exposed a real 5S
+  answer-save/evidence-refresh race in `five-s-journeys.spec.ts`. Issue
+  #200 / PR #201 fixed the application race rather than weakening the test.
+  PR #201 head `480d29e927e20cd1563cee0d959d8b5de2ac0934` passed Fast CI and
+  Full Regression, and post-merge `main` `4ae04302` passed Full
+  Regression #36753152549.
 
 ## Verified baseline before Coach-04 merge
 
@@ -114,9 +119,10 @@ similarity must search *only readable* suggestions, cases and other records.
    30 September 2026 with the official linked CLI. Coach schema, RPC
    security and Security Advisor were re-checked after apply.
 2. Coordinated Netlify deploy of an approved SHA **after** that migration.
-   Do not deploy incidentally. Current `main` `74aa551c` is not an approved
-   publish SHA (docs-only merge; later Full Regression platform shard
-   flake).
+   Do not deploy incidentally. Current `main`
+   `4ae04302adae5640a1dfc0bbf9890a88da28d56f` is green in post-merge
+   Full Regression and is the current release candidate, but it is not yet
+   an operator-approved published SHA.
 3. Stripe Sandbox products, webhook and hosted payment/onboarding smoke
    (not only fake local tests).
 4. A **new** Professional/monthly/one-site QA organisation following
@@ -148,4 +154,5 @@ hosted Coach migration succeeded.
 - [Historical billing implementation/operator report](./BILLING-001-operator-report.md)
 - GitHub: #67 (historical smoke register), #134 (performance), #170 (billing
   programme), #183 (LeanAI contextual programme), #194 (billing API exposure),
-  #195 (Coach-04), #196, #197, #198.
+  #195 (Coach-04), #196, #197, #198, #200 (5S save-status race), #201
+  (merged fix).
