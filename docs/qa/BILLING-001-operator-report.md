@@ -1,5 +1,32 @@
 # BILLING-001 — Architecture and operator report
 
+> **Current-state note (30 September 2026):** The report below was written
+> before billing was merged. It is retained as an implementation/decision
+> record, **not** as the current release status. Use
+> [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md) and the live migration
+> ledger for deployment decisions.
+
+**Verified after the original report was written:**
+
+- BILLING-CORE-001 (#176), BILLING-LIFECYCLE-001 (#177) and the replacement
+  founder/onboarding PR (#181) merged into `main` on 29 September.
+- The QA-new-organisation runbook PR (#179) also merged. Superseded
+  onboarding PRs #178 and #180 were closed without merging.
+- Hosted Supabase migration history and `main` match for all 216 migrations
+  through `20260930081134_sec_rpc_002_billing_leanai_privilege_boundary`
+  (read-only reconciliation performed on 30 September).
+- The SEC-RPC-002 history discrepancy tracked in #193 is repaired: do not
+  reapply or repair `20260930081134` again.
+- **Not verified here:** Stripe Sandbox products/webhook/Netlify configuration,
+  fresh paid-organisation hosted smoke, live payment readiness or production
+  deployment SHA. Historical statements below that say "not merged" or
+  "hosted migrations not applied" apply only to the 29 September snapshot.
+
+---
+
+## Original pre-merge implementation report (29 September 2026)
+
+
 Status: **implementation complete as stacked PRs; not merged, not deployed.**
 
 Date: **2026-09-29**
