@@ -1,12 +1,15 @@
 /**
- * Treat session IDs supplied by the browser as untrusted. Only use a session
- * after the database has returned the canonical, permission-scoped Coach
- * detail for this exact intervention.
+ * Treat browser-supplied session IDs as untrusted. Read conversation history
+ * only after verifying the canonical, permission-scoped Coach session.
  */
 export type CoachConversationMessage = {
   role: "user" | "assistant";
   content: string;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
 export function readTrustedCoachConversation(
   payload: unknown,
@@ -19,56 +22,43 @@ export function readTrustedCoachConversation(
   conversationHistory: CoachConversationMessage[];
   priorTurnCount: number;
 } | null {
-  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+  if (!isRecord(payload) || !isRecord(payload.session)) {
     return null;
   }
 
-  const record = payload as Record<string, unknown>;
-  const session = record.session;
-  if (session === null || typeof session !== "object" || Array.isArray(session)) {
-    return null;
-  }
-  const s = session as Record<string, unknown>;
+  const session = payload.session;
   if (
-    s.id !== expected.sessionId ||
-    s.context_type !== "coach" ||
-    s.module_key !== expected.moduleKey ||
-    s.intervention_key !== expected.interventionKey ||
-    s.problem_solving_case_id !== null ||
-    s.status !== "active"
+    session.id !== expected.sessionId ||
+    session.context_type !== "coach" ||
+    session.module_key !== expected.moduleKey ||
+    session.intervention_key !== expected.interventionKey ||
+    session.problem_solving_case_id !== null ||
+    session.status !== "active"
   ) {
     return null;
   }
 
-  if (!Array.isArray(record.messages)) {
+  if (!Array.isArray(payload.messages)) {
     return null;
   }
-  const messages = record.messages as unknown[];
-  // The SQL session-detail API returns the full permitted session transcript;
-  // count all prior user turns, even though only six messages enter the prompt.
-  const priorTurnCount = messages.filter(
-    (message) =>
-      message !== null &&
-      typeof message === "object" &&
-      !Array.isArray(message) &&
-      (message as Record<string, unknown>).role === "user",
+
+  // Count all prior user turns, although only the last six messages go to AI.
+  const priorTurnCount = payload.messages.filter(
+    (message: unknown) => isRecord(message) && message.role === "user",
   ).length;
 
-  const conversationHistory = messages
+  const conversationHistory: CoachConversationMessage[] = payload.messages
     .filter(
-      (message): message is CoachConversationMessage =>
-        message !== null &&
-        typeof message === "object" &&
-        !Array.isArray(message) &&
-        ((message as Record<string, unknown>).role === "user" ||
-          (message as Record<string, unknown>).role === "assistant") &&
-        typeof (message as Record<string, unknown>).content === "string" &&
-        ((message as Record<string, unknown>).content as string).trim().length > 0,
+      (message: unknown) =>
+        isRecord(message) &&
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.content === "string" &&
+        message.content.trim().length > 0,
     )
     .slice(-6)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.slice(0, 4000),
+    .map((message: Record<string, unknown>) => ({
+      role: message.role as CoachConversationMessage["role"],
+      content: (message.content as string).slice(0, 4000),
     }));
 
   return { conversationHistory, priorTurnCount };
