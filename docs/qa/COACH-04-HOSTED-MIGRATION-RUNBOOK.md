@@ -7,22 +7,44 @@
 history aligned through `20260930081134`; the generated-version mismatch
 tracked in #193 was already repaired.
 
-This runbook requires explicit authorisation to apply the migration. It does
+This runbook required explicit authorisation to apply the migration. It does
 not authorise a Netlify deploy, Auth changes, billing writes or a CookieWorks
-reset. Code gate: #196 and #197 are merged; `main` is
-`70f41c4a4f41cfd46bf3f052597f8414cda36246` with Full Regression green. The
-hosted schema gate is **not** complete.
+reset. Code gate: #196 and #197 are merged. The hosted schema gate is
+**complete** as of the apply recorded below; customer-readiness is not.
 
-## Recovery outcome (30 September 2026)
+## Applied outcome (30 September 2026)
 
-A recovery operator confirmed hosted project `zsadfvjtknbbfomlmttv` is
-`ACTIVE_HEALTHY` and that remote history still ends at
-`20260930081134_sec_rpc_002_billing_leanai_privilege_boundary`. Official CLI
-`npx supabase` v2.115.0 is present, but `supabase link --project-ref
-zsadfvjtknbbfomlmttv` failed: access token not provided
-(`LegacyPlatformAuthRequiredError`). Per policy, the migration was **not**
-applied by any other mechanism (including MCP `apply_migration`). Repeat the
-sequence below from an authenticated operator environment.
+An authenticated operator environment (Cursor Cloud runtime secret
+`SUPABASE_ACCESS_TOKEN`, value not recorded) used official CLI
+`npx supabase` v2.115.0 against project `zsadfvjtknbbfomlmttv`
+(`ACTIVE_HEALTHY`, `eu-west-1`):
+
+1. `supabase login` then `supabase link --project-ref zsadfvjtknbbfomlmttv`
+   succeeded.
+2. `supabase migration list --linked` showed 216 matched versions through
+   `20260930081134` and **only** local-only `20260930103004`.
+3. `supabase db push --linked --dry-run` listed **only**
+   `20260930103004_leanai_general_coach_sessions.sql`.
+4. `supabase db push --linked` applied that file once. Remote history now
+   includes canonical `20260930103004` / `leanai_general_coach_sessions`
+   (217/217). A second dry run reports the remote database up to date.
+5. Post-apply SQL confirmed Coach columns, INVOKER
+   `public.create_ai_coach_session`, guarded DEFINER
+   `get_ai_session_detail`, remaining Problem Solving `create_ai_session`,
+   and Security Advisor counts unchanged (3 anon / 261 authenticated
+   DEFINER warnings; leaked-password protection disabled).
+
+MCP `apply_migration` was not used. History was not repaired. CookieWorks,
+Stripe and Netlify were not mutated. Do not replay this file.
+
+## Earlier recovery (30 September 2026)
+
+A previous recovery operator confirmed the same hosted project was
+`ACTIVE_HEALTHY` with remote history ending at
+`20260930081134_sec_rpc_002_billing_leanai_privilege_boundary`, but
+`supabase link --project-ref zsadfvjtknbbfomlmttv` failed:
+`LegacyPlatformAuthRequiredError` (no access token). That attempt correctly
+stopped without applying the migration by any other mechanism.
 
 ## Why the linked CLI, not an MCP migration call?
 
@@ -98,8 +120,8 @@ while the new `context_type` is not. The new
 creator-only Coach privacy through the reviewed pgTAP test before deployment
 and inspect the hosted Security Advisor afterwards.
 
-Finally, compare `supabase migration list --linked` to the repository and
-record the exact migration version, post-deployment advisor counts and
-operator-approved app deployment SHA in
-[PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md). Do not mark the
-customer-readiness gate complete merely because the migration succeeded.
+The 30 September apply recorded canonical version `20260930103004`,
+post-deployment advisor counts (3 anon / 261 authenticated DEFINER, leaked
+password protection disabled) and **no** operator-approved app deployment
+SHA in [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md). Do not mark
+the customer-readiness gate complete merely because the migration succeeded.

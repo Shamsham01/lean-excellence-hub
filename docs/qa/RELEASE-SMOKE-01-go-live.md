@@ -2,9 +2,10 @@
 
 > **Release-state notice (30 September 2026):** The original checklist below
 > is a historical gate review from 29 September, not a current declaration
-> of hosted schema state. For the maintained merge/migration/CI status and
-> remaining customer-release gates, see
-> [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md).
+> of hosted schema state. Canonical Coach migration `20260930103004` is
+> applied on hosted project `zsadfvjtknbbfomlmttv` (217/217). For the
+> maintained merge/migration/CI status and remaining customer-release
+> gates, see [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md).
 >
 > The original report predates merged Stripe/onboarding and LeanAI work.
 > Its claims that billing was not implemented and no migrations existed
