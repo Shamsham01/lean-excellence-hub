@@ -13,7 +13,6 @@ import {
 import type { LeanAiInterventionDefinition } from "./types";
 
 const SETUP_SURFACES = [
-  "onboarding",
   "setup",
   "platform_home",
 ] as const satisfies LeanAiInterventionDefinition["surfaces"];
@@ -27,6 +26,23 @@ const DEFAULT_SNOOZE_MINUTES = 1_440;
  */
 export const LEANAI_INTERVENTION_CATALOGUE: readonly LeanAiInterventionDefinition[] =
   [
+    {
+      key: "organisation_onboarding_continue",
+      moduleKey: "onboarding",
+      readinessKey: "organisation",
+      eligibleStatuses: ["incomplete"],
+      requiredPermissions: ["billing.manage"],
+      priority: 5,
+      surfaces: ["onboarding"],
+      title: "Finish initial onboarding",
+      body: "Your subscription is active and the organisation is ready to enter the workspace. Finish this short onboarding step before LeanAI guides the operational setup.",
+      explain:
+        "Normal platform setup routes stay protected until onboarding is completed. Finish this step first; once you enter the workspace, LeanAI will guide sites, people, Maturity, Suggestions and the remaining modules in the right order.",
+      primaryCtaLabel: "Continue below",
+      targetRoute: "/onboarding/setup#finish-onboarding",
+      dismissCooldownHours: DEFAULT_DISMISS_HOURS,
+      snoozeMinutes: DEFAULT_SNOOZE_MINUTES,
+    },
     {
       key: "organisation_profile_setup",
       moduleKey: "organisation",
