@@ -84,7 +84,7 @@ export default async function OnboardingSetupPage() {
               </li>
             ))}
           </ol>
-          <form action={completeOrganisationOnboarding}>
+          <form id="finish-onboarding" action={completeOrganisationOnboarding}>
             <Button type="submit" className="w-full">
               Finish and enter workspace
             </Button>
