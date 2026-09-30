@@ -36,6 +36,23 @@ describe("parseCoachEnvelope", () => {
     expect(envelope.suggested_next_step).toBeNull();
   });
 
+  it("rejects protocol-relative, backslash, and control-character routes", () => {
+    for (const route of [
+      "//evil.example",
+      "/platform\\admin",
+      "/platform/\u0000setup",
+    ]) {
+      const envelope = parseCoachEnvelope({
+        message: "Open this next.",
+        next_step_label: "Continue",
+        next_step_route: route,
+        permission_note: "",
+        follow_up_prompts: [],
+      });
+      expect(envelope.suggested_next_step).toBeNull();
+    }
+  });
+
   it("falls back to a safe empty envelope", () => {
     expect(fallbackCoachEnvelope("").message).toMatch(/could not complete/i);
   });
