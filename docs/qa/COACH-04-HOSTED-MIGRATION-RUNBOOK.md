@@ -9,8 +9,20 @@ tracked in #193 was already repaired.
 
 This runbook requires explicit authorisation to apply the migration. It does
 not authorise a Netlify deploy, Auth changes, billing writes or a CookieWorks
-reset. Run only after #196 is merged, #197 is green and the current `main`
-tree has been independently reviewed.
+reset. Code gate: #196 and #197 are merged; `main` is
+`70f41c4a4f41cfd46bf3f052597f8414cda36246` with Full Regression green. The
+hosted schema gate is **not** complete.
+
+## Recovery outcome (30 September 2026)
+
+A recovery operator confirmed hosted project `zsadfvjtknbbfomlmttv` is
+`ACTIVE_HEALTHY` and that remote history still ends at
+`20260930081134_sec_rpc_002_billing_leanai_privilege_boundary`. Official CLI
+`npx supabase` v2.115.0 is present, but `supabase link --project-ref
+zsadfvjtknbbfomlmttv` failed: access token not provided
+(`LegacyPlatformAuthRequiredError`). Per policy, the migration was **not**
+applied by any other mechanism (including MCP `apply_migration`). Repeat the
+sequence below from an authenticated operator environment.
 
 ## Why the linked CLI, not an MCP migration call?
 
