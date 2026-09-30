@@ -10,6 +10,7 @@ import {
 import { redirect } from "next/navigation";
 
 import { completeOrganisationOnboarding } from "../actions";
+import { LeanAiCoach } from "@/components/leanai/leanai-coach";
 
 const STEPS = [
   {
@@ -64,7 +65,8 @@ export default async function OnboardingSetupPage() {
       className="flex min-h-dvh flex-col items-center justify-center px-4 py-10"
       data-testid="onboarding-setup"
     >
-      <div className="w-full max-w-lg">
+      <div className="flex w-full max-w-lg flex-col gap-4">
+        <LeanAiCoach surface="onboarding" />
         <AuthCard
           title="Set up Lean Excellence Hub"
           description={`${current.organisation_name} is active. This wizard is skippable and does not replace operational setup.`}
@@ -82,7 +84,7 @@ export default async function OnboardingSetupPage() {
               </li>
             ))}
           </ol>
-          <form action={completeOrganisationOnboarding}>
+          <form id="finish-onboarding" action={completeOrganisationOnboarding}>
             <Button type="submit" className="w-full">
               Finish and enter workspace
             </Button>

@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(27);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -101,6 +101,12 @@ set local role authenticated;
 select ok(
   public.switch_organisation((select id from leanai_context_ids where key = 'org_a')),
   'owner selects organisation A'
+);
+
+select is(
+  public.get_leanai_contextual_snapshot() ->> 'proactive_assistance_enabled',
+  'true',
+  'existing snapshot RPC exposes proactive assistance without a new public SECURITY DEFINER'
 );
 
 insert into leanai_context_ids (key, id)
@@ -343,6 +349,17 @@ select throws_ok(
   '42883',
   null,
   'expired event cleanup is not exposed as a public RPC'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_indexes
+    where schemaname = 'public'
+      and tablename = 'leanai_semantic_events'
+      and indexdef ilike '%organisation_id%site_unit_id%'
+  ),
+  'site foreign key has a covering index'
 );
 
 select * from finish();

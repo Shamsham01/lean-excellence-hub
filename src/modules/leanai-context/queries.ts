@@ -199,6 +199,7 @@ export async function loadLeanAiContextualSnapshot(): Promise<LeanAiContextualSn
     journey: parseJourney(record.journey),
     retention: parseRetention(record.retention),
     applicationAiAvailable,
+    proactiveAssistanceEnabled: record.proactive_assistance_enabled !== false,
   };
 }
 

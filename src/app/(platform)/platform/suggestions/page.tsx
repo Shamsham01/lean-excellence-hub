@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { LeanAiCoach } from "@/components/leanai/leanai-coach";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
@@ -87,6 +88,8 @@ export default async function SuggestionsOverviewPage({
           </div>
         }
       />
+
+      <LeanAiCoach surface="suggestions" presentation="empty_state" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
