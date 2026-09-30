@@ -227,7 +227,9 @@ export class FakeAIProvider implements AIProvider {
       };
     }
 
-    const maturity = lastUser.toLowerCase().includes("maturity");
+    const maturity =
+      lastUser.includes("Intervention: maturity_first_setup") ||
+      /"module":\{"key":"maturity"/.test(lastUser);
     const message = maturity
       ? "This organisation has no published Maturity Framework yet. Creating and publishing a framework lets teams assess operational excellence against one shared standard. Open Maturity Framework authoring to draft pillars and questions, then publish a version. LeanAI will not publish it for you."
       : "This setup step is still incomplete. Follow the recommended Lean Excellence Hub route to finish configuration. LeanAI will not make administrative changes automatically.";

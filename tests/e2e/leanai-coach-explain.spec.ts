@@ -103,9 +103,13 @@ test.describe("LeanAI Coach intelligent Explain", () => {
       { timeout: 30_000 },
     );
     await expect(page.getByTestId("leanai-coach-explain-ai")).toContainText(
-      /setup step is still incomplete|Lean Excellence Hub/i,
+      /setup step is still incomplete|recommended Lean Excellence Hub route/i,
     );
     await expect(page.getByText("AI-generated guidance")).toBeVisible();
+    await page.screenshot({
+      path: "/opt/cursor/artifacts/leanai-coach-explain-ai-desktop.png",
+      fullPage: true,
+    });
 
     const after = await countUsage(user, user.organisationAName);
     expect(after.count).toBeGreaterThan(0);
