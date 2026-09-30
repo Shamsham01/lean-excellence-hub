@@ -76,6 +76,7 @@ describe("LeanAI intervention catalogue", () => {
   it("covers every high-value setup gap with a stable key and permissions", () => {
     const keys = LEANAI_INTERVENTION_CATALOGUE.map((entry) => entry.key);
     expect(keys).toEqual([
+      "organisation_onboarding_continue",
       "organisation_profile_setup",
       "sites_first_setup",
       "people_job_functions_setup",
@@ -98,6 +99,23 @@ describe("LeanAI intervention catalogue", () => {
 });
 
 describe("LeanAI intervention engine", () => {
+  it("keeps pre-workspace onboarding guidance inside the onboarding flow", () => {
+    const primary = selectPrimaryLeanAiIntervention({
+      snapshot: snapshotFromFacts({
+        ...emptyOrganisationFacts(),
+        onboardingRequired: true,
+        activeBillableSiteCount: 1,
+        activeUnitCount: 1,
+      }),
+      permissions: allPermissions(),
+      surface: "onboarding",
+    });
+    expect(primary?.key).toBe("organisation_onboarding_continue");
+    expect(primary?.targetRoute).toBe(
+      "/onboarding/setup#finish-onboarding",
+    );
+  });
+
   it("recommends the first site on a fresh organisation", () => {
     const primary = selectPrimaryLeanAiIntervention({
       snapshot: snapshotFromFacts(emptyOrganisationFacts()),
