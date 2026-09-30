@@ -133,6 +133,7 @@ export type LeanAiContextualSnapshot = {
   journey: LeanAiJourneyContext;
   retention: LeanAiRetentionPolicy;
   applicationAiAvailable: boolean;
+  proactiveAssistanceEnabled: boolean;
 };
 
 export type LeanAiSemanticEventInput = {

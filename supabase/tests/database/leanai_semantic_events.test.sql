@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(26);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -343,6 +343,17 @@ select throws_ok(
   '42883',
   null,
   'expired event cleanup is not exposed as a public RPC'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_indexes
+    where schemaname = 'public'
+      and tablename = 'leanai_semantic_events'
+      and indexdef ilike '%organisation_id%site_unit_id%'
+  ),
+  'site foreign key has a covering index'
 );
 
 select * from finish();
