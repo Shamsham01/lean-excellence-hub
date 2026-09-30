@@ -123,5 +123,10 @@ and inspect the hosted Security Advisor afterwards.
 The 30 September apply recorded canonical version `20260930103004`,
 post-deployment advisor counts (3 anon / 261 authenticated DEFINER, leaked
 password protection disabled) and **no** operator-approved app deployment
-SHA in [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md). Do not mark
-the customer-readiness gate complete merely because the migration succeeded.
+SHA in [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md). After issue
+#200 / PR #201, current `main`
+`4ae04302adae5640a1dfc0bbf9890a88da28d56f` has a green post-merge Full
+Regression (#36753152549) and is the current application release candidate,
+but it is not live until a coordinated Netlify deploy is explicitly approved.
+Do not mark the customer-readiness gate complete merely because the migration
+succeeded.
