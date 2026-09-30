@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 
 import { assembleCoachExplainContext } from "@/modules/leanai-context/coach/context-assembly";
+import { readTrustedCoachConversation } from "@/modules/leanai-context/coach/session-validation";
 import {
   assessCoachAiEligibility,
   mapCoachRpcError,
@@ -42,7 +43,6 @@ export async function explainLeanAiCoachIntervention(input: {
   surface: LeanAiCoachSurface;
   sessionId?: string | null;
   followUp?: string | null;
-  conversationTurns?: number;
   idempotencyKey?: string;
 }): Promise<CoachExplainResult> {
   const followUp = input.followUp?.trim() ?? "";
@@ -54,15 +54,6 @@ export async function explainLeanAiCoachIntervention(input: {
       message: "Please ask a shorter follow-up.",
     };
   }
-  if ((input.conversationTurns ?? 0) >= MAX_FOLLOW_UP_TURNS) {
-    return {
-      ok: false,
-      source: "static",
-      reason: "usage_limit",
-      message: "This explanation has reached its follow-up limit.",
-    };
-  }
-
   try {
     const supabase = await createServerSupabaseClient();
     const eligibility = await assessCoachAiEligibility(supabase);
@@ -142,14 +133,17 @@ export async function explainLeanAiCoachIntervention(input: {
       canUseAi: true,
     });
 
-    const { data: sessionId, error: sessionError } = input.sessionId
-      ? { data: input.sessionId, error: null }
-      : await supabase.rpc("create_ai_coach_session", {
-          target_module_key: definition.moduleKey,
-          target_intervention_key: definition.key,
-          target_title: definition.title,
-          target_context_contract_version: context.contractVersion,
-        });
+    // The browser cannot select which AI conversation receives a Coach turn.
+    // Always resolve the canonical, creator-bound Coach session on the server.
+    const { data: sessionId, error: sessionError } = await supabase.rpc(
+      "create_ai_coach_session",
+      {
+        target_module_key: definition.moduleKey,
+        target_intervention_key: definition.key,
+        target_title: definition.title,
+        target_context_contract_version: context.contractVersion,
+      },
+    );
 
     if (sessionError || !sessionId) {
       return {
@@ -162,10 +156,44 @@ export async function explainLeanAiCoachIntervention(input: {
       };
     }
 
-    const conversationHistory = await loadCoachConversationHistory(
-      supabase,
-      String(sessionId),
+    if (input.sessionId && input.sessionId !== String(sessionId)) {
+      return {
+        ok: false,
+        source: "static",
+        reason: "permission_denied",
+        message: "This Coach conversation is no longer available. Reopen Explain.",
+      };
+    }
+
+    const { data: detail, error: detailError } = await supabase.rpc(
+      "get_ai_session_detail",
+      { target_ai_session_id: sessionId },
     );
+    if (detailError) {
+      throw detailError;
+    }
+    const trustedHistory = readTrustedCoachConversation(detail, {
+      sessionId: String(sessionId),
+      moduleKey: definition.moduleKey,
+      interventionKey: definition.key,
+    });
+    if (!trustedHistory) {
+      return {
+        ok: false,
+        source: "static",
+        reason: "permission_denied",
+        message: "The Coach session could not be verified.",
+      };
+    }
+    if (trustedHistory.priorTurnCount >= MAX_FOLLOW_UP_TURNS) {
+      return {
+        ok: false,
+        source: "static",
+        reason: "usage_limit",
+        message: "This Coach conversation has reached its six-turn limit.",
+      };
+    }
+    const conversationHistory = trustedHistory.conversationHistory;
 
     const userMessage = followUp
       ? followUp
@@ -203,27 +231,3 @@ export async function explainLeanAiCoachIntervention(input: {
   }
 }
 
-async function loadCoachConversationHistory(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  sessionId: string,
-): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
-  const { data } = await supabase.rpc("get_ai_session_detail", {
-    target_ai_session_id: sessionId,
-  });
-  const record =
-    data !== null && typeof data === "object" && !Array.isArray(data)
-      ? (data as { messages?: Array<{ role?: string; content?: string }> })
-      : {};
-  return (record.messages ?? [])
-    .filter(
-      (message): message is { role: "user" | "assistant"; content: string } =>
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string" &&
-        message.content.trim().length > 0,
-    )
-    .slice(-6)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.slice(0, 4000),
-    }));
-}
