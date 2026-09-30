@@ -169,11 +169,6 @@ as $$
     where session_row.organisation_id = target_organisation_id
       and session_row.id = target_ai_session_id
       and (
-        session_row.created_by_membership_id =
-          private.current_membership_id(target_organisation_id)
-        or private.can_view_ai_history(target_organisation_id)
-      )
-      and (
         (
           session_row.context_type = 'problem_solving'
           and session_row.problem_solving_case_id is not null
@@ -181,10 +176,17 @@ as $$
             target_organisation_id,
             session_row.problem_solving_case_id
           )
+          and (
+            session_row.created_by_membership_id =
+              private.current_membership_id(target_organisation_id)
+            or private.can_view_ai_history(target_organisation_id)
+          )
         )
         or (
           session_row.context_type = 'coach'
           and session_row.problem_solving_case_id is null
+          and session_row.created_by_membership_id =
+            private.current_membership_id(target_organisation_id)
         )
       )
   )
