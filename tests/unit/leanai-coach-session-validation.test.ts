@@ -23,7 +23,7 @@ function detail(messages: unknown[] = []) {
 }
 
 describe("Coach session validation", () => {
-  it("accepts only the current canonical Coach session and limits transcript length", () => {
+  it("accepts a canonical Coach session and bounds transcript length", () => {
     const messages = Array.from({ length: 10 }, (_, i) => ({
       role: i % 2 === 0 ? "user" : "assistant",
       content: "x".repeat(4100),
@@ -35,7 +35,7 @@ describe("Coach session validation", () => {
     expect(result?.conversationHistory[0]?.content).toHaveLength(4000);
   });
 
-  it("rejects a Problem Solving session even if the caller is its creator", () => {
+  it("rejects a readable Problem Solving session", () => {
     expect(
       readTrustedCoachConversation(
         {
@@ -51,21 +51,35 @@ describe("Coach session validation", () => {
     ).toBeNull();
   });
 
-  it("rejects mismatched session IDs, interventions and modules", () => {
+  it("rejects mismatched session, module, and intervention IDs", () => {
     expect(
-      readTrustedCoachConversation(detail(), { ...expected, sessionId: "other" }),
+      readTrustedCoachConversation(detail(), {
+        ...expected,
+        sessionId: "other",
+      }),
     ).toBeNull();
     expect(
-      readTrustedCoachConversation(detail(), { ...expected, moduleKey: "training" }),
+      readTrustedCoachConversation(detail(), {
+        ...expected,
+        moduleKey: "training",
+      }),
     ).toBeNull();
     expect(
-      readTrustedCoachConversation(detail(), { ...expected, interventionKey: "other" }),
+      readTrustedCoachConversation(detail(), {
+        ...expected,
+        interventionKey: "other",
+      }),
     ).toBeNull();
   });
 
-  it("rejects malformed or inactive detail instead of silently dropping errors", () => {
+  it("rejects malformed or inactive detail", () => {
     expect(readTrustedCoachConversation(null, expected)).toBeNull();
-    expect(readTrustedCoachConversation({ session: detail().session }, expected)).toBeNull();
+    expect(
+      readTrustedCoachConversation(
+        { session: detail().session },
+        expected,
+      ),
+    ).toBeNull();
     expect(
       readTrustedCoachConversation(
         { ...detail(), session: { ...detail().session, status: "closed" } },
@@ -74,7 +88,7 @@ describe("Coach session validation", () => {
     ).toBeNull();
   });
 
-  it("counts all prior user turns even when only six messages are included in the prompt", () => {
+  it("counts user turns beyond the retained prompt window", () => {
     const messages = Array.from({ length: 18 }, (_, i) => ({
       role: i % 2 === 0 ? "user" : "assistant",
       content: "turn " + i,
