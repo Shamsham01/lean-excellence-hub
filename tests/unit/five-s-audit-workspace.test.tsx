@@ -76,7 +76,16 @@ function sections(questions: Question[], extra: Question[] = []) {
   ];
 }
 
-function renderWorkspace({
+type WorkspaceAnswers = Record<
+  string,
+  {
+    text_value?: string | null;
+    number_value?: number | null;
+    is_not_applicable?: boolean;
+  }
+>;
+
+function workspaceTree({
   questions = [
     question(YES_NO_ID, "Is the area sorted?", "yes_no"),
     question(SECOND_ID, "Is the second check complete?", "yes_no"),
@@ -87,18 +96,10 @@ function renderWorkspace({
   canEdit = true,
   canComplete = false,
   onComplete,
-  width,
 }: {
   questions?: Question[];
   extraQuestions?: Question[];
-  answers?: Record<
-    string,
-    {
-      text_value?: string | null;
-      number_value?: number | null;
-      is_not_applicable?: boolean;
-    }
-  >;
+  answers?: WorkspaceAnswers;
   evidence?: Array<{
     id: string;
     filename: string;
@@ -109,9 +110,8 @@ function renderWorkspace({
   canEdit?: boolean;
   canComplete?: boolean;
   onComplete?: typeof completeFiveSAudit;
-  width?: number;
 } = {}) {
-  const ui = (
+  return (
     <FiveSAuditWorkspace
       auditId="audit-1"
       status="in_progress"
@@ -123,6 +123,13 @@ function renderWorkspace({
       {...(onComplete ? { onComplete } : {})}
     />
   );
+}
+
+function renderWorkspace({
+  width,
+  ...tree
+}: Parameters<typeof workspaceTree>[0] & { width?: number } = {}) {
+  const ui = workspaceTree(tree);
 
   return render(
     width ? (
@@ -356,6 +363,225 @@ describe("FiveSAuditWorkspace answer state", () => {
       "aria-pressed",
       "false",
     );
+  });
+
+  it("keeps Saving then Saved when a server snapshot arrives during an in-flight Yes save", async () => {
+    let resolveSave: (value: { ok: true }) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const { rerender } = renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+
+    rerender(
+      workspaceTree({
+        answers: {
+          [YES_NO_ID]: {
+            text_value: "yes",
+            number_value: null,
+            is_not_applicable: false,
+          },
+        },
+      }),
+    );
+
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("keeps an in-flight Yes when a stale empty snapshot arrives from evidence refresh", async () => {
+    let resolveSave: (value: { ok: true }) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const { rerender } = renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+
+    rerender(
+      workspaceTree({
+        answers: {
+          [YES_NO_ID]: {
+            text_value: null,
+            number_value: null,
+            is_not_applicable: false,
+          },
+        },
+      }),
+    );
+
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("keeps a genuine save failure visible when a snapshot arrives", async () => {
+    let rejectSave: (reason?: unknown) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    const { rerender } = renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+
+    rerender(
+      workspaceTree({
+        answers: {
+          [YES_NO_ID]: {
+            text_value: null,
+            number_value: null,
+            is_not_applicable: false,
+          },
+        },
+      }),
+    );
+
+    rejectSave(new Error("destination stream closed early"));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        ANSWER_SAVE_ERROR_MESSAGE,
+      );
+    });
+    expect(screen.getByTestId("answer-save-status")).not.toHaveTextContent(
+      "Saved",
+    );
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("answer-save-retry")).toBeVisible();
+  });
+
+  it("keeps Saved when a matching server snapshot arrives after persist", async () => {
+    const { rerender } = renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+
+    rerender(
+      workspaceTree({
+        answers: {
+          [YES_NO_ID]: {
+            text_value: "yes",
+            number_value: null,
+            is_not_applicable: false,
+          },
+        },
+      }),
+    );
+
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent("Saved");
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("does not drop an in-flight Yes during Next while a snapshot arrives", async () => {
+    let resolveSave: (value: { ok: true }) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const { rerender } = renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    });
+
+    rerender(
+      workspaceTree({
+        answers: {
+          [YES_NO_ID]: {
+            text_value: "yes",
+            number_value: null,
+            is_not_applicable: false,
+          },
+        },
+      }),
+    );
+
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Is the second check complete?" }),
+      ).toBeVisible();
+    });
   });
 
   it("selects N/A, clears incompatible values, and clears N/A when a real answer is chosen", async () => {

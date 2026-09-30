@@ -96,6 +96,43 @@ function isSaveSuccess(result: unknown) {
   return record.ok === true && record.error == null;
 }
 
+export function answersFingerprintFrom(
+  answers: Record<string, AuditAnswer>,
+): string {
+  const normalized: Record<string, ReturnType<typeof normalizeAnswer>> = {};
+  for (const questionId of Object.keys(answers).sort()) {
+    normalized[questionId] = normalizeAnswer(answers[questionId]);
+  }
+  return JSON.stringify(normalized);
+}
+
+function isRuntimeActive(runtime: QuestionRuntime | undefined) {
+  if (!runtime) return false;
+  return Boolean(
+    runtime.inFlight ||
+    runtime.pending ||
+    runtime.current ||
+    runtime.debounceTimer,
+  );
+}
+
+function shouldPreserveLocalAnswer(
+  runtime: QuestionRuntime | undefined,
+  status: SaveStatus | undefined,
+) {
+  return (
+    isRuntimeActive(runtime) ||
+    status === "saving" ||
+    status === "error" ||
+    Boolean(runtime?.lastFailed)
+  );
+}
+
+function retagJobEpoch(job: SaveJob | null, epoch: number) {
+  if (!job || job.epoch === epoch) return job;
+  return { ...job, epoch };
+}
+
 function parseNumberDraft(value: string): number | null | undefined {
   const trimmed = value.trim();
   if (trimmed === "") return null;
@@ -110,7 +147,10 @@ function parseNumberDraft(value: string): number | null | undefined {
  * Architecture:
  * - Server-loaded `answers` seed local and last-confirmed maps.
  * - Visible controls always read local state.
- * - Refresh / new `answers` fingerprint is the authoritative DB rehydrate.
+ * - Refresh / new `answers` fingerprint is the authoritative DB rehydrate
+ *   for idle questions. In-flight, debounced, and failed saves keep their
+ *   local value and status so a concurrent evidence refresh cannot blank
+ *   Saving/Saved/error feedback or discard the user's latest answer.
  *
  * Persistence:
  * - Yes/No and N/A enqueue immediately (optimistic selected state).
@@ -165,12 +205,17 @@ export function useAuditAnswerState({
 
   const confirmedRef = useRef(confirmedAnswers);
   const statusRef = useRef(statuses);
+  const localAnswersRef = useRef(localAnswers);
+  const errorsRef = useRef(errors);
+  const numberDraftsRef = useRef(numberDrafts);
   const epochRef = useRef(0);
   const runtimesRef = useRef(new Map<string, QuestionRuntime>());
   const saveAnswerRef = useRef(saveAnswer);
   const auditIdRef = useRef(auditId);
   const canEditRef = useRef(canEdit);
   const answersSnapshotRef = useRef(answers);
+  const previousAuditIdRef = useRef(auditId);
+  const previousFingerprintRef = useRef(answersFingerprintFrom(answers));
   const runLoopRef = useRef<(questionId: string) => Promise<void>>(
     async () => undefined,
   );
@@ -178,46 +223,136 @@ export function useAuditAnswerState({
     (questionId: string, payload: SavePayload, answer: AuditAnswer) => void
   >(() => undefined);
 
-  const answersFingerprint = JSON.stringify(answers);
+  const answersFingerprint = answersFingerprintFrom(answers);
 
   useEffect(() => {
     confirmedRef.current = confirmedAnswers;
     statusRef.current = statuses;
+    localAnswersRef.current = localAnswers;
+    errorsRef.current = errors;
+    numberDraftsRef.current = numberDrafts;
     saveAnswerRef.current = saveAnswer;
     auditIdRef.current = auditId;
     canEditRef.current = canEdit;
     answersSnapshotRef.current = answers;
-  }, [answers, auditId, canEdit, confirmedAnswers, saveAnswer, statuses]);
+  }, [
+    answers,
+    auditId,
+    canEdit,
+    confirmedAnswers,
+    errors,
+    localAnswers,
+    numberDrafts,
+    saveAnswer,
+    statuses,
+  ]);
 
   useEffect(() => {
-    const snapshot = answersSnapshotRef.current;
-    const runtimes = runtimesRef.current;
-    epochRef.current += 1;
-    for (const runtime of runtimes.values()) {
-      if (runtime.debounceTimer) {
-        clearTimeout(runtime.debounceTimer);
-        runtime.debounceTimer = null;
-      }
-      runtime.current = null;
-      runtime.pending = null;
-      runtime.latest = null;
-      runtime.lastFailed = null;
-      const waiters = runtime.waiters.splice(0);
-      for (const waiter of waiters) waiter(false);
-    }
-    setLocalAnswers(cloneAnswers(snapshot));
-    setConfirmedAnswers(cloneAnswers(snapshot));
-    setStatuses({});
-    setErrors({});
-    setNumberDrafts(buildNumberDrafts(snapshot));
     return () => {
-      for (const runtime of runtimes.values()) {
+      for (const runtime of runtimesRef.current.values()) {
         if (runtime.debounceTimer) {
           clearTimeout(runtime.debounceTimer);
           runtime.debounceTimer = null;
         }
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const snapshot = answersSnapshotRef.current;
+    const auditChanged = previousAuditIdRef.current !== auditId;
+    const fingerprintChanged =
+      previousFingerprintRef.current !== answersFingerprint;
+    previousAuditIdRef.current = auditId;
+    previousFingerprintRef.current = answersFingerprint;
+
+    if (!auditChanged && !fingerprintChanged) {
+      return;
+    }
+
+    const runtimes = runtimesRef.current;
+
+    if (auditChanged) {
+      epochRef.current += 1;
+      for (const runtime of runtimes.values()) {
+        if (runtime.debounceTimer) {
+          clearTimeout(runtime.debounceTimer);
+          runtime.debounceTimer = null;
+        }
+        runtime.current = null;
+        runtime.pending = null;
+        runtime.latest = null;
+        runtime.lastFailed = null;
+        const waiters = runtime.waiters.splice(0);
+        for (const waiter of waiters) waiter(false);
+      }
+      runtimes.clear();
+      setLocalAnswers(cloneAnswers(snapshot));
+      setConfirmedAnswers(cloneAnswers(snapshot));
+      setStatuses({});
+      setErrors({});
+      setNumberDrafts(buildNumberDrafts(snapshot));
+      return;
+    }
+
+    const currentLocal = localAnswersRef.current;
+    const currentStatuses = statusRef.current;
+    const currentErrors = errorsRef.current;
+    const currentDrafts = numberDraftsRef.current;
+    const nextLocal = cloneAnswers(snapshot);
+    const nextConfirmed = cloneAnswers(snapshot);
+    const nextStatuses: Record<string, SaveStatus> = {};
+    const nextErrors: Record<string, string | null> = {};
+    const nextDrafts = buildNumberDrafts(snapshot);
+    const questionIds = new Set([
+      ...Object.keys(snapshot),
+      ...Object.keys(currentLocal),
+      ...runtimes.keys(),
+    ]);
+
+    for (const questionId of questionIds) {
+      const runtime = runtimes.get(questionId);
+      const status = currentStatuses[questionId];
+      const preserve = shouldPreserveLocalAnswer(runtime, status);
+
+      if (preserve) {
+        if (currentLocal[questionId] !== undefined) {
+          nextLocal[questionId] = currentLocal[questionId];
+        }
+        if (currentDrafts[questionId] !== undefined) {
+          nextDrafts[questionId] = currentDrafts[questionId];
+        }
+        if (status) {
+          nextStatuses[questionId] = status;
+        }
+        if (currentErrors[questionId] != null) {
+          nextErrors[questionId] = currentErrors[questionId];
+        }
+        if (runtime) {
+          runtime.pending = retagJobEpoch(runtime.pending, epochRef.current);
+          runtime.current = retagJobEpoch(runtime.current, epochRef.current);
+          runtime.latest = retagJobEpoch(runtime.latest, epochRef.current);
+          runtime.lastFailed = retagJobEpoch(
+            runtime.lastFailed,
+            epochRef.current,
+          );
+        }
+        continue;
+      }
+
+      if (
+        status === "saved" &&
+        answersEqual(currentLocal[questionId], snapshot[questionId])
+      ) {
+        nextStatuses[questionId] = "saved";
+      }
+    }
+
+    setLocalAnswers(nextLocal);
+    setConfirmedAnswers(nextConfirmed);
+    setStatuses(nextStatuses);
+    setErrors(nextErrors);
+    setNumberDrafts(nextDrafts);
   }, [auditId, answersFingerprint]);
 
   function ensureRuntime(questionId: string) {
