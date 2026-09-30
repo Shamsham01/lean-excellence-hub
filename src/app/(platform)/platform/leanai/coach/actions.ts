@@ -161,7 +161,8 @@ export async function explainLeanAiCoachIntervention(input: {
         ok: false,
         source: "static",
         reason: "permission_denied",
-        message: "This Coach conversation is no longer available. Reopen Explain.",
+        message:
+          "This Coach conversation is no longer available. Reopen Explain.",
       };
     }
 
