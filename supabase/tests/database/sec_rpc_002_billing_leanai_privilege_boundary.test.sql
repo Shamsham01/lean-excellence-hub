@@ -60,6 +60,14 @@ values
     )
   ),
   (
+    'org_isolated',
+    private.provision_organisation(
+      'd1910000-0000-4000-8000-000000000001',
+      'sec-rpc-002-isolated',
+      'SEC RPC 002 Isolated'
+    )
+  ),
+  (
     'org_foreign',
     private.provision_organisation(
       'd1910000-0000-4000-8000-000000000003',
@@ -128,9 +136,7 @@ values
     statement_timestamp()
   );
 
-insert into sec_rpc_002_ids (key, id)
-select 'foreign_site', inserted.id
-from (
+with inserted_unit as (
   insert into public.organisation_units (
     organisation_id,
     code,
@@ -144,7 +150,9 @@ from (
     'site'
   )
   returning id
-) inserted;
+)
+insert into sec_rpc_002_ids (key, id)
+select 'foreign_site', id from inserted_unit;
 
 update public.organisations
 set status = 'provisioning',
@@ -670,8 +678,8 @@ select throws_ok(
 );
 
 select ok(
-  public.switch_organisation((select id from sec_rpc_002_ids where key = 'org_provisioning')),
-  'same identity switches to the provisioning organisation'
+  public.switch_organisation((select id from sec_rpc_002_ids where key = 'org_isolated')),
+  'same identity switches to a second active organisation'
 );
 
 select is(
@@ -682,13 +690,13 @@ select is(
 
 select is(
   public.get_organisation_setup_readiness() ->> 'organisation_id',
-  (select id::text from sec_rpc_002_ids where key = 'org_provisioning'),
+  (select id::text from sec_rpc_002_ids where key = 'org_isolated'),
   'same identity switching organisations receives isolated readiness'
 );
 
 select is(
   public.get_leanai_contextual_snapshot() -> 'journey' ->> 'organisation_id',
-  (select id::text from sec_rpc_002_ids where key = 'org_provisioning'),
+  (select id::text from sec_rpc_002_ids where key = 'org_isolated'),
   'contextual snapshot stays on the current organisation after switch'
 );
 
