@@ -50,11 +50,14 @@ core domains continue without AI.
 ### Usage ledger
 
 `ai_usage_events` is append-only authoritative telemetry (input/output/cached/reasoning tokens,
-provider, model). No hard-coded pricing. Future commercial milestone maps to credits.
+provider, model). No hard-coded pricing. Logical model classes (`economy`, `standard`, `deep`)
+are mapped server-side; see [ADR-0018](../adr/ADR-0018-general-leanai-coach-sessions.md).
 
 ### Security controls (authoritative)
 
-- Session-bound case context; tools do not accept model-supplied `case_id` (except deliberate search tool)
+- Session-bound context: Problem Solving sessions require a real case; Coach
+  sessions bind to organisation, membership, module and optional authorised
+  site. Tools do not accept model-supplied tenant identifiers.
 - Strict tool registry; no write tools
 - Source allowlist per run + re-authorization on click
 - Prompt injection defence is tool security, not prompt text alone
