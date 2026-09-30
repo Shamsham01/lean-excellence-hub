@@ -111,9 +111,7 @@ describe("LeanAI intervention engine", () => {
       surface: "onboarding",
     });
     expect(primary?.key).toBe("organisation_onboarding_continue");
-    expect(primary?.targetRoute).toBe(
-      "/onboarding/setup#finish-onboarding",
-    );
+    expect(primary?.targetRoute).toBe("/onboarding/setup#finish-onboarding");
   });
 
   it("recommends the first site on a fresh organisation", () => {
