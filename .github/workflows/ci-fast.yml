@@ -38,6 +38,13 @@ jobs:
         run: ./scripts/ci/timed.sh "npm ci" npm ci
       - name: Format check
         run: ./scripts/ci/timed.sh "format:check" npm run format:check
+      - name: Temporary Prettier diagnostics for Coach PR
+        if: failure()
+        run: |
+          npx prettier --write "src/app/(platform)/platform/leanai/coach/actions.ts" "tests/unit/leanai-coach-session-validation.test.ts"
+          echo "BEGIN_COACH_PRETTIER_PATCH"
+          git diff -- "src/app/(platform)/platform/leanai/coach/actions.ts" "tests/unit/leanai-coach-session-validation.test.ts"
+          echo "END_COACH_PRETTIER_PATCH"
       - name: Lint
         run: ./scripts/ci/timed.sh "lint" npm run lint
       - name: Typecheck
