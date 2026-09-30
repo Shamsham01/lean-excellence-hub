@@ -119,6 +119,11 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expect(page.getByTestId("leanai-coach-explain-toggle")).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("leanai-coach-explain")).toBeVisible();
+    await expect(page.getByTestId("leanai-coach-explain")).not.toHaveAttribute(
+      "data-explanation-source",
+      "loading",
+      { timeout: 30_000 },
+    );
     await screenshotIfPossible(page, "leanai-coach-home-desktop.png");
 
     const snapshot = await readContextualSnapshot(page);

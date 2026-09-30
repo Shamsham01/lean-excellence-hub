@@ -47,7 +47,12 @@ Uses existing `leanai_intervention_states` current-state rows. No employee count
 - **Later** records `leanai.intervention_dismissed`. That key is hidden for 168 hours. The next eligible recommendation may appear after reload.
 - **Snooze** records `leanai.intervention_snoozed` with `snooze_minutes = 1440`. That key is hidden until `snoozed_until`.
 - **Set it up** records `leanai.intervention_accepted` and navigates.
-- **Explain** expands deterministic copy. No event and no model call.
+- **Explain** expands deterministic copy by default (zero model cost). When
+  application AI, organisation AI, `ai.use`, subscription access and usage
+  limits all pass, an explicit Explain click may enrich the answer through a
+  general Coach AI session (ADR-0018). Deterministic copy remains the fallback.
+  The UI labels **Setup guidance** versus **AI-generated guidance** and may
+  offer a bounded follow-up. No AI call on mount, ranking, Later, or Snooze.
 - Mount records `leanai.intervention_shown` once per browser session.
 
 State is membership + organisation scoped, so the same person in two organisations has separate cooldowns.

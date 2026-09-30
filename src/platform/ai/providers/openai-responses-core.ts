@@ -14,6 +14,20 @@ import type {
 export function buildResponsesCreateParams(
   input: CreateResponseInput,
 ): OpenAI.Responses.ResponseCreateParamsNonStreaming {
+  const structuredFormat = input.structuredOutputFormat
+    ? {
+        type: "json_schema" as const,
+        name: input.structuredOutputFormat.name,
+        schema: input.structuredOutputFormat.schema,
+        strict: true as const,
+      }
+    : {
+        type: "json_schema" as const,
+        name: "facilitator_envelope",
+        schema: facilitatorEnvelopeJsonSchema,
+        strict: true as const,
+      };
+
   return {
     model: input.model,
     input: [
@@ -47,12 +61,7 @@ export function buildResponsesCreateParams(
     // response items or encrypted reasoning if benchmarks justify it.
     store: false,
     text: {
-      format: {
-        type: "json_schema",
-        name: "facilitator_envelope",
-        schema: facilitatorEnvelopeJsonSchema,
-        strict: true,
-      },
+      format: structuredFormat,
     },
   };
 }
@@ -77,10 +86,12 @@ export class OpenAIResponsesProvider implements AIProvider {
       { timeout: input.timeoutMs },
     );
 
+    const formatName = input.structuredOutputFormat?.name;
     return parseStructuredOpenAiResponse(response as OpenAiResponseSnapshot, {
       provider: this.name,
       model: input.model,
       maxOutputTokens: input.maxOutputTokens,
+      ...(formatName ? { formatName } : {}),
     });
   }
 }

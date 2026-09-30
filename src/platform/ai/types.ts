@@ -2,6 +2,25 @@ export type AiMessageRole = "user" | "assistant";
 
 export type AiSessionMode = "ask" | "facilitate" | "review" | "challenge";
 
+export const AI_SESSION_CONTEXT_TYPES = ["problem_solving", "coach"] as const;
+
+export type AiSessionContextType = (typeof AI_SESSION_CONTEXT_TYPES)[number];
+
+export const AI_LOGICAL_MODEL_CLASSES = [
+  "economy",
+  "standard",
+  "deep",
+] as const;
+
+export type AiLogicalModelClass = (typeof AI_LOGICAL_MODEL_CLASSES)[number];
+
+export type CoachEnvelope = {
+  message: string;
+  suggested_next_step: { label: string; route: string } | null;
+  permission_note: string | null;
+  follow_up_prompts: string[];
+};
+
 export type AiRunStatus =
   "running" | "completed" | "failed" | "timed_out" | "denied";
 
@@ -114,6 +133,11 @@ export const AI_REASONING_EFFORTS = [
 
 export type AiReasoningEffort = (typeof AI_REASONING_EFFORTS)[number];
 
+export type StructuredOutputFormat = {
+  name: string;
+  schema: Record<string, unknown>;
+};
+
 export type CreateResponseInput = {
   model: string;
   systemPrompt: string;
@@ -123,12 +147,14 @@ export type CreateResponseInput = {
   timeoutMs: number;
   reasoningEffort?: AiReasoningEffort;
   expectsStructuredOutput?: boolean;
+  structuredOutputFormat?: StructuredOutputFormat;
 };
 
 export type CreateResponseResult = {
   responseId?: string;
   outputText: string;
   structuredOutput?: FacilitatorEnvelope;
+  parsedJson?: Record<string, unknown>;
   toolCalls: ProviderToolCallRequest[];
   usage: ProviderUsage;
 };

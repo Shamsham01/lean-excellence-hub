@@ -28,22 +28,37 @@ export async function loadLeanAiInterventionPermissions(): Promise<
   return Object.fromEntries(entries);
 }
 
-export const loadLeanAiCoachRecommendation = cache(
+export const loadLeanAiCoachView = cache(
   async (
     surface: LeanAiCoachSurface,
-  ): Promise<LeanAiInterventionCandidate | null> => {
+  ): Promise<{
+    recommendation: LeanAiInterventionCandidate | null;
+    applicationAiAvailable: boolean;
+  }> => {
     try {
       const [snapshot, permissions] = await Promise.all([
         loadLeanAiContextualSnapshot(),
         loadLeanAiInterventionPermissions(),
       ]);
-      return selectPrimaryLeanAiIntervention({
-        snapshot,
-        permissions,
-        surface,
-      });
+      return {
+        recommendation: selectPrimaryLeanAiIntervention({
+          snapshot,
+          permissions,
+          surface,
+        }),
+        applicationAiAvailable: snapshot.applicationAiAvailable,
+      };
     } catch {
-      return null;
+      return { recommendation: null, applicationAiAvailable: false };
     }
+  },
+);
+
+export const loadLeanAiCoachRecommendation = cache(
+  async (
+    surface: LeanAiCoachSurface,
+  ): Promise<LeanAiInterventionCandidate | null> => {
+    const view = await loadLeanAiCoachView(surface);
+    return view.recommendation;
   },
 );

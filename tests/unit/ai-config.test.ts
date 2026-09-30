@@ -26,4 +26,15 @@ describe("parseAiEnvironment", () => {
   it("treats AI_ENABLED=0 as a disabled application provider", () => {
     expect(parseAiEnvironment({ AI_ENABLED: "0" }).AI_ENABLED).toBe("0");
   });
+
+  it("accepts optional logical model class mappings", () => {
+    const env = parseAiEnvironment({
+      AI_MODEL_ECONOMY: "gpt-4.1-nano",
+      AI_MODEL_STANDARD: "gpt-4.1-mini",
+      AI_MODEL_DEEP: "gpt-4.1",
+    });
+    expect(env.AI_MODEL_ECONOMY).toBe("gpt-4.1-nano");
+    expect(env.AI_MODEL_STANDARD).toBe("gpt-4.1-mini");
+    expect(env.AI_MODEL_DEEP).toBe("gpt-4.1");
+  });
 });

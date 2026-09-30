@@ -19,8 +19,10 @@ around domain modules.
    outbound provider calls separately.
 3. **No service-role user path** — ordinary AI flows use authenticated caller-scoped Supabase
    clients; proposals accept via exact existing M11 public RPCs with human membership as actor.
-4. **Typed context** — M12 AI sessions bind to `problem_solving_case_id` (no speculative
-   polymorphic context).
+4. **Typed context** — M12 AI sessions bind to `problem_solving_case_id`.
+   LEANAI-CONTEXT-04 adds an explicit `context_type` discriminator so general
+   Coach sessions can reuse the same run/usage infrastructure without dummy
+   cases. See [ADR-0018](./ADR-0018-general-leanai-coach-sessions.md).
 5. **Private-by-author sessions** — case read alone does not grant AI conversation access;
    creator or `ai.view_history` plus current case read required.
 6. **Typed source references** — exact-one nullable FK columns; no authoritative
@@ -31,6 +33,7 @@ around domain modules.
 
 ## Consequences
 
-- Future modules (Projects, Maturity) add deliberate context architecture when requirements exist.
+- Future modules add deliberate context architecture when requirements exist.
+  Coach sessions are that architecture for contextual assistance (ADR-0018).
 - Live provider validation is opt-in; CI uses FakeAIProvider.
 - Long-running/queued AI is deferred; foreground execution respects Netlify limits (~40–45s).

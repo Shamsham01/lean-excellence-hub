@@ -534,11 +534,15 @@ The user should always be able to continue manually.
 
 ### LEANAI-CONTEXT-04 — AI Enrichment
 
-- extend current orchestrator to consume readiness/journey context
-- logical model routing
-- product knowledge retrieval
-- contextual explanation/follow-up
-- existing usage ledger reused
+Implemented as a two-PR sequence:
+
+- **Foundation (ADR-0018)** — general Coach `ai_sessions.context_type`, secure
+  session lifecycle, logical model routing (`economy` / `standard` / `deep`),
+  reuse of `ai_usage_events`. No dummy Problem Solving cases.
+- **Enrichment** — compact `coach-explain-v1` context, user-triggered Explain,
+  bounded follow-up, Coach UI (static vs AI-generated), mocked-provider tests.
+  Ordinary Explain uses the `economy` class only. Deterministic copy remains
+  the fallback when AI is unavailable, disabled, or over limit.
 
 ### LEANAI-ONBOARD-01 — Intelligent Onboarding
 
