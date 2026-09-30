@@ -248,8 +248,9 @@ export function useAuditAnswerState({
   ]);
 
   useEffect(() => {
+    const runtimes = runtimesRef.current;
     return () => {
-      for (const runtime of runtimesRef.current.values()) {
+      for (const runtime of runtimes.values()) {
         if (runtime.debounceTimer) {
           clearTimeout(runtime.debounceTimer);
           runtime.debounceTimer = null;
