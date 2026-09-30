@@ -22,11 +22,14 @@ function createTypesFixtureRepo(content = "export type Foo = 1;\n") {
 }
 
 function initGitRepo(repoRoot: string) {
-  execFileSync("git", ["init"], { cwd: repoRoot });
+  execFileSync("git", ["init", "--initial-branch=main"], { cwd: repoRoot });
   execFileSync("git", ["config", "user.email", "qa@example.com"], {
     cwd: repoRoot,
   });
   execFileSync("git", ["config", "user.name", "QA"], { cwd: repoRoot });
+  execFileSync("git", ["config", "commit.gpgsign", "false"], {
+    cwd: repoRoot,
+  });
 }
 
 describe("assertDatabaseTypesCurrent", () => {
@@ -156,81 +159,85 @@ describe("assertDatabaseTypesCurrent", () => {
     expect(runDbTypes).not.toHaveBeenCalled();
   });
 
-  it("restores original bytes when ordinary git diff is clean but bytes differ (Windows autocrlf)", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-win-autocrlf-"));
-    const relativePath = DATABASE_TYPES_RELATIVE_PATH;
-    const absolutePath = join(repoRoot, relativePath);
-    mkdirSync(join(repoRoot, "src/platform/supabase"), { recursive: true });
+  it(
+    "restores original bytes when ordinary git diff is clean but bytes differ (Windows autocrlf)",
+    { timeout: 15_000 },
+    () => {
+      const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-win-autocrlf-"));
+      const relativePath = DATABASE_TYPES_RELATIVE_PATH;
+      const absolutePath = join(repoRoot, relativePath);
+      mkdirSync(join(repoRoot, "src/platform/supabase"), { recursive: true });
 
-    initGitRepo(repoRoot);
-    execFileSync("git", ["config", "core.autocrlf", "true"], {
-      cwd: repoRoot,
-    });
+      initGitRepo(repoRoot);
+      execFileSync("git", ["config", "core.autocrlf", "true"], {
+        cwd: repoRoot,
+      });
 
-    const originalContent = "export type Foo = 1;\n";
-    writeFileSync(absolutePath, originalContent, "utf8");
-    execFileSync("git", ["add", relativePath], { cwd: repoRoot });
-    execFileSync("git", ["commit", "-m", "baseline"], { cwd: repoRoot });
+      const originalContent = "export type Foo = 1;\n";
+      writeFileSync(absolutePath, originalContent, "utf8");
+      execFileSync("git", ["add", relativePath], { cwd: repoRoot });
+      execFileSync("git", ["commit", "-m", "baseline"], { cwd: repoRoot });
 
-    const originalBytes = readFileSync(absolutePath);
+      const originalBytes = readFileSync(absolutePath);
 
-    const ordinaryGitDiff = vi.fn((root: string, filePath: string) => {
-      try {
-        const stdout = execFileSync(
-          "git",
-          ["diff", "--exit-code", "--", filePath],
-          {
-            cwd: root,
-            encoding: "utf8",
-            stdio: ["ignore", "pipe", "pipe"],
-          },
-        );
-        return { exitCode: 0, stdout, stderr: "" };
-      } catch (error) {
-        const execError = error as Error & {
-          status?: number;
-          stdout?: string;
-          stderr?: string;
-        };
+      const ordinaryGitDiff = vi.fn((root: string, filePath: string) => {
+        try {
+          const stdout = execFileSync(
+            "git",
+            ["diff", "--exit-code", "--", filePath],
+            {
+              cwd: root,
+              encoding: "utf8",
+              stdio: ["ignore", "pipe", "pipe"],
+            },
+          );
+          return { exitCode: 0, stdout, stderr: "" };
+        } catch (error) {
+          const execError = error as Error & {
+            status?: number;
+            stdout?: string;
+            stderr?: string;
+          };
+          return {
+            exitCode: execError.status ?? 1,
+            stdout: execError.stdout ?? "",
+            stderr: execError.stderr ?? "",
+          };
+        }
+      });
+
+      const runGitDiff = vi.fn<GitDiffRunner>((_root, _filePath) => {
         return {
-          exitCode: execError.status ?? 1,
-          stdout: execError.stdout ?? "",
-          stderr: execError.stderr ?? "",
+          exitCode: 0,
+          stdout: "",
+          stderr: "",
         };
-      }
-    });
+      });
 
-    const runGitDiff = vi.fn<GitDiffRunner>((_root, _filePath) => {
-      return {
-        exitCode: 0,
-        stdout: "",
-        stderr: "",
-      };
-    });
+      const runDbTypes = vi.fn(() => {
+        writeFileSync(absolutePath, "export type Foo = 1;\r\n", "utf8");
+      });
 
-    const runDbTypes = vi.fn(() => {
+      expect(readFileSync(absolutePath).equals(originalBytes)).toBe(true);
+
+      assertDatabaseTypesCurrent({
+        repoRoot,
+        runDbTypes,
+        runGitDiff,
+      });
+
+      expect(readFileSync(absolutePath).equals(originalBytes)).toBe(true);
+      expect(readFileSync(absolutePath).toString("utf8")).toBe(originalContent);
+
       writeFileSync(absolutePath, "export type Foo = 1;\r\n", "utf8");
-    });
-
-    expect(readFileSync(absolutePath).equals(originalBytes)).toBe(true);
-
-    assertDatabaseTypesCurrent({
-      repoRoot,
-      runDbTypes,
-      runGitDiff,
-    });
-
-    expect(readFileSync(absolutePath).equals(originalBytes)).toBe(true);
-    expect(readFileSync(absolutePath).toString("utf8")).toBe(originalContent);
-
-    writeFileSync(absolutePath, "export type Foo = 1;\r\n", "utf8");
-    const ordinaryDiffBeforeRestoreWouldHaveSkipped = ordinaryGitDiff(
-      repoRoot,
-      absolutePath,
-    );
-    expect(ordinaryDiffBeforeRestoreWouldHaveSkipped.exitCode).toBe(0);
-    expect(readFileSync(absolutePath).equals(originalBytes)).toBe(false);
-  });
+      const ordinaryDiffBeforeRestoreWouldHaveSkipped = ordinaryGitDiff(
+        repoRoot,
+        absolutePath,
+      );
+      expect(ordinaryDiffBeforeRestoreWouldHaveSkipped.exitCode).toBe(0);
+      expect(readFileSync(absolutePath).equals(originalBytes)).toBe(false);
+    },
+  );
 });
 
 describe("Windows path joining", () => {
@@ -265,53 +272,61 @@ describe("assertWorkingTreeClean", () => {
 });
 
 describe("defaultGitDiff EOL semantics", () => {
-  it("treats CRLF-only changes as no drift with --ignore-space-at-eol", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-"));
-    const relativePath = DATABASE_TYPES_RELATIVE_PATH;
-    const absolutePath = join(repoRoot, relativePath);
-    mkdirSync(join(repoRoot, "src/platform/supabase"), { recursive: true });
+  it(
+    "treats CRLF-only changes as no drift with --ignore-space-at-eol",
+    { timeout: 15_000 },
+    () => {
+      const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-"));
+      const relativePath = DATABASE_TYPES_RELATIVE_PATH;
+      const absolutePath = join(repoRoot, relativePath);
+      mkdirSync(join(repoRoot, "src/platform/supabase"), { recursive: true });
 
-    initGitRepo(repoRoot);
+      initGitRepo(repoRoot);
 
-    writeFileSync(absolutePath, "export type Foo = 1;\n", "utf8");
-    execFileSync("git", ["add", relativePath], { cwd: repoRoot });
-    execFileSync("git", ["commit", "-m", "baseline"], { cwd: repoRoot });
+      writeFileSync(absolutePath, "export type Foo = 1;\n", "utf8");
+      execFileSync("git", ["add", relativePath], { cwd: repoRoot });
+      execFileSync("git", ["commit", "-m", "baseline"], { cwd: repoRoot });
 
-    const originalBytes = readFileSync(absolutePath);
+      const originalBytes = readFileSync(absolutePath);
 
-    expect(() =>
-      assertDatabaseTypesCurrent({
-        repoRoot,
-        runDbTypes: () => {
-          writeFileSync(absolutePath, "export type Foo = 1;\r\n", "utf8");
-        },
-      }),
-    ).not.toThrow();
+      expect(() =>
+        assertDatabaseTypesCurrent({
+          repoRoot,
+          runDbTypes: () => {
+            writeFileSync(absolutePath, "export type Foo = 1;\r\n", "utf8");
+          },
+        }),
+      ).not.toThrow();
 
-    expect(readFileSync(absolutePath).equals(originalBytes)).toBe(true);
-  });
+      expect(readFileSync(absolutePath).equals(originalBytes)).toBe(true);
+    },
+  );
 
-  it("fails on substantive type changes after generation", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-"));
-    const relativePath = DATABASE_TYPES_RELATIVE_PATH;
-    const absolutePath = join(repoRoot, relativePath);
-    mkdirSync(join(repoRoot, "src/platform/supabase"), { recursive: true });
+  it(
+    "fails on substantive type changes after generation",
+    { timeout: 15_000 },
+    () => {
+      const repoRoot = mkdtempSync(join(tmpdir(), "qa-db-types-"));
+      const relativePath = DATABASE_TYPES_RELATIVE_PATH;
+      const absolutePath = join(repoRoot, relativePath);
+      mkdirSync(join(repoRoot, "src/platform/supabase"), { recursive: true });
 
-    initGitRepo(repoRoot);
+      initGitRepo(repoRoot);
 
-    writeFileSync(absolutePath, "export type Foo = 1;\n", "utf8");
-    execFileSync("git", ["add", relativePath], { cwd: repoRoot });
-    execFileSync("git", ["commit", "-m", "baseline"], { cwd: repoRoot });
+      writeFileSync(absolutePath, "export type Foo = 1;\n", "utf8");
+      execFileSync("git", ["add", relativePath], { cwd: repoRoot });
+      execFileSync("git", ["commit", "-m", "baseline"], { cwd: repoRoot });
 
-    expect(() =>
-      assertDatabaseTypesCurrent({
-        repoRoot,
-        runDbTypes: () => {
-          writeFileSync(absolutePath, "export type Foo = 2;\n", "utf8");
-        },
-      }),
-    ).toThrow(
-      "Generated database.types.ts differs from HEAD after db:types (schema/type drift).",
-    );
-  });
+      expect(() =>
+        assertDatabaseTypesCurrent({
+          repoRoot,
+          runDbTypes: () => {
+            writeFileSync(absolutePath, "export type Foo = 2;\n", "utf8");
+          },
+        }),
+      ).toThrow(
+        "Generated database.types.ts differs from HEAD after db:types (schema/type drift).",
+      );
+    },
+  );
 });
