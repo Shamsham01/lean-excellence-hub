@@ -711,37 +711,52 @@ export type Database = {
       ai_sessions: {
         Row: {
           completed_at: string | null
+          context_contract_version: string | null
+          context_type: string
           created_at: string
           created_by_membership_id: string
           id: string
+          intervention_key: string | null
           mode: string
+          module_key: string | null
           organisation_id: string
-          problem_solving_case_id: string
+          problem_solving_case_id: string | null
           problem_solving_session_id: string | null
+          site_unit_id: string | null
           status: string
           title: string | null
         }
         Insert: {
           completed_at?: string | null
+          context_contract_version?: string | null
+          context_type?: string
           created_at?: string
           created_by_membership_id: string
           id?: string
+          intervention_key?: string | null
           mode: string
+          module_key?: string | null
           organisation_id: string
-          problem_solving_case_id: string
+          problem_solving_case_id?: string | null
           problem_solving_session_id?: string | null
+          site_unit_id?: string | null
           status?: string
           title?: string | null
         }
         Update: {
           completed_at?: string | null
+          context_contract_version?: string | null
+          context_type?: string
           created_at?: string
           created_by_membership_id?: string
           id?: string
+          intervention_key?: string | null
           mode?: string
+          module_key?: string | null
           organisation_id?: string
-          problem_solving_case_id?: string
+          problem_solving_case_id?: string | null
           problem_solving_session_id?: string | null
+          site_unit_id?: string | null
           status?: string
           title?: string | null
         }
@@ -765,6 +780,13 @@ export type Database = {
             columns: ["organisation_id", "problem_solving_session_id"]
             isOneToOne: false
             referencedRelation: "problem_solving_sessions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_sessions_site_fkey"
+            columns: ["organisation_id", "site_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_units"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -12344,6 +12366,16 @@ export type Database = {
           target_source_resource_id?: string
           target_title: string
           target_unit_id?: string
+        }
+        Returns: string
+      }
+      create_ai_coach_session: {
+        Args: {
+          target_context_contract_version?: string
+          target_intervention_key: string
+          target_module_key: string
+          target_site_unit_id?: string
+          target_title?: string
         }
         Returns: string
       }
