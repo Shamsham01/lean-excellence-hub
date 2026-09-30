@@ -296,64 +296,82 @@ export function useAuditAnswerState({
       return;
     }
 
-    const currentLocal = localAnswersRef.current;
-    const currentStatuses = statusRef.current;
-    const currentErrors = errorsRef.current;
-    const currentDrafts = numberDraftsRef.current;
-    const nextLocal = cloneAnswers(snapshot);
-    const nextConfirmed = cloneAnswers(snapshot);
-    const nextStatuses: Record<string, SaveStatus> = {};
-    const nextErrors: Record<string, string | null> = {};
-    const nextDrafts = buildNumberDrafts(snapshot);
-    const questionIds = new Set([
-      ...Object.keys(snapshot),
-      ...Object.keys(currentLocal),
-      ...runtimes.keys(),
-    ]);
-
-    for (const questionId of questionIds) {
-      const runtime = runtimes.get(questionId);
-      const status = currentStatuses[questionId];
-      const preserve = shouldPreserveLocalAnswer(runtime, status);
-
-      if (preserve) {
-        if (currentLocal[questionId] !== undefined) {
-          nextLocal[questionId] = currentLocal[questionId];
-        }
-        if (currentDrafts[questionId] !== undefined) {
-          nextDrafts[questionId] = currentDrafts[questionId];
-        }
-        if (status) {
-          nextStatuses[questionId] = status;
-        }
-        if (currentErrors[questionId] != null) {
-          nextErrors[questionId] = currentErrors[questionId];
-        }
-        if (runtime) {
-          runtime.pending = retagJobEpoch(runtime.pending, epochRef.current);
-          runtime.current = retagJobEpoch(runtime.current, epochRef.current);
-          runtime.latest = retagJobEpoch(runtime.latest, epochRef.current);
-          runtime.lastFailed = retagJobEpoch(
-            runtime.lastFailed,
-            epochRef.current,
-          );
-        }
-        continue;
-      }
-
-      if (
-        status === "saved" &&
-        answersEqual(currentLocal[questionId], snapshot[questionId])
-      ) {
-        nextStatuses[questionId] = "saved";
-      }
+    for (const runtime of runtimes.values()) {
+      runtime.pending = retagJobEpoch(runtime.pending, epochRef.current);
+      runtime.current = retagJobEpoch(runtime.current, epochRef.current);
+      runtime.latest = retagJobEpoch(runtime.latest, epochRef.current);
+      runtime.lastFailed = retagJobEpoch(runtime.lastFailed, epochRef.current);
     }
 
-    setLocalAnswers(nextLocal);
-    setConfirmedAnswers(nextConfirmed);
-    setStatuses(nextStatuses);
-    setErrors(nextErrors);
-    setNumberDrafts(nextDrafts);
+    setConfirmedAnswers(cloneAnswers(snapshot));
+    setLocalAnswers((currentLocal) => {
+      const next = cloneAnswers(snapshot);
+      const questionIds = new Set([
+        ...Object.keys(snapshot),
+        ...Object.keys(currentLocal),
+        ...runtimes.keys(),
+      ]);
+      for (const questionId of questionIds) {
+        const runtime = runtimes.get(questionId);
+        const status = statusRef.current[questionId];
+        if (
+          shouldPreserveLocalAnswer(runtime, status) &&
+          currentLocal[questionId] !== undefined
+        ) {
+          next[questionId] = currentLocal[questionId];
+        }
+      }
+      return next;
+    });
+    setNumberDrafts((currentDrafts) => {
+      const next = buildNumberDrafts(snapshot);
+      for (const [questionId, draft] of Object.entries(currentDrafts)) {
+        const runtime = runtimes.get(questionId);
+        if (shouldPreserveLocalAnswer(runtime, statusRef.current[questionId])) {
+          next[questionId] = draft;
+        }
+      }
+      return next;
+    });
+    setStatuses((currentStatuses) => {
+      const next: Record<string, SaveStatus> = {};
+      const questionIds = new Set([
+        ...Object.keys(snapshot),
+        ...Object.keys(currentStatuses),
+        ...runtimes.keys(),
+      ]);
+      for (const questionId of questionIds) {
+        const runtime = runtimes.get(questionId);
+        const status = currentStatuses[questionId];
+        if (shouldPreserveLocalAnswer(runtime, status)) {
+          if (status) next[questionId] = status;
+          continue;
+        }
+        if (
+          status === "saved" &&
+          answersEqual(
+            localAnswersRef.current[questionId],
+            snapshot[questionId],
+          )
+        ) {
+          next[questionId] = "saved";
+        }
+      }
+      return next;
+    });
+    setErrors((currentErrors) => {
+      const next: Record<string, string | null> = {};
+      for (const [questionId, error] of Object.entries(currentErrors)) {
+        const runtime = runtimes.get(questionId);
+        if (
+          error != null &&
+          shouldPreserveLocalAnswer(runtime, statusRef.current[questionId])
+        ) {
+          next[questionId] = error;
+        }
+      }
+      return next;
+    });
   }, [auditId, answersFingerprint]);
 
   function ensureRuntime(questionId: string) {

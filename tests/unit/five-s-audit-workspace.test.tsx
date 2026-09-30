@@ -584,6 +584,73 @@ describe("FiveSAuditWorkspace answer state", () => {
     });
   });
 
+  it("keeps a later in-flight Yes when an earlier question snapshot arrives", async () => {
+    let resolveSave: (value: { ok: true }) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const { rerender } = renderWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Is the second check complete?" }),
+      ).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+
+    rerender(
+      workspaceTree({
+        answers: {
+          [YES_NO_ID]: {
+            text_value: "yes",
+            number_value: null,
+            is_not_applicable: false,
+          },
+        },
+      }),
+    );
+
+    expect(screen.getByRole("button", { name: "Yes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+    expect(
+      screen.getByRole("heading", { name: "Is the second check complete?" }),
+    ).toBeVisible();
+  });
+
   it("selects N/A, clears incompatible values, and clears N/A when a real answer is chosen", async () => {
     renderWorkspace({
       questions: [
