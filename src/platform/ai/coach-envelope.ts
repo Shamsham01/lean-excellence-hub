@@ -20,7 +20,7 @@ export function parseCoachEnvelope(value: unknown): CoachEnvelope {
   return {
     message,
     suggested_next_step:
-      nextLabel && nextRoute && nextRoute.startsWith("/")
+      nextLabel && nextRoute && isSafeInternalRoute(nextRoute)
         ? { label: nextLabel, route: nextRoute }
         : parseNextStep(record.suggested_next_step),
     permission_note: sanitiseText(record.permission_note, MAX_PERMISSION_NOTE),
@@ -54,10 +54,22 @@ function parseNextStep(value: unknown): CoachEnvelope["suggested_next_step"] {
   const record = value as Record<string, unknown>;
   const label = sanitiseText(record.label, MAX_LABEL);
   const route = sanitiseText(record.route, MAX_ROUTE);
-  if (!label || !route || !route.startsWith("/")) {
+  if (!label || !route || !isSafeInternalRoute(route)) {
     return null;
   }
   return { label, route };
+}
+
+// Prevent protocol-relative destinations (//evil.example) and backslash/ASCII
+// control-character URL parsing ambiguities before applying the stronger
+// per-intervention allowlist in the Coach orchestrator.
+function isSafeInternalRoute(route: string): boolean {
+  return (
+    route.startsWith("/") &&
+    !route.startsWith("//") &&
+    !route.includes("\\") &&
+    !/[\u0000-\u001f\u007f]/.test(route)
+  );
 }
 
 function sanitiseText(value: unknown, max: number): string | null {
