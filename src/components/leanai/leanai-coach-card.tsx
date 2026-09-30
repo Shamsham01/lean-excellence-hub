@@ -46,7 +46,6 @@ export function LeanAiCoachCard({
   const [aiEnvelope, setAiEnvelope] = useState<CoachEnvelope | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState("");
-  const [conversationTurns, setConversationTurns] = useState(0);
 
   useEffect(() => {
     const storageKey = shownStorageKey(
@@ -132,7 +131,6 @@ export function LeanAiCoachCard({
         surface: surface ?? "platform_home",
         sessionId,
         followUp: followUpText ?? null,
-        conversationTurns,
         idempotencyKey: crypto.randomUUID(),
       });
       if (!result.ok) {
@@ -149,7 +147,6 @@ export function LeanAiCoachCard({
       setAiEnvelope(result.envelope);
       setSessionId(result.sessionId);
       setExplanationSource("ai");
-      setConversationTurns((turns) => turns + 1);
       setFollowUp("");
     });
   };
