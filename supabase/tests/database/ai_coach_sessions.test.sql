@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(29);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -421,6 +421,28 @@ select ok(
     where session_row.id = (select id from ai_coach_ids where key = 'coach_session')
   ),
   'member without ai.view_history cannot read another member coach session'
+);
+
+-- Hostile privacy test: even an otherwise history-authorised role cannot
+-- access a different user's private Coach conversation (PS semantics differ).
+reset role;
+create or replace function private.can_view_ai_history(target_organisation_id uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $ select true $;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"c1950000-0000-4000-8000-000000000002","role":"authenticated","session_id":"c1951000-0000-4000-8000-000000000002","email":"ai-coach-unprivileged@example.test"}',
+  true
+);
+set local role authenticated;
+select throws_ok(
+  format(
+    'select public.get_ai_session_detail(%L::uuid)',
+    (select id from ai_coach_ids where key = 'coach_session')
+  ),
+  '42501',
+  'ai session read is not authorised',
+  'ai.view_history cannot expose another member personal Coach conversation'
 );
 
 reset role;

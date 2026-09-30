@@ -45,9 +45,10 @@ Extend the current AI session model with an explicit context type.
    preserves the SEC-RPC-002 privilege boundary from #192.
 6. `start_ai_run`, `finish_ai_run`, `fail_ai_run`, and `ai_usage_events` are
    reused. Coach runs cannot persist Problem Solving proposals.
-7. `can_read_ai_session` stays private-by-author (creator or `ai.view_history`).
-   Problem Solving sessions still require current case read. Coach sessions
-   require current organisation membership, not a case.
+7. `can_read_ai_session` retains creator-or-`ai.view_history` access for
+   Problem Solving sessions, conditional on current case read. Personal Coach
+   conversations are **creator-only** within the current active organisation;
+   `ai.view_history` alone never exposes another employee's Coach questions.
 8. Problem Solving tools stay owned by the Problem Solving orchestrator. Coach
    turns must not register or execute those tools.
 9. Organisation switching remains session-bound (`current_organisation_id`).
