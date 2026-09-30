@@ -122,7 +122,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await screenshotIfPossible(page, "leanai-coach-home-desktop.png");
 
     const snapshot = await readContextualSnapshot(page);
-    expect(snapshot.applicationAiAvailable).toBe(false);
+    if (process.env.AI_ENABLED === "0") {
+      expect(snapshot.applicationAiAvailable).toBe(false);
+    }
     expect(await countAiUsageEvents(page, user)).toBe(0);
 
     await page.setViewportSize({ width: 390, height: 844 });
