@@ -80,8 +80,8 @@ persona. Do not paste secrets.
 
 ### A. Identity and provisioning
 
-1. Open `/signup` (or login → Create your organisation).
-2. Confirm invitation-only copy is still visible. Workforce self-signup stays closed.
+1. Open `/signup` (or login → Create your account).
+2. Confirm invitation-only copy is still visible. Workforce self-signup stays closed. The check-email state must not claim a confirmation email was definitely sent.
 3. Create the founder account and confirm email.
 4. Land on `/create-organisation`.
 5. Submit organisation + first site + quantity **1**.

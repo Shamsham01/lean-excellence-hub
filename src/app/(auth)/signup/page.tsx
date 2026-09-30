@@ -18,19 +18,30 @@ export default async function FoundingSignupPage({
     return (
       <AuthCard
         title="Check your email"
-        description="Confirm your address to finish creating your organisation account. Workforce accounts still require an invitation."
+        description="If this is a new account, we've sent a confirmation link. If you already have an account, sign in or reset your password."
       >
-        <Button variant="outline" className="w-full" asChild>
-          <Link href="/login">Back to sign in</Link>
-        </Button>
+        <div
+          className="flex flex-col gap-2"
+          data-testid="founding-signup-check-email"
+        >
+          <Button className="w-full" asChild>
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/recover">Forgot password?</Link>
+          </Button>
+          <Button variant="ghost" className="w-full" asChild>
+            <Link href="/signup">Use a different email</Link>
+          </Button>
+        </div>
       </AuthCard>
     );
   }
 
   return (
     <AuthCard
-      title="Create your organisation"
-      description="This creates a founder account. Joining an existing organisation still requires an invitation."
+      title="Create your account"
+      description="Create a founder account first. Organisation setup follows after you confirm your email. Joining an existing organisation still requires an invitation."
       footer={
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
