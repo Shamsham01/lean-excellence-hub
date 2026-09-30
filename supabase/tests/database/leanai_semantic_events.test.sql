@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(27);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -101,6 +101,12 @@ set local role authenticated;
 select ok(
   public.switch_organisation((select id from leanai_context_ids where key = 'org_a')),
   'owner selects organisation A'
+);
+
+select is(
+  public.get_leanai_contextual_snapshot() ->> 'proactive_assistance_enabled',
+  'true',
+  'existing snapshot RPC exposes proactive assistance without a new public SECURITY DEFINER'
 );
 
 insert into leanai_context_ids (key, id)

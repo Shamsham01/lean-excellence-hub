@@ -10,6 +10,19 @@ import {
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
+type LeanAiContextSnapshot = {
+  applicationAiAvailable: boolean;
+  journey: {
+    organisationId: string;
+    interventionStates: Array<{
+      interventionKey: string;
+      lastEventKey: string;
+      lastDismissedAt: string | null;
+      snoozedUntil: string | null;
+    }>;
+  };
+};
+
 async function countAiUsageEvents(organisationName: string) {
   const { url, serviceRoleKey } = resolveSupabaseEnv();
   if (!url || !serviceRoleKey) {
@@ -31,6 +44,43 @@ async function countAiUsageEvents(organisationName: string) {
     .select("id", { count: "exact", head: true })
     .eq("organisation_id", org.data.id);
   return usage.count ?? 0;
+}
+
+async function expireInterventionSnooze(
+  organisationName: string,
+  interventionKey: string,
+) {
+  const { url, serviceRoleKey } = resolveSupabaseEnv();
+  if (!url || !serviceRoleKey) {
+    throw new Error("Supabase URL and service role key are required");
+  }
+  const admin = createClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const org = await admin
+    .from("organisations")
+    .select("id")
+    .eq("name", organisationName)
+    .single();
+  if (org.error || !org.data?.id) {
+    throw org.error ?? new Error("Organisation not found");
+  }
+  const updated = await admin
+    .from("leanai_intervention_states")
+    .update({
+      snoozed_until: new Date(Date.now() - 60_000).toISOString(),
+    })
+    .eq("organisation_id", org.data.id)
+    .eq("intervention_key", interventionKey);
+  if (updated.error) {
+    throw updated.error;
+  }
+}
+
+async function readContextualSnapshot(page: Page) {
+  const response = await page.request.get("/api/leanai/context");
+  expect(response.ok()).toBeTruthy();
+  return (await response.json()) as LeanAiContextSnapshot;
 }
 
 async function screenshotIfPossible(page: Page, name: string) {
@@ -73,8 +123,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     );
     await expect(coach.getByText("LeanAI Coach")).toBeVisible();
     await expect(page.getByTestId("leanai-coach-setup")).toBeVisible();
-
-    await page.getByTestId("leanai-coach-explain-toggle").click();
+    await page.getByTestId("leanai-coach-explain-toggle").focus();
+    await expect(page.getByTestId("leanai-coach-explain-toggle")).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(page.getByTestId("leanai-coach-explain")).toBeVisible();
     await screenshotIfPossible(page, "leanai-coach-home-desktop.png");
 
@@ -84,6 +135,14 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expect(coach).toBeVisible();
     await screenshotIfPossible(page, "leanai-coach-home-mobile.png");
     await page.setViewportSize({ width: 1280, height: 720 });
+
+    await page.goto("/platform/setup");
+    await expect(page.getByTestId("setup-page")).toBeVisible();
+    await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
+      "data-intervention-key",
+      "sites_first_setup",
+    );
+    await screenshotIfPossible(page, "leanai-coach-setup.png");
   });
 
   test("later persists across reload and does not leak to another organisation", async ({
@@ -92,12 +151,32 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     test.setTimeout(90_000);
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await expect(page.getByTestId("leanai-coach")).toBeVisible();
+    await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
+      "data-intervention-key",
+      "sites_first_setup",
+    );
     await page.getByTestId("leanai-coach-later").click();
     await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
 
+    const afterLater = await readContextualSnapshot(page);
+    const dismissed = afterLater.journey.interventionStates.find(
+      (state) => state.interventionKey === "sites_first_setup",
+    );
+    expect(dismissed?.lastEventKey).toBe("leanai.intervention_dismissed");
+    expect(dismissed?.lastDismissedAt).toBeTruthy();
+
     await page.reload();
     await expect(page.getByTestId("platform-home-page")).toBeVisible();
-    await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
+    const afterReload = page.getByTestId("leanai-coach");
+    await expect(afterReload).toBeVisible();
+    await expect(afterReload).not.toHaveAttribute(
+      "data-intervention-key",
+      "sites_first_setup",
+    );
+    await expect(afterReload).toHaveAttribute(
+      "data-intervention-key",
+      "people_job_functions_setup",
+    );
 
     await page.goto("/select-organisation");
     await page.getByRole("button", { name: user.organisationBName }).click();
@@ -129,6 +208,17 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
     await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
 
+    await expireInterventionSnooze(
+      user.organisationBName,
+      "maturity_first_setup",
+    );
+    await page.reload();
+    await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
+      "data-intervention-key",
+      "maturity_first_setup",
+    );
+
     await page.goto("/platform/suggestions");
     await expect(page.getByTestId("suggestions-overview")).toBeVisible();
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
@@ -152,5 +242,6 @@ test.describe("LeanAI intervention engine and coach UI", () => {
       "data-intervention-key",
       "people_job_functions_setup",
     );
+    expect(await countAiUsageEvents(user.organisationBName)).toBe(0);
   });
 });

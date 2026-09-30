@@ -164,7 +164,7 @@ describe("LeanAI intervention engine", () => {
         ],
       }),
     });
-    expect(dismissed[0]?.key).not.toBe("sites_first_setup");
+    expect(dismissed[0]?.key).toBe("people_job_functions_setup");
 
     const afterCooldown = select({
       now: new Date("2026-10-08T12:00:00.000Z"),
@@ -200,7 +200,7 @@ describe("LeanAI intervention engine", () => {
         ],
       }),
     });
-    expect(snoozed[0]?.key).not.toBe("sites_first_setup");
+    expect(snoozed[0]?.key).toBe("people_job_functions_setup");
 
     const expired = select({
       now: new Date("2026-09-30T13:01:00.000Z"),

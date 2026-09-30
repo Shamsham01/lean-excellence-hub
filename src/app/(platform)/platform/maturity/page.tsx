@@ -72,6 +72,7 @@ export default async function MaturityOverviewPage() {
           <LeanAiCoachCard
             recommendation={recommendation}
             presentation="empty_state"
+            surface="maturity"
           />
         ) : (
           <EmptyState

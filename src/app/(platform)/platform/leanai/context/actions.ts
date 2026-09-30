@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import {
   loadLeanAiContextualSnapshot,
   recordLeanAiSemanticEvent,
@@ -24,7 +26,12 @@ export async function recordLeanAiSemanticEventAction(
   input: LeanAiSemanticEventInput,
 ) {
   try {
-    return { ok: true as const, data: await recordLeanAiSemanticEvent(input) };
+    const data = await recordLeanAiSemanticEvent(input);
+    if (input.eventKey.startsWith("leanai.intervention_")) {
+      revalidatePath("/platform", "layout");
+      revalidatePath("/onboarding/setup");
+    }
+    return { ok: true as const, data };
   } catch (error) {
     return {
       ok: false as const,

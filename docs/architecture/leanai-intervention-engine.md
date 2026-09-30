@@ -36,15 +36,15 @@ Copy, routes and explain text are static product strings.
 2. Keep interventions whose surface includes the current page.
 3. Keep only matching readiness statuses. `ready` never qualifies. Hard-blocked modules (5S/Gemba/Recognition waiting on sites) stay out because they are not eligible until unblocked.
 4. Keep only interventions where **every** required permission is true for the current membership.
-5. Drop snoozed or dismissed keys.
-6. Sort by catalogue priority (setup order). Return one primary recommendation.
+5. Drop snoozed or dismissed keys for the current membership and organisation.
+6. Sort by catalogue priority (setup order). Return one primary recommendation. Dismissing or snoozing the primary key can surface the next eligible gap on a later load; the same key does not nag during its cooldown.
 
 ## Dismissal / snooze
 
 Uses existing `leanai_intervention_states` current-state rows. No employee counts.
 
-- **Later** records `leanai.intervention_dismissed`. Hidden for 168 hours.
-- **Snooze** records `leanai.intervention_snoozed` with `snooze_minutes = 1440`. Hidden until `snoozed_until`.
+- **Later** records `leanai.intervention_dismissed`. That key is hidden for 168 hours. The next eligible recommendation may appear after reload.
+- **Snooze** records `leanai.intervention_snoozed` with `snooze_minutes = 1440`. That key is hidden until `snoozed_until`.
 - **Set it up** records `leanai.intervention_accepted` and navigates.
 - **Explain** expands deterministic copy. No event and no model call.
 - Mount records `leanai.intervention_shown` once per browser session.

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 import type {
   LeanAiCoachPresentation,
+  LeanAiCoachSurface,
   LeanAiInterventionCandidate,
 } from "@/modules/leanai-context/interventions/types";
 
@@ -21,13 +22,16 @@ function shownStorageKey(organisationId: string, interventionKey: string) {
 export function LeanAiCoachCard({
   recommendation,
   presentation = "card",
+  surface,
 }: {
   recommendation: LeanAiInterventionCandidate;
   presentation?: LeanAiCoachPresentation;
+  surface?: LeanAiCoachSurface;
 }) {
   const explainId = useId();
   const [explainOpen, setExplainOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -48,12 +52,13 @@ export function LeanAiCoachCard({
       eventKey: "leanai.intervention_shown",
       interventionKey: recommendation.key,
       moduleKey: recommendation.moduleKey,
-      metadata: { surface: recommendation.moduleKey },
+      metadata: { surface: surface ?? recommendation.moduleKey },
     });
   }, [
     recommendation.key,
     recommendation.moduleKey,
     recommendation.organisationId,
+    surface,
   ]);
 
   if (hidden) {
@@ -65,30 +70,42 @@ export function LeanAiCoachCard({
     metadata: Record<string, string | number | boolean | null> = {},
   ) => {
     startTransition(async () => {
-      await recordLeanAiSemanticEventAction({
+      setError(null);
+      const result = await recordLeanAiSemanticEventAction({
         eventKey,
         interventionKey: recommendation.key,
         moduleKey: recommendation.moduleKey,
         metadata,
       });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setHidden(true);
     });
   };
 
   const accept = () => {
     startTransition(async () => {
-      await recordLeanAiSemanticEventAction({
+      setError(null);
+      const result = await recordLeanAiSemanticEventAction({
         eventKey: "leanai.intervention_accepted",
         interventionKey: recommendation.key,
         moduleKey: recommendation.moduleKey,
         metadata: {},
       });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       hardNavigate(recommendation.targetRoute);
     });
   };
 
   return (
     <Card
+      role="region"
+      aria-label="LeanAI Coach"
       className={cn(
         "border-primary/25 bg-accent/40 shadow-xs",
         presentation === "empty_state" && "bg-accent/50",
@@ -131,6 +148,12 @@ export function LeanAiCoachCard({
           >
             {recommendation.explain}
           </div>
+        ) : null}
+
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
         ) : null}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">

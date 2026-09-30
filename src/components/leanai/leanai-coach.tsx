@@ -21,6 +21,7 @@ export async function LeanAiCoach({
     <LeanAiCoachCard
       recommendation={recommendation}
       presentation={presentation}
+      surface={surface}
     />
   );
 }
