@@ -21,6 +21,24 @@ calls when useful, permission-scoped context, no employee surveillance and
 human approval before authoritative writes. Future organisational-memory
 similarity must search *only readable* suggestions, cases and other records.
 
+## Release checkpoint after #196 merge
+
+- `main` is `591aaa2ba8c067be0e544664d2ae9231b6d15dfb`: PR #196
+  passed Fast CI, Database CI and Full Regression and merged on 30 September.
+- The repository now has **217** migration files. Hosted Supabase still has
+  **216** recorded migrations; the **only** pending file is the canonical
+  `20260930103004_leanai_general_coach_sessions.sql`. No hosted Coach
+  migration or application deployment was performed in this checkpoint.
+- PR #197 has been reconciled onto current `main` at
+  `5404124f073d90923e58a4b19fd5de517dbfd12f` and is mergeable.
+  Fast CI and targeted database/Full Regression database-core checks have
+  passed. The other long-running checks must complete. One existing Windows
+  QA database-types test hit its five-second timeout in Full Regression;
+  the same Windows harness passed on #196 and the post-merge main run.
+- Documentation PR #198 is a draft pending the final #197 regression and
+  definitive hosted migration evidence. Refresh this section and the exact
+  published application SHA before first-customer approval.
+
 ## Verified baseline before Coach-04 merge
 
 - `main` at the 30 September pre-Coach checkpoint:
