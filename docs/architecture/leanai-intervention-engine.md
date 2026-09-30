@@ -51,6 +51,8 @@ Uses existing `leanai_intervention_states` current-state rows. No employee count
   application AI, organisation AI, `ai.use`, subscription access and usage
   limits all pass, an explicit Explain click may enrich the answer through a
   general Coach AI session (ADR-0018). Deterministic copy remains the fallback.
+  The UI labels **Setup guidance** versus **AI-generated guidance** and may
+  offer a bounded follow-up. No AI call on mount, ranking, Later, or Snooze.
 - Mount records `leanai.intervention_shown` once per browser session.
 
 State is membership + organisation scoped, so the same person in two organisations has separate cooldowns.

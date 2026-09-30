@@ -52,4 +52,22 @@ describe("buildResponsesCreateParams", () => {
       strict: true,
     });
   });
+
+  it("uses the Coach envelope schema when a format is supplied", () => {
+    const params = buildResponsesCreateParams({
+      ...baseInput,
+      structuredOutputFormat: {
+        name: "coach_envelope",
+        schema: { type: "object", properties: { message: { type: "string" } } },
+      },
+    });
+
+    expect(params.store).toBe(false);
+    expect(params.text?.format).toEqual({
+      type: "json_schema",
+      name: "coach_envelope",
+      schema: { type: "object", properties: { message: { type: "string" } } },
+      strict: true,
+    });
+  });
 });

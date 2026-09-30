@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
-import { loadLeanAiCoachRecommendation } from "@/modules/leanai-context/interventions/load";
+import { loadLeanAiCoachView } from "@/modules/leanai-context/interventions/load";
 import {
   AssessmentStatusBadge,
   ScoreBadge,
@@ -61,18 +61,20 @@ export default async function MaturityOverviewPage() {
     .limit(5);
 
   if (!models?.length) {
-    const recommendation = await loadLeanAiCoachRecommendation("maturity");
+    const view = await loadLeanAiCoachView("maturity");
     return (
       <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
         <PageHeader
           title="Lean maturity"
           description="Measure and improve operational excellence across your organisation."
         />
-        {recommendation ? (
+        {view.recommendation ? (
           <LeanAiCoachCard
-            recommendation={recommendation}
+            key={`${view.recommendation.organisationId}:${view.recommendation.key}`}
+            recommendation={view.recommendation}
             presentation="empty_state"
             surface="maturity"
+            applicationAiAvailable={view.applicationAiAvailable}
           />
         ) : (
           <EmptyState

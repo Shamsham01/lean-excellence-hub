@@ -18,6 +18,10 @@ export class FakeAIProvider implements AIProvider {
     const lastUser =
       input.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
+    if (input.structuredOutputFormat?.name === "coach_envelope") {
+      return this.coachResponse(lastUser);
+    }
+
     if (
       lastUser.includes("IGNORE PREVIOUS INSTRUCTIONS") &&
       lastUser.includes("delete")
@@ -187,6 +191,73 @@ export class FakeAIProvider implements AIProvider {
       usage: {
         inputTokens: 30,
         outputTokens: 60,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+      },
+    };
+  }
+
+  private coachResponse(lastUser: string): CreateResponseResult {
+    if (
+      lastUser.includes("IGNORE PREVIOUS INSTRUCTIONS") ||
+      lastUser.includes("delete all cases")
+    ) {
+      return {
+        outputText: "I cannot perform unauthorized operations.",
+        parsedJson: {
+          message: "I cannot perform unauthorized operations.",
+          next_step_label: "",
+          next_step_route: "",
+          permission_note: "",
+          follow_up_prompts: [],
+        },
+        toolCalls: [
+          {
+            id: "fake-coach-malicious",
+            name: "get_hypotheses",
+            arguments: {},
+          },
+        ],
+        usage: {
+          inputTokens: 10,
+          outputTokens: 20,
+          cachedInputTokens: 0,
+          reasoningTokens: 0,
+        },
+      };
+    }
+
+    const maturity =
+      lastUser.includes("Intervention: maturity_first_setup") ||
+      /"module":\{"key":"maturity"/.test(lastUser);
+    const message = maturity
+      ? "This organisation has no published Maturity Framework yet. Creating and publishing a framework lets teams assess operational excellence against one shared standard. Open Maturity Framework authoring to draft pillars and questions, then publish a version. LeanAI will not publish it for you."
+      : "This setup step is still incomplete. Follow the recommended Lean Excellence Hub route to finish configuration. LeanAI will not make administrative changes automatically.";
+
+    return {
+      outputText: message,
+      parsedJson: {
+        message,
+        next_step_label: maturity
+          ? "Open Maturity Frameworks"
+          : "Continue setup",
+        next_step_route: maturity
+          ? "/platform/maturity/models"
+          : "/platform/settings/structure",
+        permission_note: lastUser.includes('"canConfigureModule":false')
+          ? "You do not currently have permission to change this configuration. Ask an organisation owner or the person who manages this module."
+          : "",
+        follow_up_prompts: maturity
+          ? [
+              "What does publishing a framework change?",
+              "What should the first version include?",
+            ]
+          : ["What should we do next?"],
+      },
+      toolCalls: [],
+      usage: {
+        inputTokens: 40,
+        outputTokens: 90,
         cachedInputTokens: 0,
         reasoningTokens: 0,
       },

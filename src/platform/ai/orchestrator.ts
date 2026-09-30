@@ -9,6 +9,7 @@ import {
   getAiEnvironment,
   isApplicationAiProviderAvailable,
 } from "@/platform/ai/config";
+import { problemSolvingModelId } from "@/platform/ai/model-routing";
 import { AiProviderError } from "@/platform/ai/providers/errors";
 import {
   PROMPT_KEY,
@@ -67,7 +68,7 @@ export async function runAiTurn(
 
   const env = getAiEnvironment();
   const provider = resolveAIProvider();
-  const model = env.AI_MODEL_DEFAULT ?? AI_DEFAULTS.model;
+  const model = problemSolvingModelId(env);
   const maxOutputTokens =
     env.AI_MAX_OUTPUT_TOKENS ?? AI_DEFAULTS.maxOutputTokens;
   const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
