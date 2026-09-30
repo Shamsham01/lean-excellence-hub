@@ -12,11 +12,10 @@
   founder/onboarding PR (#181) merged into `main` on 29 September.
 - The QA-new-organisation runbook PR (#179) also merged. Superseded
   onboarding PRs #178 and #180 were closed without merging.
-- Hosted Supabase migration history still ends at
-  `20260930081134_sec_rpc_002_billing_leanai_privilege_boundary` (216
-  versions). After #196/#197, `main` has 217 files; the pending Coach
-  migration is tracked in
-  [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md).
+- Hosted Supabase migration history now includes canonical
+  `20260930103004_leanai_general_coach_sessions` (217/217). See
+  [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md) for the apply
+  evidence. Do not replay that file.
 - The SEC-RPC-002 history discrepancy tracked in #193 is repaired: do not
   reapply or repair `20260930081134` again.
 - **Not verified here:** Stripe Sandbox products/webhook/Netlify configuration,
