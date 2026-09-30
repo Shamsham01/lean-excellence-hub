@@ -428,7 +428,7 @@ select ok(
 reset role;
 create or replace function private.can_view_ai_history(target_organisation_id uuid)
 returns boolean language sql stable security definer set search_path = ''
-as $$ select true $$;
+as $coach_privacy_test$ select true $coach_privacy_test$;
 alter function private.can_view_ai_history(uuid) owner to lean_hub_private_owner;
 select set_config(
   'request.jwt.claims',
