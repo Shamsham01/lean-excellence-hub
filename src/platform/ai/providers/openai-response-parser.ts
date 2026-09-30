@@ -41,6 +41,7 @@ export type ParseOpenAiResponseContext = {
   provider: string;
   model: string;
   maxOutputTokens: number;
+  formatName?: string;
 };
 
 function baseDiagnostics(
@@ -107,7 +108,12 @@ export function parseStructuredOpenAiResponse(
   context: ParseOpenAiResponseContext,
 ): Pick<
   CreateResponseResult,
-  "responseId" | "outputText" | "structuredOutput" | "toolCalls" | "usage"
+  | "responseId"
+  | "outputText"
+  | "structuredOutput"
+  | "parsedJson"
+  | "toolCalls"
+  | "usage"
 > {
   const diagnostics = baseDiagnostics(response, context);
 
@@ -166,6 +172,35 @@ export function parseStructuredOpenAiResponse(
       STRUCTURED_CONTRACT_USER_MESSAGE,
       diagnostics,
     );
+  }
+
+  if (context.formatName && context.formatName !== "facilitator_envelope") {
+    let parsedJson: Record<string, unknown>;
+    try {
+      parsedJson = JSON.parse(rawOutput) as Record<string, unknown>;
+    } catch {
+      throwProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_PARSE_ERROR,
+        STRUCTURED_CONTRACT_USER_MESSAGE,
+        diagnostics,
+      );
+    }
+    const outputText =
+      typeof parsedJson.message === "string" ? parsedJson.message.trim() : "";
+    if (!outputText) {
+      throwProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_CONTRACT_ERROR,
+        STRUCTURED_CONTRACT_USER_MESSAGE,
+        diagnostics,
+      );
+    }
+    return {
+      responseId: response.id,
+      outputText,
+      parsedJson,
+      toolCalls: [],
+      usage,
+    };
   }
 
   let transport: OpenAiFacilitatorEnvelopeTransport;

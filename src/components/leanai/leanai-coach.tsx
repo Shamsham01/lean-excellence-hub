@@ -1,5 +1,5 @@
 import { LeanAiCoachCard } from "@/components/leanai/leanai-coach-card";
-import { loadLeanAiCoachRecommendation } from "@/modules/leanai-context/interventions/load";
+import { loadLeanAiCoachView } from "@/modules/leanai-context/interventions/load";
 import type {
   LeanAiCoachPresentation,
   LeanAiCoachSurface,
@@ -12,16 +12,19 @@ export async function LeanAiCoach({
   surface: LeanAiCoachSurface;
   presentation?: LeanAiCoachPresentation;
 }) {
-  const recommendation = await loadLeanAiCoachRecommendation(surface);
+  const { recommendation, applicationAiAvailable } =
+    await loadLeanAiCoachView(surface);
   if (!recommendation) {
     return null;
   }
 
   return (
     <LeanAiCoachCard
+      key={`${recommendation.organisationId}:${recommendation.key}`}
       recommendation={recommendation}
       presentation={presentation}
       surface={surface}
+      applicationAiAvailable={applicationAiAvailable}
     />
   );
 }

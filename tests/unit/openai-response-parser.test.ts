@@ -175,6 +175,27 @@ describe("parseStructuredOpenAiResponse", () => {
     }
   });
 
+  it("parses Coach envelopes without facilitator normalization", () => {
+    const result = parseStructuredOpenAiResponse(
+      completedResponse(
+        JSON.stringify({
+          message: "Create and publish a Maturity Framework.",
+          next_step_label: "Open Maturity Frameworks",
+          next_step_route: "/platform/maturity/models",
+          permission_note: "",
+          follow_up_prompts: [],
+        }),
+      ),
+      { ...parserContext, formatName: "coach_envelope" },
+    );
+
+    expect(result.outputText).toBe("Create and publish a Maturity Framework.");
+    expect(result.parsedJson?.next_step_route).toBe(
+      "/platform/maturity/models",
+    );
+    expect(result.structuredOutput).toBeUndefined();
+  });
+
   it("preserves proposals for orchestrator persistence", () => {
     const result = parseStructuredOpenAiResponse(
       completedResponse(validTransportJson()),
