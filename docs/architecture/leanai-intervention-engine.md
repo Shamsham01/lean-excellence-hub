@@ -16,7 +16,8 @@ Stable keys in `src/modules/leanai-context/interventions/catalogue.ts`:
 
 | Key | Readiness | Permission | Priority |
 | --- | --- | --- | --- |
-| `organisation_profile_setup` | organisation incomplete/blocked | `billing.manage` | 10 |
+| `organisation_onboarding_continue` | organisation incomplete during pre-workspace onboarding | `billing.manage` | 5 |
+| `organisation_profile_setup` | organisation incomplete/blocked outside onboarding | `billing.manage` | 10 |
 | `sites_first_setup` | sites not_started/incomplete | `hierarchy.manage` | 20 |
 | `people_job_functions_setup` | people not_started/incomplete | `job_functions.manage` | 30 |
 | `maturity_first_setup` | maturity not_started/incomplete | `maturity.models.manage` | 40 |
@@ -53,7 +54,7 @@ State is membership + organisation scoped, so the same person in two organisatio
 
 ## Surfaces
 
-- `/onboarding/setup`
+- `/onboarding/setup` — uses a dedicated pre-workspace onboarding intervention because normal `/platform/*` setup routes are intentionally unavailable until onboarding is completed
 - `/platform/setup`
 - `/platform` (home)
 - Maturity empty/setup
