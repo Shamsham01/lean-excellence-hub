@@ -70,4 +70,80 @@ describe("buildResponsesCreateParams", () => {
       strict: true,
     });
   });
+
+  it("serializes user history as input_text", () => {
+    const params = buildResponsesCreateParams({
+      ...baseInput,
+      messages: [{ role: "user", content: "first question" }],
+    });
+
+    const history = params.input.slice(1);
+    expect(history).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "first question" }],
+      },
+    ]);
+  });
+
+  it("serializes assistant history as output_text", () => {
+    const params = buildResponsesCreateParams({
+      ...baseInput,
+      messages: [
+        { role: "assistant", content: "Here is the prior Coach reply." },
+      ],
+    });
+
+    const history = params.input.slice(1);
+    expect(history).toEqual([
+      {
+        role: "assistant",
+        content: [
+          { type: "output_text", text: "Here is the prior Coach reply." },
+        ],
+      },
+    ]);
+  });
+
+  it("preserves mixed conversation order with role-appropriate content types", () => {
+    const params = buildResponsesCreateParams({
+      ...baseInput,
+      messages: [
+        { role: "user", content: "Explain maturity setup." },
+        {
+          role: "assistant",
+          content: "Publish a Maturity Framework first.",
+        },
+        { role: "user", content: "What should the first version include?" },
+      ],
+    });
+
+    expect(params.input).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "system" }],
+      },
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "Explain maturity setup." }],
+      },
+      {
+        role: "assistant",
+        content: [
+          { type: "output_text", text: "Publish a Maturity Framework first." },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: "What should the first version include?",
+          },
+        ],
+      },
+    ]);
+    expect(params.store).toBe(false);
+    expect(params).not.toHaveProperty("previous_response_id");
+  });
 });

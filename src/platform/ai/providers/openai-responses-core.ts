@@ -43,10 +43,9 @@ export function buildResponsesCreateParams(
       ...input.messages.map((message) => ({
         role: message.role,
         content: [
-          {
-            type: "input_text" as const,
-            text: message.content,
-          },
+          message.role === "assistant"
+            ? { type: "output_text" as const, text: message.content }
+            : { type: "input_text" as const, text: message.content },
         ],
       })),
     ],
