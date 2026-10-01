@@ -77,7 +77,7 @@ describe("buildResponsesCreateParams", () => {
       messages: [{ role: "user", content: "first question" }],
     });
 
-    const history = params.input.slice(1);
+    const history = params.input!.slice(1);
     expect(history).toEqual([
       {
         role: "user",
@@ -94,7 +94,7 @@ describe("buildResponsesCreateParams", () => {
       ],
     });
 
-    const history = params.input.slice(1);
+    const history = params.input!.slice(1);
     expect(history).toEqual([
       {
         role: "assistant",
