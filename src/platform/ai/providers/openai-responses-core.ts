@@ -11,6 +11,25 @@ import type {
   CreateResponseResult,
 } from "@/platform/ai/types";
 
+function serializeConversationMessage(message: {
+  role: "user" | "assistant";
+  content: string;
+}): OpenAI.Responses.ResponseInputItem {
+  if (message.role === "assistant") {
+    // Responses API requires assistant replay items to use output_text blocks.
+    // The SDK's EasyInputMessage typing only lists input_* content types.
+    return {
+      role: "assistant",
+      content: [{ type: "output_text", text: message.content }],
+    } as OpenAI.Responses.ResponseInputItem;
+  }
+
+  return {
+    role: "user",
+    content: [{ type: "input_text", text: message.content }],
+  };
+}
+
 export function buildResponsesCreateParams(
   input: CreateResponseInput,
 ): OpenAI.Responses.ResponseCreateParamsNonStreaming {
@@ -40,15 +59,7 @@ export function buildResponsesCreateParams(
           },
         ],
       },
-      ...input.messages.map((message) => ({
-        role: message.role,
-        content: [
-          {
-            type: "input_text" as const,
-            text: message.content,
-          },
-        ],
-      })),
+      ...input.messages.map(serializeConversationMessage),
     ],
     tools: input.tools as unknown as OpenAI.Responses.Tool[],
     max_output_tokens: input.maxOutputTokens,

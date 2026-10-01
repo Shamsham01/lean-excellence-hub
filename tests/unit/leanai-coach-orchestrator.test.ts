@@ -218,6 +218,55 @@ describe("runCoachAiTurn", () => {
     expect(createResponseCalls).toHaveLength(1);
   });
 
+  it("completes a follow-up turn when prior assistant history is replayed", async () => {
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "coach-run-follow-up", error: null });
+        }
+        if (name === "finish_ai_run") {
+          return Promise.resolve({ data: "assistant-follow-up", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const conversationHistory = [
+      {
+        role: "user" as const,
+        content: "Explain this Maturity setup recommendation.",
+      },
+      {
+        role: "assistant" as const,
+        content:
+          "Publish a Maturity Framework so assessments share a standard.",
+      },
+    ];
+
+    const result = await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-follow-up",
+      task: "explain_follow_up",
+      userMessage: "What should the first version include?",
+      idempotencyKey: "idem-coach-follow-up",
+      conversationHistory,
+      context,
+      provenanceHash: "follow-up-hash",
+    });
+
+    expect(result.envelope.message).toMatch(/Maturity Framework/);
+    expect(createResponseCalls).toHaveLength(1);
+    expect(createResponseCalls[0]?.messages).toEqual([
+      ...conversationHistory,
+      {
+        role: "user",
+        content: expect.stringContaining(
+          "What should the first version include?",
+        ),
+      },
+    ]);
+  });
+
   it("does not silently escalate ordinary Explain to standard or deep", async () => {
     await expect(
       runCoachAiTurn({
