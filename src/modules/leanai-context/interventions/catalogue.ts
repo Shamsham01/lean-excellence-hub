@@ -15,6 +15,7 @@ import type { LeanAiInterventionDefinition } from "./types";
 const SETUP_SURFACES = [
   "setup",
   "platform_home",
+  "workspace",
 ] as const satisfies LeanAiInterventionDefinition["surfaces"];
 
 const DEFAULT_DISMISS_HOURS = 168;
@@ -122,7 +123,7 @@ export const LEANAI_INTERVENTION_CATALOGUE: readonly LeanAiInterventionDefinitio
       title: "Set up a Suggestion Programme",
       body: "Suggestions are available, but no active published programme exists yet. People cannot submit ideas against a live programme.",
       explain:
-        "A Suggestion Programme holds categories, guidance and the published form people use to submit ideas. Create a programme and publish a version. Catalogue presence without a published version is not enough.",
+        "A Suggestion Programme is the improvement initiative or campaign people submit ideas under. Categories are a separate organisation-level catalogue describing what kind of idea it is — they are not stored inside the programme. Create a programme, publish a version, and maintain categories independently. Catalogue presence without a published programme version is not enough.",
       primaryCtaLabel: "Set it up",
       targetRoute: "/platform/suggestions/programmes",
       dismissCooldownHours: DEFAULT_DISMISS_HOURS,

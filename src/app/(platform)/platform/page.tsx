@@ -1,6 +1,5 @@
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { QuickActions } from "@/components/onboarding/quick-actions";
-import { LeanAiCoach } from "@/components/leanai/leanai-coach";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
@@ -115,8 +114,6 @@ export default async function PlatformHomePage() {
         }
         descriptionTestId="platform-org-name"
       />
-
-      <LeanAiCoach surface="platform_home" presentation="compact" />
 
       <CoreSetupBanner
         core={setupSnapshot.core}

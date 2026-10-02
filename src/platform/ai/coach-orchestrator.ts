@@ -27,6 +27,12 @@ import {
   buildCoachExplainSystemPrompt,
   hashCoachPrompt,
 } from "@/platform/ai/prompts/coach-explain";
+import {
+  COACH_ASSISTANT_PROMPT_KEY,
+  COACH_ASSISTANT_PROMPT_VERSION,
+  buildCoachAssistantSystemPrompt,
+  hashCoachAssistantPrompt,
+} from "@/platform/ai/prompts/coach-assistant";
 import { resolveAIProvider } from "@/platform/ai/registry";
 import type { CoachEnvelope } from "@/platform/ai/types";
 import type { CoachExplainContext } from "@/modules/leanai-context/coach/context-assembly";
@@ -75,8 +81,14 @@ export async function runCoachAiTurn(
   }
 
   const allowedClass = selectCoachTaskModelClass(input.task);
-  assertModelClassNotEscalated(allowedClass, "economy");
-  if (input.task !== "explain" && input.task !== "explain_follow_up") {
+  const classCeiling =
+    input.task === "setup_conversation" ? "standard" : "economy";
+  assertModelClassNotEscalated(allowedClass, classCeiling);
+  if (
+    input.task !== "explain" &&
+    input.task !== "explain_follow_up" &&
+    input.task !== "setup_conversation"
+  ) {
     throw new Error("This Coach task is not enabled in this milestone.");
   }
 
@@ -89,8 +101,13 @@ export async function runCoachAiTurn(
     1500,
   );
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
-  const systemPrompt = buildCoachExplainSystemPrompt();
-  const promptHash = hashCoachPrompt(systemPrompt);
+  const isAssistantTurn = input.task === "setup_conversation";
+  const systemPrompt = isAssistantTurn
+    ? buildCoachAssistantSystemPrompt()
+    : buildCoachExplainSystemPrompt();
+  const promptHash = isAssistantTurn
+    ? hashCoachAssistantPrompt(systemPrompt)
+    : hashCoachPrompt(systemPrompt);
   const untrusted = wrapUntrustedCoachData(input.context);
   const userMessage = `${untrusted}\n\nUser request:\n${input.userMessage}`;
 
@@ -102,8 +119,12 @@ export async function runCoachAiTurn(
       target_idempotency_key: input.idempotencyKey,
       target_provider: provider.name,
       target_model: model,
-      target_prompt_key: COACH_EXPLAIN_PROMPT_KEY,
-      target_prompt_version: COACH_EXPLAIN_PROMPT_VERSION,
+      target_prompt_key: isAssistantTurn
+        ? COACH_ASSISTANT_PROMPT_KEY
+        : COACH_EXPLAIN_PROMPT_KEY,
+      target_prompt_version: isAssistantTurn
+        ? COACH_ASSISTANT_PROMPT_VERSION
+        : COACH_EXPLAIN_PROMPT_VERSION,
       target_prompt_hash: promptHash,
     },
   );

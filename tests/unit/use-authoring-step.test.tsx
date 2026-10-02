@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { AUTHORING_STEP_CHANGE_EVENT } from "@/lib/authoring/authoring-query";
 import { useAuthoringStep } from "@/components/authoring/use-authoring-step";
 
 const STEPS = ["details", "levels", "publish"] as const;
@@ -62,5 +63,17 @@ describe("useAuthoringStep", () => {
 
     expect(window.location.search).toBe("?step=levels");
     expect(screen.getByTestId("active-step")).toHaveTextContent("levels");
+  });
+
+  it("notifies listeners when the authoring step changes without a Next.js navigation", () => {
+    const seen: string[] = [];
+    const onChange = () => {
+      seen.push(window.location.search);
+    };
+    window.addEventListener(AUTHORING_STEP_CHANGE_EVENT, onChange);
+    render(<StepHarness initialStep="details" />);
+    fireEvent.click(screen.getByRole("button", { name: "Go to levels" }));
+    window.removeEventListener(AUTHORING_STEP_CHANGE_EVENT, onChange);
+    expect(seen).toEqual(["?step=levels"]);
   });
 });

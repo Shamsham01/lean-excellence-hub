@@ -63,3 +63,13 @@ export function readTrustedCoachConversation(
 
   return { conversationHistory, priorTurnCount };
 }
+
+const USER_REQUEST_MARKER = "\n\nUser request:\n";
+
+export function visibleCoachUserMessage(content: string): string {
+  const index = content.lastIndexOf(USER_REQUEST_MARKER);
+  if (index === -1) {
+    return content;
+  }
+  return content.slice(index + USER_REQUEST_MARKER.length);
+}

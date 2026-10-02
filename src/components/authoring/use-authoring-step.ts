@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  AUTHORING_STEP_CHANGE_EVENT,
   AUTHORING_STEP_PARAM,
   parseAuthoringStep,
 } from "@/lib/authoring/authoring-query";
@@ -39,6 +40,9 @@ function writeStepToLocation<T extends string>(next: T, defaultStep: T) {
   if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
     window.history.replaceState(null, "", nextUrl);
   }
+  window.dispatchEvent(
+    new CustomEvent(AUTHORING_STEP_CHANGE_EVENT, { detail: { step: next } }),
+  );
 }
 
 export function useAuthoringStep<T extends string>(

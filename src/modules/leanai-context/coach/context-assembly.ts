@@ -12,14 +12,39 @@ import type {
 } from "@/modules/leanai-context/types";
 import { coachProductKnowledgeFor } from "@/modules/leanai-context/coach/product-knowledge";
 
+import type {
+  AssistantRelevantState,
+  AssistantTerminologyEntry,
+} from "@/modules/leanai-context/assistant/types";
+
 export const COACH_EXPLAIN_CONTEXT_CONTRACT_VERSION = "coach-explain-v1";
+export const COACH_ASSISTANT_CONTEXT_CONTRACT_VERSION =
+  "leanai-page-context-v1";
 
 const MAX_READINESS_ITEMS = 8;
 const UNTRUSTED_START = "UNTRUSTED_ORGANISATION_DATA_START";
 const UNTRUSTED_END = "UNTRUSTED_ORGANISATION_DATA_END";
 
+export type CoachPageContext = {
+  module: LeanAiModuleKey;
+  workflow: string;
+  route: string;
+  pageTitle: string;
+  contextLabel: string;
+  authoringStep: string | null;
+  entityValidated: boolean;
+  siteMode: string;
+  activeSiteName: string | null;
+  summary: string;
+  terminology: AssistantTerminologyEntry[];
+  remainingSetup: Array<{ key: string; status: string; reason: string }>;
+  relevantState: AssistantRelevantState;
+  allowedActions: string[];
+  starterPrompts: string[];
+};
+
 export type CoachExplainContext = {
-  contractVersion: typeof COACH_EXPLAIN_CONTEXT_CONTRACT_VERSION;
+  contractVersion: string;
   productKnowledgeVersion: string;
   organisation: {
     status: string;
@@ -63,6 +88,7 @@ export type CoachExplainContext = {
     facts: string[];
     recommendedPath: string;
   };
+  page?: CoachPageContext;
 };
 
 export function assembleCoachExplainContext(input: {
@@ -71,6 +97,8 @@ export function assembleCoachExplainContext(input: {
   permissions: Record<string, boolean>;
   surface: LeanAiCoachSurface;
   canUseAi: boolean;
+  page?: CoachPageContext;
+  contractVersion?: string;
 }): { context: CoachExplainContext; provenanceHash: string } {
   const definition = leanAiInterventionByKey(input.recommendation.key);
   const requiredPermissions = [...(definition?.requiredPermissions ?? [])];
@@ -89,10 +117,13 @@ export function assembleCoachExplainContext(input: {
     "organisation",
   );
   const sitesItem = findReadinessItem(input.snapshot.readiness.items, "sites");
-  const knowledge = coachProductKnowledgeFor(input.recommendation.moduleKey);
+  const knowledge = coachProductKnowledgeFor(
+    input.page?.module ?? input.recommendation.moduleKey,
+  );
 
   const context: CoachExplainContext = {
-    contractVersion: COACH_EXPLAIN_CONTEXT_CONTRACT_VERSION,
+    contractVersion:
+      input.contractVersion ?? COACH_EXPLAIN_CONTEXT_CONTRACT_VERSION,
     productKnowledgeVersion: knowledge.version,
     organisation: {
       status:
@@ -108,7 +139,7 @@ export function assembleCoachExplainContext(input: {
       activeUnitCount: numberMetric(sitesItem, "active_unit_count"),
     },
     module: {
-      key: input.recommendation.moduleKey,
+      key: input.page?.module ?? input.recommendation.moduleKey,
       surface: input.surface,
     },
     intervention: {
@@ -146,6 +177,7 @@ export function assembleCoachExplainContext(input: {
       facts: knowledge.facts,
       recommendedPath: knowledge.recommendedPath,
     },
+    ...(input.page ? { page: input.page } : {}),
   };
 
   return {

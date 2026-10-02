@@ -236,13 +236,63 @@ Create a reusable LeanAI contextual assistance component.
 
 Possible presentation modes:
 
-- small inline coach card
+- persistent docked workspace assistant (default on `/platform/*`)
+- small inline coach card (pre-workspace `/onboarding/setup`)
 - dismissible popup
-- side-panel prompt
 - onboarding step card
 - contextual empty-state CTA
 
-Avoid modal spam.
+Avoid modal spam for ordinary desktop use.
+
+## 6.1 Persistent workspace assistant (LEANAI-SHELL-01)
+
+LeanAI is a **persistent contextual workspace assistant** on `/platform/*`, integrated into `PlatformShell`. It is the same LeanAI identity as the Coach, not a second chatbot.
+
+### UX
+
+Desktop (`lg` and above): a docked right-hand pane approximately 384px wide (`24rem`, within 360–420px). The main workspace uses the remaining width. When collapsed, the workspace expands and a persistent LeanAI rail remains so the pane can be reopened in one click. Open/collapsed preference is stored in `localStorage` only.
+
+Tablet and mobile: an accessible right-hand sheet/drawer. The workspace width is not permanently reduced. The same conversation/session is used.
+
+The pane contains:
+
+- header: LeanAI identity, current context label (module / entity / authoring step), collapse/close, New conversation
+- body: deterministic page guidance, intervention CTA, conversation feed, starter prompts
+- sticky labelled message input and Send, with loading and error states
+
+### Page-context resolver
+
+The browser identifies the current route and search string. The server owns the envelope:
+
+- organisation, membership, site, and permissions are resolved from the session
+- entity IDs such as Maturity `modelId` are accepted only as UUIDs and validated against tenant RLS
+- browser-supplied organisation IDs are ignored
+- the model never receives the page DOM or clickstream
+
+The envelope includes module, workflow, route, page title, readiness, compact relevant state, terminology, allowed actions, and the current authoring step when present. Maturity `?step=` changes refresh current page context without creating a new unrelated assistant. Authoring tabs that update the URL via `history.replaceState` emit `leh:authoring-step-change` so the assistant can refresh.
+
+Suggestions configuration understands the actual LEH model: a **Programme** is the campaign people submit under; a **Category** is a separate organisation-level catalogue. The two are not the same.
+
+### Conversation and context boundary
+
+Workspace chat reuses ADR-0018 Coach sessions with `module_key = platform` and `intervention_key = workspace_assistant`. History is bounded. Provider use remains `store:false` with no `previous_response_id` dependency.
+
+Conversation survives in-workspace navigation. **Current page context is assembled fresh on every turn** and is the live truth. Organisation switch is session-bound (`current_organisation_id`); a browser session id from another organisation is rejected.
+
+### Deterministic guidance vs model invocation
+
+Readiness evaluation, intervention ranking, terminology, and starter chips make **zero provider calls**. A model call happens only when the user sends a message (or uses Coach Explain). Opening the pane, changing route, or clicking ordinary workspace controls does not invoke AI.
+
+User chat uses the existing Coach orchestrator `setup_conversation` task (`standard` class). Coach Explain remains `economy`. Deep/`complex_reasoning` is not enabled.
+
+### Fallback
+
+If `AI_ENABLED=0`, organisation AI is disabled, the member lacks `ai.use`, usage is exhausted, or the provider is unavailable, the pane still shows module explanation, readiness, terminology, and CTAs. The input explains that AI conversation is unavailable. Setup does not depend on a model.
+
+### Human approval
+
+LeanAI still cannot publish, delete, or apply authoritative writes. Later “Build with LeanAI” flows must prepare a draft proposal for human review through the normal domain/RBAC path.
+
 
 A prompt should normally provide 2–3 clear choices such as:
 
@@ -544,7 +594,14 @@ Implemented as a two-PR sequence:
   Ordinary Explain uses the `economy` class only. Deterministic copy remains
   the fallback when AI is unavailable, disabled, or over limit.
 
-### LEANAI-ONBOARD-01 — Intelligent Onboarding
+### LEANAI-SHELL-01 — Persistent contextual workspace assistant
+
+- docked desktop pane and mobile drawer in `PlatformShell`
+- server-owned page/workflow context resolver
+- Suggestions Programme vs Category product knowledge
+- Maturity authoring-step context
+- reuse of general Coach sessions; no second chatbot
+- deterministic interventions inside the pane; no duplicate cards on `/platform/*`
 
 - use the intervention engine across the new-organisation onboarding journey
 - step-by-step setup guidance
@@ -577,7 +634,7 @@ The milestone is successful when:
 
 For LEH v1:
 
-- **LeanAI becomes a proactive contextual coach**
+- **LeanAI is a persistent contextual workspace assistant on `/platform/*`**
 - **semantic events, not raw click surveillance**
 - **readiness and intervention detection are deterministic**
 - **AI is invoked only when it adds value**

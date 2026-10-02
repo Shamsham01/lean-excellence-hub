@@ -1,6 +1,5 @@
 import { SetupChecklist } from "@/components/onboarding/setup-checklist";
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
-import { LeanAiCoach } from "@/components/leanai/leanai-coach";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -22,8 +21,6 @@ export default async function SetupPage() {
           </Button>
         }
       />
-
-      <LeanAiCoach surface="setup" />
 
       <CoreSetupBanner
         core={snapshot.core}
