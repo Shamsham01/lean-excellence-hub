@@ -187,7 +187,7 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveCriterion).toHaveBeenCalledWith(
         "criterion-wrong",
         "pillar-ps",
-        1,
+        undefined,
         "model-1",
       );
     });
@@ -256,7 +256,7 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveQuestion).toHaveBeenCalledWith(
         "question-1",
         "criterion-ps",
-        1,
+        undefined,
         "model-1",
       );
     });
@@ -397,14 +397,9 @@ describe("FrameworkEditor authoring UX", () => {
     expect(
       screen.getByTestId("question-pillar-pillar-a"),
     ).not.toHaveTextContent("Pillar B question 1");
-    expect(screen.getAllByText("Order within pillar").length).toBeGreaterThan(
+    expect(screen.getAllByLabelText("Question move up").length).toBeGreaterThan(
       0,
     );
-    expect(
-      screen.getAllByText(
-        "Determines question order within this pillar. Criterion membership is controlled separately.",
-      ).length,
-    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Draft version 1 — Editing" }),
     ).toBeInTheDocument();

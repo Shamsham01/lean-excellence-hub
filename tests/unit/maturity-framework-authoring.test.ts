@@ -4,7 +4,13 @@ import {
   assessFrameworkPublishReadiness,
   buildFrameworkHierarchy,
   formatFrameworkStructureChangeLines,
+  neighborForReorder,
+  nextCriterionPositionForPillar,
+  nextPillarPosition,
+  nextQuestionPositionForCriterion,
   nextQuestionPositionForPillar,
+  orderedQuestionsForPillar,
+  planUniquePositionSwap,
   sortMaturityQuestions,
   summarizeFrameworkStructureChanges,
 } from "@/modules/maturity/framework-authoring";
@@ -63,6 +69,68 @@ describe("maturity framework authoring helpers", () => {
     ]);
 
     expect(sorted.map((question) => question.id)).toEqual(["q-1", "q-2"]);
+  });
+
+  it("appends pillars, criteria, and questions with deterministic next positions", () => {
+    expect(nextPillarPosition(pillars)).toBe(3);
+    expect(nextCriterionPositionForPillar("pillar-a", criteria)).toBe(3);
+    expect(nextCriterionPositionForPillar("pillar-b", criteria)).toBe(2);
+    expect(
+      nextQuestionPositionForCriterion("criterion-a1", pillars, criteria, [
+        {
+          id: "q-1",
+          prompt: "Gemba score",
+          criterion_id: "criterion-a1",
+          position: 1,
+        },
+      ]),
+    ).toBe(2);
+  });
+
+  it("plans sibling swaps without reusing occupied positions mid-flight", () => {
+    const plan = planUniquePositionSwap(
+      { position: 1 },
+      { position: 2 },
+      [{ position: 1 }, { position: 2 }],
+    );
+    expect(plan).toEqual({
+      stagedPosition: 3,
+      itemFinalPosition: 2,
+      neighborFinalPosition: 1,
+    });
+  });
+
+  it("selects adjacent siblings for move up and move down", () => {
+    const ordered = [
+      { id: "a", position: 1 },
+      { id: "b", position: 2 },
+      { id: "c", position: 5 },
+    ];
+    expect(neighborForReorder(ordered, "b", "up")?.id).toBe("a");
+    expect(neighborForReorder(ordered, "b", "down")?.id).toBe("c");
+    expect(neighborForReorder(ordered, "a", "up")).toBeNull();
+  });
+
+  it("orders pillar questions in hierarchy presentation order", () => {
+    const questions = [
+      {
+        id: "b2",
+        prompt: "Pillar B question 2",
+        criterion_id: "criterion-b1",
+        position: 2,
+      },
+      {
+        id: "a1",
+        prompt: "Pillar A question 1",
+        criterion_id: "criterion-a1",
+        position: 1,
+      },
+    ];
+    expect(
+      orderedQuestionsForPillar("pillar-a", pillars, criteria, questions).map(
+        (question) => question.id,
+      ),
+    ).toEqual(["a1"]);
   });
 
   it("allocates pillar-local positions without colliding across criteria", () => {

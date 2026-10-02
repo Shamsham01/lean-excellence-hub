@@ -87,17 +87,15 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
   await page.getByTestId("framework-step-pillars").click();
   for (const [index, pillar] of COOKIEWORKS_PILLARS.entries()) {
     await page.locator("#pillarName").fill(pillar.name);
-    await page.locator("#pillarPosition").fill(String(index + 1));
     await page.getByRole("button", { name: "Add pillar" }).click();
     await expect(page.getByTestId(`edit-pillar-${index + 1}`)).toBeVisible();
   }
 
   await page.getByTestId("framework-step-criteria").click();
   for (const pillar of COOKIEWORKS_PILLARS) {
-    for (const [index, criterionName] of pillar.criteria.entries()) {
+    for (const criterionName of pillar.criteria) {
       await page.locator("#pillarId").selectOption({ label: pillar.name });
       await page.locator("#criterionName").fill(criterionName);
-      await page.locator("#criterionPosition").fill(String(index + 1));
       await page.getByRole("button", { name: "Add criterion" }).click();
       await expect(
         page
@@ -114,13 +112,8 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
 
   await page.getByTestId("framework-step-questions").click();
   let linkedQuestionCount = 0;
-  const questionPositionByPillar = new Map<string, number>();
   for (const pillar of COOKIEWORKS_PILLARS) {
     for (const criterionName of pillar.criteria) {
-      const questionPosition =
-        (questionPositionByPillar.get(pillar.name) ?? 0) + 1;
-      questionPositionByPillar.set(pillar.name, questionPosition);
-
       await expect
         .poll(async () =>
           page
@@ -131,7 +124,6 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
         .toBeGreaterThan(0);
       await page.locator("#criterionId").selectOption({ label: criterionName });
       await page.locator("#questionPrompt").fill(`Rate: ${criterionName}`);
-      await page.locator("#questionPosition").fill(String(questionPosition));
       await page.getByRole("button", { name: "Add scored question" }).click();
       linkedQuestionCount += 1;
       await expect(page.locator('[data-testid^="edit-question-"]')).toHaveCount(

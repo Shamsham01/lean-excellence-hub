@@ -408,15 +408,22 @@ export async function updateMaturityQuestion(
 export async function moveMaturityCriterion(
   criterionId: string,
   pillarId: string,
-  position: number,
+  position?: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("move_maturity_criterion", {
+  const rpcArgs: {
+    target_criterion_id: string;
+    target_pillar_id: string;
+    target_position?: number;
+  } = {
     target_criterion_id: criterionId,
     target_pillar_id: pillarId,
-    target_position: position,
-  });
+  };
+  if (position != null) {
+    rpcArgs.target_position = position;
+  }
+  const { error } = await supabase.rpc("move_maturity_criterion", rpcArgs);
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
   return { ok: true };
