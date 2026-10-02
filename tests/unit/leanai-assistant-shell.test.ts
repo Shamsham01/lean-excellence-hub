@@ -13,12 +13,14 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(shell).toContain("LeanAiAssistantShell");
     expect(shell).toContain("organisationId");
     expect(shell).toContain(
-      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto",
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
     );
 
     const chrome = read("src/components/leanai/leanai-assistant-chrome.tsx");
     expect(chrome).toContain("leanai-assistant-open");
     expect(chrome).toContain("w-[min(100%,24rem)]");
+    expect(chrome).toContain("min-h-0");
+    expect(chrome).toContain("overflow-hidden");
     expect(chrome).toContain("SheetContent");
     expect(chrome).toContain('aria-label="Open LeanAI assistant"');
 
@@ -26,6 +28,10 @@ describe("LeanAI assistant platform shell integration", () => {
       "src/components/leanai/leanai-assistant-shell.tsx",
     );
     expect(assistantShell).toContain("fallback={null}");
+    expect(assistantShell).toContain(
+      "lg:h-full lg:max-h-full lg:overflow-hidden",
+    );
+    expect(assistantShell).toContain('data-testid="leanai-assistant-shell"');
     expect(assistantShell.indexOf("{children}")).toBe(
       assistantShell.lastIndexOf("{children}"),
     );
@@ -37,6 +43,8 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(panel).not.toContain("Message LeanAI");
     expect(panel).toContain("aria-live");
     expect(panel).toContain("leanai-assistant-input");
+    expect(panel).toContain("overscroll-y-contain");
+    expect(panel).toContain("overflow-hidden");
     expect(panel).toContain("LeanAiCoachCard");
 
     const home = read("src/app/(platform)/platform/page.tsx");

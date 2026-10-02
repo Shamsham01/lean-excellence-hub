@@ -49,7 +49,7 @@ export function LeanAiAssistantPanel({
     <section
       role="region"
       aria-label="LeanAI assistant"
-      className="flex h-full min-h-0 min-w-0 flex-col bg-background"
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background"
       data-testid="leanai-assistant-pane"
       data-context-label={contextLabel}
       data-module={view?.page.module ?? ""}
@@ -100,7 +100,7 @@ export function LeanAiAssistantPanel({
 
       <div
         ref={feedRef}
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-3 py-3 break-words"
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-3 break-words"
         data-testid="leanai-assistant-feed"
         aria-live="polite"
         aria-relevant="additions"
