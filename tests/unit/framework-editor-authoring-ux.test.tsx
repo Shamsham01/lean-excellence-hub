@@ -187,10 +187,183 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveCriterion).toHaveBeenCalledWith(
         "criterion-wrong",
         "pillar-ps",
-        1,
+        undefined,
         "model-1",
       );
     });
+  });
+
+  it("appends same-pillar question reparents with the next pillar-wide position", async () => {
+    moveQuestion.mockResolvedValue({ ok: true });
+    renderEditor({
+      initialAuthoringStep: "questions",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Pillar A",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-a",
+          name: "Criterion A",
+          pillar_id: "pillar-a",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "criterion-b",
+          name: "Criterion B",
+          pillar_id: "pillar-a",
+          position: 2,
+          description: null,
+          guidance: null,
+        },
+      ],
+      questions: [
+        {
+          id: "q1",
+          prompt: "Q1",
+          criterion_id: "criterion-a",
+          position: 1,
+        },
+        {
+          id: "q2",
+          prompt: "Q2",
+          criterion_id: "criterion-a",
+          position: 2,
+        },
+        {
+          id: "q3",
+          prompt: "Q3",
+          criterion_id: "criterion-a",
+          position: 3,
+        },
+        {
+          id: "q4",
+          prompt: "Q4",
+          criterion_id: "criterion-b",
+          position: 4,
+        },
+        {
+          id: "q5",
+          prompt: "Q5",
+          criterion_id: "criterion-b",
+          position: 5,
+        },
+        {
+          id: "q6",
+          prompt: "Q6",
+          criterion_id: "criterion-b",
+          position: 6,
+        },
+      ],
+    });
+
+    fireEvent.change(
+      within(screen.getByTestId("edit-question-q1")).getByLabelText(
+        "Question criterion",
+      ),
+      { target: { value: "criterion-b" } },
+    );
+    fireEvent.submit(screen.getByTestId("edit-question-q1"));
+
+    await waitFor(() => {
+      expect(moveQuestion).toHaveBeenCalledWith(
+        "q1",
+        "criterion-b",
+        7,
+        "model-1",
+      );
+    });
+  });
+
+  it("does not expose question move controls across criterion boundaries", () => {
+    renderEditor({
+      initialAuthoringStep: "questions",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Pillar A",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-a",
+          name: "Criterion A",
+          pillar_id: "pillar-a",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "criterion-b",
+          name: "Criterion B",
+          pillar_id: "pillar-a",
+          position: 2,
+          description: null,
+          guidance: null,
+        },
+      ],
+      questions: [
+        {
+          id: "q1",
+          prompt: "Q1",
+          criterion_id: "criterion-a",
+          position: 1,
+        },
+        {
+          id: "q2",
+          prompt: "Q2",
+          criterion_id: "criterion-a",
+          position: 2,
+        },
+        {
+          id: "q3",
+          prompt: "Q3",
+          criterion_id: "criterion-a",
+          position: 3,
+        },
+        {
+          id: "q4",
+          prompt: "Q4",
+          criterion_id: "criterion-b",
+          position: 4,
+        },
+        {
+          id: "q5",
+          prompt: "Q5",
+          criterion_id: "criterion-b",
+          position: 5,
+        },
+        {
+          id: "q6",
+          prompt: "Q6",
+          criterion_id: "criterion-b",
+          position: 6,
+        },
+      ],
+    });
+
+    const q3Card = screen.getByTestId("edit-question-q3");
+    expect(within(q3Card).getByLabelText("Question move down")).toBeDisabled();
+    const q4Card = screen.getByTestId("edit-question-q4");
+    expect(within(q4Card).getByLabelText("Question move up")).toBeDisabled();
+    const q2Card = screen.getByTestId("edit-question-q2");
+    expect(within(q2Card).getByLabelText("Question move down")).toBeEnabled();
+    expect(within(q2Card).getByLabelText("Question move up")).toBeEnabled();
+    const q5Card = screen.getByTestId("edit-question-q5");
+    expect(within(q5Card).getByLabelText("Question move up")).toBeEnabled();
+    expect(within(q5Card).getByLabelText("Question move down")).toBeEnabled();
   });
 
   it("reparents a draft question and confirms criterion deletion", async () => {
@@ -256,7 +429,7 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveQuestion).toHaveBeenCalledWith(
         "question-1",
         "criterion-ps",
-        1,
+        undefined,
         "model-1",
       );
     });
@@ -397,14 +570,9 @@ describe("FrameworkEditor authoring UX", () => {
     expect(
       screen.getByTestId("question-pillar-pillar-a"),
     ).not.toHaveTextContent("Pillar B question 1");
-    expect(screen.getAllByText("Order within pillar").length).toBeGreaterThan(
+    expect(screen.getAllByLabelText("Question move up").length).toBeGreaterThan(
       0,
     );
-    expect(
-      screen.getAllByText(
-        "Determines question order within this pillar. Criterion membership is controlled separately.",
-      ).length,
-    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Draft version 1 — Editing" }),
     ).toBeInTheDocument();

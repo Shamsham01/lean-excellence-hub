@@ -267,11 +267,149 @@ export function formatFrameworkStructureChangeLines(
   ];
 }
 
+export function maxSiblingPosition(
+  items: readonly { position: number }[],
+): number {
+  return items.reduce(
+    (maxPosition, item) => Math.max(maxPosition, item.position),
+    0,
+  );
+}
+
+export function nextPillarPosition(
+  pillars: readonly MaturityAuthoringPillar[],
+): number {
+  if (pillars.length === 0) {
+    return 1;
+  }
+  return maxSiblingPosition(pillars) + 1;
+}
+
+export function nextCriterionPositionForPillar(
+  pillarId: string,
+  criteria: readonly MaturityAuthoringCriterion[],
+): number {
+  const siblings = criteria.filter(
+    (criterion) => criterion.pillar_id === pillarId,
+  );
+  if (siblings.length === 0) {
+    return 1;
+  }
+  return maxSiblingPosition(siblings) + 1;
+}
+
+export function orderedByPosition<T extends { id: string; position: number }>(
+  items: readonly T[],
+): T[] {
+  return [...items].sort(compareByPositionThenId);
+}
+
+export function neighborForReorder<T extends { id: string; position: number }>(
+  items: readonly T[],
+  itemId: string,
+  direction: "up" | "down",
+): T | null {
+  const ordered = orderedByPosition(items);
+  const index = ordered.findIndex((entry) => entry.id === itemId);
+  if (index < 0) {
+    return null;
+  }
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+  if (neighborIndex < 0 || neighborIndex >= ordered.length) {
+    return null;
+  }
+  const neighbor = ordered[neighborIndex];
+  return neighbor ?? null;
+}
+
+export function planUniquePositionSwap(
+  item: { position: number },
+  neighbor: { position: number },
+  siblings: readonly { position: number }[],
+): {
+  stagedPosition: number;
+  itemFinalPosition: number;
+  neighborFinalPosition: number;
+} {
+  return {
+    stagedPosition: maxSiblingPosition(siblings) + 1,
+    itemFinalPosition: neighbor.position,
+    neighborFinalPosition: item.position,
+  };
+}
+
+export function orderedQuestionsForCriterion<
+  T extends MaturityAuthoringQuestion,
+>(criterionId: string, questions: readonly T[]): T[] {
+  return orderedByPosition(
+    questions.filter((question) => question.criterion_id === criterionId),
+  );
+}
+
+export function targetPositionForQuestionReparent(input: {
+  sourceCriterionId: string;
+  destinationCriterionId: string;
+  pillars: readonly MaturityAuthoringPillar[];
+  criteria: readonly MaturityAuthoringCriterion[];
+  questions: readonly MaturityAuthoringQuestion[];
+}): number | undefined {
+  const sourceCriterion = input.criteria.find(
+    (criterion) => criterion.id === input.sourceCriterionId,
+  );
+  const destinationCriterion = input.criteria.find(
+    (criterion) => criterion.id === input.destinationCriterionId,
+  );
+  if (!sourceCriterion || !destinationCriterion) {
+    return undefined;
+  }
+  if (sourceCriterion.pillar_id !== destinationCriterion.pillar_id) {
+    return undefined;
+  }
+  return nextQuestionPositionForPillar(
+    destinationCriterion.pillar_id,
+    input.pillars,
+    input.criteria,
+    input.questions,
+  );
+}
+
+export function orderedQuestionsForPillar(
+  pillarId: string,
+  pillars: readonly MaturityAuthoringPillar[],
+  criteria: readonly MaturityAuthoringCriterion[],
+  questions: readonly MaturityAuthoringQuestion[],
+): MaturityAuthoringQuestion[] {
+  const hierarchy = buildFrameworkHierarchy({ pillars, criteria, questions });
+  const pillar = hierarchy.pillars.find((entry) => entry.id === pillarId);
+  if (!pillar) {
+    return [];
+  }
+  return pillar.criteria.flatMap((criterion) => criterion.questions);
+}
+
+export function nextQuestionPositionForCriterion(
+  criterionId: string,
+  pillars: readonly MaturityAuthoringPillar[],
+  criteria: readonly MaturityAuthoringCriterion[],
+  questions: readonly MaturityAuthoringQuestion[],
+): number {
+  const criterion = criteria.find((entry) => entry.id === criterionId);
+  if (!criterion) {
+    return 1;
+  }
+  return nextQuestionPositionForPillar(
+    criterion.pillar_id,
+    pillars,
+    criteria,
+    questions,
+  );
+}
+
 export function nextQuestionPositionForPillar(
   pillarId: string,
-  pillars: MaturityAuthoringPillar[],
-  criteria: MaturityAuthoringCriterion[],
-  questions: MaturityAuthoringQuestion[],
+  pillars: readonly MaturityAuthoringPillar[],
+  criteria: readonly MaturityAuthoringCriterion[],
+  questions: readonly MaturityAuthoringQuestion[],
 ): number {
   const pillar = pillars.find((entry) => entry.id === pillarId);
   if (!pillar) {

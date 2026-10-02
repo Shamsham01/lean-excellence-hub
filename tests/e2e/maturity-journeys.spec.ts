@@ -13,9 +13,6 @@ import { tmpdir } from "node:os";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const CORNWALL_PLANT_LABEL = /Cornwall Plant/i;
-const QUESTION_ORDER_HELP =
-  "Determines question order within this pillar. Criterion membership is controlled separately.";
-
 async function pillarSignature(preview: Locator) {
   const pillars = preview.locator('[data-testid^="framework-preview-pillar-"]');
   const count = await pillars.count();
@@ -381,8 +378,6 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByText(/Safety → Problem Solving/)).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText("Order within pillar").first()).toBeVisible();
-    await expect(page.getByText(QUESTION_ORDER_HELP).first()).toBeVisible();
 
     const safetyQuestions = page
       .locator('[data-testid^="question-pillar-"]')

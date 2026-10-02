@@ -33,8 +33,16 @@ import {
   assessFrameworkPublishReadiness,
   buildFrameworkHierarchy,
   formatFrameworkStructureChangeLines,
-  nextQuestionPositionForPillar,
+  neighborForReorder,
+  nextCriterionPositionForPillar,
+  nextPillarPosition,
+  nextQuestionPositionForCriterion,
+  orderedByPosition,
+  orderedQuestionsForCriterion,
+  orderedQuestionsForPillar,
+  planUniquePositionSwap,
   summarizeFrameworkStructureChanges,
+  targetPositionForQuestionReparent,
 } from "@/modules/maturity/framework-authoring";
 import {
   MATURITY_ASSESSMENT_SCOPE_TYPES,
@@ -55,10 +63,6 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 const STEP_IDS: StepId[] = STEPS.map((step) => step.id);
-
-const QUESTION_ORDER_LABEL = "Order within pillar";
-const QUESTION_ORDER_HELP =
-  "Determines question order within this pillar. Criterion membership is controlled separately.";
 
 type LevelRow = {
   id: string;
@@ -113,29 +117,72 @@ type FrameworkEditorProps = {
   activeVersion?: ActiveVersionReference | null;
 };
 
+function ReorderControls({
+  label,
+  canMoveUp,
+  canMoveDown,
+  busy,
+  onMoveUp,
+  onMoveDown,
+}: {
+  label: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  busy: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={busy || !canMoveUp}
+        aria-label={`${label} move up`}
+        onClick={() => void onMoveUp()}
+      >
+        Move up
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={busy || !canMoveDown}
+        aria-label={`${label} move down`}
+        onClick={() => void onMoveDown()}
+      >
+        Move down
+      </Button>
+    </div>
+  );
+}
+
 function QuestionEditorCard({
   question,
   pillarName,
   criterionName,
   criteria,
   busy,
+  canMoveUp,
+  canMoveDown,
   onSave,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: {
   question: QuestionRow;
   pillarName: string;
   criterionName: string;
   criteria: CriterionRow[];
   busy: boolean;
-  onSave: (input: {
-    prompt: string;
-    position: number;
-    criterionId: string;
-  }) => Promise<void>;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onSave: (input: { prompt: string; criterionId: string }) => Promise<void>;
   onDelete: () => Promise<void>;
+  onMoveUp: () => Promise<void>;
+  onMoveDown: () => Promise<void>;
 }) {
-  const helpId = `question-order-help-${question.id}`;
-
   return (
     <form
       className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
@@ -145,7 +192,6 @@ function QuestionEditorCard({
         const payload = new FormData(event.currentTarget);
         await onSave({
           prompt: String(payload.get("questionPrompt") ?? "").trim(),
-          position: Number(payload.get("questionPosition")),
           criterionId: String(payload.get("questionCriterionId") ?? ""),
         });
       }}
@@ -159,23 +205,7 @@ function QuestionEditorCard({
         className="sm:col-span-2"
         aria-label="Question prompt"
       />
-      <div className="flex flex-col gap-1">
-        <Label htmlFor={`question-order-${question.id}`}>
-          {QUESTION_ORDER_LABEL}
-        </Label>
-        <Input
-          id={`question-order-${question.id}`}
-          name="questionPosition"
-          type="number"
-          min={1}
-          defaultValue={question.position}
-          aria-describedby={helpId}
-        />
-        <p id={helpId} className="text-xs text-muted-foreground">
-          {QUESTION_ORDER_HELP}
-        </p>
-      </div>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm sm:col-span-2">
         <span className="text-muted-foreground">Criterion</span>
         <select
           name="questionCriterionId"
@@ -190,7 +220,15 @@ function QuestionEditorCard({
           ))}
         </select>
       </label>
-      <div className="flex flex-wrap gap-2 sm:col-span-2">
+      <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+        <ReorderControls
+          label="Question"
+          canMoveUp={canMoveUp}
+          canMoveDown={canMoveDown}
+          busy={busy}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+        />
         <Button type="submit" size="sm" disabled={busy}>
           Save question
         </Button>
@@ -240,6 +278,9 @@ export function FrameworkEditor({
   const [selectedCriterionId, setSelectedCriterionId] = useState(
     criteria[0]?.id ?? "",
   );
+  const [selectedCriterionPillarId, setSelectedCriterionPillarId] = useState(
+    criteria[0]?.pillar_id ?? pillars[0]?.id ?? "",
+  );
 
   async function run<T>(action: () => Promise<{ error?: string } | T>) {
     setBusy(true);
@@ -286,32 +327,190 @@ export function FrameworkEditor({
         : null,
     [activeVersion, criteria, pillars, questions],
   );
-  const selectedCriterion = criteria.find(
-    (criterion) => criterion.id === selectedCriterionId,
-  );
-  const suggestedQuestionPosition = selectedCriterion
-    ? nextQuestionPositionForPillar(
-        selectedCriterion.pillar_id,
-        pillars,
-        criteria,
-        questions,
-      )
-    : 1;
+  const orderedPillars = useMemo(() => orderedByPosition(pillars), [pillars]);
+
+  async function swapPillarOrder(pillar: PillarRow, direction: "up" | "down") {
+    const neighbor = neighborForReorder(orderedPillars, pillar.id, direction);
+    if (!neighbor) return;
+    const plan = planUniquePositionSwap(pillar, neighbor, orderedPillars);
+    await run(async () => {
+      const staged = await updateMaturityPillar(
+        pillar.id,
+        pillar.name,
+        plan.stagedPosition,
+        pillar.description,
+        pillar.guidance,
+        modelId,
+      );
+      if (
+        staged &&
+        typeof staged === "object" &&
+        "error" in staged &&
+        staged.error
+      ) {
+        return staged;
+      }
+      const neighborMoved = await updateMaturityPillar(
+        neighbor.id,
+        neighbor.name,
+        plan.neighborFinalPosition,
+        neighbor.description,
+        neighbor.guidance,
+        modelId,
+      );
+      if (
+        neighborMoved &&
+        typeof neighborMoved === "object" &&
+        "error" in neighborMoved &&
+        neighborMoved.error
+      ) {
+        return neighborMoved;
+      }
+      return updateMaturityPillar(
+        pillar.id,
+        pillar.name,
+        plan.itemFinalPosition,
+        pillar.description,
+        pillar.guidance,
+        modelId,
+      );
+    });
+  }
+
+  async function swapCriterionOrder(
+    criterion: CriterionRow,
+    direction: "up" | "down",
+  ) {
+    const siblings = criteria.filter(
+      (entry) => entry.pillar_id === criterion.pillar_id,
+    );
+    const neighbor = neighborForReorder(siblings, criterion.id, direction);
+    if (!neighbor) return;
+    const plan = planUniquePositionSwap(criterion, neighbor, siblings);
+    await run(async () => {
+      const staged = await updateMaturityCriterion(
+        criterion.id,
+        criterion.name,
+        plan.stagedPosition,
+        criterion.description,
+        criterion.guidance,
+        modelId,
+      );
+      if (
+        staged &&
+        typeof staged === "object" &&
+        "error" in staged &&
+        staged.error
+      ) {
+        return staged;
+      }
+      const neighborMoved = await updateMaturityCriterion(
+        neighbor.id,
+        neighbor.name,
+        plan.neighborFinalPosition,
+        neighbor.description,
+        neighbor.guidance,
+        modelId,
+      );
+      if (
+        neighborMoved &&
+        typeof neighborMoved === "object" &&
+        "error" in neighborMoved &&
+        neighborMoved.error
+      ) {
+        return neighborMoved;
+      }
+      return updateMaturityCriterion(
+        criterion.id,
+        criterion.name,
+        plan.itemFinalPosition,
+        criterion.description,
+        criterion.guidance,
+        modelId,
+      );
+    });
+  }
+
+  async function swapQuestionOrder(
+    question: QuestionRow,
+    pillarId: string,
+    direction: "up" | "down",
+  ) {
+    const criterionSiblings = orderedQuestionsForCriterion(
+      question.criterion_id,
+      questions,
+    );
+    const neighbor = neighborForReorder(
+      criterionSiblings,
+      question.id,
+      direction,
+    );
+    if (!neighbor) return;
+    const pillarQuestions = orderedQuestionsForPillar(
+      pillarId,
+      pillars,
+      criteria,
+      questions,
+    );
+    const plan = planUniquePositionSwap(question, neighbor, pillarQuestions);
+    await run(async () => {
+      const staged = await updateMaturityQuestion(
+        question.id,
+        question.prompt,
+        plan.stagedPosition,
+        modelId,
+      );
+      if (
+        staged &&
+        typeof staged === "object" &&
+        "error" in staged &&
+        staged.error
+      ) {
+        return staged;
+      }
+      const neighborMoved = await updateMaturityQuestion(
+        neighbor.id,
+        neighbor.prompt,
+        plan.neighborFinalPosition,
+        modelId,
+      );
+      if (
+        neighborMoved &&
+        typeof neighborMoved === "object" &&
+        "error" in neighborMoved &&
+        neighborMoved.error
+      ) {
+        return neighborMoved;
+      }
+      return updateMaturityQuestion(
+        question.id,
+        question.prompt,
+        plan.itemFinalPosition,
+        modelId,
+      );
+    });
+  }
 
   async function saveQuestion(
     question: QuestionRow,
     input: {
       prompt: string;
-      position: number;
       criterionId: string;
     },
   ) {
     if (input.criterionId !== question.criterion_id) {
+      const targetPosition = targetPositionForQuestionReparent({
+        sourceCriterionId: question.criterion_id,
+        destinationCriterionId: input.criterionId,
+        pillars,
+        criteria,
+        questions,
+      });
       await run(() =>
         moveMaturityQuestion(
           question.id,
           input.criterionId,
-          input.position,
+          targetPosition,
           modelId,
         ),
       );
@@ -321,7 +520,7 @@ export function FrameworkEditor({
       updateMaturityQuestion(
         question.id,
         input.prompt,
-        input.position,
+        question.position,
         modelId,
       ),
     );
@@ -588,10 +787,14 @@ export function FrameworkEditor({
                 e.preventDefault();
                 const form = e.currentTarget;
                 const pillarName = form.pillarName.value.trim();
-                const position = Number(form.pillarPosition.value);
                 if (!pillarName) return;
                 await run(() =>
-                  addMaturityPillar(versionId, pillarName, position, modelId),
+                  addMaturityPillar(
+                    versionId,
+                    pillarName,
+                    nextPillarPosition(pillars),
+                    modelId,
+                  ),
                 );
                 form.reset();
               }}
@@ -605,23 +808,12 @@ export function FrameworkEditor({
                   placeholder="Leadership"
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="pillarPosition">Position</Label>
-                <Input
-                  id="pillarPosition"
-                  name="pillarPosition"
-                  type="number"
-                  min={1}
-                  required
-                  defaultValue={pillars.length + 1}
-                />
-              </div>
               <Button type="submit" disabled={busy}>
                 Add pillar
               </Button>
             </form>
             <div className="flex flex-col gap-3">
-              {pillars.map((pillar) => (
+              {orderedPillars.map((pillar) => (
                 <form
                   key={pillar.id}
                   className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
@@ -633,7 +825,7 @@ export function FrameworkEditor({
                       updateMaturityPillar(
                         pillar.id,
                         form.pillarName.value.trim(),
-                        Number(form.pillarPosition.value),
+                        pillar.position,
                         form.pillarDescription.value.trim() || null,
                         form.pillarGuidance.value.trim() || null,
                         modelId,
@@ -647,13 +839,6 @@ export function FrameworkEditor({
                     aria-label="Pillar name"
                   />
                   <Input
-                    name="pillarPosition"
-                    type="number"
-                    min={1}
-                    defaultValue={pillar.position}
-                    aria-label="Pillar position"
-                  />
-                  <Input
                     name="pillarDescription"
                     defaultValue={pillar.description ?? ""}
                     placeholder="Description"
@@ -665,9 +850,25 @@ export function FrameworkEditor({
                     placeholder="Guidance"
                     aria-label="Pillar guidance"
                   />
-                  <Button type="submit" size="sm" disabled={busy}>
-                    Save pillar
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                    <ReorderControls
+                      label="Pillar"
+                      canMoveUp={
+                        neighborForReorder(orderedPillars, pillar.id, "up") !=
+                        null
+                      }
+                      canMoveDown={
+                        neighborForReorder(orderedPillars, pillar.id, "down") !=
+                        null
+                      }
+                      busy={busy}
+                      onMoveUp={() => swapPillarOrder(pillar, "up")}
+                      onMoveDown={() => swapPillarOrder(pillar, "down")}
+                    />
+                    <Button type="submit" size="sm" disabled={busy}>
+                      Save pillar
+                    </Button>
+                  </div>
                 </form>
               ))}
             </div>
@@ -683,13 +884,12 @@ export function FrameworkEditor({
                 const form = e.currentTarget;
                 const pillarId = form.pillarId.value;
                 const criterionName = form.criterionName.value.trim();
-                const position = Number(form.criterionPosition.value);
                 if (!criterionName || !pillarId) return;
                 await run(() =>
                   addMaturityCriterion(
                     pillarId,
                     criterionName,
-                    position,
+                    nextCriterionPositionForPillar(pillarId, criteria),
                     modelId,
                   ),
                 );
@@ -702,6 +902,10 @@ export function FrameworkEditor({
                   id="pillarId"
                   name="pillarId"
                   required
+                  value={selectedCriterionPillarId}
+                  onChange={(event) =>
+                    setSelectedCriterionPillarId(event.target.value)
+                  }
                   className="h-9 rounded-md border border-border bg-background px-3 text-sm"
                 >
                   {pillars.map((p) => (
@@ -714,17 +918,6 @@ export function FrameworkEditor({
               <div className="flex flex-col gap-2">
                 <Label htmlFor="criterionName">Criterion name</Label>
                 <Input id="criterionName" name="criterionName" required />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="criterionPosition">Position</Label>
-                <Input
-                  id="criterionPosition"
-                  name="criterionPosition"
-                  type="number"
-                  min={1}
-                  required
-                  defaultValue={1}
-                />
               </div>
               <Button type="submit" disabled={busy || pillars.length === 0}>
                 Add criterion
@@ -750,13 +943,12 @@ export function FrameworkEditor({
                       const nextPillarId = String(
                         payload.get("criterionPillarId") ?? "",
                       );
-                      const position = Number(payload.get("criterionPosition"));
                       if (nextPillarId !== criterion.pillar_id) {
                         await run(() =>
                           moveMaturityCriterion(
                             criterion.id,
                             nextPillarId,
-                            position,
+                            undefined,
                             modelId,
                           ),
                         );
@@ -766,7 +958,7 @@ export function FrameworkEditor({
                         updateMaturityCriterion(
                           criterion.id,
                           String(payload.get("criterionName") ?? "").trim(),
-                          position,
+                          criterion.position,
                           String(
                             payload.get("criterionDescription") ?? "",
                           ).trim() || null,
@@ -785,13 +977,6 @@ export function FrameworkEditor({
                       name="criterionName"
                       defaultValue={criterion.name}
                       aria-label="Criterion name"
-                    />
-                    <Input
-                      name="criterionPosition"
-                      type="number"
-                      min={1}
-                      defaultValue={criterion.position}
-                      aria-label="Criterion position"
                     />
                     <label className="flex flex-col gap-1 text-sm">
                       <span className="text-muted-foreground">Pillar</span>
@@ -821,7 +1006,33 @@ export function FrameworkEditor({
                       aria-label="Criterion guidance"
                       className="sm:col-span-2"
                     />
-                    <div className="flex flex-wrap gap-2 sm:col-span-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                      <ReorderControls
+                        label="Criterion"
+                        canMoveUp={
+                          neighborForReorder(
+                            criteria.filter(
+                              (entry) =>
+                                entry.pillar_id === criterion.pillar_id,
+                            ),
+                            criterion.id,
+                            "up",
+                          ) != null
+                        }
+                        canMoveDown={
+                          neighborForReorder(
+                            criteria.filter(
+                              (entry) =>
+                                entry.pillar_id === criterion.pillar_id,
+                            ),
+                            criterion.id,
+                            "down",
+                          ) != null
+                        }
+                        busy={busy}
+                        onMoveUp={() => swapCriterionOrder(criterion, "up")}
+                        onMoveDown={() => swapCriterionOrder(criterion, "down")}
+                      />
                       <Button type="submit" size="sm" disabled={busy}>
                         Save criterion
                       </Button>
@@ -862,7 +1073,6 @@ export function FrameworkEditor({
                 const form = e.currentTarget;
                 const criterionId = form.criterionId.value;
                 const prompt = form.questionPrompt.value.trim();
-                const position = Number(form.questionPosition.value);
                 const pillar = pillars.find((p) =>
                   criteria.some(
                     (c) => c.id === criterionId && c.pillar_id === p.id,
@@ -875,7 +1085,12 @@ export function FrameworkEditor({
                     versionId,
                     pillar.section_id,
                     prompt,
-                    position,
+                    nextQuestionPositionForCriterion(
+                      criterionId,
+                      pillars,
+                      criteria,
+                      questions,
+                    ),
                     modelId,
                   );
                   if (q.error || !q.questionId) return q;
@@ -916,25 +1131,6 @@ export function FrameworkEditor({
                   placeholder="Rate this criterion"
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="questionPosition">{QUESTION_ORDER_LABEL}</Label>
-                <Input
-                  id="questionPosition"
-                  name="questionPosition"
-                  type="number"
-                  min={1}
-                  required
-                  key={`${selectedCriterionId}-${suggestedQuestionPosition}`}
-                  defaultValue={suggestedQuestionPosition}
-                  aria-describedby="question-order-help"
-                />
-                <p
-                  id="question-order-help"
-                  className="text-xs text-muted-foreground"
-                >
-                  {QUESTION_ORDER_HELP}
-                </p>
-              </div>
               <Button type="submit" disabled={busy || criteria.length === 0}>
                 Add scored question
               </Button>
@@ -966,18 +1162,45 @@ export function FrameworkEditor({
                           No scored questions linked.
                         </p>
                       ) : (
-                        criterion.questions.map((question) => (
-                          <QuestionEditorCard
-                            key={question.id}
-                            question={question}
-                            pillarName={pillar.name}
-                            criterionName={criterion.name}
-                            criteria={criteria}
-                            busy={busy}
-                            onSave={(input) => saveQuestion(question, input)}
-                            onDelete={() => removeQuestion(question)}
-                          />
-                        ))
+                        criterion.questions.map((question) => {
+                          const criterionQuestions =
+                            orderedQuestionsForCriterion(
+                              criterion.id,
+                              questions,
+                            );
+                          return (
+                            <QuestionEditorCard
+                              key={question.id}
+                              question={question}
+                              pillarName={pillar.name}
+                              criterionName={criterion.name}
+                              criteria={criteria}
+                              busy={busy}
+                              canMoveUp={
+                                neighborForReorder(
+                                  criterionQuestions,
+                                  question.id,
+                                  "up",
+                                ) != null
+                              }
+                              canMoveDown={
+                                neighborForReorder(
+                                  criterionQuestions,
+                                  question.id,
+                                  "down",
+                                ) != null
+                              }
+                              onSave={(input) => saveQuestion(question, input)}
+                              onDelete={() => removeQuestion(question)}
+                              onMoveUp={() =>
+                                swapQuestionOrder(question, pillar.id, "up")
+                              }
+                              onMoveDown={() =>
+                                swapQuestionOrder(question, pillar.id, "down")
+                              }
+                            />
+                          );
+                        })
                       )}
                     </div>
                   ))}
@@ -996,8 +1219,12 @@ export function FrameworkEditor({
                   criterionName="Unknown criterion"
                   criteria={criteria}
                   busy={busy}
+                  canMoveUp={false}
+                  canMoveDown={false}
                   onSave={(input) => saveQuestion(question, input)}
                   onDelete={() => removeQuestion(question)}
+                  onMoveUp={async () => {}}
+                  onMoveDown={async () => {}}
                 />
               ))}
             </div>
