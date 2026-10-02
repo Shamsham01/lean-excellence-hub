@@ -234,7 +234,7 @@ export function LeanAiAssistantPanel({
           </p>
         ) : null}
         <label className="sr-only" htmlFor={inputId}>
-          Message LeanAI
+          Ask LeanAI
         </label>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <Input

@@ -133,7 +133,7 @@ describe("LeanAI assistant panel", () => {
       "suggestions_programme_setup",
     );
     expect(screen.getByTestId("leanai-assistant-ai-unavailable")).toBeVisible();
-    expect(screen.getByLabelText("Message LeanAI")).toBeDisabled();
+    expect(screen.getByLabelText("Ask LeanAI")).toBeDisabled();
     expect(sendMessage).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId("leanai-assistant-close"));
@@ -177,7 +177,7 @@ describe("LeanAI assistant panel", () => {
     expect(
       screen.getByRole("region", { name: "LeanAI assistant" }),
     ).toBeVisible();
-    expect(screen.getByLabelText("Message LeanAI")).toBeDisabled();
+    expect(screen.getByLabelText("Ask LeanAI")).toBeDisabled();
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
@@ -205,9 +205,9 @@ describe("LeanAI assistant panel", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Message LeanAI")).toBeEnabled();
+      expect(screen.getByLabelText("Ask LeanAI")).toBeEnabled();
     });
-    fireEvent.change(screen.getByLabelText("Message LeanAI"), {
+    fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
       target: { value: "What is a programme?" },
     });
     fireEvent.click(screen.getByTestId("leanai-assistant-send"));

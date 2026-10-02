@@ -120,7 +120,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.keyboard.press("Enter");
     const pane = page.getByTestId("leanai-assistant-pane");
     await expect(pane).toBeVisible();
-    await expect(page.getByLabel("Message LeanAI")).toBeVisible();
+    await expect(page.getByLabel("Ask LeanAI")).toBeVisible();
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
     ).not.toHaveText(/Loading context/i, { timeout: 15_000 });

@@ -11,15 +11,13 @@ export function LeanAiAssistantShell({
   children: ReactNode;
 }) {
   return (
-    <Suspense
-      fallback={<div className="flex min-h-0 min-w-0 flex-1">{children}</div>}
-    >
-      <LeanAiAssistantProvider organisationId={organisationId}>
-        <div className="flex min-h-0 min-w-0 flex-1">
-          {children}
+    <div className="flex min-h-0 min-w-0 flex-1">
+      {children}
+      <Suspense fallback={null}>
+        <LeanAiAssistantProvider organisationId={organisationId}>
           <LeanAiAssistantChrome />
-        </div>
-      </LeanAiAssistantProvider>
-    </Suspense>
+        </LeanAiAssistantProvider>
+      </Suspense>
+    </div>
   );
 }

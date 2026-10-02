@@ -22,9 +22,19 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(chrome).toContain("SheetContent");
     expect(chrome).toContain('aria-label="Open LeanAI assistant"');
 
+    const assistantShell = read(
+      "src/components/leanai/leanai-assistant-shell.tsx",
+    );
+    expect(assistantShell).toContain("fallback={null}");
+    expect(assistantShell.indexOf("{children}")).toBe(
+      assistantShell.lastIndexOf("{children}"),
+    );
+    expect(assistantShell).not.toMatch(/fallback=\{[^}]*children/);
+
     const panel = read("src/components/leanai/leanai-assistant-panel.tsx");
     expect(panel).toContain('aria-label="LeanAI assistant"');
-    expect(panel).toContain("Message LeanAI");
+    expect(panel).toContain("Ask LeanAI");
+    expect(panel).not.toContain("Message LeanAI");
     expect(panel).toContain("aria-live");
     expect(panel).toContain("leanai-assistant-input");
     expect(panel).toContain("LeanAiCoachCard");

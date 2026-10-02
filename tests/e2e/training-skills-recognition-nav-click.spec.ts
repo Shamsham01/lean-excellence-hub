@@ -349,6 +349,7 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
 
     await page.getByLabel("Title").fill(awardTitle);
     await page
+      .getByTestId("award-recognition-form")
       .getByLabel("Message")
       .fill("NAV-CLICK local award so create-and-open can be verified.");
     await page
