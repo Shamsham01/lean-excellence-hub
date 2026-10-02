@@ -51,6 +51,9 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
     ).toBeVisible();
+    await expect(
+      page.getByTestId("leanai-assistant-new-conversation"),
+    ).toBeEnabled();
     await screenshotIfPossible(page, "leanai-assistant-desktop-open.png");
 
     await page.getByTestId("leanai-assistant-close").click();

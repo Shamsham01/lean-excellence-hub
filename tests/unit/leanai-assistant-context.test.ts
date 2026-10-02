@@ -13,6 +13,13 @@ import {
 } from "@/modules/leanai-context/assistant/suggestions-state";
 import { buildMaturityAuthoringState } from "@/modules/leanai-context/assistant/maturity-state";
 import { visibleCoachUserMessage } from "@/modules/leanai-context/coach/session-validation";
+import {
+  countUserTurnsAfterBoundary,
+  failClosedConversationStartedAt,
+  filterConversationAfterBoundary,
+  parseConversationBoundary,
+  validateConversationBoundary,
+} from "@/modules/leanai-context/assistant/conversation-boundary";
 import { coachProductKnowledgeFor } from "@/modules/leanai-context/coach/product-knowledge";
 import {
   LEANAI_INTERVENTION_PERMISSION_KEYS,
@@ -281,5 +288,54 @@ describe("Coach history display", () => {
       "What is a programme?",
     ].join("\n");
     expect(visibleCoachUserMessage(stored)).toBe("What is a programme?");
+  });
+});
+
+describe("LeanAI logical conversation boundary", () => {
+  it("accepts ISO timestamps and rejects far-future or malformed values", () => {
+    const valid = "2026-10-02T12:00:00.000Z";
+    expect(parseConversationBoundary(undefined).kind).toBe("none");
+    expect(parseConversationBoundary(valid)).toEqual({
+      kind: "valid",
+      startedAt: valid,
+    });
+    expect(parseConversationBoundary("not-a-date").kind).toBe("invalid");
+    expect(parseConversationBoundary("2099-01-01T00:00:00.000Z").kind).toBe(
+      "invalid",
+    );
+    expect(validateConversationBoundary(valid)).toBe(valid);
+    expect(validateConversationBoundary("nope")).toBeNull();
+  });
+
+  it("fail-closes invalid boundaries without treating them as missing", () => {
+    expect(failClosedConversationStartedAt(undefined)).toBeNull();
+    const closed = failClosedConversationStartedAt("tomorrow");
+    expect(closed).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
+  });
+
+  it("hides conversation A from history and turn counts after New", () => {
+    const messages = [
+      {
+        role: "user" as const,
+        content: "A",
+        createdAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        role: "assistant" as const,
+        content: "A reply",
+        createdAt: "2026-10-01T10:00:01.000Z",
+      },
+      {
+        role: "user" as const,
+        content: "B",
+        createdAt: "2026-10-02T12:00:00.000Z",
+      },
+    ];
+    const boundary = "2026-10-02T11:00:00.000Z";
+    expect(countUserTurnsAfterBoundary(messages, null)).toBe(2);
+    expect(countUserTurnsAfterBoundary(messages, boundary)).toBe(1);
+    expect(filterConversationAfterBoundary(messages, boundary)).toEqual([
+      messages[2],
+    ]);
   });
 });

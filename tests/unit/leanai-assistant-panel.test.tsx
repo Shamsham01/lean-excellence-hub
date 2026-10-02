@@ -89,6 +89,9 @@ import { LeanAiAssistantProvider } from "@/components/leanai/leanai-assistant-pr
 
 describe("LeanAI assistant panel", () => {
   beforeEach(() => {
+    loadView.mockReset();
+    loadConversation.mockReset();
+    sendMessage.mockReset();
     loadView.mockResolvedValue({ ok: true, view });
     loadConversation.mockResolvedValue({
       ok: true,
@@ -96,6 +99,7 @@ describe("LeanAI assistant panel", () => {
       messages: [],
     });
     window.localStorage.clear();
+    window.sessionStorage.clear();
     window.history.replaceState({}, "", "/platform/suggestions/programmes");
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: String(query).includes("1024"),
@@ -226,5 +230,274 @@ describe("LeanAI assistant panel", () => {
     expect(
       await screen.findByTestId("leanai-assistant-assistant-message"),
     ).toHaveTextContent("campaign");
+  });
+
+  it("disables New while a message is sending", async () => {
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+    sendMessage.mockImplementation(() => new Promise(() => undefined));
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Ask LeanAI")).toBeEnabled();
+    });
+    fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
+      target: { value: "Conversation A question" },
+    });
+    fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+    expect(
+      await screen.findByTestId("leanai-assistant-user-message"),
+    ).toHaveTextContent("Conversation A question");
+    expect(
+      screen.getByTestId("leanai-assistant-new-conversation"),
+    ).toBeDisabled();
+  });
+
+  it("starts a logical conversation boundary on New", async () => {
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+    sendMessage
+      .mockResolvedValueOnce({
+        ok: true,
+        sessionId: "session-1",
+        envelope: { message: "Conversation A answer." },
+        modelClass: "standard",
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        sessionId: "session-1",
+        envelope: { message: "Conversation B answer." },
+        modelClass: "standard",
+      });
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Ask LeanAI")).toBeEnabled();
+    });
+    fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
+      target: { value: "Conversation A question" },
+    });
+    fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+    expect(
+      await screen.findByTestId("leanai-assistant-user-message"),
+    ).toHaveTextContent("Conversation A question");
+    expect(
+      await screen.findByTestId("leanai-assistant-assistant-message"),
+    ).toHaveTextContent("Conversation A answer.");
+    expect(sendMessage.mock.calls[0]?.[0]).not.toHaveProperty(
+      "conversationStartedAt",
+    );
+
+    fireEvent.click(screen.getByTestId("leanai-assistant-new-conversation"));
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("leanai-assistant-user-message"),
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText("Conversation A answer."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
+      target: { value: "Conversation B question" },
+    });
+    fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          message: "Conversation B question",
+          conversationStartedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+        }),
+      );
+    });
+    expect(
+      await screen.findByTestId("leanai-assistant-user-message"),
+    ).toHaveTextContent("Conversation B question");
+    expect(
+      screen.queryByText("Conversation A question"),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByTestId("leanai-assistant-assistant-message"),
+    ).toHaveTextContent("Conversation B answer.");
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage.mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({
+        message: "Conversation B question",
+        conversationStartedAt: window.sessionStorage.getItem(
+          "leanai-assistant-cleared-at:org-a",
+        ),
+      }),
+    );
+  });
+
+  it("fail-closes an invalid stored boundary instead of loading cross-boundary history", async () => {
+    window.sessionStorage.setItem(
+      "leanai-assistant-session:org-a",
+      "session-1",
+    );
+    window.sessionStorage.setItem(
+      "leanai-assistant-cleared-at:org-a",
+      "not-an-iso-timestamp",
+    );
+    loadConversation.mockResolvedValue({
+      ok: true,
+      sessionId: "session-1",
+      messages: [],
+    });
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    await waitFor(() => {
+      expect(loadConversation).toHaveBeenCalledWith({
+        sessionId: "session-1",
+        conversationStartedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+      });
+    });
+    expect(loadConversation.mock.calls[0]?.[0]?.conversationStartedAt).not.toBe(
+      "not-an-iso-timestamp",
+    );
+    expect(
+      window.sessionStorage.getItem("leanai-assistant-cleared-at:org-a"),
+    ).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("reloads conversation B only when a stored boundary exists", async () => {
+    window.sessionStorage.setItem(
+      "leanai-assistant-session:org-a",
+      "session-1",
+    );
+    window.sessionStorage.setItem(
+      "leanai-assistant-cleared-at:org-a",
+      "2026-10-02T12:00:00.000Z",
+    );
+    loadConversation.mockResolvedValue({
+      ok: true,
+      sessionId: "session-1",
+      messages: [
+        {
+          id: "b-user",
+          role: "user",
+          content: "Conversation B after reload",
+          createdAt: "2026-10-02T12:01:00.000Z",
+          source: "deterministic",
+        },
+      ],
+    });
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    await waitFor(() => {
+      expect(loadConversation).toHaveBeenCalledWith({
+        sessionId: "session-1",
+        conversationStartedAt: "2026-10-02T12:00:00.000Z",
+      });
+    });
+    expect(
+      await screen.findByTestId("leanai-assistant-user-message"),
+    ).toHaveTextContent("Conversation B after reload");
+  });
+
+  it("does not reuse another organisation's visible assistant messages", async () => {
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+    sendMessage.mockResolvedValue({
+      ok: true,
+      sessionId: "session-a",
+      envelope: { message: "Org A answer." },
+      modelClass: "standard",
+    });
+
+    const { rerender } = render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText("Ask LeanAI")).toBeEnabled();
+    });
+    fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
+      target: { value: "Org A question" },
+    });
+    fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+    expect(
+      await screen.findByTestId("leanai-assistant-user-message"),
+    ).toHaveTextContent("Org A question");
+
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        organisationId: "org-b",
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+    rerender(
+      <LeanAiAssistantProvider organisationId="org-b">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.queryByText("Org A question")).not.toBeInTheDocument();
+    });
   });
 });

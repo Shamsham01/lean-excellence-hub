@@ -11,12 +11,43 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/**
+ * Keep this comparison local so Coach session validation does not import the
+ * workspace-assistant boundary helpers. Coach Explain omits the timestamp and
+ * continues to use the full trusted session transcript.
+ */
+function createdAtOnOrAfter(
+  createdAt: unknown,
+  conversationStartedAt: string,
+): boolean {
+  if (typeof createdAt !== "string" || createdAt.trim().length === 0) {
+    return false;
+  }
+  const createdMs = Date.parse(createdAt);
+  const startedMs = Date.parse(conversationStartedAt);
+  if (!Number.isFinite(createdMs) || !Number.isFinite(startedMs)) {
+    return false;
+  }
+  return createdMs >= startedMs;
+}
+
+function inLogicalConversation(
+  message: Record<string, unknown>,
+  conversationStartedAt: string | undefined,
+): boolean {
+  if (!conversationStartedAt) {
+    return true;
+  }
+  return createdAtOnOrAfter(message.created_at, conversationStartedAt);
+}
+
 export function readTrustedCoachConversation(
   payload: unknown,
   expected: {
     sessionId: string;
     moduleKey: string;
     interventionKey: string;
+    conversationStartedAt?: string;
   },
 ): {
   conversationHistory: CoachConversationMessage[];
@@ -42,21 +73,26 @@ export function readTrustedCoachConversation(
     return null;
   }
 
-  // Count all prior user turns, although only the last six messages go to AI.
-  const priorTurnCount = payload.messages.filter(
-    (message: unknown) => isRecord(message) && message.role === "user",
+  const inScope = payload.messages.filter(
+    (message: unknown): message is Record<string, unknown> =>
+      isRecord(message) &&
+      inLogicalConversation(message, expected.conversationStartedAt),
+  );
+
+  // Count in-scope prior user turns; only the last six in-scope messages go to AI.
+  const priorTurnCount = inScope.filter(
+    (message) => message.role === "user",
   ).length;
 
-  const conversationHistory: CoachConversationMessage[] = payload.messages
+  const conversationHistory: CoachConversationMessage[] = inScope
     .filter(
-      (message: unknown) =>
-        isRecord(message) &&
+      (message) =>
         (message.role === "user" || message.role === "assistant") &&
         typeof message.content === "string" &&
         message.content.trim().length > 0,
     )
     .slice(-6)
-    .map((message: Record<string, unknown>) => ({
+    .map((message) => ({
       role: message.role as CoachConversationMessage["role"],
       content: (message.content as string).slice(0, 4000),
     }));

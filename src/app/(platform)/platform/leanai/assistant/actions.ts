@@ -10,8 +10,13 @@ import {
   LEANAI_ASSISTANT_MODULE_KEY,
   LEANAI_PAGE_CONTEXT_CONTRACT_VERSION,
 } from "@/modules/leanai-context/assistant/constants";
+import {
+  failClosedConversationStartedAt,
+  filterConversationAfterBoundary,
+} from "@/modules/leanai-context/assistant/conversation-boundary";
 import { loadLeanAiAssistantView } from "@/modules/leanai-context/assistant/load";
 import { coachPageContextFromView } from "@/modules/leanai-context/assistant/page-context";
+import { parseAssistantRoute } from "@/modules/leanai-context/assistant/route-map";
 import type {
   LeanAiAssistantChatMessage,
   LeanAiAssistantView,
@@ -32,7 +37,6 @@ import {
 import { loadLeanAiInterventionPermissions } from "@/modules/leanai-context/interventions/load";
 import type { LeanAiInterventionCandidate } from "@/modules/leanai-context/interventions/types";
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
-import { parseAssistantRoute } from "@/modules/leanai-context/assistant/route-map";
 import { runCoachAiTurn } from "@/platform/ai/coach-orchestrator";
 import type { CoachEnvelope } from "@/platform/ai/types";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -84,13 +88,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function trustedAssistantConversation(
+  detail: unknown,
+  sessionId: string,
+  conversationStartedAt: string | null,
+) {
+  return readTrustedCoachConversation(
+    detail,
+    conversationStartedAt
+      ? {
+          sessionId,
+          moduleKey: LEANAI_ASSISTANT_MODULE_KEY,
+          interventionKey: LEANAI_ASSISTANT_INTERVENTION_KEY,
+          conversationStartedAt,
+        }
+      : {
+          sessionId,
+          moduleKey: LEANAI_ASSISTANT_MODULE_KEY,
+          interventionKey: LEANAI_ASSISTANT_INTERVENTION_KEY,
+        },
+  );
+}
+
 function messagesFromSessionDetail(
   detail: unknown,
+  conversationStartedAt: string | null,
 ): LeanAiAssistantChatMessage[] {
   if (!isRecord(detail) || !Array.isArray(detail.messages)) {
     return [];
   }
-  return detail.messages
+  const mapped: LeanAiAssistantChatMessage[] = detail.messages
     .filter(
       (message: unknown) =>
         isRecord(message) &&
@@ -116,6 +143,7 @@ function messagesFromSessionDetail(
         source: role === "assistant" ? "ai" : "deterministic",
       };
     });
+  return filterConversationAfterBoundary(mapped, conversationStartedAt);
 }
 
 async function resolveWorkspaceAssistantSession(
@@ -162,11 +190,7 @@ async function resolveWorkspaceAssistantSession(
       message: detailError.message,
     };
   }
-  const trusted = readTrustedCoachConversation(detail, {
-    sessionId: canonicalId,
-    moduleKey: LEANAI_ASSISTANT_MODULE_KEY,
-    interventionKey: LEANAI_ASSISTANT_INTERVENTION_KEY,
-  });
+  const trusted = trustedAssistantConversation(detail, canonicalId, null);
   if (!trusted) {
     return {
       ok: false,
@@ -179,11 +203,15 @@ async function resolveWorkspaceAssistantSession(
 
 export async function loadLeanAiAssistantConversationAction(input: {
   sessionId?: string | null;
+  conversationStartedAt?: string;
 }): Promise<AssistantConversationResult> {
   if (!input.sessionId) {
     return { ok: true, sessionId: null, messages: [] };
   }
   try {
+    const conversationStartedAt = failClosedConversationStartedAt(
+      input.conversationStartedAt,
+    );
     const supabase = await createServerSupabaseClient();
     const { data: detail, error: detailError } = await supabase.rpc(
       "get_ai_session_detail",
@@ -192,11 +220,11 @@ export async function loadLeanAiAssistantConversationAction(input: {
     if (detailError) {
       return { ok: false, error: detailError.message };
     }
-    const trusted = readTrustedCoachConversation(detail, {
-      sessionId: input.sessionId,
-      moduleKey: LEANAI_ASSISTANT_MODULE_KEY,
-      interventionKey: LEANAI_ASSISTANT_INTERVENTION_KEY,
-    });
+    const trusted = trustedAssistantConversation(
+      detail,
+      input.sessionId,
+      conversationStartedAt,
+    );
     if (!trusted) {
       return {
         ok: false,
@@ -207,7 +235,7 @@ export async function loadLeanAiAssistantConversationAction(input: {
     return {
       ok: true,
       sessionId: input.sessionId,
-      messages: messagesFromSessionDetail(detail),
+      messages: messagesFromSessionDetail(detail, conversationStartedAt),
     };
   } catch (error) {
     return {
@@ -260,6 +288,7 @@ export async function sendLeanAiAssistantMessageAction(input: {
   message: string;
   sessionId?: string | null;
   idempotencyKey?: string;
+  conversationStartedAt?: string;
 }): Promise<AssistantChatResult> {
   const message = input.message.trim();
   if (!message) {
@@ -358,11 +387,14 @@ export async function sendLeanAiAssistantMessageAction(input: {
       };
     }
 
-    const trustedHistory = readTrustedCoachConversation(resolved.detail, {
-      sessionId: resolved.sessionId,
-      moduleKey: LEANAI_ASSISTANT_MODULE_KEY,
-      interventionKey: LEANAI_ASSISTANT_INTERVENTION_KEY,
-    });
+    const conversationStartedAt = failClosedConversationStartedAt(
+      input.conversationStartedAt,
+    );
+    const trustedHistory = trustedAssistantConversation(
+      resolved.detail,
+      resolved.sessionId,
+      conversationStartedAt,
+    );
     if (!trustedHistory) {
       return {
         ok: false,
@@ -375,7 +407,7 @@ export async function sendLeanAiAssistantMessageAction(input: {
         ok: false,
         reason: "usage_limit",
         message:
-          "This LeanAI conversation has reached its turn limit. Clear the conversation to keep using setup guidance, or continue manually.",
+          "This LeanAI conversation has reached its turn limit. Start a new conversation to keep using setup guidance, or continue manually.",
       };
     }
 

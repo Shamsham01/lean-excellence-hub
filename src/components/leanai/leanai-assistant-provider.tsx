@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -24,6 +25,7 @@ import {
   LEANAI_ASSISTANT_MAX_MESSAGE_CHARS,
   LEANAI_ASSISTANT_SESSION_STORAGE_PREFIX,
 } from "@/modules/leanai-context/assistant/constants";
+import { parseConversationBoundary } from "@/modules/leanai-context/assistant/conversation-boundary";
 import type {
   LeanAiAssistantChatMessage,
   LeanAiAssistantView,
@@ -132,6 +134,27 @@ function writeSessionValue(
   }
 }
 
+function readConversationStartedAt(organisationId: string): string | null {
+  const stored = readSessionValue(
+    LEANAI_ASSISTANT_CLEARED_AT_STORAGE_PREFIX,
+    organisationId,
+  );
+  const parsed = parseConversationBoundary(stored);
+  if (parsed.kind === "valid") {
+    return parsed.startedAt;
+  }
+  if (parsed.kind === "invalid") {
+    const startedAt = new Date().toISOString();
+    writeSessionValue(
+      LEANAI_ASSISTANT_CLEARED_AT_STORAGE_PREFIX,
+      organisationId,
+      startedAt,
+    );
+    return startedAt;
+  }
+  return null;
+}
+
 export function LeanAiAssistantProvider({
   organisationId,
   children,
@@ -164,13 +187,16 @@ export function LeanAiAssistantProvider({
     sessionId: string | null;
     messages: LeanAiAssistantChatMessage[];
     error: string | null;
+    startedAt: string | null;
   }>({
     organisationId: "",
     sessionId: null,
     messages: [],
     error: null,
+    startedAt: null,
   });
   const [sending, setSending] = useState(false);
+  const conversationGenerationRef = useRef(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const desktopOpen = useSyncExternalStore(
     subscribeDesktopOpen,
@@ -246,13 +272,16 @@ export function LeanAiAssistantProvider({
       LEANAI_ASSISTANT_SESSION_STORAGE_PREFIX,
       organisationId,
     );
+    const startedAt = readConversationStartedAt(organisationId);
     if (!storedSession) {
       return;
     }
     let cancelled = false;
-    void loadLeanAiAssistantConversationAction({
-      sessionId: storedSession,
-    }).then((result) => {
+    void loadLeanAiAssistantConversationAction(
+      startedAt
+        ? { sessionId: storedSession, conversationStartedAt: startedAt }
+        : { sessionId: storedSession },
+    ).then((result) => {
       if (cancelled) {
         return;
       }
@@ -267,24 +296,16 @@ export function LeanAiAssistantProvider({
           sessionId: null,
           messages: [],
           error: null,
+          startedAt,
         });
         return;
       }
-      const clearedAt = readSessionValue(
-        LEANAI_ASSISTANT_CLEARED_AT_STORAGE_PREFIX,
-        organisationId,
-      );
-      const visible = result.messages.filter((message) => {
-        if (!clearedAt || !message.createdAt) {
-          return !clearedAt;
-        }
-        return message.createdAt >= clearedAt;
-      });
       setConversation({
         organisationId,
         sessionId: result.sessionId,
-        messages: visible,
+        messages: result.messages,
         error: null,
+        startedAt,
       });
     });
     return () => {
@@ -306,6 +327,8 @@ export function LeanAiAssistantProvider({
         }));
         return;
       }
+      const generation = conversationGenerationRef.current;
+      const startedAtForSend = readConversationStartedAt(organisationId);
       const userMessage: LeanAiAssistantChatMessage = {
         id: `local-user-${Date.now()}`,
         role: "user",
@@ -319,6 +342,10 @@ export function LeanAiAssistantProvider({
           current.organisationId === organisationId
             ? current.sessionId
             : sessionId,
+        startedAt:
+          current.organisationId === organisationId
+            ? current.startedAt
+            : startedAtForSend,
         messages: [
           ...(current.organisationId === organisationId
             ? current.messages
@@ -334,7 +361,14 @@ export function LeanAiAssistantProvider({
         message: trimmed,
         sessionId,
         idempotencyKey: crypto.randomUUID(),
+        ...(startedAtForSend
+          ? { conversationStartedAt: startedAtForSend }
+          : {}),
       }).then((result) => {
+        if (conversationGenerationRef.current !== generation) {
+          setSending(false);
+          return;
+        }
         setSending(false);
         if (!result.ok) {
           setConversation((current) => ({
@@ -352,6 +386,10 @@ export function LeanAiAssistantProvider({
         setConversation((current) => ({
           organisationId,
           sessionId: result.sessionId,
+          startedAt:
+            current.organisationId === organisationId
+              ? current.startedAt
+              : startedAtForSend,
           messages: [
             ...(current.organisationId === organisationId
               ? current.messages
@@ -372,17 +410,21 @@ export function LeanAiAssistantProvider({
   );
 
   const clearConversation = useCallback(() => {
+    conversationGenerationRef.current += 1;
+    const startedAt = new Date().toISOString();
+    writeSessionValue(
+      LEANAI_ASSISTANT_CLEARED_AT_STORAGE_PREFIX,
+      organisationId,
+      startedAt,
+    );
+    setSending(false);
     setConversation({
       organisationId,
       sessionId,
       messages: [],
       error: null,
+      startedAt,
     });
-    writeSessionValue(
-      LEANAI_ASSISTANT_CLEARED_AT_STORAGE_PREFIX,
-      organisationId,
-      new Date().toISOString(),
-    );
   }, [organisationId, sessionId]);
 
   const value = useMemo<LeanAiAssistantContextValue>(

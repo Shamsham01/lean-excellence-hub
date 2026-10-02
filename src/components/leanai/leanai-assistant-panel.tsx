@@ -80,6 +80,8 @@ export function LeanAiAssistantPanel({
           size="sm"
           variant="ghost"
           onClick={clearConversation}
+          disabled={sending}
+          aria-label="Start a new LeanAI conversation"
           data-testid="leanai-assistant-new-conversation"
         >
           New

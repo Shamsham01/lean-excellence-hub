@@ -73,8 +73,21 @@ describe("LeanAI assistant platform shell integration", () => {
       "This LeanAI conversation belongs to a different workspace",
     );
     expect(actions).not.toContain("previous_response_id");
+    expect(actions).toContain("conversationStartedAt");
+    expect(actions).toContain("failClosedConversationStartedAt");
+    expect(actions).toContain("assessCoachAiEligibility");
+    expect(actions).not.toContain("ai_usage_events");
     expect(read("src/modules/leanai-context/assistant/constants.ts")).toContain(
       "workspace_assistant",
     );
+    expect(read("src/components/leanai/leanai-assistant-panel.tsx")).toContain(
+      "disabled={sending}",
+    );
+
+    const coachActions = read(
+      "src/app/(platform)/platform/leanai/coach/actions.ts",
+    );
+    expect(coachActions).not.toContain("conversationStartedAt");
+    expect(coachActions).toContain("readTrustedCoachConversation");
   });
 });
