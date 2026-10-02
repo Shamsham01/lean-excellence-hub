@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -65,14 +66,42 @@ function readStoredBoolean(key: string, fallback: boolean): boolean {
   return fallback;
 }
 
-function readIsDesktop() {
-  if (
-    typeof window === "undefined" ||
-    typeof window.matchMedia !== "function"
-  ) {
-    return true;
+const DESKTOP_MEDIA_QUERY = "(min-width: 1024px)";
+const desktopOpenListeners = new Set<() => void>();
+
+function subscribeDesktopOpen(onStoreChange: () => void) {
+  desktopOpenListeners.add(onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    desktopOpenListeners.delete(onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function getDesktopOpenSnapshot() {
+  return readStoredBoolean(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, true);
+}
+
+function setDesktopOpenPreference(open: boolean) {
+  try {
+    window.localStorage.setItem(
+      LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY,
+      open ? "1" : "0",
+    );
+  } catch {
+    // Preference persistence is best-effort.
   }
-  return window.matchMedia("(min-width: 1024px)").matches;
+  desktopOpenListeners.forEach((listener) => listener());
+}
+
+function subscribeDesktopMedia(onStoreChange: () => void) {
+  const media = window.matchMedia(DESKTOP_MEDIA_QUERY);
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function getIsDesktopSnapshot() {
+  return window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
 }
 
 function readSessionValue(
@@ -142,11 +171,17 @@ export function LeanAiAssistantProvider({
     error: null,
   });
   const [sending, setSending] = useState(false);
-  const [desktopOpen, setDesktopOpenState] = useState(() =>
-    readStoredBoolean(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, true),
-  );
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(readIsDesktop);
+  const desktopOpen = useSyncExternalStore(
+    subscribeDesktopOpen,
+    getDesktopOpenSnapshot,
+    () => true,
+  );
+  const isDesktop = useSyncExternalStore(
+    subscribeDesktopMedia,
+    getIsDesktopSnapshot,
+    () => true,
+  );
 
   const viewLoading = loadedView.key !== routeKey;
   const view = loadedView.view;
@@ -161,13 +196,6 @@ export function LeanAiAssistantProvider({
       : null;
   const chatError =
     conversation.organisationId === organisationId ? conversation.error : null;
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    const update = () => setIsDesktop(media.matches);
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
 
   useEffect(() => {
     const syncFromWindow = () => {
@@ -185,15 +213,7 @@ export function LeanAiAssistantProvider({
   }, []);
 
   const setDesktopOpen = useCallback((open: boolean) => {
-    setDesktopOpenState(open);
-    try {
-      window.localStorage.setItem(
-        LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY,
-        open ? "1" : "0",
-      );
-    } catch {
-      // Preference persistence is best-effort.
-    }
+    setDesktopOpenPreference(open);
   }, []);
 
   useEffect(() => {

@@ -145,4 +145,86 @@ describe("LeanAI assistant panel", () => {
       search: "",
     });
   });
+
+  it("opens an accessible mobile drawer without invoking chat", async () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    const openButton = screen.getByTestId("leanai-assistant-open");
+    expect(openButton).toHaveAttribute("aria-label", "Open LeanAI assistant");
+    expect(
+      screen.queryByTestId("leanai-assistant-pane"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(openButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("leanai-assistant-pane")).toBeVisible();
+    });
+    expect(
+      screen.getByRole("region", { name: "LeanAI assistant" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Message LeanAI")).toBeDisabled();
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("sends a user message through the Coach assistant action when chat is allowed", async () => {
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+      },
+    });
+    sendMessage.mockResolvedValue({
+      ok: true,
+      sessionId: "session-1",
+      envelope: { message: "A programme is the campaign people submit under." },
+      modelClass: "standard",
+    });
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Message LeanAI")).toBeEnabled();
+    });
+    fireEvent.change(screen.getByLabelText("Message LeanAI"), {
+      target: { value: "What is a programme?" },
+    });
+    fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pathname: "/platform/suggestions/programmes",
+          message: "What is a programme?",
+        }),
+      );
+    });
+    expect(
+      await screen.findByTestId("leanai-assistant-user-message"),
+    ).toHaveTextContent("What is a programme?");
+    expect(
+      await screen.findByTestId("leanai-assistant-assistant-message"),
+    ).toHaveTextContent("campaign");
+  });
 });

@@ -106,6 +106,7 @@ describe("LeanAI assistant route context", () => {
       "/platform/setup",
       "/platform/settings/structure",
       "/platform/settings/job-functions",
+      "/platform/settings/people",
       "/platform/maturity",
       "/platform/suggestions",
       "/platform/5s/standards",
@@ -120,6 +121,9 @@ describe("LeanAI assistant route context", () => {
       expect(identity.pathname.startsWith("/platform")).toBe(true);
       expect(identity.pageTitle.length).toBeGreaterThan(0);
     }
+    expect(parseAssistantRoute("/platform/settings/people").workflow).toBe(
+      "people",
+    );
   });
 });
 

@@ -75,6 +75,17 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       surface: "workspace",
     };
   }
+  if (
+    pathname === "/platform/settings/people" ||
+    pathname.startsWith("/platform/settings/people/")
+  ) {
+    return {
+      module: "people",
+      workflow: "people",
+      pageTitle: "People setup",
+      surface: "workspace",
+    };
+  }
   if (pathname === "/platform/settings/ai") {
     return {
       module: "lean_ai",
