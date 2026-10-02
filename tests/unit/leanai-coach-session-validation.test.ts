@@ -94,4 +94,101 @@ describe("Coach session validation", () => {
     expect(result?.priorTurnCount).toBe(9);
     expect(result?.conversationHistory).toHaveLength(6);
   });
+
+  it("keeps the full trusted transcript when conversationStartedAt is omitted", () => {
+    const messages = [
+      {
+        role: "user",
+        content: "conversation A question",
+        created_at: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        role: "assistant",
+        content: "conversation A answer",
+        created_at: "2026-10-01T10:00:01.000Z",
+      },
+      {
+        role: "user",
+        content: "conversation B question",
+        created_at: "2026-10-02T12:00:00.000Z",
+      },
+    ];
+    const result = readTrustedCoachConversation(detail(messages), expected);
+    expect(result?.priorTurnCount).toBe(2);
+    expect(
+      result?.conversationHistory.map((message) => message.content),
+    ).toEqual([
+      "conversation A question",
+      "conversation A answer",
+      "conversation B question",
+    ]);
+  });
+
+  it("filters trusted history and priorTurnCount after a conversation boundary", () => {
+    const messages = [
+      {
+        role: "user",
+        content: "conversation A question",
+        created_at: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        role: "assistant",
+        content: "conversation A answer",
+        created_at: "2026-10-01T10:00:01.000Z",
+      },
+      {
+        role: "user",
+        content: "conversation B question",
+        created_at: "2026-10-02T12:00:00.000Z",
+      },
+      {
+        role: "assistant",
+        content: "conversation B answer",
+        created_at: "2026-10-02T12:00:01.000Z",
+      },
+    ];
+    const result = readTrustedCoachConversation(detail(messages), {
+      ...expected,
+      conversationStartedAt: "2026-10-02T11:59:59.000Z",
+    });
+    expect(result?.priorTurnCount).toBe(1);
+    expect(result?.conversationHistory).toEqual([
+      { role: "user", content: "conversation B question" },
+      { role: "assistant", content: "conversation B answer" },
+    ]);
+    expect(
+      result?.conversationHistory.some((message) =>
+        message.content.includes("conversation A"),
+      ),
+    ).toBe(false);
+  });
+
+  it("resets priorTurnCount to 0 when every stored turn is before the boundary", () => {
+    const messages = Array.from({ length: 40 }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: `old ${i}`,
+      created_at: "2026-09-01T00:00:00.000Z",
+    }));
+    const result = readTrustedCoachConversation(detail(messages), {
+      ...expected,
+      conversationStartedAt: "2026-10-02T00:00:00.000Z",
+    });
+    expect(result?.priorTurnCount).toBe(0);
+    expect(result?.conversationHistory).toEqual([]);
+  });
+
+  it("keeps the six-message window on in-scope turns only", () => {
+    const messages = Array.from({ length: 20 }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: `in-scope ${i}`,
+      created_at: "2026-10-02T12:00:00.000Z",
+    }));
+    const result = readTrustedCoachConversation(detail(messages), {
+      ...expected,
+      conversationStartedAt: "2026-10-02T00:00:00.000Z",
+    });
+    expect(result?.priorTurnCount).toBe(10);
+    expect(result?.conversationHistory).toHaveLength(6);
+    expect(result?.conversationHistory[0]?.content).toBe("in-scope 14");
+  });
 });

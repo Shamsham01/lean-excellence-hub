@@ -5,6 +5,7 @@ import {
   loginAndSelectOrganisation,
   provisionLeanAiContextE2eUser,
   resolveSupabaseEnv,
+  ensureLeanAiAssistantOpen,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
 
@@ -91,6 +92,7 @@ test.describe("LeanAI Coach intelligent Explain", () => {
     }
 
     await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toBeVisible();
     const before = await countUsage(user, user.organisationAName);
     expect(before.count).toBe(0);
@@ -130,6 +132,7 @@ test.describe("LeanAI Coach intelligent Explain", () => {
   test("organisation switch does not leak Coach history", async ({ page }) => {
     test.setTimeout(90_000);
     await loginAndSelectOrganisation(page, user, user.organisationBName);
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toBeVisible();
     await expect(page.getByTestId("leanai-coach-explain")).toHaveCount(0);
     await page.getByTestId("leanai-coach-explain-toggle").click();
@@ -159,6 +162,7 @@ test.describe("LeanAI Coach intelligent Explain", () => {
     }
 
     await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await ensureLeanAiAssistantOpen(page);
     const before = await countUsage(user, user.organisationAName);
     await page.getByTestId("leanai-coach-explain-toggle").click();
     await expect(page.getByTestId("leanai-coach-explain")).toBeVisible();

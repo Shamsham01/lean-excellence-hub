@@ -13,6 +13,7 @@ export const LEANAI_COACH_SURFACES = [
   "onboarding",
   "setup",
   "platform_home",
+  "workspace",
   "maturity",
   "suggestions",
 ] as const;

@@ -79,6 +79,7 @@ vi.mock("@/platform/ai/config", () => ({
   },
   getAiEnvironment: () => ({
     AI_MODEL_ECONOMY: "gpt-4.1-nano",
+    AI_MODEL_STANDARD: "gpt-4.1-mini",
     AI_MODEL_DEFAULT: "gpt-4.1-mini",
   }),
   isApplicationAiProviderAvailable: () => true,
@@ -268,18 +269,75 @@ describe("runCoachAiTurn", () => {
   });
 
   it("does not silently escalate ordinary Explain to standard or deep", async () => {
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "coach-run-explain", error: null });
+        }
+        if (name === "finish_ai_run") {
+          return Promise.resolve({ data: "assistant-explain", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const result = await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-3",
+      task: "explain",
+      userMessage: "Explain this setup recommendation.",
+      idempotencyKey: "idem-coach-3",
+      conversationHistory: [],
+      context,
+      provenanceHash: "ghi",
+    });
+
+    expect(result.logicalModelClass).toBe("economy");
+    expect(result.model).toBe("gpt-4.1-nano");
+  });
+
+  it("uses standard routing for workspace assistant setup_conversation", async () => {
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "coach-run-assistant", error: null });
+        }
+        if (name === "finish_ai_run") {
+          return Promise.resolve({ data: "assistant-workspace", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const result = await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-assistant",
+      task: "setup_conversation",
+      userMessage: "What is a programme?",
+      idempotencyKey: "idem-assistant-1",
+      conversationHistory: [],
+      context,
+      provenanceHash: "assistant-hash",
+    });
+
+    expect(result.logicalModelClass).toBe("standard");
+    expect(result.model).toBe("gpt-4.1-mini");
+    expect(createResponseCalls[0]?.tools).toEqual([]);
+  });
+
+  it("does not enable deep complex_reasoning in this slice", async () => {
     await expect(
       runCoachAiTurn({
         supabase: { rpc: vi.fn() } as never,
-        sessionId: "session-3",
-        task: "setup_conversation",
-        userMessage: "Walk me through onboarding.",
-        idempotencyKey: "idem-coach-3",
+        sessionId: "session-deep",
+        task: "complex_reasoning",
+        userMessage: "Solve everything.",
+        idempotencyKey: "idem-deep",
         conversationHistory: [],
         context,
-        provenanceHash: "ghi",
+        provenanceHash: "deep",
       }),
-    ).rejects.toThrow(/not permitted/);
+    ).rejects.toThrow(/not enabled|not permitted/);
     expect(createResponseCalls).toHaveLength(0);
   });
 });

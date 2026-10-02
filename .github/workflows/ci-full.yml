@@ -228,6 +228,7 @@ jobs:
               tests/e2e/leanai-context-readiness.spec.ts
               tests/e2e/leanai-coach.spec.ts
               tests/e2e/leanai-coach-explain.spec.ts
+              tests/e2e/leanai-assistant.spec.ts
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts

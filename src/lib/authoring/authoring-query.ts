@@ -1,5 +1,6 @@
 export const AUTHORING_STEP_PARAM = "step";
 export const AUTHORING_SAVED_PARAM = "saved";
+export const AUTHORING_STEP_CHANGE_EVENT = "leh:authoring-step-change";
 
 export type AuthoringSavedKey =
   | "applicability"

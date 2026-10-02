@@ -38,6 +38,22 @@ export type {
   LeanAiInterventionDefinition,
 } from "./interventions/types";
 export { LEANAI_COACH_SURFACES } from "./interventions/types";
+export { parseAssistantRoute, assistantRouteKey } from "./assistant/route-map";
+export { assistantPageDefinitionFor } from "./assistant/product-pages";
+export { selectAssistantIntervention } from "./assistant/select-recommendation";
+export {
+  buildSuggestionsSetupState,
+  suggestionsSetupGuidance,
+} from "./assistant/suggestions-state";
+export { buildMaturityAuthoringState } from "./assistant/maturity-state";
+export {
+  LEANAI_ASSISTANT_INTERVENTION_KEY,
+  LEANAI_ASSISTANT_MODULE_KEY,
+} from "./assistant/constants";
+export type {
+  AssistantRouteIdentity,
+  LeanAiAssistantView,
+} from "./assistant/types";
 export type {
   LeanAiContextualSnapshot,
   LeanAiJourneyContext,

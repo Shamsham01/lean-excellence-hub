@@ -12,6 +12,7 @@ export default async function PlatformLayout({
   return (
     <PlatformShell
       organisationName={current.organisation_name}
+      organisationId={current.organisation_id}
       organisations={organisations}
       siteContext={siteContext}
       membershipId={current.membership_id}

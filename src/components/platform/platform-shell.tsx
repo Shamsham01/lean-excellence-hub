@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { loadPlatformShellMember } from "@/modules/platform-shell/member-context";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
@@ -10,6 +11,7 @@ import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 type PlatformShellProps = {
   children: ReactNode;
   organisationName: string;
+  organisationId: string;
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
   membershipId: string;
@@ -18,6 +20,7 @@ type PlatformShellProps = {
 export async function PlatformShell({
   children,
   organisationName,
+  organisationId,
   organisations,
   siteContext,
   membershipId,
@@ -41,11 +44,13 @@ export async function PlatformShell({
         member={member}
         showSettings={showSettings}
       />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto">
-        <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </main>
+      <LeanAiAssistantShell organisationId={organisationId}>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto">
+          <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </main>
+      </LeanAiAssistantShell>
     </div>
   );
 }

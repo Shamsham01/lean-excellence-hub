@@ -187,7 +187,7 @@ export function LeanAiCoachCard({
             <Sparkles className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium tracking-wide text-primary uppercase">
+            <p className="text-xs font-medium tracking-wide whitespace-nowrap text-primary uppercase">
               LeanAI Coach
             </p>
             <h2 className="mt-1 text-sm font-semibold text-foreground">

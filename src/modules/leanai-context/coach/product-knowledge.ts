@@ -1,6 +1,6 @@
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
 
-export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v1";
+export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v2";
 
 export type CoachProductKnowledge = {
   version: string;
@@ -52,10 +52,12 @@ const KNOWLEDGE: Partial<
   },
   suggestions: {
     summary:
-      "A Suggestion Programme holds categories, guidance and the published intake form.",
+      "A Suggestion Programme is the campaign people submit ideas under. Categories are a separate organisation-level catalogue.",
     facts: [
-      "Catalogue presence without a published version is not enough.",
-      "People cannot submit ideas until a programme version is published.",
+      "A programme is an improvement initiative such as Continuous Improvement or Cost Reduction.",
+      "A category classifies the kind of idea, such as Safety or Quality. It is not a programme.",
+      "Categories are maintained as an organisation-level catalogue, not as children of a programme.",
+      "People cannot submit ideas until an active programme has a published version.",
     ],
     recommendedPath: "/platform/suggestions/programmes",
   },

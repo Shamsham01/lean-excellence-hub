@@ -5,6 +5,7 @@ import {
   loginAndSelectOrganisation,
   provisionLeanAiContextE2eUser,
   resolveSupabaseEnv,
+  ensureLeanAiAssistantOpen,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
 
@@ -106,6 +107,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     test.setTimeout(90_000);
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await expect(page.getByTestId("platform-home-page")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
 
     const coach = page.getByTestId("leanai-coach");
     await expect(coach).toBeVisible();
@@ -133,12 +135,14 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     expect(await countAiUsageEvents(page, user)).toBe(0);
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(coach).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
+    await expect(page.getByTestId("leanai-coach")).toBeVisible();
     await screenshotIfPossible(page, "leanai-coach-home-mobile.png");
     await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.goto("/platform/setup");
     await expect(page.getByTestId("setup-page")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
       "sites_first_setup",
@@ -151,6 +155,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
   }) => {
     test.setTimeout(90_000);
     await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toBeVisible();
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
@@ -168,6 +173,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
 
     await page.reload();
     await expect(page.getByTestId("platform-home-page")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
     const afterReload = page.getByTestId("leanai-coach");
     await expect(afterReload).toBeVisible();
     await expect(afterReload).not.toHaveAttribute(
@@ -182,6 +188,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await page.goto("/select-organisation");
     await page.getByRole("button", { name: user.organisationBName }).click();
     await expect(page).toHaveURL(/\/platform(?:\?|$)/, { timeout: 30_000 });
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toBeVisible();
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
@@ -196,6 +203,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await loginAndSelectOrganisation(page, user, user.organisationBName);
     await page.goto("/platform/maturity");
     await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
     const maturityCoach = page.getByTestId("leanai-coach");
     await expect(maturityCoach).toBeVisible();
     await expect(maturityCoach).toHaveAttribute(
@@ -212,6 +220,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expireInterventionSnooze(page, "maturity_first_setup");
     await page.reload();
     await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
       "maturity_first_setup",
@@ -219,6 +228,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
 
     await page.goto("/platform/suggestions");
     await expect(page.getByTestId("suggestions-overview")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
       "suggestions_programme_setup",
@@ -236,6 +246,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
 
     await page.goto("/platform");
     await expect(page.getByTestId("platform-home-page")).toBeVisible();
+    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
       "people_job_functions_setup",

@@ -59,13 +59,15 @@ State is membership + organisation scoped, so the same person in two organisatio
 
 ## Surfaces
 
-- `/onboarding/setup` — uses a dedicated pre-workspace onboarding intervention because normal `/platform/*` setup routes are intentionally unavailable until onboarding is completed
+- `/onboarding/setup` — uses a dedicated pre-workspace onboarding intervention because normal `/platform/*` setup routes are intentionally unavailable until onboarding is completed. The inline `LeanAiCoach` card remains here.
+- `/platform/*` — the persistent LeanAI assistant pane in `PlatformShell` (docked desktop, sheet/drawer on smaller viewports). Deterministic interventions render inside the pane instead of duplicating a Coach card on the page.
 - `/platform/setup`
 - `/platform` (home)
-- Maturity empty/setup
-- Suggestions overview when a programme is missing/unpublished
+- Maturity empty/setup and framework authoring, including `?step=` changes
+- Suggestions overview and `/platform/suggestions/programmes`
 
-The reusable component is `LeanAiCoach` / `LeanAiCoachCard`: compact, keyboard-accessible, non-modal, labelled LeanAI Coach.
+The reusable components are `LeanAiAssistantPanel` (workspace) and `LeanAiCoach` / `LeanAiCoachCard` (onboarding and intervention CTA inside the pane).
+
 
 ## Security
 
