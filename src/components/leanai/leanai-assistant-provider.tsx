@@ -46,10 +46,15 @@ type LeanAiAssistantContextValue = {
   clearConversation: () => void;
 };
 
+const EMPTY_MESSAGES: LeanAiAssistantChatMessage[] = [];
+
 const LeanAiAssistantContext =
   createContext<LeanAiAssistantContextValue | null>(null);
 
 function readStoredBoolean(key: string, fallback: boolean): boolean {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
   try {
     const value = window.localStorage.getItem(key);
     if (value === "1") return true;
@@ -58,6 +63,16 @@ function readStoredBoolean(key: string, fallback: boolean): boolean {
     // localStorage may be unavailable.
   }
   return fallback;
+}
+
+function readIsDesktop() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
+    return true;
+  }
+  return window.matchMedia("(min-width: 1024px)").matches;
 }
 
 function readSessionValue(
@@ -100,36 +115,66 @@ export function LeanAiAssistantProvider({
   const routerSearch = searchParams?.toString()
     ? `?${searchParams.toString()}`
     : "";
-  const [search, setSearch] = useState(routerSearch);
-  const [view, setView] = useState<LeanAiAssistantView | null>(null);
-  const [viewLoading, setViewLoading] = useState(true);
-  const [viewError, setViewError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<LeanAiAssistantChatMessage[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [authoringLocation, setAuthoringLocation] = useState<{
+    pathname: string;
+    search: string;
+  } | null>(null);
+  const search =
+    authoringLocation?.pathname === pathname
+      ? authoringLocation.search
+      : routerSearch;
+  const routeKey = `${organisationId}|${pathname}|${search}`;
+
+  const [loadedView, setLoadedView] = useState<{
+    key: string;
+    view: LeanAiAssistantView | null;
+    error: string | null;
+  }>({ key: "", view: null, error: null });
+  const [conversation, setConversation] = useState<{
+    organisationId: string;
+    sessionId: string | null;
+    messages: LeanAiAssistantChatMessage[];
+    error: string | null;
+  }>({
+    organisationId: "",
+    sessionId: null,
+    messages: [],
+    error: null,
+  });
   const [sending, setSending] = useState(false);
-  const [chatError, setChatError] = useState<string | null>(null);
-  const [desktopOpen, setDesktopOpenState] = useState(true);
+  const [desktopOpen, setDesktopOpenState] = useState(() =>
+    readStoredBoolean(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, true),
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(readIsDesktop);
+
+  const viewLoading = loadedView.key !== routeKey;
+  const view = loadedView.view;
+  const viewError = loadedView.key === routeKey ? loadedView.error : null;
+  const messages =
+    conversation.organisationId === organisationId
+      ? conversation.messages
+      : EMPTY_MESSAGES;
+  const sessionId =
+    conversation.organisationId === organisationId
+      ? conversation.sessionId
+      : null;
+  const chatError =
+    conversation.organisationId === organisationId ? conversation.error : null;
 
   useEffect(() => {
-    setDesktopOpenState(
-      readStoredBoolean(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, true),
-    );
     const media = window.matchMedia("(min-width: 1024px)");
     const update = () => setIsDesktop(media.matches);
-    update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
-    setSearch(routerSearch);
-  }, [routerSearch]);
-
-  useEffect(() => {
     const syncFromWindow = () => {
-      setSearch(window.location.search);
+      setAuthoringLocation({
+        pathname: window.location.pathname,
+        search: window.location.search,
+      });
     };
     window.addEventListener(AUTHORING_STEP_CHANGE_EVENT, syncFromWindow);
     window.addEventListener("popstate", syncFromWindow);
@@ -153,40 +198,34 @@ export function LeanAiAssistantProvider({
 
   useEffect(() => {
     let cancelled = false;
-    setViewLoading(true);
-    setViewError(null);
     void loadLeanAiAssistantViewAction({ pathname, search }).then((result) => {
       if (cancelled) {
         return;
       }
       if (!result.ok) {
-        setView(null);
-        setViewError(result.error);
-        setViewLoading(false);
+        setLoadedView({ key: routeKey, view: null, error: result.error });
         return;
       }
       if (result.view.organisationId !== organisationId) {
-        setView(null);
-        setViewError("The workspace organisation changed. Reload LeanAI.");
-        setViewLoading(false);
+        setLoadedView({
+          key: routeKey,
+          view: null,
+          error: "The workspace organisation changed. Reload LeanAI.",
+        });
         return;
       }
-      setView(result.view);
-      setViewLoading(false);
+      setLoadedView({ key: routeKey, view: result.view, error: null });
     });
     return () => {
       cancelled = true;
     };
-  }, [organisationId, pathname, search]);
+  }, [organisationId, pathname, routeKey, search]);
 
   useEffect(() => {
-    setMessages([]);
-    setChatError(null);
     const storedSession = readSessionValue(
       LEANAI_ASSISTANT_SESSION_STORAGE_PREFIX,
       organisationId,
     );
-    setSessionId(storedSession);
     if (!storedSession) {
       return;
     }
@@ -198,13 +237,17 @@ export function LeanAiAssistantProvider({
         return;
       }
       if (!result.ok) {
-        setSessionId(null);
-        setMessages([]);
         writeSessionValue(
           LEANAI_ASSISTANT_SESSION_STORAGE_PREFIX,
           organisationId,
           null,
         );
+        setConversation({
+          organisationId,
+          sessionId: null,
+          messages: [],
+          error: null,
+        });
         return;
       }
       const clearedAt = readSessionValue(
@@ -217,8 +260,12 @@ export function LeanAiAssistantProvider({
         }
         return message.createdAt >= clearedAt;
       });
-      setSessionId(result.sessionId);
-      setMessages(visible);
+      setConversation({
+        organisationId,
+        sessionId: result.sessionId,
+        messages: visible,
+        error: null,
+      });
     });
     return () => {
       cancelled = true;
@@ -232,7 +279,11 @@ export function LeanAiAssistantProvider({
         return;
       }
       if (trimmed.length > LEANAI_ASSISTANT_MAX_MESSAGE_CHARS) {
-        setChatError("Please ask a shorter question.");
+        setConversation((current) => ({
+          ...current,
+          organisationId,
+          error: "Please ask a shorter question.",
+        }));
         return;
       }
       const userMessage: LeanAiAssistantChatMessage = {
@@ -242,9 +293,21 @@ export function LeanAiAssistantProvider({
         createdAt: new Date().toISOString(),
         source: "deterministic",
       };
-      setMessages((current) => [...current, userMessage]);
+      setConversation((current) => ({
+        organisationId,
+        sessionId:
+          current.organisationId === organisationId
+            ? current.sessionId
+            : sessionId,
+        messages: [
+          ...(current.organisationId === organisationId
+            ? current.messages
+            : []),
+          userMessage,
+        ],
+        error: null,
+      }));
       setSending(true);
-      setChatError(null);
       void sendLeanAiAssistantMessageAction({
         pathname,
         search,
@@ -254,39 +317,53 @@ export function LeanAiAssistantProvider({
       }).then((result) => {
         setSending(false);
         if (!result.ok) {
-          setChatError(result.message);
+          setConversation((current) => ({
+            ...current,
+            organisationId,
+            error: result.message,
+          }));
           return;
         }
-        setSessionId(result.sessionId);
         writeSessionValue(
           LEANAI_ASSISTANT_SESSION_STORAGE_PREFIX,
           organisationId,
           result.sessionId,
         );
-        setMessages((current) => [
-          ...current,
-          {
-            id: `local-assistant-${Date.now()}`,
-            role: "assistant",
-            content: result.envelope.message,
-            createdAt: new Date().toISOString(),
-            source: "ai",
-          },
-        ]);
+        setConversation((current) => ({
+          organisationId,
+          sessionId: result.sessionId,
+          messages: [
+            ...(current.organisationId === organisationId
+              ? current.messages
+              : []),
+            {
+              id: `local-assistant-${Date.now()}`,
+              role: "assistant",
+              content: result.envelope.message,
+              createdAt: new Date().toISOString(),
+              source: "ai",
+            },
+          ],
+          error: null,
+        }));
       });
     },
     [organisationId, pathname, search, sending, sessionId],
   );
 
   const clearConversation = useCallback(() => {
-    setMessages([]);
-    setChatError(null);
+    setConversation({
+      organisationId,
+      sessionId,
+      messages: [],
+      error: null,
+    });
     writeSessionValue(
       LEANAI_ASSISTANT_CLEARED_AT_STORAGE_PREFIX,
       organisationId,
       new Date().toISOString(),
     );
-  }, [organisationId]);
+  }, [organisationId, sessionId]);
 
   const value = useMemo<LeanAiAssistantContextValue>(
     () => ({

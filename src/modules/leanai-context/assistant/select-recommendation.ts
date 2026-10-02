@@ -15,11 +15,12 @@ export function selectAssistantIntervention(input: {
   pageSurface: LeanAiCoachSurface;
   now?: Date;
 }): LeanAiInterventionCandidate | null {
+  const nowOption = input.now ? { now: input.now } : {};
   const pageSpecific = selectPrimaryLeanAiIntervention({
     snapshot: input.snapshot,
     permissions: input.permissions,
     surface: input.pageSurface,
-    now: input.now,
+    ...nowOption,
   });
   if (pageSpecific) {
     return pageSpecific;
@@ -35,6 +36,6 @@ export function selectAssistantIntervention(input: {
     snapshot: input.snapshot,
     permissions: input.permissions,
     surface: "workspace",
-    now: input.now,
+    ...nowOption,
   });
 }

@@ -43,6 +43,8 @@ export const MATURITY_AUTHORING_STEP_LABELS: Record<
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function isAssistantUuid(value: string | null | undefined): boolean {
+export function isAssistantUuid(
+  value: string | null | undefined,
+): value is string {
   return Boolean(value && UUID_PATTERN.test(value));
 }

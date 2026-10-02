@@ -52,10 +52,11 @@ export async function loadLeanAiAssistantViewAction(input: {
     ) {
       return { ok: false, error: "That workspace page is not available." };
     }
-    const view = await loadLeanAiAssistantView({
-      pathname: input.pathname,
-      search: input.search,
-    });
+    const view = await loadLeanAiAssistantView(
+      input.search
+        ? { pathname: input.pathname, search: input.search }
+        : { pathname: input.pathname },
+    );
     if (!view) {
       return { ok: false, error: "LeanAI could not load this page context." };
     }
@@ -297,10 +298,11 @@ export async function sendLeanAiAssistantMessageAction(input: {
       };
     }
 
-    const view = await loadLeanAiAssistantView({
-      pathname: input.pathname,
-      search: input.search,
-    });
+    const view = await loadLeanAiAssistantView(
+      input.search
+        ? { pathname: input.pathname, search: input.search }
+        : { pathname: input.pathname },
+    );
     if (!view) {
       return {
         ok: false,
