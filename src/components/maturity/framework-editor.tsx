@@ -327,10 +327,7 @@ export function FrameworkEditor({
   );
   const orderedPillars = useMemo(() => orderedByPosition(pillars), [pillars]);
 
-  async function swapPillarOrder(
-    pillar: PillarRow,
-    direction: "up" | "down",
-  ) {
+  async function swapPillarOrder(pillar: PillarRow, direction: "up" | "down") {
     const neighbor = neighborForReorder(orderedPillars, pillar.id, direction);
     if (!neighbor) return;
     const plan = planUniquePositionSwap(pillar, neighbor, orderedPillars);
@@ -343,7 +340,12 @@ export function FrameworkEditor({
         pillar.guidance,
         modelId,
       );
-      if (staged && typeof staged === "object" && "error" in staged && staged.error) {
+      if (
+        staged &&
+        typeof staged === "object" &&
+        "error" in staged &&
+        staged.error
+      ) {
         return staged;
       }
       const neighborMoved = await updateMaturityPillar(
@@ -392,7 +394,12 @@ export function FrameworkEditor({
         criterion.guidance,
         modelId,
       );
-      if (staged && typeof staged === "object" && "error" in staged && staged.error) {
+      if (
+        staged &&
+        typeof staged === "object" &&
+        "error" in staged &&
+        staged.error
+      ) {
         return staged;
       }
       const neighborMoved = await updateMaturityCriterion(
@@ -443,7 +450,12 @@ export function FrameworkEditor({
         plan.stagedPosition,
         modelId,
       );
-      if (staged && typeof staged === "object" && "error" in staged && staged.error) {
+      if (
+        staged &&
+        typeof staged === "object" &&
+        "error" in staged &&
+        staged.error
+      ) {
         return staged;
       }
       const neighborMoved = await updateMaturityQuestion(
@@ -478,7 +490,12 @@ export function FrameworkEditor({
   ) {
     if (input.criterionId !== question.criterion_id) {
       await run(() =>
-        moveMaturityQuestion(question.id, input.criterionId, undefined, modelId),
+        moveMaturityQuestion(
+          question.id,
+          input.criterionId,
+          undefined,
+          modelId,
+        ),
       );
       return;
     }
@@ -978,7 +995,8 @@ export function FrameworkEditor({
                         canMoveUp={
                           neighborForReorder(
                             criteria.filter(
-                              (entry) => entry.pillar_id === criterion.pillar_id,
+                              (entry) =>
+                                entry.pillar_id === criterion.pillar_id,
                             ),
                             criterion.id,
                             "up",
@@ -987,7 +1005,8 @@ export function FrameworkEditor({
                         canMoveDown={
                           neighborForReorder(
                             criteria.filter(
-                              (entry) => entry.pillar_id === criterion.pillar_id,
+                              (entry) =>
+                                entry.pillar_id === criterion.pillar_id,
                             ),
                             criterion.id,
                             "down",

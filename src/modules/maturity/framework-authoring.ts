@@ -298,15 +298,17 @@ export function nextCriterionPositionForPillar(
   return maxSiblingPosition(siblings) + 1;
 }
 
-export function orderedByPosition<
-  T extends { id: string; position: number },
->(items: readonly T[]): T[] {
+export function orderedByPosition<T extends { id: string; position: number }>(
+  items: readonly T[],
+): T[] {
   return [...items].sort(compareByPositionThenId);
 }
 
-export function neighborForReorder<
-  T extends { id: string; position: number },
->(items: readonly T[], itemId: string, direction: "up" | "down"): T | null {
+export function neighborForReorder<T extends { id: string; position: number }>(
+  items: readonly T[],
+  itemId: string,
+  direction: "up" | "down",
+): T | null {
   const ordered = orderedByPosition(items);
   const index = ordered.findIndex((entry) => entry.id === itemId);
   if (index < 0) {

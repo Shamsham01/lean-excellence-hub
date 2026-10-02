@@ -88,11 +88,10 @@ describe("maturity framework authoring helpers", () => {
   });
 
   it("plans sibling swaps without reusing occupied positions mid-flight", () => {
-    const plan = planUniquePositionSwap(
+    const plan = planUniquePositionSwap({ position: 1 }, { position: 2 }, [
       { position: 1 },
       { position: 2 },
-      [{ position: 1 }, { position: 2 }],
-    );
+    ]);
     expect(plan).toEqual({
       stagedPosition: 3,
       itemFinalPosition: 2,
