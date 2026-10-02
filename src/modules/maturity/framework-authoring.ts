@@ -338,6 +338,41 @@ export function planUniquePositionSwap(
   };
 }
 
+export function orderedQuestionsForCriterion<
+  T extends MaturityAuthoringQuestion,
+>(criterionId: string, questions: readonly T[]): T[] {
+  return orderedByPosition(
+    questions.filter((question) => question.criterion_id === criterionId),
+  );
+}
+
+export function targetPositionForQuestionReparent(input: {
+  sourceCriterionId: string;
+  destinationCriterionId: string;
+  pillars: readonly MaturityAuthoringPillar[];
+  criteria: readonly MaturityAuthoringCriterion[];
+  questions: readonly MaturityAuthoringQuestion[];
+}): number | undefined {
+  const sourceCriterion = input.criteria.find(
+    (criterion) => criterion.id === input.sourceCriterionId,
+  );
+  const destinationCriterion = input.criteria.find(
+    (criterion) => criterion.id === input.destinationCriterionId,
+  );
+  if (!sourceCriterion || !destinationCriterion) {
+    return undefined;
+  }
+  if (sourceCriterion.pillar_id !== destinationCriterion.pillar_id) {
+    return undefined;
+  }
+  return nextQuestionPositionForPillar(
+    destinationCriterion.pillar_id,
+    input.pillars,
+    input.criteria,
+    input.questions,
+  );
+}
+
 export function orderedQuestionsForPillar(
   pillarId: string,
   pillars: readonly MaturityAuthoringPillar[],

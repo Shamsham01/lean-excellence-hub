@@ -38,9 +38,11 @@ import {
   nextPillarPosition,
   nextQuestionPositionForCriterion,
   orderedByPosition,
+  orderedQuestionsForCriterion,
   orderedQuestionsForPillar,
   planUniquePositionSwap,
   summarizeFrameworkStructureChanges,
+  targetPositionForQuestionReparent,
 } from "@/modules/maturity/framework-authoring";
 import {
   MATURITY_ASSESSMENT_SCOPE_TYPES,
@@ -434,15 +436,23 @@ export function FrameworkEditor({
     pillarId: string,
     direction: "up" | "down",
   ) {
-    const siblings = orderedQuestionsForPillar(
+    const criterionSiblings = orderedQuestionsForCriterion(
+      question.criterion_id,
+      questions,
+    );
+    const neighbor = neighborForReorder(
+      criterionSiblings,
+      question.id,
+      direction,
+    );
+    if (!neighbor) return;
+    const pillarQuestions = orderedQuestionsForPillar(
       pillarId,
       pillars,
       criteria,
       questions,
     );
-    const neighbor = neighborForReorder(siblings, question.id, direction);
-    if (!neighbor) return;
-    const plan = planUniquePositionSwap(question, neighbor, siblings);
+    const plan = planUniquePositionSwap(question, neighbor, pillarQuestions);
     await run(async () => {
       const staged = await updateMaturityQuestion(
         question.id,
@@ -489,11 +499,18 @@ export function FrameworkEditor({
     },
   ) {
     if (input.criterionId !== question.criterion_id) {
+      const targetPosition = targetPositionForQuestionReparent({
+        sourceCriterionId: question.criterion_id,
+        destinationCriterionId: input.criterionId,
+        pillars,
+        criteria,
+        questions,
+      });
       await run(() =>
         moveMaturityQuestion(
           question.id,
           input.criterionId,
-          undefined,
+          targetPosition,
           modelId,
         ),
       );
@@ -1146,12 +1163,11 @@ export function FrameworkEditor({
                         </p>
                       ) : (
                         criterion.questions.map((question) => {
-                          const pillarQuestions = orderedQuestionsForPillar(
-                            pillar.id,
-                            pillars,
-                            criteria,
-                            questions,
-                          );
+                          const criterionQuestions =
+                            orderedQuestionsForCriterion(
+                              criterion.id,
+                              questions,
+                            );
                           return (
                             <QuestionEditorCard
                               key={question.id}
@@ -1162,14 +1178,14 @@ export function FrameworkEditor({
                               busy={busy}
                               canMoveUp={
                                 neighborForReorder(
-                                  pillarQuestions,
+                                  criterionQuestions,
                                   question.id,
                                   "up",
                                 ) != null
                               }
                               canMoveDown={
                                 neighborForReorder(
-                                  pillarQuestions,
+                                  criterionQuestions,
                                   question.id,
                                   "down",
                                 ) != null
