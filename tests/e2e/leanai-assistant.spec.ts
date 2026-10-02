@@ -13,11 +13,19 @@ async function screenshotIfPossible(page: Page, name: string) {
   try {
     await page.screenshot({
       path: `/opt/cursor/artifacts/${name}`,
-      fullPage: true,
+      fullPage: false,
     });
   } catch {
     // Artifact directory is optional outside Cloud Agent runs.
   }
+}
+
+async function waitForAssistantContext(page: Page) {
+  const pane = await ensureLeanAiAssistantOpen(page);
+  await expect(
+    page.getByTestId("leanai-assistant-context-label"),
+  ).not.toHaveText(/Loading context/i, { timeout: 15_000 });
+  return pane;
 }
 
 test.describe("LeanAI persistent workspace assistant", () => {
@@ -38,7 +46,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await expect(page.getByTestId("platform-home-page")).toBeVisible();
-    const pane = await ensureLeanAiAssistantOpen(page);
+    const pane = await waitForAssistantContext(page);
     await expect(pane).toBeVisible();
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
@@ -63,7 +71,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
 
     await page.goto("/platform/suggestions/programmes");
     await expect(page.getByTestId("suggestion-programmes-page")).toBeVisible();
-    await ensureLeanAiAssistantOpen(page);
+    await waitForAssistantContext(page);
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
     ).toContainText(/Suggestions/i);
@@ -83,7 +91,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(page).toHaveURL(/\/platform\/maturity\/models\/[0-9a-f-]+/i, {
       timeout: 30_000,
     });
-    await ensureLeanAiAssistantOpen(page);
+    await waitForAssistantContext(page);
     await expect(page.getByTestId("leanai-assistant-pane")).toHaveAttribute(
       "data-workflow",
       "maturity_authoring",
@@ -113,6 +121,9 @@ test.describe("LeanAI persistent workspace assistant", () => {
     const pane = page.getByTestId("leanai-assistant-pane");
     await expect(pane).toBeVisible();
     await expect(page.getByLabel("Message LeanAI")).toBeVisible();
+    await expect(
+      page.getByTestId("leanai-assistant-context-label"),
+    ).not.toHaveText(/Loading context/i, { timeout: 15_000 });
     const overflow = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,

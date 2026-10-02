@@ -62,7 +62,7 @@ export function LeanAiAssistantChrome() {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="right"
-          className="h-dvh max-h-dvh w-[min(100%,28rem)] gap-0 bg-background p-0 [&>button[aria-label='Close']]:hidden"
+          className="h-dvh max-h-dvh w-full max-w-[28rem] gap-0 bg-background p-0 [&>button[aria-label='Close']]:hidden"
           aria-describedby={undefined}
         >
           <SheetTitle className="sr-only">LeanAI assistant</SheetTitle>

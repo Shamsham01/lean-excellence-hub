@@ -32,12 +32,15 @@ export function LeanAiAssistantPanel({
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
+    if (messages.length === 0 && !sending) {
+      return;
+    }
     const node = feedRef.current;
     if (!node) {
       return;
     }
     node.scrollTop = node.scrollHeight;
-  }, [messages, view?.recommendation?.key, sending]);
+  }, [messages, sending]);
 
   const conversationAvailable = view?.conversationAvailable === true;
   const contextLabel = view?.contextLabel ?? "Workspace";
