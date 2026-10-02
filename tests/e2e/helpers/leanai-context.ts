@@ -115,11 +115,11 @@ export async function loginAndSelectOrganisation(
 
 export async function ensureLeanAiAssistantOpen(page: Page) {
   const pane = page.getByTestId("leanai-assistant-pane");
+  const openButton = page.getByTestId("leanai-assistant-open");
+  await expect(pane.or(openButton).first()).toBeVisible({ timeout: 15_000 });
   if (await pane.isVisible().catch(() => false)) {
     return pane;
   }
-  const openButton = page.getByTestId("leanai-assistant-open");
-  await expect(openButton).toBeVisible();
   await openButton.click();
   await expect(pane).toBeVisible();
   return pane;
