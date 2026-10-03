@@ -277,9 +277,10 @@ test.describe("Organisation Structure V2", () => {
       );
       await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
       await expect(page.getByTestId("leanai-assistant-open")).toBeVisible();
+      await screenshotIfPossible(page, "structure-mobile.png");
       await page.getByTestId("add-unit-button").click();
       await expect(page.getByTestId("add-unit-drawer")).toBeVisible();
-      await screenshotIfPossible(page, "structure-mobile.png");
+      await screenshotIfPossible(page, "structure-mobile-drawer.png");
     });
   });
 
