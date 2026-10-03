@@ -15,7 +15,7 @@ export function LeanAiAssistantChrome() {
     if (!desktopOpen) {
       return (
         <div
-          className="hidden h-full w-12 shrink-0 flex-col items-center border-l border-border bg-sidebar py-3 lg:flex"
+          className="hidden h-full max-h-full min-h-0 w-12 shrink-0 flex-col items-center overflow-hidden border-l border-border bg-sidebar py-3 lg:flex"
           data-testid="leanai-assistant-rail"
         >
           <Button
@@ -35,7 +35,7 @@ export function LeanAiAssistantChrome() {
 
     return (
       <aside
-        className="hidden h-full w-[min(100%,24rem)] shrink-0 flex-col border-l border-border lg:flex"
+        className="hidden h-full max-h-full min-h-0 w-[min(100%,24rem)] shrink-0 flex-col overflow-hidden border-l border-border lg:flex"
         data-testid="leanai-assistant-desktop"
       >
         <LeanAiAssistantPanel

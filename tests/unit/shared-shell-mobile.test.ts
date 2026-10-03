@@ -21,9 +21,11 @@ describe("shared platform shell mobile layout", () => {
     const shell = readComponent("src/components/platform/platform-shell.tsx");
 
     expect(shell).toContain("min-h-dvh min-w-0 flex-col");
-    expect(shell).toContain("lg:h-dvh lg:flex-row lg:overflow-hidden");
     expect(shell).toContain(
-      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto",
+      "lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden",
+    );
+    expect(shell).toContain(
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
     );
   });
 

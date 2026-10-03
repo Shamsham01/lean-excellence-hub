@@ -28,6 +28,96 @@ async function waitForAssistantContext(page: Page) {
   return pane;
 }
 
+async function readLayoutMetrics(page: Page) {
+  return page.evaluate(() => {
+    const rect = (selector: string) => {
+      const node = document.querySelector(selector);
+      if (!node) {
+        return null;
+      }
+      const box = node.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, height: box.height };
+    };
+    const feed = document.querySelector(
+      '[data-testid="leanai-assistant-feed"]',
+    );
+    const main = document.querySelector('[data-testid="platform-main"]');
+    return {
+      windowScrollY: window.scrollY,
+      documentScrollHeight: document.documentElement.scrollHeight,
+      documentClientHeight: document.documentElement.clientHeight,
+      bodyScrollHeight: document.body.scrollHeight,
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+      documentScrollWidth: document.documentElement.scrollWidth,
+      documentClientWidth: document.documentElement.clientWidth,
+      shell: rect('[data-testid="platform-shell"]'),
+      sidebar: rect('[data-testid="platform-desktop-sidebar"]'),
+      main: main
+        ? {
+            ...rect('[data-testid="platform-main"]'),
+            scrollTop: (main as HTMLElement).scrollTop,
+            scrollHeight: (main as HTMLElement).scrollHeight,
+            clientHeight: (main as HTMLElement).clientHeight,
+          }
+        : null,
+      assistant: rect('[data-testid="leanai-assistant-desktop"]'),
+      rail: rect('[data-testid="leanai-assistant-rail"]'),
+      pane: rect('[data-testid="leanai-assistant-pane"]'),
+      feed: feed
+        ? {
+            ...rect('[data-testid="leanai-assistant-feed"]'),
+            scrollTop: (feed as HTMLElement).scrollTop,
+            scrollHeight: (feed as HTMLElement).scrollHeight,
+            clientHeight: (feed as HTMLElement).clientHeight,
+          }
+        : null,
+    };
+  });
+}
+
+async function makeElementOverflow(
+  page: Page,
+  selector: string,
+  extraPx = 800,
+) {
+  await page.locator(selector).evaluate((node, extra) => {
+    const target = node as HTMLElement;
+    const spacer = document.createElement("div");
+    spacer.dataset.testid = "scroll-overflow-spacer";
+    spacer.style.minHeight = `${target.clientHeight + extra}px`;
+    spacer.style.flexShrink = "0";
+    spacer.textContent = "Scroll overflow spacer";
+    target.appendChild(spacer);
+  }, extraPx);
+}
+
+async function wheelOver(page: Page, selector: string, ticks: number) {
+  const box = await page.locator(selector).boundingBox();
+  if (!box) {
+    throw new Error(`Cannot wheel over missing ${selector}`);
+  }
+  await page.mouse.move(
+    box.x + box.width / 2,
+    box.y + Math.min(80, box.height / 2),
+  );
+  for (let i = 0; i < ticks; i++) {
+    await page.mouse.wheel(0, 240);
+  }
+}
+
+function expectViewportLocked(
+  metrics: Awaited<ReturnType<typeof readLayoutMetrics>>,
+) {
+  expect(metrics.windowScrollY).toBe(0);
+  expect(metrics.documentScrollWidth).toBeLessThanOrEqual(
+    metrics.documentClientWidth + 1,
+  );
+  expect(metrics.shell?.height ?? 0).toBeLessThanOrEqual(
+    metrics.viewportHeight + 2,
+  );
+}
+
 test.describe("LeanAI persistent workspace assistant", () => {
   test.describe.configure({ mode: "serial" });
   test.skip(
@@ -133,5 +223,93 @@ test.describe("LeanAI persistent workspace assistant", () => {
     }));
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
     await screenshotIfPossible(page, "leanai-assistant-mobile.png");
+  });
+
+  test("desktop LeanAI feed scrolling does not move the workspace document", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await page.goto("/platform/suggestions/programmes");
+    await expect(page.getByTestId("suggestion-programmes-page")).toBeVisible();
+    await waitForAssistantContext(page);
+
+    await makeElementOverflow(page, '[data-testid="leanai-assistant-feed"]');
+    await makeElementOverflow(page, '[data-testid="platform-main"]', 1200);
+
+    const initial = await readLayoutMetrics(page);
+    expectViewportLocked(initial);
+    expect(initial.feed?.scrollHeight ?? 0).toBeGreaterThan(
+      (initial.feed?.clientHeight ?? 0) + 100,
+    );
+    expect(initial.main?.scrollTop).toBe(0);
+    expect(initial.sidebar?.top).toBeLessThanOrEqual(2);
+    expect(initial.sidebar?.bottom ?? 0).toBeGreaterThanOrEqual(
+      initial.viewportHeight - 2,
+    );
+    expect(initial.assistant?.top).toBeLessThanOrEqual(2);
+    expect(initial.assistant?.bottom ?? 0).toBeGreaterThanOrEqual(
+      initial.viewportHeight - 2,
+    );
+
+    await wheelOver(page, '[data-testid="leanai-assistant-feed"]', 24);
+    const afterFeed = await readLayoutMetrics(page);
+    expectViewportLocked(afterFeed);
+    expect(afterFeed.main?.scrollTop).toBe(initial.main?.scrollTop);
+    expect(afterFeed.feed?.scrollTop ?? 0).toBeGreaterThan(0);
+    expect(afterFeed.feed?.scrollTop ?? 0).toBeGreaterThanOrEqual(
+      (afterFeed.feed?.scrollHeight ?? 0) -
+        (afterFeed.feed?.clientHeight ?? 0) -
+        2,
+    );
+    expect(afterFeed.sidebar?.top).toBeLessThanOrEqual(2);
+    expect(afterFeed.sidebar?.bottom ?? 0).toBeGreaterThanOrEqual(
+      afterFeed.viewportHeight - 2,
+    );
+    expect(afterFeed.assistant?.top).toBeLessThanOrEqual(2);
+    expect(afterFeed.assistant?.bottom ?? 0).toBeGreaterThanOrEqual(
+      afterFeed.viewportHeight - 2,
+    );
+    await expect(
+      page.getByTestId("leanai-assistant-context-label"),
+    ).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-input")).toBeVisible();
+    await screenshotIfPossible(page, "leanai-assistant-feed-scrolled.png");
+
+    await wheelOver(page, '[data-testid="leanai-assistant-feed"]', 8);
+    const afterExtra = await readLayoutMetrics(page);
+    expectViewportLocked(afterExtra);
+    expect(afterExtra.main?.scrollTop).toBe(initial.main?.scrollTop);
+    expect(afterExtra.sidebar?.top).toBeLessThanOrEqual(2);
+    expect(afterExtra.assistant?.top).toBeLessThanOrEqual(2);
+
+    await wheelOver(page, '[data-testid="platform-main"]', 10);
+    const afterMain = await readLayoutMetrics(page);
+    expectViewportLocked(afterMain);
+    expect(afterMain.main?.scrollTop ?? 0).toBeGreaterThan(0);
+    expect(afterMain.sidebar?.top).toBeLessThanOrEqual(2);
+    expect(afterMain.assistant?.top).toBeLessThanOrEqual(2);
+    expect(afterMain.assistant?.bottom ?? 0).toBeGreaterThanOrEqual(
+      afterMain.viewportHeight - 2,
+    );
+
+    await page.getByTestId("leanai-assistant-close").click();
+    await expect(page.getByTestId("leanai-assistant-rail")).toBeVisible();
+    const collapsed = await readLayoutMetrics(page);
+    expectViewportLocked(collapsed);
+    expect(collapsed.rail?.top).toBeLessThanOrEqual(2);
+    expect(collapsed.rail?.bottom ?? 0).toBeGreaterThanOrEqual(
+      collapsed.viewportHeight - 2,
+    );
+
+    await page.getByTestId("leanai-assistant-open").click();
+    await expect(page.getByTestId("leanai-assistant-pane")).toBeVisible();
+    await makeElementOverflow(page, '[data-testid="leanai-assistant-feed"]');
+    await wheelOver(page, '[data-testid="leanai-assistant-feed"]', 12);
+    const reopened = await readLayoutMetrics(page);
+    expectViewportLocked(reopened);
+    expect(reopened.feed?.scrollTop ?? 0).toBeGreaterThan(0);
+    expect(reopened.main?.scrollTop).toBe(afterMain.main?.scrollTop);
   });
 });

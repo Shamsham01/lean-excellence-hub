@@ -35,7 +35,10 @@ export async function PlatformShell({
     !navWithSetup.some((item) => item.href === settingsNavigationItem.href);
 
   return (
-    <div className="flex min-h-dvh min-w-0 flex-col bg-background lg:h-dvh lg:flex-row lg:overflow-hidden">
+    <div
+      data-testid="platform-shell"
+      className="flex min-h-dvh min-w-0 flex-col bg-background lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden"
+    >
       <PlatformSidebar
         items={navWithSetup}
         organisationName={organisationName}
@@ -45,7 +48,10 @@ export async function PlatformShell({
         showSettings={showSettings}
       />
       <LeanAiAssistantShell organisationId={organisationId}>
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto">
+        <main
+          data-testid="platform-main"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
+        >
           <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
             {children}
           </div>

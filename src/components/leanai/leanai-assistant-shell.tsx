@@ -11,7 +11,10 @@ export function LeanAiAssistantShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-1">
+    <div
+      data-testid="leanai-assistant-shell"
+      className="flex min-h-0 min-w-0 flex-1 lg:h-full lg:max-h-full lg:overflow-hidden"
+    >
       {children}
       <Suspense fallback={null}>
         <LeanAiAssistantProvider organisationId={organisationId}>
