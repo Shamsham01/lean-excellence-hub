@@ -1,94 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  saveAssessmentAnswer,
-  saveCriterionNote,
-} from "@/app/(platform)/platform/maturity/actions";
+import { saveCriterionNote } from "@/app/(platform)/platform/maturity/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
+import { AssessmentLifecycleActions } from "@/components/maturity/assessment-lifecycle-actions";
+import { QuestionCard } from "@/components/maturity/assessment-question-card";
 import { FormalLifecycleIndicator } from "@/components/maturity/formal-lifecycle-indicator";
-import { EvidenceUploader } from "@/components/maturity/evidence-uploader";
+import {
+  SaveStatus,
+  type FieldSaveState,
+} from "@/components/maturity/save-status";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import {
   actionStatusLabel,
   formatActionReference,
   formatDueDate,
 } from "@/lib/actions/status";
+import { cn } from "@/lib/utils";
+import {
+  persistCriterionSelection,
+  resolveInitialCriterionId,
+} from "@/modules/maturity/assessment-criterion-state";
+import { buildAssessmentReadiness } from "@/modules/maturity/assessment-readiness";
+import type {
+  AssessmentAnswer,
+  AssessmentLevel,
+  AssessmentLifecyclePermissions,
+  AssessmentPillar,
+  LinkedAssessmentAction,
+} from "@/modules/maturity/assessment-workspace-types";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
-
-type Question = {
-  id: string;
-  prompt: string;
-  question_type: string;
-  is_required: boolean;
-  allows_not_applicable: boolean;
-  help_text: string | null;
-  options: unknown;
-  contributes_to_score: boolean;
-};
-
-type Criterion = {
-  id: string;
-  name: string;
-  description: string | null;
-  guidance: string | null;
-  questions: Question[];
-};
-
-type Pillar = {
-  id: string;
-  name: string;
-  criteria: Criterion[];
-};
-
-type LevelGuidance = {
-  level_number: number;
-  name: string;
-  guidance: string | null;
-};
-
-type LinkedAssessmentAction = {
-  id: string;
-  action_number: string | null;
-  title: string;
-  status: string;
-  due_at: string | null;
-  assignee_name: string | null;
-  pillar_id: string;
-  criterion_id: string;
-  question_id: string | null;
-  pillar_name: string;
-  criterion_name: string;
-  question_prompt: string | null;
-};
 
 type AssessmentWorkspaceProps = {
   assessmentId: string;
   status: string;
   assessmentType: string;
-  pillars: Pillar[];
-  levels: LevelGuidance[];
-  answers: Record<
-    string,
-    {
-      text_value?: string | null;
-      number_value?: number | null;
-      is_not_applicable?: boolean;
-    }
-  >;
+  pillars: AssessmentPillar[];
+  levels: AssessmentLevel[];
+  answers: Record<string, AssessmentAnswer>;
   criterionNotes: Record<string, string>;
+  questionNotes: Record<string, string>;
   evidence: EvidenceItem[];
   canEdit: boolean;
   linkedActions?: LinkedAssessmentAction[];
   leadAssessorName?: string | null;
   submittedByName?: string | null;
+  lifecycle: AssessmentLifecyclePermissions;
+  initialCriterionId?: string | null;
 };
 
 export function AssessmentWorkspace({
@@ -99,20 +70,130 @@ export function AssessmentWorkspace({
   levels,
   answers,
   criterionNotes,
+  questionNotes,
   evidence,
   canEdit,
   linkedActions = [],
   leadAssessorName,
   submittedByName,
+  lifecycle,
+  initialCriterionId = null,
 }: AssessmentWorkspaceProps) {
-  const flatCriteria = pillars.flatMap((p) =>
-    p.criteria.map((c) => ({ pillar: p, criterion: c })),
+  const flatCriteria = useMemo(
+    () =>
+      pillars.flatMap((pillar) =>
+        pillar.criteria.map((criterion) => ({
+          pillar,
+          criterion,
+        })),
+      ),
+    [pillars],
   );
-  const [index, setIndex] = useState(0);
-  const current = flatCriteria[index];
-  const progress = flatCriteria.length
-    ? Math.round(((index + 1) / flatCriteria.length) * 100)
-    : 0;
+  const criterionIds = useMemo(
+    () => flatCriteria.map((item) => item.criterion.id),
+    [flatCriteria],
+  );
+  const [criterionId, setCriterionId] = useState(
+    () =>
+      resolveInitialCriterionId({
+        assessmentId,
+        criterionIds,
+        urlCriterionId: initialCriterionId,
+      }) ??
+      criterionIds[0] ??
+      "",
+  );
+  const [localAnswers, setLocalAnswers] = useState<
+    Record<string, AssessmentAnswer>
+  >({});
+  const [localQuestionNotes, setLocalQuestionNotes] = useState<
+    Record<string, string>
+  >({});
+  const [actionFormOpen, setActionFormOpen] = useState(false);
+  const [criteriaOpen, setCriteriaOpen] = useState(false);
+  const [highlightQuestionId, setHighlightQuestionId] = useState<string | null>(
+    null,
+  );
+  const pendingSaves = useRef(new Set<Promise<unknown>>());
+  const fieldFlushers = useRef(new Set<() => Promise<void>>());
+
+  const trackSave = useCallback(async <T,>(promise: Promise<T>) => {
+    pendingSaves.current.add(promise);
+    try {
+      return await promise;
+    } finally {
+      pendingSaves.current.delete(promise);
+    }
+  }, []);
+
+  const registerFlush = useCallback((flush: () => Promise<void>) => {
+    fieldFlushers.current.add(flush);
+    return () => {
+      fieldFlushers.current.delete(flush);
+    };
+  }, []);
+
+  const flushSaves = useCallback(async () => {
+    await Promise.allSettled([
+      ...[...fieldFlushers.current].map((flush) => flush()),
+      ...pendingSaves.current,
+    ]);
+  }, []);
+
+  const draftAnswers = useMemo(
+    () => ({ ...answers, ...localAnswers }),
+    [answers, localAnswers],
+  );
+  const draftQuestionNotes = useMemo(
+    () => ({ ...questionNotes, ...localQuestionNotes }),
+    [localQuestionNotes, questionNotes],
+  );
+
+  const readiness = useMemo(
+    () => buildAssessmentReadiness(pillars, draftAnswers),
+    [draftAnswers, pillars],
+  );
+
+  const currentIndex = Math.max(
+    0,
+    flatCriteria.findIndex((item) => item.criterion.id === criterionId),
+  );
+  const current = flatCriteria[currentIndex] ?? flatCriteria[0];
+
+  const selectCriterion = useCallback(
+    async (nextId: string, questionId?: string | null) => {
+      await flushSaves();
+      setCriterionId(nextId);
+      persistCriterionSelection({
+        assessmentId,
+        criterionId: nextId,
+        questionId,
+      });
+      if (questionId) {
+        setHighlightQuestionId(questionId);
+      }
+      setCriteriaOpen(false);
+    },
+    [assessmentId, flushSaves],
+  );
+
+  useEffect(() => {
+    if (!current?.criterion.id) {
+      return;
+    }
+    persistCriterionSelection({
+      assessmentId,
+      criterionId: current.criterion.id,
+    });
+  }, [assessmentId, current?.criterion.id]);
+
+  useEffect(() => {
+    if (!highlightQuestionId) return;
+    const node = document.querySelector(
+      `[data-question-id="${highlightQuestionId}"]`,
+    );
+    node?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightQuestionId, criterionId]);
 
   if (!current) {
     return (
@@ -121,51 +202,31 @@ export function AssessmentWorkspace({
   }
 
   const { pillar, criterion } = current;
-  const primaryScore = criterion.questions
-    .map((question) => answers[question.id]?.number_value)
-    .find((value) => value != null);
-  const matchedLevel =
-    primaryScore != null
-      ? levels.find((level) => level.level_number === Math.round(primaryScore))
-      : null;
-  const nextLevel = matchedLevel
-    ? levels.find(
-        (level) => level.level_number === matchedLevel.level_number + 1,
-      )
-    : null;
+  const firstMissing = readiness.remaining[0];
+  const nextIncomplete = readiness.remaining.find(
+    (item) => item.criterionId !== criterion.id,
+  );
+  const completion = readiness.criterionCompletions[criterion.id];
 
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[12rem_1fr_16rem] lg:gap-8">
-      <aside className="hidden flex-col gap-1 lg:flex">
-        {pillars.map((p) => (
-          <div key={p.id} className="mb-3">
-            <p className="px-2 text-xs font-semibold text-muted-foreground uppercase">
-              {p.name}
-            </p>
-            {p.criteria.map((c) => {
-              const idx = flatCriteria.findIndex(
-                (fc) => fc.criterion.id === c.id,
-              );
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setIndex(idx)}
-                  className={`w-full rounded-md px-2 py-2 text-left text-sm ${
-                    idx === index
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  {c.name}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+    <div
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8"
+      data-testid="assessment-workspace"
+    >
+      <aside
+        className="hidden min-w-0 flex-col gap-1 lg:flex"
+        data-testid="desktop-criterion-nav"
+      >
+        <CriterionNavigator
+          pillars={pillars}
+          readiness={readiness}
+          activeId={criterion.id}
+          testIdPrefix="criterion-nav"
+          onSelect={(id) => void selectCriterion(id)}
+        />
       </aside>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <AssessmentStatusBadge status={status} />
           <span className="text-sm text-muted-foreground capitalize">
@@ -191,8 +252,55 @@ export function AssessmentWorkspace({
             ) : null}
           </dl>
         ) : null}
-        <Progress value={progress} aria-label="Assessment progress" />
-        <div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p
+              className="text-sm font-medium"
+              data-testid="assessment-completion-count"
+            >
+              {readiness.answeredRequired} / {readiness.totalRequired} required
+              responses
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {readiness.completionPercent}% complete
+            </p>
+          </div>
+          <Progress
+            value={readiness.completionPercent}
+            aria-label="Assessment progress"
+          />
+          <p
+            className="text-xs text-muted-foreground"
+            data-testid="assessment-criterion-position"
+          >
+            Criterion {currentIndex + 1} of {flatCriteria.length}
+          </p>
+        </div>
+
+        <div className="flex items-start justify-between gap-3 lg:hidden">
+          <div>
+            <p className="typography-section-title">{pillar.name}</p>
+            <h2 className="mt-1 text-lg font-semibold">{criterion.name}</h2>
+            {completion ? (
+              <p className="text-xs text-muted-foreground">
+                {completion.answeredRequired}/{completion.totalRequired}{" "}
+                complete
+              </p>
+            ) : null}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="criteria-drawer-open"
+            onClick={() => setCriteriaOpen(true)}
+          >
+            Criteria
+          </Button>
+        </div>
+
+        <div className="hidden lg:block">
           <p className="typography-section-title">{pillar.name}</p>
           <h2 className="mt-1 text-lg font-semibold">{criterion.name}</h2>
           {criterion.description ? (
@@ -202,42 +310,80 @@ export function AssessmentWorkspace({
           ) : null}
         </div>
 
-        <CriterionNoteField
+        <ContextualGuidance criterion={criterion} levels={levels} />
+
+        <div className="flex flex-col gap-4">
+          {criterion.questions.map((question) => (
+            <QuestionCard
+              key={question.id}
+              assessmentId={assessmentId}
+              criterionId={criterion.id}
+              question={question}
+              {...(draftAnswers[question.id]
+                ? { answer: draftAnswers[question.id] }
+                : {})}
+              comment={draftQuestionNotes[question.id] ?? ""}
+              evidence={evidence}
+              levels={levels}
+              canEdit={canEdit}
+              highlight={highlightQuestionId === question.id}
+              trackSave={trackSave}
+              registerFlush={registerFlush}
+              onAnswerChange={(id, next) =>
+                setLocalAnswers((current) => ({ ...current, [id]: next }))
+              }
+              onCommentChange={(id, next) =>
+                setLocalQuestionNotes((current) => ({
+                  ...current,
+                  [id]: next,
+                }))
+              }
+            />
+          ))}
+        </div>
+
+        <CriterionSummaryField
+          key={criterion.id}
           assessmentId={assessmentId}
           criterionId={criterion.id}
           initialComment={criterionNotes[criterion.id] ?? ""}
           canEdit={canEdit}
+          trackSave={trackSave}
+          registerFlush={registerFlush}
         />
 
-        <div className="flex flex-col gap-6">
-          {criterion.questions.map((question) => {
-            const answer = answers[question.id];
-            return (
-              <QuestionField
-                key={`${question.id}:${answer?.number_value ?? ""}:${answer?.text_value ?? ""}:${answer?.is_not_applicable ?? false}`}
-                assessmentId={assessmentId}
-                criterionId={criterion.id}
-                question={question}
-                evidence={evidence}
-                {...(answer ? { answer } : {})}
-                canEdit={canEdit}
-              />
-            );
-          })}
-        </div>
-
         {canEdit ? (
-          <div className="max-w-lg rounded-lg border border-border bg-card p-4">
-            <AssessmentActionForm
-              assessmentId={assessmentId}
-              pillarId={pillar.id}
-              criterionId={criterion.id}
-              questions={criterion.questions.map((question) => ({
-                id: question.id,
-                prompt: question.prompt,
-              }))}
-            />
-          </div>
+          actionFormOpen ? (
+            <div className="max-w-lg rounded-lg border border-border bg-card p-4">
+              <AssessmentActionForm
+                assessmentId={assessmentId}
+                pillarId={pillar.id}
+                criterionId={criterion.id}
+                questions={criterion.questions.map((question) => ({
+                  id: question.id,
+                  prompt: question.prompt,
+                }))}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                onClick={() => setActionFormOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="create-improvement-action"
+              onClick={() => setActionFormOpen(true)}
+            >
+              + Create improvement action
+            </Button>
+          )
         ) : null}
 
         <LinkedActionsList
@@ -248,22 +394,62 @@ export function AssessmentWorkspace({
           emptyLabel="No actions have been created from this criterion yet."
         />
 
-        <div className="sticky bottom-4 flex gap-2 rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
+        <AssessmentLifecycleActions
+          assessmentId={assessmentId}
+          assessmentType={assessmentType}
+          status={status}
+          readiness={readiness}
+          lifecycle={lifecycle}
+          canEdit={canEdit}
+          flushSaves={flushSaves}
+          onGoToFirstMissing={() => {
+            if (!firstMissing) return;
+            void selectCriterion(
+              firstMissing.criterionId,
+              firstMissing.questionId,
+            );
+          }}
+        />
+
+        <div className="sticky bottom-4 z-20 flex gap-2 rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
           <Button
             type="button"
             variant="outline"
-            disabled={index === 0}
-            onClick={() => setIndex((i) => i - 1)}
+            disabled={currentIndex === 0}
+            data-testid="previous-criterion"
+            onClick={() => {
+              const previous = flatCriteria[currentIndex - 1];
+              if (previous) void selectCriterion(previous.criterion.id);
+            }}
           >
             Previous
           </Button>
           <Button
             type="button"
-            disabled={index >= flatCriteria.length - 1}
-            onClick={() => setIndex((i) => i + 1)}
+            disabled={currentIndex >= flatCriteria.length - 1}
+            data-testid="next-criterion"
+            onClick={() => {
+              const next = flatCriteria[currentIndex + 1];
+              if (next) void selectCriterion(next.criterion.id);
+            }}
           >
             Next
           </Button>
+          {nextIncomplete ? (
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="next-incomplete"
+              onClick={() =>
+                void selectCriterion(
+                  nextIncomplete.criterionId,
+                  nextIncomplete.questionId,
+                )
+              }
+            >
+              Next incomplete
+            </Button>
+          ) : null}
         </div>
 
         <LinkedActionsList
@@ -274,31 +460,147 @@ export function AssessmentWorkspace({
         />
       </div>
 
-      <aside className="rounded-lg border border-border bg-surface p-4 text-sm">
-        <p className="font-semibold">Guidance</p>
-        <p className="mt-2 text-muted-foreground">
+      <Sheet open={criteriaOpen} onOpenChange={setCriteriaOpen}>
+        <SheetContent
+          side="bottom"
+          data-testid="criteria-drawer"
+          className="max-h-[80vh] overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle>Criteria</SheetTitle>
+            <SheetDescription>
+              Choose a criterion. Completion is required responses, not
+              navigation position.
+            </SheetDescription>
+          </SheetHeader>
+          <CriterionNavigator
+            pillars={pillars}
+            readiness={readiness}
+            activeId={criterion.id}
+            testIdPrefix="criteria-drawer-item"
+            onSelect={(id) => void selectCriterion(id)}
+          />
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+function CriterionNavigator({
+  pillars,
+  readiness,
+  activeId,
+  onSelect,
+  testIdPrefix,
+}: {
+  pillars: AssessmentPillar[];
+  readiness: ReturnType<typeof buildAssessmentReadiness>;
+  activeId: string;
+  onSelect: (criterionId: string) => void;
+  testIdPrefix: string;
+}) {
+  return (
+    <nav className="flex flex-col gap-3" data-testid={`${testIdPrefix}-list`}>
+      {pillars.map((pillar) => (
+        <div key={pillar.id}>
+          <p className="px-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            {pillar.name}
+          </p>
+          {pillar.criteria.map((criterion) => {
+            const completion = readiness.criterionCompletions[criterion.id];
+            const state = completion?.state ?? "not_started";
+            const marker =
+              state === "complete" ? "✓" : state === "partial" ? "●" : "○";
+            return (
+              <button
+                key={criterion.id}
+                type="button"
+                onClick={() => onSelect(criterion.id)}
+                data-testid={`${testIdPrefix}-${criterion.id}`}
+                data-completion-state={state}
+                data-active={criterion.id === activeId ? "true" : "false"}
+                className={cn(
+                  "mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+                  criterion.id === activeId
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-muted",
+                )}
+              >
+                <span aria-hidden className="mt-0.5 text-xs">
+                  {marker}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block leading-snug">{criterion.name}</span>
+                  {completion &&
+                  completion.totalRequired > 0 &&
+                  state !== "complete" ? (
+                    <span className="text-xs text-muted-foreground">
+                      {completion.answeredRequired}/{completion.totalRequired}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function ContextualGuidance({
+  criterion,
+  levels,
+}: {
+  criterion: AssessmentPillar["criteria"][number];
+  levels: AssessmentLevel[];
+}) {
+  return (
+    <div className="flex flex-col gap-2" data-testid="contextual-guidance">
+      <details className="rounded-md border border-border bg-surface px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium">
+          Scoring guidance
+        </summary>
+        <ul className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
+          {levels.length === 0 ? (
+            <li>No maturity levels are configured on this framework.</li>
+          ) : (
+            levels.map((level) => (
+              <li key={level.level_number}>
+                <span className="font-medium text-foreground">
+                  {level.level_number} {level.name}
+                </span>
+                {level.guidance ? ` — ${level.guidance}` : ""}
+              </li>
+            ))
+          )}
+        </ul>
+      </details>
+      <details className="rounded-md border border-border bg-surface px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium">
+          Criterion guidance
+        </summary>
+        <p className="mt-2 text-sm text-muted-foreground">
           {criterion.guidance ??
-            "Review the criterion and provide evidence where required."}
+            criterion.description ??
+            "Review the criterion and capture evidence against each question."}
         </p>
-        {matchedLevel ? (
-          <div className="mt-4 space-y-2">
-            <p className="font-medium">
-              Expected at {matchedLevel.name} (level {matchedLevel.level_number}
-              )
-            </p>
-            <p className="text-muted-foreground">
-              {matchedLevel.guidance ?? "No level descriptor configured."}
-            </p>
-            {nextLevel ? (
-              <p className="text-muted-foreground">
-                Next level ({nextLevel.name}):{" "}
-                {nextLevel.guidance ??
-                  "Configure guidance in the framework editor."}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </aside>
+      </details>
+      <details className="rounded-md border border-border bg-surface px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium">
+          Level descriptors
+        </summary>
+        <ul className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
+          {levels.map((level) => (
+            <li key={level.level_number}>
+              <span className="font-medium text-foreground">{level.name}</span>
+              {level.guidance
+                ? ` — ${level.guidance}`
+                : " — No descriptor configured."}
+            </li>
+          ))}
+        </ul>
+      </details>
     </div>
   );
 }
@@ -347,169 +649,85 @@ function LinkedActionsList({
   );
 }
 
-function CriterionNoteField({
+function CriterionSummaryField({
   assessmentId,
   criterionId,
   initialComment,
   canEdit,
+  trackSave,
+  registerFlush,
 }: {
   assessmentId: string;
   criterionId: string;
   initialComment: string;
   canEdit: boolean;
+  trackSave: <T>(promise: Promise<T>) => Promise<T>;
+  registerFlush: (flush: () => Promise<void>) => () => void;
 }) {
   const [comment, setComment] = useState(initialComment);
-  const [saving, setSaving] = useState(false);
+  const [state, setState] = useState<FieldSaveState>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const commentRef = useRef(initialComment);
+  const dirtyRef = useRef(false);
 
-  async function saveComment() {
-    if (!canEdit || !comment.trim()) return;
-    setSaving(true);
-    await saveCriterionNote(assessmentId, criterionId, comment.trim());
-    setSaving(false);
-  }
+  const saveComment = useCallback(
+    async (value = commentRef.current) => {
+      if (!canEdit || !value.trim()) {
+        dirtyRef.current = false;
+        return;
+      }
+      dirtyRef.current = false;
+      setState("saving");
+      setError(null);
+      const result = await trackSave(
+        saveCriterionNote(assessmentId, criterionId, value.trim()),
+      );
+      if (result.error) {
+        dirtyRef.current = true;
+        setState("error");
+        setError(result.error);
+        return;
+      }
+      setState("saved");
+      window.setTimeout(() => setState("idle"), 2000);
+    },
+    [assessmentId, canEdit, criterionId, trackSave],
+  );
+
+  useEffect(() => {
+    return registerFlush(async () => {
+      if (dirtyRef.current) {
+        await saveComment(commentRef.current);
+      }
+    });
+  }, [registerFlush, saveComment]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <Label htmlFor={`criterion-note-${criterionId}`}>Assessor comment</Label>
+      <Label htmlFor={`criterion-note-${criterionId}`}>Criterion summary</Label>
+      <p className="typography-helper mt-1">
+        Overall observation for this criterion. Use question comments for
+        detailed evidence narrative.
+      </p>
       <Textarea
         id={`criterion-note-${criterionId}`}
         className="mt-2"
         rows={3}
         disabled={!canEdit}
         value={comment}
-        onChange={(event) => setComment(event.target.value)}
+        onChange={(event) => {
+          commentRef.current = event.target.value;
+          dirtyRef.current = true;
+          setComment(event.target.value);
+        }}
         onBlur={() => void saveComment()}
         data-testid="assessor-comment"
-        placeholder="Capture narrative evidence, context, or observations."
+        placeholder="Overall criterion observation."
       />
-      {saving ? (
-        <p className="typography-caption mt-2">Saving comment…</p>
-      ) : null}
-    </div>
-  );
-}
-
-function QuestionField({
-  assessmentId,
-  criterionId,
-  question,
-  answer,
-  evidence,
-  canEdit,
-}: {
-  assessmentId: string;
-  criterionId: string;
-  question: Question;
-  evidence: EvidenceItem[];
-  answer?: {
-    text_value?: string | null;
-    number_value?: number | null;
-    is_not_applicable?: boolean;
-  };
-  canEdit: boolean;
-}) {
-  const [saving, setSaving] = useState(false);
-  const [numberValue, setNumberValue] = useState(
-    answer?.number_value != null ? String(answer.number_value) : "",
-  );
-  const [textValue, setTextValue] = useState(answer?.text_value ?? "");
-
-  async function save(payload: {
-    textValue?: string | null;
-    numberValue?: number | null;
-    isNotApplicable?: boolean;
-  }) {
-    if (!canEdit) return;
-    setSaving(true);
-    await saveAssessmentAnswer(assessmentId, question.id, payload);
-    setSaving(false);
-  }
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <Label className="text-sm font-medium">{question.prompt}</Label>
-      {question.help_text ? (
-        <p className="typography-helper mt-1">{question.help_text}</p>
-      ) : null}
-
-      {question.question_type === "score" ||
-      question.question_type === "number" ? (
-        <Input
-          type="number"
-          className="mt-3 max-w-[8rem]"
-          disabled={!canEdit}
-          value={numberValue}
-          onChange={(event) => setNumberValue(event.target.value)}
-          onBlur={() => {
-            void save({
-              numberValue: numberValue ? Number(numberValue) : null,
-            });
-          }}
-        />
-      ) : question.question_type === "long_text" ? (
-        <Textarea
-          className="mt-3"
-          disabled={!canEdit}
-          value={textValue}
-          onChange={(event) => setTextValue(event.target.value)}
-          onBlur={() => {
-            void save({ textValue });
-          }}
-        />
-      ) : question.question_type === "yes_no" ? (
-        <div className="mt-3 flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={answer?.text_value === "yes" ? "default" : "outline"}
-            disabled={!canEdit}
-            onClick={() => save({ textValue: "yes" })}
-          >
-            Yes
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={answer?.text_value === "no" ? "default" : "outline"}
-            disabled={!canEdit}
-            onClick={() => save({ textValue: "no" })}
-          >
-            No
-          </Button>
-        </div>
-      ) : (
-        <Input
-          className="mt-3"
-          disabled={!canEdit}
-          value={textValue}
-          onChange={(event) => setTextValue(event.target.value)}
-          onBlur={() => {
-            void save({ textValue });
-          }}
-        />
-      )}
-
-      {question.allows_not_applicable ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mt-2"
-          disabled={!canEdit}
-          onClick={() => save({ isNotApplicable: true })}
-        >
-          Mark N/A
-        </Button>
-      ) : null}
-
-      {saving ? <p className="typography-caption mt-2">Saving…</p> : null}
-
-      <EvidenceUploader
-        assessmentId={assessmentId}
-        criterionId={criterionId}
-        questionId={question.id}
-        existingEvidence={evidence}
-        canEdit={canEdit}
+      <SaveStatus
+        state={state}
+        error={error}
+        onRetry={() => void saveComment()}
       />
     </div>
   );

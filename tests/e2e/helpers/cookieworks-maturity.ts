@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 import {
+  answerAllVisibleScores,
   selectAssessmentScopeAndWaitForEntities,
   selectAssessmentType,
   selectFirstScopeEntity,
@@ -162,30 +163,7 @@ export async function startFormalAssessmentForBodmin(
 }
 
 export async function answerAllAssessmentCriteria(page: Page, score = 3) {
-  const nextButton = page.getByRole("button", { name: "Next", exact: true });
-
-  while (await nextButton.isEnabled()) {
-    const scoreInput = page.locator('input[type="number"]').first();
-    if (await scoreInput.isVisible()) {
-      await scoreInput.click();
-      await scoreInput.pressSequentially(String(score));
-      await scoreInput.blur();
-      await expect(page.getByText("Saving…")).not.toBeVisible({
-        timeout: 10_000,
-      });
-    }
-    await nextButton.click();
-  }
-
-  const scoreInput = page.locator('input[type="number"]').first();
-  if (await scoreInput.isVisible()) {
-    await scoreInput.click();
-    await scoreInput.pressSequentially(String(score));
-    await scoreInput.blur();
-    await expect(page.getByText("Saving…")).not.toBeVisible({
-      timeout: 10_000,
-    });
-  }
+  await answerAllVisibleScores(page, score);
 }
 
 export async function uploadEvidenceFile(page: Page, filePath: string) {

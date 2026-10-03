@@ -5019,6 +5019,61 @@ export type Database = {
           },
         ]
       }
+      maturity_assessment_question_notes: {
+        Row: {
+          assessment_id: string
+          comment_text: string
+          created_at: string
+          created_by_membership_id: string
+          id: string
+          organisation_id: string
+          question_id: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          comment_text: string
+          created_at?: string
+          created_by_membership_id: string
+          id?: string
+          organisation_id: string
+          question_id: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          comment_text?: string
+          created_at?: string
+          created_by_membership_id?: string
+          id?: string
+          organisation_id?: string
+          question_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessment_question_notes_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_question_notes_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_question_notes_question_fkey"
+            columns: ["organisation_id", "question_id"]
+            isOneToOne: false
+            referencedRelation: "template_questions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       maturity_assessment_participants: {
         Row: {
           assessment_id: string
@@ -14770,6 +14825,14 @@ export type Database = {
           target_assessment_id: string
           target_comment_text: string
           target_criterion_id: string
+        }
+        Returns: string
+      }
+      upsert_maturity_assessment_question_note: {
+        Args: {
+          target_assessment_id: string
+          target_comment_text: string
+          target_question_id: string
         }
         Returns: string
       }

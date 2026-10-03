@@ -1,4 +1,5 @@
 import {
+  answerVisibleScore,
   selectAssessmentScopeAndWaitForEntities,
   selectAssessmentType,
   selectFirstScopeEntity,
@@ -133,10 +134,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByRole("button", { name: "Start assessment" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/assessments\//);
 
-    const scoreInput = page.locator('input[type="number"]').first();
-    await scoreInput.click();
-    await scoreInput.pressSequentially("4");
-    await scoreInput.blur();
+    await answerVisibleScore(page, 4);
     await page.waitForTimeout(500);
 
     await page
@@ -155,6 +153,7 @@ test.describe("Milestone 5 maturity journeys", () => {
       timeout: 15000,
     });
 
+    await page.getByTestId("create-improvement-action").click();
     await page.getByLabel("Create action").fill("Improve Gemba cadence");
     await page.getByRole("button", { name: "Create action" }).click();
     await expect(page.getByTestId("action-created")).toBeVisible({
@@ -198,13 +197,8 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(page.getByTestId("formal-lifecycle-indicator")).toBeVisible();
     await expect(page.getByTestId("lead-assessor-name")).toBeVisible();
     await expect(page.getByTestId("submitted-by-name")).toBeVisible();
-    const reviewScore = page.locator('input[type="number"]').first();
-    await expect(reviewScore).toBeEnabled();
-    await reviewScore.fill("5");
-    await reviewScore.blur();
-    await expect(page.getByText("Saving…")).not.toBeVisible({
-      timeout: 10_000,
-    });
+    await answerVisibleScore(page, 5);
+    await expect(page.getByTestId("level-choice").first()).toBeEnabled();
 
     await page
       .getByLabel("Return for correction")
@@ -231,7 +225,7 @@ test.describe("Milestone 5 maturity journeys", () => {
         .getByTestId("formal-lifecycle-indicator")
         .locator('[data-current="true"]'),
     ).toHaveText("Published");
-    await expect(reviewScore).toBeDisabled();
+    await expect(page.getByTestId("level-choice").first()).toBeDisabled();
   });
 
   test("self assessor: complete self assessment without official result", async ({
@@ -247,15 +241,13 @@ test.describe("Milestone 5 maturity journeys", () => {
     await selectAssessmentType(page, "self");
     await page.getByRole("button", { name: "Start assessment" }).click();
 
-    const scoreInput = page.locator('input[type="number"]').first();
-    await expect(scoreInput).toBeVisible();
-    await scoreInput.click();
-    await scoreInput.pressSequentially("3");
-    await scoreInput.blur();
-    await expect(page.getByText("Saving…")).not.toBeVisible({
-      timeout: 10_000,
-    });
-    await expect(scoreInput).toHaveValue("3");
+    await expect(page.getByTestId("level-choice").first()).toBeVisible();
+    await answerVisibleScore(page, 3);
+    await expect(
+      page
+        .locator('[data-testid="level-choice"][data-selected="true"]')
+        .first(),
+    ).toHaveAttribute("data-level-number", "1");
 
     await page.getByTestId("complete-self-assessment").click();
     await expect(page.getByTestId("complete-self-assessment")).not.toBeVisible({
@@ -282,14 +274,7 @@ test.describe("Milestone 5 maturity journeys", () => {
       page.getByTestId("maturity-assessment-detail-page"),
     ).toBeVisible();
 
-    const scoreInput = page.locator('input[type="number"]').first();
-    await scoreInput.click();
-    await scoreInput.pressSequentially("4");
-    await scoreInput.blur();
-    await expect(page.getByText("Saving…")).not.toBeVisible({
-      timeout: 10_000,
-    });
-    await expect(scoreInput).toHaveValue("4");
+    await answerVisibleScore(page, 4);
 
     const imagePath = join(
       fileURLToPath(new URL(".", import.meta.url)),

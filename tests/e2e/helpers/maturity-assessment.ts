@@ -216,3 +216,39 @@ export async function selectFirstScopeEntity(page: Page) {
   await entitySelect.selectOption(value);
   return value;
 }
+
+export async function answerVisibleScore(page: Page, score = 3) {
+  const preferred = page
+    .locator(`[data-testid="level-choice"][data-level-number="${score}"]`)
+    .first();
+  const fallback = page.getByTestId("level-choice").first();
+  const numberInput = page.locator('input[type="number"]').first();
+
+  if ((await preferred.count()) > 0) {
+    await preferred.click();
+  } else if ((await fallback.count()) > 0) {
+    await fallback.click();
+  } else {
+    await expect(numberInput).toBeVisible();
+    await numberInput.click();
+    await numberInput.fill(String(score));
+    await numberInput.blur();
+  }
+
+  await expect(page.getByText("Saving…")).not.toBeVisible({
+    timeout: 10_000,
+  });
+}
+
+export async function answerAllVisibleScores(page: Page, score = 3) {
+  const nextButton = page.getByRole("button", { name: "Next", exact: true });
+  while (await nextButton.isEnabled()) {
+    if ((await page.getByTestId("level-choice").count()) > 0) {
+      await answerVisibleScore(page, score);
+    }
+    await nextButton.click();
+  }
+  if ((await page.getByTestId("level-choice").count()) > 0) {
+    await answerVisibleScore(page, score);
+  }
+}
