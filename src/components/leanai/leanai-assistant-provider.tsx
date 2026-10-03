@@ -26,6 +26,7 @@ import {
   LEANAI_ASSISTANT_SESSION_STORAGE_PREFIX,
 } from "@/modules/leanai-context/assistant/constants";
 import { parseConversationBoundary } from "@/modules/leanai-context/assistant/conversation-boundary";
+import { LEANAI_ASSISTANT_OPEN_EVENT } from "@/modules/leanai-context/assistant/open-request";
 import type {
   LeanAiAssistantChatMessage,
   LeanAiAssistantView,
@@ -429,6 +430,27 @@ export function LeanAiAssistantProvider({
       startedAt,
     });
   }, [organisationId, sessionId]);
+
+  useEffect(() => {
+    const onOpenRequest = (event: Event) => {
+      const message = (event as CustomEvent<{ message?: string }>).detail
+        ?.message;
+      if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+        setDesktopOpenPreference(true);
+      } else {
+        setMobileOpen(true);
+      }
+      if (message) {
+        window.setTimeout(() => {
+          sendMessage(message);
+        }, 0);
+      }
+    };
+    window.addEventListener(LEANAI_ASSISTANT_OPEN_EVENT, onOpenRequest);
+    return () => {
+      window.removeEventListener(LEANAI_ASSISTANT_OPEN_EVENT, onOpenRequest);
+    };
+  }, [sendMessage]);
 
   const value = useMemo<LeanAiAssistantContextValue>(
     () => ({

@@ -17,6 +17,7 @@ export type ContextualHelpTopic =
   | "organisational-unit"
   | "parent-unit"
   | "unit-type"
+  | "unit-code"
   | "job-function"
   | "application-role"
   | "access-scope"
@@ -28,15 +29,19 @@ const helpContent: Record<
 > = {
   "organisational-unit": {
     title: "Organisation unit",
-    body: "An organisation unit is a place or team in your structure — for example a site, department, line, or ward. Units help anchor improvement work, training, and access to the right part of your organisation.",
+    body: "An organisation unit is a place or team in your structure — for example a department, area, line, or ward. Units keep stable identifiers. Archive instead of delete so history is preserved.",
   },
   "parent-unit": {
     title: "Parent unit",
-    body: "The parent unit sits above this unit in your hierarchy. For example, a packing department might sit under a manufacturing site. Choose the unit that this new unit belongs to.",
+    body: "The parent unit sits above this unit in your hierarchy. Top level is the root of the organisation, typically a site. Nested units belong to the parent you select.",
   },
   "unit-type": {
     title: "Unit type",
-    body: "A short label that describes what kind of unit this is in your organisation, such as site, department, line, or ward. This helps colleagues understand your structure at a glance.",
+    body: "A short label that describes what kind of unit this is, such as department, area, team, or line. Sites, plants, factories and locations are billable security boundaries and are not a routine type on this page.",
+  },
+  "unit-code": {
+    title: "Unit code",
+    body: "The unit code is a stable identifier generated from the unit name. You can edit it before creating the unit. After creation it cannot be changed.",
   },
   "job-function": {
     title: "Job function",

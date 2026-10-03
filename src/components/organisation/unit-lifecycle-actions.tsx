@@ -1,7 +1,9 @@
 "use client";
 
+import { MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { UnitTypeField } from "@/components/organisation/unit-type-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +30,7 @@ type UnitLifecycleActionsProps = {
   unit: FlatOrganisationUnit;
   activeUnits: FlatOrganisationUnit[];
   canCreateRoot: boolean;
+  layout?: "compact" | "archived";
   onUpdate: (input: {
     unitId: string;
     name: string;
@@ -62,6 +71,7 @@ export function UnitLifecycleActions({
   unit,
   activeUnits,
   canCreateRoot,
+  layout = "compact",
   onUpdate,
   onMove,
   onRetire,
@@ -163,26 +173,28 @@ export function UnitLifecycleActions({
 
   return (
     <div
-      className="flex flex-wrap gap-2"
+      className="flex flex-wrap items-center gap-1"
       data-testid={`unit-lifecycle-actions-${unit.id}`}
     >
-      {isRetired ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setMessage(null);
-            setDialog("reactivate");
-          }}
-        >
-          Reactivate
-        </Button>
+      {isRetired || layout === "archived" ? (
+        isRetired ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setMessage(null);
+              setDialog("reactivate");
+            }}
+          >
+            Reactivate
+          </Button>
+        ) : null
       ) : (
         <>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => {
               setName(unit.name);
@@ -193,30 +205,41 @@ export function UnitLifecycleActions({
           >
             Edit
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setParentUnitId(unit.parent_unit_id ?? "");
-              setMessage(null);
-              setDialog("move");
-            }}
-          >
-            Move
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setArchiveReason("");
-              setMessage(null);
-              setDialog("archive");
-            }}
-          >
-            Archive
-          </Button>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="px-2"
+                aria-label={`More actions for ${unit.name}`}
+                data-testid={`unit-more-menu-${unit.id}`}
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent data-testid={`unit-more-content-${unit.id}`}>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setParentUnitId(unit.parent_unit_id ?? "");
+                  setMessage(null);
+                  setDialog("move");
+                }}
+              >
+                Move
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => {
+                  setArchiveReason("");
+                  setMessage(null);
+                  setDialog("archive");
+                }}
+              >
+                Archive
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </>
       )}
 
@@ -242,14 +265,11 @@ export function UnitLifecycleActions({
                 onChange={(event) => setName(event.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={`edit-type-${unit.id}`}>Unit type</Label>
-              <Input
-                id={`edit-type-${unit.id}`}
-                value={unitType}
-                onChange={(event) => setUnitType(event.target.value)}
-              />
-            </div>
+            <UnitTypeField
+              id={`edit-type-${unit.id}`}
+              value={unitType}
+              onChange={setUnitType}
+            />
             <p className="text-xs text-muted-foreground">
               Code: {unit.code} (immutable)
             </p>
@@ -297,9 +317,7 @@ export function UnitLifecycleActions({
               data-testid="unit-move-parent-select"
             >
               <option value="">
-                {canCreateRoot
-                  ? "None (top-level unit)"
-                  : "Select a parent unit"}
+                {canCreateRoot ? "Top level" : "Select a parent unit"}
               </option>
               {moveParentOptions.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
@@ -364,7 +382,12 @@ export function UnitLifecycleActions({
             >
               Cancel
             </Button>
-            <Button type="button" onClick={handleArchive} disabled={loading}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleArchive}
+              disabled={loading}
+            >
               {loading ? "Archiving..." : "Archive unit"}
             </Button>
           </DialogFooter>

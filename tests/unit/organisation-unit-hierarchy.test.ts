@@ -5,6 +5,7 @@ import {
   collectDescendantUnitIds,
   filterUnitsToSite,
   formatUnitPath,
+  summariseOrganisationStructure,
 } from "@/modules/organisation/unit-hierarchy";
 
 describe("organisation unit hierarchy", () => {
@@ -142,5 +143,50 @@ describe("organisation unit hierarchy", () => {
       "exeter",
       "exeter-packing",
     ]);
+  });
+
+  it("summarises active, archived, top-level, child and depth counts", () => {
+    const summary = summariseOrganisationStructure([
+      {
+        id: "site",
+        code: "the-club",
+        name: "The Club",
+        unit_type: "site",
+        parent_unit_id: null,
+        status: "active",
+      },
+      {
+        id: "community",
+        code: "community",
+        name: "Community",
+        unit_type: "department",
+        parent_unit_id: "site",
+        status: "active",
+      },
+      {
+        id: "discord",
+        code: "discord",
+        name: "Discord",
+        unit_type: "area",
+        parent_unit_id: "community",
+        status: "active",
+      },
+      {
+        id: "old",
+        code: "old",
+        name: "Old unit",
+        unit_type: "team",
+        parent_unit_id: "site",
+        status: "retired",
+      },
+    ]);
+
+    expect(summary).toEqual({
+      activeUnits: 3,
+      topLevelUnits: 1,
+      archivedUnits: 1,
+      childUnits: 2,
+      maxDepth: 3,
+    });
   });
 });

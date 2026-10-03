@@ -61,19 +61,21 @@ test.describe("organisation onboarding", () => {
 
     await page.goto("/platform/settings/structure");
     await expect(page.getByTestId("structure-settings-page")).toBeVisible();
+    await page.getByTestId("add-unit-button").click();
     await expect(page.getByTestId("unit-create-form")).toBeVisible();
 
     const unitCode = `e2e-site-${Date.now()}`;
-    await page.getByLabel("Unit code").fill(unitCode);
-    await page.getByLabel("Unit name").fill("E2E Site");
-    await page.getByLabel("Unit type").fill("site");
+    await page.locator("#unit-name").fill("E2E Site");
+    await page.getByTestId("unit-type-choice").selectOption("custom");
+    await page.getByTestId("unit-type").fill("site");
+    await page.getByTestId("unit-code-edit").click();
+    await page.locator("#unit-code").fill(unitCode);
     await page.getByRole("button", { name: "Create unit" }).click();
 
-    await expect(page.getByText("Unit created.")).toBeVisible();
     await expect(
       page
         .getByTestId("structure-settings-page")
-        .locator("li")
+        .locator('[data-testid^="org-unit-node-"]')
         .filter({ hasText: "E2E Site" }),
     ).toBeVisible();
   });

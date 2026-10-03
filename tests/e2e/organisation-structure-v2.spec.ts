@@ -25,6 +25,44 @@ function unitTreeNode(page: import("@playwright/test").Page, name: string) {
     });
 }
 
+async function screenshotIfPossible(
+  page: import("@playwright/test").Page,
+  name: string,
+) {
+  try {
+    await page.screenshot({
+      path: `/opt/cursor/artifacts/${name}`,
+      fullPage: false,
+    });
+  } catch {
+    // Artifact directory is optional outside Cloud Agent runs.
+  }
+}
+
+async function enableDarkMode(page: import("@playwright/test").Page) {
+  await page.evaluate(() => {
+    window.localStorage.setItem("theme", "dark");
+    document.documentElement.classList.add("dark");
+  });
+}
+
+async function openAddUnitDrawer(
+  page: import("@playwright/test").Page,
+  parentName?: string,
+) {
+  if (parentName) {
+    await unitTreeNode(page, parentName)
+      .getByRole("button", {
+        name: new RegExp(`Add child under ${parentName}`),
+      })
+      .click();
+  } else {
+    await page.getByTestId("add-unit-button").click();
+  }
+  await expect(page.getByTestId("add-unit-drawer")).toBeVisible();
+  await expect(page.getByTestId("unit-create-form")).toBeVisible();
+}
+
 test.describe("Organisation Structure V2", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(120_000);
@@ -50,21 +88,40 @@ test.describe("Organisation Structure V2", () => {
       page,
     }) => {
       await loginAsCookieWorksPersona(page, "admin");
+      await enableDarkMode(page);
       await page.goto("/platform/settings/structure");
       await expect(page.getByTestId("structure-settings-page")).toBeVisible();
+      await expect(page.getByTestId("structure-summary")).toBeVisible();
+      await expect(unitTreeNode(page, BODMIN_FACTORY_LABEL)).toBeVisible();
+
+      const bodminToggle = page.getByRole("button", {
+        name: `Collapse ${BODMIN_FACTORY_LABEL}`,
+      });
+      await expect(bodminToggle).toBeVisible();
+      await bodminToggle.click();
+      await expect(unitTreeNode(page, "Decorating")).toHaveCount(0);
+      await page
+        .getByRole("button", { name: `Expand ${BODMIN_FACTORY_LABEL}` })
+        .click();
+      await expect(unitTreeNode(page, "Decorating")).toBeVisible();
 
       const unitCode = `pr3-child-${Date.now()}`;
       const unitName = `PR3 Lifecycle Child ${unitCode}`;
       const renamedUnitName = `${unitName} Renamed`;
-      await page.getByLabel("Parent unit (optional)").selectOption({
-        label: BODMIN_FACTORY_LABEL,
-      });
-      await page.locator("#unit-code").fill(unitCode);
+      await openAddUnitDrawer(page, BODMIN_FACTORY_LABEL);
+      await expect(page.getByTestId("unit-parent-select")).toHaveValue(/.+/);
+      const parentLabels = await page
+        .getByTestId("unit-parent-select")
+        .locator("option:checked")
+        .textContent();
+      expect(parentLabels).toContain(BODMIN_FACTORY_LABEL);
       await page.locator("#unit-name").fill(unitName);
-      await page.locator("#unit-type").fill("department");
+      await page.getByTestId("unit-type-choice").selectOption("department");
+      await page.getByTestId("unit-code-edit").click();
+      await page.locator("#unit-code").fill(unitCode);
       await page.getByRole("button", { name: "Create unit" }).click();
-      await expect(page.getByText("Unit created.")).toBeVisible();
       await expect(unitTreeNode(page, unitName)).toBeVisible();
+      await expect(page.getByTestId("add-unit-drawer")).toHaveCount(0);
 
       let unitNode = unitTreeNode(page, unitName);
       await unitNode.getByRole("button", { name: "Edit" }).click();
@@ -78,7 +135,8 @@ test.describe("Organisation Structure V2", () => {
       await expect(unitTreeNode(page, renamedUnitName)).toBeVisible();
 
       unitNode = unitTreeNode(page, renamedUnitName);
-      await unitNode.getByRole("button", { name: "Move" }).click();
+      await unitNode.getByLabel(`More actions for ${renamedUnitName}`).click();
+      await page.getByRole("menuitem", { name: "Move" }).click();
       await expect(page.getByTestId("unit-move-dialog")).toBeVisible();
       const moveSelect = page.getByTestId("unit-move-parent-select");
       await moveSelect.selectOption({
@@ -87,12 +145,14 @@ test.describe("Organisation Structure V2", () => {
       await page.getByRole("button", { name: "Move unit" }).click();
       await expect(unitTreeNode(page, renamedUnitName)).toBeVisible();
 
-      await unitNode.getByRole("button", { name: "Archive" }).click();
+      await unitNode.getByLabel(`More actions for ${renamedUnitName}`).click();
+      await page.getByRole("menuitem", { name: "Archive" }).click();
       await expect(page.getByTestId("unit-archive-dialog")).toBeVisible();
       await page.getByLabel("Reason").fill("PR3 acceptance archive");
       await page.getByRole("button", { name: "Archive unit" }).click();
       await expect(unitTreeNode(page, renamedUnitName)).toHaveCount(0);
       await expect(page.getByTestId("archived-units-section")).toBeVisible();
+      await page.getByTestId("archived-units-toggle").click();
       await expect(
         page.getByTestId("archived-units-section").getByText(renamedUnitName),
       ).toBeVisible();
@@ -104,6 +164,101 @@ test.describe("Organisation Structure V2", () => {
       await archivedUnit.getByRole("button", { name: "Reactivate" }).click();
       await page.getByRole("button", { name: "Reactivate unit" }).click();
       await expect(unitTreeNode(page, renamedUnitName)).toBeVisible();
+    });
+
+    test("structure workspace remains usable with LeanAI rail polish", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await loginAsCookieWorksPersona(page, "admin");
+      await enableDarkMode(page);
+      await page.goto("/platform/settings/structure");
+      await expect(page.getByTestId("structure-settings-page")).toBeVisible();
+      await expect(page.getByTestId("structure-summary")).toBeVisible();
+      await expect(page.getByTestId("organisation-unit-tree")).toBeVisible();
+      await expect(page.getByTestId("platform-main")).toHaveClass(
+        /platform-scroll/,
+      );
+
+      const pane = page.getByTestId("leanai-assistant-pane");
+      if (await pane.count()) {
+        await expect(
+          page.getByTestId("leanai-assistant-context-label"),
+        ).toContainText(/Organisation · Structure/i, { timeout: 15_000 });
+        await screenshotIfPossible(
+          page,
+          "structure-desktop-leanai-expanded.png",
+        );
+        await page.getByTestId("leanai-assistant-close").click();
+      }
+
+      await expect(page.getByTestId("leanai-assistant-rail")).toBeVisible();
+      const railBox = await page
+        .getByTestId("leanai-assistant-rail")
+        .boundingBox();
+      expect(railBox?.width ?? 0).toBeGreaterThanOrEqual(44);
+      expect(railBox?.width ?? 0).toBeLessThanOrEqual(48);
+      expect(railBox?.x ?? 0).toBeGreaterThan(page.viewportSize()!.width - 60);
+      await expect(page.getByTestId("leanai-assistant-open")).toHaveAttribute(
+        "title",
+        "Open LeanAI",
+      );
+      await screenshotIfPossible(
+        page,
+        "structure-desktop-leanai-collapsed.png",
+      );
+
+      const beforeScroll = await page.evaluate(() => ({
+        windowY: window.scrollY,
+        main: (
+          document.querySelector(
+            '[data-testid="platform-main"]',
+          ) as HTMLElement | null
+        )?.scrollTop,
+      }));
+      await page.locator('[data-testid="platform-main"]').evaluate((node) => {
+        const spacer = document.createElement("div");
+        spacer.style.minHeight = `${(node as HTMLElement).clientHeight + 800}px`;
+        node.appendChild(spacer);
+      });
+      await page.mouse.move(400, 200);
+      await page.mouse.wheel(0, 600);
+      const afterScroll = await page.evaluate(() => ({
+        windowY: window.scrollY,
+        main: (
+          document.querySelector(
+            '[data-testid="platform-main"]',
+          ) as HTMLElement | null
+        )?.scrollTop,
+      }));
+      expect(afterScroll.windowY).toBe(0);
+      expect(afterScroll.main ?? 0).toBeGreaterThan(beforeScroll.main ?? 0);
+
+      await page.getByTestId("add-unit-button").click();
+      await expect(page.getByTestId("add-unit-drawer")).toBeVisible();
+      await expect(page.getByTestId("unit-parent-select")).toHaveValue("");
+      await screenshotIfPossible(page, "structure-add-unit-drawer.png");
+      await page.getByRole("button", { name: "Cancel" }).click();
+
+      await screenshotIfPossible(page, "structure-desktop-hierarchy.png");
+      await page.getByTestId("leanai-assistant-open").click();
+      await expect(page.getByTestId("leanai-assistant-pane")).toBeVisible();
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("/platform/settings/structure");
+      await expect(page.getByTestId("structure-settings-page")).toBeVisible();
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(
+        overflow.clientWidth + 1,
+      );
+      await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
+      await expect(page.getByTestId("leanai-assistant-open")).toBeVisible();
+      await page.getByTestId("add-unit-button").click();
+      await expect(page.getByTestId("add-unit-drawer")).toBeVisible();
+      await screenshotIfPossible(page, "structure-mobile.png");
     });
   });
 
@@ -196,7 +351,8 @@ test.describe("Organisation Structure V2", () => {
       await expect(page.getByTestId("structure-settings-page")).toBeVisible();
 
       const packingNode = unitTreeNode(page, "Packing");
-      await packingNode.getByRole("button", { name: "Move" }).click();
+      await packingNode.getByLabel("More actions for Packing").click();
+      await page.getByRole("menuitem", { name: "Move" }).click();
       const moveLabels = await page
         .getByTestId("unit-move-parent-select")
         .locator("option")

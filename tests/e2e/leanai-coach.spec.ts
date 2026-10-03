@@ -237,12 +237,19 @@ test.describe("LeanAI intervention engine and coach UI", () => {
 
     await page.goto("/platform/settings/structure");
     await expect(page.getByTestId("structure-settings-page")).toBeVisible();
+    await page.getByTestId("add-unit-button").click();
     const suffix = Date.now().toString(36);
-    await page.locator("#unit-code").fill(`coach-site-${suffix}`.slice(0, 32));
     await page.locator("#unit-name").fill(`Coach Site ${suffix}`);
-    await page.locator("#unit-type").fill("site");
+    await page.getByTestId("unit-type-choice").selectOption("custom");
+    await page.getByTestId("unit-type").fill("site");
+    await page.getByTestId("unit-code-edit").click();
+    await page.locator("#unit-code").fill(`coach-site-${suffix}`.slice(0, 32));
     await page.getByRole("button", { name: "Create unit" }).click();
-    await expect(page.getByText("Unit created.")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("organisation-unit-tree")
+        .getByText(`Coach Site ${suffix}`),
+    ).toBeVisible();
 
     await page.goto("/platform");
     await expect(page.getByTestId("platform-home-page")).toBeVisible();

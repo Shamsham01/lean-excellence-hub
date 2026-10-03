@@ -111,6 +111,19 @@ describe("LeanAI assistant route context", () => {
     expect(identity.entityId).toBeNull();
   });
 
+  it("maps Organisation structure to a dedicated Structure context", () => {
+    const identity = parseAssistantRoute("/platform/settings/structure");
+    const page = assistantPageDefinitionFor(identity);
+    expect(identity.workflow).toBe("structure");
+    expect(page.contextLabel).toBe("Organisation · Structure");
+    expect(page.starterPrompts).toEqual([
+      "Recommend a structure",
+      "Explain organisational units",
+      "How should I structure my organisation?",
+      "What should go under this site?",
+    ]);
+  });
+
   it("keeps assistant presence on other setup pages", () => {
     const routes = [
       "/platform/setup",

@@ -195,6 +195,14 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.getByTestId("leanai-assistant-close").click();
     await expect(page.getByTestId("leanai-assistant-rail")).toBeVisible();
     await expect(page.getByTestId("leanai-assistant-pane")).toHaveCount(0);
+    await expect(page.getByTestId("platform-main")).toHaveClass(
+      /platform-scroll/,
+    );
+    const collapsedRail = await page
+      .getByTestId("leanai-assistant-rail")
+      .boundingBox();
+    expect(collapsedRail?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(collapsedRail?.width ?? 0).toBeLessThanOrEqual(48);
     await screenshotIfPossible(page, "leanai-assistant-desktop-collapsed.png");
 
     await page.getByTestId("leanai-assistant-open").click();

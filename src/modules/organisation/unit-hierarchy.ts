@@ -112,3 +112,40 @@ export function filterUnitsToSite(
   const ids = collectDescendantUnitIds(units, siteUnitId);
   return units.filter((unit) => ids.has(unit.id));
 }
+
+export function organisationUnitTreeDepth(
+  nodes: OrganisationUnitNode[],
+): number {
+  if (nodes.length === 0) {
+    return 0;
+  }
+
+  return Math.max(
+    ...nodes.map((node) => 1 + organisationUnitTreeDepth(node.children)),
+  );
+}
+
+export type OrganisationStructureSummary = {
+  activeUnits: number;
+  topLevelUnits: number;
+  archivedUnits: number;
+  childUnits: number;
+  maxDepth: number;
+};
+
+export function summariseOrganisationStructure(
+  units: FlatOrganisationUnit[],
+): OrganisationStructureSummary {
+  const activeUnits = units.filter((unit) => unit.status !== "retired");
+  const archivedUnits = units.filter((unit) => unit.status === "retired");
+  const tree = buildOrganisationUnitTree(activeUnits);
+
+  return {
+    activeUnits: activeUnits.length,
+    topLevelUnits: tree.length,
+    archivedUnits: archivedUnits.length,
+    childUnits: activeUnits.filter((unit) => Boolean(unit.parent_unit_id))
+      .length,
+    maxDepth: organisationUnitTreeDepth(tree),
+  };
+}
