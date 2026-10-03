@@ -190,8 +190,8 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await signInAsDemoUser(page, "operator");
-    await startAssessment(page, "self");
+    await signInAsDemoUser(page, "manager");
+    await startAssessment(page, "formal");
 
     const firstCriterion = await page
       .getByTestId("assessment-criterion-position")
