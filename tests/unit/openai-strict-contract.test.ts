@@ -36,6 +36,7 @@ describe("OpenAI strict request contract", () => {
   it("covers all 13 problem-solving read tools", () => {
     const toolNames = tools.map((tool) => tool.name);
     expect(toolNames).toEqual([...PROBLEM_SOLVING_READ_TOOLS]);
+    expect(tools.some((tool) => tool.type === "web_search")).toBe(false);
   });
 });
 

@@ -8,6 +8,7 @@ import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
 import { AI_PERMISSIONS } from "@/modules/operational/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
+import { loadCurrentOrganisationIdentity } from "@/modules/organisations/context";
 import {
   currentMemberHasPermission,
   prefetchMemberPermissions,
@@ -66,14 +67,22 @@ export async function resolveLeanAiAssistantView(
   ]);
 
   const supabase = await createServerSupabaseClient();
-  const [snapshot, permissions, site, canUseAi, eligibility] =
+  const [snapshot, permissions, site, canUseAi, eligibility, organisation] =
     await Promise.all([
       loadLeanAiContextualSnapshot(),
       loadLeanAiInterventionPermissions(),
       loadActiveSiteContext(),
       currentMemberHasPermission(AI_PERMISSIONS.use),
       assessCoachAiEligibility(supabase),
+      loadCurrentOrganisationIdentity(),
     ]);
+
+  if (
+    !organisation ||
+    organisation.organisationId !== snapshot.journey.organisationId
+  ) {
+    throw new Error("Current organisation identity could not be verified.");
+  }
 
   const leanAiItem = snapshot.readiness.items.find(
     (item) => item.key === "lean_ai",
@@ -278,6 +287,12 @@ export async function resolveLeanAiAssistantView(
   return {
     organisationId: snapshot.journey.organisationId,
     membershipId: snapshot.journey.membershipId,
+    organisation: {
+      name: organisation.organisationName,
+    },
+    capabilities: {
+      webSearchEnabled: snapshot.webSearchEnabled,
+    },
     applicationAiAvailable: snapshot.applicationAiAvailable,
     conversationAvailable,
     conversationUnavailableReason,

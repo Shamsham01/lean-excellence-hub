@@ -67,6 +67,9 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(load).not.toContain("runCoachAiTurn");
     expect(load).not.toContain("resolveAIProvider");
     expect(load).toContain("selectAssistantIntervention");
+    expect(load).toContain("loadCurrentOrganisationIdentity");
+    expect(load).toContain("organisationName");
+    expect(load).toContain("webSearchEnabled: snapshot.webSearchEnabled");
   });
 
   it("keeps organisation switching on a server-owned session key", () => {
@@ -84,6 +87,10 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(actions).toContain("conversationStartedAt");
     expect(actions).toContain("failClosedConversationStartedAt");
     expect(actions).toContain("assessCoachAiEligibility");
+    expect(actions).toContain(
+      "webSearchEnabled: view.capabilities.webSearchEnabled",
+    );
+    expect(actions).not.toContain("webSearchEnabled: input");
     expect(actions).not.toContain("ai_usage_events");
     expect(read("src/modules/leanai-context/assistant/constants.ts")).toContain(
       "workspace_assistant",
@@ -91,6 +98,11 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(read("src/components/leanai/leanai-assistant-panel.tsx")).toContain(
       "disabled={sending}",
     );
+
+    const problemSolving = read("src/platform/ai/orchestrator.ts");
+    expect(problemSolving).toContain("buildOpenAiTools()");
+    expect(problemSolving).not.toContain("workspaceAssistantTools");
+    expect(problemSolving).not.toContain("web_search");
 
     const coachActions = read(
       "src/app/(platform)/platform/leanai/coach/actions.ts",

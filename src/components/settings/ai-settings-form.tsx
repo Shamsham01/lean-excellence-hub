@@ -11,24 +11,30 @@ import { Label } from "@/components/ui/label";
 type AiSettingsFormProps = {
   initialEnabled: boolean;
   initialMonthlyTokenCeiling: number | null;
+  initialWebSearchEnabled: boolean;
   providerAvailable: boolean;
   usageSummary: Record<string, unknown> | null;
   usageLoadError?: string | null;
   onSave: (input: {
     aiEnabled: boolean;
     monthlyTokenCeiling?: number | null;
+    webSearchEnabled: boolean;
   }) => Promise<{ error?: string; ok?: true }>;
 };
 
 export function AiSettingsForm({
   initialEnabled,
   initialMonthlyTokenCeiling,
+  initialWebSearchEnabled,
   providerAvailable,
   usageSummary,
   usageLoadError = null,
   onSave,
 }: AiSettingsFormProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(
+    initialWebSearchEnabled,
+  );
   const [ceiling, setCeiling] = useState(
     initialMonthlyTokenCeiling?.toString() ?? "",
   );
@@ -41,6 +47,7 @@ export function AiSettingsForm({
     const result = await onSave({
       aiEnabled: enabled,
       monthlyTokenCeiling: ceiling.trim() ? Number(ceiling) : null,
+      webSearchEnabled,
     });
     setMessage(result.error ?? "Settings saved.");
     setLoading(false);
@@ -74,6 +81,31 @@ export function AiSettingsForm({
                 onChange={(event) => setCeiling(event.target.value)}
                 placeholder="e.g. 500000"
               />
+            </div>
+            <div
+              className="flex flex-col gap-2 border-t border-border pt-4"
+              data-testid="ai-settings-web-search-section"
+            >
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={webSearchEnabled}
+                  onChange={(event) =>
+                    setWebSearchEnabled(event.target.checked)
+                  }
+                  aria-describedby="ai-settings-web-search-help"
+                  data-testid="ai-settings-web-search"
+                />
+                <span>Allow LeanAI to search the public web</span>
+              </label>
+              <p
+                id="ai-settings-web-search-help"
+                className="text-xs text-muted-foreground"
+              >
+                Allows LeanAI to use public web search when a question requires
+                current or external information. Web searches may incur
+                additional AI usage costs.
+              </p>
             </div>
             <p className="text-xs text-muted-foreground">
               Provider availability:{" "}

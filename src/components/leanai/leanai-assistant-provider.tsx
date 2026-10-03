@@ -400,6 +400,9 @@ export function LeanAiAssistantProvider({
               content: result.envelope.message,
               createdAt: new Date().toISOString(),
               source: "ai",
+              ...(result.externalSources && result.externalSources.length > 0
+                ? { externalSources: result.externalSources }
+                : {}),
             },
           ],
           error: null,

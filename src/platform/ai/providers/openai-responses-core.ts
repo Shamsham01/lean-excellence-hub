@@ -10,6 +10,10 @@ import type {
   CreateResponseInput,
   CreateResponseResult,
 } from "@/platform/ai/types";
+import {
+  providerToolsIncludeWebSearch,
+  WEB_SEARCH_SOURCES_INCLUDE,
+} from "@/platform/ai/web-search";
 
 function serializeConversationMessage(message: {
   role: "user" | "assistant";
@@ -65,6 +69,9 @@ export function buildResponsesCreateParams(
     max_output_tokens: input.maxOutputTokens,
     ...(input.reasoningEffort
       ? { reasoning: { effort: input.reasoningEffort } }
+      : {}),
+    ...(providerToolsIncludeWebSearch(input.tools)
+      ? { include: [WEB_SEARCH_SOURCES_INCLUDE] }
       : {}),
     // Application-managed context is replayed on every request with store:false.
     // Do not send previous_response_id; retained provider responses conflict with

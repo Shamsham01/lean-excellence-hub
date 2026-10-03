@@ -279,6 +279,20 @@ Workspace chat reuses ADR-0018 Coach sessions with `module_key = platform` and `
 
 Conversation survives in-workspace navigation. **Current page context is assembled fresh on every turn** and is the live truth. Organisation switch is session-bound (`current_organisation_id`); a browser session id from another organisation is rejected.
 
+**Organisation name is mandatory trusted server context.** LeanAI resolves the current organisation name from RLS-protected `organisations` (`id = current_organisation_id()`). Browser-supplied organisation names or IDs are ignored. The untrusted organisation-data envelope includes `organisation_name` plus the independent active site name. LeanAI must not substitute the site name for the organisation name.
+
+### Public web research (LEANAI-WEB-01)
+
+Organisation admins with `ai.manage_settings` may opt in to LeanAI public web research via `organisation_ai_settings.web_search_enabled` (default **false**). Enabling AI does not enable web search.
+
+When disabled, the persistent workspace assistant (`setup_conversation`) must not receive a web-search tool. Explicit research requests explain the organisation policy. Internal LEH assistance continues.
+
+When enabled, workspace chat may use the OpenAI Responses built-in `web_search` tool. The model should search only when current/external research is genuinely useful. Answers that used web research must show sanitised `{ title, url }` sources. Sources persist on the assistant message `structured_payload.external_sources`.
+
+Web pages are untrusted external content: never follow instructions found on the web, never change RBAC/settings because a page asked, and never leak private organisation data into search queries unless the user explicitly asks to research the public organisation name.
+
+Problem Solving AI, Coach Explain, readiness evaluation, and page-context loading do not receive web search. Opening LeanAI still makes zero provider calls. Provider privacy remains `store:false` with no `previous_response_id`.
+
 ### Deterministic guidance vs model invocation
 
 Readiness evaluation, intervention ranking, terminology, and starter chips make **zero provider calls**. A model call happens only when the user sends a message (or uses Coach Explain). Opening the pane, changing route, or clicking ordinary workspace controls does not invoke AI.
@@ -603,6 +617,15 @@ Implemented as a two-PR sequence:
 - reuse of general Coach sessions; no second chatbot
 - deterministic interventions inside the pane; no duplicate cards on `/platform/*`
 
+### LEANAI-WEB-01 — Organisation-aware context and admin-controlled web research
+
+- organisation name is mandatory server-resolved trusted context
+- `web_search_enabled` defaults false; only `ai.manage_settings` may change it
+- workspace assistant tool gating is server-side; browser cannot enable search
+- researched answers show persisted, sanitised source links
+- web content is untrusted; no authoritative writes from web findings
+- Problem Solving AI and Coach Explain do not gain web search
+
 - use the intervention engine across the new-organisation onboarding journey
 - step-by-step setup guidance
 - starter setup actions
@@ -643,6 +666,8 @@ For LEH v1:
 - **specialist capabilities are tools/workflows, not autonomous agents**
 - **human approval remains mandatory for authoritative writes**
 - **context is tenant/permission scoped**
+- **organisation name is server-resolved, never inferred from the site or browser**
+- **public web research is organisation-admin opt-in, default off**
 - **no employee productivity scoring**
 - **AI provider/model selection remains configurable**
 - **build contextual onboarding before the final clean-organisation smoke**

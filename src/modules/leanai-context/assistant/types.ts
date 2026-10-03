@@ -71,6 +71,12 @@ export type LeanAiAssistantPageEnvelope = {
 export type LeanAiAssistantView = {
   organisationId: string;
   membershipId: string;
+  organisation: {
+    name: string;
+  };
+  capabilities: {
+    webSearchEnabled: boolean;
+  };
   applicationAiAvailable: boolean;
   conversationAvailable: boolean;
   conversationUnavailableReason: string | null;
@@ -99,4 +105,5 @@ export type LeanAiAssistantChatMessage = {
   content: string;
   createdAt: string | null;
   source: "ai" | "static" | "deterministic";
+  externalSources?: Array<{ title: string; url: string }>;
 };

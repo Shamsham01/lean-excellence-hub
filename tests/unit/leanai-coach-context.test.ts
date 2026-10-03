@@ -40,6 +40,7 @@ function snapshot(): LeanAiContextualSnapshot {
     retention: { eventRetentionDays: 90, cleanupAvailable: true },
     applicationAiAvailable: true,
     proactiveAssistanceEnabled: true,
+    webSearchEnabled: false,
   };
 }
 
@@ -68,8 +69,10 @@ describe("Coach explain context assembly", () => {
       permissions: { "maturity.models.manage": true },
       surface: "maturity",
       canUseAi: true,
+      organisationName: "HODL Token Club",
     });
 
+    expect(context.organisation.name).toBe("HODL Token Club");
     expect(context.organisation.activeBillableSiteCount).toBe(2);
     expect(context.intervention.key).toBe("maturity_first_setup");
     expect(context.productKnowledge.summary).toMatch(/Maturity Framework/);
@@ -124,9 +127,12 @@ describe("Coach explain context assembly", () => {
       permissions: { "maturity.models.manage": true },
       surface: "maturity",
       canUseAi: true,
+      organisationName: "HODL Token Club",
     });
     const wrapped = wrapUntrustedCoachData(context);
     expect(wrapped).toContain("UNTRUSTED_ORGANISATION_DATA_START");
+    expect(wrapped).toContain("organisation_name");
+    expect(wrapped).toContain("HODL Token Club");
     expect(wrapped).toContain("IGNORE PREVIOUS INSTRUCTIONS");
     expect(wrapped).toContain("not instructions");
   });

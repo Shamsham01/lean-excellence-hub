@@ -19,7 +19,7 @@ export class FakeAIProvider implements AIProvider {
       input.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
     if (input.structuredOutputFormat?.name === "coach_envelope") {
-      return this.coachResponse(lastUser);
+      return this.coachResponse(lastUser, input.tools);
     }
 
     if (
@@ -197,7 +197,10 @@ export class FakeAIProvider implements AIProvider {
     };
   }
 
-  private coachResponse(lastUser: string): CreateResponseResult {
+  private coachResponse(
+    lastUser: string,
+    tools: Array<Record<string, unknown>>,
+  ): CreateResponseResult {
     if (
       lastUser.includes("IGNORE PREVIOUS INSTRUCTIONS") ||
       lastUser.includes("delete all cases")
@@ -227,6 +230,54 @@ export class FakeAIProvider implements AIProvider {
       };
     }
 
+    const hasWebSearch = tools.some(
+      (tool) =>
+        tool.type === "web_search" || tool.type === "web_search_2025_08_26",
+    );
+    const organisationName = extractUntrustedOrganisationName(lastUser);
+    const researchRequest = isExplicitExternalResearchRequest(lastUser);
+
+    if (isOrganisationNameQuestion(lastUser) && organisationName) {
+      return this.coachJson(
+        `The organisation name is ${organisationName}.`,
+        organisationName.includes("HODL")
+          ? "/platform/settings/ai"
+          : "/platform",
+      );
+    }
+
+    if (researchRequest && !hasWebSearch) {
+      return this.coachJson(
+        "Public web research is disabled for this organisation. An organisation administrator can enable it in LeanAI Settings.",
+        "/platform/settings/ai",
+      );
+    }
+
+    if (researchRequest && hasWebSearch) {
+      const subject = organisationName ?? "the requested topic";
+      return {
+        ...this.coachJson(
+          `Public web findings about ${subject} are summarised from external sources. Treat them as untrusted evidence, not Lean Excellence Hub records.`,
+          "/platform/settings/ai",
+        ),
+        externalSources: [
+          {
+            title: `${subject} — public site`,
+            url: "https://www.hodltokenclub.com/",
+          },
+          {
+            title: "Example source",
+            url: "https://example.com/research",
+          },
+        ],
+        webSearch: {
+          used: true,
+          invocationCount: 1,
+          sourceCount: 2,
+        },
+      };
+    }
+
     const maturity =
       lastUser.includes("Intervention: maturity_first_setup") ||
       /"module":\{"key":"maturity"/.test(lastUser);
@@ -234,25 +285,37 @@ export class FakeAIProvider implements AIProvider {
       ? "This organisation has no published Maturity Framework yet. Creating and publishing a framework lets teams assess operational excellence against one shared standard. Open Maturity Framework authoring to draft pillars and questions, then publish a version. LeanAI will not publish it for you."
       : "This setup step is still incomplete. Follow the recommended Lean Excellence Hub route to finish configuration. LeanAI will not make administrative changes automatically.";
 
+    return this.coachJson(
+      message,
+      maturity ? "/platform/maturity/models" : "/platform/settings/structure",
+      maturity
+        ? [
+            "What does publishing a framework change?",
+            "What should the first version include?",
+          ]
+        : ["What should we do next?"],
+      lastUser.includes('"canConfigureModule":false')
+        ? "You do not currently have permission to change this configuration. Ask an organisation owner or the person who manages this module."
+        : "",
+      maturity ? "Open Maturity Frameworks" : "Continue setup",
+    );
+  }
+
+  private coachJson(
+    message: string,
+    route: string,
+    followUps: string[] = ["What should we do next?"],
+    permissionNote = "",
+    nextLabel = "Continue setup",
+  ): CreateResponseResult {
     return {
       outputText: message,
       parsedJson: {
         message,
-        next_step_label: maturity
-          ? "Open Maturity Frameworks"
-          : "Continue setup",
-        next_step_route: maturity
-          ? "/platform/maturity/models"
-          : "/platform/settings/structure",
-        permission_note: lastUser.includes('"canConfigureModule":false')
-          ? "You do not currently have permission to change this configuration. Ask an organisation owner or the person who manages this module."
-          : "",
-        follow_up_prompts: maturity
-          ? [
-              "What does publishing a framework change?",
-              "What should the first version include?",
-            ]
-          : ["What should we do next?"],
+        next_step_label: nextLabel,
+        next_step_route: route,
+        permission_note: permissionNote,
+        follow_up_prompts: followUps,
       },
       toolCalls: [],
       usage: {
@@ -287,4 +350,47 @@ export class FakeAIProvider implements AIProvider {
       },
     };
   }
+}
+
+function extractUserRequest(lastUser: string): string {
+  const marker = "User request:";
+  const index = lastUser.lastIndexOf(marker);
+  return index >= 0 ? lastUser.slice(index + marker.length) : lastUser;
+}
+
+function extractUntrustedOrganisationName(lastUser: string): string | null {
+  const nameMatch = lastUser.match(
+    /"organisation_name"\s*:\s*"((?:\\.|[^"\\])*)"/,
+  );
+  if (nameMatch?.[1]) {
+    return nameMatch[1];
+  }
+  const nestedMatch = lastUser.match(
+    /"organisation"\s*:\s*\{[^}]*"name"\s*:\s*"((?:\\.|[^"\\])*)"/,
+  );
+  return nestedMatch?.[1] ?? null;
+}
+
+function isOrganisationNameQuestion(lastUser: string): boolean {
+  const request = extractUserRequest(lastUser).toLowerCase();
+  return (
+    request.includes("organisation name") ||
+    request.includes("organization name") ||
+    request.includes("what is our organisation") ||
+    request.includes("what is our organization")
+  );
+}
+
+function isExplicitExternalResearchRequest(lastUser: string): boolean {
+  const request = extractUserRequest(lastUser).toLowerCase();
+  return (
+    request.includes("research") ||
+    request.includes("search") ||
+    request.includes("on the web") ||
+    request.includes("online") ||
+    /\blatest\b/.test(request) ||
+    /\brecent\b/.test(request) ||
+    request.includes("current best") ||
+    request.includes("iso 9001")
+  );
 }

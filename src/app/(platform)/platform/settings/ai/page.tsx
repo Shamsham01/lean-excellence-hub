@@ -16,7 +16,7 @@ export default async function AiSettingsPage() {
   const supabase = await createServerSupabaseClient();
   const { data: settings } = await supabase
     .from("organisation_ai_settings")
-    .select("ai_enabled, monthly_token_ceiling")
+    .select("ai_enabled, monthly_token_ceiling, web_search_enabled")
     .maybeSingle();
 
   const { data: usageSummary, error: usageSummaryError } = await supabase.rpc(
@@ -35,6 +35,7 @@ export default async function AiSettingsPage() {
       <AiSettingsForm
         initialEnabled={settings?.ai_enabled ?? false}
         initialMonthlyTokenCeiling={settings?.monthly_token_ceiling ?? null}
+        initialWebSearchEnabled={settings?.web_search_enabled ?? false}
         providerAvailable={isApplicationAiProviderAvailable()}
         usageSummary={(usageSummary as Record<string, unknown> | null) ?? null}
         usageLoadError={usageLoadError}

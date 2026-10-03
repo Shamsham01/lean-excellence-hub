@@ -16,6 +16,7 @@ import type {
   LeanAiInterventionCandidate,
 } from "@/modules/leanai-context/interventions/types";
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
+import { loadCurrentOrganisationIdentity } from "@/modules/organisations/context";
 import { runCoachAiTurn } from "@/platform/ai/coach-orchestrator";
 import type { CoachEnvelope } from "@/platform/ai/types";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -76,10 +77,22 @@ export async function explainLeanAiCoachIntervention(input: {
       };
     }
 
-    const [snapshot, permissions] = await Promise.all([
+    const [snapshot, permissions, organisation] = await Promise.all([
       loadLeanAiContextualSnapshot(),
       loadLeanAiInterventionPermissions(),
+      loadCurrentOrganisationIdentity(),
     ]);
+    if (
+      !organisation ||
+      organisation.organisationId !== snapshot.journey.organisationId
+    ) {
+      return {
+        ok: false,
+        source: "static",
+        reason: "permission_denied",
+        message: "The workspace organisation changed. Reload LeanAI.",
+      };
+    }
 
     const readinessItem = snapshot.readiness.items.find(
       (item) => item.key === definition.readinessKey,
@@ -131,6 +144,8 @@ export async function explainLeanAiCoachIntervention(input: {
       permissions,
       surface: input.surface,
       canUseAi: true,
+      organisationName: organisation.organisationName,
+      webSearchEnabled: false,
     });
 
     // The browser cannot select which AI conversation receives a Coach turn.

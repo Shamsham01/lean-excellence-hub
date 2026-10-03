@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
 
 import {
   ensureLeanAiAssistantOpen,
   loginAndSelectOrganisation,
   provisionLeanAiContextE2eUser,
+  resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
 
@@ -118,6 +120,46 @@ function expectViewportLocked(
   );
 }
 
+async function asOrganisationClient(
+  user: LeanAiContextE2eUser,
+  organisationName: string,
+) {
+  const { url, publishableKey } = resolveSupabaseEnv();
+  if (!url || !publishableKey) {
+    throw new Error("Supabase URL and publishable key are required");
+  }
+  const client = createClient(url, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const signedIn = await client.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (signedIn.error) {
+    throw signedIn.error;
+  }
+  const organisations = await client.rpc("list_my_eligible_organisations");
+  if (organisations.error) {
+    throw organisations.error;
+  }
+  const match = (
+    organisations.data as Array<{
+      organisation_id: string;
+      organisation_name: string;
+    }>
+  ).find((row) => row.organisation_name === organisationName);
+  if (!match) {
+    throw new Error(`Organisation ${organisationName} was not listed`);
+  }
+  const switched = await client.rpc("switch_organisation", {
+    target_organisation_id: match.organisation_id,
+  });
+  if (switched.error) {
+    throw switched.error;
+  }
+  return client;
+}
+
 test.describe("LeanAI persistent workspace assistant", () => {
   test.describe.configure({ mode: "serial" });
   test.skip(
@@ -141,6 +183,10 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
     ).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-pane")).toHaveAttribute(
+      "data-organisation-name",
+      user.organisationAName,
+    );
     await expect(
       page.getByTestId("leanai-assistant-new-conversation"),
     ).toBeEnabled();
@@ -311,5 +357,104 @@ test.describe("LeanAI persistent workspace assistant", () => {
     expectViewportLocked(reopened);
     expect(reopened.feed?.scrollTop ?? 0).toBeGreaterThan(0);
     expect(reopened.main?.scrollTop).toBe(afterMain.main?.scrollTop);
+  });
+
+  test("organisation name is server-resolved and independent from the active site", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await waitForAssistantContext(page);
+    await expect(page.getByTestId("leanai-assistant-pane")).toHaveAttribute(
+      "data-organisation-name",
+      user.organisationAName,
+    );
+
+    await loginAndSelectOrganisation(page, user, user.organisationBName);
+    await waitForAssistantContext(page);
+    await expect(page.getByTestId("leanai-assistant-pane")).toHaveAttribute(
+      "data-organisation-name",
+      user.organisationBName,
+    );
+    await expect(page.getByTestId("leanai-assistant-pane")).not.toHaveAttribute(
+      "data-organisation-name",
+      user.organisationAName,
+    );
+  });
+
+  test("web research stays off by default and can render mocked sources when enabled", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const client = await asOrganisationClient(user, user.organisationAName);
+    const enabled = await client.rpc("update_organisation_ai_settings", {
+      target_ai_enabled: true,
+      target_monthly_token_ceiling: 100000,
+      target_web_search_enabled: false,
+    });
+    if (enabled.error) {
+      throw enabled.error;
+    }
+
+    await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await page.goto("/platform/settings/ai");
+    await expect(page.getByTestId("ai-settings-page")).toBeVisible();
+    await expect(page.getByTestId("ai-settings-web-search")).not.toBeChecked();
+    await screenshotIfPossible(page, "leanai-settings-web-search-off.png");
+
+    await waitForAssistantContext(page);
+    await expect(page.getByTestId("leanai-assistant-pane")).toHaveAttribute(
+      "data-web-search-enabled",
+      "false",
+    );
+    await expect(page.getByLabel("Ask LeanAI")).toBeEnabled();
+    await page.getByLabel("Ask LeanAI").fill("What is our organisation name?");
+    await page.getByTestId("leanai-assistant-send").click();
+    await expect(
+      page.getByTestId("leanai-assistant-assistant-message"),
+    ).toContainText(user.organisationAName, { timeout: 30_000 });
+
+    await page
+      .getByLabel("Ask LeanAI")
+      .fill("Research HODL Token Club on the web.");
+    await page.getByTestId("leanai-assistant-send").click();
+    await expect(
+      page.getByTestId("leanai-assistant-assistant-message").last(),
+    ).toContainText(/disabled for this organisation/i, { timeout: 30_000 });
+    await expect(page.getByTestId("leanai-assistant-sources")).toHaveCount(0);
+
+    const turnedOn = await client.rpc("update_organisation_ai_settings", {
+      target_ai_enabled: true,
+      target_monthly_token_ceiling: 100000,
+      target_web_search_enabled: true,
+    });
+    if (turnedOn.error) {
+      throw turnedOn.error;
+    }
+
+    await page.reload();
+    await waitForAssistantContext(page);
+    await expect(page.getByTestId("leanai-assistant-pane")).toHaveAttribute(
+      "data-web-search-enabled",
+      "true",
+    );
+    await page.getByTestId("ai-settings-web-search").check();
+    await page.getByTestId("ai-settings-save").click();
+    await expect(page.getByText("Settings saved.")).toBeVisible();
+
+    await page
+      .getByLabel("Ask LeanAI")
+      .fill("Research HODL Token Club on the web.");
+    await page.getByTestId("leanai-assistant-send").click();
+    await expect(page.getByTestId("leanai-assistant-sources")).toBeVisible({
+      timeout: 30_000,
+    });
+    const sourceLink = page.getByTestId("leanai-assistant-source-link").first();
+    await expect(sourceLink).toHaveAttribute("href", /https:\/\//);
+    await expect(sourceLink).toHaveAttribute("target", "_blank");
+    await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+    await screenshotIfPossible(page, "leanai-assistant-web-sources.png");
   });
 });

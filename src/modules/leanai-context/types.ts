@@ -134,6 +134,7 @@ export type LeanAiContextualSnapshot = {
   retention: LeanAiRetentionPolicy;
   applicationAiAvailable: boolean;
   proactiveAssistanceEnabled: boolean;
+  webSearchEnabled: boolean;
 };
 
 export type LeanAiSemanticEventInput = {

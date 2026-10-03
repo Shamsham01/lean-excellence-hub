@@ -37,6 +37,10 @@ import { resolveAIProvider } from "@/platform/ai/registry";
 import type { CoachEnvelope } from "@/platform/ai/types";
 import type { CoachExplainContext } from "@/modules/leanai-context/coach/context-assembly";
 import { wrapUntrustedCoachData } from "@/modules/leanai-context/coach/context-assembly";
+import {
+  coachStructuredPayload,
+  workspaceAssistantTools,
+} from "@/platform/ai/web-search";
 
 const PROBLEM_SOLVING_TOOL_NAMES = new Set([
   "get_problem_solving_case_overview",
@@ -63,6 +67,7 @@ export type RunCoachAiTurnInput = {
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   context: CoachExplainContext;
   provenanceHash: string;
+  webSearchEnabled?: boolean;
 };
 
 export type RunCoachAiTurnResult = {
@@ -71,6 +76,7 @@ export type RunCoachAiTurnResult = {
   envelope: CoachEnvelope;
   model: string;
   logicalModelClass: "economy" | "standard" | "deep";
+  externalSources: Array<{ title: string; url: string }>;
 };
 
 export async function runCoachAiTurn(
@@ -102,8 +108,15 @@ export async function runCoachAiTurn(
   );
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
   const isAssistantTurn = input.task === "setup_conversation";
+  const webSearchEnabled =
+    isAssistantTurn &&
+    input.webSearchEnabled === true &&
+    input.context.capabilities.webSearchEnabled === true;
+  const tools = isAssistantTurn
+    ? workspaceAssistantTools(webSearchEnabled)
+    : [];
   const systemPrompt = isAssistantTurn
-    ? buildCoachAssistantSystemPrompt()
+    ? buildCoachAssistantSystemPrompt({ webSearchEnabled })
     : buildCoachExplainSystemPrompt();
   const promptHash = isAssistantTurn
     ? hashCoachAssistantPrompt(systemPrompt)
@@ -152,7 +165,7 @@ export async function runCoachAiTurn(
         ...input.conversationHistory,
         { role: "user", content: userMessage },
       ],
-      tools: [],
+      tools,
       maxOutputTokens,
       timeoutMs,
       expectsStructuredOutput: true,
@@ -202,6 +215,31 @@ export async function runCoachAiTurn(
       }
     }
 
+    const externalSources = webSearchEnabled
+      ? (response.externalSources ?? [])
+      : [];
+    const webSearchUsed = webSearchEnabled && response.webSearch?.used === true;
+    if (webSearchUsed) {
+      toolCallRecords.push({
+        sequence_number: toolCallRecords.length + 1,
+        tool_name: "web_search",
+        arguments_json: {},
+        arguments_hash: hashJson({}),
+        status: "succeeded",
+        result_metadata_json: {
+          used: true,
+          invocation_count: response.webSearch?.invocationCount ?? 0,
+          source_count: externalSources.length,
+        },
+        duration_ms: 0,
+      });
+    }
+
+    const structuredPayload = coachStructuredPayload({
+      envelope: envelope as unknown as Record<string, unknown>,
+      externalSources,
+    });
+
     const manifest = {
       context_type: "coach",
       logical_model_class: logicalModelClass,
@@ -210,14 +248,22 @@ export async function runCoachAiTurn(
       intervention_key: input.context.intervention.key,
       module_key: input.context.module.key,
       context_hash: input.provenanceHash,
-      denied_tool_count: toolCallRecords.length,
+      denied_tool_count: toolCallRecords.filter(
+        (record) => record.status === "denied",
+      ).length,
+      web_search_enabled: webSearchEnabled,
+      web_search_used: webSearchUsed,
+      web_search_invocation_count: webSearchUsed
+        ? (response.webSearch?.invocationCount ?? 0)
+        : 0,
+      external_source_count: externalSources.length,
     };
 
     const { data: assistantMessageId, error: finishError } =
       await input.supabase.rpc("finish_ai_run", {
         target_ai_run_id: runId,
         target_assistant_content: envelope.message,
-        target_structured_payload: envelope,
+        target_structured_payload: structuredPayload,
         target_manifest_version: input.context.contractVersion,
         target_manifest_json: manifest,
         target_manifest_hash: hashJson(manifest),
@@ -243,6 +289,7 @@ export async function runCoachAiTurn(
       envelope,
       model,
       logicalModelClass,
+      externalSources,
     };
   } catch (error) {
     await input.supabase.rpc("fail_ai_run", {

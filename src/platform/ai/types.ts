@@ -157,6 +157,12 @@ export type CreateResponseResult = {
   parsedJson?: Record<string, unknown>;
   toolCalls: ProviderToolCallRequest[];
   usage: ProviderUsage;
+  externalSources?: Array<{ title: string; url: string }>;
+  webSearch?: {
+    used: boolean;
+    invocationCount: number;
+    sourceCount: number;
+  };
 };
 
 export type ProviderHealth = {

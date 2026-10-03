@@ -1,6 +1,6 @@
 begin;
 
-select plan(27);
+select plan(28);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -107,6 +107,12 @@ select is(
   public.get_leanai_contextual_snapshot() ->> 'proactive_assistance_enabled',
   'true',
   'existing snapshot RPC exposes proactive assistance without a new public SECURITY DEFINER'
+);
+
+select is(
+  public.get_leanai_contextual_snapshot() ->> 'web_search_enabled',
+  'false',
+  'snapshot exposes web search disabled by default'
 );
 
 insert into leanai_context_ids (key, id)

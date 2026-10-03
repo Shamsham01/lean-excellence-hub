@@ -159,6 +159,7 @@ export async function rejectProblemSolvingAiProposal(input: {
 export async function updateOrganisationAiSettings(input: {
   aiEnabled: boolean;
   monthlyTokenCeiling?: number | null;
+  webSearchEnabled?: boolean;
 }): Promise<ActionResult> {
   try {
     const supabase = await createServerSupabaseClient();
@@ -167,6 +168,7 @@ export async function updateOrganisationAiSettings(input: {
       ...(typeof input.monthlyTokenCeiling === "number"
         ? { target_monthly_token_ceiling: input.monthlyTokenCeiling }
         : {}),
+      target_web_search_enabled: input.webSearchEnabled === true,
     });
     if (error) throw error;
     revalidatePath("/platform/settings/ai");

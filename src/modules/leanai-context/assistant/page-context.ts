@@ -5,6 +5,7 @@ export function coachPageContextFromView(
   view: LeanAiAssistantView,
 ): CoachPageContext {
   return {
+    organisationName: view.organisation.name,
     module: view.page.module,
     workflow: view.page.workflow,
     route: view.page.route,
