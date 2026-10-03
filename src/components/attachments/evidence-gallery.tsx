@@ -147,7 +147,7 @@ function EvidencePreviewCard({
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          <span className="min-w-0 flex-1 truncate font-medium">
+          <span className="w-full min-w-0 font-medium break-all">
             {item.filename}
           </span>
           <span className="text-xs text-muted-foreground">

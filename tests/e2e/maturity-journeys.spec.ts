@@ -281,7 +281,9 @@ test.describe("Milestone 5 maturity journeys", () => {
       "../fixtures/maturity-evidence/sample.png",
     );
     await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
-    await expect(page.getByText("sample.png")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Evidence attached")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
 
@@ -296,8 +298,9 @@ test.describe("Milestone 5 maturity journeys", () => {
         .locator('[data-testid="level-choice"][data-level-number="4"]')
         .first(),
     ).toHaveAttribute("data-selected", "true", { timeout: 15_000 });
-    await expect(page.getByText("sample.png")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
 
     await page.getByTestId("submit-assessment").click();
@@ -308,7 +311,6 @@ test.describe("Milestone 5 maturity journeys", () => {
         .locator('[data-current="true"]'),
     ).toHaveText("Submitted");
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
-    await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
   });

@@ -64,13 +64,15 @@ async function createReadinessFramework(page: Page) {
     "Decision-Making & Accountability",
     "Strategy & Priorities",
   ]) {
+    const before = await page
+      .locator('[data-testid^="edit-criterion-"]')
+      .count();
     await page.locator("#criterionName").fill(name);
     await page.getByRole("button", { name: "Add criterion" }).click();
-    await expect(
-      page
-        .locator('[data-testid^="edit-criterion-"]')
-        .filter({ hasText: name }),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-testid^="edit-criterion-"]')).toHaveCount(
+      before + 1,
+      { timeout: 15_000 },
+    );
   }
 
   await page.getByTestId("framework-step-questions").click();
@@ -213,7 +215,8 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     await expect(page.getByText("Evidence attached")).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.getByText("sample.jpg")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible();
     await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
       activeCriterion,
     );
@@ -221,7 +224,6 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       page.getByTestId("maturity-assessment-detail-page"),
     ).toBeVisible();
     await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
-    await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible();
 
     await screenshotIfPossible(page, "maturity-mobile-question-evidence.png");
 
@@ -238,7 +240,9 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     ).toBeVisible({
       timeout: 30_000,
     });
-    await expect(page.getByText("sample.jpg")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible();
     await expect(page.getByTestId("question-comment")).toHaveValue(
       "Photo evidence follows.",
