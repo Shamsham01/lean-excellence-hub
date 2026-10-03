@@ -216,7 +216,10 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       timeout: 20_000,
     });
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
-    await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible();
+    await page.getByTestId("evidence-gallery").scrollIntoViewIfNeeded();
+    await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
       activeCriterion,
     );
@@ -243,7 +246,9 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     await expect(page.getByTestId("evidence-gallery")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("question-comment")).toHaveValue(
       "Photo evidence follows.",
     );

@@ -82,9 +82,14 @@ function EvidencePreviewCard({
         setLoadedPath(authorisedPath);
         setPreviewError(false);
       })
-      .catch(() => {
+      .catch((previewLoadError) => {
         if (!cancelled) {
           setPreviewError(true);
+          onError?.(
+            previewLoadError instanceof Error
+              ? previewLoadError.message
+              : "Unable to preview this evidence.",
+          );
         }
       });
 
