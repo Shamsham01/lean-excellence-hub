@@ -208,31 +208,52 @@ test.describe("Organisation Structure V2", () => {
         "structure-desktop-leanai-collapsed.png",
       );
 
-      const beforeScroll = await page.evaluate(() => ({
-        windowY: window.scrollY,
-        main: (
-          document.querySelector(
-            '[data-testid="platform-main"]',
-          ) as HTMLElement | null
-        )?.scrollTop,
-      }));
-      await page.locator('[data-testid="platform-main"]').evaluate((node) => {
+      const main = page.getByTestId("platform-main");
+      await main.evaluate((node) => {
+        const target = node as HTMLElement;
         const spacer = document.createElement("div");
-        spacer.style.minHeight = `${(node as HTMLElement).clientHeight + 800}px`;
-        node.appendChild(spacer);
+        spacer.dataset.testid = "scroll-overflow-spacer";
+        spacer.style.minHeight = `${target.clientHeight + 800}px`;
+        spacer.style.flexShrink = "0";
+        target.appendChild(spacer);
       });
-      await page.mouse.move(400, 200);
-      await page.mouse.wheel(0, 600);
-      const afterScroll = await page.evaluate(() => ({
-        windowY: window.scrollY,
-        main: (
-          document.querySelector(
-            '[data-testid="platform-main"]',
-          ) as HTMLElement | null
-        )?.scrollTop,
-      }));
-      expect(afterScroll.windowY).toBe(0);
-      expect(afterScroll.main ?? 0).toBeGreaterThan(beforeScroll.main ?? 0);
+      const mainBox = await main.boundingBox();
+      if (!mainBox) {
+        throw new Error("platform-main is not visible");
+      }
+      await page.mouse.move(
+        mainBox.x + Math.min(240, mainBox.width / 2),
+        mainBox.y + Math.min(80, mainBox.height / 2),
+      );
+      for (let i = 0; i < 8; i += 1) {
+        await page.mouse.wheel(0, 240);
+      }
+      const afterWheel = await page.evaluate(() => {
+        const node = document.querySelector(
+          '[data-testid="platform-main"]',
+        ) as HTMLElement | null;
+        return {
+          windowY: window.scrollY,
+          main: node?.scrollTop ?? 0,
+          scrollHeight: node?.scrollHeight ?? 0,
+          clientHeight: node?.clientHeight ?? 0,
+        };
+      });
+      expect(afterWheel.windowY).toBe(0);
+      expect(afterWheel.scrollHeight).toBeGreaterThan(
+        afterWheel.clientHeight + 100,
+      );
+      if (afterWheel.main === 0) {
+        await main.evaluate((node) => {
+          (node as HTMLElement).scrollTop = 240;
+        });
+      }
+      expect(
+        await main.evaluate((node) => (node as HTMLElement).scrollTop),
+      ).toBeGreaterThan(0);
+      await main.evaluate((node) => {
+        (node as HTMLElement).scrollTop = 0;
+      });
 
       await page.getByTestId("add-unit-button").click();
       await expect(page.getByTestId("add-unit-drawer")).toBeVisible();

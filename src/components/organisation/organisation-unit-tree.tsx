@@ -94,7 +94,7 @@ function TreeNode({
             type="button"
             variant="ghost"
             size="icon"
-            className="mt-0.5 size-8 min-h-8 shrink-0"
+            className="mt-0.5 size-8 min-h-8 shrink-0 text-muted-foreground"
             aria-expanded={expanded}
             aria-label={
               expanded ? `Collapse ${node.name}` : `Expand ${node.name}`
