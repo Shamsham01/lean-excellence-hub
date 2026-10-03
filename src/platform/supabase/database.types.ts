@@ -5019,6 +5019,48 @@ export type Database = {
           },
         ]
       }
+      maturity_assessment_participants: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          participant_role: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          participant_role?: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          participant_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_assessment_participants_assessment_fkey"
+            columns: ["organisation_id", "assessment_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_assessments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "maturity_assessment_participants_member_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       maturity_assessment_question_notes: {
         Row: {
           assessment_id: string
@@ -5070,48 +5112,6 @@ export type Database = {
             columns: ["organisation_id", "question_id"]
             isOneToOne: false
             referencedRelation: "template_questions"
-            referencedColumns: ["organisation_id", "id"]
-          },
-        ]
-      }
-      maturity_assessment_participants: {
-        Row: {
-          assessment_id: string
-          created_at: string
-          id: string
-          membership_id: string
-          organisation_id: string
-          participant_role: string
-        }
-        Insert: {
-          assessment_id: string
-          created_at?: string
-          id?: string
-          membership_id: string
-          organisation_id: string
-          participant_role?: string
-        }
-        Update: {
-          assessment_id?: string
-          created_at?: string
-          id?: string
-          membership_id?: string
-          organisation_id?: string
-          participant_role?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "maturity_assessment_participants_assessment_fkey"
-            columns: ["organisation_id", "assessment_id"]
-            isOneToOne: false
-            referencedRelation: "maturity_assessments"
-            referencedColumns: ["organisation_id", "id"]
-          },
-          {
-            foreignKeyName: "maturity_assessment_participants_member_fkey"
-            columns: ["organisation_id", "membership_id"]
-            isOneToOne: false
-            referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
