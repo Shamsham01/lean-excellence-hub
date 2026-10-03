@@ -218,18 +218,18 @@ export async function selectFirstScopeEntity(page: Page) {
 }
 
 export async function answerVisibleScore(page: Page, score = 3) {
+  const levelChoices = page.getByTestId("level-choice");
+  const numberInput = page.locator('input[type="number"]').first();
+  await expect(levelChoices.or(numberInput)).toBeVisible({ timeout: 15_000 });
+
   const preferred = page
     .locator(`[data-testid="level-choice"][data-level-number="${score}"]`)
     .first();
-  const fallback = page.getByTestId("level-choice").first();
-  const numberInput = page.locator('input[type="number"]').first();
-
   if ((await preferred.count()) > 0) {
     await preferred.click();
-  } else if ((await fallback.count()) > 0) {
-    await fallback.click();
+  } else if ((await levelChoices.count()) > 0) {
+    await levelChoices.first().click();
   } else {
-    await expect(numberInput).toBeVisible();
     await numberInput.click();
     await numberInput.fill(String(score));
     await numberInput.blur();

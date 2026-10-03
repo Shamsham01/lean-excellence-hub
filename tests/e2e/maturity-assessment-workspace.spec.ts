@@ -44,7 +44,7 @@ async function createReadinessFramework(page: Page) {
     "Developing",
     "Established",
   ].entries()) {
-    await page.getByLabel("Level name").fill(name);
+    await page.locator("#levelName").fill(name);
     await page.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByTestId(`edit-level-${index + 1}`)).toBeVisible({
       timeout: 15_000,
@@ -64,7 +64,7 @@ async function createReadinessFramework(page: Page) {
     "Decision-Making & Accountability",
     "Strategy & Priorities",
   ]) {
-    await page.getByLabel("Criterion name").fill(name);
+    await page.locator("#criterionName").fill(name);
     await page.getByRole("button", { name: "Add criterion" }).click();
     await expect(
       page

@@ -141,8 +141,8 @@ test.describe("Milestone 5 maturity journeys", () => {
       .getByTestId("assessor-comment")
       .fill("Observed consistent Gemba cadence on the shop floor.");
     await page.getByTestId("assessor-comment").blur();
-    await expect(page.getByText("Saving comment")).not.toBeVisible({
-      timeout: 10000,
+    await expect(page.getByText("Saving…")).not.toBeVisible({
+      timeout: 10_000,
     });
     await page.waitForTimeout(500);
 
