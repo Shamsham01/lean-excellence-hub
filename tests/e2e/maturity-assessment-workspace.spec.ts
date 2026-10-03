@@ -19,6 +19,17 @@ const jpegPath = join(
   "../fixtures/maturity-evidence/sample.jpg",
 );
 
+async function screenshotViewport(page: Page, name: string) {
+  try {
+    await page.screenshot({
+      path: `/opt/cursor/artifacts/${name}`,
+      fullPage: false,
+    });
+  } catch {
+    // Artifact directory is optional outside Cloud Agent runs.
+  }
+}
+
 async function screenshotIfPossible(page: Page, name: string) {
   try {
     await page.screenshot({
@@ -28,6 +39,11 @@ async function screenshotIfPossible(page: Page, name: string) {
   } catch {
     // Artifact directory is optional outside Cloud Agent runs.
   }
+}
+
+async function scrollDeepIntoCriterion(page: Page) {
+  await page.getByTestId("assessor-comment").scrollIntoViewIfNeeded();
+  await page.getByTestId("assessment-actions-summary").scrollIntoViewIfNeeded();
 }
 
 async function makeAssessmentContentTall(page: Page) {
@@ -345,11 +361,11 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
       "Pillar 1 of 1 · Criterion 1 of 3",
     );
-    await screenshotIfPossible(page, "maturity-mobile-criterion-top.png");
+    await screenshotViewport(page, "maturity-mobile-criterion-top.png");
 
-    await page.getByTestId("next-criterion").scrollIntoViewIfNeeded();
+    await scrollDeepIntoCriterion(page);
     await expectStickyMobileContextVisible(page);
-    await screenshotIfPossible(
+    await screenshotViewport(
       page,
       "maturity-mobile-sticky-header-scrolled.png",
     );
@@ -377,15 +393,15 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     expect(questionBox!.y).toBeLessThan(700);
     const nextScrollY = await page.evaluate(() => window.scrollY);
     expect(nextScrollY).toBeLessThan(previousScrollY - 50);
-    await screenshotIfPossible(page, "maturity-mobile-after-next.png");
+    await screenshotViewport(page, "maturity-mobile-after-next.png");
 
-    await page.getByTestId("next-criterion").scrollIntoViewIfNeeded();
+    await scrollDeepIntoCriterion(page);
     await page.getByTestId("criteria-drawer-open").click();
     await expect(page.getByTestId("criteria-drawer")).toBeVisible();
     await expect(
       page.locator('[data-testid="criteria-drawer"] [data-active="true"]'),
     ).toContainText("Decision-Making & Accountability");
-    await screenshotIfPossible(page, "maturity-mobile-criteria-drawer-nav.png");
+    await screenshotViewport(page, "maturity-mobile-criteria-drawer-nav.png");
     await page
       .getByTestId("criteria-drawer")
       .getByRole("button", { name: /Strategy & Priorities/i })

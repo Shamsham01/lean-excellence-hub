@@ -245,6 +245,67 @@ export function AssessmentWorkspace({
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
+        {/*
+          html/body use overflow-x: clip, which prevents position:sticky in
+          Chromium. Keep this compact bar fixed below platform-mobile-chrome.
+        */}
+        <div className="lg:hidden">
+          <div
+            aria-hidden
+            className="h-[5.75rem]"
+            data-testid="assessment-mobile-context-spacer"
+          />
+          <header
+            data-testid="assessment-mobile-context"
+            className="fixed inset-x-0 top-[calc(3.85rem+env(safe-area-inset-top,0px))] z-30 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-sm sm:px-6"
+          >
+            <div className="mx-auto flex max-w-6xl min-w-0 items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <p
+                  className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+                  data-testid="assessment-mobile-pillar-name"
+                >
+                  {pillar.name}
+                </p>
+                <h2
+                  className="truncate text-sm leading-tight font-semibold text-foreground"
+                  data-testid="assessment-mobile-criterion-name"
+                >
+                  {criterion.name}
+                </h2>
+                <p
+                  className="text-[11px] leading-tight text-muted-foreground"
+                  data-testid="assessment-criterion-position"
+                >
+                  {formatAssessmentNavPosition(navPosition)}
+                </p>
+                <p
+                  className="text-[11px] leading-tight text-muted-foreground"
+                  data-testid="assessment-mobile-completion"
+                >
+                  {readiness.answeredRequired} / {readiness.totalRequired}{" "}
+                  complete · {readiness.completionPercent}%
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                data-testid="criteria-drawer-open"
+                onClick={() => setCriteriaOpen(true)}
+              >
+                Criteria
+              </Button>
+            </div>
+            <Progress
+              className="mx-auto mt-2 h-1 max-w-6xl"
+              value={readiness.completionPercent}
+              aria-label="Assessment progress"
+            />
+          </header>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3">
           <AssessmentStatusBadge status={status} />
           <span className="text-sm text-muted-foreground capitalize">
@@ -302,58 +363,8 @@ export function AssessmentWorkspace({
         <div
           ref={criterionTopRef}
           data-testid="assessment-criterion-top"
-          className="scroll-mt-[calc(3.85rem+env(safe-area-inset-top,0px))] lg:scroll-mt-2"
-        >
-          <header
-            data-testid="assessment-mobile-context"
-            className="sticky top-[calc(3.85rem+env(safe-area-inset-top,0px))] z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:hidden"
-          >
-            <div className="flex min-w-0 items-start gap-2">
-              <div className="min-w-0 flex-1">
-                <p
-                  className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-                  data-testid="assessment-mobile-pillar-name"
-                >
-                  {pillar.name}
-                </p>
-                <h2
-                  className="truncate text-sm leading-tight font-semibold text-foreground"
-                  data-testid="assessment-mobile-criterion-name"
-                >
-                  {criterion.name}
-                </h2>
-                <p
-                  className="text-[11px] leading-tight text-muted-foreground"
-                  data-testid="assessment-criterion-position"
-                >
-                  {formatAssessmentNavPosition(navPosition)}
-                </p>
-                <p
-                  className="text-[11px] leading-tight text-muted-foreground"
-                  data-testid="assessment-mobile-completion"
-                >
-                  {readiness.answeredRequired} / {readiness.totalRequired}{" "}
-                  complete · {readiness.completionPercent}%
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                data-testid="criteria-drawer-open"
-                onClick={() => setCriteriaOpen(true)}
-              >
-                Criteria
-              </Button>
-            </div>
-            <Progress
-              className="mt-2 h-1"
-              value={readiness.completionPercent}
-              aria-label="Assessment progress"
-            />
-          </header>
-        </div>
+          className="h-px scroll-mt-[calc(3.85rem+env(safe-area-inset-top,0px)+5.75rem)] lg:scroll-mt-2"
+        />
 
         <div className="hidden lg:block">
           <p className="typography-section-title">{pillar.name}</p>

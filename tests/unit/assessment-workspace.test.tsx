@@ -426,8 +426,7 @@ describe("AssessmentWorkspace", () => {
     });
 
     expect(screen.getByTestId("assessment-mobile-context")).toHaveClass(
-      "sticky",
-      "lg:hidden",
+      "fixed",
     );
     expect(
       screen.getByTestId("assessment-mobile-pillar-name"),
@@ -449,7 +448,10 @@ describe("AssessmentWorkspace", () => {
     const desktop = screen.getByTestId("assessment-desktop-progress");
     const mobile = screen.getByTestId("assessment-mobile-context");
     expect(desktop).toHaveClass("hidden", "lg:flex");
-    expect(mobile).toHaveClass("lg:hidden");
+    expect(mobile).toHaveClass("fixed");
+    expect(screen.getByTestId("assessment-mobile-context-spacer")).toHaveClass(
+      "h-[5.75rem]",
+    );
     expect(desktop).toHaveTextContent("1 / 3 required responses");
     expect(desktop).toHaveTextContent("33% complete");
     expect(
