@@ -17,6 +17,7 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import { isAssistantUuid } from "./constants";
 import { buildMaturityAuthoringState } from "./maturity-state";
+import { buildMaturityAssessmentAssistantState } from "./maturity-assessment-state";
 import { assistantPageDefinitionFor } from "./product-pages";
 import { parseAssistantRoute } from "./route-map";
 import { selectAssistantIntervention } from "./select-recommendation";
@@ -272,6 +273,25 @@ export async function resolveLeanAiAssistantView(
     }
   }
 
+  if (
+    identity.workflow === "maturity_assessment" &&
+    isAssistantUuid(identity.entityId)
+  ) {
+    const snapshotState = await loadMaturityAssessmentAssistantSnapshot(
+      supabase,
+      identity.entityId,
+      identity.search,
+    );
+    if (snapshotState) {
+      entityValidated = true;
+      contextLabel = snapshotState.contextLabel;
+      summary = definition.summary;
+      Object.assign(relevantState, snapshotState.relevantState);
+      allowedActions.push(...snapshotState.allowedActions);
+      extraRemaining.push(...snapshotState.remaining);
+    }
+  }
+
   const remainingSetup = flattenRemaining(snapshot.readiness.items);
   for (const reason of extraRemaining) {
     if (
@@ -335,6 +355,154 @@ export async function resolveLeanAiAssistantView(
 }
 
 type AssistantSupabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+async function loadMaturityAssessmentAssistantSnapshot(
+  supabase: AssistantSupabase,
+  assessmentId: string,
+  search: string,
+): Promise<ReturnType<typeof buildMaturityAssessmentAssistantState> | null> {
+  const { data: assessment } = await supabase
+    .from("maturity_assessments")
+    .select(
+      "id, status, assessment_type, model_version_id, submission_id, unit_id",
+    )
+    .eq("id", assessmentId)
+    .maybeSingle();
+  if (!assessment) {
+    return null;
+  }
+
+  const params = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search,
+  );
+  const requestedCriterionId = params.get("criterion");
+  const requestedQuestionId = params.get("question");
+
+  const [
+    { data: unit },
+    { data: version },
+    { data: pillars },
+    { data: answers },
+  ] = await Promise.all([
+    supabase
+      .from("organisation_units")
+      .select("name")
+      .eq("id", assessment.unit_id)
+      .maybeSingle(),
+    supabase
+      .from("maturity_model_versions")
+      .select("display_name")
+      .eq("id", assessment.model_version_id)
+      .maybeSingle(),
+    supabase
+      .from("maturity_pillars")
+      .select("id, name, position")
+      .eq("model_version_id", assessment.model_version_id)
+      .order("position"),
+    supabase
+      .from("template_answers")
+      .select("question_id, text_value, number_value, is_not_applicable")
+      .eq("submission_id", assessment.submission_id),
+  ]);
+
+  const pillarRows = pillars ?? [];
+  const pillarIds = pillarRows.map((pillar) => pillar.id);
+  const { data: criterionRows } =
+    pillarIds.length > 0
+      ? await supabase
+          .from("maturity_criteria")
+          .select("id, name, pillar_id, position")
+          .in("pillar_id", pillarIds)
+          .order("position")
+      : { data: [] };
+  const criteria = criterionRows ?? [];
+  const criterionIds = criteria.map((criterion) => criterion.id);
+  const { data: linkRows } =
+    criterionIds.length > 0
+      ? await supabase
+          .from("maturity_criterion_questions")
+          .select("criterion_id, question_id")
+          .in("criterion_id", criterionIds)
+      : { data: [] };
+  const links = linkRows ?? [];
+  const questionIds = [...new Set(links.map((link) => link.question_id))];
+  const { data: questionRows } =
+    questionIds.length > 0
+      ? await supabase
+          .from("template_questions")
+          .select("id, prompt, is_required")
+          .in("id", questionIds)
+      : { data: [] };
+  const questionById = new Map(
+    (questionRows ?? []).map((row) => [row.id, row]),
+  );
+  const answerById = new Map(
+    (answers ?? []).map((row) => [
+      row.question_id,
+      {
+        text_value: row.text_value,
+        number_value: row.number_value,
+        is_not_applicable: row.is_not_applicable,
+      },
+    ]),
+  );
+
+  let totalRequired = 0;
+  let answeredRequired = 0;
+  let currentPillarName: string | null = null;
+  let currentCriterionName: string | null = null;
+  let currentQuestionPrompt: string | null = null;
+  const firstCriterion = criteria[0];
+  const activeCriterionId =
+    requestedCriterionId && criterionIds.includes(requestedCriterionId)
+      ? requestedCriterionId
+      : (firstCriterion?.id ?? null);
+
+  for (const criterion of criteria) {
+    const pillar = pillarRows.find((row) => row.id === criterion.pillar_id);
+    if (criterion.id === activeCriterionId) {
+      currentCriterionName = criterion.name;
+      currentPillarName = pillar?.name ?? null;
+    }
+    for (const link of links.filter(
+      (item) => item.criterion_id === criterion.id,
+    )) {
+      const question = questionById.get(link.question_id);
+      if (!question) continue;
+      if (
+        criterion.id === activeCriterionId &&
+        (requestedQuestionId
+          ? question.id === requestedQuestionId
+          : currentQuestionPrompt == null)
+      ) {
+        currentQuestionPrompt = question.prompt;
+      }
+      if (!question.is_required) continue;
+      totalRequired += 1;
+      const answer = answerById.get(question.id);
+      const answered =
+        Boolean(answer?.is_not_applicable) ||
+        Boolean(answer?.text_value) ||
+        answer?.number_value != null;
+      if (answered) {
+        answeredRequired += 1;
+      }
+    }
+  }
+
+  return buildMaturityAssessmentAssistantState({
+    assessmentType: assessment.assessment_type,
+    status: assessment.status,
+    unitName: unit?.name ?? "Unknown unit",
+    frameworkName: version?.display_name ?? null,
+    currentPillarName,
+    currentCriterionName,
+    currentQuestionPrompt,
+    answeredRequired,
+    totalRequired,
+    remainingRequired: Math.max(0, totalRequired - answeredRequired),
+  });
+}
 
 async function loadMaturityAuthoringStructure(
   supabase: AssistantSupabase,

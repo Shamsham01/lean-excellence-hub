@@ -216,3 +216,41 @@ export async function selectFirstScopeEntity(page: Page) {
   await entitySelect.selectOption(value);
   return value;
 }
+
+export async function answerVisibleScore(page: Page, score = 3) {
+  const levelChoices = page.getByTestId("level-choice");
+  const numberInput = page.locator('input[type="number"]').first();
+  await expect(levelChoices.first().or(numberInput)).toBeVisible({
+    timeout: 15_000,
+  });
+
+  const preferred = page
+    .locator(`[data-testid="level-choice"][data-level-number="${score}"]`)
+    .first();
+  if ((await preferred.count()) > 0) {
+    await preferred.click();
+  } else if ((await levelChoices.count()) > 0) {
+    await levelChoices.first().click();
+  } else {
+    await numberInput.click();
+    await numberInput.fill(String(score));
+    await numberInput.blur();
+  }
+
+  await expect(page.getByText("Saving…")).not.toBeVisible({
+    timeout: 10_000,
+  });
+}
+
+export async function answerAllVisibleScores(page: Page, score = 3) {
+  const nextButton = page.getByRole("button", { name: "Next", exact: true });
+  while (await nextButton.isEnabled()) {
+    if ((await page.getByTestId("level-choice").count()) > 0) {
+      await answerVisibleScore(page, score);
+    }
+    await nextButton.click();
+  }
+  if ((await page.getByTestId("level-choice").count()) > 0) {
+    await answerVisibleScore(page, score);
+  }
+}

@@ -138,6 +138,41 @@ function definitionFor(
     };
   }
 
+  if (identity.workflow === "maturity_assessment") {
+    return {
+      module: "maturity",
+      workflow: identity.workflow,
+      pageTitle: "Maturity assessment",
+      contextLabel: "Maturity · Assessment",
+      summary:
+        "Score the current criterion against the published framework. LeanAI can explain guidance and evidence; it will not choose or save a score.",
+      terminology: [
+        {
+          term: "Criterion",
+          meaning:
+            "A specific capability under a pillar. Each criterion contains scored questions and optional evidence.",
+        },
+        {
+          term: "Required response",
+          meaning:
+            "A question that must be answered or marked N/A before the assessment can be completed or submitted.",
+        },
+      ],
+      starterPrompts: [
+        "Guide me through this assessment",
+        "Explain this criterion",
+        "What evidence should I look for?",
+        "Help me score this objectively",
+        "What is still incomplete?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "LeanAI must not choose or save a maturity score. The assessor records the score in the workspace.",
+        "Framework scoring guidance, criterion guidance, and level descriptors are authoritative. LeanAI explains them; it does not replace them.",
+      ],
+    };
+  }
+
   if (
     identity.workflow === "maturity_overview" ||
     identity.workflow === "maturity_models"

@@ -105,6 +105,10 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
     disable trigger maturity_action_context_guard_immutable;
   alter table public.maturity_assessment_criterion_notes
     disable trigger maturity_assessment_criterion_notes_guard_immutable;
+  if to_regclass('public.maturity_assessment_question_notes') is not null then
+    alter table public.maturity_assessment_question_notes
+      disable trigger maturity_assessment_question_notes_guard_immutable;
+  end if;
   alter table public.maturity_official_results
     disable trigger maturity_official_results_prevent_delete;
   alter table public.maturity_official_result_pillars
@@ -123,6 +127,11 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
 
   delete from public.maturity_assessment_criterion_notes
   where organisation_id = target_org_id;
+
+  if to_regclass('public.maturity_assessment_question_notes') is not null then
+    delete from public.maturity_assessment_question_notes
+    where organisation_id = target_org_id;
+  end if;
 
   delete from public.maturity_official_result_pillars
   where organisation_id = target_org_id;
@@ -175,6 +184,10 @@ ${buildTenantPrivateInfrastructurePurgeStatements("target_org_id")}
     enable trigger maturity_action_context_guard_immutable;
   alter table public.maturity_assessment_criterion_notes
     enable trigger maturity_assessment_criterion_notes_guard_immutable;
+  if to_regclass('public.maturity_assessment_question_notes') is not null then
+    alter table public.maturity_assessment_question_notes
+      enable trigger maturity_assessment_question_notes_guard_immutable;
+  end if;
   alter table public.maturity_official_results
     enable trigger maturity_official_results_prevent_delete;
   alter table public.maturity_official_result_pillars

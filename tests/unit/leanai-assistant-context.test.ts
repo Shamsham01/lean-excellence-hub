@@ -12,6 +12,7 @@ import {
   suggestionsSetupGuidance,
 } from "@/modules/leanai-context/assistant/suggestions-state";
 import { buildMaturityAuthoringState } from "@/modules/leanai-context/assistant/maturity-state";
+import { buildMaturityAssessmentAssistantState } from "@/modules/leanai-context/assistant/maturity-assessment-state";
 import { coachPageContextFromView } from "@/modules/leanai-context/assistant/page-context";
 import type { LeanAiAssistantView } from "@/modules/leanai-context/assistant/types";
 import {
@@ -109,6 +110,50 @@ describe("LeanAI assistant route context", () => {
     );
     expect(identity.workflow).toBe("maturity_authoring");
     expect(identity.entityId).toBeNull();
+  });
+
+  it("maps a Maturity assessment id to assessment context, not Organisation structure", () => {
+    const assessmentId = "3376cea8-7b56-42df-9d78-ad7a8bf701fd";
+    const identity = parseAssistantRoute(
+      `/platform/maturity/assessments/${assessmentId}`,
+      `?criterion=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`,
+    );
+    const page = assistantPageDefinitionFor(identity);
+    expect(identity.workflow).toBe("maturity_assessment");
+    expect(identity.entityId).toBe(assessmentId);
+    expect(identity.pageTitle).toBe("Maturity assessment");
+    expect(page.contextLabel).toBe("Maturity · Assessment");
+    expect(page.starterPrompts).toEqual([
+      "Guide me through this assessment",
+      "Explain this criterion",
+      "What evidence should I look for?",
+      "Help me score this objectively",
+      "What is still incomplete?",
+    ]);
+    expect(page.facts.join(" ")).toMatch(/must not choose or save/);
+  });
+
+  it("builds trusted maturity assessment assistant state from the current criterion", () => {
+    const state = buildMaturityAssessmentAssistantState({
+      assessmentType: "self",
+      status: "in_progress",
+      unitName: "Cornwall Plant",
+      frameworkName: "E2E Readiness Framework",
+      currentPillarName: "Leadership & Governance",
+      currentCriterionName: "Strategy & Priorities",
+      currentQuestionPrompt: "Are priorities visible?",
+      answeredRequired: 24,
+      totalRequired: 27,
+      remainingRequired: 3,
+    });
+
+    expect(state.contextLabel).toBe("Maturity assessment · Self · in progress");
+    expect(state.relevantState.currentPillar).toBe("Leadership & Governance");
+    expect(state.relevantState.currentCriterion).toBe("Strategy & Priorities");
+    expect(state.relevantState.completion).toBe(
+      "24 of 27 required responses complete",
+    );
+    expect(state.allowedActions.join(" ")).toMatch(/without choosing a score/);
   });
 
   it("maps Organisation structure to a dedicated Structure context", () => {

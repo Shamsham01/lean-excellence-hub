@@ -17,6 +17,7 @@ import {
   startFormalAssessmentForBodmin,
   uploadEvidenceFile,
 } from "./helpers/cookieworks-maturity";
+import { answerVisibleScore } from "./helpers/maturity-assessment";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const fixtureDirectory = join(
@@ -130,21 +131,25 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
       page.getByRole("heading", { name: "Assessment" }),
     ).toBeVisible();
 
-    const scoreInput = page.locator('input[type="number"]').first();
-    await expect(scoreInput).toBeVisible({ timeout: 15_000 });
-    await scoreInput.click();
-    await scoreInput.pressSequentially("3");
-    await scoreInput.blur();
-    await expect(page.getByText("Saving…")).not.toBeVisible({
-      timeout: 10_000,
+    await expect(page.getByTestId("level-choice").first()).toBeVisible({
+      timeout: 15_000,
     });
+    await answerVisibleScore(page, 3);
 
     await page.goto("/platform/maturity");
     await page.goto(`/platform/maturity/assessments/${journey.assessmentId}`);
-    await expect(page.locator('input[type="number"]').first()).toHaveValue("3");
+    await expect(
+      page
+        .locator('[data-testid="level-choice"][data-selected="true"]')
+        .first(),
+    ).toHaveAttribute("data-level-number", "3");
 
     await page.reload();
-    await expect(page.locator('input[type="number"]').first()).toHaveValue("3");
+    await expect(
+      page
+        .locator('[data-testid="level-choice"][data-selected="true"]')
+        .first(),
+    ).toHaveAttribute("data-level-number", "3");
   });
 
   test("MAT0-09: evidence upload for image and document", async ({ page }) => {
@@ -152,14 +157,18 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
     await page.goto(`/platform/maturity/assessments/${journey.assessmentId}`);
 
     await uploadEvidenceFile(page, sampleImagePath);
-    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
 
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await uploadEvidenceFile(page, sampleDocumentPath);
-    await expect(page.getByText("sample.txt")).toBeVisible();
+    await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="evidence-file-card-"]'),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Previous", exact: true }).click();
-    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
   });
 
   test("MAT0-10: operator cannot upload evidence on formal assessment", async ({
@@ -194,7 +203,7 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
         .getByTestId("formal-lifecycle-indicator")
         .locator('[data-current="true"]'),
     ).toHaveText("Submitted");
-    await expect(page.getByText("sample.png")).toBeVisible();
+    await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();
     await expect(page.getByTestId("publish-official-result")).toHaveCount(0);
     await expect(page.getByTestId("submit-assessment")).toHaveCount(0);
 
@@ -239,7 +248,7 @@ test.describe("CookieWorks maturity smoke (MAT0)", () => {
         .locator('[data-current="true"]'),
     ).toHaveText("Published");
     await expect(page.getByTestId("submit-assessment")).toHaveCount(0);
-    await expect(page.locator('input[type="number"]').first()).toBeDisabled();
+    await expect(page.getByTestId("level-choice").first()).toBeDisabled();
     await expect(page.getByTestId("evidence-file-input")).toHaveCount(0);
   });
 

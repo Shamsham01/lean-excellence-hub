@@ -158,7 +158,27 @@ export async function saveCriterionNote(
     },
   );
   if (error) return { error: error.message };
-  revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
+  // Keep the workspace mounted. Criterion/question note persistence is
+  // already reflected in client state; an RSC refresh here raced evidence
+  // uploads and in-flight answer saves.
+  return { ok: true };
+}
+
+export async function saveQuestionNote(
+  assessmentId: string,
+  questionId: string,
+  commentText: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc(
+    "upsert_maturity_assessment_question_note",
+    {
+      target_assessment_id: assessmentId,
+      target_question_id: questionId,
+      target_comment_text: commentText,
+    },
+  );
+  if (error) return { error: error.message };
   return { ok: true };
 }
 
@@ -199,7 +219,8 @@ export async function saveAssessmentAnswer(
   if (error) {
     return { error: error.message };
   }
-  revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
+  // Optimistic client state already shows the answer. Refreshing the RSC
+  // tree after every score save remounted the workspace and raced evidence.
   return { ok: true };
 }
 
@@ -233,6 +254,7 @@ export async function publishOfficialResult(assessmentId: string) {
   );
   if (error) return { error: error.message };
   revalidatePath("/platform/maturity");
+  revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
   return { resultId: data as string };
 }
 
@@ -626,7 +648,9 @@ export async function linkMaturityEvidence(
   }
   const { error } = await supabase.rpc("link_maturity_evidence", rpcArgs);
   if (error) return { error: error.message };
-  revalidatePath(`/platform/maturity/assessments/${assessmentId}`);
+  // Do not revalidate here. Evidence is already persisted and shown from
+  // local pending state. Immediate RSC refresh after photo upload previously
+  // destroyed the assessment workspace (React #441) and raced answer saves.
   return { ok: true };
 }
 

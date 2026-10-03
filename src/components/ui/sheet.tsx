@@ -16,7 +16,7 @@ export function SheetContent({
   side = "left",
   ...props
 }: ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & {
-  side?: "left" | "right";
+  side?: "left" | "right" | "bottom";
 }) {
   return (
     <SheetPrimitive.Portal>
@@ -28,6 +28,8 @@ export function SheetContent({
             "inset-y-0 left-0 h-full w-[min(100%,18rem)] border-r border-sidebar-border",
           side === "right" &&
             "inset-y-0 right-0 h-full w-[min(100%,24rem)] border-l border-sidebar-border",
+          side === "bottom" &&
+            "inset-x-0 bottom-0 max-h-[85vh] w-full rounded-t-xl border-t border-sidebar-border",
           className,
         )}
         {...props}

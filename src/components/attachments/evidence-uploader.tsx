@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { Upload, X } from "lucide-react";
 
 import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
@@ -10,6 +10,7 @@ import {
   EVIDENCE_FILE_HELP,
   validateEvidenceFile,
 } from "@/lib/attachments/evidence-file-rules";
+import { isEvidenceImageMimeType } from "@/lib/attachments/evidence-preview";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
 export type EvidenceItem = {
@@ -18,6 +19,7 @@ export type EvidenceItem = {
   mime_type: string;
   byte_size: number;
   storage_object_path?: string | null;
+  preview_url?: string | null;
   question_id?: string | null;
   section_id?: string | null;
   finding_id?: string | null;
@@ -77,6 +79,7 @@ export function EvidenceUploader({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pendingEvidence, setPendingEvidence] = useState<EvidenceItem[]>([]);
+  const fileInputId = useId();
 
   const filteredEvidence = filter
     ? existingEvidence.filter(filter)
@@ -146,6 +149,9 @@ export function EvidenceUploader({
         byte_size: validation.byteSize,
         storage_object_path: storagePath,
       };
+      if (isEvidenceImageMimeType(validation.mimeType)) {
+        pendingItem.preview_url = URL.createObjectURL(file);
+      }
       if (createdItemExtras?.question_id !== undefined) {
         pendingItem.question_id = createdItemExtras.question_id;
       }
@@ -167,8 +173,9 @@ export function EvidenceUploader({
         pendingItem,
       ]);
       setState("success");
-      // Link actions already revalidate. A delayed router.refresh() can collide
-      // with a later answer save and blank Saving/Saved feedback.
+      // Do not router.refresh() here. Delayed refreshes collide with answer
+      // saves (5S evidence race), and maturity evidence linking no longer
+      // revalidates the assessment RSC tree after photo upload.
       setTimeout(() => setState("idle"), 2000);
     },
     [canEdit, createdItemExtras, onInitiate, onConfirm, onLink],
@@ -196,37 +203,62 @@ export function EvidenceUploader({
       />
 
       {canEdit ? (
-        <div
-          className={`rounded-lg border border-dashed p-4 transition-colors ${
-            dragOver ? "border-primary bg-accent/50" : "border-border"
-          }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            onFileChange(e.dataTransfer.files);
-          }}
-        >
-          <div className="flex flex-col items-center gap-2 text-center text-sm">
-            <Upload className="size-5 text-muted-foreground" />
-            <p>Drag and drop a photo or file, or select one to upload.</p>
+        <>
+          <input
+            id={fileInputId}
+            type="file"
+            className="sr-only"
+            accept={EVIDENCE_ACCEPT}
+            onChange={(e) => onFileChange(e.target.files)}
+            data-testid="evidence-file-input"
+          />
+          <div className="flex flex-col gap-2 sm:hidden">
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                className="sr-only"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                onChange={(e) => onFileChange(e.target.files)}
+                data-testid="evidence-camera-input"
+              />
+              <Button type="button" className="min-h-11 w-full" asChild>
+                <span>Take / add photo</span>
+              </Button>
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full"
+              asChild
+            >
+              <label htmlFor={fileInputId}>Choose file</label>
+            </Button>
             <p className="text-xs text-muted-foreground">
               {EVIDENCE_FILE_HELP}
             </p>
-            <label className="cursor-pointer">
-              <span className="sr-only">Select evidence file</span>
-              <input
-                type="file"
-                className="hidden"
-                accept={EVIDENCE_ACCEPT}
-                capture="environment"
-                onChange={(e) => onFileChange(e.target.files)}
-                data-testid="evidence-file-input"
-              />
+          </div>
+          <div
+            className={`hidden rounded-lg border border-dashed p-4 transition-colors sm:block ${
+              dragOver ? "border-primary bg-accent/50" : "border-border"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              onFileChange(e.dataTransfer.files);
+            }}
+          >
+            <div className="flex flex-col items-center gap-2 text-center text-sm">
+              <Upload className="size-5 text-muted-foreground" />
+              <p>Drag and drop a photo or file, or select one to upload.</p>
+              <p className="text-xs text-muted-foreground">
+                {EVIDENCE_FILE_HELP}
+              </p>
               <Button
                 type="button"
                 size="sm"
@@ -234,11 +266,10 @@ export function EvidenceUploader({
                 className="min-h-11"
                 asChild
               >
-                <span>Select file</span>
+                <label htmlFor={fileInputId}>Select file</label>
               </Button>
-            </label>
+            </div>
           </div>
-
           {state === "uploading" ? (
             <p className="mt-2 text-center text-sm text-muted-foreground">
               Uploading…
@@ -258,7 +289,7 @@ export function EvidenceUploader({
               {error}
             </p>
           ) : null}
-        </div>
+        </>
       ) : null}
     </div>
   );

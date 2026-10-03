@@ -14,6 +14,7 @@ export const ASSISTANT_WORKFLOWS = [
   "maturity_overview",
   "maturity_models",
   "maturity_authoring",
+  "maturity_assessment",
   "suggestions_overview",
   "programme_configuration",
   "five_s",

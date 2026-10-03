@@ -134,6 +134,19 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       entityId: isAssistantUuid(entityId) ? entityId : null,
     };
   }
+  const maturityAssessment = pathname.match(
+    /^\/platform\/maturity\/assessments\/([^/]+)$/,
+  );
+  if (maturityAssessment) {
+    const entityId = maturityAssessment[1] ?? null;
+    return {
+      module: "maturity",
+      workflow: "maturity_assessment",
+      pageTitle: "Maturity assessment",
+      surface: "maturity",
+      entityId: isAssistantUuid(entityId) ? entityId : null,
+    };
+  }
   if (pathname.startsWith("/platform/maturity/")) {
     return {
       module: "maturity",
