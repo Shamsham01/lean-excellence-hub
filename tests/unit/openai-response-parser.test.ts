@@ -196,6 +196,69 @@ describe("parseStructuredOpenAiResponse", () => {
     expect(result.structuredOutput).toBeUndefined();
   });
 
+  it("extracts url_citation and web_search_call sources without executing tools", () => {
+    const result = parseStructuredOpenAiResponse(
+      completedResponse(
+        JSON.stringify({
+          message: "Public findings about HODL Token Club.",
+          next_step_label: "",
+          next_step_route: "",
+          permission_note: "",
+          follow_up_prompts: [],
+        }),
+        {
+          output: [
+            {
+              type: "web_search_call",
+              id: "ws_1",
+              action: {
+                type: "search",
+                queries: ["HODL Token Club"],
+                sources: [
+                  { type: "url", url: "https://www.hodltokenclub.com/" },
+                  { type: "url", url: "javascript:alert(1)" },
+                ],
+              },
+            },
+            {
+              type: "message",
+              content: [
+                {
+                  type: "output_text",
+                  text: '{"message":"Public findings about HODL Token Club."}',
+                  annotations: [
+                    {
+                      type: "url_citation",
+                      title: "HODL Token Club",
+                      url: "https://www.hodltokenclub.com/",
+                    },
+                    {
+                      type: "url_citation",
+                      title: "Example source",
+                      url: "https://example.com/research",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ),
+      { ...parserContext, formatName: "coach_envelope" },
+    );
+
+    expect(result.toolCalls).toEqual([]);
+    expect(result.webSearch).toEqual({
+      used: true,
+      invocationCount: 1,
+      sourceCount: 2,
+    });
+    expect(result.externalSources).toEqual([
+      { title: "hodltokenclub.com", url: "https://www.hodltokenclub.com/" },
+      { title: "Example source", url: "https://example.com/research" },
+    ]);
+  });
+
   it("preserves proposals for orchestrator persistence", () => {
     const result = parseStructuredOpenAiResponse(
       completedResponse(validTransportJson()),

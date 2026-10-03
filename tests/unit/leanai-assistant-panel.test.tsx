@@ -12,6 +12,8 @@ import type { LeanAiAssistantView } from "@/modules/leanai-context/assistant/typ
 const view: LeanAiAssistantView = {
   organisationId: "org-a",
   membershipId: "mem-a",
+  organisation: { name: "Apex Manufacturing" },
+  capabilities: { webSearchEnabled: false },
   applicationAiAvailable: false,
   conversationAvailable: false,
   conversationUnavailableReason:
@@ -230,6 +232,96 @@ describe("LeanAI assistant panel", () => {
     expect(
       await screen.findByTestId("leanai-assistant-assistant-message"),
     ).toHaveTextContent("campaign");
+  });
+
+  it("renders safe source links from a researched answer and restores them on reload", async () => {
+    loadView.mockResolvedValue({
+      ok: true,
+      view: {
+        ...view,
+        applicationAiAvailable: true,
+        conversationAvailable: true,
+        conversationUnavailableReason: null,
+        capabilities: { webSearchEnabled: true },
+      },
+    });
+    sendMessage.mockResolvedValue({
+      ok: true,
+      sessionId: "session-sources",
+      envelope: { message: "Public findings about HODL Token Club." },
+      modelClass: "standard",
+      externalSources: [
+        {
+          title: "HODL Token Club",
+          url: "https://www.hodltokenclub.com/",
+        },
+      ],
+    });
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Ask LeanAI")).toBeEnabled();
+    });
+    fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
+      target: { value: "Research HODL Token Club on the web." },
+    });
+    fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+
+    const sourceLink = await screen.findByTestId(
+      "leanai-assistant-source-link",
+    );
+    expect(sourceLink).toHaveAttribute(
+      "href",
+      "https://www.hodltokenclub.com/",
+    );
+    expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(sourceLink).toHaveAttribute("target", "_blank");
+    expect(screen.getByTestId("leanai-assistant-sources")).toHaveTextContent(
+      "hodltokenclub.com",
+    );
+    expect(sendMessage.mock.calls[0]?.[0]).not.toHaveProperty(
+      "webSearchEnabled",
+    );
+
+    cleanup();
+    loadConversation.mockResolvedValue({
+      ok: true,
+      sessionId: "session-sources",
+      messages: [
+        {
+          id: "assistant-1",
+          role: "assistant",
+          content: "Public findings about HODL Token Club.",
+          createdAt: "2026-10-03T09:00:01.000Z",
+          source: "ai",
+          externalSources: [
+            {
+              title: "HODL Token Club",
+              url: "https://www.hodltokenclub.com/",
+            },
+          ],
+        },
+      ],
+    });
+    window.sessionStorage.setItem(
+      "leanai-assistant-session:org-a",
+      "session-sources",
+    );
+
+    render(
+      <LeanAiAssistantProvider organisationId="org-a">
+        <LeanAiAssistantChrome />
+      </LeanAiAssistantProvider>,
+    );
+
+    expect(
+      await screen.findByTestId("leanai-assistant-source-link"),
+    ).toHaveAttribute("href", "https://www.hodltokenclub.com/");
   });
 
   it("disables New while a message is sending", async () => {

@@ -53,6 +53,11 @@ core domains continue without AI.
 provider, model). No hard-coded pricing. Logical model classes (`economy`, `standard`, `deep`)
 are mapped server-side; see [ADR-0018](../adr/ADR-0018-general-leanai-coach-sessions.md).
 
+Public web research is an additional provider cost. Organisation admins opt in through
+`organisation_ai_settings.web_search_enabled` (default false). Workspace assistant runs record
+whether web search was used, invocation count, and displayed source count. Full web page contents
+are not logged. Monthly token ceilings still apply.
+
 ### Security controls (authoritative)
 
 - Session-bound context: Problem Solving sessions require a real case; Coach
@@ -61,6 +66,9 @@ are mapped server-side; see [ADR-0018](../adr/ADR-0018-general-leanai-coach-sess
 - Strict tool registry; no write tools
 - Source allowlist per run + re-authorization on click
 - Prompt injection defence is tool security, not prompt text alone
+- Persistent LeanAI workspace chat may offer the OpenAI Responses `web_search` built-in tool
+  only when the current organisation has `web_search_enabled`. Problem Solving AI does not.
+  Web results are untrusted evidence, never system instructions.
 
 ## Related
 

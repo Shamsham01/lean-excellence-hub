@@ -12,7 +12,8 @@ import {
   suggestionsSetupGuidance,
 } from "@/modules/leanai-context/assistant/suggestions-state";
 import { buildMaturityAuthoringState } from "@/modules/leanai-context/assistant/maturity-state";
-import { visibleCoachUserMessage } from "@/modules/leanai-context/coach/session-validation";
+import { coachPageContextFromView } from "@/modules/leanai-context/assistant/page-context";
+import type { LeanAiAssistantView } from "@/modules/leanai-context/assistant/types";
 import {
   countUserTurnsAfterBoundary,
   failClosedConversationStartedAt,
@@ -21,6 +22,7 @@ import {
   validateConversationBoundary,
 } from "@/modules/leanai-context/assistant/conversation-boundary";
 import { coachProductKnowledgeFor } from "@/modules/leanai-context/coach/product-knowledge";
+import { visibleCoachUserMessage } from "@/modules/leanai-context/coach/session-validation";
 import {
   LEANAI_INTERVENTION_PERMISSION_KEYS,
   leanAiInterventionByKey,
@@ -60,6 +62,7 @@ function snapshotFromFacts(
     retention: { eventRetentionDays: 90, cleanupAvailable: true },
     applicationAiAvailable: false,
     proactiveAssistanceEnabled: true,
+    webSearchEnabled: false,
   };
 }
 
@@ -278,6 +281,40 @@ describe("Maturity authoring context", () => {
 });
 
 describe("Coach history display", () => {
+  it("maps server-resolved organisation name independently from the active site", () => {
+    const view: LeanAiAssistantView = {
+      organisationId: "org-a",
+      membershipId: "mem-a",
+      organisation: { name: "HODL Token Club" },
+      capabilities: { webSearchEnabled: false },
+      applicationAiAvailable: true,
+      conversationAvailable: true,
+      conversationUnavailableReason: null,
+      contextLabel: "LeanAI Settings",
+      page: {
+        module: "lean_ai",
+        workflow: "lean_ai_settings",
+        route: "/platform/settings/ai",
+        pageTitle: "LeanAI Settings",
+        authoringStep: null,
+        entityValidated: false,
+      },
+      site: { mode: "site", activeSiteName: "The Club" },
+      terminology: [],
+      starterPrompts: [],
+      summary: "LeanAI settings",
+      remainingSetup: [],
+      relevantState: {},
+      allowedActions: [],
+      recommendation: null,
+    };
+    const page = coachPageContextFromView(view);
+    expect(page.organisationName).toBe("HODL Token Club");
+    expect(page.activeSiteName).toBe("The Club");
+    expect(page.organisationName).not.toBe(page.activeSiteName);
+    expect(page.pageTitle).toBe("LeanAI Settings");
+  });
+
   it("shows only the user request from wrapped Coach turns", () => {
     const stored = [
       "UNTRUSTED_ORGANISATION_DATA_START",

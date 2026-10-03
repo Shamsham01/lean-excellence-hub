@@ -54,6 +54,7 @@ function snapshotFromFacts(
     retention: { eventRetentionDays: 90, cleanupAvailable: true },
     applicationAiAvailable: options.applicationAiAvailable ?? false,
     proactiveAssistanceEnabled: options.proactiveAssistanceEnabled ?? true,
+    webSearchEnabled: false,
   };
 }
 

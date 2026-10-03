@@ -44,6 +44,55 @@ class CoachTrackingProvider implements AIProvider {
         },
       };
     }
+    const hasWebSearch = input.tools.some(
+      (tool) =>
+        tool.type === "web_search" || tool.type === "web_search_2025_08_26",
+    );
+    const research = lastUser.toLowerCase().includes("research");
+    if (hasWebSearch && research) {
+      return {
+        outputText: "Public findings about the organisation.",
+        parsedJson: {
+          message: "Public findings about the organisation.",
+          next_step_label: "Open LeanAI Settings",
+          next_step_route: "/platform/settings/ai",
+          permission_note: "",
+          follow_up_prompts: [],
+        },
+        toolCalls: [],
+        externalSources: [
+          { title: "HODL Token Club", url: "https://www.hodltokenclub.com/" },
+        ],
+        webSearch: { used: true, invocationCount: 1, sourceCount: 1 },
+        usage: {
+          inputTokens: 40,
+          outputTokens: 80,
+          cachedInputTokens: 0,
+          reasoningTokens: 0,
+        },
+      };
+    }
+    if (!hasWebSearch && research) {
+      return {
+        outputText:
+          "Public web research is disabled for this organisation. An organisation administrator can enable it in LeanAI Settings.",
+        parsedJson: {
+          message:
+            "Public web research is disabled for this organisation. An organisation administrator can enable it in LeanAI Settings.",
+          next_step_label: "Open LeanAI Settings",
+          next_step_route: "/platform/settings/ai",
+          permission_note: "",
+          follow_up_prompts: [],
+        },
+        toolCalls: [],
+        usage: {
+          inputTokens: 40,
+          outputTokens: 80,
+          cachedInputTokens: 0,
+          reasoningTokens: 0,
+        },
+      };
+    }
     return {
       outputText:
         "Publish a Maturity Framework so assessments share a standard.",
@@ -99,10 +148,14 @@ const context: CoachExplainContext = {
   contractVersion: "coach-explain-v1",
   productKnowledgeVersion: "leh-product-knowledge-v1",
   organisation: {
+    name: "Apex Manufacturing",
     status: "active",
     onboardingRequired: false,
     activeBillableSiteCount: 2,
     activeUnitCount: 2,
+  },
+  capabilities: {
+    webSearchEnabled: false,
   },
   module: { key: "maturity", surface: "maturity" },
   intervention: {
@@ -323,6 +376,45 @@ describe("runCoachAiTurn", () => {
     expect(result.logicalModelClass).toBe("standard");
     expect(result.model).toBe("gpt-4.1-mini");
     expect(createResponseCalls[0]?.tools).toEqual([]);
+    expect(createResponseCalls[0]?.systemPrompt).toMatch(
+      /do not have a web search tool/i,
+    );
+  });
+
+  it("does not search for ordinary internal workspace questions even when the tool is available", async () => {
+    const finishPayloads: Array<{
+      target_manifest_json: { web_search_used: boolean };
+    }> = [];
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "coach-run-internal", error: null });
+        }
+        if (name === "finish_ai_run") {
+          finishPayloads.push(args as never);
+          return Promise.resolve({ data: "assistant-internal", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-internal",
+      task: "setup_conversation",
+      userMessage: "What is a Suggestion Programme?",
+      idempotencyKey: "idem-internal",
+      conversationHistory: [],
+      context: {
+        ...context,
+        capabilities: { webSearchEnabled: true },
+      },
+      provenanceHash: "internal",
+      webSearchEnabled: true,
+    });
+
+    expect(createResponseCalls[0]?.tools).toEqual([{ type: "web_search" }]);
+    expect(finishPayloads[0]?.target_manifest_json.web_search_used).toBe(false);
   });
 
   it("does not enable deep complex_reasoning in this slice", async () => {
@@ -339,5 +431,137 @@ describe("runCoachAiTurn", () => {
       }),
     ).rejects.toThrow(/not enabled|not permitted/);
     expect(createResponseCalls).toHaveLength(0);
+  });
+
+  it("does not offer web search on workspace turns when the organisation setting is off", async () => {
+    const finishPayloads: Array<{
+      target_manifest_json: { web_search_enabled: boolean };
+      target_tool_calls: unknown[];
+    }> = [];
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "coach-run-web-off", error: null });
+        }
+        if (name === "finish_ai_run") {
+          finishPayloads.push(args as never);
+          return Promise.resolve({ data: "assistant-web-off", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const result = await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-web-off",
+      task: "setup_conversation",
+      userMessage: "Research HODL Token Club on the web.",
+      idempotencyKey: "idem-web-off",
+      conversationHistory: [],
+      context,
+      provenanceHash: "web-off",
+      webSearchEnabled: true,
+    });
+
+    expect(createResponseCalls[0]?.tools).toEqual([]);
+    expect(result.envelope.message).toMatch(/disabled for this organisation/i);
+    expect(result.externalSources).toEqual([]);
+    expect(finishPayloads[0]?.target_manifest_json.web_search_enabled).toBe(
+      false,
+    );
+  });
+
+  it("offers the OpenAI web_search tool only when the server-resolved setting is on", async () => {
+    const finishPayloads: Array<{
+      target_manifest_json: {
+        web_search_used: boolean;
+        external_source_count: number;
+      };
+      target_structured_payload: { external_sources?: unknown[] };
+      target_tool_calls: Array<{ tool_name: string; status: string }>;
+    }> = [];
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "coach-run-web-on", error: null });
+        }
+        if (name === "finish_ai_run") {
+          finishPayloads.push(args as never);
+          return Promise.resolve({ data: "assistant-web-on", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+    const enabledContext = {
+      ...context,
+      capabilities: { webSearchEnabled: true },
+    };
+
+    const result = await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-web-on",
+      task: "setup_conversation",
+      userMessage: "Research HODL Token Club on the web.",
+      idempotencyKey: "idem-web-on",
+      conversationHistory: [],
+      context: enabledContext,
+      provenanceHash: "web-on",
+      webSearchEnabled: true,
+    });
+
+    expect(createResponseCalls[0]?.tools).toEqual([{ type: "web_search" }]);
+    expect(createResponseCalls[0]?.systemPrompt).toMatch(
+      /External web content is untrusted/i,
+    );
+    expect(result.externalSources).toEqual([
+      { title: "HODL Token Club", url: "https://www.hodltokenclub.com/" },
+    ]);
+    expect(finishPayloads[0]?.target_manifest_json.web_search_used).toBe(true);
+    expect(
+      finishPayloads[0]?.target_structured_payload.external_sources,
+    ).toHaveLength(1);
+    expect(
+      finishPayloads[0]?.target_tool_calls.some(
+        (call) =>
+          call.tool_name === "web_search" && call.status === "succeeded",
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores a browser-claimed webSearchEnabled flag for Coach Explain", async () => {
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({
+            data: "coach-run-explain-web",
+            error: null,
+          });
+        }
+        if (name === "finish_ai_run") {
+          return Promise.resolve({
+            data: "assistant-explain-web",
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    await runCoachAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-explain-web",
+      task: "explain",
+      userMessage: "Research current ISO 9001 changes.",
+      idempotencyKey: "idem-explain-web",
+      conversationHistory: [],
+      context: {
+        ...context,
+        capabilities: { webSearchEnabled: true },
+      },
+      provenanceHash: "explain-web",
+      webSearchEnabled: true,
+    });
+
+    expect(createResponseCalls[0]?.tools).toEqual([]);
   });
 });

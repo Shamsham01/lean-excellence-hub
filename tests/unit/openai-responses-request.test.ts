@@ -23,6 +23,20 @@ describe("buildResponsesCreateParams", () => {
     expect(params).not.toHaveProperty("previous_response_id");
   });
 
+  it("includes web_search_call sources only when the web_search tool is present", () => {
+    const withSearch = buildResponsesCreateParams({
+      ...baseInput,
+      tools: [{ type: "web_search" }],
+    });
+    expect(withSearch.store).toBe(false);
+    expect(withSearch).not.toHaveProperty("previous_response_id");
+    expect(withSearch.include).toEqual(["web_search_call.action.sources"]);
+    expect(withSearch.tools).toEqual([{ type: "web_search" }]);
+
+    const withoutSearch = buildResponsesCreateParams(baseInput);
+    expect(withoutSearch.include).toBeUndefined();
+  });
+
   it("sends configured reasoning effort", () => {
     const params = buildResponsesCreateParams({
       ...baseInput,

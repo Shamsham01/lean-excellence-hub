@@ -10,10 +10,8 @@ import {
   LEANAI_ASSISTANT_MODULE_KEY,
   LEANAI_PAGE_CONTEXT_CONTRACT_VERSION,
 } from "@/modules/leanai-context/assistant/constants";
-import {
-  failClosedConversationStartedAt,
-  filterConversationAfterBoundary,
-} from "@/modules/leanai-context/assistant/conversation-boundary";
+import { failClosedConversationStartedAt } from "@/modules/leanai-context/assistant/conversation-boundary";
+import { messagesFromSessionDetail } from "@/modules/leanai-context/assistant/conversation-history";
 import { loadLeanAiAssistantView } from "@/modules/leanai-context/assistant/load";
 import { coachPageContextFromView } from "@/modules/leanai-context/assistant/page-context";
 import { parseAssistantRoute } from "@/modules/leanai-context/assistant/route-map";
@@ -30,10 +28,7 @@ import {
   mapCoachRpcError,
   type CoachAiDenialReason,
 } from "@/modules/leanai-context/coach/eligibility";
-import {
-  readTrustedCoachConversation,
-  visibleCoachUserMessage,
-} from "@/modules/leanai-context/coach/session-validation";
+import { readTrustedCoachConversation } from "@/modules/leanai-context/coach/session-validation";
 import { loadLeanAiInterventionPermissions } from "@/modules/leanai-context/interventions/load";
 import type { LeanAiInterventionCandidate } from "@/modules/leanai-context/interventions/types";
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
@@ -84,10 +79,6 @@ export type AssistantConversationResult =
     }
   | { ok: false; error: string };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
 function trustedAssistantConversation(
   detail: unknown,
   sessionId: string,
@@ -108,42 +99,6 @@ function trustedAssistantConversation(
           interventionKey: LEANAI_ASSISTANT_INTERVENTION_KEY,
         },
   );
-}
-
-function messagesFromSessionDetail(
-  detail: unknown,
-  conversationStartedAt: string | null,
-): LeanAiAssistantChatMessage[] {
-  if (!isRecord(detail) || !Array.isArray(detail.messages)) {
-    return [];
-  }
-  const mapped: LeanAiAssistantChatMessage[] = detail.messages
-    .filter(
-      (message: unknown) =>
-        isRecord(message) &&
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string",
-    )
-    .map((message) => {
-      const role = message.role as "user" | "assistant";
-      const raw = message.content as string;
-      const payload = isRecord(message.structured_payload)
-        ? message.structured_payload
-        : null;
-      const assistantText =
-        role === "assistant" && typeof payload?.message === "string"
-          ? payload.message
-          : raw;
-      return {
-        id: typeof message.id === "string" ? message.id : randomUUID(),
-        role,
-        content: role === "user" ? visibleCoachUserMessage(raw) : assistantText,
-        createdAt:
-          typeof message.created_at === "string" ? message.created_at : null,
-        source: role === "assistant" ? "ai" : "deterministic",
-      };
-    });
-  return filterConversationAfterBoundary(mapped, conversationStartedAt);
 }
 
 async function resolveWorkspaceAssistantSession(
@@ -254,6 +209,7 @@ export type AssistantChatResult =
       sessionId: string;
       envelope: CoachEnvelope;
       modelClass: "standard";
+      externalSources: Array<{ title: string; url: string }>;
     }
   | {
       ok: false;
@@ -371,6 +327,8 @@ export async function sendLeanAiAssistantMessageAction(input: {
       permissions,
       surface: identity.surface,
       canUseAi: true,
+      organisationName: view.organisation.name,
+      webSearchEnabled: view.capabilities.webSearchEnabled,
       page: coachPageContextFromView(view),
       contractVersion: COACH_ASSISTANT_CONTEXT_CONTRACT_VERSION,
     });
@@ -424,6 +382,7 @@ export async function sendLeanAiAssistantMessageAction(input: {
       conversationHistory,
       context,
       provenanceHash,
+      webSearchEnabled: view.capabilities.webSearchEnabled,
     });
 
     return {
@@ -431,6 +390,7 @@ export async function sendLeanAiAssistantMessageAction(input: {
       sessionId: resolved.sessionId,
       envelope: result.envelope,
       modelClass: "standard",
+      externalSources: result.externalSources,
     };
   } catch (error) {
     const messageText =

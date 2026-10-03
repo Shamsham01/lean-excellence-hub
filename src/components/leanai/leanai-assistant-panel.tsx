@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { hardNavigate } from "@/lib/navigation/navigate";
 import { cn } from "@/lib/utils";
+import { hostLabelFromUrl } from "@/modules/leanai-context/assistant/external-sources";
 
 export function LeanAiAssistantPanel({
   onClose,
@@ -52,6 +53,11 @@ export function LeanAiAssistantPanel({
       className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background"
       data-testid="leanai-assistant-pane"
       data-context-label={contextLabel}
+      data-organisation-name={view?.organisation.name ?? ""}
+      data-web-search-enabled={
+        view?.capabilities.webSearchEnabled ? "true" : "false"
+      }
+      data-active-site-name={view?.site.activeSiteName ?? ""}
       data-module={view?.page.module ?? ""}
       data-workflow={view?.page.workflow ?? ""}
       data-authoring-step={view?.page.authoringStep ?? ""}
@@ -177,6 +183,37 @@ export function LeanAiAssistantPanel({
               {message.role === "user" ? "You" : "LeanAI"}
             </p>
             <p className="mt-1">{message.content}</p>
+            {message.role === "assistant" &&
+            message.externalSources &&
+            message.externalSources.length > 0 ? (
+              <div
+                className="mt-3 border-t border-border/60 pt-2"
+                data-testid="leanai-assistant-sources"
+              >
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Sources
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {message.externalSources.map((source) => (
+                    <li key={source.url}>
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary underline-offset-2 hover:underline"
+                        data-testid="leanai-assistant-source-link"
+                      >
+                        {source.title}
+                        <span className="text-muted-foreground">
+                          {" "}
+                          — {hostLabelFromUrl(source.url)}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         ))}
 

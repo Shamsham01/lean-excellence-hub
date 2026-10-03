@@ -200,6 +200,7 @@ export async function loadLeanAiContextualSnapshot(): Promise<LeanAiContextualSn
     retention: parseRetention(record.retention),
     applicationAiAvailable,
     proactiveAssistanceEnabled: record.proactive_assistance_enabled !== false,
+    webSearchEnabled: record.web_search_enabled === true,
   };
 }
 

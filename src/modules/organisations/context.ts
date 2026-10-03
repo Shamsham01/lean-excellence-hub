@@ -46,6 +46,45 @@ export const loadCurrentOrganisationId = cache(async () => {
   return data;
 });
 
+export type CurrentOrganisationIdentity = {
+  organisationId: string;
+  organisationName: string;
+};
+
+/**
+ * Server-resolved current organisation identity.
+ *
+ * Uses RLS on `organisations` (`id = current_organisation_id()`). Do not accept
+ * a browser-supplied organisation name or organisation ID as AI context.
+ */
+export const loadCurrentOrganisationIdentity = cache(
+  async (): Promise<CurrentOrganisationIdentity | null> => {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("organisations")
+      .select("id, name")
+      .maybeSingle();
+
+    if (error) {
+      throwPlatformBoundaryError({
+        category: "organisation_access",
+        operation: "organisations.select",
+        route: await readRequestPathname(),
+        supabaseError: error,
+      });
+    }
+
+    if (!data?.id || typeof data.name !== "string" || data.name.trim() === "") {
+      return null;
+    }
+
+    return {
+      organisationId: data.id,
+      organisationName: data.name,
+    };
+  },
+);
+
 export async function switchOrganisation(organisationId: string) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("switch_organisation", {

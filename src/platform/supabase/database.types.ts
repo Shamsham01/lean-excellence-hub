@@ -6121,6 +6121,7 @@ export type Database = {
           proactive_assistance_enabled: boolean
           updated_at: string
           updated_by_membership_id: string | null
+          web_search_enabled: boolean
         }
         Insert: {
           ai_enabled?: boolean
@@ -6130,6 +6131,7 @@ export type Database = {
           proactive_assistance_enabled?: boolean
           updated_at?: string
           updated_by_membership_id?: string | null
+          web_search_enabled?: boolean
         }
         Update: {
           ai_enabled?: boolean
@@ -6139,6 +6141,7 @@ export type Database = {
           proactive_assistance_enabled?: boolean
           updated_at?: string
           updated_by_membership_id?: string | null
+          web_search_enabled?: boolean
         }
         Relationships: [
           {
@@ -14604,6 +14607,7 @@ export type Database = {
         Args: {
           target_ai_enabled: boolean
           target_monthly_token_ceiling?: number
+          target_web_search_enabled?: boolean
         }
         Returns: undefined
       }

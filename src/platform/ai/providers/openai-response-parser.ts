@@ -15,6 +15,11 @@ import type {
   FacilitatorEnvelope,
   ProviderToolCallRequest,
 } from "@/platform/ai/types";
+import {
+  sanitiseExternalWebSources,
+  type ExternalWebSource,
+} from "@/modules/leanai-context/assistant/external-sources";
+import { WEB_SEARCH_TOOL_TYPES } from "@/platform/ai/web-search";
 
 export type OpenAiResponseSnapshot = {
   id: string;
@@ -28,6 +33,21 @@ export type OpenAiResponseSnapshot = {
     id?: string | null;
     name?: string;
     arguments?: string;
+    action?: {
+      type?: string;
+      query?: string;
+      queries?: string[];
+      sources?: Array<{ type?: string; url?: string; title?: string }>;
+    };
+    content?: Array<{
+      type?: string;
+      text?: string;
+      annotations?: Array<{
+        type?: string;
+        title?: string;
+        url?: string;
+      }>;
+    }>;
   }> | null;
   usage?: {
     input_tokens?: number;
@@ -103,6 +123,49 @@ export function extractToolCalls(
   return toolCalls;
 }
 
+export function extractExternalWebSources(
+  output: OpenAiResponseSnapshot["output"],
+): ExternalWebSource[] {
+  const collected: Array<{ title?: unknown; url?: unknown }> = [];
+
+  for (const item of output ?? []) {
+    if (item.type === "web_search_call") {
+      for (const source of item.action?.sources ?? []) {
+        collected.push({ title: source.title, url: source.url });
+      }
+    }
+    for (const content of item.content ?? []) {
+      for (const annotation of content.annotations ?? []) {
+        if (annotation.type === "url_citation") {
+          collected.push({ title: annotation.title, url: annotation.url });
+        }
+      }
+    }
+  }
+
+  return sanitiseExternalWebSources(collected);
+}
+
+export function extractWebSearchUsage(
+  output: OpenAiResponseSnapshot["output"],
+): {
+  used: boolean;
+  invocationCount: number;
+  sourceCount: number;
+} {
+  const searchCalls = (output ?? []).filter(
+    (item) =>
+      item.type === "web_search_call" ||
+      (typeof item.name === "string" && WEB_SEARCH_TOOL_TYPES.has(item.name)),
+  );
+  const sources = extractExternalWebSources(output);
+  return {
+    used: searchCalls.length > 0 || sources.length > 0,
+    invocationCount: searchCalls.length,
+    sourceCount: sources.length,
+  };
+}
+
 export function parseStructuredOpenAiResponse(
   response: OpenAiResponseSnapshot,
   context: ParseOpenAiResponseContext,
@@ -114,6 +177,8 @@ export function parseStructuredOpenAiResponse(
   | "parsedJson"
   | "toolCalls"
   | "usage"
+  | "externalSources"
+  | "webSearch"
 > {
   const diagnostics = baseDiagnostics(response, context);
 
@@ -148,6 +213,8 @@ export function parseStructuredOpenAiResponse(
   }
 
   const toolCalls = extractToolCalls(response.output);
+  const externalSources = extractExternalWebSources(response.output);
+  const webSearch = extractWebSearchUsage(response.output);
   const usage = {
     inputTokens: response.usage?.input_tokens ?? 0,
     outputTokens: response.usage?.output_tokens ?? 0,
@@ -162,6 +229,8 @@ export function parseStructuredOpenAiResponse(
       outputText: response.output_text ?? "",
       toolCalls,
       usage,
+      externalSources,
+      webSearch,
     };
   }
 
@@ -200,6 +269,8 @@ export function parseStructuredOpenAiResponse(
       parsedJson,
       toolCalls: [],
       usage,
+      externalSources,
+      webSearch,
     };
   }
 
@@ -240,5 +311,7 @@ export function parseStructuredOpenAiResponse(
     structuredOutput,
     toolCalls: [],
     usage,
+    externalSources,
+    webSearch,
   };
 }
