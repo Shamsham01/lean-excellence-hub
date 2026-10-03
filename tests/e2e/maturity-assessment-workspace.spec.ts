@@ -190,8 +190,8 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await signInAsDemoUser(page, "manager");
-    await startAssessment(page, "formal");
+    await signInAsDemoUser(page, "admin");
+    await startAssessment(page, "self");
 
     const firstCriterion = await page
       .getByTestId("assessment-criterion-position")
@@ -205,6 +205,9 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       .innerText();
 
     await answerVisibleScore(page, 2);
+    await expect(
+      page.locator('[data-testid="level-choice"][data-selected="true"]').first(),
+    ).toBeVisible();
     await page.getByTestId("question-comment").fill("Photo evidence follows.");
     await page.getByTestId("question-comment").blur();
     await expect(page.getByText("Saving…")).not.toBeVisible({
