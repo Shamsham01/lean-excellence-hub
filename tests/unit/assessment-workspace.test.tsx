@@ -237,7 +237,12 @@ describe("AssessmentWorkspace", () => {
   });
 
   it("marks criterion completion in the compact navigator", () => {
-    renderWorkspace();
+    renderWorkspace({
+      answers: {
+        q1: { number_value: 2 },
+        q2: { number_value: 1 },
+      },
+    });
     expect(screen.getByTestId("criterion-nav-c1")).toHaveAttribute(
       "data-completion-state",
       "complete",
@@ -265,7 +270,7 @@ describe("AssessmentWorkspace", () => {
     fireEvent.click(screen.getByTestId("complete-self-assessment"));
     await waitFor(() => {
       expect(screen.getByTestId("lifecycle-action-error")).toHaveTextContent(
-        "required responses remaining",
+        "Required responses are still missing",
       );
     });
     expect(

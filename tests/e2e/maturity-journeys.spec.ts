@@ -291,7 +291,11 @@ test.describe("Milestone 5 maturity journeys", () => {
     ).toBeVisible({
       timeout: 30_000,
     });
-    await expect(scoreInput).toHaveValue("4", { timeout: 15_000 });
+    await expect(
+      page
+        .locator('[data-testid="level-choice"][data-level-number="4"]')
+        .first(),
+    ).toHaveAttribute("data-selected", "true", { timeout: 15_000 });
     await expect(page.getByText("sample.png")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.getByRole("img", { name: /sample\.png/i })).toBeVisible();

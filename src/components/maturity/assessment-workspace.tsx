@@ -167,7 +167,7 @@ export function AssessmentWorkspace({
       persistCriterionSelection({
         assessmentId,
         criterionId: nextId,
-        questionId,
+        ...(questionId ? { questionId } : {}),
       });
       if (questionId) {
         setHighlightQuestionId(questionId);

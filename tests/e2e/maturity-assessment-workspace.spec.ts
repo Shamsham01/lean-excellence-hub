@@ -69,7 +69,7 @@ async function createReadinessFramework(page: Page) {
     await expect(
       page
         .locator('[data-testid^="edit-criterion-"]')
-        .filter({ has: page.getByDisplayValue(name) }),
+        .filter({ hasText: name }),
     ).toBeVisible({ timeout: 15_000 });
   }
 

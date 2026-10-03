@@ -55,7 +55,11 @@ export function AssessmentLifecycleActions({
   const incomplete = !readiness.ready;
 
   function runAction(
-    action: () => Promise<{ error?: string; ok?: true; resultId?: string }>,
+    action: () => Promise<{
+      error?: string;
+      ok?: boolean;
+      resultId?: string;
+    }>,
   ) {
     startTransition(async () => {
       setError(null);
