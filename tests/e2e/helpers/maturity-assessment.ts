@@ -220,7 +220,9 @@ export async function selectFirstScopeEntity(page: Page) {
 export async function answerVisibleScore(page: Page, score = 3) {
   const levelChoices = page.getByTestId("level-choice");
   const numberInput = page.locator('input[type="number"]').first();
-  await expect(levelChoices.or(numberInput)).toBeVisible({ timeout: 15_000 });
+  await expect(levelChoices.first().or(numberInput)).toBeVisible({
+    timeout: 15_000,
+  });
 
   const preferred = page
     .locator(`[data-testid="level-choice"][data-level-number="${score}"]`)

@@ -294,7 +294,9 @@ test.describe("Milestone 5 maturity journeys", () => {
       timeout: 30_000,
     });
     await expect(
-      page.getByTestId("level-choice").locator('[data-selected="true"]').first(),
+      page
+        .locator('[data-testid="level-choice"][data-selected="true"]')
+        .first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("evidence-gallery")).toBeVisible({
       timeout: 15_000,
