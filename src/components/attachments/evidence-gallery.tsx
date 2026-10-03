@@ -27,6 +27,7 @@ export type EvidenceGalleryItem = {
   mime_type: string;
   byte_size: number;
   storage_object_path?: string | null;
+  preview_url?: string | null;
 };
 
 type EvidenceGalleryProps = {
@@ -56,15 +57,17 @@ function EvidencePreviewCard({
   onError?: (message: string) => void;
 }) {
   const authorisedPath = item.storage_object_path?.trim() || null;
+  const localPreview = item.preview_url?.trim() || null;
   const canPreviewImage =
-    isEvidenceImageMimeType(item.mime_type) && Boolean(authorisedPath);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [loadedPath, setLoadedPath] = useState<string | null>(null);
+    isEvidenceImageMimeType(item.mime_type) &&
+    Boolean(localPreview || authorisedPath);
+  const [fetchedUrl, setFetchedUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const previewUrl = localPreview ?? fetchedUrl;
 
   useEffect(() => {
-    if (!canPreviewImage || !authorisedPath) {
+    if (localPreview || !canPreviewImage || !authorisedPath) {
       return;
     }
 
@@ -78,8 +81,7 @@ function EvidencePreviewCard({
           return;
         }
         objectUrl = url;
-        setPreviewUrl(url);
-        setLoadedPath(authorisedPath);
+        setFetchedUrl(url);
         setPreviewError(false);
       })
       .catch((previewLoadError) => {
@@ -99,7 +101,7 @@ function EvidencePreviewCard({
         revokeObjectUrl(objectUrl);
       }
     };
-  }, [authorisedPath, canPreviewImage]);
+  }, [authorisedPath, canPreviewImage, localPreview, onError]);
 
   const openFile = useCallback(async () => {
     if (!authorisedPath) return;
@@ -116,10 +118,7 @@ function EvidencePreviewCard({
 
   const altText = evidencePreviewAltText(item.filename, contextLabel);
   const showImagePreview =
-    canPreviewImage &&
-    Boolean(previewUrl) &&
-    loadedPath === authorisedPath &&
-    !previewError;
+    canPreviewImage && Boolean(previewUrl) && !previewError;
 
   return (
     <li

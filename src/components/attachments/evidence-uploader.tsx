@@ -10,6 +10,7 @@ import {
   EVIDENCE_FILE_HELP,
   validateEvidenceFile,
 } from "@/lib/attachments/evidence-file-rules";
+import { isEvidenceImageMimeType } from "@/lib/attachments/evidence-preview";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
 export type EvidenceItem = {
@@ -18,6 +19,7 @@ export type EvidenceItem = {
   mime_type: string;
   byte_size: number;
   storage_object_path?: string | null;
+  preview_url?: string | null;
   question_id?: string | null;
   section_id?: string | null;
   finding_id?: string | null;
@@ -147,6 +149,9 @@ export function EvidenceUploader({
         byte_size: validation.byteSize,
         storage_object_path: storagePath,
       };
+      if (isEvidenceImageMimeType(validation.mimeType)) {
+        pendingItem.preview_url = URL.createObjectURL(file);
+      }
       if (createdItemExtras?.question_id !== undefined) {
         pendingItem.question_id = createdItemExtras.question_id;
       }
