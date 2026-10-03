@@ -206,7 +206,9 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
 
     await answerVisibleScore(page, 2);
     await expect(
-      page.locator('[data-testid="level-choice"][data-selected="true"]').first(),
+      page
+        .locator('[data-testid="level-choice"][data-selected="true"]')
+        .first(),
     ).toBeVisible();
     await page.getByTestId("question-comment").fill("Photo evidence follows.");
     await page.getByTestId("question-comment").blur();
@@ -246,18 +248,18 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     ).toBeVisible({
       timeout: 30_000,
     });
+    await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
+      activeCriterion,
+    );
+    await expect(page.getByTestId("question-comment")).toHaveValue(
+      "Photo evidence follows.",
+    );
     await expect(page.getByTestId("evidence-gallery")).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByRole("img", { name: /sample\.jpg/i })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByTestId("question-comment")).toHaveValue(
-      "Photo evidence follows.",
-    );
-    await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
-      activeCriterion,
-    );
     await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
   });
 
