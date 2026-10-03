@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   normaliseOrganisationUnitCode,
+  suggestOrganisationUnitCode,
   validateOrganisationUnitCode,
 } from "@/modules/organisation-setup/unit-code";
 
@@ -37,5 +38,24 @@ describe("organisation unit code validation", () => {
   it("rejects empty codes", () => {
     const result = validateOrganisationUnitCode("   ");
     expect(result.ok).toBe(false);
+  });
+
+  it("slugifies unit names into valid codes", () => {
+    expect(suggestOrganisationUnitCode("Community")).toBe("community");
+    expect(suggestOrganisationUnitCode("Media & Marketing")).toBe(
+      "media-marketing",
+    );
+    expect(suggestOrganisationUnitCode("Technical Operations")).toBe(
+      "technical-operations",
+    );
+  });
+
+  it("adds a deterministic suffix when the generated code is taken", () => {
+    expect(suggestOrganisationUnitCode("Community", ["community"])).toBe(
+      "community-2",
+    );
+    expect(
+      suggestOrganisationUnitCode("Community", ["community", "community-2"]),
+    ).toBe("community-3");
   });
 });

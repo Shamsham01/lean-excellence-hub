@@ -144,6 +144,11 @@ describe("LeanAI assistant panel", () => {
 
     fireEvent.click(screen.getByTestId("leanai-assistant-close"));
     expect(screen.getByTestId("leanai-assistant-rail")).toBeVisible();
+    expect(screen.getByTestId("leanai-assistant-rail-guidance")).toBeVisible();
+    expect(screen.getByTestId("leanai-assistant-open")).toHaveAttribute(
+      "title",
+      "Open LeanAI",
+    );
     fireEvent.click(screen.getByTestId("leanai-assistant-open"));
     expect(screen.getByTestId("leanai-assistant-pane")).toBeVisible();
     expect(loadView).toHaveBeenCalledWith({

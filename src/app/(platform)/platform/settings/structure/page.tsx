@@ -1,13 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { OrganisationUnitTree } from "@/components/organisation/organisation-unit-tree";
-import { UnitCreateForm } from "@/components/organisation/unit-create-form";
-import { UnitLifecycleActions } from "@/components/organisation/unit-lifecycle-actions";
-import { PageHeader } from "@/components/platform/page-header";
-import { AppLink } from "@/components/ui/app-link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buildOrganisationUnitTree } from "@/modules/organisation/unit-hierarchy";
+import { StructureWorkspace } from "@/components/organisation/structure-workspace";
+import {
+  buildOrganisationUnitTree,
+  summariseOrganisationStructure,
+} from "@/modules/organisation/unit-hierarchy";
 import {
   currentMemberHasOrganisationScopedPermission,
   currentMemberHasPermission,
@@ -100,6 +97,9 @@ export default async function StructureSettingsPage() {
     parent_unit_id: unit.parent_unit_id,
     status: unit.status,
   }));
+  const summary = summariseOrganisationStructure(flatUnits);
+  const canAddUnit =
+    canCreateRoot || activeUnits.some((unit) => manageableUnitIds.has(unit.id));
 
   const lifecycleActions = canManage
     ? {
@@ -111,101 +111,19 @@ export default async function StructureSettingsPage() {
     : undefined;
 
   return (
-    <div className="flex flex-col gap-8" data-testid="structure-settings-page">
-      <PageHeader
-        title="Organisation structure"
-        description="Manage units that reflect how your organisation operates. Units keep stable identifiers; archive instead of delete."
-        actions={
-          <Button variant="outline" size="sm" asChild>
-            <AppLink href="/platform/settings" data-testid="settings-back-link">
-              Back to settings
-            </AppLink>
-          </Button>
-        }
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Active units</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OrganisationUnitTree
-            nodes={tree}
-            flatUnits={flatUnits}
-            canManage={canManage}
-            canCreateRoot={canCreateRoot}
-            manageableUnitIds={[...manageableUnitIds]}
-            {...(lifecycleActions ? { lifecycleActions } : {})}
-          />
-        </CardContent>
-      </Card>
-
-      {retiredUnits.length > 0 ? (
-        <Card data-testid="archived-units-section">
-          <CardHeader>
-            <CardTitle className="text-base">Archived units</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {retiredUnits.map((unit) => (
-              <div
-                key={unit.id}
-                className="flex flex-col gap-3 rounded-md border border-dashed border-border p-3 text-sm"
-                data-testid={`archived-unit-${unit.id}`}
-              >
-                <div>
-                  <p className="font-medium text-foreground">{unit.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {unit.unit_type}
-                    {unit.code ? ` · ${unit.code}` : ""}
-                  </p>
-                </div>
-                {manageableUnitIds.has(unit.id) ? (
-                  <UnitLifecycleActions
-                    unit={{
-                      id: unit.id,
-                      name: unit.name,
-                      code: unit.code,
-                      unit_type: unit.unit_type,
-                      parent_unit_id: unit.parent_unit_id,
-                      status: unit.status,
-                    }}
-                    activeUnits={activeUnits}
-                    canCreateRoot={canCreateRoot}
-                    onUpdate={updateOrganisationUnit}
-                    onMove={moveOrganisationUnit}
-                    onRetire={retireOrganisationUnit}
-                    onRestore={restoreOrganisationUnit}
-                  />
-                ) : null}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {canManage ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Create unit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UnitCreateForm
-              units={activeUnits.map((unit) => ({
-                id: unit.id,
-                name: unit.name,
-                code: unit.code,
-                parent_unit_id: unit.parent_unit_id,
-              }))}
-              canCreateRoot={canCreateRoot}
-              onCreate={createOrganisationUnit}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Ask an Organisation Administrator to create organisational units.
-        </p>
-      )}
-    </div>
+    <StructureWorkspace
+      tree={tree}
+      flatUnits={flatUnits}
+      activeUnits={activeUnits}
+      retiredUnits={retiredUnits}
+      summary={summary}
+      canManage={canManage}
+      canCreateRoot={canCreateRoot}
+      canAddUnit={canAddUnit}
+      manageableUnitIds={[...manageableUnitIds]}
+      existingCodes={(units ?? []).map((unit) => unit.code)}
+      onCreate={createOrganisationUnit}
+      {...(lifecycleActions ? { lifecycleActions } : {})}
+    />
   );
 }

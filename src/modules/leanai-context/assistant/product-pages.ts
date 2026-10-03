@@ -177,6 +177,39 @@ function definitionFor(
     };
   }
 
+  if (identity.workflow === "structure") {
+    return {
+      module: "sites",
+      workflow: identity.workflow,
+      pageTitle: "Organisation structure",
+      contextLabel: "Organisation · Structure",
+      summary:
+        "Design how your sites, departments, areas and teams are organised. LeanAI can recommend a structure; you apply changes on this page.",
+      terminology: [
+        {
+          term: "Organisation unit",
+          meaning:
+            "A place or team in the hierarchy, such as a department, area or team. Units keep stable identifiers and are archived rather than deleted.",
+        },
+        {
+          term: "Site",
+          meaning:
+            "A billable security boundary such as a plant, factory or location. Site creation is not a routine unit-type choice on this page.",
+        },
+      ],
+      starterPrompts: [
+        "Recommend a structure",
+        "Explain organisational units",
+        "How should I structure my organisation?",
+        "What should go under this site?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "LeanAI may recommend a structure conversationally. Hierarchy changes stay human-approved actions on this page.",
+      ],
+    };
+  }
+
   return {
     module: identity.module,
     workflow: identity.workflow,

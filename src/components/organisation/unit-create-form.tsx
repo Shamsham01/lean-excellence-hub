@@ -3,11 +3,15 @@
 import { useState } from "react";
 
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
-import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
-import { validateOrganisationUnitCode } from "@/modules/organisation-setup/unit-code";
+import { UnitTypeField } from "@/components/organisation/unit-type-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
+import {
+  suggestOrganisationUnitCode,
+  validateOrganisationUnitCode,
+} from "@/modules/organisation-setup/unit-code";
 
 type UnitOption = {
   id: string;
@@ -20,6 +24,10 @@ export function UnitCreateForm({
   units,
   canCreateRoot,
   onCreate,
+  initialParentUnitId = "",
+  existingCodes = [],
+  onSuccess,
+  onCancel,
 }: {
   units: UnitOption[];
   canCreateRoot: boolean;
@@ -29,13 +37,36 @@ export function UnitCreateForm({
     name: string;
     unitType: string;
   }) => Promise<{ error?: string; ok?: true }>;
+  initialParentUnitId?: string;
+  existingCodes?: readonly string[];
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }) {
-  const [parentUnitId, setParentUnitId] = useState<string>("");
+  const [parentUnitId, setParentUnitId] = useState(initialParentUnitId);
   const [code, setCode] = useState("");
+  const [codeManual, setCodeManual] = useState(false);
+  const [codeUnlocked, setCodeUnlocked] = useState(false);
   const [name, setName] = useState("");
   const [unitType, setUnitType] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function resetForm() {
+    setParentUnitId(initialParentUnitId);
+    setCode("");
+    setCodeManual(false);
+    setCodeUnlocked(false);
+    setName("");
+    setUnitType("");
+    setMessage(null);
+  }
+
+  function updateName(nextName: string) {
+    setName(nextName);
+    if (!codeManual) {
+      setCode(suggestOrganisationUnitCode(nextName, existingCodes));
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -56,7 +87,7 @@ export function UnitCreateForm({
     }
 
     if (!unitType.trim()) {
-      setMessage("Enter a unit type (for example, site, department, or ward).");
+      setMessage("Choose a unit type, or enter a custom type.");
       setLoading(false);
       return;
     }
@@ -80,14 +111,14 @@ export function UnitCreateForm({
     if (result.error) {
       setMessage(result.error);
     } else {
-      setCode("");
-      setName("");
-      setUnitType("");
-      setParentUnitId("");
+      resetForm();
       setMessage("Unit created.");
+      onSuccess?.();
     }
     setLoading(false);
   }
+
+  const selectedParent = units.find((unit) => unit.id === parentUnitId);
 
   return (
     <form
@@ -97,18 +128,17 @@ export function UnitCreateForm({
     >
       <div className="flex flex-col gap-2">
         <Label htmlFor="parent-unit">
-          <ContextualHelpLabel topic="parent-unit">
-            Parent unit (optional)
-          </ContextualHelpLabel>
+          <ContextualHelpLabel topic="parent-unit">Parent</ContextualHelpLabel>
         </Label>
         <select
           id="parent-unit"
-          className="border-input h-9 rounded-md border bg-background px-3 text-sm"
+          className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
           value={parentUnitId}
           onChange={(event) => setParentUnitId(event.target.value)}
+          data-testid="unit-parent-select"
         >
           <option value="">
-            {canCreateRoot ? "None (top-level unit)" : "Select a parent unit"}
+            {canCreateRoot ? "Top level" : "Select a parent unit"}
           </option>
           {units.map((unit) => (
             <option key={unit.id} value={unit.id}>
@@ -117,47 +147,78 @@ export function UnitCreateForm({
           ))}
         </select>
         <p className="text-xs text-muted-foreground">
-          Leave empty to create a top-level unit. Your organisation defines its
-          own structure and terminology.
+          {parentUnitId
+            ? `This unit will sit under ${selectedParent?.name ?? "the selected parent"}.`
+            : canCreateRoot
+              ? "Top level units sit at the root of your organisation, such as a site."
+              : "Choose the unit this new unit belongs to."}
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="unit-code">Unit code</Label>
-          <Input
-            id="unit-code"
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            placeholder="site-1"
-            autoComplete="off"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="unit-name">
-            <ContextualHelpLabel topic="organisational-unit">
-              Unit name
-            </ContextualHelpLabel>
-          </Label>
-          <Input
-            id="unit-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="North distribution centre"
-          />
-        </div>
-      </div>
-
       <div className="flex flex-col gap-2">
-        <Label htmlFor="unit-type">
-          <ContextualHelpLabel topic="unit-type">Unit type</ContextualHelpLabel>
+        <Label htmlFor="unit-name">
+          <ContextualHelpLabel topic="organisational-unit">
+            Unit name
+          </ContextualHelpLabel>
         </Label>
         <Input
-          id="unit-type"
-          value={unitType}
-          onChange={(event) => setUnitType(event.target.value)}
-          placeholder="site, department, ward, line..."
+          id="unit-name"
+          value={name}
+          onChange={(event) => updateName(event.target.value)}
+          placeholder="Community"
+          autoComplete="off"
         />
+      </div>
+
+      <UnitTypeField id="unit-type" value={unitType} onChange={setUnitType} />
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={codeUnlocked ? "unit-code" : undefined}>
+          <ContextualHelpLabel topic="unit-code">Code</ContextualHelpLabel>
+        </Label>
+        {codeUnlocked ? (
+          <>
+            <Input
+              id="unit-code"
+              value={code}
+              onChange={(event) => {
+                setCodeManual(true);
+                setCode(event.target.value);
+              }}
+              placeholder="community"
+              autoComplete="off"
+              data-testid="unit-code"
+            />
+            <p className="text-xs text-muted-foreground">
+              This code cannot be changed after the unit is created.
+            </p>
+          </>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <p
+              className="font-mono text-sm text-muted-foreground"
+              data-testid="unit-code-preview"
+            >
+              {code || "Generated from the unit name"}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setCodeUnlocked(true)}
+              data-testid="unit-code-edit"
+            >
+              Edit code
+            </Button>
+            <input
+              id="unit-code"
+              type="hidden"
+              value={code}
+              data-testid="unit-code"
+              readOnly
+            />
+          </div>
+        )}
       </div>
 
       {message ? (
@@ -166,9 +227,25 @@ export function UnitCreateForm({
         </p>
       ) : null}
 
-      <Button type="submit" disabled={loading}>
-        {loading ? "Creating..." : "Create unit"}
-      </Button>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          disabled={loading}
+          data-testid="unit-create-submit"
+        >
+          {loading ? "Creating..." : "Create unit"}
+        </Button>
+      </div>
     </form>
   );
 }

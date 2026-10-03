@@ -62,3 +62,15 @@ export function SheetTitle({
     />
   );
 }
+
+export function SheetDescription({
+  className,
+  ...props
+}: ComponentPropsWithoutRef<typeof SheetPrimitive.Description>) {
+  return (
+    <SheetPrimitive.Description
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  );
+}

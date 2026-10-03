@@ -20,6 +20,7 @@ import { buildMaturityAuthoringState } from "./maturity-state";
 import { assistantPageDefinitionFor } from "./product-pages";
 import { parseAssistantRoute } from "./route-map";
 import { selectAssistantIntervention } from "./select-recommendation";
+import { buildStructureAssistantState } from "./structure-state";
 import {
   buildSuggestionsSetupState,
   suggestionsSetupGuidance,
@@ -133,6 +134,19 @@ export async function resolveLeanAiAssistantView(
     currentMemberHasPermission(MATURITY_PERMISSIONS.modelsManage),
     currentMemberHasPermission("suggestions.programmes.manage"),
   ]);
+
+  if (identity.workflow === "structure") {
+    const { data: units } = await supabase
+      .from("organisation_units")
+      .select("id, parent_unit_id, status");
+    const structure = buildStructureAssistantState(units ?? []);
+    Object.assign(relevantState, structure.relevantState);
+    summary = structure.summary;
+    allowedActions.push(
+      "Recommend a structure conversationally",
+      "Explain organisational units",
+    );
+  }
 
   if (
     identity.module === "suggestions" &&

@@ -106,7 +106,7 @@ export function LeanAiAssistantPanel({
 
       <div
         ref={feedRef}
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-3 break-words"
+        className="platform-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 py-3 break-words"
         data-testid="leanai-assistant-feed"
         aria-live="polite"
         aria-relevant="additions"
