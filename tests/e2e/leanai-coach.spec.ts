@@ -241,6 +241,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     const suffix = Date.now().toString(36);
     await page.locator("#unit-name").fill(`Coach Site ${suffix}`);
     await page.getByTestId("unit-type-choice").selectOption("custom");
+    await expect(page.getByTestId("unit-type")).toBeVisible();
     await page.getByTestId("unit-type").fill("site");
     await page.getByTestId("unit-code-edit").click();
     await page.locator("#unit-code").fill(`coach-site-${suffix}`.slice(0, 32));

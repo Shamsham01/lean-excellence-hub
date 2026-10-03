@@ -67,6 +67,7 @@ test.describe("organisation onboarding", () => {
     const unitCode = `e2e-site-${Date.now()}`;
     await page.locator("#unit-name").fill("E2E Site");
     await page.getByTestId("unit-type-choice").selectOption("custom");
+    await expect(page.getByTestId("unit-type")).toBeVisible();
     await page.getByTestId("unit-type").fill("site");
     await page.getByTestId("unit-code-edit").click();
     await page.locator("#unit-code").fill(unitCode);

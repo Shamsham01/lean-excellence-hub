@@ -50,7 +50,10 @@ describe("UnitCreateForm", () => {
     fireEvent.change(screen.getByTestId("unit-type-choice"), {
       target: { value: "custom" },
     });
-    fireEvent.change(screen.getByTestId("unit-type"), {
+    expect(screen.getByTestId("unit-type-choice")).toHaveValue("custom");
+    const customType = screen.getByPlaceholderText("For example, ward or cell");
+    expect(customType).toBeVisible();
+    fireEvent.change(customType, {
       target: { value: "ward" },
     });
     expect(screen.getByTestId("unit-type")).toHaveValue("ward");

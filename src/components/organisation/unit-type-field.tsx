@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,14 @@ export function UnitTypeField({
   const fieldId = id ?? generatedId;
   const choiceId = `${fieldId}-choice`;
   const customId = fieldId;
-  const choice = resolveUnitTypeChoice(value);
+  const resolvedChoice = resolveUnitTypeChoice(value);
+  const [customSelected, setCustomSelected] = useState(
+    resolvedChoice === CUSTOM_UNIT_TYPE_CHOICE,
+  );
+  const choice =
+    customSelected || resolvedChoice === CUSTOM_UNIT_TYPE_CHOICE
+      ? CUSTOM_UNIT_TYPE_CHOICE
+      : resolvedChoice;
   const customValue = choice === CUSTOM_UNIT_TYPE_CHOICE ? value : "";
   const siteHint = siteTypeCreationHint(value);
 
@@ -44,9 +51,11 @@ export function UnitTypeField({
         onChange={(event) => {
           const nextChoice = event.target.value;
           if (nextChoice === CUSTOM_UNIT_TYPE_CHOICE) {
-            onChange(isCommonOrEmpty(value) ? "" : value);
+            setCustomSelected(true);
+            onChange(resolvedChoice === CUSTOM_UNIT_TYPE_CHOICE ? value : "");
             return;
           }
+          setCustomSelected(false);
           onChange(nextChoice);
         }}
         required={required}
@@ -68,15 +77,11 @@ export function UnitTypeField({
           value={customValue}
           onChange={(event) => onChange(event.target.value)}
           placeholder="For example, ward or cell"
+          required={required}
           data-testid="unit-type"
         />
       ) : (
-        <input
-          id={customId}
-          type="hidden"
-          value={value}
-          data-testid="unit-type"
-        />
+        <input type="hidden" value={value} data-testid="unit-type-value" />
       )}
       <p className="text-xs text-muted-foreground">
         Sites such as plants, factories and locations are billable security
@@ -89,8 +94,4 @@ export function UnitTypeField({
       ) : null}
     </div>
   );
-}
-
-function isCommonOrEmpty(value: string) {
-  return resolveUnitTypeChoice(value) !== CUSTOM_UNIT_TYPE_CHOICE;
 }
