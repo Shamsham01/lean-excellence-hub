@@ -165,7 +165,13 @@ $$;
 
 alter function private.get_leanai_contextual_snapshot() owner to lean_hub_private_owner;
 
-revoke all on function private.get_leanai_contextual_snapshot() from public, anon, authenticated;
-grant execute on function private.get_leanai_contextual_snapshot() to lean_hub_private_owner;
-grant execute on function public.get_leanai_contextual_snapshot() to authenticated;
-revoke all on function public.get_leanai_contextual_snapshot() from public, anon;
+-- Preserve SEC_RPC_002: the public wrapper is SECURITY INVOKER, so
+-- authenticated must retain narrow EXECUTE on this private helper.
+revoke all on function private.get_leanai_contextual_snapshot()
+  from public, anon, authenticated, service_role;
+grant execute on function private.get_leanai_contextual_snapshot()
+  to authenticated, lean_hub_private_owner;
+grant execute on function public.get_leanai_contextual_snapshot()
+  to authenticated;
+revoke all on function public.get_leanai_contextual_snapshot()
+  from public, anon, service_role;

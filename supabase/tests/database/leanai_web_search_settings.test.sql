@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(19);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -104,6 +104,22 @@ select is(
   ),
   1::bigint,
   'legacy private 2-argument update_organisation_ai_settings overload is removed'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated', 'public.get_leanai_contextual_snapshot()', 'EXECUTE'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated', 'private.get_leanai_contextual_snapshot()', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon', 'public.get_leanai_contextual_snapshot()', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon', 'private.get_leanai_contextual_snapshot()', 'EXECUTE'
+  ),
+  'snapshot privilege boundary remains invoker-wrapper plus private helper'
 );
 
 select set_config(
