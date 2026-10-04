@@ -18,14 +18,46 @@ import { MarketingSystemVisual } from "./system-visual";
 import { MarketingAudience, MarketingValue } from "./value-audience";
 
 const FRAGMENTS = [
-  "Audits",
-  "Gemba findings",
-  "Actions",
-  "Suggestions",
-  "Projects",
-  "Training",
-  "Maturity assessments",
-  "Benefits",
+  {
+    label: "Audit checklist",
+    source: "Shared folder",
+    kind: "sheet",
+  },
+  {
+    label: "Gemba findings",
+    source: "Email thread",
+    kind: "email",
+  },
+  {
+    label: "Open actions",
+    source: "Exported register",
+    kind: "sheet",
+  },
+  {
+    label: "Suggestion form",
+    source: "Standalone form",
+    kind: "form",
+  },
+  {
+    label: "Project tracker",
+    source: "Local workbook",
+    kind: "sheet",
+  },
+  {
+    label: "Training records",
+    source: "Separate matrix",
+    kind: "form",
+  },
+  {
+    label: "Maturity scores",
+    source: "Slide deck",
+    kind: "report",
+  },
+  {
+    label: "Benefits forecast",
+    source: "Unvalidated",
+    kind: "report",
+  },
 ] as const;
 
 export function MarketingHome() {
@@ -96,11 +128,9 @@ function Problem() {
         </SectionIntro>
         <ul className="marketing-fragment mt-8" role="list">
           {FRAGMENTS.map((item) => (
-            <li
-              key={item}
-              className="rounded-md border border-border bg-card px-3 py-3 text-sm font-medium text-foreground"
-            >
-              {item}
+            <li key={item.label} data-kind={item.kind}>
+              <span className="marketing-fragment-label">{item.label}</span>
+              <span className="marketing-fragment-source">{item.source}</span>
             </li>
           ))}
         </ul>

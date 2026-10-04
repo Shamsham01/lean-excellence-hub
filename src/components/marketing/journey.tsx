@@ -83,8 +83,7 @@ export function MarketingJourney() {
             ))}
           </ol>
           <PreviewCaption>
-            Illustrative loop. The same objects exist in Lean Excellence Hub;
-            these records are examples, not customer results.
+            The same objects exist in Lean Excellence Hub as one connected loop.
           </PreviewCaption>
         </figure>
       </MarketingContainer>

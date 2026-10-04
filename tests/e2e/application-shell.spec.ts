@@ -24,6 +24,9 @@ test("renders the commercial landing page", async ({ page }) => {
     "Lean Excellence Hub — Operational Excellence & Continuous Improvement Platform",
   );
   await expect(page.getByText("Application baseline")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Appearance" }).first(),
+  ).toBeVisible();
 });
 
 test("mobile navigation reaches in-page sections and sign-in", async ({
@@ -46,6 +49,27 @@ test("mobile navigation reaches in-page sections and sign-in", async ({
   await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+});
+
+test("marketing appearance menu persists light and dark", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Appearance" }).first().click();
+  await page.getByRole("menuitemradio", { name: "Light" }).click();
+  await expect(page.locator("html")).toHaveClass(/light/);
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("theme")))
+    .toBe("light");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/light/);
+
+  await page.getByRole("button", { name: "Appearance" }).first().click();
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("theme")))
+    .toBe("dark");
 });
 
 test("request a demo page stays truthful", async ({ page }) => {

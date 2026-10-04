@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -44,6 +45,7 @@ vi.mock("@/modules/identity/session", () => ({
 }));
 
 import Home, { metadata } from "@/app/page";
+import { ThemeProvider } from "@/app/theme-provider";
 import { MarketingDemoPage, MarketingHome } from "@/components/marketing/home";
 
 describe("public marketing homepage", () => {
@@ -200,6 +202,12 @@ describe("public marketing homepage", () => {
       "/#gemba",
     );
     expect(
+      within(footer).getByRole("link", { name: "Actions" }),
+    ).toHaveAttribute("href", "/#actions");
+    expect(
+      within(footer).getByText(/© 2026 Lean Excellence Hub/),
+    ).toBeInTheDocument();
+    expect(
       within(footer).queryByRole("link", { name: /privacy|terms|company/i }),
     ).not.toBeInTheDocument();
   });
@@ -231,6 +239,148 @@ describe("public marketing homepage", () => {
     expect(
       screen.queryByRole("navigation", { name: "Mobile" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("uses an editorial platform grid order rather than masonry", () => {
+    render(<MarketingHome />);
+
+    const platform = document.getElementById("platform");
+    expect(platform).toBeTruthy();
+    const titles = [
+      ...platform!.querySelectorAll(".marketing-preview-title"),
+    ].map((node) => node.textContent);
+    expect(titles).toEqual([
+      "Maturity",
+      "Gemba",
+      "5S",
+      "Suggestions",
+      "Actions",
+      "Problem Solving",
+      "Projects & Benefits",
+      "Training & Skills",
+    ]);
+
+    expect(document.getElementById("maturity")).toHaveClass(
+      "marketing-platform-maturity",
+    );
+    expect(document.getElementById("gemba")).toHaveClass(
+      "marketing-platform-gemba",
+    );
+    expect(document.getElementById("actions")).toHaveClass(
+      "marketing-platform-actions",
+    );
+  });
+
+  it("keeps one platform disclosure instead of repeating illustrative captions", () => {
+    render(<MarketingHome />);
+
+    expect(
+      screen.getByText(
+        /product previews use illustrative example records\. they are not customer performance data/i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/illustrative/i)).toHaveLength(1);
+    expect(
+      screen.getByText(
+        "Observations become owned follow-up in the same system.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/highlighted cells are not actual site scores/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/forecast and realisation stay separate/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows disconnected operational fragments rather than generic labels", () => {
+    render(<MarketingHome />);
+
+    expect(screen.getByText("Audit checklist")).toBeInTheDocument();
+    expect(screen.getByText("Email thread")).toBeInTheDocument();
+    expect(screen.getByText("Standalone form")).toBeInTheDocument();
+    expect(screen.getByText("Slide deck")).toBeInTheDocument();
+    expect(screen.queryAllByText(/\bexcel\b|\bpowerpoint\b/i)).toHaveLength(0);
+    expect(
+      screen.queryByAltText(/excel|microsoft|teams/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("exposes a labelled System / Light / Dark appearance control", () => {
+    render(<MarketingHome />);
+
+    const appearanceTriggers = screen.getAllByRole("button", {
+      name: "Appearance",
+    });
+    expect(appearanceTriggers.length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const appearanceGroup = screen.getByRole("group", { name: "Appearance" });
+    expect(
+      within(appearanceGroup).getByRole("button", { name: "System" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(appearanceGroup).getByRole("button", { name: "Light" }),
+    ).toBeInTheDocument();
+    expect(
+      within(appearanceGroup).getByRole("button", { name: "Dark" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("marketing appearance persistence", () => {
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+  });
+
+  it("persists System, Light and Dark through next-themes", async () => {
+    render(
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableColorScheme
+        enableSystem
+      >
+        <MarketingHome />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const appearanceGroup = screen.getByRole("group", { name: "Appearance" });
+
+    fireEvent.click(
+      within(appearanceGroup).getByRole("button", { name: "Dark" }),
+    );
+    await waitFor(() => {
+      expect(window.localStorage.getItem("theme")).toBe("dark");
+    });
+
+    fireEvent.click(
+      within(appearanceGroup).getByRole("button", { name: "Light" }),
+    );
+    await waitFor(() => {
+      expect(window.localStorage.getItem("theme")).toBe("light");
+    });
+
+    fireEvent.click(
+      within(appearanceGroup).getByRole("button", { name: "System" }),
+    );
+    await waitFor(() => {
+      expect(window.localStorage.getItem("theme")).toBe("system");
+    });
   });
 });
 
@@ -304,6 +454,25 @@ describe("homepage authentication routing", () => {
     expect(css).toContain("content-visibility: auto");
     expect(css).not.toContain("gsap");
     expect(css).not.toContain("framer-motion");
+    expect(css).toContain("grid-template-areas");
+    expect(css).not.toContain("masonry");
+    expect(css).toContain("color-scheme: light dark");
+    expect(css).toContain("--warning-foreground: oklch(0.88 0.08 80)");
+  });
+
+  it("reuses next-themes instead of a parallel marketing theme store", () => {
+    const layout = readFileSync("src/app/layout.tsx", "utf8");
+    const appearance = readFileSync(
+      "src/components/marketing/appearance-menu.tsx",
+      "utf8",
+    );
+    expect(layout).toContain('defaultTheme="system"');
+    expect(layout).toContain("enableSystem");
+    expect(layout).toContain("enableColorScheme");
+    expect(layout).toContain('colorScheme: "light dark"');
+    expect(appearance).toContain('from "next-themes"');
+    expect(appearance).toContain("useTheme");
+    expect(appearance).not.toContain("localStorage.setItem");
   });
 
   it("keeps the page-level auth gate and public metadata", () => {

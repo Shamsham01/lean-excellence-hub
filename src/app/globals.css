@@ -57,11 +57,11 @@
   --primary-foreground: oklch(0.16 0.014 255);
   --accent: oklch(0.28 0.03 250);
   --accent-foreground: oklch(0.92 0.02 250);
-  --success: oklch(0.65 0.14 145);
+  --success: oklch(0.72 0.13 145);
   --success-foreground: oklch(0.16 0.02 145);
-  --warning: oklch(0.78 0.12 75);
-  --warning-foreground: oklch(0.2 0.04 75);
-  --destructive: oklch(0.62 0.18 25);
+  --warning: oklch(0.84 0.12 80);
+  --warning-foreground: oklch(0.88 0.08 80);
+  --destructive: oklch(0.76 0.16 25);
   --destructive-foreground: oklch(0.98 0.01 25);
   --information: oklch(0.68 0.1 240);
   --information-foreground: oklch(0.16 0.02 240);
@@ -74,11 +74,11 @@
   --chart-3: oklch(0.72 0.1 145);
   --chart-4: oklch(0.78 0.12 75);
   --chart-5: oklch(0.68 0.14 25);
-  --maturity-1: oklch(0.68 0.14 25);
-  --maturity-2: oklch(0.76 0.12 75);
-  --maturity-3: oklch(0.74 0.09 145);
-  --maturity-4: oklch(0.68 0.1 200);
-  --maturity-5: oklch(0.62 0.12 250);
+  --maturity-1: oklch(0.8 0.13 28);
+  --maturity-2: oklch(0.84 0.12 78);
+  --maturity-3: oklch(0.82 0.1 145);
+  --maturity-4: oklch(0.78 0.1 205);
+  --maturity-5: oklch(0.76 0.12 250);
   --ring: oklch(0.68 0.12 245);
   color-scheme: dark;
 }
@@ -133,6 +133,7 @@
 html {
   background: var(--background);
   overflow-x: clip;
+  color-scheme: light dark;
 }
 
 body {
@@ -293,6 +294,13 @@ body {
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
 .marketing {
+  --background: oklch(0.97 0.007 95);
+  --surface: oklch(0.948 0.01 95);
+  --elevated: oklch(0.995 0.003 95);
+  --card: oklch(0.992 0.003 95);
+  --muted: oklch(0.93 0.01 95);
+  --muted-foreground: oklch(0.4 0.022 255);
+  --border: oklch(0.84 0.016 95);
   --marketing-max: 72rem;
   --marketing-wide: 76rem;
   --marketing-gutter: 1.25rem;
@@ -311,6 +319,13 @@ body {
 }
 
 .dark .marketing {
+  --background: oklch(0.155 0.014 255);
+  --surface: oklch(0.185 0.016 255);
+  --elevated: oklch(0.24 0.016 255);
+  --card: oklch(0.215 0.016 255);
+  --muted: oklch(0.27 0.017 255);
+  --muted-foreground: oklch(0.74 0.016 255);
+  --border: oklch(0.36 0.018 255);
   --marketing-shadow:
     0 1px 1px oklch(0 0 0 / 0.24), 0 12px 32px oklch(0 0 0 / 0.28);
   --marketing-shadow-lift:
@@ -425,9 +440,49 @@ body {
   position: sticky;
   top: 0;
   z-index: 40;
-  border-bottom: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
-  background: color-mix(in oklch, var(--background) 92%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 88%, transparent);
+  background: color-mix(in oklch, var(--background) 90%, transparent);
   backdrop-filter: blur(14px);
+}
+
+.marketing-nav-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.marketing-nav-link:hover {
+  color: var(--foreground);
+}
+
+.marketing-mobile-link {
+  border-radius: 0.375rem;
+  padding: 0.625rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.marketing-mobile-link:hover {
+  background: var(--muted);
+}
+
+.marketing-appearance-group {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.marketing-appearance-trigger {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
 }
 
 .marketing-mark {
@@ -619,14 +674,106 @@ body {
 }
 
 .marketing-fragment {
+  position: relative;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.7rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.marketing-fragment li {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid var(--border);
+  background: var(--elevated);
+  padding: 0.7rem 0.8rem 0.75rem;
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-fragment li[data-kind="sheet"] {
+  border-radius: 0.2rem 0.45rem 0.45rem 0.2rem;
+  border-left-width: 3px;
+  border-left-color: color-mix(in oklch, var(--success) 55%, var(--border));
+}
+
+.marketing-fragment li[data-kind="email"] {
+  border-radius: 0.55rem;
+  border-style: dashed;
+  background: color-mix(in oklch, var(--muted) 55%, var(--elevated));
+}
+
+.marketing-fragment li[data-kind="form"] {
+  border-radius: 0.7rem;
+}
+
+.marketing-fragment li[data-kind="report"] {
+  border-radius: 0.25rem;
+  box-shadow:
+    var(--marketing-shadow),
+    0.18rem 0.18rem 0 color-mix(in oklch, var(--border) 80%, transparent);
+}
+
+.marketing-fragment-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.marketing-fragment-source {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
 }
 
 @media (min-width: 768px) {
   .marketing-fragment {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.85rem 0.9rem;
+    align-items: start;
+  }
+
+  .marketing-fragment li:nth-child(1) {
+    grid-column: 1 / span 4;
+  }
+
+  .marketing-fragment li:nth-child(2) {
+    grid-column: 6 / span 5;
+    margin-top: 0.85rem;
+  }
+
+  .marketing-fragment li:nth-child(3) {
+    grid-column: 2 / span 4;
+  }
+
+  .marketing-fragment li:nth-child(4) {
+    grid-column: 7 / span 4;
+    margin-top: -0.35rem;
+  }
+
+  .marketing-fragment li:nth-child(5) {
+    grid-column: 1 / span 5;
+  }
+
+  .marketing-fragment li:nth-child(6) {
+    grid-column: 8 / span 4;
+    margin-top: 0.55rem;
+  }
+
+  .marketing-fragment li:nth-child(7) {
+    grid-column: 3 / span 4;
+  }
+
+  .marketing-fragment li:nth-child(8) {
+    grid-column: 8 / span 5;
+    margin-top: -0.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-fragment li {
+    margin-top: 0;
   }
 }
 
@@ -655,10 +802,20 @@ body {
   color: var(--warning-foreground);
 }
 
+.dark .marketing-chip-warning {
+  color: var(--warning);
+}
+
 .marketing-chip-success {
   border-color: color-mix(in oklch, var(--success) 40%, var(--border));
   background: color-mix(in oklch, var(--success) 12%, var(--card));
   color: var(--success);
+}
+
+.marketing-chip-danger {
+  border-color: color-mix(in oklch, var(--destructive) 45%, var(--border));
+  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+  color: var(--destructive);
 }
 
 .marketing-preview {
@@ -736,6 +893,10 @@ body {
   color: var(--muted-foreground);
 }
 
+.marketing-heatmap-head [data-band] {
+  font-weight: 650;
+}
+
 .marketing-heatmap-head [data-band="1"] {
   color: var(--maturity-1);
 }
@@ -789,7 +950,8 @@ body {
 }
 
 .marketing-action-list li[data-overdue="true"] {
-  border-color: color-mix(in oklch, var(--warning) 40%, var(--border));
+  border-color: color-mix(in oklch, var(--warning) 45%, var(--border));
+  background: color-mix(in oklch, var(--warning) 10%, var(--card));
 }
 
 .marketing-workflow,
@@ -887,11 +1049,22 @@ body {
 }
 
 .marketing-matrix td[data-state="meets"] {
+  border-radius: 0.25rem;
+  background: color-mix(in oklch, var(--success) 12%, var(--card));
   color: var(--success);
+  font-weight: 650;
 }
 
 .marketing-matrix td[data-state="gap"] {
-  color: var(--warning-foreground);
+  border-radius: 0.25rem;
+  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+  color: var(--destructive);
+  font-weight: 650;
+}
+
+.marketing-matrix td[data-state="not assessed"],
+.marketing-matrix td[data-state="not required"] {
+  color: var(--muted-foreground);
 }
 
 .marketing-governance {
@@ -900,19 +1073,82 @@ body {
   padding-top: 0.9rem;
 }
 
-.marketing-platform-grid {
-  display: grid;
-  gap: 1.1rem;
+.marketing-platform-disclosure {
+  margin: 1.35rem 0 0;
+  max-width: 40rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
 }
 
-@media (min-width: 900px) {
+.marketing-platform-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.marketing-platform-grid > figure {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
   .marketing-platform-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "maturity maturity"
+      "gemba fives"
+      "suggestions actions"
+      "problemsolving problemsolving"
+      "projects training";
+    align-items: stretch;
   }
 
-  .marketing-platform-maturity,
-  .marketing-platform-wide {
-    grid-column: span 2;
+  .marketing-platform-maturity {
+    grid-area: maturity;
+  }
+
+  .marketing-platform-gemba {
+    grid-area: gemba;
+  }
+
+  .marketing-platform-fives {
+    grid-area: fives;
+  }
+
+  .marketing-platform-suggestions {
+    grid-area: suggestions;
+  }
+
+  .marketing-platform-actions {
+    grid-area: actions;
+  }
+
+  .marketing-platform-problemsolving {
+    grid-area: problemsolving;
+  }
+
+  .marketing-platform-projects {
+    grid-area: projects;
+  }
+
+  .marketing-platform-training {
+    grid-area: training;
+  }
+
+  .marketing-platform-grid > figure {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .marketing-platform-grid .marketing-preview {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .marketing-platform-grid .marketing-preview-body {
+    flex: 1 1 auto;
   }
 }
 
@@ -1108,18 +1344,19 @@ body {
 
 .marketing-footer {
   border-top: 1px solid var(--border);
-  padding-block: 2.5rem 3rem;
+  padding-block: 2.75rem 2rem;
 }
 
 .marketing-footer-grid {
   display: grid;
-  gap: 1.75rem;
+  gap: 2rem 1.5rem;
 }
 
 @media (min-width: 768px) {
   .marketing-footer-grid {
-    grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr));
-    gap: 2rem 1.5rem;
+    grid-template-columns: minmax(0, 1.45fr) repeat(3, minmax(0, 1fr));
+    gap: 2.25rem 2rem;
+    padding-bottom: 0.25rem;
   }
 }
 
@@ -1133,23 +1370,39 @@ body {
 
 .marketing-footer-list {
   display: grid;
-  gap: 0.45rem;
-  margin: 0.85rem 0 0;
+  gap: 0.15rem;
+  margin: 0.9rem 0 0;
   padding: 0;
   list-style: none;
 }
 
 .marketing-footer-list a {
   display: inline-flex;
-  min-height: 2.5rem;
+  min-height: 2.25rem;
   align-items: center;
   font-size: 0.875rem;
   color: var(--foreground);
   text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease;
 }
 
 .marketing-footer-list a:hover {
+  color: var(--accent-foreground);
   text-decoration: underline;
+}
+
+.marketing-footer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.1rem;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
 }
 
 .marketing-demo-outcomes p {

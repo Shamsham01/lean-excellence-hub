@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { MarketingAppearanceMenu } from "./appearance-menu";
 import { MarketingContainer, MarketingWordmark } from "./primitives";
 
 const PLATFORM_LINKS = [
@@ -13,6 +14,7 @@ const SYSTEM_LINKS = [
   { href: "/#gemba", label: "Gemba" },
   { href: "/#five-s", label: "5S" },
   { href: "/#suggestions", label: "Suggestions" },
+  { href: "/#actions", label: "Actions" },
   { href: "/#projects-benefits", label: "Projects & Benefits" },
   { href: "/#training-skills", label: "Training & Skills" },
 ] as const;
@@ -62,6 +64,11 @@ export function MarketingFooter() {
               </li>
             </ul>
           </nav>
+        </div>
+
+        <div className="marketing-footer-meta">
+          <p>© {new Date().getFullYear()} Lean Excellence Hub</p>
+          <MarketingAppearanceMenu />
         </div>
       </MarketingContainer>
     </footer>

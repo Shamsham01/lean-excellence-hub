@@ -59,8 +59,7 @@ export function MarketingLeanAi() {
             </div>
           </div>
           <PreviewCaption>
-            Illustrative assistant context. LeanAI does not publish frameworks
-            or close actions on its own.
+            LeanAI does not publish frameworks or close actions on its own.
           </PreviewCaption>
         </figure>
       </MarketingContainer>
