@@ -479,6 +479,71 @@ describe("loadFrameworkStructure", () => {
     ]);
   });
 
+  it("preserves the legacy flat criterion order used by authoring controls", async () => {
+    const fixture: FixtureTables = {
+      maturity_levels: [],
+      maturity_pillars: [
+        {
+          id: "pillar-ops",
+          name: "Operations",
+          position: 1,
+          section_id: "section-ops",
+          description: null,
+          guidance: null,
+          model_version_id: VERSION_ID,
+        },
+        {
+          id: "pillar-people",
+          name: "People",
+          position: 2,
+          section_id: "section-people",
+          description: null,
+          guidance: null,
+          model_version_id: VERSION_ID,
+        },
+      ],
+      maturity_criteria: [
+        {
+          id: "people-first",
+          name: "People first",
+          pillar_id: "pillar-people",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "ops-second",
+          name: "Operations second",
+          pillar_id: "pillar-ops",
+          position: 2,
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "ops-first",
+          name: "Operations first",
+          pillar_id: "pillar-ops",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+      maturity_criterion_questions: [],
+      template_questions: [],
+    };
+
+    const snapshot = await loadFrameworkStructure(
+      createStructureClient(fixture).client,
+      VERSION_ID,
+    );
+
+    expect(snapshot.criteria.map((criterion) => criterion.id)).toEqual([
+      "ops-first",
+      "ops-second",
+      "people-first",
+    ]);
+  });
+
   it("emits one authoring row per criterion-question link when a question is reused", async () => {
     const fixture: FixtureTables = {
       maturity_levels: [],
