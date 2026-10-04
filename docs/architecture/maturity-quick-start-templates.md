@@ -71,16 +71,16 @@ Canonical TypeScript contract:
 Positions are derived from array order. Template authors do not supply raw
 position numbers.
 
-Forward migrations (not applied hosted):
+Forward migrations (applied to hosted Supabase on 2026-10-04):
 
-- `supabase/migrations/20261004005415_instantiate_maturity_quick_start_template.sql`
+- `supabase/migrations/20261004110720_instantiate_maturity_quick_start_template.sql`
   introduced the original bulk RPC.
-- `supabase/migrations/20261004102713_create_maturity_model_draft_from_definition.sql`
+- `supabase/migrations/20261004110729_create_maturity_model_draft_from_definition.sql`
   replaces it with `create_maturity_model_draft_from_definition`, a neutral audit
   event, and null-safe JSON validation.
 
-They must be tested locally / in Database CI. Do **not** apply them to hosted
-Supabase from this change.
+The filenames match the canonical hosted migration versions. Do not replay
+these migrations. Future schema changes require new forward migrations.
 
 This Maturity path is the reference implementation for later Quick Start
 templates in 5S, Gemba, Suggestions, Training and Skills, and for the broader
