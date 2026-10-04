@@ -1,6 +1,7 @@
 # Maturity Quick Start templates
 
-Status: **Implemented for Maturity** (`MAT-TEMPLATE-01` / #209)
+Status: **Implemented for Maturity** (`MAT-TEMPLATE-01` / #209,
+`MAT-TEMPLATE-02` / #224)
 
 Date: **2026-10-04**
 
@@ -19,6 +20,16 @@ reference implementation is:
 
 This is a **recommended starting point**, not a mandatory Lean methodology.
 Customers remain owners of the copy they deploy.
+
+The built-in standard assesses **operating-system behaviours** that a connected
+OpEx management system would show: workplace organisation / 5S discipline,
+structured Gemba, daily management action follow-through, workforce improvement
+participation, structured improvement relative to workforce size, Lean / CI
+capability planning, training compliance, problem-solving discipline, and
+improvement project benefits. Questions describe practices, not LEH module
+usage. Indicative numeric examples live in criterion guidance and question
+wording because question-level score thresholds are not a supported template
+field.
 
 ## Built-in template versus customer copy
 
@@ -95,3 +106,20 @@ not call a model merely because the page loaded.
 
 When no framework exists, deterministic setup guidance may mention starting
 manually or deploying the LEH Operational Excellence Standard as a draft.
+
+## Future direction (not implemented)
+
+**Operational evidence-linked maturity scoring** is a later capability. An
+assessment question could eventually show live operational evidence beside the
+human score, for example:
+
+- 5S adherence: 93%
+- 42 / 45 scheduled audits complete
+- 2 overdue corrective actions
+- suggested maturity level: 4
+
+That would require a `Maturity Question → Evidence Metric → Measurement Window →
+Score Thresholds → Suggested Score` architecture. The human assessor would still
+approve or change the score. Do not implement that engine from this template
+content slice. Current indicative thresholds remain in wording and guidance
+only.

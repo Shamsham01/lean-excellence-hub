@@ -4,6 +4,7 @@ import {
   LEH_OE_STANDARD_EXPECTED_COUNTS,
   LEH_OPERATIONAL_EXCELLENCE_STANDARD,
   LEH_OPERATIONAL_EXCELLENCE_STANDARD_KEY,
+  MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH,
   assertLehOperationalExcellenceCompleteness,
   buildMaturityQuickStartDefinition,
   cloneMaturityFrameworkTemplate,
@@ -18,6 +19,39 @@ import {
   validateMaturityFrameworkTemplate,
   type MaturityFrameworkTemplate,
 } from "@/modules/maturity/templates";
+
+function templateCorpus(template: MaturityFrameworkTemplate): string {
+  return [
+    template.description,
+    ...template.levels.flatMap((level) => [
+      level.name,
+      level.description,
+      level.guidance,
+    ]),
+    ...template.pillars.flatMap((pillar) => [
+      pillar.name,
+      pillar.description ?? "",
+      pillar.guidance ?? "",
+      ...pillar.criteria.flatMap((criterion) => [
+        criterion.name,
+        criterion.description,
+        criterion.guidance,
+        ...criterion.questions.map((question) => question.prompt),
+      ]),
+    ]),
+  ].join("\n");
+}
+
+function criterionNamesByPillar(
+  template: MaturityFrameworkTemplate,
+): Record<string, string[]> {
+  return Object.fromEntries(
+    template.pillars.map((pillar) => [
+      pillar.name,
+      pillar.criteria.map((criterion) => criterion.name),
+    ]),
+  );
+}
 
 function malformedTemplate(
   overrides: Partial<MaturityFrameworkTemplate>,
@@ -120,6 +154,85 @@ describe("LEH Operational Excellence Quick Start template", () => {
     expect(assertLehOperationalExcellenceCompleteness(template)).toEqual([]);
   });
 
+  it("keeps every scored prompt within the existing database length limit", () => {
+    template.pillars.forEach((pillar) => {
+      pillar.criteria.forEach((criterion) => {
+        criterion.questions.forEach((question) => {
+          expect(question.prompt.length).toBeGreaterThan(0);
+          expect(question.prompt.length).toBeLessThanOrEqual(
+            MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH,
+          );
+        });
+      });
+    });
+  });
+
+  it("covers connected operating-system themes without advertising LEH modules", () => {
+    expect(criterionNamesByPillar(template)).toEqual({
+      Operations: [
+        "Daily Management / LDMS",
+        "Standard Work",
+        "5S / Workplace Organisation",
+        "Gemba Management",
+        "Flow & Capacity",
+        "Structured Improvement Activity",
+      ],
+      "Health & Safety": [
+        "Safety Leadership & Accountability",
+        "Risk Assessment & Controls",
+        "Incident & Near-Miss Learning",
+        "Safe Work Practices",
+        "Emergency Preparedness",
+        "Safety Engagement & Improvement",
+      ],
+      "Quality & Technical": [
+        "Quality Standards & Governance",
+        "Process Control",
+        "Non-Conformance & Corrective Action",
+        "Audit & Compliance",
+        "Customer / Stakeholder Quality",
+        "Quality Data & Traceability",
+      ],
+      "Engineering & Asset Reliability": [
+        "Preventive Maintenance",
+        "Breakdown Response",
+        "Reliability & Root Cause Analysis",
+        "Maintenance Planning",
+        "Critical Assets & Spares",
+        "Operator Care / Basic Asset Care",
+      ],
+      "People & Leadership": [
+        "Strategy & Leadership",
+        "Lean / CI Capability Matrix",
+        "Training Plan Compliance",
+        "Workforce Improvement Participation",
+        "Improvement Projects & Benefits",
+        "Problem-Solving Discipline",
+      ],
+    });
+
+    const corpus = templateCorpus(template);
+    expect(corpus).toMatch(/workplace organisation \/ 5S/i);
+    expect(corpus).toMatch(/planned Gemba/i);
+    expect(corpus).toMatch(/participation rate/i);
+    expect(corpus).toMatch(/ideas per employee per year/i);
+    expect(corpus).toMatch(/per 100 employees per year/i);
+    expect(corpus).toMatch(/Daily Management \/ LDMS/i);
+    expect(corpus).toMatch(/three-year Lean \/ CI capability/i);
+    expect(corpus).toMatch(
+      /planned Lean \/ CI training completed to schedule/i,
+    );
+    expect(corpus).toMatch(/A3, 8D, DMAIC, PDCA/i);
+    expect(corpus).toMatch(/realised value validated/i);
+    expect(corpus).toMatch(/completion against that schedule/i);
+    expect(corpus).not.toMatch(
+      /LEH 5S module|LEH Gemba module|LEH Suggestions/i,
+    );
+    expect(corpus).not.toMatch(/Does the site use the LEH/i);
+    expect(corpus).toMatch(/not individual ranking/i);
+    expect(corpus).not.toMatch(/productivity ranking/i);
+  });
+
   it("keeps the built-in template independent from a customer copy payload", () => {
     const originalName = template.name;
     const originalPrompt =
@@ -199,6 +312,43 @@ describe("maturity framework template validation", () => {
         (entry) =>
           entry.path.endsWith("questions[0].prompt") &&
           /prompt/i.test(entry.message),
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects prompts that would fail the existing question length constraint", () => {
+    const tooLong = "x".repeat(
+      MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH + 1,
+    );
+    const issues = validateMaturityFrameworkTemplate(
+      malformedTemplate({
+        pillars: [
+          {
+            name: "Operations",
+            criteria: [
+              {
+                name: "Daily Management / LDMS",
+                description: "Action discipline.",
+                guidance: "Look for owners and due dates.",
+                questions: [{ prompt: tooLong }, { prompt: "Short enough." }],
+              },
+              ...LEH_OPERATIONAL_EXCELLENCE_STANDARD.pillars[0]!.criteria.slice(
+                1,
+              ),
+            ],
+          },
+          ...LEH_OPERATIONAL_EXCELLENCE_STANDARD.pillars.slice(1),
+        ],
+      }),
+    );
+
+    expect(
+      issues.some(
+        (entry) =>
+          entry.path === "pillars[0].criteria[0].questions[0].prompt" &&
+          entry.message.includes(
+            String(MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH),
+          ),
       ),
     ).toBe(true);
   });

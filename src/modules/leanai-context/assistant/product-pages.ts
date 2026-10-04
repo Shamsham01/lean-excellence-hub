@@ -201,7 +201,7 @@ function definitionFor(
       ],
       facts: [
         ...knowledge.facts,
-        "The LEH Operational Excellence Standard is a recommended starting point, not a mandatory methodology.",
+        "The LEH Operational Excellence Standard is a recommended starting point, not a mandatory methodology. It assesses operating-system behaviours such as workplace organisation, Gemba, daily management and improvement participation, not whether particular LEH modules are in use.",
         "Use this template creates a draft only. A person must publish it later.",
         "LeanAI must not deploy or publish the template.",
       ],
