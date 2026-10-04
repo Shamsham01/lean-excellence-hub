@@ -183,7 +183,7 @@ export function StatusChip({
   tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: "neutral" | "accent" | "warning" | "success";
+  tone?: "neutral" | "accent" | "warning" | "success" | "danger";
 }) {
   return (
     <span className={cn("marketing-chip", `marketing-chip-${tone}`)}>

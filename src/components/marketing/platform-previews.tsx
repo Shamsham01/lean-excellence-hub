@@ -62,7 +62,7 @@ function MaturityPreview() {
       id="maturity"
       title="Maturity"
       className="marketing-platform-maturity"
-      caption="Illustrative LEH Operational Excellence Standard structure. Not an assessment result and not evidence-linked scoring."
+      caption="Highlighted cells are not actual site scores — they show the framework scale, not a scored site."
     >
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone="accent">Draft</StatusChip>
@@ -99,8 +99,8 @@ function MaturityPreview() {
         ))}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Levels 1–5 are the framework scale. Highlighted cell is an example
-        authoring focus, not a scored site.
+        Levels 1–5 are the framework scale. One cell is highlighted as an
+        authoring focus.
       </p>
     </PreviewFrame>
   );
@@ -111,7 +111,8 @@ function GembaPreview() {
     <PreviewFrame
       id="gemba"
       title="Gemba"
-      caption="Illustrative walk. Observations become owned follow-up in the same system."
+      className="marketing-platform-gemba"
+      caption="Observations become owned follow-up in the same system."
     >
       <MetaRow items={["Packing cell", "In progress", "Today"]} />
       <div className="marketing-preview-record">
@@ -141,7 +142,8 @@ function FiveSPreview() {
     <PreviewFrame
       id="five-s"
       title="5S"
-      caption="Illustrative audit board. Adherence, findings and overdue sustainment — not a percentage trophy."
+      className="marketing-platform-fives"
+      caption="Adherence, findings and overdue sustainment — not a percentage trophy."
     >
       <MetaRow items={["Goods-in", "Scheduled audit", "Site supervisor"]} />
       <ul className="marketing-adherence" role="list">
@@ -174,7 +176,8 @@ function SuggestionsPreview() {
     <PreviewFrame
       id="suggestions"
       title="Suggestions"
-      caption="Illustrative idea progressing through review. Count is not the point — conversion and feedback are."
+      className="marketing-platform-suggestions"
+      caption="Count is not the point — conversion and feedback are."
     >
       <p className="text-sm font-medium text-foreground">
         SUG-018 · Move changeover kit to the line-side cupboard.
@@ -207,8 +210,8 @@ function ProblemSolvingPreview() {
     <PreviewFrame
       id="problem-solving"
       title="Problem Solving"
-      className="marketing-platform-wide"
-      caption="Illustrative case. Methodology-neutral stages — the organisation chooses A3, 8D, DMAIC or its own method."
+      className="marketing-platform-problemsolving"
+      caption="Methodology-neutral stages — the organisation chooses A3, 8D, DMAIC or its own method."
     >
       <p className="text-sm font-medium text-foreground">
         Why do labels leave the station after every SKU changeover?
@@ -274,7 +277,8 @@ function ActionsPreview() {
     <PreviewFrame
       id="actions"
       title="Actions"
-      caption="Illustrative action system. One accountable list across Gemba, 5S, suggestions and problem solving."
+      className="marketing-platform-actions"
+      caption="One accountable action system across Gemba, 5S, suggestions and problem solving."
     >
       <ul className="marketing-action-list" role="list">
         {actions.map((action) => (
@@ -305,7 +309,8 @@ function ProjectsBenefitsPreview() {
     <PreviewFrame
       id="projects-benefits"
       title="Projects & Benefits"
-      caption="Illustrative project. Forecast and realisation stay separate. No invented financial result."
+      className="marketing-platform-projects"
+      caption="Forecast and realisation stay separate. No invented financial result."
     >
       <p className="text-sm font-medium text-foreground">
         PRJ-07 · Restore changeover standard on packing.
@@ -341,8 +346,8 @@ function TrainingSkillsPreview() {
     <PreviewFrame
       id="training-skills"
       title="Training & Skills"
-      className="marketing-platform-wide"
-      caption="Illustrative capability matrix. Gaps and requirements, not a course catalogue."
+      className="marketing-platform-training"
+      caption="Gaps and requirements, not a course catalogue."
     >
       <div className="marketing-matrix-scroll">
         <table className="marketing-matrix">
@@ -401,13 +406,17 @@ export function MarketingPlatform() {
             solved, benefits validated, capability built.
           </p>
         </SectionIntro>
+        <p className="marketing-platform-disclosure">
+          Product previews use illustrative example records. They are not
+          customer performance data.
+        </p>
         <div className="marketing-platform-grid mt-10">
           <MaturityPreview />
           <GembaPreview />
           <FiveSPreview />
           <SuggestionsPreview />
-          <ProblemSolvingPreview />
           <ActionsPreview />
+          <ProblemSolvingPreview />
           <ProjectsBenefitsPreview />
           <TrainingSkillsPreview />
         </div>

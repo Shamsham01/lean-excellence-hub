@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   title: "Lean Excellence Hub",
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
@@ -30,6 +34,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           disableTransitionOnChange
+          enableColorScheme
           enableSystem
         >
           {children}

@@ -28,7 +28,7 @@ export function MarketingLeanAi() {
               <StatusChip tone="accent">Contextual assistant</StatusChip>
             </div>
             <div className="marketing-preview-body">
-              <p className="text-[0.68rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+              <p className="text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 Context
               </p>
               <p className="mt-1.5 text-sm font-medium text-foreground">
@@ -38,7 +38,7 @@ export function MarketingLeanAi() {
                 Organisation · current site · framework authoring
               </p>
 
-              <p className="mt-5 text-[0.68rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+              <p className="mt-5 text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                 Assistance
               </p>
               <ul className="marketing-assist" role="list">
@@ -48,7 +48,7 @@ export function MarketingLeanAi() {
               </ul>
 
               <div className="marketing-governance">
-                <p className="text-[0.68rem] font-semibold tracking-[0.12em] text-accent-foreground uppercase">
+                <p className="text-[0.68rem] font-semibold tracking-[0.08em] text-accent-foreground uppercase">
                   Governance
                 </p>
                 <p className="mt-1.5 text-sm leading-6 text-foreground">
@@ -59,8 +59,7 @@ export function MarketingLeanAi() {
             </div>
           </div>
           <PreviewCaption>
-            Illustrative assistant context. LeanAI does not publish frameworks
-            or close actions on its own.
+            LeanAI does not publish frameworks or close actions on its own.
           </PreviewCaption>
         </figure>
       </MarketingContainer>

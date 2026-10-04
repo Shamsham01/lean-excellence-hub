@@ -78,9 +78,8 @@ export function MarketingSystemVisual() {
         </div>
       </div>
       <figcaption className="mt-3 text-xs leading-5 text-muted-foreground">
-        Illustrative product UI. Example records show how a workplace signal
-        becomes an owned action, a verified countermeasure and a benefit
-        awaiting validation — not a customer result.
+        A workplace signal becoming owned action, a verified countermeasure and
+        a benefit awaiting validation.
       </figcaption>
     </figure>
   );

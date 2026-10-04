@@ -1,6 +1,7 @@
 "use client";
 
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { Check } from "lucide-react";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@/lib/utils";
@@ -60,5 +61,30 @@ export function DropdownMenuSeparator({
       className={cn("-mx-1 my-1 h-px bg-border", className)}
       {...props}
     />
+  );
+}
+
+export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
+
+export function DropdownMenuRadioItem({
+  className,
+  children,
+  ...props
+}: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>) {
+  return (
+    <DropdownMenuPrimitive.RadioItem
+      className={cn(
+        "relative flex cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-sm transition-colors outline-none select-none focus:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className,
+      )}
+      {...props}
+    >
+      <span className="absolute left-2 flex size-3.5 items-center justify-center">
+        <DropdownMenuPrimitive.ItemIndicator>
+          <Check className="size-3.5" />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.RadioItem>
   );
 }
