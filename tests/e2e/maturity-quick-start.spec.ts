@@ -138,11 +138,15 @@ test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
     await expect(levelForm).toBeVisible();
     await levelForm.getByLabel("Level name").fill("Initial tailored");
     await levelForm.getByRole("button", { name: "Save level" }).click();
+    await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
+      "Saved.",
+    );
     await expect(levelForm.getByLabel("Level name")).toHaveValue(
       "Initial tailored",
     );
 
     await page.reload();
+    await expect(page.getByTestId("edit-level-1")).toBeVisible();
     await expect(
       page.getByTestId("edit-level-1").getByLabel("Level name"),
     ).toHaveValue("Initial tailored");
