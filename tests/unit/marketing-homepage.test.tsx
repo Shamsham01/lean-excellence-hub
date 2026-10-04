@@ -69,7 +69,7 @@ describe("public marketing homepage", () => {
       screen.getByText("From signal to measurable improvement"),
     ).toBeInTheDocument();
     expect(screen.getByText("Observation identified")).toBeInTheDocument();
-    expect(screen.getByText("£48,600 annualised")).toBeInTheDocument();
+    expect(screen.getByText("Benefit value captured")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         name: "One connected improvement system.",
