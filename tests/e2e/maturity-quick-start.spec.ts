@@ -11,11 +11,15 @@ const RISK_QUESTION =
 const SKILLS_QUESTION =
   "Are required skills defined for roles and responsibilities?";
 
-async function screenshotIfPossible(page: Page, name: string) {
+async function screenshotIfPossible(
+  page: Page,
+  name: string,
+  options: { fullPage?: boolean } = {},
+) {
   try {
     await page.screenshot({
       path: `/opt/cursor/artifacts/${name}`,
-      fullPage: true,
+      fullPage: options.fullPage ?? true,
     });
   } catch {
     // Artifact directory is optional outside Cloud Agent runs.
@@ -106,7 +110,10 @@ test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
-    await screenshotIfPossible(page, "maturity-template-preview-mobile.png");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await screenshotIfPossible(page, "maturity-template-preview-mobile.png", {
+      fullPage: false,
+    });
     await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.getByTestId("use-quick-start-template").click();

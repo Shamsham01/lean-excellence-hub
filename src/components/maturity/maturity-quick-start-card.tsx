@@ -46,14 +46,11 @@ export function MaturityQuickStartCard({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-5 p-5 pt-0 sm:p-6 sm:pt-0">
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <QuickStartStat label="Pillars" value={counts.pillars} />
           <QuickStartStat label="Criteria" value={counts.criteria} />
-          <QuickStartStat
-            label="Assessment questions"
-            value={counts.scoredQuestions}
-          />
-          <QuickStartStat label="Maturity levels" value={counts.levels} />
+          <QuickStartStat label="Questions" value={counts.scoredQuestions} />
+          <QuickStartStat label="Levels" value={counts.levels} />
         </dl>
         <p className="text-sm text-muted-foreground">
           Deploying creates an organisation-owned draft you can edit. Nothing is
@@ -83,9 +80,7 @@ export function MaturityQuickStartCard({
 function QuickStartStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-3">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-xl font-semibold text-foreground tabular-nums">
         {value}
       </dd>

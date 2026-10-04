@@ -57,14 +57,11 @@ export function MaturityTemplatePreview({
         can be edited before anyone publishes it.
       </p>
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <PreviewStat label="Pillars" value={counts.pillars} />
         <PreviewStat label="Criteria" value={counts.criteria} />
-        <PreviewStat
-          label="Assessment questions"
-          value={counts.scoredQuestions}
-        />
-        <PreviewStat label="Maturity levels" value={counts.levels} />
+        <PreviewStat label="Questions" value={counts.scoredQuestions} />
+        <PreviewStat label="Levels" value={counts.levels} />
       </dl>
 
       <section className="flex flex-col gap-3">
@@ -177,9 +174,7 @@ export function MaturityTemplatePreview({
 function PreviewStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-3">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-xl font-semibold tabular-nums">{value}</dd>
     </div>
   );
