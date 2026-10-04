@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(57);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -113,6 +113,236 @@ as $$
 $$;
 
 grant execute on function pg_temp.quick_start_definition(text) to authenticated;
+
+create function pg_temp.custom_framework_definition()
+returns jsonb
+language sql
+as $$
+  select jsonb_build_object(
+    'key', 'caller-supplied-custom',
+    'name', 'Caller supplied custom draft',
+    'description',
+      'Custom payload used to prove audit provenance is not official.',
+    'assessmentScopes', jsonb_build_array('site'),
+    'levels', jsonb_build_array(
+      jsonb_build_object(
+        'name', 'Initial',
+        'colorToken', 'maturity-1',
+        'description', 'Custom level',
+        'guidance', 'Custom guidance'
+      )
+    ),
+    'pillars', jsonb_build_array(
+      jsonb_build_object(
+        'name', 'Custom pillar',
+        'description', 'Custom pillar description',
+        'guidance', 'Custom pillar guidance',
+        'criteria', jsonb_build_array(
+          jsonb_build_object(
+            'name', 'Custom criterion',
+            'description', 'Custom criterion description',
+            'guidance', 'Custom criterion guidance',
+            'questions', jsonb_build_array(
+              jsonb_build_object(
+                'prompt', 'Custom observable question one',
+                'allowsNotApplicable', true
+              ),
+              jsonb_build_object(
+                'prompt', 'Custom observable question two',
+                'allowsNotApplicable', true
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+$$;
+
+grant execute on function pg_temp.custom_framework_definition() to authenticated;
+
+create temporary table invalid_maturity_defs (
+  sort_key integer primary key,
+  test_name text not null,
+  expected_message text not null,
+  definition jsonb not null
+) on commit drop;
+
+grant select on invalid_maturity_defs to authenticated;
+
+insert into invalid_maturity_defs (
+  sort_key, test_name, expected_message, definition
+)
+select *
+from (
+  values
+    (
+      1,
+      'missing assessmentScopes array is rejected',
+      'maturity framework definition requires a non-empty assessmentScopes array',
+      pg_temp.quick_start_definition() - 'assessmentScopes'
+    ),
+    (
+      2,
+      'JSON-null assessmentScopes array is rejected',
+      'maturity framework definition requires a non-empty assessmentScopes array',
+      jsonb_set(pg_temp.quick_start_definition(), '{assessmentScopes}', 'null'::jsonb)
+    ),
+    (
+      3,
+      'wrong-type assessmentScopes value is rejected',
+      'maturity framework definition requires a non-empty assessmentScopes array',
+      jsonb_set(pg_temp.quick_start_definition(), '{assessmentScopes}', '{}'::jsonb)
+    ),
+    (
+      4,
+      'empty assessmentScopes array is rejected',
+      'maturity framework definition requires a non-empty assessmentScopes array',
+      jsonb_set(pg_temp.quick_start_definition(), '{assessmentScopes}', '[]'::jsonb)
+    ),
+    (
+      5,
+      'missing levels array is rejected',
+      'maturity framework definition requires a non-empty levels array',
+      pg_temp.quick_start_definition() - 'levels'
+    ),
+    (
+      6,
+      'JSON-null levels array is rejected',
+      'maturity framework definition requires a non-empty levels array',
+      jsonb_set(pg_temp.quick_start_definition(), '{levels}', 'null'::jsonb)
+    ),
+    (
+      7,
+      'wrong-type levels value is rejected',
+      'maturity framework definition requires a non-empty levels array',
+      jsonb_set(pg_temp.quick_start_definition(), '{levels}', to_jsonb(1))
+    ),
+    (
+      8,
+      'empty levels array is rejected',
+      'maturity framework definition requires a non-empty levels array',
+      jsonb_set(pg_temp.quick_start_definition(), '{levels}', '[]'::jsonb)
+    ),
+    (
+      9,
+      'missing pillars array is rejected',
+      'maturity framework definition requires a non-empty pillars array',
+      pg_temp.quick_start_definition() - 'pillars'
+    ),
+    (
+      10,
+      'JSON-null pillars array is rejected',
+      'maturity framework definition requires a non-empty pillars array',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars}', 'null'::jsonb)
+    ),
+    (
+      11,
+      'wrong-type pillars value is rejected',
+      'maturity framework definition requires a non-empty pillars array',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars}', to_jsonb('nope'::text))
+    ),
+    (
+      12,
+      'empty pillars array is rejected',
+      'maturity framework definition requires a non-empty pillars array',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars}', '[]'::jsonb)
+    ),
+    (
+      13,
+      'missing nested criteria array is rejected',
+      'maturity framework definition requires a non-empty criteria array',
+      pg_temp.quick_start_definition() #- '{pillars,0,criteria}'
+    ),
+    (
+      14,
+      'JSON-null nested criteria array is rejected',
+      'maturity framework definition requires a non-empty criteria array',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars,0,criteria}', 'null'::jsonb)
+    ),
+    (
+      15,
+      'wrong-type nested criteria value is rejected',
+      'maturity framework definition requires a non-empty criteria array',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars,0,criteria}', '{}'::jsonb)
+    ),
+    (
+      16,
+      'empty nested criteria array is rejected',
+      'maturity framework definition requires a non-empty criteria array',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars,0,criteria}', '[]'::jsonb)
+    ),
+    (
+      17,
+      'missing nested questions array is rejected',
+      'maturity framework definition requires a non-empty questions array',
+      pg_temp.quick_start_definition() #- '{pillars,0,criteria,0,questions}'
+    ),
+    (
+      18,
+      'JSON-null nested questions array is rejected',
+      'maturity framework definition requires a non-empty questions array',
+      jsonb_set(
+        pg_temp.quick_start_definition(),
+        '{pillars,0,criteria,0,questions}',
+        'null'::jsonb
+      )
+    ),
+    (
+      19,
+      'wrong-type nested questions value is rejected',
+      'maturity framework definition requires a non-empty questions array',
+      jsonb_set(
+        pg_temp.quick_start_definition(),
+        '{pillars,0,criteria,0,questions}',
+        to_jsonb(true)
+      )
+    ),
+    (
+      20,
+      'empty nested questions array is rejected',
+      'maturity framework definition requires a non-empty questions array',
+      jsonb_set(
+        pg_temp.quick_start_definition(),
+        '{pillars,0,criteria,0,questions}',
+        '[]'::jsonb
+      )
+    ),
+    (
+      21,
+      'non-object level is rejected',
+      'maturity framework definition has a malformed level',
+      jsonb_set(pg_temp.quick_start_definition(), '{levels,0}', to_jsonb('bad'::text))
+    ),
+    (
+      22,
+      'non-object pillar is rejected',
+      'maturity framework definition has a malformed pillar',
+      jsonb_set(pg_temp.quick_start_definition(), '{pillars,0}', to_jsonb(0))
+    ),
+    (
+      23,
+      'non-object criterion is rejected',
+      'maturity framework definition has a malformed criterion',
+      jsonb_set(
+        pg_temp.quick_start_definition(),
+        '{pillars,0,criteria,0}',
+        to_jsonb('bad'::text)
+      )
+    ),
+    (
+      24,
+      'non-object question is rejected',
+      'maturity framework definition has a malformed question',
+      jsonb_set(
+        pg_temp.quick_start_definition(),
+        '{pillars,0,criteria,0,questions,0}',
+        '[]'::jsonb
+      )
+    )
+) as cases(
+  sort_key, test_name, expected_message, definition
+);
 
 insert into maturity_qs_ids (key, id)
 values
@@ -233,7 +463,7 @@ select ok(
 
 select throws_ok(
   format(
-    'select public.instantiate_maturity_quick_start_template(%L, %L::jsonb)',
+    'select public.create_maturity_model_draft_from_definition(%L, %L::jsonb)',
     'leh-operational-excellence-standard',
     pg_temp.quick_start_definition()::text
   ),
@@ -256,7 +486,30 @@ select ok(
 
 select throws_ok(
   format(
-    'select public.instantiate_maturity_quick_start_template(%L, %L::jsonb)',
+    'select public.create_maturity_model_draft_from_definition(%L, %L::jsonb)',
+    'leh-operational-excellence-standard',
+    invalid_row.definition::text
+  ),
+  '22023',
+  invalid_row.expected_message,
+  invalid_row.test_name
+)
+from invalid_maturity_defs invalid_row
+order by invalid_row.sort_key;
+
+select is(
+  (
+    select count(*)
+    from public.maturity_models
+    where organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+  ),
+  0::bigint,
+  'rejected missing, null, wrong-type and empty arrays leave no framework records'
+);
+
+select throws_ok(
+  format(
+    'select public.create_maturity_model_draft_from_definition(%L, %L::jsonb)',
     'leh-operational-excellence-standard',
     jsonb_set(
       pg_temp.quick_start_definition(),
@@ -265,7 +518,7 @@ select throws_ok(
     )::text
   ),
   '22023',
-  'maturity Quick Start template has an empty question prompt',
+  'maturity framework definition has an empty question prompt',
   'empty question prompts are rejected before a tenant copy is created'
 );
 
@@ -281,7 +534,7 @@ select is(
 
 select throws_ok(
   format(
-    'select public.instantiate_maturity_quick_start_template(%L, %L::jsonb)',
+    'select public.create_maturity_model_draft_from_definition(%L, %L::jsonb)',
     'leh-operational-excellence-standard',
     jsonb_set(
       pg_temp.quick_start_definition(repeat('x', 501)),
@@ -305,7 +558,7 @@ select is(
 );
 
 insert into maturity_qs_ids (key, id)
-select 'model_a', public.instantiate_maturity_quick_start_template(
+select 'model_a', public.create_maturity_model_draft_from_definition(
   'leh-operational-excellence-standard',
   pg_temp.quick_start_definition()
 );
@@ -442,6 +695,56 @@ select ok(
   'question scoring metadata remains compatible with the assessment engine'
 );
 
+reset role;
+
+select is(
+  (
+    select count(*)
+    from public.business_audit_events audit_row
+    where audit_row.organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+      and audit_row.resource_record_id = (select id from maturity_qs_ids where key = 'model_a')
+      and audit_row.event_action = 'maturity.model.quick_start_instantiated'
+  ),
+  0::bigint,
+  'catalogue-key payloads do not write verified Quick Start provenance'
+);
+
+select is(
+  (
+    select count(*)
+    from public.business_audit_events audit_row
+    where audit_row.organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+      and audit_row.resource_record_id = (select id from maturity_qs_ids where key = 'model_a')
+      and audit_row.event_action = 'maturity.model.draft_created_from_definition'
+  ),
+  1::bigint,
+  'bulk draft creation writes a neutral definition audit event'
+);
+
+select is(
+  (
+    select audit_row.metadata ->> 'declared_template_key'
+    from public.business_audit_events audit_row
+    where audit_row.organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+      and audit_row.resource_record_id = (select id from maturity_qs_ids where key = 'model_a')
+      and audit_row.event_action = 'maturity.model.draft_created_from_definition'
+  ),
+  'leh-operational-excellence-standard',
+  'declared template key is stored as caller metadata'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"20900000-0000-4000-8000-000000000001","role":"authenticated","session_id":"20900000-0000-4000-8000-000000000011","email":"maturity-quick-start-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from maturity_qs_ids where key = 'org_a')),
+  'owner resumes organisation A after audit assertions'
+);
+
 select ok(
   public.publish_maturity_model_version(
     (select id from maturity_qs_ids where key = 'model_version_a')
@@ -450,7 +753,7 @@ select ok(
 );
 
 insert into maturity_qs_ids (key, id)
-select 'model_a_second', public.instantiate_maturity_quick_start_template(
+select 'model_a_second', public.create_maturity_model_draft_from_definition(
   'leh-operational-excellence-standard',
   pg_temp.quick_start_definition('Second draft question')
 );
@@ -463,6 +766,54 @@ select is(
   ),
   2::bigint,
   'an organisation may use the built-in template more than once'
+);
+
+insert into maturity_qs_ids (key, id)
+select 'model_custom', public.create_maturity_model_draft_from_definition(
+  'caller-supplied-custom',
+  pg_temp.custom_framework_definition()
+);
+
+select ok(
+  (select id from maturity_qs_ids where key = 'model_custom') is not null,
+  'authorised admin can create a draft from a custom supplied definition'
+);
+
+reset role;
+
+select is(
+  (
+    select count(*)
+    from public.business_audit_events audit_row
+    where audit_row.organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+      and audit_row.resource_record_id = (select id from maturity_qs_ids where key = 'model_custom')
+      and audit_row.event_action = 'maturity.model.quick_start_instantiated'
+  ),
+  0::bigint,
+  'custom payloads cannot claim official Quick Start provenance'
+);
+
+select is(
+  (
+    select count(*)
+    from public.business_audit_events audit_row
+    where audit_row.organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+      and audit_row.event_action = 'maturity.model.quick_start_instantiated'
+  ),
+  0::bigint,
+  'no official Quick Start provenance event exists for the organisation'
+);
+
+select is(
+  (
+    select audit_row.metadata ->> 'declared_template_key'
+    from public.business_audit_events audit_row
+    where audit_row.organisation_id = (select id from maturity_qs_ids where key = 'org_a')
+      and audit_row.resource_record_id = (select id from maturity_qs_ids where key = 'model_custom')
+      and audit_row.event_action = 'maturity.model.draft_created_from_definition'
+  ),
+  'caller-supplied-custom',
+  'custom payload stores the caller-declared template key only as metadata'
 );
 
 select set_config(

@@ -12791,6 +12791,10 @@ export type Database = {
         Args: { target_description?: string; target_display_name: string }
         Returns: string
       }
+      create_maturity_model_draft_from_definition: {
+        Args: { target_declared_template_key: string; target_definition: Json }
+        Returns: string
+      }
       create_maturity_model_successor_version: {
         Args: { target_model_id: string }
         Returns: string
@@ -13639,10 +13643,6 @@ export type Database = {
           attachment_id: string
           storage_object_path: string
         }[]
-      }
-      instantiate_maturity_quick_start_template: {
-        Args: { target_definition: Json; target_template_key: string }
-        Returns: string
       }
       issue_organisation_invitation: {
         Args: {

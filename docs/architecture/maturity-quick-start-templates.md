@@ -30,18 +30,28 @@ Customers remain owners of the copy they deploy.
 | Seeded into tenants? | No | Only after an authorised administrator chooses **Use this template** |
 | Later catalogue edits | Do not change existing copies | Independent from future built-in updates |
 
-The browser sends only a recognised template key. The server resolves the
-canonical definition and instantiates it. A giant framework payload from the
-browser is not trusted as product content.
+The browser sends only a recognised template key. The server action
+`instantiateMaturityQuickStartTemplate` resolves the canonical catalogue
+definition and then calls a permission-checked bulk RPC. A giant framework
+payload from the browser is not trusted as product content.
+
+The RPC itself does **not** verify LEH provenance. Any supplied template key is
+caller-declared metadata. Admins with `maturity.models.manage` can also call the
+RPC with a custom definition; that must not be audited as an official Quick
+Start deploy.
 
 ## Deployment contract
 
 1. Authorised administrator (`maturity.models.manage`) chooses **Use this template**.
 2. Server action `instantiateMaturityQuickStartTemplate` resolves the catalogue
-   entry and calls `public.instantiate_maturity_quick_start_template`.
+   entry and calls `public.create_maturity_model_draft_from_definition`.
 3. One database transaction creates the complete organisation-owned **draft**.
 4. The user is redirected to `/platform/maturity/models/[modelId]?step=review`.
 5. A human must explicitly **Publish**. Instantiation never publishes.
+
+The bulk RPC audit event is `maturity.model.draft_created_from_definition` with
+`declared_template_key`. It must not claim verified official-template
+provenance.
 
 If instantiation fails, the transaction rolls back. No partial framework remains
 visible. Retry is safe. Accidental double-click is prevented in the UI by
@@ -61,11 +71,15 @@ Canonical TypeScript contract:
 Positions are derived from array order. Template authors do not supply raw
 position numbers.
 
-The bulk RPC is a forward migration:
+Forward migrations (not applied hosted):
 
-`supabase/migrations/20261004005415_instantiate_maturity_quick_start_template.sql`
+- `supabase/migrations/20261004005415_instantiate_maturity_quick_start_template.sql`
+  introduced the original bulk RPC.
+- `supabase/migrations/20261004102713_create_maturity_model_draft_from_definition.sql`
+  replaces it with `create_maturity_model_draft_from_definition`, a neutral audit
+  event, and null-safe JSON validation.
 
-It must be tested locally / in Database CI. Do **not** apply it to hosted
+They must be tested locally / in Database CI. Do **not** apply them to hosted
 Supabase from this change.
 
 This Maturity path is the reference implementation for later Quick Start

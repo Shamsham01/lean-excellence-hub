@@ -39,9 +39,9 @@ export async function instantiateMaturityQuickStartTemplate(
 
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc(
-    "instantiate_maturity_quick_start_template",
+    "create_maturity_model_draft_from_definition",
     {
-      target_template_key: key,
+      target_declared_template_key: key,
       target_definition: definition,
     },
   );
