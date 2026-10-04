@@ -32,3 +32,9 @@ Gemba, 5S, Leader Standard Work, maturity, and comparable configurable audit/for
 - The engine must not become an arbitrary no-code data model or visual workflow designer.
 - Domain-specific scoring, transitions, and reporting remain in domain services when they are not truly universal.
 - Later acceptance requires immutability, exact-version answer traceability, transactional publication, tenant isolation, concurrent draft handling, and migration compatibility tests.
+
+Maturity Quick Start (#209) does not introduce a second template engine. Built-in
+LEH frameworks are source-controlled product content. Deployment creates a normal
+organisation-owned template + maturity model **draft** through the existing
+engine. Future built-in updates do not mutate existing customer copies. Human
+publication remains required.

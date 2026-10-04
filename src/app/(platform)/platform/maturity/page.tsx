@@ -67,7 +67,7 @@ export default async function MaturityOverviewPage() {
         />
         <EmptyState
           title="No Lean maturity framework yet"
-          description="Create your organisation's Lean / Operational Excellence framework to begin measuring maturity across sites and teams."
+          description="Start with an LEH Quick Start template or create a framework to begin measuring maturity across sites and teams."
           {...(canManage
             ? {
                 actionLabel: "Create framework",

@@ -54,7 +54,8 @@ Do not delete resolved findings; retain them as QA history.
 - Prefer shared primitives and shared selectors over module-specific copies.
 - For organisation admins, use an explicit active-site context and filter site-scoped selectors to that site; do not permanently render verbose hierarchy paths everywhere just to disambiguate duplicate unit names.
 - Preserve stable UUIDs and audit/history semantics.
-- Prefer forward-only migrations.
+- Prefer forward-only migrations. Create them in the PR and test locally / Database CI; do not apply hosted Supabase mutations from an implementation agent.
+- Built-in Quick Start templates stay in application code. Tenant copies are created only when an authorised administrator deploys them, and they remain independent drafts until a human publishes.
 - Keep production UI free of internal UUIDs, raw membership IDs, resource IDs, or implementation codes unless the user explicitly needs them.
 
 ## PR scope discipline

@@ -104,9 +104,9 @@ export const LEANAI_INTERVENTION_CATALOGUE: readonly LeanAiInterventionDefinitio
       priority: 40,
       surfaces: [...SETUP_SURFACES, "maturity"],
       title: "Set up a Maturity Framework",
-      body: "You do not have a published Maturity Framework yet, so the organisation cannot measure Lean / operational excellence consistently.",
+      body: "You do not have a published Maturity Framework yet, so the organisation cannot measure Lean / operational excellence consistently. You can start manually or deploy the LEH Operational Excellence Standard as a draft.",
       explain:
-        "A Maturity Framework defines the pillars and questions used for assessments. A draft-only framework is not ready. Publish at least one version so teams can run assessments against a shared standard.",
+        "A Maturity Framework defines the pillars and questions used for assessments. Quick Start copies a practical starting-point framework into your organisation as an editable draft. A draft-only framework is not ready. A person must publish at least one version so teams can run assessments against a shared standard. LeanAI will not deploy or publish it.",
       primaryCtaLabel: "Set it up",
       targetRoute: "/platform/maturity/models",
       dismissCooldownHours: DEFAULT_DISMISS_HOURS,

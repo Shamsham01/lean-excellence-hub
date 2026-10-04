@@ -168,7 +168,7 @@ function evaluateMaturity(facts: SetupReadinessFacts): SetupReadinessItem {
   return item(
     "maturity",
     "not_started",
-    "No Maturity Framework exists yet.",
+    "No Maturity Framework exists yet. You can start manually or deploy the LEH Operational Excellence Standard as a draft.",
     "maturity_none",
     metrics,
   );

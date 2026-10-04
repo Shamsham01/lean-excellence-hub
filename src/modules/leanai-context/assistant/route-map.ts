@@ -121,6 +121,17 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       surface: "maturity",
     };
   }
+  const maturityTemplate = pathname.match(
+    /^\/platform\/maturity\/templates\/([^/]+)$/,
+  );
+  if (maturityTemplate) {
+    return {
+      module: "maturity",
+      workflow: "maturity_template_preview",
+      pageTitle: "Maturity Quick Start template",
+      surface: "maturity",
+    };
+  }
   const maturityModel = pathname.match(
     /^\/platform\/maturity\/models\/([^/]+)$/,
   );

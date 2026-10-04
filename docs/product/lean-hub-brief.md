@@ -34,7 +34,7 @@ Planned core domains include:
 - evidence, comments, activity, and audit;
 - strategic alignment where justified by later requirements.
 
-One universal, versioned template engine must serve Gemba, 5S, Leader Standard Work, maturity, and similar configurable forms. Templates contain immutable published versions, versioned sections and questions, submissions tied to the exact version used, and answers tied to exact versioned questions. Typed extensions are allowed only for genuinely different semantics such as curricula and structured problem-solving.
+One universal, versioned template engine must serve Gemba, 5S, Leader Standard Work, maturity, and similar configurable forms. Templates contain immutable published versions, versioned sections and questions, submissions tied to the exact version used, and answers tied to exact versioned questions. Typed extensions are allowed only for genuinely different semantics such as curricula and structured problem-solving. Product-owned Quick Start catalogues (starting with the Maturity Operational Excellence Standard) copy into organisation-owned drafts; they are not a second engine and they never silently publish.
 
 ## Shared platform capabilities
 

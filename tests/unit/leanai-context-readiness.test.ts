@@ -56,6 +56,9 @@ describe("LeanAI setup readiness", () => {
       readiness.items.find((item) => item.key === "maturity")
         ?.recommendedAction,
     ).toBe("Set up a Maturity Framework");
+    expect(
+      readiness.items.find((item) => item.key === "maturity")?.reason,
+    ).toMatch(/LEH Operational Excellence Standard as a draft/);
   });
 
   it("marks a partial organisation as incomplete for started modules", () => {
