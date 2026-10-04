@@ -483,8 +483,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await expect(
       page.getByRole("heading", { name: "Assessment" }),
     ).toBeVisible();
+    await expect(page.getByTestId("assessment-mobile-context")).toBeVisible();
     await expect(
-      page.locator('[aria-label="Assessment progress"]'),
+      page.getByTestId("assessment-mobile-context").getByRole("progressbar"),
     ).toBeVisible();
   });
 });

@@ -166,6 +166,7 @@ export function QuestionCard({
       )}
       data-testid={`question-card-${question.id}`}
       data-question-id={question.id}
+      data-highlighted={highlight ? "true" : "false"}
     >
       <div>
         <Label className="text-sm font-medium">{question.prompt}</Label>

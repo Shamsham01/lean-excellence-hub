@@ -34,6 +34,12 @@ import {
   persistCriterionSelection,
   resolveInitialCriterionId,
 } from "@/modules/maturity/assessment-criterion-state";
+import {
+  buildAssessmentNavPosition,
+  formatAssessmentNavPosition,
+  scrollAssessmentTarget,
+  type AssessmentScrollIntent,
+} from "@/modules/maturity/assessment-navigation";
 import { buildAssessmentReadiness } from "@/modules/maturity/assessment-readiness";
 import type {
   AssessmentAnswer,
@@ -116,6 +122,9 @@ export function AssessmentWorkspace({
   );
   const pendingSaves = useRef(new Set<Promise<unknown>>());
   const fieldFlushers = useRef(new Set<() => Promise<void>>());
+  const criterionTopRef = useRef<HTMLDivElement>(null);
+  const pendingScrollRef = useRef<AssessmentScrollIntent | null>(null);
+  const [scrollNonce, setScrollNonce] = useState(0);
 
   const trackSave = useCallback(async <T,>(promise: Promise<T>) => {
     pendingSaves.current.add(promise);
@@ -159,19 +168,25 @@ export function AssessmentWorkspace({
     flatCriteria.findIndex((item) => item.criterion.id === criterionId),
   );
   const current = flatCriteria[currentIndex] ?? flatCriteria[0];
+  const navPosition = useMemo(
+    () => buildAssessmentNavPosition(pillars, criterionId),
+    [criterionId, pillars],
+  );
 
   const selectCriterion = useCallback(
     async (nextId: string, questionId?: string | null) => {
       await flushSaves();
+      pendingScrollRef.current = questionId
+        ? { kind: "question", questionId }
+        : { kind: "criterion-top" };
+      setScrollNonce((value) => value + 1);
       setCriterionId(nextId);
       persistCriterionSelection({
         assessmentId,
         criterionId: nextId,
         ...(questionId ? { questionId } : {}),
       });
-      if (questionId) {
-        setHighlightQuestionId(questionId);
-      }
+      setHighlightQuestionId(questionId ?? null);
       setCriteriaOpen(false);
     },
     [assessmentId, flushSaves],
@@ -188,12 +203,16 @@ export function AssessmentWorkspace({
   }, [assessmentId, current?.criterion.id]);
 
   useEffect(() => {
-    if (!highlightQuestionId) return;
-    const node = document.querySelector(
-      `[data-question-id="${highlightQuestionId}"]`,
-    );
-    node?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlightQuestionId, criterionId]);
+    if (scrollNonce === 0) {
+      return;
+    }
+    const intent = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    if (!intent) {
+      return;
+    }
+    scrollAssessmentTarget(intent, criterionTopRef.current);
+  }, [criterionId, scrollNonce]);
 
   if (!current) {
     return (
@@ -206,7 +225,6 @@ export function AssessmentWorkspace({
   const nextIncomplete = readiness.remaining.find(
     (item) => item.criterionId !== criterion.id,
   );
-  const completion = readiness.criterionCompletions[criterion.id];
 
   return (
     <div
@@ -227,6 +245,67 @@ export function AssessmentWorkspace({
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
+        {/*
+          html/body use overflow-x: clip, which prevents position:sticky in
+          Chromium. Keep this compact bar fixed below platform-mobile-chrome.
+        */}
+        <div className="lg:hidden">
+          <div
+            aria-hidden
+            className="h-[5.75rem]"
+            data-testid="assessment-mobile-context-spacer"
+          />
+          <header
+            data-testid="assessment-mobile-context"
+            className="fixed inset-x-0 top-[calc(3.85rem+env(safe-area-inset-top,0px))] z-30 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-sm sm:px-6"
+          >
+            <div className="mx-auto flex max-w-6xl min-w-0 items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <p
+                  className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+                  data-testid="assessment-mobile-pillar-name"
+                >
+                  {pillar.name}
+                </p>
+                <h2
+                  className="truncate text-sm leading-tight font-semibold text-foreground"
+                  data-testid="assessment-mobile-criterion-name"
+                >
+                  {criterion.name}
+                </h2>
+                <p
+                  className="text-[11px] leading-tight text-muted-foreground"
+                  data-testid="assessment-criterion-position"
+                >
+                  {formatAssessmentNavPosition(navPosition)}
+                </p>
+                <p
+                  className="text-[11px] leading-tight text-muted-foreground"
+                  data-testid="assessment-mobile-completion"
+                >
+                  {readiness.answeredRequired} / {readiness.totalRequired}{" "}
+                  complete · {readiness.completionPercent}%
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                data-testid="criteria-drawer-open"
+                onClick={() => setCriteriaOpen(true)}
+              >
+                Criteria
+              </Button>
+            </div>
+            <Progress
+              className="mx-auto mt-2 h-1 max-w-6xl"
+              value={readiness.completionPercent}
+              aria-label="Assessment progress"
+            />
+          </header>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3">
           <AssessmentStatusBadge status={status} />
           <span className="text-sm text-muted-foreground capitalize">
@@ -253,7 +332,10 @@ export function AssessmentWorkspace({
           </dl>
         ) : null}
 
-        <div className="flex flex-col gap-2">
+        <div
+          className="hidden flex-col gap-2 lg:flex"
+          data-testid="assessment-desktop-progress"
+        >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p
               className="text-sm font-medium"
@@ -272,33 +354,17 @@ export function AssessmentWorkspace({
           />
           <p
             className="text-xs text-muted-foreground"
-            data-testid="assessment-criterion-position"
+            data-testid="assessment-desktop-nav-position"
           >
-            Criterion {currentIndex + 1} of {flatCriteria.length}
+            {formatAssessmentNavPosition(navPosition)}
           </p>
         </div>
 
-        <div className="flex items-start justify-between gap-3 lg:hidden">
-          <div>
-            <p className="typography-section-title">{pillar.name}</p>
-            <h2 className="mt-1 text-lg font-semibold">{criterion.name}</h2>
-            {completion ? (
-              <p className="text-xs text-muted-foreground">
-                {completion.answeredRequired}/{completion.totalRequired}{" "}
-                complete
-              </p>
-            ) : null}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            data-testid="criteria-drawer-open"
-            onClick={() => setCriteriaOpen(true)}
-          >
-            Criteria
-          </Button>
-        </div>
+        <div
+          ref={criterionTopRef}
+          data-testid="assessment-criterion-top"
+          className="h-px scroll-mt-[calc(3.85rem+env(safe-area-inset-top,0px)+5.75rem)] lg:scroll-mt-2"
+        />
 
         <div className="hidden lg:block">
           <p className="typography-section-title">{pillar.name}</p>
@@ -411,7 +477,7 @@ export function AssessmentWorkspace({
           }}
         />
 
-        <div className="sticky bottom-4 z-20 flex gap-2 rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
+        <div className="sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-20 flex gap-2 rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
           <Button
             type="button"
             variant="outline"
@@ -519,10 +585,11 @@ function CriterionNavigator({
                 data-testid={`${testIdPrefix}-${criterion.id}`}
                 data-completion-state={state}
                 data-active={criterion.id === activeId ? "true" : "false"}
+                aria-current={criterion.id === activeId ? "true" : undefined}
                 className={cn(
                   "mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                   criterion.id === activeId
-                    ? "bg-accent text-accent-foreground"
+                    ? "bg-accent font-medium text-accent-foreground"
                     : "hover:bg-muted",
                 )}
               >
@@ -531,9 +598,7 @@ function CriterionNavigator({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block leading-snug">{criterion.name}</span>
-                  {completion &&
-                  completion.totalRequired > 0 &&
-                  state !== "complete" ? (
+                  {completion && completion.totalRequired > 0 ? (
                     <span className="text-xs text-muted-foreground">
                       {completion.answeredRequired}/{completion.totalRequired}
                     </span>

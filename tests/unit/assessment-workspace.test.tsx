@@ -9,8 +9,13 @@ import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AssessmentWorkspace } from "@/components/maturity/assessment-workspace";
+import { AUTHORING_STEP_CHANGE_EVENT } from "@/lib/authoring/authoring-query";
+import { assessmentCriterionStorageKey } from "@/modules/maturity/assessment-criterion-state";
 import type { AssessmentPillar } from "@/modules/maturity/assessment-workspace-types";
-import { completeSelfAssessment } from "@/app/(platform)/platform/maturity/actions";
+import {
+  completeSelfAssessment,
+  saveCriterionNote,
+} from "@/app/(platform)/platform/maturity/actions";
 
 vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
   saveAssessmentAnswer: vi.fn(async () => ({ ok: true })),
@@ -88,6 +93,94 @@ const pillars: AssessmentPillar[] = [
   },
 ];
 
+const multiPillars: AssessmentPillar[] = [
+  pillars[0]!,
+  {
+    id: "pillar-2",
+    name: "Community & Operations",
+    criteria: [
+      {
+        id: "c3",
+        name: "Community Engagement",
+        description: null,
+        guidance: "Look for engagement cadence",
+        questions: [
+          {
+            id: "q4",
+            prompt: "Are communities engaged?",
+            question_type: "score",
+            is_required: true,
+            allows_not_applicable: false,
+            help_text: null,
+            contributes_to_score: true,
+            position: 1,
+          },
+        ],
+      },
+      {
+        id: "c4",
+        name: "Daily Management",
+        description: null,
+        guidance: null,
+        questions: [
+          {
+            id: "q5",
+            prompt: "Is daily management visible?",
+            question_type: "score",
+            is_required: true,
+            allows_not_applicable: false,
+            help_text: null,
+            contributes_to_score: true,
+            position: 1,
+          },
+        ],
+      },
+      {
+        id: "c5",
+        name: "Standard Work",
+        description: null,
+        guidance: null,
+        questions: [
+          {
+            id: "q6",
+            prompt: "Is standard work followed?",
+            question_type: "score",
+            is_required: true,
+            allows_not_applicable: false,
+            help_text: null,
+            contributes_to_score: true,
+            position: 1,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "pillar-3",
+    name: "Results",
+    criteria: [
+      {
+        id: "c6",
+        name: "Performance Dialogue",
+        description: null,
+        guidance: null,
+        questions: [
+          {
+            id: "q7",
+            prompt: "Are results reviewed?",
+            question_type: "score",
+            is_required: true,
+            allows_not_applicable: false,
+            help_text: null,
+            contributes_to_score: true,
+            position: 1,
+          },
+        ],
+      },
+    ],
+  },
+];
+
 const levels = [
   { level_number: 1, name: "Initial", guidance: "Ad hoc" },
   { level_number: 2, name: "Developing", guidance: "Repeatable" },
@@ -122,13 +215,27 @@ function renderWorkspace(
   );
 }
 
+function lastScrolledElement(scrolled: Element[]) {
+  return scrolled.at(-1) as HTMLElement | undefined;
+}
+
 describe("AssessmentWorkspace", () => {
+  let scrollIntoView: ReturnType<typeof vi.spyOn>;
+  const scrolledElements: Element[] = [];
+
   afterEach(() => {
     cleanup();
+    scrollIntoView.mockRestore();
   });
 
   beforeEach(() => {
     window.sessionStorage.clear();
+    scrolledElements.length = 0;
+    scrollIntoView = vi
+      .spyOn(Element.prototype, "scrollIntoView")
+      .mockImplementation(function (this: Element) {
+        scrolledElements.push(this);
+      });
   });
 
   it("shows required-response completion rather than criterion position as the primary progress", () => {
@@ -141,7 +248,10 @@ describe("AssessmentWorkspace", () => {
     );
     expect(
       screen.getByTestId("assessment-criterion-position"),
-    ).toHaveTextContent("Criterion 1 of 2");
+    ).toHaveTextContent("Pillar 1 of 1 · Criterion 1 of 2");
+    expect(
+      screen.getByTestId("assessment-desktop-nav-position"),
+    ).toHaveTextContent("Pillar 1 of 1 · Criterion 1 of 2");
   });
 
   it("renders configured levels instead of a generic number field", () => {
@@ -173,7 +283,7 @@ describe("AssessmentWorkspace", () => {
     await waitFor(() => {
       expect(
         screen.getByTestId("assessment-criterion-position"),
-      ).toHaveTextContent("Criterion 2 of 2");
+      ).toHaveTextContent("Pillar 1 of 1 · Criterion 2 of 2");
     });
     expect(screen.getByText("Are priorities visible?")).toBeVisible();
     expect(
@@ -247,6 +357,7 @@ describe("AssessmentWorkspace", () => {
       "data-completion-state",
       "complete",
     );
+    expect(screen.getByTestId("criterion-nav-c1")).toHaveTextContent("1/1");
     expect(screen.getByTestId("criterion-nav-c2")).toHaveAttribute(
       "data-completion-state",
       "partial",
@@ -301,5 +412,184 @@ describe("AssessmentWorkspace", () => {
 
     expect(screen.getByTestId("approve-assessment")).toBeVisible();
     expect(screen.getByRole("button", { name: "1 Initial" })).toBeEnabled();
+  });
+
+  it("shows a compact mobile context header for the current pillar and criterion", () => {
+    renderWorkspace({
+      pillars: multiPillars,
+      initialCriterionId: "c3",
+      answers: {
+        q1: { number_value: 2 },
+        q2: { number_value: 1 },
+        q3: { number_value: 1 },
+      },
+    });
+
+    expect(screen.getByTestId("assessment-mobile-context")).toHaveClass(
+      "fixed",
+    );
+    expect(
+      screen.getByTestId("assessment-mobile-pillar-name"),
+    ).toHaveTextContent("Community & Operations");
+    expect(
+      screen.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveTextContent("Community Engagement");
+    expect(
+      screen.getByTestId("assessment-criterion-position"),
+    ).toHaveTextContent("Pillar 2 of 3 · Criterion 1 of 3");
+    expect(
+      screen.getByTestId("assessment-mobile-completion"),
+    ).toHaveTextContent("3 / 7 complete · 43%");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("keeps desktop progress available without duplicating it on mobile", () => {
+    renderWorkspace();
+    const desktop = screen.getByTestId("assessment-desktop-progress");
+    const mobile = screen.getByTestId("assessment-mobile-context");
+    expect(desktop).toHaveClass("hidden", "lg:flex");
+    expect(mobile).toHaveClass("fixed");
+    expect(screen.getByTestId("assessment-mobile-context-spacer")).toHaveClass(
+      "h-[5.75rem]",
+    );
+    expect(desktop).toHaveTextContent("1 / 3 required responses");
+    expect(desktop).toHaveTextContent("33% complete");
+    expect(
+      screen.getByTestId("assessment-desktop-nav-position"),
+    ).toHaveTextContent("Pillar 1 of 1 · Criterion 1 of 2");
+    expect(
+      mobile.querySelectorAll('[aria-label="Assessment progress"]'),
+    ).toHaveLength(1);
+    expect(
+      desktop.querySelectorAll('[aria-label="Assessment progress"]'),
+    ).toHaveLength(1);
+  });
+
+  it("does not auto-scroll on the initial workspace load", () => {
+    renderWorkspace();
+    expect(
+      screen.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveTextContent("Clear Roles & Responsibilities");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("restores a persisted criterion without scrolling during hydration", () => {
+    const storedId = "c2";
+    window.sessionStorage.setItem(
+      assessmentCriterionStorageKey("assess-1"),
+      storedId,
+    );
+    renderWorkspace({ initialCriterionId: storedId });
+    expect(
+      screen.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveTextContent("Strategy & Priorities");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("flushes saves, changes criterion, and scrolls to the start on Next", async () => {
+    const locationEvents: Event[] = [];
+    window.addEventListener(AUTHORING_STEP_CHANGE_EVENT, (event) => {
+      locationEvents.push(event);
+    });
+    renderWorkspace();
+    fireEvent.change(screen.getByTestId("assessor-comment"), {
+      target: { value: "Roles observation" },
+    });
+    fireEvent.click(screen.getByTestId("next-criterion"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Strategy & Priorities");
+    });
+    expect(saveCriterionNote).toHaveBeenCalled();
+    expect(lastScrolledElement(scrolledElements)).toHaveAttribute(
+      "data-testid",
+      "assessment-criterion-top",
+    );
+    expect(locationEvents.length).toBeGreaterThan(0);
+    expect(window.location.search).toContain("criterion=c2");
+  });
+
+  it("scrolls to the criterion start after Previous", async () => {
+    renderWorkspace({ initialCriterionId: "c2" });
+    scrollIntoView.mockClear();
+    scrolledElements.length = 0;
+    fireEvent.click(screen.getByTestId("previous-criterion"));
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Clear Roles & Responsibilities");
+    });
+    expect(lastScrolledElement(scrolledElements)).toHaveAttribute(
+      "data-testid",
+      "assessment-criterion-top",
+    );
+  });
+
+  it("closes the Criteria drawer and scrolls the selected criterion to the top", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByTestId("criteria-drawer-open"));
+    expect(screen.getByTestId("criteria-drawer")).toBeVisible();
+    fireEvent.click(screen.getByTestId("criteria-drawer-item-c2"));
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Strategy & Priorities");
+    });
+    expect(screen.queryByTestId("criteria-drawer")).not.toBeInTheDocument();
+    expect(lastScrolledElement(scrolledElements)).toHaveAttribute(
+      "data-testid",
+      "assessment-criterion-top",
+    );
+  });
+
+  it("scrolls to the criterion start from the desktop navigator", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByTestId("criterion-nav-c2"));
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Strategy & Priorities");
+    });
+    expect(lastScrolledElement(scrolledElements)).toHaveAttribute(
+      "data-testid",
+      "assessment-criterion-top",
+    );
+  });
+
+  it("scrolls and highlights a specific question for Next incomplete", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByTestId("next-incomplete"));
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Strategy & Priorities");
+    });
+    const scrolled = lastScrolledElement(scrolledElements);
+    expect(scrolled).toHaveAttribute("data-question-id", "q2");
+    expect(scrolled).toHaveAttribute("data-highlighted", "true");
+    expect(scrolled).not.toHaveAttribute(
+      "data-testid",
+      "assessment-criterion-top",
+    );
+    expect(screen.getByTestId("question-card-q2")).toHaveClass("ring-2");
+  });
+
+  it("scrolls and highlights a specific question for Go to first missing", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByTestId("review-missing-responses"));
+    fireEvent.click(screen.getByTestId("go-to-first-missing"));
+    await waitFor(() => {
+      expect(lastScrolledElement(scrolledElements)).toHaveAttribute(
+        "data-question-id",
+        "q2",
+      );
+    });
+    expect(lastScrolledElement(scrolledElements)).not.toHaveAttribute(
+      "data-testid",
+      "assessment-criterion-top",
+    );
+    expect(screen.getByText("Are priorities visible?")).toBeVisible();
   });
 });

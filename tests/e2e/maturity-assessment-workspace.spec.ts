@@ -19,6 +19,17 @@ const jpegPath = join(
   "../fixtures/maturity-evidence/sample.jpg",
 );
 
+async function screenshotViewport(page: Page, name: string) {
+  try {
+    await page.screenshot({
+      path: `/opt/cursor/artifacts/${name}`,
+      fullPage: false,
+    });
+  } catch {
+    // Artifact directory is optional outside Cloud Agent runs.
+  }
+}
+
 async function screenshotIfPossible(page: Page, name: string) {
   try {
     await page.screenshot({
@@ -28,6 +39,39 @@ async function screenshotIfPossible(page: Page, name: string) {
   } catch {
     // Artifact directory is optional outside Cloud Agent runs.
   }
+}
+
+async function scrollDeepIntoCriterion(page: Page) {
+  await page.getByTestId("assessor-comment").scrollIntoViewIfNeeded();
+  await page.getByTestId("assessment-actions-summary").scrollIntoViewIfNeeded();
+}
+
+async function makeAssessmentContentTall(page: Page) {
+  await page.addStyleTag({
+    content:
+      '[data-testid^="question-card-"] { min-height: 70vh; } [data-testid="contextual-guidance"] { min-height: 40vh; }',
+  });
+}
+
+async function expectStickyMobileContextVisible(page: Page) {
+  const header = page.getByTestId("assessment-mobile-context");
+  await expect(header).toBeVisible();
+  const box = await header.boundingBox();
+  expect(box, "mobile context header should remain on screen").toBeTruthy();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeLessThan(180);
+  await expect(header.getByRole("progressbar")).toBeVisible();
+}
+
+async function expectNearTopOfViewport(page: Page, testId: string) {
+  const locator = page.getByTestId(testId);
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box, `${testId} should have a bounding box`).toBeTruthy();
+  expect(viewport, "viewport should be defined").toBeTruthy();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeLessThan(viewport!.height * 0.55);
 }
 
 async function createReadinessFramework(page: Page) {
@@ -296,5 +340,100 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       timeout: 15_000,
     });
     await screenshotIfPossible(page, "maturity-completed-readonly.png");
+  });
+
+  test("mobile sticky context stays visible and Next resets to the criterion start", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await startAssessment(page, "self");
+    await makeAssessmentContentTall(page);
+
+    const header = page.getByTestId("assessment-mobile-context");
+    await expect(header).toBeVisible();
+    await expect(page.getByTestId("assessment-mobile-pillar-name")).toHaveText(
+      /Leadership & Governance/i,
+    );
+    await expect(
+      page.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveText(/Clear Roles & Responsibilities/i);
+    await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
+      "Pillar 1 of 1 · Criterion 1 of 3",
+    );
+    await screenshotViewport(page, "maturity-mobile-criterion-top.png");
+
+    await scrollDeepIntoCriterion(page);
+    await expectStickyMobileContextVisible(page);
+    await screenshotViewport(
+      page,
+      "maturity-mobile-sticky-header-scrolled.png",
+    );
+
+    const previousScrollY = await page.evaluate(() => window.scrollY);
+    expect(previousScrollY).toBeGreaterThan(200);
+
+    await page.getByTestId("next-criterion").click();
+    await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
+      "Pillar 1 of 1 · Criterion 2 of 3",
+    );
+    await expect(
+      page.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveText(/Decision-Making & Accountability/i);
+    await expectNearTopOfViewport(page, "assessment-mobile-context");
+    await expectNearTopOfViewport(page, "assessment-criterion-top");
+    await expect(
+      page.getByText("Rate: Decision-Making & Accountability"),
+    ).toBeVisible();
+    const questionBox = await page
+      .getByText("Rate: Decision-Making & Accountability")
+      .boundingBox();
+    expect(questionBox, "first question should be on screen").toBeTruthy();
+    expect(questionBox!.y).toBeGreaterThan(0);
+    expect(questionBox!.y).toBeLessThan(700);
+    const nextScrollY = await page.evaluate(() => window.scrollY);
+    expect(nextScrollY).toBeLessThan(previousScrollY - 50);
+    await screenshotViewport(page, "maturity-mobile-after-next.png");
+
+    await scrollDeepIntoCriterion(page);
+    await page.getByTestId("criteria-drawer-open").click();
+    await expect(page.getByTestId("criteria-drawer")).toBeVisible();
+    await expect(
+      page.locator('[data-testid="criteria-drawer"] [data-active="true"]'),
+    ).toContainText("Decision-Making & Accountability");
+    await screenshotViewport(page, "maturity-mobile-criteria-drawer-nav.png");
+    await page
+      .getByTestId("criteria-drawer")
+      .getByRole("button", { name: /Strategy & Priorities/i })
+      .click();
+    await expect(page.getByTestId("assessment-criterion-position")).toHaveText(
+      "Pillar 1 of 1 · Criterion 3 of 3",
+    );
+    await expect(
+      page.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveText(/Strategy & Priorities/i);
+    await expectNearTopOfViewport(page, "assessment-criterion-top");
+    await expect(page.getByText("Rate: Strategy & Priorities")).toBeVisible();
+
+    await page.getByTestId("next-incomplete").click();
+    await expect(
+      page.getByTestId("assessment-mobile-criterion-name"),
+    ).toHaveText(/Clear Roles & Responsibilities/i);
+    const highlighted = page.locator(
+      '[data-question-id][data-highlighted="true"]',
+    );
+    await expect(highlighted).toBeVisible();
+    await expect(highlighted).toContainText(
+      "Rate: Clear Roles & Responsibilities",
+    );
+    const highlightedBox = await highlighted.boundingBox();
+    expect(highlightedBox).toBeTruthy();
+    expect(highlightedBox!.y).toBeGreaterThan(0);
+    expect(highlightedBox!.y).toBeLessThan(844);
+
+    await page.getByTestId("review-missing-responses").click();
+    await page.getByTestId("go-to-first-missing").click();
+    await expect(highlighted).toBeVisible();
+    await expect(highlighted).toHaveAttribute("data-highlighted", "true");
   });
 });
