@@ -8,7 +8,7 @@ import {
 import { PageHeader } from "@/components/platform/page-header";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
 import { PublishedFrameworkInspector } from "@/components/maturity/published-framework-inspector";
-import { sortMaturityQuestions } from "@/modules/maturity/framework-authoring";
+import { loadFrameworkStructure } from "@/modules/maturity/load-framework-structure";
 import { Badge } from "@/components/ui/badge";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -130,73 +130,16 @@ export default async function MaturityModelPage({
     ) ?? ["site"];
   }
 
-  async function loadFrameworkStructure(versionId: string) {
-    const loadedLevels: typeof levels = [];
-    const loadedPillars: typeof pillars = [];
-    const loadedCriteria: typeof criteria = [];
-    const loadedQuestions: typeof questions = [];
-
-    const { data: levelRows } = await supabase
-      .from("maturity_levels")
-      .select("id, level_number, name, color_token, description, guidance")
-      .eq("model_version_id", versionId)
-      .order("level_number");
-    loadedLevels.push(...(levelRows ?? []));
-
-    const { data: pillarRows } = await supabase
-      .from("maturity_pillars")
-      .select("id, name, position, section_id, description, guidance")
-      .eq("model_version_id", versionId)
-      .order("position");
-    loadedPillars.push(...(pillarRows ?? []));
-
-    for (const pillar of loadedPillars) {
-      const { data: criterionRows } = await supabase
-        .from("maturity_criteria")
-        .select("id, name, pillar_id, position, description, guidance")
-        .eq("pillar_id", pillar.id)
-        .order("position");
-      for (const criterion of criterionRows ?? []) {
-        loadedCriteria.push(criterion);
-        const { data: links } = await supabase
-          .from("maturity_criterion_questions")
-          .select("question_id")
-          .eq("criterion_id", criterion.id)
-          .eq("contributes_to_score", true);
-        for (const link of links ?? []) {
-          const { data: questionRow } = await supabase
-            .from("template_questions")
-            .select("id, prompt, position")
-            .eq("id", link.question_id)
-            .order("position")
-            .maybeSingle();
-          if (questionRow) {
-            loadedQuestions.push({
-              id: questionRow.id,
-              prompt: questionRow.prompt,
-              criterion_id: criterion.id,
-              position: questionRow.position,
-            });
-          }
-        }
-      }
-    }
-
-    return {
-      levels: loadedLevels,
-      pillars: loadedPillars,
-      criteria: loadedCriteria,
-      questions: sortMaturityQuestions(loadedQuestions),
-    };
-  }
-
   let publishedLevels: typeof levels = [];
   let publishedPillars: typeof pillars = [];
   let publishedCriteria: typeof criteria = [];
   let publishedQuestions: typeof questions = [];
 
   if (draftVersion) {
-    const draftStructure = await loadFrameworkStructure(draftVersion.id);
+    const draftStructure = await loadFrameworkStructure(
+      supabase,
+      draftVersion.id,
+    );
     levels = draftStructure.levels;
     pillars = draftStructure.pillars;
     criteria.push(...draftStructure.criteria);
@@ -205,6 +148,7 @@ export default async function MaturityModelPage({
 
   if (publishedVersion) {
     const publishedStructure = await loadFrameworkStructure(
+      supabase,
       publishedVersion.id,
     );
     publishedLevels = publishedStructure.levels;
