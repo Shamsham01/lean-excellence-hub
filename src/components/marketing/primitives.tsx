@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { HTMLAttributes, ReactNode } from "react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function MarketingContainer({
@@ -20,9 +22,15 @@ export function MarketingContainer({
 
 export function MarketingSection({
   className,
+  flush = false,
   ...props
-}: HTMLAttributes<HTMLElement>) {
-  return <section className={cn("marketing-section", className)} {...props} />;
+}: HTMLAttributes<HTMLElement> & { flush?: boolean }) {
+  return (
+    <section
+      className={cn(!flush && "marketing-section", className)}
+      {...props}
+    />
+  );
 }
 
 export function MarketingKicker({
@@ -122,25 +130,17 @@ export function MarketingWordmark({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function BookDemoControl({
-  noteId = "demo-booking-note",
+export function RequestDemoControl({
+  size = "default",
+  className,
 }: {
-  noteId?: string;
+  size?: "default" | "sm";
+  className?: string;
 }) {
   return (
-    <span className="inline-flex flex-col items-start gap-1">
-      <button
-        type="button"
-        disabled
-        className="marketing-cta-soon"
-        aria-describedby={noteId}
-      >
-        Book a demo
-      </button>
-      <span id={noteId} className="text-xs text-muted-foreground">
-        Coming soon — booking is not available yet.
-      </span>
-    </span>
+    <Button asChild size={size} className={className}>
+      <Link href="/demo">Request a demo</Link>
+    </Button>
   );
 }
 
@@ -169,5 +169,25 @@ export function SectionIntro({
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function PreviewCaption({ children }: { children: ReactNode }) {
+  return (
+    <figcaption className="marketing-preview-caption">{children}</figcaption>
+  );
+}
+
+export function StatusChip({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "accent" | "warning" | "success";
+}) {
+  return (
+    <span className={cn("marketing-chip", `marketing-chip-${tone}`)}>
+      {children}
+    </span>
   );
 }

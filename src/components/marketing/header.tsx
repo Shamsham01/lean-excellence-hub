@@ -7,12 +7,16 @@ import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { MarketingContainer, MarketingWordmark } from "./primitives";
+import {
+  MarketingContainer,
+  MarketingWordmark,
+  RequestDemoControl,
+} from "./primitives";
 
 const NAV_LINKS = [
-  { href: "#platform", label: "Platform" },
-  { href: "#why", label: "Why LEH" },
-  { href: "#leanai", label: "LeanAI" },
+  { href: "/#platform", label: "Platform" },
+  { href: "/#why", label: "Why LEH" },
+  { href: "/#leanai", label: "LeanAI" },
 ] as const;
 
 export function MarketingHeader() {
@@ -61,9 +65,7 @@ export function MarketingHeader() {
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">Sign in</Link>
           </Button>
-          <Button asChild size="sm">
-            <a href="#platform">Explore the platform</a>
-          </Button>
+          <RequestDemoControl size="sm" />
         </div>
 
         <Button
@@ -102,11 +104,7 @@ export function MarketingHeader() {
             ))}
           </nav>
           <div className="flex flex-col gap-2">
-            <Button asChild>
-              <a href="#platform" onClick={() => setOpen(false)}>
-                Explore the platform
-              </a>
-            </Button>
+            <RequestDemoControl />
             <Button asChild variant="outline">
               <Link href="/login">Sign in</Link>
             </Button>

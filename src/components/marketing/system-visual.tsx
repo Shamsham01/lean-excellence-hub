@@ -7,12 +7,12 @@ const FLOW_STEPS = [
   {
     module: "Action",
     status: "Owner assigned",
-    detail: "Due Friday",
+    detail: "Area leader · due Friday",
   },
   {
     module: "Problem Solving",
     status: "Root cause verified",
-    detail: "5 Why complete",
+    detail: "Containment in place",
   },
   {
     module: "Project",
@@ -21,15 +21,15 @@ const FLOW_STEPS = [
   },
   {
     module: "Benefit",
-    status: "Benefit value captured",
-    detail: "Awaiting validation",
+    status: "Awaiting validation",
+    detail: "Forecast captured · not customer results",
   },
 ] as const;
 
 export function MarketingSystemVisual() {
   return (
     <figure className="marketing-system">
-      <div className="marketing-system-shell">
+      <div className="marketing-system-shell marketing-system-shell-hero">
         <div className="marketing-system-chrome">
           <div className="marketing-system-dots" aria-hidden="true">
             <span />
@@ -41,7 +41,7 @@ export function MarketingSystemVisual() {
           </p>
         </div>
         <div className="marketing-system-body">
-          <ol className="marketing-system-flow">
+          <ol className="marketing-system-flow" role="list">
             {FLOW_STEPS.map((step) => (
               <li key={step.module}>
                 <div className="marketing-system-card">
@@ -64,22 +64,23 @@ export function MarketingSystemVisual() {
                 Maturity
               </p>
               <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">
-                Operational discipline ↑
+                Connecting layer
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Evidence from Gemba, actions and projects feeds the operating
-                system — not a separate scorecard.
+                Evidence from Gemba, actions and projects sits in the same
+                operating system — not a separate scorecard.
               </p>
             </div>
             <p className="text-xs font-medium text-accent-foreground">
-              Connecting layer
+              Engine, not doctrine
             </p>
           </aside>
         </div>
       </div>
       <figcaption className="mt-3 text-xs leading-5 text-muted-foreground">
-        Illustrative product UI showing how a workplace signal becomes an owned
-        action, a verified countermeasure and a validated benefit.
+        Illustrative product UI. Example records show how a workplace signal
+        becomes an owned action, a verified countermeasure and a benefit
+        awaiting validation — not a customer result.
       </figcaption>
     </figure>
   );
