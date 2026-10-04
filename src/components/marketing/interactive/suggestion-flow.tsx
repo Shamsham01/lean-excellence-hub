@@ -6,6 +6,7 @@ import {
   AsyncActionButton,
   type AsyncActionPhase,
 } from "@/components/ui/async-action-button";
+import { ImprovementProgress } from "@/components/ui/improvement-progress";
 
 import { runDemoWorkflow } from "./demo-progress";
 import {
@@ -296,6 +297,12 @@ function SuggestionSuccess() {
       reference={SUGGESTION_REF}
       body="Your idea is now visible and ready for review."
     >
+      <ImprovementProgress
+        complete
+        activeIndex={2}
+        label="Capture complete · ready for review"
+      />
+      <DemoTimeline currentIndex={1} />
       <div className="leh-demo-actions">
         <button
           type="button"

@@ -11,6 +11,7 @@ type ImprovementProgressProps = {
   activeIndex: number;
   label: string;
   compact?: boolean;
+  complete?: boolean;
   className?: string;
 };
 
@@ -18,6 +19,7 @@ export function ImprovementProgress({
   activeIndex,
   label,
   compact = false,
+  complete = false,
   className,
 }: ImprovementProgressProps) {
   const clamped = Math.max(
@@ -34,6 +36,7 @@ export function ImprovementProgress({
       )}
       data-testid="leh-progress"
       data-active-index={clamped}
+      data-complete={complete ? "true" : undefined}
       aria-hidden={compact ? true : undefined}
     >
       <p className="leh-progress-label">{label}</p>
@@ -42,7 +45,11 @@ export function ImprovementProgress({
           <li
             key={step}
             data-state={
-              index < clamped ? "done" : index === clamped ? "active" : "idle"
+              complete || index < clamped
+                ? "done"
+                : index === clamped
+                  ? "active"
+                  : "idle"
             }
           >
             <span className="leh-progress-node" />

@@ -99,7 +99,7 @@ export function DemoWorkspace() {
       </div>
 
       <p className="leh-demo-banner">
-        DEMO WORKSPACE
+        <span className="leh-demo-banner-label">DEMO WORKSPACE</span>
         <span>Example data · not customer records</span>
       </p>
 

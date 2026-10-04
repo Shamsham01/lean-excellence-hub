@@ -44,7 +44,9 @@ async function submitSuggestion(
   fireEvent.change(idea, { target: { value: title } });
   fireEvent.click(screen.getByTestId("leh-demo-submit-idea"));
   await waitFor(() => {
-    expect(screen.getByText("Idea submitted")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Idea submitted" }),
+    ).toBeInTheDocument();
   });
 }
 
@@ -149,7 +151,9 @@ describe("interactive LEH product experience", () => {
     expect(
       screen.queryByTestId("leh-demo-notification-count"),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("Idea submitted")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Idea submitted" }),
+    ).not.toBeInTheDocument();
   });
 
   it("runs a gemba finding into an owned action", async () => {

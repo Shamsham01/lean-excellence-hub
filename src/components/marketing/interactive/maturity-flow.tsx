@@ -14,7 +14,7 @@ function pillarScores(answers: Array<MaturityAnswer | null>) {
   const operations = Number(((value(0) + value(2)) / 2).toFixed(1));
   const discipline = Number(((value(1) + value(3)) / 2).toFixed(1));
   const capability = value(4);
-  const people = value(4);
+  const people = Number(((value(1) + value(4)) / 2).toFixed(1));
   const leadership = Number(
     ((value(0) + value(1) + value(2) + value(3) + value(4)) / 5).toFixed(1),
   );

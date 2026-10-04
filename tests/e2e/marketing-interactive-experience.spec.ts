@@ -13,7 +13,9 @@ test("public interactive workspace submits a suggestion without leaving the home
   await page.getByTestId("leh-demo-start-suggestion").click();
   await expect(page.getByTestId("leh-demo-suggestion-form")).toBeVisible();
   await page.getByTestId("leh-demo-submit-idea").click();
-  await expect(page.getByText("Idea submitted")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Idea submitted" }),
+  ).toBeVisible();
   await expect(page.getByText("SUG-DEMO-001")).toBeVisible();
   await expect(page.getByTestId("leh-demo-notification-count")).toHaveText("1");
 });

@@ -176,7 +176,10 @@ export function DemoScenarioSelector({
       </p>
       <ul className="leh-demo-scenario-grid" role="list">
         {DEMO_SCENARIOS.map((scenario) => (
-          <li key={scenario.id}>
+          <li
+            key={scenario.id}
+            data-featured={scenario.featured ? "true" : undefined}
+          >
             <button
               type="button"
               className="leh-demo-scenario"
