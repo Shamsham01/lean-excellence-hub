@@ -121,6 +121,7 @@ test.describe("Maturity Quick Start template preview and draft deploy", () => {
     await expect(page.getByTestId("framework-editor")).toBeVisible({
       timeout: 45_000,
     });
+    await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
     await expect(page).toHaveURL(
       /\/platform\/maturity\/models\/.+[?&]step=review/,
     );
