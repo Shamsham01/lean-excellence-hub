@@ -658,7 +658,7 @@ body {
 .marketing-chip-success {
   border-color: color-mix(in oklch, var(--success) 40%, var(--border));
   background: color-mix(in oklch, var(--success) 12%, var(--card));
-  color: var(--success-foreground);
+  color: var(--success);
 }
 
 .marketing-preview {
@@ -736,31 +736,32 @@ body {
   color: var(--muted-foreground);
 }
 
+.marketing-heatmap-head [data-band="1"] {
+  color: var(--maturity-1);
+}
+.marketing-heatmap-head [data-band="2"] {
+  color: var(--maturity-2);
+}
+.marketing-heatmap-head [data-band="3"] {
+  color: var(--maturity-3);
+}
+.marketing-heatmap-head [data-band="4"] {
+  color: var(--maturity-4);
+}
+.marketing-heatmap-head [data-band="5"] {
+  color: var(--maturity-5);
+}
+
 .marketing-heatmap-cell {
   height: 0.7rem;
   border-radius: 0.2rem;
   background: color-mix(in oklch, var(--border) 80%, var(--muted));
 }
 
-.marketing-heatmap-cell[data-band="1"] {
-  background: color-mix(in oklch, var(--maturity-1) 28%, var(--muted));
-}
-.marketing-heatmap-cell[data-band="2"] {
-  background: color-mix(in oklch, var(--maturity-2) 28%, var(--muted));
-}
-.marketing-heatmap-cell[data-band="3"] {
-  background: color-mix(in oklch, var(--maturity-3) 28%, var(--muted));
-}
-.marketing-heatmap-cell[data-band="4"] {
-  background: color-mix(in oklch, var(--maturity-4) 28%, var(--muted));
-}
-.marketing-heatmap-cell[data-band="5"] {
-  background: color-mix(in oklch, var(--maturity-5) 28%, var(--muted));
-}
-
 .marketing-heatmap-cell[data-active="true"] {
   outline: 2px solid var(--primary);
   outline-offset: 1px;
+  background: color-mix(in oklch, var(--maturity-3) 55%, var(--muted));
 }
 
 .marketing-adherence,
@@ -961,10 +962,11 @@ body {
   .marketing-process-progress {
     display: block;
     position: absolute;
-    top: 0.55rem;
+    top: 2.55rem;
     right: 1.5rem;
     left: 1.5rem;
     height: 1px;
+    opacity: 0.55;
     transform: scaleX(1);
     transform-origin: left center;
     background: color-mix(in oklch, var(--primary) 45%, var(--border));
@@ -1138,6 +1140,9 @@ body {
 }
 
 .marketing-footer-list a {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
   font-size: 0.875rem;
   color: var(--foreground);
   text-decoration: none;

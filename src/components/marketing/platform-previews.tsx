@@ -79,8 +79,10 @@ function MaturityPreview() {
       >
         <div className="marketing-heatmap-head">
           <span>Pillar</span>
-          {levels.map((level) => (
-            <span key={level}>{level}</span>
+          {levels.map((level, column) => (
+            <span key={level} data-band={column + 1}>
+              {level}
+            </span>
           ))}
         </div>
         {pillars.map((pillar, row) => (
@@ -90,7 +92,6 @@ function MaturityPreview() {
               <span
                 key={level}
                 className="marketing-heatmap-cell"
-                data-band={column + 1}
                 data-active={row === 0 && column === 2 ? "true" : undefined}
               />
             ))}
