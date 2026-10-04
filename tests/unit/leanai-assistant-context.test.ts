@@ -193,6 +193,38 @@ describe("LeanAI assistant route context", () => {
       "people",
     );
   });
+
+  it("maps Maturity frameworks and Quick Start preview to template-aware context", () => {
+    const models = parseAssistantRoute("/platform/maturity/models");
+    const modelsPage = assistantPageDefinitionFor(models);
+    expect(models.workflow).toBe("maturity_models");
+    expect(modelsPage.starterPrompts).toEqual([
+      "Is Quick Start right for us?",
+      "Explain this framework",
+      "Which parts should we customise?",
+      "How should we adapt this to our organisation?",
+    ]);
+    expect(modelsPage.facts.join(" ")).toMatch(
+      /deploy the LEH Operational Excellence Standard as a draft/i,
+    );
+    expect(modelsPage.facts.join(" ")).not.toMatch(
+      /will deploy|automatically publish/i,
+    );
+
+    const preview = parseAssistantRoute(
+      "/platform/maturity/templates/leh-operational-excellence-standard",
+    );
+    const previewPage = assistantPageDefinitionFor(preview);
+    expect(preview.workflow).toBe("maturity_template_preview");
+    expect(previewPage.contextLabel).toBe("Maturity · Quick Start");
+    expect(previewPage.starterPrompts).toEqual([
+      "Is Quick Start right for us?",
+      "Explain this framework",
+      "Which parts should we customise?",
+      "How should we adapt this to our organisation?",
+    ]);
+    expect(previewPage.facts.join(" ")).toMatch(/must not deploy or publish/i);
+  });
 });
 
 describe("LeanAI programme versus category product knowledge", () => {

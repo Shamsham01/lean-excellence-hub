@@ -1,20 +1,17 @@
-import { redirect } from "next/navigation";
-
-import { createMaturityModel } from "../actions";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { CreateMaturityFrameworkForm } from "@/components/maturity/create-maturity-framework-form";
+import { MaturityQuickStartCard } from "@/components/maturity/maturity-quick-start-card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
   scopeTypeLabel,
   type MaturityAssessmentScopeType,
 } from "@/modules/maturity/semantic-scope";
+import { listMaturityFrameworkTemplates } from "@/modules/maturity/templates";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function MaturityModelsPage() {
@@ -26,6 +23,7 @@ export default async function MaturityModelsPage() {
     .from("maturity_models")
     .select("id, display_name, description, created_at")
     .order("created_at", { ascending: false });
+  const templates = listMaturityFrameworkTemplates();
 
   const modelIds = models?.map((model) => model.id) ?? [];
   const { data: versions } =
@@ -71,19 +69,11 @@ export default async function MaturityModelsPage() {
     scopesByVersion.set(row.model_version_id, existing);
   }
 
-  async function createAction(formData: FormData) {
-    "use server";
-    const result = await createMaturityModel(formData);
-    if (result.modelId) {
-      redirect(`/platform/maturity/models/${result.modelId}`);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-8" data-testid="maturity-models-page">
       <PageHeader
         title="Maturity frameworks"
-        description="Configure pillars, criteria, assessment scopes, and questions."
+        description="Create a framework from scratch or start with an LEH template and tailor it to your organisation."
         actions={
           <Button variant="outline" asChild>
             <AppLink
@@ -96,28 +86,46 @@ export default async function MaturityModelsPage() {
         }
       />
 
+      <section
+        className="flex flex-col gap-4"
+        data-testid="maturity-quick-start-section"
+      >
+        <div className="flex flex-col gap-1">
+          <h2 className="typography-section-title">Quick Start</h2>
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            Start with a practical Operational Excellence framework and tailor
+            it to your organisation. The template is optional, fully editable,
+            and never publishes itself.
+          </p>
+        </div>
+        {templates.map((template) => (
+          <MaturityQuickStartCard
+            key={template.key}
+            template={template}
+            canManage={canManage}
+          />
+        ))}
+      </section>
+
       {canManage ? (
-        <Card>
-          <CardContent className="flex flex-col gap-4 pt-6">
-            <h2 className="text-sm font-semibold">New framework</h2>
-            <form action={createAction} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  required
-                  placeholder="Lean Excellence Framework"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" rows={3} />
-              </div>
-              <Button type="submit">Create draft framework</Button>
-            </form>
-          </CardContent>
-        </Card>
+        <section
+          className="flex flex-col gap-4"
+          data-testid="maturity-manual-create-section"
+        >
+          <div className="flex flex-col gap-1">
+            <h2 className="typography-section-title">Create manually</h2>
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              Start from a blank draft if you already know the pillars, criteria
+              and questions your organisation needs.
+            </p>
+          </div>
+          <Card>
+            <CardContent className="flex flex-col gap-4 pt-6">
+              <h3 className="text-sm font-semibold">New framework</h3>
+              <CreateMaturityFrameworkForm />
+            </CardContent>
+          </Card>
+        </section>
       ) : null}
 
       <div className="flex flex-col gap-2">

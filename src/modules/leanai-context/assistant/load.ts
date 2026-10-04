@@ -7,6 +7,10 @@ import { loadLeanAiInterventionPermissions } from "@/modules/leanai-context/inte
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
 import { AI_PERMISSIONS } from "@/modules/operational/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import {
+  getMaturityFrameworkTemplate,
+  maturityTemplateCounts,
+} from "@/modules/maturity/templates";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { loadCurrentOrganisationIdentity } from "@/modules/organisations/context";
 import {
@@ -179,6 +183,55 @@ export async function resolveLeanAiAssistantView(
     extraRemaining.push(...suggestions.remaining);
     if (identity.workflow === "programme_configuration") {
       summary = suggestionsSetupGuidance(suggestions);
+    }
+  }
+
+  if (
+    identity.workflow === "maturity_models" ||
+    identity.workflow === "maturity_overview"
+  ) {
+    const maturityItem = snapshot.readiness.items.find(
+      (item) => item.key === "maturity",
+    );
+    relevantState.maturityFrameworkCount = Number(
+      maturityItem?.supportingMetrics.model_count ?? 0,
+    );
+    relevantState.publishedMaturityVersionCount = Number(
+      maturityItem?.supportingMetrics.published_version_count ?? 0,
+    );
+    relevantState.quickStartAvailable = true;
+    if (canManageMaturity) {
+      allowedActions.push(
+        "Preview the LEH Operational Excellence Standard",
+        "Create an organisation-owned draft from Quick Start",
+        "Create a framework manually",
+      );
+    }
+    if (canManageMaturity && maturityItem?.reasonCode === "maturity_none") {
+      extraRemaining.push(
+        "You can start manually or deploy the LEH Operational Excellence Standard as a draft.",
+      );
+    }
+  }
+
+  if (identity.workflow === "maturity_template_preview") {
+    const templateKey = identity.pathname.split("/").at(-1) ?? "";
+    const template = getMaturityFrameworkTemplate(templateKey);
+    if (template) {
+      const counts = maturityTemplateCounts(template);
+      relevantState.templateKey = template.key;
+      relevantState.templateName = template.name;
+      relevantState.levelCount = counts.levels;
+      relevantState.pillarCount = counts.pillars;
+      relevantState.criterionCount = counts.criteria;
+      relevantState.questionCount = counts.scoredQuestions;
+      relevantState.deploysAsDraft = true;
+      allowedActions.push("Explain this Quick Start template");
+      if (canManageMaturity) {
+        allowedActions.push(
+          "Use this template to create an organisation-owned draft. LeanAI will not deploy or publish it.",
+        );
+      }
     }
   }
 

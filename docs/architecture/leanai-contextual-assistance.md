@@ -20,6 +20,7 @@ Related architecture:
 
 - `docs/architecture/ai-platform.md`
 - `docs/architecture/ai-problem-solving-facilitator.md`
+- `docs/architecture/maturity-quick-start-templates.md`
 - `docs/product/pricing-subscription-onboarding-v1.md`
 
 ---
@@ -536,9 +537,14 @@ LeanAI:
 
 ### Maturity
 
-> You do not have a Maturity Framework yet.
+> You do not have a Maturity Framework yet. You can start manually or deploy the LEH Operational Excellence Standard as a draft.
 
-**Use LEH starter framework** · **Build one with LeanAI** · **Later**
+**Use this template** · **Create manually** · **Later**
+
+The Maturity Quick Start path (#209) is implemented as a curated, product-owned
+template that copies into an organisation-owned **draft**. LeanAI explains the
+catalogue and preview; it does not deploy or publish the template. The full
+Manual / Build with LeanAI / Quick Start shell across modules remains #207.
 
 ### Suggestions
 

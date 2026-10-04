@@ -13640,6 +13640,10 @@ export type Database = {
           storage_object_path: string
         }[]
       }
+      instantiate_maturity_quick_start_template: {
+        Args: { target_definition: Json; target_template_key: string }
+        Returns: string
+      }
       issue_organisation_invitation: {
         Args: {
           invitation_canonical_recipient: string

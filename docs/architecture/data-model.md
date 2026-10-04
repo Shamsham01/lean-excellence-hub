@@ -84,6 +84,12 @@ See [ADR-0012](../adr/ADR-0012-milestone-4-shared-foundation-boundary.md).
 
 Gemba, 5S, Leader Standard Work, maturity, and similar forms share this engine. Curriculum and structured problem-solving use typed domain extensions where their semantics genuinely differ.
 
+Maturity Quick Start templates are **product-owned catalogue definitions** in
+application code, not rows seeded into every tenant. Choosing **Use this
+template** copies the definition into the organisation's `maturity_models` /
+template-engine draft. See
+[maturity-quick-start-templates.md](./maturity-quick-start-templates.md).
+
 ## Workflow, audit, events, and history
 
 Domains define stable states and transition rules in application services. Shared transition history records the actor, tenant, resource, from/to states, reason, and time. Audit is tamper-resistant evidence, outbox events enable reactions, and activity is user-facing; they remain separate.

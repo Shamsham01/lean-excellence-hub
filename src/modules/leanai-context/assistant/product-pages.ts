@@ -173,18 +173,87 @@ function definitionFor(
     };
   }
 
-  if (
-    identity.workflow === "maturity_overview" ||
-    identity.workflow === "maturity_models"
-  ) {
+  if (identity.workflow === "maturity_template_preview") {
+    return {
+      module: "maturity",
+      workflow: identity.workflow,
+      pageTitle: "Maturity Quick Start template",
+      contextLabel: "Maturity · Quick Start",
+      summary:
+        "Preview a curated LEH starting-point framework. Using it creates an organisation-owned draft that you can edit. LeanAI will not deploy or publish it.",
+      terminology: [
+        {
+          term: "Quick Start template",
+          meaning:
+            "A product-owned starting-point framework. Using it copies the content into your organisation as an editable draft.",
+        },
+        {
+          term: "Organisation-owned draft",
+          meaning:
+            "The copy created for your organisation. Later updates to the built-in LEH template do not change this copy.",
+        },
+      ],
+      starterPrompts: [
+        "Is Quick Start right for us?",
+        "Explain this framework",
+        "Which parts should we customise?",
+        "How should we adapt this to our organisation?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "The LEH Operational Excellence Standard is a recommended starting point, not a mandatory methodology.",
+        "Use this template creates a draft only. A person must publish it later.",
+        "LeanAI must not deploy or publish the template.",
+      ],
+    };
+  }
+
+  if (identity.workflow === "maturity_models") {
     return {
       module: "maturity",
       workflow: identity.workflow,
       pageTitle: identity.pageTitle,
-      contextLabel:
-        identity.workflow === "maturity_models"
-          ? "Maturity · Frameworks"
-          : "Maturity",
+      contextLabel: "Maturity · Frameworks",
+      summary:
+        "Create a framework from scratch or start with an LEH template and tailor it to your organisation.",
+      terminology: [
+        {
+          term: "Maturity Framework",
+          meaning:
+            "The published standard of pillars, criteria, levels, and questions used to assess operational excellence.",
+        },
+        {
+          term: "Quick Start",
+          meaning:
+            "A curated LEH starting-point framework. It is optional, editable, and deploys as a draft.",
+        },
+        {
+          term: "Criterion",
+          meaning:
+            "A specific capability inside a pillar that questions measure.",
+        },
+      ],
+      starterPrompts: [
+        "Is Quick Start right for us?",
+        "Explain this framework",
+        "Which parts should we customise?",
+        "How should we adapt this to our organisation?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "You can start manually or deploy the LEH Operational Excellence Standard as a draft.",
+        "Quick Start is a starting point, not the one correct Lean system.",
+        "LeanAI must not deploy or publish a framework.",
+      ],
+    };
+  }
+
+  if (identity.workflow === "maturity_overview") {
+    return {
+      module: "maturity",
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel: "Maturity",
       summary: knowledge.summary,
       terminology: [
         {
@@ -205,6 +274,7 @@ function definitionFor(
       ],
       starterPrompts: [
         "What is a Maturity Framework?",
+        "Is Quick Start right for us?",
         "What should I do next?",
         "Is this setup complete?",
       ],
@@ -342,6 +412,8 @@ function defaultContextLabel(identity: AssistantRouteIdentity): string {
       return "Recognition";
     case "lean_ai_settings":
       return "LeanAI · Settings";
+    case "maturity_template_preview":
+      return "Maturity · Quick Start";
     default:
       return identity.pageTitle;
   }

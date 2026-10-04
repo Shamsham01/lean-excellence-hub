@@ -2,7 +2,58 @@
 
 import { revalidatePath } from "next/cache";
 
+import {
+  buildMaturityQuickStartDefinition,
+  isMaturityQuickStartTemplateKey,
+  requireCanonicalMaturityTemplate,
+} from "@/modules/maturity/templates";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import type { Json } from "@/platform/supabase/database.types";
+
+function quickStartInstantiationError(message: string | undefined): string {
+  const detail = (message ?? "").toLowerCase();
+  if (detail.includes("not authorised") || detail.includes("not authorized")) {
+    return "You do not have permission to create a Maturity Framework from this template.";
+  }
+  if (detail.trim().length > 0) {
+    return message as string;
+  }
+  return "The Quick Start template could not be created. Nothing was published. You can try again.";
+}
+
+export async function instantiateMaturityQuickStartTemplate(
+  templateKey: string,
+) {
+  const key = templateKey.trim();
+  if (!isMaturityQuickStartTemplateKey(key)) {
+    return { error: "This Quick Start template is not available." };
+  }
+
+  let definition: Json;
+  try {
+    const template = requireCanonicalMaturityTemplate(key);
+    definition = buildMaturityQuickStartDefinition(template) as Json;
+  } catch {
+    return { error: "This Quick Start template is not ready to deploy." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc(
+    "instantiate_maturity_quick_start_template",
+    {
+      target_template_key: key,
+      target_definition: definition,
+    },
+  );
+
+  if (error) {
+    return { error: quickStartInstantiationError(error.message) };
+  }
+
+  revalidatePath("/platform/maturity");
+  revalidatePath("/platform/maturity/models");
+  return { modelId: data as string };
+}
 
 export async function createMaturityModel(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();

@@ -1,6 +1,6 @@
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
 
-export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v2";
+export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v3";
 
 export type CoachProductKnowledge = {
   version: string;
@@ -46,7 +46,8 @@ const KNOWLEDGE: Partial<
     facts: [
       "A draft-only framework is not ready for operational use.",
       "Publish at least one version so teams assess against a shared standard.",
-      "LeanAI does not publish frameworks automatically. An authorised person publishes through the Maturity authoring interface.",
+      "The LEH Operational Excellence Standard is an optional Quick Start template. Using it creates an organisation-owned draft; later template updates do not change existing copies.",
+      "LeanAI does not deploy or publish frameworks automatically. An authorised person publishes through the Maturity authoring interface.",
     ],
     recommendedPath: "/platform/maturity/models",
   },
