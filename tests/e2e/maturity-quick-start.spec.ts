@@ -5,11 +5,11 @@ import { signInAsDemoUser } from "./helpers/demo-auth";
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const TEMPLATE_NAME = "LEH Operational Excellence Standard";
 const DAILY_MANAGEMENT_QUESTION =
-  "Are teams using a consistent routine to review safety, quality, delivery, cost and people performance?";
+  "Are Daily Management / LDMS reviews used consistently to inspect safety, quality, delivery, cost and people performance, with abnormalities made visible?";
 const RISK_QUESTION =
   "Are operational risks systematically identified, assessed and controlled?";
-const SKILLS_QUESTION =
-  "Are required skills defined for roles and responsibilities?";
+const TRAINING_QUESTION =
+  "Is planned Lean / CI training completed to schedule for the people and roles identified in the capability plan?";
 
 async function screenshotIfPossible(
   page: Page,
@@ -38,7 +38,7 @@ async function expectPreviewCount(
   ).toHaveText(String(value));
 }
 
-test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
+test.describe("Maturity Quick Start template preview and draft deploy", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(180_000);
 
@@ -98,7 +98,7 @@ test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
     await page.getByTestId("template-preview-criterion-5-3").click();
     await expect(
       page.getByTestId("template-preview-question-5-3-1"),
-    ).toContainText(SKILLS_QUESTION);
+    ).toContainText(TRAINING_QUESTION);
     await screenshotIfPossible(page, "maturity-template-preview-desktop.png");
 
     await page.setViewportSize({ width: 390, height: 844 });

@@ -8,7 +8,10 @@ import type {
   MaturityTemplateLevel,
   MaturityTemplatePillar,
 } from "./types";
-import { LEH_OE_STANDARD_EXPECTED_COUNTS } from "./types";
+import {
+  LEH_OE_STANDARD_EXPECTED_COUNTS,
+  MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH,
+} from "./types";
 
 const ALLOWED_SCOPES = new Set<string>(MATURITY_FRAMEWORK_SCOPE_TYPES);
 
@@ -58,6 +61,15 @@ function validateQuestion(
 ): void {
   if (isBlank(prompt)) {
     issues.push(issue(`${path}.prompt`, "Question prompt is required."));
+    return;
+  }
+  if (prompt.length > MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH) {
+    issues.push(
+      issue(
+        `${path}.prompt`,
+        `Question prompt must be at most ${MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH} characters.`,
+      ),
+    );
   }
 }
 

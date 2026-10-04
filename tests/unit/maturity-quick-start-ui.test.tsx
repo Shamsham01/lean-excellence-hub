@@ -64,6 +64,20 @@ describe("Maturity Quick Start UI", () => {
     );
     expect(
       screen.getByTestId("template-preview-criterion-1-1"),
-    ).toHaveTextContent("Daily Management");
+    ).toHaveTextContent("Daily Management / LDMS");
+    expect(
+      screen.getByTestId("template-preview-criterion-1-3"),
+    ).toHaveTextContent("5S / Workplace Organisation");
+    expect(
+      screen.getByTestId("template-preview-criterion-1-4"),
+    ).toHaveTextContent("Gemba Management");
+    expect(
+      screen.getByTestId("template-preview-question-1-3-1"),
+    ).toHaveTextContent(
+      "Is there a defined workplace organisation / 5S standard, and are planned audits completed at the required frequency rather than as one-off clean-ups?",
+    );
+    expect(
+      screen.getByText(/rather than a fixed scorecard/i),
+    ).toBeInTheDocument();
   });
 });

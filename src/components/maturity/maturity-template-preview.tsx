@@ -54,7 +54,9 @@ export function MaturityTemplatePreview({
       <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
         This is a practical starting point, not a mandatory Lean methodology.
         After you use the template, the copy belongs to your organisation and
-        can be edited before anyone publishes it.
+        can be edited before anyone publishes it. Where criteria mention
+        percentages or rates, treat them as indicative starter evidence of
+        maturity rather than a fixed scorecard.
       </p>
 
       <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -80,14 +82,17 @@ export function MaturityTemplatePreview({
           {template.levels.map((level, index) => (
             <li key={level.name}>
               <Card>
-                <CardContent className="flex flex-col gap-1 p-4">
+                <CardContent className="flex flex-col gap-2 p-4">
                   <p className="font-medium">
                     {index + 1}. {level.name}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     {level.description}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      How to recognise this level.{" "}
+                    </span>
                     {level.guidance}
                   </p>
                 </CardContent>
@@ -134,7 +139,7 @@ export function MaturityTemplatePreview({
                 >
                   <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium marker:content-none sm:px-5 [&::-webkit-details-marker]:hidden">
                     <span className="flex items-start justify-between gap-3">
-                      <span>
+                      <span className="min-w-0 text-left leading-snug">
                         {criterionIndex + 1}. {criterion.name}
                       </span>
                       <span className="shrink-0 text-xs font-normal text-muted-foreground">
@@ -143,17 +148,20 @@ export function MaturityTemplatePreview({
                     </span>
                   </summary>
                   <div className="flex flex-col gap-3 px-4 pb-4 sm:px-5">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm leading-relaxed text-muted-foreground">
                       {criterion.description}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      Assessment guidance: {criterion.guidance}
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        How to assess.{" "}
+                      </span>
+                      {criterion.guidance}
                     </p>
-                    <ul className="flex flex-col gap-2 pl-1">
+                    <ul className="flex flex-col gap-2 border-t border-border pt-3 pl-1">
                       {criterion.questions.map((question, questionIndex) => (
                         <li
                           key={question.prompt}
-                          className="text-sm"
+                          className="text-sm leading-relaxed"
                           data-testid={`template-preview-question-${pillarIndex + 1}-${criterionIndex + 1}-${questionIndex + 1}`}
                         >
                           {questionIndex + 1}. {question.prompt}

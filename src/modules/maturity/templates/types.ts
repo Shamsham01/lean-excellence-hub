@@ -11,6 +11,9 @@ export const LEH_OE_STANDARD_EXPECTED_COUNTS = {
   questionsPerCriterion: 2,
 } as const;
 
+/** Matches `template_questions_prompt_check` (1..500). */
+export const MATURITY_TEMPLATE_QUESTION_PROMPT_MAX_LENGTH = 500;
+
 export type MaturityTemplateQuestion = {
   prompt: string;
   allowsNotApplicable?: boolean;
