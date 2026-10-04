@@ -1,7 +1,7 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ImprovementProgress } from "@/components/ui/improvement-progress";
 import { MarketingWordmark } from "@/components/marketing/primitives";
@@ -53,13 +53,14 @@ export function DemoWorkspace() {
   const state = useDemoState();
   const dispatch = useDemoDispatch();
   const [shell, setShell] = useState<HTMLElement | null>(null);
-  const [canvas, setCanvas] = useState<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (canvas) {
-      canvas.scrollTop = 0;
+    const node = canvasRef.current;
+    if (node) {
+      node.scrollTop = 0;
     }
-  }, [canvas, state.view, state.perspective]);
+  }, [state.view, state.perspective]);
 
   return (
     <section
@@ -124,7 +125,7 @@ export function DemoWorkspace() {
           ))}
         </nav>
 
-        <div ref={setCanvas} className="leh-demo-canvas">
+        <div ref={canvasRef} className="leh-demo-canvas">
           {state.progress ? (
             <ImprovementProgress
               activeIndex={Math.min(
