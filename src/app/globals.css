@@ -296,7 +296,7 @@ body {
   --marketing-max: 72rem;
   --marketing-wide: 76rem;
   --marketing-gutter: 1.25rem;
-  --marketing-section-y: 4.5rem;
+  --marketing-section-y: 3.75rem;
   --marketing-radius: 0.75rem;
   --marketing-shadow:
     0 1px 1px oklch(0.22 0.02 255 / 0.04),
@@ -320,14 +320,14 @@ body {
 @media (min-width: 768px) {
   .marketing {
     --marketing-gutter: 1.75rem;
-    --marketing-section-y: 6rem;
+    --marketing-section-y: 5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .marketing {
     --marketing-gutter: 2rem;
-    --marketing-section-y: 7.5rem;
+    --marketing-section-y: 6.25rem;
   }
 }
 
@@ -436,49 +436,36 @@ body {
   flex-shrink: 0;
 }
 
-.marketing-cta-soon {
-  display: inline-flex;
-  min-height: 2.75rem;
-  cursor: not-allowed;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed var(--border);
-  border-radius: 0.5rem;
-  background: transparent;
-  padding: 0.5rem 1rem;
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-  font-weight: 500;
+.marketing {
+  overflow-x: clip;
+}
+
+.marketing main:focus {
+  outline: none;
+}
+
+.marketing main:focus-visible {
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.25rem;
 }
 
 .marketing-hero {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: clip;
+  padding-block: 2.25rem 3rem;
 }
 
-.marketing-hero-grid {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in oklch, var(--border) 55%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in oklch, var(--border) 55%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 3rem 3rem;
-  mask-image: radial-gradient(
-    ellipse 80% 70% at 70% 10%,
-    black 10%,
-    transparent 72%
-  );
+@media (min-width: 768px) {
+  .marketing-hero {
+    padding-block: 2.5rem 3.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-hero {
+    padding-block: 2.75rem 4rem;
+  }
 }
 
 .marketing-system {
@@ -491,6 +478,18 @@ body {
   border-radius: calc(var(--marketing-radius) + 0.1rem);
   background: var(--elevated);
   box-shadow: var(--marketing-shadow-lift);
+}
+
+.marketing-system-shell-hero {
+  box-shadow:
+    var(--marketing-shadow-lift),
+    0 28px 64px oklch(0.22 0.02 255 / 0.1);
+}
+
+@media (min-width: 640px) {
+  .marketing-system-shell-hero {
+    min-height: 26.5rem;
+  }
 }
 
 .marketing-system-chrome {
@@ -574,27 +573,32 @@ body {
 }
 
 .marketing-system-card {
-  animation: marketing-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
   border: 1px solid var(--border);
   border-radius: 0.6rem;
   background: var(--card);
   padding: 0.7rem 0.8rem 0.75rem;
 }
 
-.marketing-system-flow li:nth-child(1) .marketing-system-card {
-  animation-delay: 40ms;
-}
-.marketing-system-flow li:nth-child(2) .marketing-system-card {
-  animation-delay: 110ms;
-}
-.marketing-system-flow li:nth-child(3) .marketing-system-card {
-  animation-delay: 180ms;
-}
-.marketing-system-flow li:nth-child(4) .marketing-system-card {
-  animation-delay: 250ms;
-}
-.marketing-system-flow li:nth-child(5) .marketing-system-card {
-  animation-delay: 320ms;
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-system-card {
+    animation: marketing-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .marketing-system-flow li:nth-child(1) .marketing-system-card {
+    animation-delay: 40ms;
+  }
+  .marketing-system-flow li:nth-child(2) .marketing-system-card {
+    animation-delay: 110ms;
+  }
+  .marketing-system-flow li:nth-child(3) .marketing-system-card {
+    animation-delay: 180ms;
+  }
+  .marketing-system-flow li:nth-child(4) .marketing-system-card {
+    animation-delay: 250ms;
+  }
+  .marketing-system-flow li:nth-child(5) .marketing-system-card {
+    animation-delay: 320ms;
+  }
 }
 
 .marketing-maturity-panel {
@@ -602,102 +606,15 @@ body {
   flex-direction: column;
   justify-content: space-between;
   gap: 1rem;
-  animation: marketing-enter 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
   border: 1px solid color-mix(in oklch, var(--primary) 28%, var(--border));
   border-radius: 0.6rem;
   background: color-mix(in oklch, var(--accent) 70%, var(--card));
   padding: 0.9rem;
 }
 
-.marketing-bento {
-  display: grid;
-  gap: 0.9rem;
-}
-
-@media (min-width: 768px) {
-  .marketing-bento {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .marketing-bento > :nth-child(1) {
-    grid-column: span 4;
-  }
-
-  .marketing-bento > :nth-child(2),
-  .marketing-bento > :nth-child(3) {
-    grid-column: span 3;
-  }
-
-  .marketing-bento > :nth-child(4) {
-    grid-column: span 3;
-  }
-
-  .marketing-bento > :nth-child(5) {
-    grid-column: span 4;
-  }
-
-  .marketing-bento > :nth-child(6) {
-    grid-column: span 2;
-  }
-
-  .marketing-bento > :nth-child(7),
-  .marketing-bento > :nth-child(8) {
-    grid-column: span 3;
-  }
-}
-
-@media (min-width: 1024px) {
-  .marketing-bento > :nth-child(1) {
-    grid-column: span 3;
-    grid-row: span 2;
-  }
-
-  .marketing-bento > :nth-child(2),
-  .marketing-bento > :nth-child(3) {
-    grid-column: span 3;
-  }
-
-  .marketing-bento > :nth-child(4) {
-    grid-column: span 2;
-  }
-
-  .marketing-bento > :nth-child(5) {
-    grid-column: span 4;
-  }
-
-  .marketing-bento > :nth-child(6) {
-    grid-column: span 2;
-  }
-
-  .marketing-bento > :nth-child(7),
-  .marketing-bento > :nth-child(8) {
-    grid-column: span 2;
-  }
-}
-
-.marketing-journey {
-  display: grid;
-  gap: 0.75rem;
-}
-
-@media (min-width: 768px) {
-  .marketing-journey {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.85rem;
-  }
-
-  .marketing-journey li:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    top: 1.35rem;
-    right: -0.55rem;
-    width: 0.42rem;
-    height: 0.42rem;
-    border-top: 1px solid
-      color-mix(in oklch, var(--foreground) 28%, var(--border));
-    border-right: 1px solid
-      color-mix(in oklch, var(--foreground) 28%, var(--border));
-    transform: rotate(45deg);
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-maturity-panel {
+    animation: marketing-enter 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
   }
 }
 
@@ -713,6 +630,535 @@ body {
   }
 }
 
+.marketing-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  background: var(--muted);
+  padding: 0.12rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+}
+
+.marketing-chip-accent {
+  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
+  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  color: var(--accent-foreground);
+}
+
+.marketing-chip-warning {
+  border-color: color-mix(in oklch, var(--warning) 45%, var(--border));
+  background: color-mix(in oklch, var(--warning) 16%, var(--card));
+  color: var(--warning-foreground);
+}
+
+.marketing-chip-success {
+  border-color: color-mix(in oklch, var(--success) 40%, var(--border));
+  background: color-mix(in oklch, var(--success) 12%, var(--card));
+  color: var(--success-foreground);
+}
+
+.marketing-preview {
+  container: inline-size / preview;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--marketing-radius);
+  background: var(--elevated);
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-preview-featured {
+  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
+}
+
+.marketing-preview-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 55%, var(--elevated));
+  padding: 0.65rem 0.85rem;
+}
+
+.marketing-preview-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-preview-body {
+  padding: 0.9rem;
+}
+
+.marketing-preview-caption {
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.marketing-preview-meta {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.marketing-preview-record {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--card);
+  padding: 0.75rem;
+}
+
+.marketing-heatmap {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.marketing-heatmap-head,
+.marketing-heatmap-row {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 1.4fr) repeat(5, minmax(1.1rem, 1fr));
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+
+.marketing-heatmap-cell {
+  height: 0.7rem;
+  border-radius: 0.2rem;
+  background: color-mix(in oklch, var(--border) 80%, var(--muted));
+}
+
+.marketing-heatmap-cell[data-band="1"] {
+  background: color-mix(in oklch, var(--maturity-1) 28%, var(--muted));
+}
+.marketing-heatmap-cell[data-band="2"] {
+  background: color-mix(in oklch, var(--maturity-2) 28%, var(--muted));
+}
+.marketing-heatmap-cell[data-band="3"] {
+  background: color-mix(in oklch, var(--maturity-3) 28%, var(--muted));
+}
+.marketing-heatmap-cell[data-band="4"] {
+  background: color-mix(in oklch, var(--maturity-4) 28%, var(--muted));
+}
+.marketing-heatmap-cell[data-band="5"] {
+  background: color-mix(in oklch, var(--maturity-5) 28%, var(--muted));
+}
+
+.marketing-heatmap-cell[data-active="true"] {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.marketing-adherence,
+.marketing-action-list,
+.marketing-assist {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketing-adherence li,
+.marketing-action-list li,
+.marketing-assist li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.marketing-action-list li[data-overdue="true"] {
+  border-color: color-mix(in oklch, var(--warning) 40%, var(--border));
+}
+
+.marketing-workflow,
+.marketing-stages,
+.marketing-lifecycle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketing-workflow li,
+.marketing-stages li,
+.marketing-lifecycle li {
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.marketing-workflow li[data-done="true"],
+.marketing-stages li[data-done="true"] {
+  color: var(--foreground);
+}
+
+.marketing-workflow li[data-current="true"],
+.marketing-stages li[data-current="true"],
+.marketing-lifecycle li[data-current="true"] {
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  color: var(--accent-foreground);
+}
+
+.marketing-benefit-pair,
+.marketing-count-row {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .marketing-benefit-pair,
+  .marketing-count-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marketing-count-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.marketing-benefit-pair dt,
+.marketing-count-row dt {
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-benefit-pair dd,
+.marketing-count-row dd {
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.marketing-count-row dd {
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.marketing-matrix-scroll {
+  overflow-x: auto;
+  overscroll-behavior: contain;
+}
+
+.marketing-matrix {
+  width: 100%;
+  min-width: 22rem;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.marketing-matrix th,
+.marketing-matrix td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 0.4rem;
+  text-align: left;
+}
+
+.marketing-matrix td[data-state="meets"] {
+  color: var(--success);
+}
+
+.marketing-matrix td[data-state="gap"] {
+  color: var(--warning-foreground);
+}
+
+.marketing-governance {
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+
+.marketing-platform-grid {
+  display: grid;
+  gap: 1.1rem;
+}
+
+@media (min-width: 900px) {
+  .marketing-platform-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marketing-platform-maturity,
+  .marketing-platform-wide {
+    grid-column: span 2;
+  }
+}
+
+.marketing-process {
+  position: relative;
+  margin-top: 2.25rem;
+}
+
+.marketing-process-progress {
+  display: none;
+}
+
+.marketing-process-track {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketing-process-step {
+  min-width: 0;
+}
+
+.marketing-process-index {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-process-record {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--card);
+  padding: 0.75rem 0.8rem;
+}
+
+@media (min-width: 1024px) {
+  .marketing-process-track {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
+  .marketing-process-progress {
+    display: block;
+    position: absolute;
+    top: 0.55rem;
+    right: 1.5rem;
+    left: 1.5rem;
+    height: 1px;
+    transform: scaleX(1);
+    transform-origin: left center;
+    background: color-mix(in oklch, var(--primary) 45%, var(--border));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    .marketing-process {
+      view-timeline-name: --leh-process;
+      view-timeline-axis: block;
+    }
+
+    .marketing-process-progress {
+      transform: scaleX(0);
+      animation: marketing-process-fill auto linear both;
+      animation-timeline: --leh-process;
+      animation-range: entry 8% cover 62%;
+    }
+
+    .marketing-process-step .marketing-process-record {
+      animation: marketing-process-mark auto linear both;
+      animation-timeline: --leh-process;
+    }
+
+    .marketing-process-step:nth-child(1) .marketing-process-record {
+      animation-range: entry 0% cover 28%;
+    }
+    .marketing-process-step:nth-child(2) .marketing-process-record {
+      animation-range: entry 8% cover 36%;
+    }
+    .marketing-process-step:nth-child(3) .marketing-process-record {
+      animation-range: entry 16% cover 44%;
+    }
+    .marketing-process-step:nth-child(4) .marketing-process-record {
+      animation-range: entry 24% cover 52%;
+    }
+    .marketing-process-step:nth-child(5) .marketing-process-record {
+      animation-range: entry 32% cover 62%;
+    }
+  }
+}
+
+@keyframes marketing-process-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes marketing-process-mark {
+  from {
+    border-color: var(--border);
+  }
+  to {
+    border-color: color-mix(in oklch, var(--primary) 40%, var(--border));
+  }
+}
+
+.marketing-value-flow,
+.marketing-audience,
+.marketing-demo-outcomes {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketing-value-flow li,
+.marketing-audience li,
+.marketing-demo-outcomes li {
+  min-width: 0;
+  padding-bottom: 0.4rem;
+}
+
+.marketing-value-flow li + li,
+.marketing-audience li + li,
+.marketing-demo-outcomes li + li {
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-value-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+  }
+
+  .marketing-value-flow li + li {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .marketing-value-flow li:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+    padding-top: 1.1rem;
+  }
+
+  .marketing-audience,
+  .marketing-demo-outcomes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.75rem;
+  }
+
+  .marketing-audience li + li,
+  .marketing-demo-outcomes li + li {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-audience {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: relative;
+  }
+
+  .marketing-audience li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 0.35rem;
+    right: -0.7rem;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-top: 1px solid
+      color-mix(in oklch, var(--foreground) 28%, var(--border));
+    border-right: 1px solid
+      color-mix(in oklch, var(--foreground) 28%, var(--border));
+    transform: rotate(45deg);
+  }
+
+  .marketing-audience li {
+    position: relative;
+  }
+}
+
+.marketing-footer {
+  border-top: 1px solid var(--border);
+  padding-block: 2.5rem 3rem;
+}
+
+.marketing-footer-grid {
+  display: grid;
+  gap: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-footer-grid {
+    grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr));
+    gap: 2rem 1.5rem;
+  }
+}
+
+.marketing-footer-heading {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-footer-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketing-footer-list a {
+  font-size: 0.875rem;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.marketing-footer-list a:hover {
+  text-decoration: underline;
+}
+
+.marketing-demo-outcomes p {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.marketing-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 36rem;
+}
+
 @keyframes marketing-enter {
   from {
     opacity: 0;
@@ -722,5 +1168,27 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-system-card,
+  .marketing-maturity-panel,
+  .marketing-process-progress,
+  .marketing-process-step .marketing-process-record {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@container preview (max-width: 22rem) {
+  .marketing-heatmap-head span:not(:first-child),
+  .marketing-heatmap-row span:first-child {
+    font-size: 0.62rem;
+  }
+
+  .marketing-matrix {
+    min-width: 18rem;
   }
 }
