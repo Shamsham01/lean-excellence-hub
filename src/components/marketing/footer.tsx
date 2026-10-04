@@ -4,6 +4,7 @@ import { MarketingAppearanceMenu } from "./appearance-menu";
 import { MarketingContainer, MarketingWordmark } from "./primitives";
 
 const PLATFORM_LINKS = [
+  { href: "/#try-leh", label: "Try LEH" },
   { href: "/#platform", label: "Platform" },
   { href: "/#leanai", label: "LeanAI" },
   { href: "/#maturity", label: "Maturity" },

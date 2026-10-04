@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
+import { MarketingInteractiveExperience } from "./interactive/experience";
 import { MarketingJourney } from "./journey";
 import { MarketingLeanAi } from "./leanai-preview";
 import { MarketingMaturity } from "./maturity-section";
@@ -66,6 +67,7 @@ export function MarketingHome() {
       <Hero />
       <Problem />
       <MarketingJourney />
+      <MarketingInteractiveExperience />
       <MarketingPlatform />
       <MarketingLeanAi />
       <MarketingMaturity />
@@ -97,6 +99,9 @@ function Hero() {
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <RequestDemoControl />
+            <Button asChild variant="outline">
+              <a href="#try-leh">Try LEH</a>
+            </Button>
             <Button asChild variant="outline">
               <a href="#platform">Explore the platform</a>
             </Button>

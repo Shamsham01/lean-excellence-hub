@@ -402,13 +402,18 @@ export function MarketingPlatform() {
         >
           <p>
             Each area is useful on its own. Together they are how Operational
-            Excellence actually runs: evidence in, actions owned, problems
-            solved, benefits validated, capability built.
+            Excellence actually runs. Try Suggestions, Gemba, Actions, Problem
+            Solving and Maturity in the interactive workspace, then use these
+            previews for the rest of the system.
           </p>
         </SectionIntro>
         <p className="marketing-platform-disclosure">
           Product previews use illustrative example records. They are not
-          customer performance data.
+          customer performance data.{" "}
+          <a href="#try-leh" className="underline-offset-2 hover:underline">
+            Try the interactive workspace
+          </a>{" "}
+          to run a live example.
         </p>
         <div className="marketing-platform-grid mt-10">
           <MaturityPreview />
