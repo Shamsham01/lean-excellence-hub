@@ -109,7 +109,7 @@ export function DemoWorkspace() {
         </p>
       ) : null}
 
-      <div className="leh-demo-body">
+      <div className="leh-demo-shell-body">
         <nav className="leh-demo-nav" aria-label="Demo modules">
           {MODULE_NAV.map((item) => (
             <button

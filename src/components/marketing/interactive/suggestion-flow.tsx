@@ -354,10 +354,7 @@ function SuggestionRecord() {
           },
         ]}
       />
-      <p className="leh-demo-body">{record.opportunity}</p>
-      <DemoTimeline
-        currentIndex={timelineIndex(record.status, Boolean(action))}
-      />
+      <p className="leh-demo-prose">{record.opportunity}</p>
       <div className="leh-demo-actions">
         {record.status === "Submitted" ? (
           <button
@@ -393,6 +390,9 @@ function SuggestionRecord() {
           </button>
         ) : null}
       </div>
+      <DemoTimeline
+        currentIndex={timelineIndex(record.status, Boolean(action))}
+      />
     </article>
   );
 }
@@ -443,7 +443,7 @@ function SuggestionReview() {
           { label: "Idea", value: record.title },
         ]}
       />
-      <p className="leh-demo-body">{record.opportunity}</p>
+      <p className="leh-demo-prose">{record.opportunity}</p>
       <fieldset className="leh-demo-decision">
         <legend>Decision</legend>
         <div className="leh-demo-decision-row">

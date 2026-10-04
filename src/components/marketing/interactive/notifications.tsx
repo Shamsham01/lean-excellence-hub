@@ -81,7 +81,7 @@ export function DemoNotificationCentre({
             <div>
               <Dialog.Title id={titleId}>Notifications</Dialog.Title>
               <Dialog.Description id={descriptionId}>
-                Simulated workspace alerts for this preview only.
+                Demo notifications for this workspace.
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
