@@ -290,3 +290,423 @@ body {
 .platform-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
+.marketing {
+  --marketing-max: 72rem;
+  --marketing-wide: 76rem;
+  --marketing-gutter: 1.25rem;
+  --marketing-section-y: 4.5rem;
+  --marketing-radius: 0.75rem;
+  --marketing-shadow:
+    0 1px 1px oklch(0.22 0.02 255 / 0.04),
+    0 10px 28px oklch(0.22 0.02 255 / 0.05);
+  --marketing-shadow-lift:
+    0 1px 1px oklch(0.22 0.02 255 / 0.05),
+    0 18px 40px oklch(0.22 0.02 255 / 0.08);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.dark .marketing {
+  --marketing-shadow:
+    0 1px 1px oklch(0 0 0 / 0.24), 0 12px 32px oklch(0 0 0 / 0.28);
+  --marketing-shadow-lift:
+    0 1px 1px oklch(0 0 0 / 0.28), 0 18px 44px oklch(0 0 0 / 0.36);
+}
+
+@media (min-width: 768px) {
+  .marketing {
+    --marketing-gutter: 1.75rem;
+    --marketing-section-y: 6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing {
+    --marketing-gutter: 2rem;
+    --marketing-section-y: 7.5rem;
+  }
+}
+
+.marketing-skip {
+  position: absolute;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 60;
+  transform: translateY(-200%);
+  border-radius: 0.375rem;
+  background: var(--foreground);
+  padding: 0.5rem 0.85rem;
+  color: var(--background);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.marketing-skip:focus {
+  transform: translateY(0);
+}
+
+.marketing-container {
+  width: min(100% - (var(--marketing-gutter) * 2), var(--marketing-max));
+  margin-inline: auto;
+}
+
+.marketing-container-wide {
+  width: min(100% - (var(--marketing-gutter) * 2), var(--marketing-wide));
+  margin-inline: auto;
+}
+
+.marketing-section {
+  padding-block: var(--marketing-section-y);
+  scroll-margin-top: 5.5rem;
+}
+
+.marketing-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-foreground);
+}
+
+.marketing-display {
+  font-size: clamp(2.35rem, 5.2vw, 4.35rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+.marketing-lede {
+  max-width: 40rem;
+  font-size: 1.125rem;
+  line-height: 1.65;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+
+.marketing-heading {
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+.marketing-subheading {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.marketing-copy {
+  max-width: 40rem;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+
+.marketing-surface {
+  border: 1px solid var(--border);
+  border-radius: var(--marketing-radius);
+  background: var(--card);
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+  background: color-mix(in oklch, var(--background) 92%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.marketing-mark {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+}
+
+.marketing-cta-soon {
+  display: inline-flex;
+  min-height: 2.75rem;
+  cursor: not-allowed;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.5rem 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.marketing-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.marketing-hero-grid {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklch, var(--border) 55%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--border) 55%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 3rem 3rem;
+  mask-image: radial-gradient(
+    ellipse 80% 70% at 70% 10%,
+    black 10%,
+    transparent 72%
+  );
+}
+
+.marketing-system {
+  margin: 0;
+}
+
+.marketing-system-shell {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--marketing-radius) + 0.1rem);
+  background: var(--elevated);
+  box-shadow: var(--marketing-shadow-lift);
+}
+
+.marketing-system-chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 55%, var(--elevated));
+  padding: 0.7rem 0.9rem;
+}
+
+.marketing-system-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.marketing-system-dots span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
+.marketing-system-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .marketing-system-body {
+    grid-template-columns: minmax(0, 1fr) 13.75rem;
+    align-items: stretch;
+    padding: 1.15rem;
+  }
+}
+
+.marketing-system-flow {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.15rem 0 0.15rem 0.15rem;
+  list-style: none;
+}
+
+.marketing-system-flow li {
+  position: relative;
+  padding-bottom: 0.7rem;
+  padding-left: 1.55rem;
+}
+
+.marketing-system-flow li:last-child {
+  padding-bottom: 0;
+}
+
+.marketing-system-flow li::before {
+  content: "";
+  position: absolute;
+  top: 1.05rem;
+  left: 0.12rem;
+  z-index: 1;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: var(--elevated);
+}
+
+.marketing-system-flow li::after {
+  content: "";
+  position: absolute;
+  top: 1.5rem;
+  bottom: 0;
+  left: 0.34rem;
+  width: 1px;
+  background: color-mix(in oklch, var(--primary) 45%, var(--border));
+}
+
+.marketing-system-flow li:last-child::after {
+  display: none;
+}
+
+.marketing-system-card {
+  animation: marketing-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--card);
+  padding: 0.7rem 0.8rem 0.75rem;
+}
+
+.marketing-system-flow li:nth-child(1) .marketing-system-card {
+  animation-delay: 40ms;
+}
+.marketing-system-flow li:nth-child(2) .marketing-system-card {
+  animation-delay: 110ms;
+}
+.marketing-system-flow li:nth-child(3) .marketing-system-card {
+  animation-delay: 180ms;
+}
+.marketing-system-flow li:nth-child(4) .marketing-system-card {
+  animation-delay: 250ms;
+}
+.marketing-system-flow li:nth-child(5) .marketing-system-card {
+  animation-delay: 320ms;
+}
+
+.marketing-maturity-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  animation: marketing-enter 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+  border: 1px solid color-mix(in oklch, var(--primary) 28%, var(--border));
+  border-radius: 0.6rem;
+  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  padding: 0.9rem;
+}
+
+.marketing-bento {
+  display: grid;
+  gap: 0.9rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-bento {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .marketing-bento > :nth-child(1) {
+    grid-column: span 4;
+  }
+
+  .marketing-bento > :nth-child(2),
+  .marketing-bento > :nth-child(3) {
+    grid-column: span 3;
+  }
+
+  .marketing-bento > :nth-child(4) {
+    grid-column: span 3;
+  }
+
+  .marketing-bento > :nth-child(5) {
+    grid-column: span 4;
+  }
+
+  .marketing-bento > :nth-child(6) {
+    grid-column: span 2;
+  }
+
+  .marketing-bento > :nth-child(7),
+  .marketing-bento > :nth-child(8) {
+    grid-column: span 3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-bento > :nth-child(1) {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+
+  .marketing-bento > :nth-child(2),
+  .marketing-bento > :nth-child(3) {
+    grid-column: span 3;
+  }
+
+  .marketing-bento > :nth-child(4) {
+    grid-column: span 2;
+  }
+
+  .marketing-bento > :nth-child(5) {
+    grid-column: span 4;
+  }
+
+  .marketing-bento > :nth-child(6) {
+    grid-column: span 2;
+  }
+
+  .marketing-bento > :nth-child(7),
+  .marketing-bento > :nth-child(8) {
+    grid-column: span 2;
+  }
+}
+
+.marketing-journey {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-journey {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+}
+
+.marketing-fragment {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .marketing-fragment {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@keyframes marketing-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
