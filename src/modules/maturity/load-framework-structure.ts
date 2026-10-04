@@ -149,6 +149,9 @@ export async function loadFrameworkStructure(
     return { levels, pillars, criteria: [], questions: [] };
   }
 
+  const pillarOrder = new Map(
+    pillarIds.map((pillarId, index) => [pillarId, index]),
+  );
   const criteria = requireQueryRows(
     await supabase
       .from("maturity_criteria")
@@ -156,6 +159,12 @@ export async function loadFrameworkStructure(
       .in("pillar_id", pillarIds)
       .order("position"),
     FRAMEWORK_STRUCTURE_LOAD_OPERATIONS.criteria,
+  ).sort(
+    (left, right) =>
+      (pillarOrder.get(left.pillar_id) ?? Number.MAX_SAFE_INTEGER) -
+        (pillarOrder.get(right.pillar_id) ?? Number.MAX_SAFE_INTEGER) ||
+      left.position - right.position ||
+      left.id.localeCompare(right.id),
   );
 
   const criterionIds = criteria.map((criterion) => criterion.id);
