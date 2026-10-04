@@ -21,7 +21,7 @@ const FLOW_STEPS = [
   },
   {
     module: "Benefit",
-    status: "£48,600 annualised",
+    status: "Benefit value captured",
     detail: "Awaiting validation",
   },
 ] as const;
