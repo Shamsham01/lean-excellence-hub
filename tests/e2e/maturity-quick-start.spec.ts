@@ -27,10 +27,11 @@ async function expectPreviewCount(
   label: string,
   value: number,
 ) {
-  const row = preview.locator("div").filter({
-    has: preview.getByText(label, { exact: true }),
-  });
-  await expect(row.getByText(String(value), { exact: true })).toBeVisible();
+  await expect(
+    preview
+      .locator("dt", { hasText: label })
+      .locator("xpath=following-sibling::dd"),
+  ).toHaveText(String(value));
 }
 
 test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
@@ -121,7 +122,7 @@ test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
       page.getByTestId("draft-version-preview-heading"),
     ).toContainText("Draft version");
 
-    const preview = page.getByTestId("framework-structure-preview");
+    const preview = page.getByTestId("draft-structure-preview");
     await expect(preview).toBeVisible();
     await expectPreviewCount(preview, "Levels", 5);
     await expectPreviewCount(preview, "Pillars", 5);
@@ -147,7 +148,7 @@ test.describe("MAT-TEMPLATE-01 maturity Quick Start", () => {
     ).toHaveValue("Initial tailored");
 
     await page.getByTestId("framework-step-review").click();
-    await expect(page.getByTestId("framework-structure-preview")).toContainText(
+    await expect(page.getByTestId("draft-structure-preview")).toContainText(
       "Initial tailored",
     );
     await expect(page.getByTestId("framework-editor")).toBeVisible();
