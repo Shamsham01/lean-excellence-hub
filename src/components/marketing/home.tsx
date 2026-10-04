@@ -140,7 +140,7 @@ const VALUE = [
   },
   {
     title: "Evidence",
-    body: "Assess Operational Excellence using the activity the organisation is already running — not a parallel paper exercise.",
+    body: "Keep maturity assessment alongside the improvement activity the organisation is already running, instead of managing it in a separate paper process.",
     icon: Eye,
   },
   {
