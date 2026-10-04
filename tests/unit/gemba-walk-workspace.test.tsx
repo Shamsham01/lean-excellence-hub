@@ -754,10 +754,10 @@ describe("GembaWalkWorkspace answer state", () => {
       expect(
         screen.getByRole("heading", { name: "What help does the team need?" }),
       ).toBeVisible();
+      expect(sessionStorage.getItem(gembaWalkPromptStorageKey("walk-1"))).toBe(
+        SECOND_ID,
+      );
     });
-    expect(sessionStorage.getItem(gembaWalkPromptStorageKey("walk-1"))).toBe(
-      SECOND_ID,
-    );
 
     view.unmount();
     renderWorkspace();
