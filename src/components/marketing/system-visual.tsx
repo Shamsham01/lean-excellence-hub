@@ -45,7 +45,7 @@ export function MarketingSystemVisual() {
             {FLOW_STEPS.map((step) => (
               <li key={step.module}>
                 <div className="marketing-system-card">
-                  <p className="text-[0.68rem] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                  <p className="text-[0.68rem] font-semibold tracking-[0.1em] whitespace-nowrap text-muted-foreground uppercase">
                     {step.module}
                   </p>
                   <p className="mt-1 text-sm font-semibold tracking-tight text-foreground">
@@ -60,19 +60,19 @@ export function MarketingSystemVisual() {
           </ol>
           <aside className="marketing-maturity-panel">
             <div>
-              <p className="text-[0.68rem] font-semibold tracking-[0.14em] text-accent-foreground uppercase">
+              <p className="text-[0.68rem] font-semibold tracking-[0.1em] whitespace-nowrap text-accent-foreground uppercase">
                 Maturity
               </p>
               <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">
-                Operational discipline
+                Operational discipline ↑
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 Evidence from Gemba, actions and projects feeds the operating
                 system — not a separate scorecard.
               </p>
             </div>
-            <p className="text-sm font-semibold text-accent-foreground">
-              Discipline ↑
+            <p className="text-xs font-medium text-accent-foreground">
+              Connecting layer
             </p>
           </aside>
         </div>

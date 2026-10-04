@@ -215,20 +215,22 @@ function IconTile({
   body,
   icon,
   featured = false,
+  className,
+  children,
 }: {
   title: string;
   body: string;
   icon: LucideIcon;
   featured?: boolean;
+  className?: string;
+  children?: ReactNode;
 }) {
   return (
-    <MarketingSurface
-      featured={featured}
-      className={featured ? "flex flex-col justify-between" : ""}
-    >
+    <MarketingSurface featured={featured} className={className}>
       <FeatureIcon icon={icon} />
       <h3 className="marketing-subheading mt-4">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+      {children}
     </MarketingSurface>
   );
 }
@@ -342,7 +344,7 @@ function Journey() {
         </SectionIntro>
         <ol className="marketing-journey mt-10">
           {JOURNEY.map((step, index) => (
-            <li key={step.title} className="marketing-surface p-5">
+            <li key={step.title} className="marketing-surface relative p-5">
               <p className="text-[0.68rem] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
                 {String(index + 1).padStart(2, "0")}
               </p>
@@ -376,9 +378,22 @@ function Platform() {
           </p>
         </SectionIntro>
         <div className="marketing-bento mt-10">
-          {PLATFORM.map((item) => (
-            <IconTile key={item.title} {...item} />
-          ))}
+          {PLATFORM.map((item) =>
+            item.featured ? (
+              <IconTile key={item.title} {...item}>
+                <ul className="mt-5 grid gap-2 text-sm text-foreground sm:grid-cols-2">
+                  <li>Workplace organisation / 5S</li>
+                  <li>Structured Gemba</li>
+                  <li>Action follow-through</li>
+                  <li>Problem-solving discipline</li>
+                  <li>Capability planning</li>
+                  <li>Validated benefits</li>
+                </ul>
+              </IconTile>
+            ) : (
+              <IconTile key={item.title} {...item} />
+            ),
+          )}
         </div>
       </MarketingContainer>
     </MarketingSection>
@@ -523,9 +538,15 @@ function Audience() {
             it.
           </p>
         </SectionIntro>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {AUDIENCES.map((item) => (
-            <IconTile key={item.title} {...item} />
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          {AUDIENCES.map((item, index) => (
+            <IconTile
+              key={item.title}
+              {...item}
+              className={
+                index < 3 ? "lg:col-span-2" : "sm:col-span-1 lg:col-span-3"
+              }
+            />
           ))}
         </div>
       </MarketingContainer>

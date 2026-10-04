@@ -113,7 +113,7 @@ export function MarketingWordmark({ compact = false }: { compact?: boolean }) {
           Lean Excellence Hub
         </span>
         {compact ? null : (
-          <span className="mt-1 hidden text-[0.65rem] tracking-[0.12em] text-muted-foreground uppercase sm:block">
+          <span className="mt-1 hidden text-[0.65rem] tracking-[0.12em] text-muted-foreground uppercase lg:block">
             Continuous Improvement OS
           </span>
         )}

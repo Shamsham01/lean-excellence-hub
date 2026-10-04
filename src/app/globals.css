@@ -361,7 +361,7 @@ body {
 
 .marketing-section {
   padding-block: var(--marketing-section-y);
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: 6.75rem;
 }
 
 .marketing-kicker {
@@ -522,7 +522,7 @@ body {
 
 @media (min-width: 640px) {
   .marketing-system-body {
-    grid-template-columns: minmax(0, 1fr) 13.75rem;
+    grid-template-columns: minmax(0, 1fr) 15rem;
     align-items: stretch;
     padding: 1.15rem;
   }
@@ -684,6 +684,20 @@ body {
   .marketing-journey {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.85rem;
+  }
+
+  .marketing-journey li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 1.35rem;
+    right: -0.55rem;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-top: 1px solid
+      color-mix(in oklch, var(--foreground) 28%, var(--border));
+    border-right: 1px solid
+      color-mix(in oklch, var(--foreground) 28%, var(--border));
+    transform: rotate(45deg);
   }
 }
 

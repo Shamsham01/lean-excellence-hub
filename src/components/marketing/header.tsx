@@ -45,7 +45,7 @@ export function MarketingHeader() {
           <MarketingWordmark />
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-7 md:flex">
           {NAV_LINKS.map((item) => (
             <a
               key={item.href}
@@ -57,7 +57,7 @@ export function MarketingHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-2 md:flex">
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">Sign in</Link>
           </Button>
@@ -70,7 +70,7 @@ export function MarketingHeader() {
           type="button"
           variant="outline"
           size="icon"
-          className="lg:hidden"
+          className="md:hidden"
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={open ? "Close menu" : "Open menu"}
@@ -84,7 +84,7 @@ export function MarketingHeader() {
         id={panelId}
         hidden={!open}
         className={cn(
-          "border-t border-border bg-background lg:hidden",
+          "border-t border-border bg-background md:hidden",
           open ? "block" : "hidden",
         )}
       >

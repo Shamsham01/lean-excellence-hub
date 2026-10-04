@@ -40,7 +40,7 @@ test("mobile navigation reaches in-page sections and sign-in", async ({
 
   await page.getByRole("button", { name: "Open menu" }).click();
   await expect(page.getByRole("navigation", { name: "Mobile" })).toBeVisible();
-  await page.getByRole("link", { name: "Sign in" }).click();
+  await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });
