@@ -479,6 +479,8 @@ body {
 }
 
 .marketing-appearance-trigger {
+  color: var(--foreground);
+  border-color: color-mix(in oklch, var(--foreground) 22%, var(--border));
   transition:
     background-color 160ms ease,
     color 160ms ease,
@@ -1135,15 +1137,15 @@ body {
   }
 
   .marketing-platform-grid > figure {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    align-items: stretch;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
   }
 
   .marketing-platform-grid .marketing-preview {
     display: flex;
-    height: 100%;
     min-height: 0;
+    flex: 1 1 auto;
     flex-direction: column;
   }
 

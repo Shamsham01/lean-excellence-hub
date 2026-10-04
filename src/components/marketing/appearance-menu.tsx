@@ -2,6 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,16 +27,25 @@ function isAppearanceValue(
   return value === "system" || value === "light" || value === "dark";
 }
 
+const subscribe = () => () => {};
+
+function useIsClient() {
+  return useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+}
+
 export function MarketingAppearanceMenu({
   variant = "icon",
 }: {
   variant?: "icon" | "labeled";
 }) {
+  const isClient = useIsClient();
   const { theme, setTheme } = useTheme();
-  const current: AppearanceValue = isAppearanceValue(theme) ? theme : "system";
-  const TriggerIcon =
-    APPEARANCE_OPTIONS.find((option) => option.value === current)?.Icon ??
-    Monitor;
+  const current: AppearanceValue =
+    isClient && isAppearanceValue(theme) ? theme : "system";
 
   if (variant === "labeled") {
     return (
@@ -71,12 +81,12 @@ export function MarketingAppearanceMenu({
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           className="marketing-appearance-trigger size-9 min-h-9"
           aria-label="Appearance"
         >
-          <TriggerIcon className="size-4" />
+          <Monitor className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
