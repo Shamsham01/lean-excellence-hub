@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/async-action-button";
 import { ImprovementProgress } from "@/components/ui/improvement-progress";
 
-import { runDemoWorkflow } from "./demo-progress";
+import { runDemoWorkflow, useDemoWorkflowSignal } from "./demo-progress";
 import {
   ACTION_CREATE_STEPS,
   ACTION_FROM_SUGGESTION,
@@ -83,6 +83,7 @@ export function SuggestionFlow() {
 
 function SuggestionForm() {
   const dispatch = useDemoDispatch();
+  const workflowSignal = useDemoWorkflowSignal();
   const titleId = useId();
   const areaId = useId();
   const categoryId = useId();
@@ -115,6 +116,7 @@ function SuggestionForm() {
           },
         });
       },
+      workflowSignal,
     );
     if (!done) {
       setPhase("idle");
@@ -407,6 +409,7 @@ function SuggestionRecord() {
 function SuggestionReview() {
   const state = useDemoState();
   const dispatch = useDemoDispatch();
+  const workflowSignal = useDemoWorkflowSignal();
   const record = state.suggestion;
   const [phase, setPhase] = useState<AsyncActionPhase>("idle");
   const [progressIndex, setProgressIndex] = useState(0);
@@ -417,17 +420,21 @@ function SuggestionReview() {
 
   async function decide(decision: SuggestionDecision) {
     setPhase("loading");
-    const done = await runDemoWorkflow(REVIEW_STEPS, (_label, index) => {
-      setProgressIndex(index);
-      dispatch({
-        type: "set-progress",
-        progress: {
-          label: REVIEW_STEPS[index] ?? "Working",
-          stepIndex: index,
-          stepCount: REVIEW_STEPS.length,
-        },
-      });
-    });
+    const done = await runDemoWorkflow(
+      REVIEW_STEPS,
+      (_label, index) => {
+        setProgressIndex(index);
+        dispatch({
+          type: "set-progress",
+          progress: {
+            label: REVIEW_STEPS[index] ?? "Working",
+            stepIndex: index,
+            stepCount: REVIEW_STEPS.length,
+          },
+        });
+      },
+      workflowSignal,
+    );
     if (!done) {
       setPhase("idle");
       return;
@@ -495,6 +502,7 @@ function SuggestionReview() {
 
 export function SuggestionActionCompose() {
   const dispatch = useDemoDispatch();
+  const workflowSignal = useDemoWorkflowSignal();
   const [title, setTitle] = useState(ACTION_FROM_SUGGESTION.title);
   const [owner, setOwner] = useState(ACTION_FROM_SUGGESTION.owner);
   const [due, setDue] = useState(ACTION_FROM_SUGGESTION.due);
@@ -507,17 +515,21 @@ export function SuggestionActionCompose() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPhase("loading");
-    const done = await runDemoWorkflow(ACTION_CREATE_STEPS, (_label, index) => {
-      setProgressIndex(index);
-      dispatch({
-        type: "set-progress",
-        progress: {
-          label: ACTION_CREATE_STEPS[index] ?? "Working",
-          stepIndex: index,
-          stepCount: ACTION_CREATE_STEPS.length,
-        },
-      });
-    });
+    const done = await runDemoWorkflow(
+      ACTION_CREATE_STEPS,
+      (_label, index) => {
+        setProgressIndex(index);
+        dispatch({
+          type: "set-progress",
+          progress: {
+            label: ACTION_CREATE_STEPS[index] ?? "Working",
+            stepIndex: index,
+            stepCount: ACTION_CREATE_STEPS.length,
+          },
+        });
+      },
+      workflowSignal,
+    );
     if (!done) {
       setPhase("idle");
       return;
