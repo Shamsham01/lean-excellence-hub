@@ -875,7 +875,7 @@ language plpgsql
 volatile
 security definer
 set search_path = ''
-as $
+as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
@@ -913,7 +913,7 @@ begin
 
   return true;
 end;
-$;
+$$;
 
 create or replace function private.update_maturity_criterion(
   target_criterion_id uuid,
@@ -929,7 +929,7 @@ language plpgsql
 volatile
 security definer
 set search_path = ''
-as $
+as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
@@ -964,7 +964,7 @@ begin
 
   return true;
 end;
-$;
+$$;
 
 create or replace function private.update_maturity_question(
   target_question_id uuid,
@@ -977,7 +977,7 @@ language plpgsql
 volatile
 security definer
 set search_path = ''
-as $
+as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
@@ -1009,7 +1009,7 @@ begin
 
   return true;
 end;
-$;
+$$;
 
 create or replace function public.update_maturity_pillar(
   target_pillar_id uuid,
@@ -1021,7 +1021,7 @@ create or replace function public.update_maturity_pillar(
 )
 returns boolean
 language sql volatile security invoker set search_path = ''
-as $
+as $$
   select private.update_maturity_pillar(
     target_pillar_id,
     target_name,
@@ -1030,7 +1030,7 @@ as $
     target_guidance,
     target_weight
   )
-$;
+$$;
 
 create or replace function public.update_maturity_criterion(
   target_criterion_id uuid,
@@ -1043,7 +1043,7 @@ create or replace function public.update_maturity_criterion(
 )
 returns boolean
 language sql volatile security invoker set search_path = ''
-as $
+as $$
   select private.update_maturity_criterion(
     target_criterion_id,
     target_name,
@@ -1053,7 +1053,7 @@ as $
     target_guidance,
     target_weight
   )
-$;
+$$;
 
 create or replace function public.update_maturity_question(
   target_question_id uuid,
@@ -1063,14 +1063,14 @@ create or replace function public.update_maturity_question(
 )
 returns boolean
 language sql volatile security invoker set search_path = ''
-as $
+as $$
   select private.update_maturity_question(
     target_question_id,
     target_prompt,
     target_position,
     target_help_text
   )
-$;
+$$;
 
 drop function if exists public.add_maturity_pillar(uuid, text, integer, text, numeric, text, text);
 drop function if exists public.add_maturity_question(uuid, uuid, text, text, integer, boolean, boolean, text, jsonb);
@@ -1159,13 +1159,13 @@ language sql
 volatile
 security invoker
 set search_path = ''
-as $
+as $$
   select private.move_maturity_criterion(
     target_criterion_id,
     target_pillar_id,
     null
   )
-$;
+$$;
 
 create or replace function public.move_maturity_question(
   target_question_id uuid,
@@ -1177,13 +1177,13 @@ language sql
 volatile
 security invoker
 set search_path = ''
-as $
+as $$
   select private.move_maturity_question(
     target_question_id,
     target_criterion_id,
     null
   )
-$;
+$$;
 
 create or replace function public.reorder_maturity_pillar(
   target_pillar_id uuid,
