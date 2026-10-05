@@ -1,4 +1,24 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 export const DEMO_WORKFLOW_DURATION_MS = 720;
+
+export type DemoWorkflowSignal = { cancelled: boolean };
+
+export function useDemoWorkflowSignal(): DemoWorkflowSignal {
+  const signalRef = useRef<DemoWorkflowSignal>({ cancelled: false });
+
+  useEffect(() => {
+    const signal = signalRef.current;
+    signal.cancelled = false;
+    return () => {
+      signal.cancelled = true;
+    };
+  }, []);
+
+  return signalRef.current;
+}
 
 export function prefersReducedDemoMotion(): boolean {
   if (
@@ -33,7 +53,7 @@ export function wait(ms: number): Promise<void> {
 export async function runDemoWorkflow(
   steps: readonly string[],
   onStep: (label: string, index: number) => void,
-  signal?: { cancelled: boolean },
+  signal?: DemoWorkflowSignal,
 ): Promise<boolean> {
   const duration = demoStepDurationMs(steps.length);
 
