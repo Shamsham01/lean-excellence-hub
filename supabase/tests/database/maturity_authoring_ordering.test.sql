@@ -1,6 +1,6 @@
 begin;
 
-select plan(41);
+select plan(47);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -150,7 +150,18 @@ select is(
 insert into order_ids (key, id)
 select 'pillar_daily', public.add_maturity_pillar(
   (select id from order_ids where key = 'version_a'),
-  'Daily Management'
+  'Daily Management',
+  99
+);
+
+select is(
+  (
+    select pillar_row.position
+    from public.maturity_pillars pillar_row
+    where pillar_row.id = (select id from order_ids where key = 'pillar_daily')
+  ),
+  2,
+  'legacy client-supplied pillar position is ignored and append order stays authoritative'
 );
 
 insert into order_ids (key, id)
@@ -179,7 +190,18 @@ select 'criterion_gemba', public.add_maturity_criterion(
 insert into order_ids (key, id)
 select 'criterion_standards', public.add_maturity_criterion(
   (select id from order_ids where key = 'pillar_leadership'),
-  'Standards'
+  'Standards',
+  99
+);
+
+select is(
+  (
+    select criterion_row.position
+    from public.maturity_criteria criterion_row
+    where criterion_row.id = (select id from order_ids where key = 'criterion_standards')
+  ),
+  2,
+  'legacy client-supplied criterion position is ignored and append order stays authoritative'
 );
 
 insert into order_ids (key, id)
@@ -230,7 +252,18 @@ select 'question_gemba_2', public.add_maturity_question(
     where pillar_row.id = (select id from order_ids where key = 'pillar_leadership')
   ),
   'score',
-  'Rate Gemba coaching'
+  'Rate Gemba coaching',
+  99
+);
+
+select is(
+  (
+    select question_row.position
+    from public.template_questions question_row
+    where question_row.id = (select id from order_ids where key = 'question_gemba_2')
+  ),
+  2,
+  'legacy client-supplied question position is ignored and append order stays authoritative'
 );
 
 insert into order_ids (key, id)
@@ -283,6 +316,63 @@ select is(
   ),
   array['Rate Gemba cadence', 'Rate Gemba coaching', 'Rate Standards']::text[],
   'questions append within the pillar section'
+);
+
+select ok(
+  public.update_maturity_pillar(
+    (select id from order_ids where key = 'pillar_daily'),
+    'Daily Management',
+    99
+  ),
+  'pillar details update accepts legacy position parameter'
+);
+
+select is(
+  (
+    select pillar_row.position
+    from public.maturity_pillars pillar_row
+    where pillar_row.id = (select id from order_ids where key = 'pillar_daily')
+  ),
+  2,
+  'pillar details update cannot change authoritative order'
+);
+
+select ok(
+  public.update_maturity_criterion(
+    (select id from order_ids where key = 'criterion_standards'),
+    'Standards',
+    99
+  ),
+  'criterion details update accepts legacy position parameter'
+);
+
+select is(
+  (
+    select criterion_row.position
+    from public.maturity_criteria criterion_row
+    where criterion_row.id = (select id from order_ids where key = 'criterion_standards')
+  ),
+  2,
+  'criterion details update cannot change authoritative order'
+);
+
+select ok(
+  public.update_maturity_question(
+    (select id from order_ids where key = 'question_gemba_2'),
+    'Rate Gemba coaching',
+    99
+  ),
+  'question details update accepts legacy position parameter'
+);
+
+select is(
+  (
+    select question_row.position
+    from public.template_questions question_row
+    where question_row.id = (select id from order_ids where key = 'question_gemba_2')
+  ),
+  2,
+  'question details update cannot change authoritative order'
 );
 
 select ok(
@@ -396,7 +486,8 @@ select throws_ok(
 select ok(
   public.move_maturity_criterion(
     (select id from order_ids where key = 'criterion_standards'),
-    (select id from order_ids where key = 'pillar_daily')
+    (select id from order_ids where key = 'pillar_daily'),
+    99
   ),
   'move criterion to another pillar'
 );
@@ -424,7 +515,8 @@ select is(
 select ok(
   public.move_maturity_question(
     (select id from order_ids where key = 'question_gemba_1'),
-    (select id from order_ids where key = 'criterion_standards')
+    (select id from order_ids where key = 'criterion_standards'),
+    99
   ),
   'move question to a criterion in another pillar'
 );
