@@ -14653,7 +14653,7 @@ export type Database = {
           target_expected_evidence?: string
           target_guidance?: string
           target_name: string
-          target_position: number
+          target_position?: number
           target_weight?: number
         }
         Returns: boolean
@@ -14683,7 +14683,7 @@ export type Database = {
           target_guidance?: string
           target_name: string
           target_pillar_id: string
-          target_position: number
+          target_position?: number
           target_weight?: number
         }
         Returns: boolean
@@ -14691,7 +14691,7 @@ export type Database = {
       update_maturity_question: {
         Args: {
           target_help_text?: string
-          target_position: number
+          target_position?: number
           target_prompt: string
           target_question_id: string
         }
