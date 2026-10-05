@@ -3,6 +3,8 @@ export const DEMO_VISITOR = "Visitor";
 export const DEMO_MANAGER = "CI Manager";
 export const SUGGESTION_REF = "SUG-DEMO-001";
 export const ACTION_REF = "ACT-DEMO-001";
+export const GEMBA_ACTION_REF = "ACT-DEMO-002";
+export const STANDALONE_ACTION_REF = "ACT-DEMO-003";
 export const GEMBA_REF = "GEM-DEMO-001";
 
 export type DemoModule =
@@ -99,6 +101,7 @@ export type DemoNotification = {
   body: string;
   meta: string;
   objectType: DemoObjectType;
+  objectRef: string;
   unread: boolean;
   createdLabel: "Just now";
 };
