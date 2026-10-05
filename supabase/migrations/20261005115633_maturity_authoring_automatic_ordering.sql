@@ -857,6 +857,160 @@ begin
 end;
 $$;
 
+-- Legacy public authoring RPC signatures still include target_position for
+-- compatibility with existing generated clients. From MAT-UX-006 onward,
+-- position is deliberately ignored by create/update/move operations. Ordering
+-- changes are only available through the dedicated reorder RPCs.
+
+create or replace function private.update_maturity_pillar(
+  target_pillar_id uuid,
+  target_name text,
+  target_position integer,
+  target_description text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  target_section_id uuid;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity pillar update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.maturity_pillars pillar_row
+  set name = target_name,
+      description = target_description,
+      guidance = target_guidance,
+      weight = target_weight
+  from public.maturity_model_versions model_version
+  where pillar_row.organisation_id = org_id
+    and pillar_row.id = target_pillar_id
+    and model_version.organisation_id = pillar_row.organisation_id
+    and model_version.id = pillar_row.model_version_id
+    and model_version.status = 'draft'
+  returning pillar_row.section_id into target_section_id;
+
+  if target_section_id is null then
+    raise exception 'maturity pillar is not editable'
+      using errcode = '55000';
+  end if;
+
+  update public.template_sections section_row
+  set title = target_name
+  where section_row.organisation_id = org_id
+    and section_row.id = target_section_id;
+
+  return true;
+end;
+$;
+
+create or replace function private.update_maturity_criterion(
+  target_criterion_id uuid,
+  target_name text,
+  target_position integer,
+  target_description text default null,
+  target_expected_evidence text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity criterion update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.maturity_criteria criterion_row
+  set name = target_name,
+      description = target_description,
+      expected_evidence = target_expected_evidence,
+      guidance = target_guidance,
+      weight = target_weight
+  from public.maturity_pillars pillar_row
+  join public.maturity_model_versions model_version
+    on model_version.organisation_id = pillar_row.organisation_id
+   and model_version.id = pillar_row.model_version_id
+   and model_version.status = 'draft'
+  where criterion_row.organisation_id = org_id
+    and criterion_row.id = target_criterion_id
+    and pillar_row.organisation_id = criterion_row.organisation_id
+    and pillar_row.id = criterion_row.pillar_id;
+
+  if not found then
+    raise exception 'maturity criterion is not editable'
+      using errcode = '55000';
+  end if;
+
+  return true;
+end;
+$;
+
+create or replace function private.update_maturity_question(
+  target_question_id uuid,
+  target_prompt text,
+  target_position integer,
+  target_help_text text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'maturity.models.manage', null, null) then
+    raise exception 'maturity question update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.template_questions question_row
+  set prompt = target_prompt,
+      help_text = target_help_text
+  from public.template_versions template_version
+  join public.maturity_model_versions model_version
+    on model_version.organisation_id = template_version.organisation_id
+   and model_version.template_version_id = template_version.id
+   and model_version.status = 'draft'
+  where question_row.organisation_id = org_id
+    and question_row.id = target_question_id
+    and template_version.organisation_id = question_row.organisation_id
+    and template_version.id = question_row.template_version_id;
+
+  if not found then
+    raise exception 'maturity question is not editable'
+      using errcode = '55000';
+  end if;
+
+  return true;
+end;
+$;
+
 drop function if exists public.add_maturity_pillar(uuid, text, integer, text, numeric, text, text);
 drop function if exists public.add_maturity_question(uuid, uuid, text, text, integer, boolean, boolean, text, jsonb);
 drop function if exists public.add_maturity_criterion(uuid, text, integer, text, text, text, numeric);
@@ -876,7 +1030,7 @@ as $$
   select private.add_maturity_pillar(
     target_model_version_id,
     target_name,
-    target_position,
+    null,
     target_description,
     target_weight,
     target_guidance,
@@ -903,7 +1057,7 @@ as $$
     target_section_id,
     target_question_type,
     target_prompt,
-    target_position,
+    null,
     target_is_required,
     target_allows_not_applicable,
     target_help_text,
@@ -926,13 +1080,49 @@ as $$
   select private.add_maturity_criterion(
     target_pillar_id,
     target_name,
-    target_position,
+    null,
     target_description,
     target_expected_evidence,
     target_guidance,
     target_weight
   )
 $$;
+
+create or replace function public.move_maturity_criterion(
+  target_criterion_id uuid,
+  target_pillar_id uuid,
+  target_position integer default null
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $
+  select private.move_maturity_criterion(
+    target_criterion_id,
+    target_pillar_id,
+    null
+  )
+$;
+
+create or replace function public.move_maturity_question(
+  target_question_id uuid,
+  target_criterion_id uuid,
+  target_position integer default null
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $
+  select private.move_maturity_question(
+    target_question_id,
+    target_criterion_id,
+    null
+  )
+$;
 
 create or replace function public.reorder_maturity_pillar(
   target_pillar_id uuid,
