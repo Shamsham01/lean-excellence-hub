@@ -15,26 +15,44 @@ export function StructureFirstProgressNav({
   progress: StructureFirstProgress;
   currentStep: StructureFirstStepKey;
 }) {
+  const current = progress.steps.find((step) => step.key === currentStep);
+  const currentIndex = progress.steps.findIndex(
+    (step) => step.key === currentStep,
+  );
+
   return (
     <nav
       aria-label="Organisation setup progress"
       data-testid="structure-first-progress"
     >
-      <ol className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+      <p className="mb-3 text-sm text-muted-foreground lg:hidden">
+        Step {currentIndex + 1} of {progress.steps.length}
+        {current ? (
+          <>
+            {" "}
+            · {current.title} · {structureFirstStatusLabel(current.status)}
+            {current.status === "skipped" ? " · discoverable later" : ""}
+          </>
+        ) : null}
+      </p>
+      <ol className="flex gap-2 lg:flex-col lg:gap-1">
         {progress.steps.map((step, index) => {
-          const current = step.key === currentStep;
+          const isCurrent = step.key === currentStep;
           const complete = step.status === "complete";
           const skipped = step.status === "skipped";
           return (
-            <li key={step.key} className="min-w-fit shrink-0 lg:min-w-0">
+            <li key={step.key} className="min-w-0 flex-1 lg:flex-none">
               <AppLink
                 href={`/onboarding/setup?step=${step.key}`}
-                aria-current={current ? "step" : undefined}
+                aria-current={isCurrent ? "step" : undefined}
+                aria-label={`${step.title}, ${structureFirstStatusLabel(step.status)}${
+                  skipped ? ", discoverable later" : ""
+                }`}
                 data-testid={`structure-first-progress-${step.key}`}
                 data-status={step.status}
                 className={cn(
-                  "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                  current
+                  "flex min-h-11 items-center justify-center gap-3 rounded-md px-1 py-2 text-sm transition-colors lg:justify-start lg:px-3",
+                  isCurrent
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
@@ -44,7 +62,7 @@ export function StructureFirstProgressNav({
                     "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-medium",
                     complete
                       ? "border-success/40 bg-success/15 text-success"
-                      : current
+                      : isCurrent
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-elevated",
                   )}
@@ -52,7 +70,7 @@ export function StructureFirstProgressNav({
                 >
                   {complete ? <Check className="size-3.5" /> : index + 1}
                 </span>
-                <span className="flex min-w-0 flex-col">
+                <span className="hidden min-w-0 flex-col lg:flex">
                   <span className="font-medium text-foreground">
                     {step.title}
                   </span>
