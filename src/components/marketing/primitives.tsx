@@ -50,7 +50,7 @@ export function MarketingSurface({
       className={cn(
         "marketing-surface p-5 sm:p-6",
         featured &&
-          "border-primary/25 bg-[color-mix(in_oklch,var(--accent)_55%,var(--card))]",
+          "border-primary/25 bg-[color-mix(in_oklab,var(--accent)_55%,var(--card))]",
         className,
       )}
       {...props}
@@ -138,7 +138,7 @@ export function RequestDemoControl({
   className?: string;
 }) {
   return (
-    <Button asChild size={size} className={className}>
+    <Button asChild size={size} className={cn("marketing-cta", className)}>
       <Link href="/demo">Request a demo</Link>
     </Button>
   );
@@ -183,7 +183,7 @@ export function StatusChip({
   tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: "neutral" | "accent" | "warning" | "success" | "danger";
+  tone?: "neutral" | "accent" | "connected" | "warning" | "success" | "danger";
 }) {
   return (
     <span className={cn("marketing-chip", `marketing-chip-${tone}`)}>
