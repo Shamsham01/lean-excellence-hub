@@ -305,11 +305,7 @@ describe("FrameworkEditor authoring UX", () => {
     fireEvent.submit(screen.getByTestId("edit-question-q1"));
 
     await waitFor(() => {
-      expect(moveQuestion).toHaveBeenCalledWith(
-        "q1",
-        "criterion-b",
-        "model-1",
-      );
+      expect(moveQuestion).toHaveBeenCalledWith("q1", "criterion-b", "model-1");
     });
   });
 
