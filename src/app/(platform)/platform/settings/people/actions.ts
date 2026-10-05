@@ -86,6 +86,7 @@ export async function inviteColleague(input: {
 
   revalidatePath("/platform/settings/people");
   revalidatePath("/platform/setup");
+  revalidatePath("/onboarding/setup");
 
   const originResult = resolveApplicationOrigin({
     requestHeaders: await headers(),
@@ -134,6 +135,7 @@ export async function reissueInvitation(invitationId: string) {
   }
 
   revalidatePath("/platform/settings/people");
+  revalidatePath("/onboarding/setup");
 
   const originResult = resolveApplicationOrigin({
     requestHeaders: await headers(),
@@ -178,5 +180,6 @@ export async function revokeInvitation(invitationId: string) {
   }
 
   revalidatePath("/platform/settings/people");
+  revalidatePath("/onboarding/setup");
   return { ok: true as const };
 }

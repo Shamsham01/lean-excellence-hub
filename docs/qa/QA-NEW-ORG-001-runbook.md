@@ -100,12 +100,17 @@ persona. Do not paste secrets.
 6. Wait for webhook. Do not treat the success URL as activation.
 7. Organisation becomes `active` with `onboarding_required`. Land on `/onboarding/setup`.
 
-### C. Wizard and owner access
+### C. Structure-first organisation setup
 
-1. Skippable wizard lists org/site, invitations, setup approach, module guidance.
-2. Finish and enter workspace.
-3. Owner can open Settings → Billing: plan `professional`, quantity 1, interval monthly, state active.
-4. **Manage billing** opens Customer Portal and returns to Settings → Billing.
+1. Confirm organisation profile (name, locale, time zone, currency, plan) and
+   first site. Do not recreate the site.
+2. Choose a structure path: start simple, review a manufacturing suggestion, or
+   build manually.
+3. Optionally add job functions. Job functions are not access roles.
+4. Optionally invite people. Skip is allowed and must remain visible as skipped.
+5. Readiness summary, then **Continue setup** into Operational Excellence setup.
+6. Owner can open Settings → Billing: plan `professional`, quantity 1, interval monthly, state active.
+7. **Manage billing** opens Customer Portal and returns to Settings → Billing.
 
 ### D. Site quantity
 
