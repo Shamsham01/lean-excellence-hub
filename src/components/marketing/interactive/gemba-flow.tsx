@@ -7,7 +7,7 @@ import {
   type AsyncActionPhase,
 } from "@/components/ui/async-action-button";
 
-import { runDemoWorkflow } from "./demo-progress";
+import { runDemoWorkflow, useDemoWorkflowSignal } from "./demo-progress";
 import {
   ACTION_CREATE_STEPS,
   ACTION_FROM_GEMBA,
@@ -188,6 +188,7 @@ function GembaFinding() {
 
 export function GembaActionCompose() {
   const dispatch = useDemoDispatch();
+  const workflowSignal = useDemoWorkflowSignal();
   const [title, setTitle] = useState(ACTION_FROM_GEMBA.title);
   const [owner, setOwner] = useState(ACTION_FROM_GEMBA.owner);
   const [due, setDue] = useState(ACTION_FROM_GEMBA.due);
@@ -200,17 +201,21 @@ export function GembaActionCompose() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPhase("loading");
-    const done = await runDemoWorkflow(ACTION_CREATE_STEPS, (_label, index) => {
-      setProgressIndex(index);
-      dispatch({
-        type: "set-progress",
-        progress: {
-          label: ACTION_CREATE_STEPS[index] ?? "Working",
-          stepIndex: index,
-          stepCount: ACTION_CREATE_STEPS.length,
-        },
-      });
-    });
+    const done = await runDemoWorkflow(
+      ACTION_CREATE_STEPS,
+      (_label, index) => {
+        setProgressIndex(index);
+        dispatch({
+          type: "set-progress",
+          progress: {
+            label: ACTION_CREATE_STEPS[index] ?? "Working",
+            stepIndex: index,
+            stepCount: ACTION_CREATE_STEPS.length,
+          },
+        });
+      },
+      workflowSignal,
+    );
     if (!done) {
       setPhase("idle");
       return;
