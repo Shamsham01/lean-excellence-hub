@@ -1011,6 +1011,67 @@ begin
 end;
 $;
 
+create or replace function public.update_maturity_pillar(
+  target_pillar_id uuid,
+  target_name text,
+  target_position integer default null,
+  target_description text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $
+  select private.update_maturity_pillar(
+    target_pillar_id,
+    target_name,
+    target_position,
+    target_description,
+    target_guidance,
+    target_weight
+  )
+$;
+
+create or replace function public.update_maturity_criterion(
+  target_criterion_id uuid,
+  target_name text,
+  target_position integer default null,
+  target_description text default null,
+  target_expected_evidence text default null,
+  target_guidance text default null,
+  target_weight numeric default 1
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $
+  select private.update_maturity_criterion(
+    target_criterion_id,
+    target_name,
+    target_position,
+    target_description,
+    target_expected_evidence,
+    target_guidance,
+    target_weight
+  )
+$;
+
+create or replace function public.update_maturity_question(
+  target_question_id uuid,
+  target_prompt text,
+  target_position integer default null,
+  target_help_text text default null
+)
+returns boolean
+language sql volatile security invoker set search_path = ''
+as $
+  select private.update_maturity_question(
+    target_question_id,
+    target_prompt,
+    target_position,
+    target_help_text
+  )
+$;
+
 drop function if exists public.add_maturity_pillar(uuid, text, integer, text, numeric, text, text);
 drop function if exists public.add_maturity_question(uuid, uuid, text, text, integer, boolean, boolean, text, jsonb);
 drop function if exists public.add_maturity_criterion(uuid, text, integer, text, text, text, numeric);
