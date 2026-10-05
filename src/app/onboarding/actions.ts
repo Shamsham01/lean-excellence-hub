@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { isFakeBillingEnabled } from "@/modules/billing/env";
+import { currentCanManageBilling } from "@/modules/billing/authority";
 import { completeFakeCheckoutSession } from "@/modules/billing/complete-fake-checkout";
+import { isFakeBillingEnabled } from "@/modules/billing/env";
 import { startOrganisationCheckout } from "@/modules/billing/start-checkout";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
@@ -41,6 +42,9 @@ export async function startCheckout(formData: FormData) {
       ),
     );
   }
+  if (!(await currentCanManageBilling())) {
+    redirect("/onboarding");
+  }
 
   const parsed = checkoutSchema.safeParse({
     planCode: formData.get("planCode"),
@@ -62,19 +66,14 @@ export async function startCheckout(formData: FormData) {
   redirect(checkout.url);
 }
 
-export async function completeFakeCheckout(formData: FormData) {
+export async function completeFakeCheckout() {
   await requireClaims();
   if (!isFakeBillingEnabled()) {
     redirect("/onboarding");
   }
 
-  const sessionId = formData.get("session_id");
-  if (typeof sessionId !== "string" || sessionId.length === 0) {
-    redirect("/onboarding");
-  }
-
   try {
-    await completeFakeCheckoutSession(sessionId);
+    await completeFakeCheckoutSession();
   } catch {
     redirect("/onboarding");
   }

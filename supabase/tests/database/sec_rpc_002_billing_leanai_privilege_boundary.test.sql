@@ -1,6 +1,6 @@
 begin;
 
-select plan(48);
+select plan(49);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -248,6 +248,7 @@ select ok(
     join pg_catalog.pg_namespace n on n.oid = p.pronamespace
     where (n.nspname, p.proname) in (
       ('public', 'get_current_organisation_billing'),
+      ('public', 'get_current_organisation_billing_management'),
       ('public', 'record_leanai_semantic_event'),
       ('public', 'get_leanai_journey_context'),
       ('public', 'get_organisation_setup_readiness'),
@@ -264,6 +265,7 @@ select ok(
     join pg_catalog.pg_namespace n on n.oid = p.pronamespace
     where (n.nspname, p.proname) in (
       ('public', 'get_current_organisation_billing'),
+      ('public', 'get_current_organisation_billing_management'),
       ('public', 'record_leanai_semantic_event'),
       ('public', 'get_leanai_journey_context'),
       ('public', 'get_organisation_setup_readiness'),
@@ -301,6 +303,11 @@ select ok(
   )
   and pg_catalog.has_function_privilege(
     'authenticated',
+    'public.get_current_organisation_billing_management()',
+    'EXECUTE'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated',
     'public.record_leanai_semantic_event(text,integer,text,text,uuid,jsonb,timestamp with time zone)',
     'EXECUTE'
   )
@@ -313,12 +320,15 @@ select ok(
   and pg_catalog.has_function_privilege(
     'authenticated', 'public.get_leanai_contextual_snapshot()', 'EXECUTE'
   ),
-  'authenticated retains EXECUTE on the five public APIs'
+  'authenticated retains EXECUTE on the public billing and LeanAI APIs'
 );
 
 select ok(
   not pg_catalog.has_function_privilege(
     'anon', 'public.get_current_organisation_billing()', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon', 'public.get_current_organisation_billing_management()', 'EXECUTE'
   )
   and not pg_catalog.has_function_privilege(
     'anon',
@@ -338,6 +348,9 @@ select ok(
     'public', 'public.get_current_organisation_billing()', 'EXECUTE'
   )
   and not pg_catalog.has_function_privilege(
+    'public', 'public.get_current_organisation_billing_management()', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
     'public',
     'public.record_leanai_semantic_event(text,integer,text,text,uuid,jsonb,timestamp with time zone)',
     'EXECUTE'
@@ -351,7 +364,7 @@ select ok(
   and not pg_catalog.has_function_privilege(
     'public', 'public.get_leanai_contextual_snapshot()', 'EXECUTE'
   ),
-  'anon and PUBLIC cannot execute the five public APIs'
+  'anon and PUBLIC cannot execute the public billing and LeanAI APIs'
 );
 
 select ok(
@@ -429,6 +442,13 @@ select throws_ok(
   '42501',
   null,
   'anonymous callers cannot execute billing RPC'
+);
+
+select throws_ok(
+  $$select public.get_current_organisation_billing_management()$$,
+  '42501',
+  null,
+  'anonymous callers cannot execute billing-management RPC'
 );
 
 select throws_ok(

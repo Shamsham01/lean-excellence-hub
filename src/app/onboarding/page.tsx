@@ -1,11 +1,13 @@
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { currentCanManageBilling } from "@/modules/billing/authority";
 import {
   annualSitePriceMinor,
   listPublicPlans,
   resolveListedPriceMinor,
 } from "@/modules/billing/catalogue";
+import { loadCurrentOrganisationBilling } from "@/modules/billing/current-billing";
 import { isFakeBillingEnabled } from "@/modules/billing/env";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
@@ -61,11 +63,11 @@ export default async function OnboardingPage({
   }
 
   const supabase = await createServerSupabaseClient();
-  const billing = await supabase.rpc("get_current_organisation_billing");
-  const snapshot = billing.data?.[0];
+  const snapshot = await loadCurrentOrganisationBilling(supabase);
+  const canManageBilling = await currentCanManageBilling();
   const { error } = await searchParams;
   const awaitingConfirmation = Boolean(
-    snapshot?.open_checkout_session_id || snapshot?.billing_state,
+    snapshot?.has_open_checkout || snapshot?.billing_state,
   );
   const fakeProvider = isFakeBillingEnabled();
   const publicPlans = listPublicPlans();
@@ -81,16 +83,11 @@ export default async function OnboardingPage({
             title="Confirming subscription"
             description={`${current.organisation_name} is being provisioned. Access opens after Stripe confirms the subscription. Checkout return is not treated as success.`}
           >
-            {fakeProvider && snapshot?.open_checkout_session_id ? (
+            {fakeProvider && canManageBilling && snapshot?.has_open_checkout ? (
               <form
                 action={completeFakeCheckout}
                 className="flex flex-col gap-3"
               >
-                <input
-                  type="hidden"
-                  name="session_id"
-                  value={snapshot.open_checkout_session_id}
-                />
                 <Button type="submit" className="w-full">
                   Complete sandbox payment
                 </Button>

@@ -6,9 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const getClaims = vi.fn();
-const rpc = vi.fn();
 const loadCurrentOrganisationId = vi.fn();
 const listEligibleOrganisations = vi.fn();
+const loadCurrentOrganisationBillingManagement = vi.fn();
 const lookupOpenCheckoutSession = vi.fn();
 const processVerifiedBillingEvent = vi.fn();
 const simulateCheckoutCompletion = vi.fn();
@@ -22,13 +22,17 @@ vi.mock("@/modules/billing/env", () => ({
 vi.mock("@/platform/supabase/server", () => ({
   createServerSupabaseClient: async () => ({
     auth: { getClaims },
-    rpc,
   }),
 }));
 
 vi.mock("@/modules/organisations/context", () => ({
   loadCurrentOrganisationId: () => loadCurrentOrganisationId(),
   listEligibleOrganisations: () => listEligibleOrganisations(),
+}));
+
+vi.mock("@/modules/billing/current-billing", () => ({
+  loadCurrentOrganisationBillingManagement: () =>
+    loadCurrentOrganisationBillingManagement(),
 }));
 
 vi.mock("@/modules/billing/repository", () => ({
@@ -73,14 +77,9 @@ describe("completeFakeCheckoutSession", () => {
       ownOrganisation.organisation_id,
     );
     listEligibleOrganisations.mockResolvedValue([ownOrganisation]);
-    rpc.mockResolvedValue({
-      data: [
-        {
-          organisation_id: ownOrganisation.organisation_id,
-          open_checkout_session_id: "cs_own",
-        },
-      ],
-      error: null,
+    loadCurrentOrganisationBillingManagement.mockResolvedValue({
+      organisation_id: ownOrganisation.organisation_id,
+      open_checkout_session_id: "cs_own",
     });
     simulateCheckoutCompletion.mockReturnValue({
       organisationId: ownOrganisation.organisation_id,
@@ -95,7 +94,7 @@ describe("completeFakeCheckoutSession", () => {
   it("rejects unauthenticated callers", async () => {
     getClaims.mockResolvedValue({ data: { claims: null }, error: null });
 
-    await expect(completeFakeCheckoutSession("cs_own")).rejects.toMatchObject({
+    await expect(completeFakeCheckoutSession()).rejects.toMatchObject({
       code: "unauthorized",
     });
     expect(simulateCheckoutCompletion).not.toHaveBeenCalled();
@@ -105,16 +104,16 @@ describe("completeFakeCheckoutSession", () => {
   it("rejects callers without a selected organisation", async () => {
     loadCurrentOrganisationId.mockResolvedValue(null);
 
-    await expect(completeFakeCheckoutSession("cs_own")).rejects.toMatchObject({
+    await expect(completeFakeCheckoutSession()).rejects.toMatchObject({
       code: "forbidden",
     });
     expect(simulateCheckoutCompletion).not.toHaveBeenCalled();
   });
 
-  it("rejects a foreign organisation Checkout session id", async () => {
-    await expect(
-      completeFakeCheckoutSession("cs_foreign"),
-    ).rejects.toMatchObject({
+  it("rejects callers without billing-management Checkout context", async () => {
+    loadCurrentOrganisationBillingManagement.mockResolvedValue(null);
+
+    await expect(completeFakeCheckoutSession()).rejects.toMatchObject({
       code: "forbidden",
     });
     expect(simulateCheckoutCompletion).not.toHaveBeenCalled();
@@ -126,7 +125,7 @@ describe("completeFakeCheckoutSession", () => {
       { ...ownOrganisation, organisation_status: "active" },
     ]);
 
-    await expect(completeFakeCheckoutSession("cs_own")).rejects.toMatchObject({
+    await expect(completeFakeCheckoutSession()).rejects.toMatchObject({
       code: "forbidden",
     });
     expect(simulateCheckoutCompletion).not.toHaveBeenCalled();
@@ -144,7 +143,7 @@ describe("completeFakeCheckoutSession", () => {
       site_quantity: 1,
     });
 
-    await expect(completeFakeCheckoutSession("cs_own")).rejects.toMatchObject({
+    await expect(completeFakeCheckoutSession()).rejects.toMatchObject({
       code: "forbidden",
     });
     expect(hydrateCheckoutSession).not.toHaveBeenCalled();
@@ -152,9 +151,7 @@ describe("completeFakeCheckoutSession", () => {
   });
 
   it("completes the selected organisation's own open Checkout session", async () => {
-    await expect(
-      completeFakeCheckoutSession("cs_own"),
-    ).resolves.toBeUndefined();
+    await expect(completeFakeCheckoutSession()).resolves.toBeUndefined();
     expect(simulateCheckoutCompletion).toHaveBeenCalledWith("cs_own");
     expect(processVerifiedBillingEvent).toHaveBeenCalledTimes(1);
   });
