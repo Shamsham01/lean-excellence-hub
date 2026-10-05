@@ -73,6 +73,11 @@ describe("public marketing homepage", () => {
     expect(screen.getByText("Observation identified")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
+        name: "Experience improvement, not another product tour.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
         name: "One connected improvement system.",
       }),
     ).toBeInTheDocument();
@@ -103,10 +108,9 @@ describe("public marketing homepage", () => {
       expect(link).toHaveAttribute("href", "#platform");
     }
 
-    expect(
-      screen.queryByRole("button", { name: /book a demo/i }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+    const tryLinks = screen.getAllByRole("link", { name: "Try LEH" });
+    expect(tryLinks.length).toBeGreaterThan(0);
+    expect(screen.queryByText(/£49|\$49|49\/month/i)).not.toBeInTheDocument();
   });
 
   it("keeps sign-in on the login route and out of the hero CTA pair", () => {
@@ -279,7 +283,11 @@ describe("public marketing homepage", () => {
         /product previews use illustrative example records\. they are not customer performance data/i,
       ),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/illustrative/i)).toHaveLength(1);
+    expect(
+      screen.getAllByText(
+        /product previews use illustrative example records\. they are not customer performance data/i,
+      ),
+    ).toHaveLength(1);
     expect(
       screen.getByText(
         "Observations become owned follow-up in the same system.",
