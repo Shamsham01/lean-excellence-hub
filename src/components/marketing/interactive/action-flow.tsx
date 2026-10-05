@@ -7,7 +7,7 @@ import {
   type AsyncActionPhase,
 } from "@/components/ui/async-action-button";
 
-import { runDemoWorkflow } from "./demo-progress";
+import { runDemoWorkflow, useDemoWorkflowSignal } from "./demo-progress";
 import {
   ACTION_CREATE_STEPS,
   ACTION_DUES,
@@ -52,6 +52,7 @@ export function ActionFlow() {
 
 function StandaloneActionCompose() {
   const dispatch = useDemoDispatch();
+  const workflowSignal = useDemoWorkflowSignal();
   const [title, setTitle] = useState(STANDALONE_ACTION.title);
   const [owner, setOwner] = useState(STANDALONE_ACTION.owner);
   const [due, setDue] = useState(STANDALONE_ACTION.due);
@@ -69,17 +70,21 @@ function StandaloneActionCompose() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPhase("loading");
-    const done = await runDemoWorkflow(ACTION_CREATE_STEPS, (_label, index) => {
-      setProgressIndex(index);
-      dispatch({
-        type: "set-progress",
-        progress: {
-          label: ACTION_CREATE_STEPS[index] ?? "Working",
-          stepIndex: index,
-          stepCount: ACTION_CREATE_STEPS.length,
-        },
-      });
-    });
+    const done = await runDemoWorkflow(
+      ACTION_CREATE_STEPS,
+      (_label, index) => {
+        setProgressIndex(index);
+        dispatch({
+          type: "set-progress",
+          progress: {
+            label: ACTION_CREATE_STEPS[index] ?? "Working",
+            stepIndex: index,
+            stepCount: ACTION_CREATE_STEPS.length,
+          },
+        });
+      },
+      workflowSignal,
+    );
     if (!done) {
       setPhase("idle");
       return;
