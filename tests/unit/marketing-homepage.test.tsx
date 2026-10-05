@@ -318,9 +318,13 @@ describe("public marketing homepage", () => {
     render(<MarketingHome />);
 
     const appearanceTriggers = screen.getAllByRole("button", {
-      name: "Appearance",
+      name: "Appearance: System",
     });
     expect(appearanceTriggers.length).toBeGreaterThan(0);
+    for (const trigger of appearanceTriggers) {
+      expect(trigger).toHaveAttribute("data-appearance", "system");
+      expect(trigger.querySelector("svg.lucide-monitor")).not.toBeNull();
+    }
 
     fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
     const appearanceGroup = screen.getByRole("group", { name: "Appearance" });
@@ -389,6 +393,53 @@ describe("marketing appearance persistence", () => {
     await waitFor(() => {
       expect(window.localStorage.getItem("theme")).toBe("system");
     });
+  });
+
+  it("switches the header icon and accessible label with the setting", async () => {
+    render(
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableColorScheme
+        enableSystem
+      >
+        <MarketingHome />
+      </ThemeProvider>,
+    );
+
+    const banner = screen.getByRole("banner");
+    const trigger = () =>
+      within(banner).getByRole("button", { name: /^Appearance: / });
+
+    expect(trigger()).toHaveAccessibleName("Appearance: System");
+    expect(trigger().querySelector("svg.lucide-monitor")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const appearanceGroup = screen.getByRole("group", { name: "Appearance" });
+
+    const cases = [
+      { choice: "Dark", icon: "lucide-moon" },
+      { choice: "Light", icon: "lucide-sun" },
+      { choice: "System", icon: "lucide-monitor" },
+    ] as const;
+
+    for (const { choice, icon } of cases) {
+      fireEvent.click(
+        within(appearanceGroup).getByRole("button", { name: choice }),
+      );
+      await waitFor(() => {
+        expect(trigger()).toHaveAccessibleName(`Appearance: ${choice}`);
+      });
+      expect(trigger()).toHaveAttribute(
+        "data-appearance",
+        choice.toLowerCase(),
+      );
+      expect(trigger().querySelectorAll("svg")).toHaveLength(1);
+      expect(trigger().querySelector(`svg.${icon}`)).not.toBeNull();
+      expect(
+        within(appearanceGroup).getByRole("button", { name: choice }),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
   });
 });
 
@@ -466,6 +517,25 @@ describe("homepage authentication routing", () => {
     expect(css).not.toContain("masonry");
     expect(css).toContain("color-scheme: light dark");
     expect(css).toContain("--warning-foreground: oklch(0.88 0.08 80)");
+  });
+
+  it("keeps the sticky header bound to the viewport when scroll is locked", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const appearance = readFileSync(
+      "src/components/marketing/appearance-menu.tsx",
+      "utf8",
+    );
+    const header = readFileSync("src/components/marketing/header.tsx", "utf8");
+
+    expect(css).toMatch(
+      /html:has\(> body > \.marketing\) \{\s*overflow-x: visible;\s*\}/,
+    );
+    expect(css).toMatch(/\.marketing \{\s*overflow-x: clip;\s*\}/);
+    expect(css).toMatch(/\.marketing-header \{\s*position: sticky;\s*top: 0;/);
+    expect(css).not.toMatch(/\.marketing-header \{[^}]*position: fixed/);
+    expect(appearance).toContain("<DropdownMenu modal={false}>");
+    expect(header).toContain("marketing-mobile-panel");
+    expect(css).toMatch(/\.marketing-mobile-panel \{\s*position: absolute;/);
   });
 
   it("reuses next-themes instead of a parallel marketing theme store", () => {

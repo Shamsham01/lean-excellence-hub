@@ -37,6 +37,13 @@ function useIsClient() {
   );
 }
 
+function optionFor(value: AppearanceValue) {
+  return (
+    APPEARANCE_OPTIONS.find((option) => option.value === value) ??
+    APPEARANCE_OPTIONS[0]
+  );
+}
+
 export function MarketingAppearanceMenu({
   variant = "icon",
 }: {
@@ -46,6 +53,8 @@ export function MarketingAppearanceMenu({
   const { theme, setTheme } = useTheme();
   const current: AppearanceValue =
     isClient && isAppearanceValue(theme) ? theme : "system";
+  const currentOption = optionFor(current);
+  const CurrentIcon = currentOption.Icon;
 
   if (variant === "labeled") {
     return (
@@ -63,11 +72,11 @@ export function MarketingAppearanceMenu({
               type="button"
               size="sm"
               variant={selected ? "secondary" : "outline"}
-              className="min-h-9 flex-1"
+              className="min-h-10 flex-1"
               aria-pressed={selected}
               onClick={() => setTheme(option.value)}
             >
-              <option.Icon className="size-3.5" />
+              <option.Icon aria-hidden="true" className="size-3.5 shrink-0" />
               {option.label}
             </Button>
           );
@@ -77,16 +86,19 @@ export function MarketingAppearanceMenu({
   }
 
   return (
-    <DropdownMenu>
+    // Non-modal: a modal menu locks <body> scroll, and a scroll-locked body
+    // must never become the sticky header's scroll container.
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="marketing-appearance-trigger size-9 min-h-9"
-          aria-label="Appearance"
+          className="marketing-icon-button marketing-appearance-trigger"
+          aria-label={`Appearance: ${currentOption.label}`}
+          data-appearance={current}
         >
-          <Monitor className="size-4" />
+          <CurrentIcon aria-hidden="true" className="size-4 shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -108,7 +120,7 @@ export function MarketingAppearanceMenu({
               value={option.value}
               className="gap-2"
             >
-              <option.Icon className="size-3.5" />
+              <option.Icon aria-hidden="true" className="size-3.5 shrink-0" />
               {option.label}
             </DropdownMenuRadioItem>
           ))}

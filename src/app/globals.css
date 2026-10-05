@@ -454,6 +454,37 @@ body {
   backdrop-filter: blur(14px);
 }
 
+/* Overlays the page instead of growing the sticky header, so opening the menu
+   never shifts layout or triggers scroll anchoring. */
+.marketing-mobile-panel {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  max-height: calc(100dvh - 4.25rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+  box-shadow: var(--marketing-shadow);
+}
+
+.marketing-icon-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .marketing-icon-button {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 2.25rem;
+  }
+}
+
 .marketing-nav-link {
   font-size: 0.875rem;
   font-weight: 500;
@@ -504,6 +535,14 @@ body {
 
 .marketing {
   overflow-x: clip;
+}
+
+/* `html { overflow-x: clip }` stops <body>'s overflow from propagating to the
+   viewport. Any body scroll lock then turns <body> into the sticky header's
+   scroll container and the header scrolls away. `.marketing` clips horizontal
+   overflow itself, so the root can stay visible here. */
+html:has(> body > .marketing) {
+  overflow-x: visible;
 }
 
 .marketing main:focus {
