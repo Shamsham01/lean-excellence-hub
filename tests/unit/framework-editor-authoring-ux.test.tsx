@@ -219,7 +219,6 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveCriterion).toHaveBeenCalledWith(
         "criterion-wrong",
         "pillar-ps",
-        undefined,
         "model-1",
       );
     });
@@ -309,7 +308,6 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveQuestion).toHaveBeenCalledWith(
         "q1",
         "criterion-b",
-        undefined,
         "model-1",
       );
     });
@@ -485,7 +483,6 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveQuestion).toHaveBeenCalledWith(
         "question-1",
         "criterion-ps",
-        undefined,
         "model-1",
       );
     });
