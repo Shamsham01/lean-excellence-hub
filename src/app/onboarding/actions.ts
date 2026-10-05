@@ -87,5 +87,5 @@ export async function completeOrganisationOnboarding() {
   if (completed.error || completed.data !== true) {
     redirect("/onboarding/setup?error=complete");
   }
-  redirect("/platform");
+  redirect("/platform/setup");
 }

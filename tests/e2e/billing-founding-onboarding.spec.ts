@@ -64,17 +64,97 @@ test.describe("founding organisation onboarding", () => {
       timeout: 30_000,
     });
     await expect(
-      page.getByRole("heading", { name: "Set up Lean Excellence Hub" }),
+      page.getByRole("heading", { name: "Organisation setup" }),
     ).toBeVisible();
+    await expect(
+      page.getByTestId("structure-first-organisation-step"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("structure-first-organisation-profile"),
+    ).toContainText(user.organisationName);
+    await expect(
+      page.getByTestId("structure-first-site-distinction"),
+    ).toContainText(user.firstSiteName);
 
     await page.goto("/platform");
     await expect(page).toHaveURL(/\/onboarding\/setup/);
 
-    await page
-      .getByRole("button", { name: "Finish and enter workspace" })
-      .click();
-    await expect(page).toHaveURL(/\/platform(?:\?|$)/, { timeout: 30_000 });
-    await expect(page.getByTestId("core-setup-banner")).toBeVisible();
+    await page.getByTestId("structure-first-continue-context").click();
+    await expect(
+      page.getByTestId("structure-first-structure-step"),
+    ).toBeVisible();
+    await page.getByTestId("structure-first-build-manual").click();
+    await page.getByTestId("add-unit-button").click();
+    await expect(page.getByTestId("unit-create-form")).toBeVisible();
+    await page.locator("#unit-name").fill("Production");
+    await page.getByTestId("unit-type-choice").selectOption("department");
+    await page.getByTestId("unit-create-submit").click();
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: "Production",
+      }),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(
+      page.getByTestId("structure-first-structure-step"),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: "Production",
+      }),
+    ).toBeVisible();
+    await page.goto("/onboarding/setup");
+    await expect(
+      page.getByTestId("structure-first-job-functions-step"),
+    ).toBeVisible();
+    await page.goto("/onboarding/setup?step=structure");
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: "Production",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: user.firstSiteName,
+      }),
+    ).toBeVisible();
+
+    await page.getByTestId("structure-first-continue-structure").click();
+    await expect(
+      page.getByTestId("structure-first-job-functions-step"),
+    ).toBeVisible();
+    await page.getByTestId("structure-first-job-suggestion-operator").click();
+    await expect(page.getByTestId("job-function-item-operator")).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByTestId("structure-first-job-functions-step"),
+    ).toBeVisible();
+    await expect(page.getByTestId("job-function-item-operator")).toBeVisible();
+    await page.goto("/onboarding/setup");
+    await expect(page.getByTestId("structure-first-people-step")).toBeVisible();
+    await page.goto("/onboarding/setup?step=job_functions");
+    await expect(page.getByTestId("job-function-item-operator")).toBeVisible();
+    await page.getByTestId("structure-first-continue-job-functions").click();
+    await expect(page.getByTestId("structure-first-people-step")).toBeVisible();
+    await page.getByTestId("structure-first-skip-people").click();
+    await expect(
+      page.getByTestId("structure-first-readiness-step"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("structure-first-progress-people"),
+    ).toHaveAttribute("data-status", "skipped");
+    await expect(
+      page.getByTestId("structure-first-readiness-summary"),
+    ).toContainText("organisational units");
+    await expect(
+      page.getByTestId("structure-first-readiness-summary"),
+    ).toContainText("1 functions");
+    await page.getByTestId("structure-first-continue-setup").click();
+    await expect(page).toHaveURL(/\/platform\/setup(?:\?|$)/, {
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId("setup-page")).toBeVisible();
 
     await page.goto("/platform/settings");
     await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible();

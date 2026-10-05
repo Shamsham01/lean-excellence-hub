@@ -2698,3 +2698,31 @@ body {
 .leh-authoring-reorder-button:disabled {
   opacity: 0.45;
 }
+
+.structure-first-shell {
+  min-height: 100dvh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.structure-first-step-enter {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .structure-first-step-enter {
+    animation: structure-first-step-in 180ms ease-out;
+  }
+
+  @keyframes structure-first-step-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}

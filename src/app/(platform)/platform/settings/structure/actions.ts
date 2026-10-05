@@ -261,4 +261,5 @@ function revalidateStructurePaths() {
   revalidatePath("/platform");
   revalidatePath("/platform/people");
   revalidatePath("/platform/settings/people");
+  revalidatePath("/onboarding/setup");
 }

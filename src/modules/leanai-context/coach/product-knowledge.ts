@@ -124,9 +124,12 @@ const KNOWLEDGE: Partial<
     recommendedPath: "/platform/setup",
   },
   onboarding: {
-    summary: "Finish onboarding before using normal platform setup routes.",
+    summary:
+      "Capture organisation, site, structure, job functions and people before Operational Excellence setup.",
     facts: [
-      "Once the workspace is open, LeanAI guides remaining setup in order.",
+      "Organisation is the company tenant. A site is an operational location.",
+      "Job functions describe work. Access roles describe application permissions.",
+      "LeanAI is advisory and does not create authoritative configuration automatically.",
     ],
     recommendedPath: "/onboarding/setup",
   },
