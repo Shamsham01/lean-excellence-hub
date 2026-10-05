@@ -416,22 +416,12 @@ export function FrameworkEditor({
   ) {
     if (input.criterionId !== question.criterion_id) {
       await run(() =>
-        moveMaturityQuestion(
-          question.id,
-          input.criterionId,
-          undefined,
-          modelId,
-        ),
+        moveMaturityQuestion(question.id, input.criterionId, modelId),
       );
       return;
     }
     await run(() =>
-      updateMaturityQuestion(
-        question.id,
-        input.prompt,
-        question.position,
-        modelId,
-      ),
+      updateMaturityQuestion(question.id, input.prompt, modelId),
     );
   }
 
@@ -735,7 +725,6 @@ export function FrameworkEditor({
                       updateMaturityPillar(
                         pillar.id,
                         form.pillarName.value.trim(),
-                        pillar.position,
                         form.pillarDescription.value.trim() || null,
                         form.pillarGuidance.value.trim() || null,
                         modelId,
@@ -872,7 +861,6 @@ export function FrameworkEditor({
                               moveMaturityCriterion(
                                 criterion.id,
                                 nextPillarId,
-                                undefined,
                                 modelId,
                               ),
                             );
@@ -882,7 +870,6 @@ export function FrameworkEditor({
                             updateMaturityCriterion(
                               criterion.id,
                               String(payload.get("criterionName") ?? "").trim(),
-                              criterion.position,
                               String(
                                 payload.get("criterionDescription") ?? "",
                               ).trim() || null,
