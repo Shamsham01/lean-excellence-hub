@@ -90,5 +90,8 @@ describe("createCustomerPortalSession", () => {
       customerId: "cus_123",
       returnUrl: "http://127.0.0.1:3000/billing",
     });
+    expect(rpc).toHaveBeenCalledWith(
+      "get_current_organisation_billing_management",
+    );
   });
 });

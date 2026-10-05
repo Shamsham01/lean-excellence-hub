@@ -1,5 +1,6 @@
 import "server-only";
 
+import { loadCurrentOrganisationBillingManagement } from "./current-billing";
 import { isBillingInterval, isCheckoutPlanCode } from "./billing-state";
 import { isFakeBillingEnabled } from "./env";
 import { getFakeBillingProvider } from "./get-provider";
@@ -12,7 +13,7 @@ import {
 } from "@/modules/organisations/context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-async function requireAuthorisedFakeCheckout(sessionId: string) {
+async function requireAuthorisedFakeCheckout() {
   if (!isFakeBillingEnabled()) {
     throw new BillingProviderError("Fake billing is not enabled.", "not_found");
   }
@@ -45,13 +46,11 @@ async function requireAuthorisedFakeCheckout(sessionId: string) {
     );
   }
 
-  const billing = await supabase.rpc("get_current_organisation_billing");
-  const snapshot = billing.data?.[0];
+  const snapshot = await loadCurrentOrganisationBillingManagement(supabase);
   if (
-    billing.error ||
     !snapshot ||
     snapshot.organisation_id !== organisationId ||
-    snapshot.open_checkout_session_id !== sessionId
+    !snapshot.open_checkout_session_id
   ) {
     throw new BillingProviderError(
       "Checkout session was not found.",
@@ -59,11 +58,14 @@ async function requireAuthorisedFakeCheckout(sessionId: string) {
     );
   }
 
-  return organisationId;
+  return {
+    organisationId,
+    sessionId: snapshot.open_checkout_session_id,
+  };
 }
 
-export async function completeFakeCheckoutSession(sessionId: string) {
-  const organisationId = await requireAuthorisedFakeCheckout(sessionId);
+export async function completeFakeCheckoutSession() {
+  const { organisationId, sessionId } = await requireAuthorisedFakeCheckout();
   const provider = getFakeBillingProvider();
 
   try {

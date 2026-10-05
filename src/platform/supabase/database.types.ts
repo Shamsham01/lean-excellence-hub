@@ -13360,6 +13360,29 @@ export type Database = {
           current_period_start: string
           ended_at: string
           grace_expires_at: string
+          has_open_checkout: boolean
+          intended_site_quantity: number
+          onboarding_required: boolean
+          organisation_id: string
+          organisation_status: string
+          paid_site_limit: number
+          plan_code: string
+          provider_status: string
+          retention_eligible_at: string
+          site_quantity: number
+        }[]
+      }
+      get_current_organisation_billing_management: {
+        Args: never
+        Returns: {
+          active_site_count: number
+          billing_interval: string
+          billing_state: string
+          cancel_at_period_end: boolean
+          current_period_end: string
+          current_period_start: string
+          ended_at: string
+          grace_expires_at: string
           intended_site_quantity: number
           onboarding_required: boolean
           open_checkout_session_id: string

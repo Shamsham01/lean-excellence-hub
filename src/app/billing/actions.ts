@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { currentCanManageBilling } from "@/modules/billing/authority";
+import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
 import { getBillingProvider } from "@/modules/billing/get-provider";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
@@ -37,8 +38,8 @@ export async function createCustomerPortalSession() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const billing = await supabase.rpc("get_current_organisation_billing");
-  const customerId = billing.data?.[0]?.provider_customer_id;
+  const billing = await loadCurrentOrganisationBillingManagement(supabase);
+  const customerId = billing?.provider_customer_id;
   if (!customerId) {
     redirect(
       pathForOrganisationStatus(

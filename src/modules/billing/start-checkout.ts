@@ -2,6 +2,7 @@ import "server-only";
 
 import { getBillingProvider } from "@/modules/billing/get-provider";
 import { isSelfServicePlan } from "@/modules/billing/catalogue";
+import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
 import {
   ensureOrganisationBillingAccount,
   setOrganisationOpenCheckoutSession,
@@ -10,6 +11,7 @@ import type {
   BillingInterval,
   SelfServicePlanCode,
 } from "@/modules/billing/types";
+import { BillingProviderError } from "@/modules/billing/provider";
 import { getServerEnvironment } from "@/platform/env";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -25,9 +27,14 @@ export async function startOrganisationCheckout(input: {
   }
 
   const supabase = await createServerSupabaseClient();
-  const billing = await supabase.rpc("get_current_organisation_billing");
-  const snapshot = billing.data?.[0];
-  const siteQuantity = Math.max(1, snapshot?.intended_site_quantity ?? 1);
+  const snapshot = await loadCurrentOrganisationBillingManagement(supabase);
+  if (!snapshot || snapshot.organisation_id !== input.organisationId) {
+    throw new BillingProviderError(
+      "Billing management is required to start checkout.",
+      "forbidden",
+    );
+  }
+  const siteQuantity = Math.max(1, snapshot.intended_site_quantity ?? 1);
   const provider = getBillingProvider();
   const origin = getServerEnvironment().APP_ORIGIN;
 
@@ -35,7 +42,7 @@ export async function startOrganisationCheckout(input: {
     organisationId: input.organisationId,
     organisationName: input.organisationName,
     email: input.email,
-    existingCustomerId: snapshot?.provider_customer_id,
+    existingCustomerId: snapshot.provider_customer_id,
   });
 
   await ensureOrganisationBillingAccount({
@@ -54,7 +61,7 @@ export async function startOrganisationCheckout(input: {
     successUrl: `${origin}/onboarding/confirm?session_id={CHECKOUT_SESSION_ID}`,
     cancelUrl: `${origin}/onboarding`,
     existingCustomerId: customer.customerId,
-    ...(snapshot?.open_checkout_session_id
+    ...(snapshot.open_checkout_session_id
       ? { existingCheckoutSessionId: snapshot.open_checkout_session_id }
       : {}),
   });

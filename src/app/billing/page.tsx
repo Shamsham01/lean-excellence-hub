@@ -8,6 +8,10 @@ import {
   switchOrganisation,
 } from "@/modules/organisations/context";
 import { currentCanManageBilling } from "@/modules/billing/authority";
+import {
+  loadCurrentOrganisationBilling,
+  loadCurrentOrganisationBillingManagement,
+} from "@/modules/billing/current-billing";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -43,9 +47,11 @@ export default async function BillingRecoveryPage() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const billing = await supabase.rpc("get_current_organisation_billing");
-  const snapshot = billing.data?.[0];
+  const snapshot = await loadCurrentOrganisationBilling(supabase);
   const canManageBilling = await currentCanManageBilling();
+  const management = canManageBilling
+    ? await loadCurrentOrganisationBillingManagement(supabase)
+    : null;
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
@@ -78,7 +84,7 @@ export default async function BillingRecoveryPage() {
               </dd>
             </div>
           </dl>
-          {snapshot?.provider_customer_id && canManageBilling ? (
+          {management?.provider_customer_id ? (
             <form action={createCustomerPortalSession}>
               <Button
                 type="submit"

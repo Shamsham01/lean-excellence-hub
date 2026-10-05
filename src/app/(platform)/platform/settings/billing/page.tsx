@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -14,8 +15,7 @@ export default async function OrganisationBillingSettingsPage() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const billing = await supabase.rpc("get_current_organisation_billing");
-  const snapshot = billing.data?.[0];
+  const snapshot = await loadCurrentOrganisationBillingManagement(supabase);
 
   return (
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
