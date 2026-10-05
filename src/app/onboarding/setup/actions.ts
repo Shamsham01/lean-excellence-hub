@@ -27,6 +27,7 @@ import {
   type StructureDraftUnit,
   type StructureFirstStepKey,
 } from "@/modules/organisation-onboarding";
+import { loadStructureFirstSnapshot } from "@/modules/organisation-onboarding/queries";
 import { requireClaims } from "@/modules/identity/session";
 import { currentMemberHasScopedPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -64,15 +65,18 @@ async function requireGuidedSetupOrganisation() {
   return { organisationId, current };
 }
 
-async function recordOnboardingEvent(input: {
-  eventKey:
-    | "onboarding.started"
-    | "onboarding.step_completed"
-    | "onboarding.step_skipped"
-    | "onboarding.completed";
-  stepKey?: StructureFirstStepKey;
-  extra?: Record<string, string | number | boolean | null>;
-}) {
+async function recordOnboardingEvent(
+  input: {
+    eventKey:
+      | "onboarding.started"
+      | "onboarding.step_completed"
+      | "onboarding.step_skipped"
+      | "onboarding.completed";
+    stepKey?: StructureFirstStepKey;
+    extra?: Record<string, string | number | boolean | null>;
+  },
+  options: { required?: boolean } = {},
+) {
   try {
     await recordLeanAiSemanticEvent({
       eventKey: input.eventKey,
@@ -82,8 +86,13 @@ async function recordOnboardingEvent(input: {
         ...(input.extra ?? {}),
       },
     });
+    return true;
   } catch {
-    // Journey context is advisory. Domain mutations must still succeed.
+    if (options.required) {
+      return false;
+    }
+    // Pure journey telemetry is advisory. Domain mutations must still succeed.
+    return true;
   }
 }
 
@@ -128,11 +137,19 @@ export async function confirmSimpleStructure(): Promise<ActionResult> {
   }
 
   await recordOnboardingEvent({ eventKey: "onboarding.started" });
-  await recordOnboardingEvent({
-    eventKey: "onboarding.step_completed",
-    stepKey: "structure",
-    extra: { structure_mode: "simple" },
-  });
+  const persisted = await recordOnboardingEvent(
+    {
+      eventKey: "onboarding.step_completed",
+      stepKey: "structure",
+      extra: { structure_mode: "simple" },
+    },
+    { required: true },
+  );
+  if (!persisted) {
+    return {
+      error: "Unable to save structure progress. Try again before continuing.",
+    };
+  }
   revalidateSetup();
   return { ok: true as const };
 }
@@ -152,10 +169,18 @@ export async function skipStructureFirstStep(
   }
 
   await recordOnboardingEvent({ eventKey: "onboarding.started" });
-  await recordOnboardingEvent({
-    eventKey: "onboarding.step_skipped",
-    stepKey,
-  });
+  const persisted = await recordOnboardingEvent(
+    {
+      eventKey: "onboarding.step_skipped",
+      stepKey,
+    },
+    { required: true },
+  );
+  if (!persisted) {
+    return {
+      error: "Unable to save that skipped step. Try again before continuing.",
+    };
+  }
   revalidateSetup();
   return { ok: true as const };
 }
@@ -353,15 +378,20 @@ export async function completeStructureFirstOnboarding() {
     redirect("/onboarding/setup?error=complete");
   }
 
-  await recordOnboardingEvent({
-    eventKey: "onboarding.completed",
-    extra: { foundation: true },
-  });
+  const snapshot = await loadStructureFirstSnapshot("readiness");
+  if (!snapshot.progress.allFoundationReady) {
+    redirect("/onboarding/setup?error=complete");
+  }
 
   const supabase = await createServerSupabaseClient();
   const completed = await supabase.rpc("complete_organisation_onboarding");
   if (completed.error || completed.data !== true) {
     redirect("/onboarding/setup?error=complete");
   }
+
+  await recordOnboardingEvent({
+    eventKey: "onboarding.completed",
+    extra: { foundation: true },
+  });
   redirect("/platform/setup");
 }
