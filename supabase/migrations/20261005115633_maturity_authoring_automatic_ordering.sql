@@ -447,9 +447,9 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.assert_maturity_draft_authoring();
-  version_id uuid;
+  item_version_id uuid;
   item_section_id uuid;
-  template_version_id uuid;
+  item_template_version_id uuid;
   target_model_id uuid;
   item_position integer;
   neighbor_id uuid;
@@ -469,10 +469,10 @@ begin
     model_version.template_version_id,
     model_version.model_id
   into
-    version_id,
+    item_version_id,
     item_section_id,
     item_position,
-    template_version_id,
+    item_template_version_id,
     target_model_id
   from public.maturity_pillars pillar_row
   join public.maturity_model_versions model_version
@@ -483,7 +483,7 @@ begin
     and pillar_row.id = target_pillar_id
   for update of pillar_row, model_version;
 
-  if version_id is null then
+  if item_version_id is null then
     raise exception 'maturity pillar is not editable'
       using errcode = '55000';
   end if;
@@ -491,7 +491,7 @@ begin
   perform 1
   from public.maturity_pillars pillar_row
   where pillar_row.organisation_id = org_id
-    and pillar_row.model_version_id = version_id
+    and pillar_row.model_version_id = item_version_id
   for update of pillar_row;
 
   if target_direction = 'up' then
@@ -499,7 +499,7 @@ begin
     into neighbor_id, neighbor_section_id, neighbor_position
     from public.maturity_pillars pillar_row
     where pillar_row.organisation_id = org_id
-      and pillar_row.model_version_id = version_id
+      and pillar_row.model_version_id = item_version_id
       and (
         pillar_row.position < item_position
         or (
@@ -514,7 +514,7 @@ begin
     into neighbor_id, neighbor_section_id, neighbor_position
     from public.maturity_pillars pillar_row
     where pillar_row.organisation_id = org_id
-      and pillar_row.model_version_id = version_id
+      and pillar_row.model_version_id = item_version_id
       and (
         pillar_row.position > item_position
         or (
@@ -538,7 +538,7 @@ begin
           select pg_catalog.max(pillar_row.position)
           from public.maturity_pillars pillar_row
           where pillar_row.organisation_id = org_id
-            and pillar_row.model_version_id = version_id
+            and pillar_row.model_version_id = item_version_id
         ),
         0
       ),
@@ -547,7 +547,7 @@ begin
           select pg_catalog.max(section_row.position)
           from public.template_sections section_row
           where section_row.organisation_id = org_id
-            and section_row.template_version_id = template_version_id
+            and section_row.template_version_id = item_template_version_id
         ),
         0
       )
@@ -613,8 +613,8 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.assert_maturity_draft_authoring();
-  pillar_id uuid;
-  version_id uuid;
+  item_pillar_id uuid;
+  item_version_id uuid;
   target_model_id uuid;
   item_position integer;
   neighbor_id uuid;
@@ -631,7 +631,7 @@ begin
     criterion_row.position,
     pillar_row.model_version_id,
     model_version.model_id
-  into pillar_id, item_position, version_id, target_model_id
+  into item_pillar_id, item_position, item_version_id, target_model_id
   from public.maturity_criteria criterion_row
   join public.maturity_pillars pillar_row
     on pillar_row.organisation_id = criterion_row.organisation_id
@@ -644,7 +644,7 @@ begin
     and criterion_row.id = target_criterion_id
   for update of criterion_row, pillar_row;
 
-  if pillar_id is null then
+  if item_pillar_id is null then
     raise exception 'maturity criterion is not editable'
       using errcode = '55000';
   end if;
@@ -652,7 +652,7 @@ begin
   perform 1
   from public.maturity_criteria criterion_row
   where criterion_row.organisation_id = org_id
-    and criterion_row.pillar_id = pillar_id
+    and criterion_row.pillar_id = item_pillar_id
   for update of criterion_row;
 
   if target_direction = 'up' then
@@ -660,7 +660,7 @@ begin
     into neighbor_id, neighbor_position
     from public.maturity_criteria criterion_row
     where criterion_row.organisation_id = org_id
-      and criterion_row.pillar_id = pillar_id
+      and criterion_row.pillar_id = item_pillar_id
       and (
         criterion_row.position < item_position
         or (
@@ -675,7 +675,7 @@ begin
     into neighbor_id, neighbor_position
     from public.maturity_criteria criterion_row
     where criterion_row.organisation_id = org_id
-      and criterion_row.pillar_id = pillar_id
+      and criterion_row.pillar_id = item_pillar_id
       and (
         criterion_row.position > item_position
         or (
@@ -692,7 +692,7 @@ begin
       using errcode = '22023';
   end if;
 
-  staged_position := private.next_maturity_criterion_position(org_id, pillar_id);
+  staged_position := private.next_maturity_criterion_position(org_id, item_pillar_id);
 
   update public.maturity_criteria criterion_row
   set position = staged_position
@@ -738,8 +738,8 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.assert_maturity_draft_authoring();
-  section_id uuid;
-  criterion_id uuid;
+  item_section_id uuid;
+  item_criterion_id uuid;
   target_model_id uuid;
   item_position integer;
   neighbor_id uuid;
@@ -756,7 +756,7 @@ begin
     question_row.position,
     question_link.criterion_id,
     model_version.model_id
-  into section_id, item_position, criterion_id, target_model_id
+  into item_section_id, item_position, item_criterion_id, target_model_id
   from public.template_questions question_row
   join public.maturity_model_versions model_version
     on model_version.organisation_id = question_row.organisation_id
@@ -771,7 +771,7 @@ begin
   limit 1
   for update of question_row;
 
-  if section_id is null or criterion_id is null then
+  if item_section_id is null or item_criterion_id is null then
     raise exception 'maturity question is not editable'
       using errcode = '55000';
   end if;
@@ -779,7 +779,7 @@ begin
   perform 1
   from public.template_questions question_row
   where question_row.organisation_id = org_id
-    and question_row.section_id = section_id
+    and question_row.section_id = item_section_id
   for update of question_row;
 
   if target_direction = 'up' then
@@ -789,9 +789,9 @@ begin
     join public.maturity_criterion_questions question_link
       on question_link.organisation_id = question_row.organisation_id
      and question_link.question_id = question_row.id
-     and question_link.criterion_id = criterion_id
+     and question_link.criterion_id = item_criterion_id
     where question_row.organisation_id = org_id
-      and question_row.section_id = section_id
+      and question_row.section_id = item_section_id
       and question_row.id <> target_question_id
       and (
         question_row.position < item_position
@@ -809,9 +809,9 @@ begin
     join public.maturity_criterion_questions question_link
       on question_link.organisation_id = question_row.organisation_id
      and question_link.question_id = question_row.id
-     and question_link.criterion_id = criterion_id
+     and question_link.criterion_id = item_criterion_id
     where question_row.organisation_id = org_id
-      and question_row.section_id = section_id
+      and question_row.section_id = item_section_id
       and question_row.id <> target_question_id
       and (
         question_row.position > item_position
@@ -831,7 +831,7 @@ begin
 
   staged_position := private.next_maturity_section_question_position(
     org_id,
-    section_id
+    item_section_id
   );
 
   update public.template_questions question_row
