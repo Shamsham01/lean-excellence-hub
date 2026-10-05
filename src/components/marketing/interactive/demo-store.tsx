@@ -169,10 +169,7 @@ function scenarioStart(
 function viewForNotification(
   item: DemoNotification,
   state: DemoState,
-): Pick<
-  DemoState,
-  "view" | "module" | "perspective" | "selectedActionId"
-> {
+): Pick<DemoState, "view" | "module" | "perspective" | "selectedActionId"> {
   if (item.objectType === "suggestion") {
     return {
       view:
