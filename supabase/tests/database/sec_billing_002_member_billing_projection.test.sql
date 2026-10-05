@@ -294,10 +294,10 @@ select ok(
       'intended_site_quantity',
       'has_open_checkout',
       'grace_expires_at'
-    ]::name[]
-      and not p.proargnames @> array['provider_customer_id']::name[]
-      and not p.proargnames @> array['open_checkout_session_id']::name[]
-      and not p.proargnames @> array['provider']::name[]
+    ]::text[]
+      and not p.proargnames @> array['provider_customer_id']::text[]
+      and not p.proargnames @> array['open_checkout_session_id']::text[]
+      and not p.proargnames @> array['provider']::text[]
     from pg_catalog.pg_proc p
     join pg_catalog.pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
@@ -313,7 +313,7 @@ select ok(
       'open_checkout_session_id',
       'provider',
       'plan_code'
-    ]::name[]
+    ]::text[]
     from pg_catalog.pg_proc p
     join pg_catalog.pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
