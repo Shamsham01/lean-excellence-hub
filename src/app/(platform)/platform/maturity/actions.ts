@@ -416,13 +416,11 @@ export async function updateMaturityPillar(
   const rpcArgs: {
     target_pillar_id: string;
     target_name: string;
-    target_position: number;
     target_description?: string;
     target_guidance?: string;
   } = {
     target_pillar_id: pillarId,
     target_name: name,
-    target_position: 0,
   };
   if (description) rpcArgs.target_description = description;
   if (guidance) rpcArgs.target_guidance = guidance;
@@ -443,13 +441,11 @@ export async function updateMaturityCriterion(
   const rpcArgs: {
     target_criterion_id: string;
     target_name: string;
-    target_position: number;
     target_description?: string;
     target_guidance?: string;
   } = {
     target_criterion_id: criterionId,
     target_name: name,
-    target_position: 0,
   };
   if (description) rpcArgs.target_description = description;
   if (guidance) rpcArgs.target_guidance = guidance;
@@ -468,7 +464,6 @@ export async function updateMaturityQuestion(
   const { error } = await supabase.rpc("update_maturity_question", {
     target_question_id: questionId,
     target_prompt: prompt,
-    target_position: 0,
   });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
