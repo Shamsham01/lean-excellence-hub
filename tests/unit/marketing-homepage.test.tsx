@@ -387,31 +387,56 @@ describe("public marketing homepage", () => {
     expect(tablist).toHaveAttribute("aria-orientation", "vertical");
     const tabs = within(tablist).getAllByRole("tab");
     expect(tabs).toHaveLength(4);
-    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    const organisationTab = tabs[0] as HTMLElement;
+    expect(organisationTab).toHaveAttribute("aria-selected", "true");
+
+    const panels = within(audience).getAllByRole("tabpanel");
+    expect(panels).toHaveLength(4);
+    const activePanel = () => {
+      const active = panels.filter(
+        (panel) => panel.getAttribute("data-state") === "active",
+      );
+      expect(active).toHaveLength(1);
+      return active[0] as HTMLElement;
+    };
+    expect(activePanel()).toHaveAttribute(
+      "aria-labelledby",
+      organisationTab.id,
+    );
     expect(
-      within(audience).getByText(
+      within(activePanel()).getByText(
         "Where is the system maturing, and where is it drifting?",
       ),
     ).toBeInTheDocument();
-    expect(within(audience).getAllByRole("tabpanel")).toHaveLength(1);
 
     const siteTab = within(tablist).getByRole("tab", {
       name: /site leadership/i,
     });
     fireEvent.mouseDown(siteTab);
     expect(siteTab).toHaveAttribute("aria-selected", "true");
-    expect(tabs[0]).toHaveAttribute("aria-selected", "false");
-    const panel = within(audience).getByRole("tabpanel");
+    expect(organisationTab).toHaveAttribute("aria-selected", "false");
+    const sitePanel = activePanel();
+    expect(sitePanel).toHaveAttribute("aria-labelledby", siteTab.id);
     expect(
-      within(panel).getByText("What needs attention at this site this week?"),
+      within(sitePanel).getByText(
+        "What needs attention at this site this week?",
+      ),
     ).toBeInTheDocument();
-    expect(within(panel).getByText("North plant")).toBeInTheDocument();
+    expect(within(sitePanel).getByText("North plant")).toBeInTheDocument();
     expect(
-      within(audience).queryByText(
+      within(sitePanel).queryByText(
         "Where is the system maturing, and where is it drifting?",
       ),
     ).not.toBeInTheDocument();
     expect(audience.querySelector(".marketing-audience")).toBeNull();
+
+    const css = readFileSync("src/app/globals.css", "utf8");
+    expect(css).toMatch(
+      /\.marketing-perspective-panel \{\s*grid-row: 2;\s*grid-column: 1;/,
+    );
+    expect(css).toMatch(
+      /\.marketing-perspective-panel\[data-state="inactive"\] \{\s*visibility: hidden;\s*\}/,
+    );
   });
 
   it("exposes a labelled System / Light / Dark appearance control", () => {

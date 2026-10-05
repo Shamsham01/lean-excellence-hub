@@ -959,7 +959,7 @@ html:has(> body > .marketing) {
   position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 0 0.6rem;
   border: 1px solid var(--leh-cobalt-line);
   border-radius: 0.5rem;
@@ -1986,28 +1986,35 @@ html:has(> body > .marketing) {
 /* Who it is for — one system, different perspectives. */
 .marketing-perspectives {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   margin-top: 2rem;
 }
 
 .marketing-perspective-rail {
+  --rail-x: 1.2rem;
+  --rail-node: 0.625rem;
+  --rail-tab-top: 0.65rem;
+  --rail-scope-line: 1rem;
+  --rail-node-y: calc(var(--rail-tab-top) + var(--rail-scope-line) / 2);
   position: relative;
+  grid-row: 1;
+  grid-column: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
 }
 
 .marketing-perspective-tab {
   position: relative;
   display: grid;
   align-content: start;
-  gap: 0.2rem;
+  gap: 0.15rem;
   min-width: 0;
-  min-height: 4.25rem;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 0.5rem;
-  background: color-mix(in oklab, var(--muted) 35%, var(--surface));
-  padding: 0.65rem 0.75rem;
+  background: transparent;
+  padding: var(--rail-tab-top) 0.9rem 0.7rem 2.5rem;
   text-align: left;
   color: var(--foreground);
   cursor: pointer;
@@ -2017,9 +2024,8 @@ html:has(> body > .marketing) {
     box-shadow 160ms ease;
 }
 
-.marketing-perspective-tab:hover {
-  border-color: var(--leh-cobalt-line);
-  background: var(--elevated);
+.marketing-perspective-tab:hover:not([data-state="active"]) {
+  background: color-mix(in oklab, var(--muted) 45%, transparent);
 }
 
 .marketing-perspective-tab:focus-visible {
@@ -2048,6 +2054,40 @@ html:has(> body > .marketing) {
   color: var(--accent-foreground);
 }
 
+.marketing-perspective-scope {
+  line-height: var(--rail-scope-line);
+}
+
+.marketing-perspective-scope::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--rail-node-y) - var(--rail-node) / 2);
+  left: calc(var(--rail-x) - var(--rail-node) / 2 + 0.5px);
+  z-index: 2;
+  width: var(--rail-node);
+  height: var(--rail-node);
+  border: 2px solid var(--leh-cobalt-line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.marketing-perspective-tab[data-state="active"]
+  .marketing-perspective-scope::before {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.marketing-perspective-tab:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: var(--rail-node-y);
+  left: var(--rail-x);
+  z-index: 1;
+  width: 1px;
+  height: 100%;
+  background: var(--leh-cobalt-line);
+}
+
 .marketing-perspective-role {
   font-size: 0.875rem;
   font-weight: 600;
@@ -2062,8 +2102,17 @@ html:has(> body > .marketing) {
   color: var(--muted-foreground);
 }
 
+/* Panels share one grid cell so the frame keeps the tallest panel's height. */
 .marketing-perspective-panel {
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+}
+
+.marketing-perspective-panel[data-state="inactive"] {
+  visibility: hidden;
 }
 
 .marketing-perspective-panel:focus-visible {
@@ -2073,6 +2122,9 @@ html:has(> body > .marketing) {
 }
 
 .marketing-perspective-frame {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--marketing-radius);
@@ -2121,6 +2173,9 @@ html:has(> body > .marketing) {
 }
 
 .marketing-perspective-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   padding: 0.95rem 0.95rem 1rem;
 }
 
@@ -2190,7 +2245,8 @@ html:has(> body > .marketing) {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  margin-top: 0.85rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--muted-foreground);
@@ -2229,55 +2285,17 @@ html:has(> body > .marketing) {
   }
 
   .marketing-perspective-rail {
-    --rail-x: 1.2rem;
-    --rail-node: 0.625rem;
     --rail-tab-top: 0.85rem;
-    --rail-scope-line: 1rem;
-    --rail-node-y: calc(var(--rail-tab-top) + var(--rail-scope-line) / 2);
-    grid-template-columns: minmax(0, 1fr);
-    align-content: start;
-    gap: 0;
   }
 
   .marketing-perspective-tab {
-    min-height: 0;
-    border-color: transparent;
-    background: transparent;
+    gap: 0.2rem;
     padding: var(--rail-tab-top) 1rem 0.9rem 2.5rem;
   }
 
-  .marketing-perspective-scope {
-    line-height: var(--rail-scope-line);
-  }
-
-  .marketing-perspective-scope::before {
-    content: "";
-    position: absolute;
-    top: calc(var(--rail-node-y) - var(--rail-node) / 2);
-    left: calc(var(--rail-x) - var(--rail-node) / 2 + 0.5px);
-    z-index: 2;
-    width: var(--rail-node);
-    height: var(--rail-node);
-    border: 2px solid var(--leh-cobalt-line);
-    border-radius: 999px;
-    background: var(--surface);
-  }
-
-  .marketing-perspective-tab[data-state="active"]
-    .marketing-perspective-scope::before {
-    border-color: var(--primary);
-    background: var(--primary);
-  }
-
-  .marketing-perspective-tab:not(:last-child)::before {
-    content: "";
-    position: absolute;
-    top: var(--rail-node-y);
-    left: var(--rail-x);
-    z-index: 1;
-    width: 1px;
-    height: 100%;
-    background: var(--leh-cobalt-line);
+  .marketing-perspective-panel {
+    grid-row: 1;
+    grid-column: 2;
   }
 
   .marketing-perspective-tab[data-state="active"]::after {
@@ -2288,11 +2306,6 @@ html:has(> body > .marketing) {
     width: 2.5rem;
     height: 1px;
     background: var(--leh-cobalt-line);
-  }
-
-  .marketing-perspective-tab:hover:not([data-state="active"]) {
-    border-color: transparent;
-    background: color-mix(in oklab, var(--muted) 45%, transparent);
   }
 
   .marketing-perspective-focus {

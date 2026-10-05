@@ -173,6 +173,7 @@ export function MarketingAudiencePerspectives() {
         <TabsPrimitive.Content
           key={perspective.value}
           className="marketing-perspective-panel"
+          forceMount
           value={perspective.value}
         >
           <div className="marketing-perspective-frame">
