@@ -14,6 +14,7 @@ import {
   ACTION_OWNERS,
   ACTION_REF,
   STANDALONE_ACTION,
+  STANDALONE_ACTION_REF,
   type ActionStatus,
 } from "./demo-model";
 import { useDemoDispatch, useDemoState } from "./demo-store";
@@ -88,7 +89,7 @@ function StandaloneActionCompose() {
     dispatch({
       type: "create-action",
       record: {
-        id: ACTION_REF,
+        id: STANDALONE_ACTION_REF,
         title,
         owner,
         due,
@@ -207,7 +208,7 @@ function ActionList() {
               type="button"
               className="leh-demo-action-row"
               onClick={() =>
-                dispatch({ type: "set-view", view: "action-record" })
+                dispatch({ type: "select-action", id: item.id })
               }
             >
               <span>
@@ -231,7 +232,9 @@ function ActionList() {
 function ActionDetail() {
   const state = useDemoState();
   const dispatch = useDemoDispatch();
-  const record = state.actions[0];
+  const record =
+    state.actions.find((item) => item.id === state.selectedActionId) ??
+    state.actions[0];
   if (!record) {
     return null;
   }
