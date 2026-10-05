@@ -433,7 +433,11 @@ test.describe("Milestone 5 maturity journeys", () => {
       label: "Problem Solving",
     });
     await page.getByRole("button", { name: "Save question" }).click();
-    await expect(page.getByText(/Safety → Problem Solving/)).toBeVisible({
+    await expect(
+      page
+        .locator('[data-testid^="edit-question-"]')
+        .getByText("Safety → Problem Solving"),
+    ).toBeVisible({
       timeout: 15_000,
     });
 
@@ -454,7 +458,9 @@ test.describe("Milestone 5 maturity journeys", () => {
       0,
     );
 
-    await page.locator("#criterionId").selectOption({ label: "Gemba walks" });
+    await page.locator("#criterionId").selectOption({
+      label: "Leadership → Gemba walks",
+    });
     await page.locator("#questionPrompt").fill("Rate remaining Gemba");
     await page.getByRole("button", { name: "Add scored question" }).click();
     await expect(leadershipQuestions.getByLabel("Question prompt")).toHaveValue(

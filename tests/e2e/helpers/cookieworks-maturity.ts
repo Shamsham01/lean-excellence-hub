@@ -123,7 +123,9 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
             .count(),
         )
         .toBeGreaterThan(0);
-      await page.locator("#criterionId").selectOption({ label: criterionName });
+      await page.locator("#criterionId").selectOption({
+        label: `${pillar.name} → ${criterionName}`,
+      });
       await page.locator("#questionPrompt").fill(`Rate: ${criterionName}`);
       await page.getByRole("button", { name: "Add scored question" }).click();
       linkedQuestionCount += 1;
