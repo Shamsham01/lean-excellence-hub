@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export const DEMO_WORKFLOW_DURATION_MS = 720;
 
-export type DemoWorkflowSignal = { cancelled: boolean };
+export type DemoWorkflowSignal = () => boolean;
 
 export function useDemoWorkflowSignal(): DemoWorkflowSignal {
-  const signal = useMemo<DemoWorkflowSignal>(() => ({ cancelled: false }), []);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
-    signal.cancelled = false;
+    cancelledRef.current = false;
     return () => {
-      signal.cancelled = true;
+      cancelledRef.current = true;
     };
-  }, [signal]);
+  }, []);
 
-  return signal;
+  return useCallback(() => cancelledRef.current, []);
 }
 
 export function prefersReducedDemoMotion(): boolean {
@@ -57,7 +57,7 @@ export async function runDemoWorkflow(
   const duration = demoStepDurationMs(steps.length);
 
   for (let index = 0; index < steps.length; index += 1) {
-    if (signal?.cancelled) {
+    if (signal?.()) {
       return false;
     }
 
@@ -72,5 +72,5 @@ export async function runDemoWorkflow(
     }
   }
 
-  return !signal?.cancelled;
+  return !(signal?.() ?? false);
 }
