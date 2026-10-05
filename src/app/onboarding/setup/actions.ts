@@ -211,16 +211,19 @@ export async function applyStructureDraft(input: {
   if (!parent || parent.status !== "active") {
     return { error: "The selected site is not available." };
   }
+  if (!isSiteUnitType(parent.unit_type)) {
+    return {
+      error:
+        "The reviewed structure can only be applied beneath the existing site.",
+    };
+  }
 
-  const { data: existingUnits } = await supabase
-    .from("organisation_units")
-    .select("code");
-  const existingCodes = (existingUnits ?? []).map((unit) => unit.code);
   const flattened = flattenDraftUnits(input.units);
-  const createdIds = new Map<string, string>([
-    ["__root__", input.parentUnitId],
-  ]);
-
+  if (flattened.length === 0) {
+    return {
+      error: "Add at least one unit, or choose Start simple to keep site only.",
+    };
+  }
   for (const unit of flattened) {
     if (!unit.name.trim()) {
       return { error: "Every unit needs a name before it can be saved." };
@@ -231,7 +234,17 @@ export async function applyStructureDraft(input: {
           "This setup step adds departments, areas and teams beneath the existing site. It does not create additional sites.",
       };
     }
+  }
 
+  const { data: existingUnits } = await supabase
+    .from("organisation_units")
+    .select("code");
+  const existingCodes = (existingUnits ?? []).map((unit) => unit.code);
+  const createdIds = new Map<string, string>([
+    ["__root__", input.parentUnitId],
+  ]);
+
+  for (const unit of flattened) {
     const parentId = unit.parentLocalId
       ? createdIds.get(unit.parentLocalId)
       : input.parentUnitId;
