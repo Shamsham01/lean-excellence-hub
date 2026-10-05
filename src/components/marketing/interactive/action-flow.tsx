@@ -86,7 +86,6 @@ function StandaloneActionCompose() {
       workflowSignal,
     );
     if (!done) {
-      setPhase("idle");
       return;
     }
     setPhase("success");
