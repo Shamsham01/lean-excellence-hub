@@ -420,9 +420,7 @@ export function FrameworkEditor({
       );
       return;
     }
-    await run(() =>
-      updateMaturityQuestion(question.id, input.prompt, modelId),
-    );
+    await run(() => updateMaturityQuestion(question.id, input.prompt, modelId));
   }
 
   async function removeQuestion(question: QuestionRow) {
