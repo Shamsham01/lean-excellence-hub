@@ -408,7 +408,6 @@ export async function updateMaturityLevel(
 export async function updateMaturityPillar(
   pillarId: string,
   name: string,
-  position: number,
   description: string | null,
   guidance: string | null,
   modelId?: string,
@@ -423,7 +422,7 @@ export async function updateMaturityPillar(
   } = {
     target_pillar_id: pillarId,
     target_name: name,
-    target_position: position,
+    target_position: 0,
   };
   if (description) rpcArgs.target_description = description;
   if (guidance) rpcArgs.target_guidance = guidance;
@@ -436,7 +435,6 @@ export async function updateMaturityPillar(
 export async function updateMaturityCriterion(
   criterionId: string,
   name: string,
-  position: number,
   description: string | null,
   guidance: string | null,
   modelId?: string,
@@ -451,7 +449,7 @@ export async function updateMaturityCriterion(
   } = {
     target_criterion_id: criterionId,
     target_name: name,
-    target_position: position,
+    target_position: 0,
   };
   if (description) rpcArgs.target_description = description;
   if (guidance) rpcArgs.target_guidance = guidance;
@@ -464,14 +462,13 @@ export async function updateMaturityCriterion(
 export async function updateMaturityQuestion(
   questionId: string,
   prompt: string,
-  position: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("update_maturity_question", {
     target_question_id: questionId,
     target_prompt: prompt,
-    target_position: position,
+    target_position: 0,
   });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
@@ -481,22 +478,13 @@ export async function updateMaturityQuestion(
 export async function moveMaturityCriterion(
   criterionId: string,
   pillarId: string,
-  position?: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
-  const rpcArgs: {
-    target_criterion_id: string;
-    target_pillar_id: string;
-    target_position?: number;
-  } = {
+  const { error } = await supabase.rpc("move_maturity_criterion", {
     target_criterion_id: criterionId,
     target_pillar_id: pillarId,
-  };
-  if (position != null) {
-    rpcArgs.target_position = position;
-  }
-  const { error } = await supabase.rpc("move_maturity_criterion", rpcArgs);
+  });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
   return { ok: true };
@@ -505,22 +493,13 @@ export async function moveMaturityCriterion(
 export async function moveMaturityQuestion(
   questionId: string,
   criterionId: string,
-  position?: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
-  const rpcArgs: {
-    target_question_id: string;
-    target_criterion_id: string;
-    target_position?: number;
-  } = {
+  const { error } = await supabase.rpc("move_maturity_question", {
     target_question_id: questionId,
     target_criterion_id: criterionId,
-  };
-  if (position != null) {
-    rpcArgs.target_position = position;
-  }
-  const { error } = await supabase.rpc("move_maturity_question", rpcArgs);
+  });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
   return { ok: true };
