@@ -1,6 +1,41 @@
 begin;
 
-select plan(50);
+select plan(52);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated', 'private.reorder_maturity_pillar(uuid,text)', 'EXECUTE'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated', 'private.reorder_maturity_criterion(uuid,text)', 'EXECUTE'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated', 'private.reorder_maturity_question(uuid,text)', 'EXECUTE'
+  ),
+  'authenticated may execute only the private reorder implementations needed by the public invoker wrappers'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon', 'private.reorder_maturity_pillar(uuid,text)', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon', 'private.reorder_maturity_criterion(uuid,text)', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'anon', 'private.reorder_maturity_question(uuid,text)', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'public', 'private.reorder_maturity_pillar(uuid,text)', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'public', 'private.reorder_maturity_criterion(uuid,text)', 'EXECUTE'
+  )
+  and not pg_catalog.has_function_privilege(
+    'public', 'private.reorder_maturity_question(uuid,text)', 'EXECUTE'
+  ),
+  'anon and PUBLIC cannot execute private Maturity reorder implementations'
+);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
