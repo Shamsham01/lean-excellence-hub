@@ -8,17 +8,6 @@ import { createRouteHandlerSupabaseClient } from "@/platform/supabase/route-hand
 
 export const runtime = "nodejs";
 
-async function sessionIdFrom(request: Request) {
-  const contentType = request.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    const body = (await request.json()) as { session_id?: string };
-    return body.session_id ?? null;
-  }
-  const form = await request.formData();
-  const value = form.get("session_id");
-  return typeof value === "string" ? value : null;
-}
-
 function statusFor(cause: BillingProviderError) {
   if (cause.code === "unauthorized") {
     return 401;
@@ -37,13 +26,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const sessionId = await sessionIdFrom(request);
-  if (!sessionId) {
-    return NextResponse.json({ error: "missing_session" }, { status: 400 });
-  }
-
   try {
-    await completeFakeCheckoutSession(sessionId);
+    await completeFakeCheckoutSession();
   } catch (cause) {
     if (cause instanceof BillingProviderError) {
       return NextResponse.json(
