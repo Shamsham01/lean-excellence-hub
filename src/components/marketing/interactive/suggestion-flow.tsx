@@ -119,7 +119,6 @@ function SuggestionForm() {
       workflowSignal,
     );
     if (!done) {
-      setPhase("idle");
       return;
     }
     setPhase("success");
@@ -436,7 +435,6 @@ function SuggestionReview() {
       workflowSignal,
     );
     if (!done) {
-      setPhase("idle");
       return;
     }
     setPhase("success");
@@ -531,7 +529,6 @@ export function SuggestionActionCompose() {
       workflowSignal,
     );
     if (!done) {
-      setPhase("idle");
       return;
     }
     setPhase("success");
