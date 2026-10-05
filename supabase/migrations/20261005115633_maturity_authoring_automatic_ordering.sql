@@ -531,28 +531,19 @@ begin
       using errcode = '22023';
   end if;
 
-  select
-    pg_catalog.greatest(
-      coalesce(
-        (
-          select pg_catalog.max(pillar_row.position)
-          from public.maturity_pillars pillar_row
-          where pillar_row.organisation_id = org_id
-            and pillar_row.model_version_id = item_version_id
-        ),
-        0
-      ),
-      coalesce(
-        (
-          select pg_catalog.max(section_row.position)
-          from public.template_sections section_row
-          where section_row.organisation_id = org_id
-            and section_row.template_version_id = item_template_version_id
-        ),
-        0
-      )
-    ) + 1
-  into staged_position;
+  select coalesce(pg_catalog.max(position_candidate.position_value), 0) + 1
+    into staged_position
+  from (
+    select pg_catalog.max(pillar_row.position) as position_value
+    from public.maturity_pillars pillar_row
+    where pillar_row.organisation_id = org_id
+      and pillar_row.model_version_id = item_version_id
+    union all
+    select pg_catalog.max(section_row.position)
+    from public.template_sections section_row
+    where section_row.organisation_id = org_id
+      and section_row.template_version_id = item_template_version_id
+  ) as position_candidate;
 
   update public.maturity_pillars pillar_row
   set position = staged_position
