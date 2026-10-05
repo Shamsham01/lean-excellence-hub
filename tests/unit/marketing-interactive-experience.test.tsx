@@ -290,7 +290,6 @@ describe("interactive experience source safety", () => {
     expect(css).not.toContain("three.js");
   });
 
-
   it("keeps notification generation deterministic for identical reducer input", () => {
     const action = {
       type: "submit-suggestion" as const,
