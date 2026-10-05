@@ -114,7 +114,11 @@ test.describe("founding organisation onboarding", () => {
         hasText: "Production",
       }),
     ).toBeVisible();
-    await expect(page.getByText(user.firstSiteName)).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: user.firstSiteName,
+      }),
+    ).toBeVisible();
 
     await page.getByTestId("structure-first-continue-structure").click();
     await expect(
