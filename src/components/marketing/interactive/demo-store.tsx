@@ -35,6 +35,7 @@ export type DemoState = {
   perspective: DemoPerspective;
   suggestion: SuggestionRecord | null;
   actions: ActionRecord[];
+  selectedActionId: string | null;
   gemba: GembaRecord | null;
   problem: ProblemSolvingState;
   maturity: MaturityState;
@@ -58,6 +59,7 @@ type DemoAction =
   | { type: "decide-suggestion"; decision: SuggestionDecision }
   | { type: "start-action-compose"; source: DemoActionSource }
   | { type: "create-action"; record: ActionRecord }
+  | { type: "select-action"; id: string }
   | { type: "update-action-status"; id: string; status: ActionRecord["status"] }
   | { type: "save-gemba"; record: GembaRecord }
   | {
@@ -89,6 +91,7 @@ export const initialDemoState: DemoState = {
   perspective: "visitor",
   suggestion: null,
   actions: [],
+  selectedActionId: null,
   gemba: null,
   problem: initialProblem,
   maturity: initialMaturity,
@@ -99,23 +102,23 @@ export const initialDemoState: DemoState = {
   liveMessage: "",
 };
 
-let notificationSeq = 0;
-
 function notification(
+  sequence: number,
   kind: DemoNotification["kind"],
   title: string,
   body: string,
   meta: string,
   objectType: DemoNotification["objectType"],
+  objectRef: string,
 ): DemoNotification {
-  notificationSeq += 1;
   return {
-    id: `${kind}-${notificationSeq}`,
+    id: `${kind}-${sequence}`,
     kind,
     title,
     body,
     meta,
     objectType,
+    objectRef,
     unread: true,
     createdLabel: "Just now",
   };
@@ -166,7 +169,10 @@ function scenarioStart(
 function viewForNotification(
   item: DemoNotification,
   state: DemoState,
-): Pick<DemoState, "view" | "module" | "perspective"> {
+): Pick<
+  DemoState,
+  "view" | "module" | "perspective" | "selectedActionId"
+> {
   if (item.objectType === "suggestion") {
     return {
       view:
@@ -176,14 +182,21 @@ function viewForNotification(
           : "suggestion-record",
       module: "suggestions",
       perspective: "visitor",
+      selectedActionId: state.selectedActionId,
     };
   }
 
   if (item.objectType === "action") {
+    const matchingAction = state.actions.some(
+      (action) => action.id === item.objectRef,
+    );
     return {
-      view: state.actions.length > 1 ? "action-list" : "action-record",
+      view: "action-record",
       module: "actions",
       perspective: "visitor",
+      selectedActionId: matchingAction
+        ? item.objectRef
+        : (state.selectedActionId ?? state.actions[0]?.id ?? null),
     };
   }
 
@@ -192,6 +205,7 @@ function viewForNotification(
       view: "gemba-finding",
       module: "gemba",
       perspective: "visitor",
+      selectedActionId: state.selectedActionId,
     };
   }
 
@@ -199,6 +213,7 @@ function viewForNotification(
     view: "maturity-result",
     module: "maturity",
     perspective: "visitor",
+    selectedActionId: state.selectedActionId,
   };
 }
 
@@ -220,7 +235,6 @@ function suggestionStatusFromDecision(
 export function demoReducer(state: DemoState, action: DemoAction): DemoState {
   switch (action.type) {
     case "reset":
-      notificationSeq = 0;
       return { ...initialDemoState };
     case "try-another":
       return {
@@ -276,6 +290,8 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           ...state,
           module: "actions",
           view: state.actions.length > 1 ? "action-list" : "action-record",
+          selectedActionId:
+            state.selectedActionId ?? state.actions[0]?.id ?? null,
           notificationsOpen: false,
         };
       }
@@ -326,11 +342,13 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         liveMessage: `${SUGGESTION_REF} submitted and ready for review.`,
         notifications: [
           notification(
+            state.notifications.length + 1,
             "suggestion-submitted",
             "New suggestion submitted",
             `${SUGGESTION_REF} · ${action.record.title}`,
             `${action.record.area} · Just now`,
             "suggestion",
+            SUGGESTION_REF,
           ),
           ...state.notifications,
         ],
@@ -345,11 +363,13 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       const nextNotifications = accepted
         ? [
             notification(
+              state.notifications.length + 1,
               "suggestion-accepted",
               "Suggestion accepted",
               `${SUGGESTION_REF} · ${state.suggestion.title}`,
               `${state.suggestion.area} · Just now`,
               "suggestion",
+              SUGGESTION_REF,
             ),
             ...state.notifications,
           ]
@@ -379,19 +399,24 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         notificationsOpen: false,
       };
     case "create-action": {
+      const notificationBase = state.notifications.length;
       const assigned = notification(
+        notificationBase + 1,
         "action-assigned",
         `Action assigned to ${action.record.owner}`,
         `${action.record.id} · ${action.record.title}`,
         `${action.record.owner} · Due ${action.record.due}`,
         "action",
+        action.record.id,
       );
       const created = notification(
+        notificationBase + 2,
         "action-created",
         "Action created",
         `${action.record.id} · ${action.record.title}`,
         `${action.record.source} · Just now`,
         "action",
+        action.record.id,
       );
 
       return {
@@ -400,6 +425,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           action.record,
           ...state.actions.filter((item) => item.id !== action.record.id),
         ],
+        selectedActionId: action.record.id,
         view:
           action.record.sourceKind === "standalone" ? "action-list" : "lineage",
         module: "actions",
@@ -409,6 +435,14 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         notifications: [created, assigned, ...state.notifications],
       };
     }
+    case "select-action":
+      return {
+        ...state,
+        selectedActionId: action.id,
+        view: "action-record",
+        module: "actions",
+        notificationsOpen: false,
+      };
     case "update-action-status":
       return {
         ...state,
@@ -510,7 +544,11 @@ export function useDemoDispatch(): Dispatch<DemoAction> {
 }
 
 export function primaryCreatedAction(state: DemoState): ActionRecord | null {
-  return state.actions[0] ?? null;
+  return (
+    state.actions.find((item) => item.id === state.selectedActionId) ??
+    state.actions[0] ??
+    null
+  );
 }
 
 export function unreadCount(state: DemoState): number {
