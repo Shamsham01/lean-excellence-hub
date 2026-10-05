@@ -574,14 +574,12 @@ export async function addMaturityLevel(
 export async function addMaturityPillar(
   versionId: string,
   name: string,
-  position: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("add_maturity_pillar", {
     target_model_version_id: versionId,
     target_name: name,
-    target_position: position,
     target_section_title: name,
   });
   if (error) return { error: error.message };
@@ -592,14 +590,12 @@ export async function addMaturityPillar(
 export async function addMaturityCriterion(
   pillarId: string,
   name: string,
-  position: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("add_maturity_criterion", {
     target_pillar_id: pillarId,
     target_name: name,
-    target_position: position,
   });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
@@ -610,7 +606,6 @@ export async function addMaturityQuestion(
   versionId: string,
   sectionId: string,
   prompt: string,
-  position: number,
   modelId?: string,
 ) {
   const supabase = await createServerSupabaseClient();
@@ -619,12 +614,56 @@ export async function addMaturityQuestion(
     target_section_id: sectionId,
     target_question_type: "score",
     target_prompt: prompt,
-    target_position: position,
     target_allows_not_applicable: true,
   });
   if (error) return { error: error.message };
   if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
   return { questionId: data as string };
+}
+
+export async function reorderMaturityPillar(
+  pillarId: string,
+  direction: "up" | "down",
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("reorder_maturity_pillar", {
+    target_pillar_id: pillarId,
+    target_direction: direction,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function reorderMaturityCriterion(
+  criterionId: string,
+  direction: "up" | "down",
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("reorder_maturity_criterion", {
+    target_criterion_id: criterionId,
+    target_direction: direction,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
+}
+
+export async function reorderMaturityQuestion(
+  questionId: string,
+  direction: "up" | "down",
+  modelId?: string,
+) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("reorder_maturity_question", {
+    target_question_id: questionId,
+    target_direction: direction,
+  });
+  if (error) return { error: error.message };
+  if (modelId) revalidatePath(`/platform/maturity/models/${modelId}`);
+  return { ok: true };
 }
 
 export async function linkCriterionQuestion(

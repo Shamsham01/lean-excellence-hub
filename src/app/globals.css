@@ -2643,3 +2643,58 @@ body {
     transform: none;
   }
 }
+
+.leh-authoring-tree {
+  min-width: 0;
+}
+
+.leh-authoring-pillar {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 1rem;
+}
+
+.leh-authoring-criterion {
+  min-width: 0;
+  border-left: 2px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+.leh-authoring-row {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--elevated, var(--card));
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.leh-authoring-row:hover {
+  background: color-mix(in oklch, var(--muted) 55%, var(--card));
+}
+
+.leh-authoring-row:focus-within {
+  border-color: color-mix(in oklch, var(--ring) 55%, var(--border));
+}
+
+.leh-authoring-row[data-busy="true"] {
+  border-color: color-mix(in oklch, var(--primary) 40%, var(--border));
+}
+
+.leh-authoring-reorder {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.25rem;
+}
+
+.leh-authoring-reorder-button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding-inline: 0.65rem;
+}
+
+.leh-authoring-reorder-button:disabled {
+  opacity: 0.45;
+}
