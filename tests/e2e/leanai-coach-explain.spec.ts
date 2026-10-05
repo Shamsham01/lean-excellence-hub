@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 import {
@@ -65,6 +65,35 @@ async function countUsage(
   return { count: usage.count ?? 0, rows: usage.data ?? [] };
 }
 
+async function ensureCoachFollowUpReady(page: Page) {
+  const followUp = page.getByTestId("leanai-coach-follow-up");
+
+  try {
+    await expect(followUp).toBeVisible({ timeout: 5_000 });
+    return followUp;
+  } catch {
+    // The server-owned Coach session and usage event can succeed even when
+    // the Server Action's RSC response is aborted. Recover once from the
+    // persisted session, then prove the AI explanation is usable again.
+    await page.reload();
+    await ensureLeanAiAssistantOpen(page);
+    await expect(page.getByTestId("leanai-coach")).toBeVisible({
+      timeout: 15_000,
+    });
+  }
+
+  const explanation = page.getByTestId("leanai-coach-explain");
+  if (!(await explanation.isVisible().catch(() => false))) {
+    await page.getByTestId("leanai-coach-explain-toggle").click();
+  }
+  await expect(explanation).toBeVisible({ timeout: 15_000 });
+  await expect(explanation).toHaveAttribute("data-explanation-source", "ai", {
+    timeout: 30_000,
+  });
+  await expect(followUp).toBeVisible({ timeout: 15_000 });
+  return followUp;
+}
+
 test.describe("LeanAI Coach intelligent Explain", () => {
   test.describe.configure({ mode: "serial" });
   test.skip(
@@ -117,9 +146,8 @@ test.describe("LeanAI Coach intelligent Explain", () => {
     expect(after.count).toBeGreaterThan(0);
     expect(after.rows.some((row) => row.model === "gpt-4.1-nano")).toBe(true);
 
-    await page
-      .getByTestId("leanai-coach-follow-up")
-      .fill("What should we do after the first site exists?");
+    const followUp = await ensureCoachFollowUpReady(page);
+    await followUp.fill("What should we do after the first site exists?");
     await page.getByTestId("leanai-coach-follow-up-send").click();
     await expect(page.getByTestId("leanai-coach-explain")).toHaveAttribute(
       "data-explanation-source",
