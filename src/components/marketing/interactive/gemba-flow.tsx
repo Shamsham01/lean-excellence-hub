@@ -11,7 +11,7 @@ import { runDemoWorkflow } from "./demo-progress";
 import {
   ACTION_CREATE_STEPS,
   ACTION_FROM_GEMBA,
-  ACTION_REF,
+  GEMBA_ACTION_REF,
   GEMBA_FINDING_EXAMPLE,
   GEMBA_PROMPTS,
   GEMBA_REF,
@@ -219,7 +219,7 @@ export function GembaActionCompose() {
     dispatch({
       type: "create-action",
       record: {
-        id: ACTION_REF,
+        id: GEMBA_ACTION_REF,
         title,
         owner,
         due,
