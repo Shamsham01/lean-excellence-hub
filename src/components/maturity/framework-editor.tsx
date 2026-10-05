@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { useAuthoringStep } from "@/components/authoring/use-authoring-step";
@@ -17,6 +17,9 @@ import {
   moveMaturityCriterion,
   moveMaturityQuestion,
   publishMaturityModel,
+  reorderMaturityCriterion,
+  reorderMaturityPillar,
+  reorderMaturityQuestion,
   setFrameworkAssessmentScopes,
   updateMaturityCriterion,
   updateMaturityLevel,
@@ -33,16 +36,12 @@ import {
   assessFrameworkPublishReadiness,
   buildFrameworkHierarchy,
   formatFrameworkStructureChangeLines,
+  hierarchyDisplayLabel,
+  maturityReorderAriaLabel,
   neighborForReorder,
-  nextCriterionPositionForPillar,
-  nextPillarPosition,
-  nextQuestionPositionForCriterion,
   orderedByPosition,
   orderedQuestionsForCriterion,
-  orderedQuestionsForPillar,
-  planUniquePositionSwap,
   summarizeFrameworkStructureChanges,
-  targetPositionForQuestionReparent,
 } from "@/modules/maturity/framework-authoring";
 import {
   MATURITY_ASSESSMENT_SCOPE_TYPES,
@@ -118,41 +117,60 @@ type FrameworkEditorProps = {
 };
 
 function ReorderControls({
-  label,
+  entityKind,
+  name,
+  itemId,
   canMoveUp,
   canMoveDown,
   busy,
+  pending,
   onMoveUp,
   onMoveDown,
 }: {
-  label: string;
+  entityKind: "pillar" | "criterion" | "question";
+  name: string;
+  itemId: string;
   canMoveUp: boolean;
   canMoveDown: boolean;
   busy: boolean;
+  pending: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div
+      className="leh-authoring-reorder"
+      role="group"
+      aria-label={`Reorder ${name}`}
+      aria-busy={pending || undefined}
+    >
       <Button
         type="button"
         size="sm"
         variant="outline"
+        className="leh-authoring-reorder-button"
         disabled={busy || !canMoveUp}
-        aria-label={`${label} move up`}
+        aria-label={maturityReorderAriaLabel(entityKind, name, "up")}
+        data-reorder-id={itemId}
+        data-reorder-direction="up"
+        aria-busy={pending || undefined}
         onClick={() => void onMoveUp()}
       >
-        Move up
+        Up
       </Button>
       <Button
         type="button"
         size="sm"
         variant="outline"
+        className="leh-authoring-reorder-button"
         disabled={busy || !canMoveDown}
-        aria-label={`${label} move down`}
+        aria-label={maturityReorderAriaLabel(entityKind, name, "down")}
+        data-reorder-id={itemId}
+        data-reorder-direction="down"
+        aria-busy={pending || undefined}
         onClick={() => void onMoveDown()}
       >
-        Move down
+        Down
       </Button>
     </div>
   );
@@ -164,6 +182,7 @@ function QuestionEditorCard({
   criterionName,
   criteria,
   busy,
+  pending,
   canMoveUp,
   canMoveDown,
   onSave,
@@ -176,6 +195,7 @@ function QuestionEditorCard({
   criterionName: string;
   criteria: CriterionRow[];
   busy: boolean;
+  pending: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onSave: (input: { prompt: string; criterionId: string }) => Promise<void>;
@@ -185,8 +205,9 @@ function QuestionEditorCard({
 }) {
   return (
     <form
-      className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+      className="leh-authoring-row grid gap-2 p-3 sm:grid-cols-2"
       data-testid={`edit-question-${question.id}`}
+      data-busy={pending ? "true" : undefined}
       onSubmit={async (event) => {
         event.preventDefault();
         const payload = new FormData(event.currentTarget);
@@ -211,7 +232,7 @@ function QuestionEditorCard({
           name="questionCriterionId"
           defaultValue={question.criterion_id}
           aria-label="Question criterion"
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+          className="h-11 rounded-md border border-border bg-background px-3 text-sm"
         >
           {criteria.map((entry) => (
             <option key={entry.id} value={entry.id}>
@@ -222,10 +243,13 @@ function QuestionEditorCard({
       </label>
       <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
         <ReorderControls
-          label="Question"
+          entityKind="question"
+          name={question.prompt}
+          itemId={question.id}
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
           busy={busy}
+          pending={pending}
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
         />
@@ -270,6 +294,11 @@ export function FrameworkEditor({
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingReorderId, setPendingReorderId] = useState<string | null>(null);
+  const pendingFocusRef = useRef<{
+    id: string;
+    direction: "up" | "down";
+  } | null>(null);
   const [name, setName] = useState(modelName);
   const [description, setDescription] = useState(modelDescription ?? "");
   const [selectedScopes, setSelectedScopes] = useState<
@@ -282,12 +311,16 @@ export function FrameworkEditor({
     criteria[0]?.pillar_id ?? pillars[0]?.id ?? "",
   );
 
-  async function run<T>(action: () => Promise<{ error?: string } | T>) {
+  async function run<T>(
+    action: () => Promise<{ error?: string } | T>,
+    successMessage = "Saved.",
+  ) {
     setBusy(true);
     setError(null);
     setSaveMessage(null);
     const result = await action();
     setBusy(false);
+    setPendingReorderId(null);
     if (
       result &&
       typeof result === "object" &&
@@ -297,10 +330,22 @@ export function FrameworkEditor({
       setError(result.error);
       return false;
     }
-    setSaveMessage("Saved.");
+    setSaveMessage(successMessage);
     router.refresh();
     return true;
   }
+
+  useEffect(() => {
+    if (busy || !pendingFocusRef.current) {
+      return;
+    }
+    const { id, direction } = pendingFocusRef.current;
+    pendingFocusRef.current = null;
+    const button = document.querySelector<HTMLButtonElement>(
+      `[data-reorder-id="${CSS.escape(id)}"][data-reorder-direction="${direction}"]`,
+    );
+    button?.focus();
+  }, [busy, criteria, pillars, questions]);
 
   const questionHierarchy = useMemo(
     () => buildFrameworkHierarchy({ pillars, criteria, questions }),
@@ -330,165 +375,36 @@ export function FrameworkEditor({
   const orderedPillars = useMemo(() => orderedByPosition(pillars), [pillars]);
 
   async function swapPillarOrder(pillar: PillarRow, direction: "up" | "down") {
-    const neighbor = neighborForReorder(orderedPillars, pillar.id, direction);
-    if (!neighbor) return;
-    const plan = planUniquePositionSwap(pillar, neighbor, orderedPillars);
-    await run(async () => {
-      const staged = await updateMaturityPillar(
-        pillar.id,
-        pillar.name,
-        plan.stagedPosition,
-        pillar.description,
-        pillar.guidance,
-        modelId,
-      );
-      if (
-        staged &&
-        typeof staged === "object" &&
-        "error" in staged &&
-        staged.error
-      ) {
-        return staged;
-      }
-      const neighborMoved = await updateMaturityPillar(
-        neighbor.id,
-        neighbor.name,
-        plan.neighborFinalPosition,
-        neighbor.description,
-        neighbor.guidance,
-        modelId,
-      );
-      if (
-        neighborMoved &&
-        typeof neighborMoved === "object" &&
-        "error" in neighborMoved &&
-        neighborMoved.error
-      ) {
-        return neighborMoved;
-      }
-      return updateMaturityPillar(
-        pillar.id,
-        pillar.name,
-        plan.itemFinalPosition,
-        pillar.description,
-        pillar.guidance,
-        modelId,
-      );
-    });
+    pendingFocusRef.current = { id: pillar.id, direction };
+    setPendingReorderId(pillar.id);
+    await run(
+      () => reorderMaturityPillar(pillar.id, direction, modelId),
+      `Moved “${pillar.name}” ${direction}.`,
+    );
   }
 
   async function swapCriterionOrder(
     criterion: CriterionRow,
     direction: "up" | "down",
   ) {
-    const siblings = criteria.filter(
-      (entry) => entry.pillar_id === criterion.pillar_id,
+    pendingFocusRef.current = { id: criterion.id, direction };
+    setPendingReorderId(criterion.id);
+    await run(
+      () => reorderMaturityCriterion(criterion.id, direction, modelId),
+      `Moved “${criterion.name}” ${direction}.`,
     );
-    const neighbor = neighborForReorder(siblings, criterion.id, direction);
-    if (!neighbor) return;
-    const plan = planUniquePositionSwap(criterion, neighbor, siblings);
-    await run(async () => {
-      const staged = await updateMaturityCriterion(
-        criterion.id,
-        criterion.name,
-        plan.stagedPosition,
-        criterion.description,
-        criterion.guidance,
-        modelId,
-      );
-      if (
-        staged &&
-        typeof staged === "object" &&
-        "error" in staged &&
-        staged.error
-      ) {
-        return staged;
-      }
-      const neighborMoved = await updateMaturityCriterion(
-        neighbor.id,
-        neighbor.name,
-        plan.neighborFinalPosition,
-        neighbor.description,
-        neighbor.guidance,
-        modelId,
-      );
-      if (
-        neighborMoved &&
-        typeof neighborMoved === "object" &&
-        "error" in neighborMoved &&
-        neighborMoved.error
-      ) {
-        return neighborMoved;
-      }
-      return updateMaturityCriterion(
-        criterion.id,
-        criterion.name,
-        plan.itemFinalPosition,
-        criterion.description,
-        criterion.guidance,
-        modelId,
-      );
-    });
   }
 
   async function swapQuestionOrder(
     question: QuestionRow,
-    pillarId: string,
     direction: "up" | "down",
   ) {
-    const criterionSiblings = orderedQuestionsForCriterion(
-      question.criterion_id,
-      questions,
+    pendingFocusRef.current = { id: question.id, direction };
+    setPendingReorderId(question.id);
+    await run(
+      () => reorderMaturityQuestion(question.id, direction, modelId),
+      `Moved “${question.prompt}” ${direction}.`,
     );
-    const neighbor = neighborForReorder(
-      criterionSiblings,
-      question.id,
-      direction,
-    );
-    if (!neighbor) return;
-    const pillarQuestions = orderedQuestionsForPillar(
-      pillarId,
-      pillars,
-      criteria,
-      questions,
-    );
-    const plan = planUniquePositionSwap(question, neighbor, pillarQuestions);
-    await run(async () => {
-      const staged = await updateMaturityQuestion(
-        question.id,
-        question.prompt,
-        plan.stagedPosition,
-        modelId,
-      );
-      if (
-        staged &&
-        typeof staged === "object" &&
-        "error" in staged &&
-        staged.error
-      ) {
-        return staged;
-      }
-      const neighborMoved = await updateMaturityQuestion(
-        neighbor.id,
-        neighbor.prompt,
-        plan.neighborFinalPosition,
-        modelId,
-      );
-      if (
-        neighborMoved &&
-        typeof neighborMoved === "object" &&
-        "error" in neighborMoved &&
-        neighborMoved.error
-      ) {
-        return neighborMoved;
-      }
-      return updateMaturityQuestion(
-        question.id,
-        question.prompt,
-        plan.itemFinalPosition,
-        modelId,
-      );
-    });
   }
 
   async function saveQuestion(
@@ -499,31 +415,12 @@ export function FrameworkEditor({
     },
   ) {
     if (input.criterionId !== question.criterion_id) {
-      const targetPosition = targetPositionForQuestionReparent({
-        sourceCriterionId: question.criterion_id,
-        destinationCriterionId: input.criterionId,
-        pillars,
-        criteria,
-        questions,
-      });
       await run(() =>
-        moveMaturityQuestion(
-          question.id,
-          input.criterionId,
-          targetPosition,
-          modelId,
-        ),
+        moveMaturityQuestion(question.id, input.criterionId, modelId),
       );
       return;
     }
-    await run(() =>
-      updateMaturityQuestion(
-        question.id,
-        input.prompt,
-        question.position,
-        modelId,
-      ),
-    );
+    await run(() => updateMaturityQuestion(question.id, input.prompt, modelId));
   }
 
   async function removeQuestion(question: QuestionRow) {
@@ -783,18 +680,16 @@ export function FrameworkEditor({
           <div className="flex flex-col gap-6">
             <form
               className="flex max-w-md flex-col gap-3"
+              data-testid="add-pillar-form"
               onSubmit={async (e) => {
                 e.preventDefault();
                 const form = e.currentTarget;
-                const pillarName = form.pillarName.value.trim();
+                const pillarName = String(
+                  new FormData(form).get("pillarName") ?? "",
+                ).trim();
                 if (!pillarName) return;
                 await run(() =>
-                  addMaturityPillar(
-                    versionId,
-                    pillarName,
-                    nextPillarPosition(pillars),
-                    modelId,
-                  ),
+                  addMaturityPillar(versionId, pillarName, modelId),
                 );
                 form.reset();
               }}
@@ -812,12 +707,15 @@ export function FrameworkEditor({
                 Add pillar
               </Button>
             </form>
-            <div className="flex flex-col gap-3">
-              {orderedPillars.map((pillar) => (
+            <div className="leh-authoring-tree flex flex-col gap-3">
+              {orderedPillars.map((pillar, pillarIndex) => (
                 <form
                   key={pillar.id}
-                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
-                  data-testid={`edit-pillar-${pillar.position}`}
+                  className="leh-authoring-row grid gap-2 p-3 sm:grid-cols-2"
+                  data-testid={`edit-pillar-${pillarIndex + 1}`}
+                  data-busy={
+                    pendingReorderId === pillar.id ? "true" : undefined
+                  }
                   onSubmit={async (e) => {
                     e.preventDefault();
                     const form = e.currentTarget;
@@ -825,7 +723,6 @@ export function FrameworkEditor({
                       updateMaturityPillar(
                         pillar.id,
                         form.pillarName.value.trim(),
-                        pillar.position,
                         form.pillarDescription.value.trim() || null,
                         form.pillarGuidance.value.trim() || null,
                         modelId,
@@ -833,6 +730,9 @@ export function FrameworkEditor({
                     );
                   }}
                 >
+                  <p className="text-xs font-medium text-muted-foreground sm:col-span-2">
+                    {hierarchyDisplayLabel(pillarIndex, pillar.name)}
+                  </p>
                   <Input
                     name="pillarName"
                     defaultValue={pillar.name}
@@ -852,7 +752,9 @@ export function FrameworkEditor({
                   />
                   <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
                     <ReorderControls
-                      label="Pillar"
+                      entityKind="pillar"
+                      name={pillar.name}
+                      itemId={pillar.id}
                       canMoveUp={
                         neighborForReorder(orderedPillars, pillar.id, "up") !=
                         null
@@ -862,6 +764,7 @@ export function FrameworkEditor({
                         null
                       }
                       busy={busy}
+                      pending={pendingReorderId === pillar.id}
                       onMoveUp={() => swapPillarOrder(pillar, "up")}
                       onMoveDown={() => swapPillarOrder(pillar, "down")}
                     />
@@ -879,19 +782,18 @@ export function FrameworkEditor({
           <div className="flex flex-col gap-6">
             <form
               className="flex max-w-md flex-col gap-3"
+              data-testid="add-criterion-form"
               onSubmit={async (e) => {
                 e.preventDefault();
                 const form = e.currentTarget;
-                const pillarId = form.pillarId.value;
-                const criterionName = form.criterionName.value.trim();
+                const payload = new FormData(form);
+                const pillarId = String(payload.get("pillarId") ?? "");
+                const criterionName = String(
+                  payload.get("criterionName") ?? "",
+                ).trim();
                 if (!criterionName || !pillarId) return;
                 await run(() =>
-                  addMaturityCriterion(
-                    pillarId,
-                    criterionName,
-                    nextCriterionPositionForPillar(pillarId, criteria),
-                    modelId,
-                  ),
+                  addMaturityCriterion(pillarId, criterionName, modelId),
                 );
                 form.reset();
               }}
@@ -906,9 +808,9 @@ export function FrameworkEditor({
                   onChange={(event) =>
                     setSelectedCriterionPillarId(event.target.value)
                   }
-                  className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                  className="h-11 rounded-md border border-border bg-background px-3 text-sm"
                 >
-                  {pillars.map((p) => (
+                  {orderedPillars.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -923,143 +825,156 @@ export function FrameworkEditor({
                 Add criterion
               </Button>
             </form>
-            <div className="flex flex-col gap-3">
-              {criteria.map((criterion) => {
-                const pillarName =
-                  pillars.find((pillar) => pillar.id === criterion.pillar_id)
-                    ?.name ?? "Unknown pillar";
-                const questionCount = questions.filter(
-                  (question) => question.criterion_id === criterion.id,
-                ).length;
-                return (
-                  <form
-                    key={criterion.id}
-                    className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
-                    data-testid={`edit-criterion-${criterion.id}`}
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const form = e.currentTarget;
-                      const payload = new FormData(form);
-                      const nextPillarId = String(
-                        payload.get("criterionPillarId") ?? "",
-                      );
-                      if (nextPillarId !== criterion.pillar_id) {
-                        await run(() =>
-                          moveMaturityCriterion(
-                            criterion.id,
-                            nextPillarId,
-                            undefined,
-                            modelId,
-                          ),
-                        );
-                        return;
-                      }
-                      await run(() =>
-                        updateMaturityCriterion(
-                          criterion.id,
-                          String(payload.get("criterionName") ?? "").trim(),
-                          criterion.position,
-                          String(
-                            payload.get("criterionDescription") ?? "",
-                          ).trim() || null,
-                          String(
-                            payload.get("criterionGuidance") ?? "",
-                          ).trim() || null,
-                          modelId,
-                        ),
-                      );
-                    }}
-                  >
-                    <p className="text-xs text-muted-foreground sm:col-span-2">
-                      {pillarName}
-                    </p>
-                    <Input
-                      name="criterionName"
-                      defaultValue={criterion.name}
-                      aria-label="Criterion name"
-                    />
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="text-muted-foreground">Pillar</span>
-                      <select
-                        name="criterionPillarId"
-                        defaultValue={criterion.pillar_id}
-                        aria-label="Criterion pillar"
-                        className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-                      >
-                        {pillars.map((pillar) => (
-                          <option key={pillar.id} value={pillar.id}>
-                            {pillar.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Input
-                      name="criterionDescription"
-                      defaultValue={criterion.description ?? ""}
-                      placeholder="Description"
-                      aria-label="Criterion description"
-                    />
-                    <Input
-                      name="criterionGuidance"
-                      defaultValue={criterion.guidance ?? ""}
-                      placeholder="Guidance"
-                      aria-label="Criterion guidance"
-                      className="sm:col-span-2"
-                    />
-                    <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-                      <ReorderControls
-                        label="Criterion"
-                        canMoveUp={
-                          neighborForReorder(
-                            criteria.filter(
-                              (entry) =>
-                                entry.pillar_id === criterion.pillar_id,
-                            ),
-                            criterion.id,
-                            "up",
-                          ) != null
+            <div className="leh-authoring-tree flex flex-col gap-4">
+              {questionHierarchy.pillars.map((pillar, pillarIndex) => (
+                <section
+                  key={pillar.id}
+                  className="leh-authoring-pillar flex flex-col gap-3"
+                >
+                  <h3 className="text-sm font-medium">
+                    {hierarchyDisplayLabel(pillarIndex, pillar.name)}
+                  </h3>
+                  {pillar.criteria.map((criterion) => {
+                    const questionCount = questions.filter(
+                      (question) => question.criterion_id === criterion.id,
+                    ).length;
+                    const siblings = pillar.criteria;
+                    return (
+                      <form
+                        key={criterion.id}
+                        className="leh-authoring-row leh-authoring-criterion grid gap-2 p-3 sm:grid-cols-2"
+                        data-testid={`edit-criterion-${criterion.id}`}
+                        data-busy={
+                          pendingReorderId === criterion.id ? "true" : undefined
                         }
-                        canMoveDown={
-                          neighborForReorder(
-                            criteria.filter(
-                              (entry) =>
-                                entry.pillar_id === criterion.pillar_id,
-                            ),
-                            criterion.id,
-                            "down",
-                          ) != null
-                        }
-                        busy={busy}
-                        onMoveUp={() => swapCriterionOrder(criterion, "up")}
-                        onMoveDown={() => swapCriterionOrder(criterion, "down")}
-                      />
-                      <Button type="submit" size="sm" disabled={busy}>
-                        Save criterion
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy}
-                        data-testid={`delete-criterion-${criterion.id}`}
-                        onClick={async () => {
-                          const confirmed = window.confirm(
-                            questionCount > 0
-                              ? `Delete criterion “${criterion.name}” and its ${questionCount} question(s) from this draft? This cannot be undone.`
-                              : `Delete criterion “${criterion.name}” from this draft? This cannot be undone.`,
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const form = e.currentTarget;
+                          const payload = new FormData(form);
+                          const nextPillarId = String(
+                            payload.get("criterionPillarId") ?? "",
                           );
-                          if (!confirmed) return;
+                          if (nextPillarId !== criterion.pillar_id) {
+                            await run(() =>
+                              moveMaturityCriterion(
+                                criterion.id,
+                                nextPillarId,
+                                modelId,
+                              ),
+                            );
+                            return;
+                          }
                           await run(() =>
-                            deleteMaturityCriterion(criterion.id, modelId),
+                            updateMaturityCriterion(
+                              criterion.id,
+                              String(payload.get("criterionName") ?? "").trim(),
+                              String(
+                                payload.get("criterionDescription") ?? "",
+                              ).trim() || null,
+                              String(
+                                payload.get("criterionGuidance") ?? "",
+                              ).trim() || null,
+                              modelId,
+                            ),
                           );
                         }}
                       >
-                        Delete criterion
-                      </Button>
-                    </div>
-                  </form>
-                );
-              })}
+                        <p className="text-xs text-muted-foreground sm:col-span-2">
+                          {pillar.name}
+                        </p>
+                        <Input
+                          name="criterionName"
+                          defaultValue={criterion.name}
+                          aria-label="Criterion name"
+                        />
+                        <label className="flex flex-col gap-1 text-sm">
+                          <span className="text-muted-foreground">Pillar</span>
+                          <select
+                            name="criterionPillarId"
+                            defaultValue={criterion.pillar_id}
+                            aria-label="Criterion pillar"
+                            className="h-11 rounded-md border border-border bg-background px-3 text-sm"
+                          >
+                            {orderedPillars.map((entry) => (
+                              <option key={entry.id} value={entry.id}>
+                                {entry.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <Input
+                          name="criterionDescription"
+                          defaultValue={criterion.description ?? ""}
+                          placeholder="Description"
+                          aria-label="Criterion description"
+                        />
+                        <Input
+                          name="criterionGuidance"
+                          defaultValue={criterion.guidance ?? ""}
+                          placeholder="Guidance"
+                          aria-label="Criterion guidance"
+                          className="sm:col-span-2"
+                        />
+                        <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                          <ReorderControls
+                            entityKind="criterion"
+                            name={criterion.name}
+                            itemId={criterion.id}
+                            canMoveUp={
+                              neighborForReorder(
+                                siblings,
+                                criterion.id,
+                                "up",
+                              ) != null
+                            }
+                            canMoveDown={
+                              neighborForReorder(
+                                siblings,
+                                criterion.id,
+                                "down",
+                              ) != null
+                            }
+                            busy={busy}
+                            pending={pendingReorderId === criterion.id}
+                            onMoveUp={() => swapCriterionOrder(criterion, "up")}
+                            onMoveDown={() =>
+                              swapCriterionOrder(criterion, "down")
+                            }
+                          />
+                          <Button type="submit" size="sm" disabled={busy}>
+                            Save criterion
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            data-testid={`delete-criterion-${criterion.id}`}
+                            onClick={async () => {
+                              const confirmed = window.confirm(
+                                questionCount > 0
+                                  ? `Delete criterion “${criterion.name}” and its ${questionCount} question(s) from this draft? This cannot be undone.`
+                                  : `Delete criterion “${criterion.name}” from this draft? This cannot be undone.`,
+                              );
+                              if (!confirmed) return;
+                              await run(() =>
+                                deleteMaturityCriterion(criterion.id, modelId),
+                              );
+                            }}
+                          >
+                            Delete criterion
+                          </Button>
+                        </div>
+                      </form>
+                    );
+                  })}
+                  {pillar.criteria.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No criteria in this pillar yet.
+                    </p>
+                  ) : null}
+                </section>
+              ))}
             </div>
           </div>
         ) : null}
@@ -1068,11 +983,15 @@ export function FrameworkEditor({
           <div className="flex flex-col gap-6">
             <form
               className="flex max-w-md flex-col gap-3"
+              data-testid="add-question-form"
               onSubmit={async (e) => {
                 e.preventDefault();
                 const form = e.currentTarget;
-                const criterionId = form.criterionId.value;
-                const prompt = form.questionPrompt.value.trim();
+                const payload = new FormData(form);
+                const criterionId = String(payload.get("criterionId") ?? "");
+                const prompt = String(
+                  payload.get("questionPrompt") ?? "",
+                ).trim();
                 const pillar = pillars.find((p) =>
                   criteria.some(
                     (c) => c.id === criterionId && c.pillar_id === p.id,
@@ -1085,12 +1004,6 @@ export function FrameworkEditor({
                     versionId,
                     pillar.section_id,
                     prompt,
-                    nextQuestionPositionForCriterion(
-                      criterionId,
-                      pillars,
-                      criteria,
-                      questions,
-                    ),
                     modelId,
                   );
                   if (q.error || !q.questionId) return q;
@@ -1113,13 +1026,15 @@ export function FrameworkEditor({
                   onChange={(event) =>
                     setSelectedCriterionId(event.target.value)
                   }
-                  className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                  className="h-11 rounded-md border border-border bg-background px-3 text-sm"
                 >
-                  {criteria.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+                  {questionHierarchy.pillars.flatMap((pillar) =>
+                    pillar.criteria.map((criterion) => (
+                      <option key={criterion.id} value={criterion.id}>
+                        {pillar.name} → {criterion.name}
+                      </option>
+                    )),
+                  )}
                 </select>
               </div>
               <div className="flex flex-col gap-2">
@@ -1136,26 +1051,26 @@ export function FrameworkEditor({
               </Button>
             </form>
             <div
-              className="flex flex-col gap-4"
+              className="leh-authoring-tree flex flex-col gap-4"
               data-testid="question-authoring-hierarchy"
             >
-              {questionHierarchy.pillars.map((pillar) => (
+              {questionHierarchy.pillars.map((pillar, pillarIndex) => (
                 <section
                   key={pillar.id}
-                  className="flex flex-col gap-3 rounded-md border border-border p-4"
+                  className="leh-authoring-pillar flex flex-col gap-3"
                   data-testid={`question-pillar-${pillar.id}`}
                 >
                   <h3 className="font-medium">
-                    {pillar.position}. {pillar.name}
+                    {hierarchyDisplayLabel(pillarIndex, pillar.name)}
                   </h3>
-                  {pillar.criteria.map((criterion) => (
+                  {pillar.criteria.map((criterion, criterionIndex) => (
                     <div
                       key={criterion.id}
-                      className="flex flex-col gap-3 pl-3"
+                      className="leh-authoring-criterion flex flex-col gap-3"
                       data-testid={`question-criterion-${criterion.id}`}
                     >
                       <p className="text-sm font-medium">
-                        {criterion.position}. {criterion.name}
+                        {hierarchyDisplayLabel(criterionIndex, criterion.name)}
                       </p>
                       {criterion.questions.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
@@ -1176,6 +1091,7 @@ export function FrameworkEditor({
                               criterionName={criterion.name}
                               criteria={criteria}
                               busy={busy}
+                              pending={pendingReorderId === question.id}
                               canMoveUp={
                                 neighborForReorder(
                                   criterionQuestions,
@@ -1192,11 +1108,9 @@ export function FrameworkEditor({
                               }
                               onSave={(input) => saveQuestion(question, input)}
                               onDelete={() => removeQuestion(question)}
-                              onMoveUp={() =>
-                                swapQuestionOrder(question, pillar.id, "up")
-                              }
+                              onMoveUp={() => swapQuestionOrder(question, "up")}
                               onMoveDown={() =>
-                                swapQuestionOrder(question, pillar.id, "down")
+                                swapQuestionOrder(question, "down")
                               }
                             />
                           );
@@ -1205,7 +1119,7 @@ export function FrameworkEditor({
                     </div>
                   ))}
                   {pillar.criteria.length === 0 ? (
-                    <p className="pl-3 text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       No criteria configured.
                     </p>
                   ) : null}
@@ -1219,6 +1133,7 @@ export function FrameworkEditor({
                   criterionName="Unknown criterion"
                   criteria={criteria}
                   busy={busy}
+                  pending={false}
                   canMoveUp={false}
                   canMoveDown={false}
                   onSave={(input) => saveQuestion(question, input)}

@@ -4,6 +4,8 @@ import {
   assessFrameworkPublishReadiness,
   buildFrameworkHierarchy,
   formatFrameworkStructureChangeLines,
+  hierarchyDisplayLabel,
+  maturityReorderAriaLabel,
   neighborForReorder,
   nextCriterionPositionForPillar,
   nextPillarPosition,
@@ -278,6 +280,16 @@ describe("maturity framework authoring helpers", () => {
     expect(
       nextQuestionPositionForPillar("pillar-b", pillars, criteria, questions),
     ).toBe(1);
+  });
+
+  it("builds accessible reorder names and display-order labels without raw indexes", () => {
+    expect(hierarchyDisplayLabel(0, "Leadership")).toBe("1. Leadership");
+    expect(maturityReorderAriaLabel("pillar", "Daily Management", "up")).toBe(
+      "Move “Daily Management” pillar up",
+    );
+    expect(
+      maturityReorderAriaLabel("criterion", "Problem Solving", "down"),
+    ).toBe("Move “Problem Solving” criterion down");
   });
 
   it("blocks publish readiness when any criterion lacks a usable question", () => {

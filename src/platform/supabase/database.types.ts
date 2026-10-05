@@ -11961,7 +11961,7 @@ export type Database = {
           target_guidance?: string
           target_name: string
           target_pillar_id: string
-          target_position: number
+          target_position?: number
           target_weight?: number
         }
         Returns: string
@@ -11983,7 +11983,7 @@ export type Database = {
           target_guidance?: string
           target_model_version_id: string
           target_name: string
-          target_position: number
+          target_position?: number
           target_section_title?: string
           target_weight?: number
         }
@@ -11996,7 +11996,7 @@ export type Database = {
           target_is_required?: boolean
           target_model_version_id: string
           target_options?: Json
-          target_position: number
+          target_position?: number
           target_prompt: string
           target_question_type: string
           target_section_id: string
@@ -14231,6 +14231,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      reorder_maturity_criterion: {
+        Args: { target_criterion_id: string; target_direction: string }
+        Returns: boolean
+      }
+      reorder_maturity_pillar: {
+        Args: { target_direction: string; target_pillar_id: string }
+        Returns: boolean
+      }
+      reorder_maturity_question: {
+        Args: { target_direction: string; target_question_id: string }
+        Returns: boolean
+      }
       replace_benefit_forecast_periods: {
         Args: { target_forecast_version_id: string; target_periods: Json }
         Returns: boolean
@@ -14641,7 +14653,7 @@ export type Database = {
           target_expected_evidence?: string
           target_guidance?: string
           target_name: string
-          target_position: number
+          target_position?: number
           target_weight?: number
         }
         Returns: boolean
@@ -14671,7 +14683,7 @@ export type Database = {
           target_guidance?: string
           target_name: string
           target_pillar_id: string
-          target_position: number
+          target_position?: number
           target_weight?: number
         }
         Returns: boolean
@@ -14679,7 +14691,7 @@ export type Database = {
       update_maturity_question: {
         Args: {
           target_help_text?: string
-          target_position: number
+          target_position?: number
           target_prompt: string
           target_question_id: string
         }

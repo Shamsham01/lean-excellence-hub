@@ -11,13 +11,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
 import {
+  addMaturityCriterion,
+  addMaturityPillar,
+  addMaturityQuestion,
   deleteMaturityCriterion,
   deleteMaturityQuestion,
+  linkCriterionQuestion,
   moveMaturityCriterion,
   moveMaturityQuestion,
+  reorderMaturityCriterion,
+  reorderMaturityPillar,
+  reorderMaturityQuestion,
   updateMaturityModelMetadata,
 } from "@/app/(platform)/platform/maturity/actions";
 import { FrameworkEditor } from "@/components/maturity/framework-editor";
+import { maturityReorderAriaLabel } from "@/modules/maturity/framework-authoring";
 
 const refresh = vi.fn();
 
@@ -38,6 +46,9 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
   moveMaturityCriterion: vi.fn(),
   moveMaturityQuestion: vi.fn(),
   publishMaturityModel: vi.fn(),
+  reorderMaturityCriterion: vi.fn(),
+  reorderMaturityPillar: vi.fn(),
+  reorderMaturityQuestion: vi.fn(),
   setFrameworkAssessmentScopes: vi.fn(),
   updateMaturityCriterion: vi.fn(),
   updateMaturityLevel: vi.fn(),
@@ -47,8 +58,15 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
 }));
 
 const updateMetadata = vi.mocked(updateMaturityModelMetadata);
+const addPillar = vi.mocked(addMaturityPillar);
+const addCriterion = vi.mocked(addMaturityCriterion);
+const addQuestion = vi.mocked(addMaturityQuestion);
+const linkQuestion = vi.mocked(linkCriterionQuestion);
 const moveCriterion = vi.mocked(moveMaturityCriterion);
 const moveQuestion = vi.mocked(moveMaturityQuestion);
+const reorderPillar = vi.mocked(reorderMaturityPillar);
+const reorderCriterion = vi.mocked(reorderMaturityCriterion);
+const reorderQuestion = vi.mocked(reorderMaturityQuestion);
 const deleteCriterion = vi.mocked(deleteMaturityCriterion);
 const deleteQuestion = vi.mocked(deleteMaturityQuestion);
 
@@ -76,11 +94,25 @@ describe("FrameworkEditor authoring UX", () => {
   beforeEach(() => {
     refresh.mockReset();
     updateMetadata.mockReset();
+    addPillar.mockReset();
+    addCriterion.mockReset();
+    addQuestion.mockReset();
+    linkQuestion.mockReset();
     moveCriterion.mockReset();
     moveQuestion.mockReset();
+    reorderPillar.mockReset();
+    reorderCriterion.mockReset();
+    reorderQuestion.mockReset();
     deleteCriterion.mockReset();
     deleteQuestion.mockReset();
     updateMetadata.mockResolvedValue({ ok: true });
+    addPillar.mockResolvedValue({ pillarId: "pillar-new" });
+    addCriterion.mockResolvedValue({ criterionId: "criterion-new" });
+    addQuestion.mockResolvedValue({ questionId: "question-new" });
+    linkQuestion.mockResolvedValue({ ok: true });
+    reorderPillar.mockResolvedValue({ ok: true });
+    reorderCriterion.mockResolvedValue({ ok: true });
+    reorderQuestion.mockResolvedValue({ ok: true });
     window.history.replaceState({}, "", "/platform/maturity/models/model-1");
   });
 
@@ -187,13 +219,12 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveCriterion).toHaveBeenCalledWith(
         "criterion-wrong",
         "pillar-ps",
-        undefined,
         "model-1",
       );
     });
   });
 
-  it("appends same-pillar question reparents with the next pillar-wide position", async () => {
+  it("reparents a draft question without sending a client-calculated position", async () => {
     moveQuestion.mockResolvedValue({ ok: true });
     renderEditor({
       initialAuthoringStep: "questions",
@@ -274,12 +305,7 @@ describe("FrameworkEditor authoring UX", () => {
     fireEvent.submit(screen.getByTestId("edit-question-q1"));
 
     await waitFor(() => {
-      expect(moveQuestion).toHaveBeenCalledWith(
-        "q1",
-        "criterion-b",
-        7,
-        "model-1",
-      );
+      expect(moveQuestion).toHaveBeenCalledWith("q1", "criterion-b", "model-1");
     });
   });
 
@@ -355,15 +381,39 @@ describe("FrameworkEditor authoring UX", () => {
     });
 
     const q3Card = screen.getByTestId("edit-question-q3");
-    expect(within(q3Card).getByLabelText("Question move down")).toBeDisabled();
+    expect(
+      within(q3Card).getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Q3", "down"),
+      }),
+    ).toBeDisabled();
     const q4Card = screen.getByTestId("edit-question-q4");
-    expect(within(q4Card).getByLabelText("Question move up")).toBeDisabled();
+    expect(
+      within(q4Card).getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Q4", "up"),
+      }),
+    ).toBeDisabled();
     const q2Card = screen.getByTestId("edit-question-q2");
-    expect(within(q2Card).getByLabelText("Question move down")).toBeEnabled();
-    expect(within(q2Card).getByLabelText("Question move up")).toBeEnabled();
+    expect(
+      within(q2Card).getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Q2", "down"),
+      }),
+    ).toBeEnabled();
+    expect(
+      within(q2Card).getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Q2", "up"),
+      }),
+    ).toBeEnabled();
     const q5Card = screen.getByTestId("edit-question-q5");
-    expect(within(q5Card).getByLabelText("Question move up")).toBeEnabled();
-    expect(within(q5Card).getByLabelText("Question move down")).toBeEnabled();
+    expect(
+      within(q5Card).getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Q5", "up"),
+      }),
+    ).toBeEnabled();
+    expect(
+      within(q5Card).getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Q5", "down"),
+      }),
+    ).toBeEnabled();
   });
 
   it("reparents a draft question and confirms criterion deletion", async () => {
@@ -429,7 +479,6 @@ describe("FrameworkEditor authoring UX", () => {
       expect(moveQuestion).toHaveBeenCalledWith(
         "question-1",
         "criterion-ps",
-        undefined,
         "model-1",
       );
     });
@@ -570,9 +619,11 @@ describe("FrameworkEditor authoring UX", () => {
     expect(
       screen.getByTestId("question-pillar-pillar-a"),
     ).not.toHaveTextContent("Pillar B question 1");
-    expect(screen.getAllByLabelText("Question move up").length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getAllByRole("button", {
+        name: /Move “.+” question up/,
+      }).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Draft version 1 — Editing" }),
     ).toBeInTheDocument();
@@ -665,6 +716,12 @@ describe("FrameworkEditor authoring UX", () => {
     ).toBeInTheDocument();
     expect(
       within(preview).getByTestId("framework-preview-pillar-pillar-ci"),
+    ).toHaveTextContent("2. Continuous Improvement");
+    expect(
+      within(preview).getByTestId("framework-preview-pillar-pillar-ci"),
+    ).not.toHaveTextContent("4. Continuous Improvement");
+    expect(
+      within(preview).getByTestId("framework-preview-pillar-pillar-ci"),
     ).toHaveTextContent(kaizenPrompt);
     expect(
       within(preview).getByTestId("framework-preview-pillar-pillar-safety"),
@@ -704,5 +761,296 @@ describe("FrameworkEditor authoring UX", () => {
         "framework-preview-pillar-pillar-safety",
       ),
     ).not.toHaveTextContent(kaizenPrompt);
+  });
+
+  it("hides raw Position fields and appends new records without client indexes", async () => {
+    renderEditor({
+      initialAuthoringStep: "pillars",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Leadership",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    expect(screen.queryByLabelText(/^Position$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Position$/)).not.toBeInTheDocument();
+
+    const addPillarForm = screen.getByTestId("add-pillar-form");
+    fireEvent.change(within(addPillarForm).getByLabelText("Pillar name"), {
+      target: { value: "Daily Management" },
+    });
+    fireEvent.submit(addPillarForm);
+
+    await waitFor(() => {
+      expect(addPillar).toHaveBeenCalledWith(
+        "version-1",
+        "Daily Management",
+        "model-1",
+      );
+    });
+
+    cleanup();
+    renderEditor({
+      initialAuthoringStep: "criteria",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Leadership",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-a",
+          name: "Gemba",
+          pillar_id: "pillar-a",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    expect(screen.queryByLabelText(/^Position$/i)).not.toBeInTheDocument();
+    const addCriterionForm = screen.getByTestId("add-criterion-form");
+    fireEvent.change(
+      within(addCriterionForm).getByLabelText("Criterion name"),
+      {
+        target: { value: "Standards" },
+      },
+    );
+    fireEvent.submit(addCriterionForm);
+
+    await waitFor(() => {
+      expect(addCriterion).toHaveBeenCalledWith(
+        "pillar-a",
+        "Standards",
+        "model-1",
+      );
+    });
+
+    cleanup();
+    renderEditor({
+      initialAuthoringStep: "questions",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Leadership",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-a",
+          name: "Gemba",
+          pillar_id: "pillar-a",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    expect(screen.queryByLabelText(/^Position$/i)).not.toBeInTheDocument();
+    const addQuestionForm = screen.getByTestId("add-question-form");
+    fireEvent.change(
+      within(addQuestionForm).getByLabelText("Question prompt"),
+      {
+        target: { value: "Rate Gemba" },
+      },
+    );
+    fireEvent.submit(addQuestionForm);
+
+    await waitFor(() => {
+      expect(addQuestion).toHaveBeenCalledWith(
+        "version-1",
+        "section-a",
+        "Rate Gemba",
+        "model-1",
+      );
+    });
+  });
+
+  it("reorders pillars, criteria and questions through accessible move controls", async () => {
+    renderEditor({
+      initialAuthoringStep: "pillars",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Daily Management",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "pillar-b",
+          name: "Problem Solving",
+          position: 2,
+          section_id: "section-b",
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: maturityReorderAriaLabel("pillar", "Daily Management", "up"),
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", {
+        name: maturityReorderAriaLabel("pillar", "Problem Solving", "down"),
+      }),
+    ).toBeDisabled();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: maturityReorderAriaLabel("pillar", "Problem Solving", "up"),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(reorderPillar).toHaveBeenCalledWith("pillar-b", "up", "model-1");
+    });
+
+    cleanup();
+    renderEditor({
+      initialAuthoringStep: "criteria",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Leadership",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-a",
+          name: "Gemba",
+          pillar_id: "pillar-a",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+        {
+          id: "criterion-b",
+          name: "Standards",
+          pillar_id: "pillar-a",
+          position: 2,
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: maturityReorderAriaLabel("criterion", "Gemba", "down"),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(reorderCriterion).toHaveBeenCalledWith(
+        "criterion-a",
+        "down",
+        "model-1",
+      );
+    });
+
+    cleanup();
+    renderEditor({
+      initialAuthoringStep: "questions",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Leadership",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+      criteria: [
+        {
+          id: "criterion-a",
+          name: "Gemba",
+          pillar_id: "pillar-a",
+          position: 1,
+          description: null,
+          guidance: null,
+        },
+      ],
+      questions: [
+        {
+          id: "q1",
+          prompt: "Rate cadence",
+          criterion_id: "criterion-a",
+          position: 1,
+        },
+        {
+          id: "q2",
+          prompt: "Rate coaching",
+          criterion_id: "criterion-a",
+          position: 2,
+        },
+      ],
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: maturityReorderAriaLabel("question", "Rate cadence", "down"),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(reorderQuestion).toHaveBeenCalledWith("q1", "down", "model-1");
+    });
+    expect(screen.getByTestId("authoring-save-feedback")).toHaveTextContent(
+      "Moved “Rate cadence” down.",
+    );
+  });
+
+  it("keeps a single sibling’s move controls disabled without layout shift", () => {
+    renderEditor({
+      initialAuthoringStep: "pillars",
+      pillars: [
+        {
+          id: "pillar-a",
+          name: "Leadership",
+          position: 1,
+          section_id: "section-a",
+          description: null,
+          guidance: null,
+        },
+      ],
+    });
+
+    const up = screen.getByRole("button", {
+      name: maturityReorderAriaLabel("pillar", "Leadership", "up"),
+    });
+    const down = screen.getByRole("button", {
+      name: maturityReorderAriaLabel("pillar", "Leadership", "down"),
+    });
+    expect(up).toBeDisabled();
+    expect(down).toBeDisabled();
+    expect(up).toBeVisible();
+    expect(down).toBeVisible();
   });
 });

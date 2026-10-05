@@ -71,7 +71,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-pillars").click();
     await page.getByLabel("Pillar name").fill("Leadership");
     await page.getByRole("button", { name: "Add pillar" }).click();
-    await expect(page.getByTestId("edit-pillar-1")).toBeVisible({
+    await expect(
+      page.locator('[data-testid^="edit-pillar-"]').first(),
+    ).toBeVisible({
       timeout: 15_000,
     });
 
@@ -98,6 +100,71 @@ test.describe("Milestone 5 maturity journeys", () => {
       /Active version \d+ — Published/,
       { timeout: 15_000 },
     );
+  });
+
+  test("admin: authoring appends automatically and reorders with move controls", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/maturity/models");
+
+    const frameworkName = `E2E Ordering ${Date.now()}`;
+    await page.getByLabel("Name").fill(frameworkName);
+    await page.getByRole("button", { name: "Create draft framework" }).click();
+    await expect(page.getByTestId("framework-editor")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.getByTestId("framework-step-pillars").click();
+    await expect(page.getByLabel("Position")).toHaveCount(0);
+
+    const addPillarForm = page.getByTestId("add-pillar-form");
+    await addPillarForm.getByLabel("Pillar name").fill("Leadership");
+    await addPillarForm.getByRole("button", { name: "Add pillar" }).click();
+    await expect(page.getByTestId("edit-pillar-1")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await addPillarForm.getByLabel("Pillar name").fill("Daily Management");
+    await addPillarForm.getByRole("button", { name: "Add pillar" }).click();
+    await expect(page.getByTestId("edit-pillar-2")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await expect(
+      page.getByRole("button", {
+        name: "Move “Leadership” pillar up",
+      }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", {
+        name: "Move “Daily Management” pillar down",
+      }),
+    ).toBeDisabled();
+
+    await page
+      .getByRole("button", { name: "Move “Daily Management” pillar up" })
+      .click();
+    await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
+      "Moved “Daily Management” up.",
+      { timeout: 15_000 },
+    );
+
+    const firstPillarName = page
+      .locator('[data-testid^="edit-pillar-"]')
+      .first()
+      .getByLabel("Pillar name");
+    await expect(firstPillarName).toHaveValue("Daily Management");
+
+    await page.reload();
+    await page.getByTestId("framework-step-pillars").click();
+    await expect(
+      page
+        .locator('[data-testid^="edit-pillar-"]')
+        .first()
+        .getByLabel("Pillar name"),
+    ).toHaveValue("Daily Management");
   });
 
   test("MAT1a: start assessment shows eligible site entities only", async ({
@@ -366,7 +433,11 @@ test.describe("Milestone 5 maturity journeys", () => {
       label: "Problem Solving",
     });
     await page.getByRole("button", { name: "Save question" }).click();
-    await expect(page.getByText(/Safety → Problem Solving/)).toBeVisible({
+    await expect(
+      page
+        .locator('[data-testid^="edit-question-"]')
+        .getByText("Safety → Problem Solving"),
+    ).toBeVisible({
       timeout: 15_000,
     });
 
@@ -387,7 +458,9 @@ test.describe("Milestone 5 maturity journeys", () => {
       0,
     );
 
-    await page.locator("#criterionId").selectOption({ label: "Gemba walks" });
+    await page.locator("#criterionId").selectOption({
+      label: "Leadership → Gemba walks",
+    });
     await page.locator("#questionPrompt").fill("Rate remaining Gemba");
     await page.getByRole("button", { name: "Add scored question" }).click();
     await expect(leadershipQuestions.getByLabel("Question prompt")).toHaveValue(

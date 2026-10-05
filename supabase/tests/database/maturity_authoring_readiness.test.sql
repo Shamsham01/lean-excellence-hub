@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(11);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -192,9 +192,9 @@ select is(
   'successor draft preserves criterion question links'
 );
 
-select throws_ok(
+select lives_ok(
   format(
-    'select public.add_maturity_question(%L::uuid, %L::uuid, ''score'', ''Duplicate position'', 1, true)',
+    'select public.add_maturity_question(%L::uuid, %L::uuid, ''score'', ''Legacy position ignored'', 1, true)',
     (select id from maturity_authoring_ids where key = 'successor_version'),
     (
       select section_id
@@ -205,9 +205,20 @@ select throws_ok(
       limit 1
     )
   ),
-  '23505',
-  null,
-  'duplicate pillar-local position remains rejected'
+  'legacy client-supplied question position is ignored'
+);
+
+select is(
+  (
+    select pg_catalog.max(question_row.position)
+    from public.template_questions question_row
+    join public.maturity_pillars pillar_row
+      on pillar_row.section_id = question_row.section_id
+    where pillar_row.organisation_id = (select id from maturity_authoring_ids where key = 'organisation')
+      and pillar_row.model_version_id = (select id from maturity_authoring_ids where key = 'successor_version')
+  ),
+  3,
+  'legacy position input appends after existing successor questions'
 );
 
 select * from finish();

@@ -438,6 +438,18 @@ export function nextQuestionPositionForPillar(
   );
 }
 
+export function hierarchyDisplayLabel(index: number, name: string): string {
+  return `${index + 1}. ${name}`;
+}
+
+export function maturityReorderAriaLabel(
+  entityKind: "pillar" | "criterion" | "question",
+  name: string,
+  direction: "up" | "down",
+): string {
+  return `Move \u201c${name}\u201d ${entityKind} ${direction}`;
+}
+
 export function assessFrameworkPublishReadiness(input: {
   levels: unknown[];
   pillars: unknown[];

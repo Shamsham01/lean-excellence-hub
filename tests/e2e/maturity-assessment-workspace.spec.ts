@@ -130,7 +130,9 @@ async function createReadinessFramework(page: Page) {
         page.locator("#criterionId option").filter({ hasText: name }).count(),
       )
       .toBeGreaterThan(0);
-    await page.locator("#criterionId").selectOption({ label: name });
+    await page.locator("#criterionId").selectOption({
+      label: `Leadership & Governance → ${name}`,
+    });
     await page.locator("#questionPrompt").fill(`Rate: ${name}`);
     const before = await page
       .locator('[data-testid^="edit-question-"]')

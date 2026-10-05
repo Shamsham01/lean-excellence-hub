@@ -1,4 +1,7 @@
-import { buildFrameworkHierarchy } from "@/modules/maturity/framework-authoring";
+import {
+  buildFrameworkHierarchy,
+  hierarchyDisplayLabel,
+} from "@/modules/maturity/framework-authoring";
 import type {
   MaturityAuthoringCriterion,
   MaturityAuthoringPillar,
@@ -119,32 +122,32 @@ export function FrameworkStructurePreview({
         <h3 className="font-medium text-foreground">
           Pillars, criteria and questions
         </h3>
-        {hierarchy.pillars.map((pillar) => (
+        {hierarchy.pillars.map((pillar, pillarIndex) => (
           <article
             key={pillar.id}
-            className="rounded-md border border-border p-4"
+            className="leh-authoring-pillar"
             data-testid={`framework-preview-pillar-${pillar.id}`}
           >
             <h4 className="font-medium">
-              {pillar.position}. {pillar.name}
+              {hierarchyDisplayLabel(pillarIndex, pillar.name)}
             </h4>
             <div className="mt-3 flex flex-col gap-3">
-              {pillar.criteria.map((criterion) => (
+              {pillar.criteria.map((criterion, criterionIndex) => (
                 <div
                   key={criterion.id}
-                  className="pl-3"
+                  className="leh-authoring-criterion"
                   data-testid={`framework-preview-criterion-${criterion.id}`}
                 >
                   <p className="font-medium">
-                    {criterion.position}. {criterion.name}
+                    {hierarchyDisplayLabel(criterionIndex, criterion.name)}
                   </p>
                   <ul className="mt-1 flex flex-col gap-1 pl-4 text-muted-foreground">
-                    {criterion.questions.map((question) => (
+                    {criterion.questions.map((question, questionIndex) => (
                       <li
                         key={question.id}
                         data-testid={`framework-preview-question-${question.id}`}
                       >
-                        {question.position}. {question.prompt}
+                        {hierarchyDisplayLabel(questionIndex, question.prompt)}
                       </li>
                     ))}
                     {criterion.questions.length === 0 ? (
@@ -168,9 +171,9 @@ export function FrameworkStructurePreview({
           <article className="rounded-md border border-border p-4">
             <h4 className="font-medium">Questions not linked to a criterion</h4>
             <ul className="mt-2 flex flex-col gap-1 pl-4 text-muted-foreground">
-              {hierarchy.unlinkedQuestions.map((question) => (
+              {hierarchy.unlinkedQuestions.map((question, questionIndex) => (
                 <li key={question.id}>
-                  {question.position}. {question.prompt}
+                  {hierarchyDisplayLabel(questionIndex, question.prompt)}
                 </li>
               ))}
             </ul>
