@@ -140,4 +140,18 @@ describe("structure-first onboarding workspace", () => {
       screen.getByTestId("structure-first-job-functions-step"),
     ).toHaveTextContent("Access roles remain separate");
   });
+
+  it("shows the organisation owner on the people step", () => {
+    render(
+      <StructureFirstWorkspace
+        snapshot={snapshot({ visibleStep: "people" })}
+      />,
+    );
+    expect(
+      screen.getByTestId("structure-first-people-summary"),
+    ).toHaveTextContent("Przemyslaw Rzasa");
+    expect(
+      screen.getByTestId("structure-first-skip-people"),
+    ).toBeInTheDocument();
+  });
 });

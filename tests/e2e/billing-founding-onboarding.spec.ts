@@ -97,6 +97,15 @@ test.describe("founding organisation onboarding", () => {
 
     await page.reload();
     await expect(
+      page.getByTestId("structure-first-structure-step"),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: "Production",
+      }),
+    ).toBeVisible();
+    await page.goto("/onboarding/setup");
+    await expect(
       page.getByTestId("structure-first-job-functions-step"),
     ).toBeVisible();
     await page.goto("/onboarding/setup?step=structure");
@@ -114,6 +123,11 @@ test.describe("founding organisation onboarding", () => {
     await page.getByTestId("structure-first-job-suggestion-operator").click();
     await expect(page.getByTestId("job-function-item-operator")).toBeVisible();
     await page.reload();
+    await expect(
+      page.getByTestId("structure-first-job-functions-step"),
+    ).toBeVisible();
+    await expect(page.getByTestId("job-function-item-operator")).toBeVisible();
+    await page.goto("/onboarding/setup");
     await expect(page.getByTestId("structure-first-people-step")).toBeVisible();
     await page.goto("/onboarding/setup?step=job_functions");
     await expect(page.getByTestId("job-function-item-operator")).toBeVisible();

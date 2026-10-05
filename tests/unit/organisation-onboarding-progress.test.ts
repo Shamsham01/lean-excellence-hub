@@ -153,6 +153,20 @@ describe("structure-first onboarding progress", () => {
     ).toBe("site");
   });
 
+  it("keeps a completed requested step on reload instead of jumping ahead", () => {
+    const started = facts({
+      onboardingJourneyStarted: true,
+      childUnitCount: 1,
+      activeUnitCount: 2,
+    });
+    expect(
+      resolveVisibleStructureFirstStep({
+        facts: started,
+        requestedStep: "structure",
+      }),
+    ).toBe("structure");
+  });
+
   it("does not jump ahead to readiness before skippable steps are complete or skipped", () => {
     const started = facts({ onboardingJourneyStarted: true });
     expect(

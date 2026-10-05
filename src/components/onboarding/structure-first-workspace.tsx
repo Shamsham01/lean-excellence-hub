@@ -59,14 +59,14 @@ export function StructureFirstWorkspace({
             progress={progress}
             currentStep={visibleStep}
           />
-          {coach}
+          {coach ? <div className="hidden lg:block">{coach}</div> : null}
           {permissions.canAskLeanAi ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="hidden text-xs text-muted-foreground lg:block">
               LeanAI can explain setup guidance when you choose Explain. It will
               not change configuration for you.
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="hidden text-xs text-muted-foreground lg:block">
               Deterministic guidance is shown in each step. LeanAI is advisory
               and never required to continue.
             </p>
@@ -122,6 +122,18 @@ export function StructureFirstWorkspace({
               completeError={completeError}
             />
           ) : null}
+          {coach ? <div className="mt-8 lg:hidden">{coach}</div> : null}
+          {permissions.canAskLeanAi ? (
+            <p className="mt-3 text-xs text-muted-foreground lg:hidden">
+              LeanAI can explain setup guidance when you choose Explain. It will
+              not change configuration for you.
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground lg:hidden">
+              Deterministic guidance is shown in each step. LeanAI is advisory
+              and never required to continue.
+            </p>
+          )}
         </main>
       </div>
     </div>

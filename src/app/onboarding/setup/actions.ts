@@ -281,6 +281,10 @@ export async function createOnboardingUnit(input: {
     return result;
   }
   await recordOnboardingEvent({ eventKey: "onboarding.started" });
+  await recordOnboardingEvent({
+    eventKey: "onboarding.step_completed",
+    stepKey: "structure",
+  });
   revalidateSetup();
   return { ok: true as const };
 }

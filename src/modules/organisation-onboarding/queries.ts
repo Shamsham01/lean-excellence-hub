@@ -51,6 +51,22 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function memberDisplayName(input: {
+  membershipName: string | null | undefined;
+  profileName: string | null | undefined;
+  isCurrentUser: boolean;
+}) {
+  const membershipName = input.membershipName?.trim();
+  if (membershipName) {
+    return membershipName;
+  }
+  const profileName = input.profileName?.trim();
+  if (profileName) {
+    return profileName;
+  }
+  return input.isCurrentUser ? "You" : "Organisation member";
+}
+
 function parseOnboardingEvents(
   rows: Array<{
     event_key: string;
@@ -138,6 +154,7 @@ export async function loadStructureFirstSnapshot(
     offersData,
     rolesResult,
     roleVersionsResult,
+    claimsResult,
   ] = await Promise.all([
     supabase
       .from("organisations")
@@ -151,7 +168,7 @@ export async function loadStructureFirstSnapshot(
       .order("name"),
     supabase
       .from("organisation_memberships")
-      .select("id, display_name, status")
+      .select("id, display_name, user_id, status")
       .eq("status", "active")
       .order("display_name"),
     supabase
@@ -181,6 +198,7 @@ export async function loadStructureFirstSnapshot(
       .from("role_versions")
       .select("id, role_id")
       .eq("status", "published"),
+    supabase.auth.getClaims(),
   ]);
 
   const pendingInvitationIds = (pendingResult.data ?? []).map(
@@ -220,12 +238,36 @@ export async function loadStructureFirstSnapshot(
       .map((grant) => grant.grantee_membership_id),
   );
 
-  const members: StructureFirstMember[] = (membershipsResult.data ?? []).map(
-    (membership) => ({
-      membershipId: membership.id,
-      displayName: membership.display_name?.trim() || "Organisation member",
-    }),
+  const membershipRows = membershipsResult.data ?? [];
+  const membershipUserIds = [
+    ...new Set(membershipRows.map((membership) => membership.user_id)),
+  ];
+  const profilesResult =
+    membershipUserIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", membershipUserIds)
+      : { data: [] as Array<{ user_id: string; display_name: string | null }> };
+  const profileNameByUserId = new Map(
+    (profilesResult.data ?? []).map((profile) => [
+      profile.user_id,
+      profile.display_name,
+    ]),
   );
+  const currentUserId =
+    typeof claimsResult.data?.claims?.sub === "string"
+      ? claimsResult.data.claims.sub
+      : null;
+
+  const members: StructureFirstMember[] = membershipRows.map((membership) => ({
+    membershipId: membership.id,
+    displayName: memberDisplayName({
+      membershipName: membership.display_name,
+      profileName: profileNameByUserId.get(membership.user_id),
+      isCurrentUser: membership.user_id === currentUserId,
+    }),
+  }));
   const owners: StructureFirstOwner[] = members.filter((member) =>
     ownerMembershipIds.has(member.membershipId),
   );
