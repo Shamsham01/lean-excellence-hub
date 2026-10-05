@@ -211,9 +211,7 @@ function ActionList() {
             <button
               type="button"
               className="leh-demo-action-row"
-              onClick={() =>
-                dispatch({ type: "select-action", id: item.id })
-              }
+              onClick={() => dispatch({ type: "select-action", id: item.id })}
             >
               <span>
                 <span className="leh-demo-ref">{item.id}</span>
