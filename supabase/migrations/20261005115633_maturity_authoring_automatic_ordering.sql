@@ -1256,6 +1256,22 @@ revoke all on function public.reorder_maturity_pillar(uuid, text) from public, a
 revoke all on function public.reorder_maturity_criterion(uuid, text) from public, anon;
 revoke all on function public.reorder_maturity_question(uuid, text) from public, anon;
 
+revoke all on function private.next_maturity_pillar_position(uuid, uuid)
+  from public, anon, authenticated, service_role;
+revoke all on function private.reorder_maturity_pillar(uuid, text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.reorder_maturity_criterion(uuid, text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.reorder_maturity_question(uuid, text)
+  from public, anon, authenticated, service_role;
+
+grant execute on function private.reorder_maturity_pillar(uuid, text)
+  to authenticated;
+grant execute on function private.reorder_maturity_criterion(uuid, text)
+  to authenticated;
+grant execute on function private.reorder_maturity_question(uuid, text)
+  to authenticated;
+
 alter function private.next_maturity_pillar_position(uuid, uuid)
   owner to lean_hub_private_owner;
 alter function private.add_maturity_pillar(uuid, text, integer, text, numeric, text, text)
