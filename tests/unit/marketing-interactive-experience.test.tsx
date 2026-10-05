@@ -26,6 +26,10 @@ vi.mock("next/link", () => ({
 }));
 
 import { MarketingHome } from "@/components/marketing/home";
+import {
+  ACTION_REF,
+  GEMBA_ACTION_REF,
+} from "@/components/marketing/interactive/demo-model";
 import { MarketingInteractiveExperience } from "@/components/marketing/interactive/experience";
 import {
   demoReducer,
@@ -284,6 +288,89 @@ describe("interactive experience source safety", () => {
     expect(css).toContain("prefers-reduced-motion: reduce");
     expect(css).not.toContain("gsap");
     expect(css).not.toContain("three.js");
+  });
+
+
+  it("keeps notification generation deterministic for identical reducer input", () => {
+    const action = {
+      type: "submit-suggestion" as const,
+      record: {
+        id: "SUG-DEMO-001" as const,
+        title: "Example",
+        area: "Packing",
+        category: "Workplace organisation",
+        opportunity: "Walks",
+        benefit: "Less movement",
+        evidenceName: null,
+        status: "Submitted" as const,
+        submittedBy: "Visitor" as const,
+        createdLabel: "Just now" as const,
+        decision: null,
+      },
+    };
+
+    const first = demoReducer(initialDemoState, action);
+    const second = demoReducer(initialDemoState, action);
+
+    expect(second).toEqual(first);
+    expect(first.notifications[0]?.id).toBe("suggestion-submitted-1");
+  });
+
+  it("keeps actions from different demo workflows distinct and selectable", () => {
+    const suggestionAction = {
+      id: ACTION_REF,
+      title: "Suggestion follow-up",
+      owner: "Area Leader",
+      due: "Friday",
+      priority: "Medium" as const,
+      source: "SUG-DEMO-001",
+      status: "Open" as const,
+      sourceKind: "suggestion" as const,
+    };
+    const gembaAction = {
+      id: GEMBA_ACTION_REF,
+      title: "Gemba follow-up",
+      owner: "Area Leader",
+      due: "Friday",
+      priority: "High" as const,
+      source: "GEM-DEMO-001",
+      status: "Open" as const,
+      sourceKind: "gemba" as const,
+    };
+
+    const withSuggestion = demoReducer(initialDemoState, {
+      type: "create-action",
+      record: suggestionAction,
+    });
+    const withBoth = demoReducer(withSuggestion, {
+      type: "create-action",
+      record: gembaAction,
+    });
+
+    expect(withBoth.actions.map((item) => item.id)).toEqual([
+      GEMBA_ACTION_REF,
+      ACTION_REF,
+    ]);
+
+    const selectedSuggestion = demoReducer(withBoth, {
+      type: "select-action",
+      id: ACTION_REF,
+    });
+
+    expect(selectedSuggestion.selectedActionId).toBe(ACTION_REF);
+    expect(selectedSuggestion.view).toBe("action-record");
+
+    const suggestionNotification = withBoth.notifications.find(
+      (item) => item.objectRef === ACTION_REF,
+    );
+    expect(suggestionNotification).toBeTruthy();
+
+    const focused = demoReducer(withBoth, {
+      type: "focus-notification",
+      id: suggestionNotification!.id,
+    });
+    expect(focused.selectedActionId).toBe(ACTION_REF);
+    expect(focused.view).toBe("action-record");
   });
 
   it("resets suggestion state in the reducer", () => {
