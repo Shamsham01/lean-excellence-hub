@@ -121,11 +121,9 @@ test.describe("subscribed site capacity", () => {
       "1 of 2 active",
       { timeout: 30_000 },
     );
+    await expect(page.getByTestId("site-capacity-confirmed")).toBeVisible();
     await screenshotIfPossible(page, "billing-site-capacity-1-of-2.png");
-    const addSite = page
-      .getByTestId("site-capacity-add-site")
-      .or(page.getByTestId("billing-add-site"));
-    await addSite.first().click();
+    await page.getByTestId("site-capacity-add-site").click();
 
     await expect(page.getByTestId("structure-settings-page")).toBeVisible();
     await expect(page.getByTestId("site-capacity-headline")).toHaveText(
