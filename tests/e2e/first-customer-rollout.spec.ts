@@ -49,6 +49,11 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await expect(
       page.getByText(/Which site are you setting up first/),
     ).toBeVisible();
+    await page.getByLabel("Organisation name").fill(user.organisationName);
+    await page.getByLabel("First site").fill(user.firstSiteName);
+    await page
+      .getByLabel("Yes, part of a wider multi-site organisation")
+      .check();
     await screenshotIfPossible(page, "01c-founder-onboarding.png");
     await completeFoundingCheckout(page, user, 1, "yes");
     await completeStructureFirstSetupToPlatform(page);
@@ -75,9 +80,11 @@ test.describe("first-customer onboarding and rollout governance", () => {
       "Single-site pilot in a wider organisation",
     );
     await expect(
-      page.getByTestId("rollout-governance-panel").getByRole("cell", {
-        name: "Plymouth Factory",
-      }),
+      page
+        .getByTestId("rollout-governance-panel")
+        .getByText("Plymouth Factory", {
+          exact: true,
+        }),
     ).toBeVisible();
     await screenshotIfPossible(page, "01c-rollout-governance.png");
 
@@ -128,14 +135,18 @@ test.describe("first-customer onboarding and rollout governance", () => {
       "2 of 2 subscribed sites active",
     );
     await expect(
-      page.getByTestId("rollout-governance-panel").getByRole("cell", {
-        name: "Plymouth Factory",
-      }),
+      page
+        .getByTestId("rollout-governance-panel")
+        .getByText("Plymouth Factory", {
+          exact: true,
+        }),
     ).toBeVisible();
     await expect(
-      page.getByTestId("rollout-governance-panel").getByRole("cell", {
-        name: "Bristol Factory",
-      }),
+      page
+        .getByTestId("rollout-governance-panel")
+        .getByText("Bristol Factory", {
+          exact: true,
+        }),
     ).toBeVisible();
     await expect(page.getByTestId("rollout-state")).toHaveText(
       "Multi-site organisation",
@@ -160,6 +171,7 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/platform/settings/organisation");
     await expect(page.getByTestId("rollout-governance-panel")).toBeVisible();
+    await expect(page.getByTestId("rollout-site-list")).toBeVisible();
     await expect(page.getByTestId("roll-out-another-site")).toBeVisible();
     await screenshotIfPossible(page, "01c-rollout-mobile.png");
   });

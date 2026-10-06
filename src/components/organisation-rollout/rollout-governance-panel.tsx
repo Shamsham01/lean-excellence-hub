@@ -79,45 +79,56 @@ export function RolloutGovernancePanel({
           setup.
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-left text-sm">
-            <caption className="sr-only">Sites in this organisation</caption>
-            <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground">
-                <th className="py-2 pr-4 font-medium">Site</th>
-                <th className="py-2 pr-4 font-medium">State</th>
-                <th className="py-2 pr-4 font-medium">Capacity</th>
-                <th className="py-2 pr-4 font-medium">Local access</th>
-                <th className="py-2 font-medium">Readiness</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshot.sites.map((site) => (
-                <tr
-                  key={site.id}
-                  className="border-b border-border/70"
-                  data-testid={`rollout-site-row-${site.id}`}
-                >
-                  <td className="py-3 pr-4 font-medium text-foreground">
-                    {site.name}
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground capitalize">
-                    {site.status}
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground">
-                    {site.consumesCapacity ? "Uses a site slot" : "Not billed"}
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground">
-                    {siteLeadershipLabel(site.leadership)}
-                  </td>
-                  <td className="py-3 text-muted-foreground">
-                    {siteReadinessLabel(site.readiness)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="flex flex-col" data-testid="rollout-site-list">
+          {snapshot.sites.map((site) => (
+            <li
+              key={site.id}
+              className="grid gap-2 border-b border-border/70 py-3 sm:grid-cols-5 sm:gap-4"
+              data-testid={`rollout-site-row-${site.id}`}
+            >
+              <div>
+                <p className="text-xs font-medium text-muted-foreground sm:sr-only">
+                  Site
+                </p>
+                <p className="text-sm font-medium text-foreground">
+                  {site.name}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground sm:sr-only">
+                  State
+                </p>
+                <p className="text-sm text-muted-foreground capitalize">
+                  {site.status}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground sm:sr-only">
+                  Capacity
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {site.consumesCapacity ? "Uses a site slot" : "Not billed"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground sm:sr-only">
+                  Local access
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {siteLeadershipLabel(site.leadership)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground sm:sr-only">
+                  Readiness
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {siteReadinessLabel(site.readiness)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row">
