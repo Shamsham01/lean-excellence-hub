@@ -14,10 +14,16 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import { updateMultiSiteIntent } from "./actions";
 
-export default async function OrganisationSettingsPage() {
+export default async function OrganisationSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   if (!(await currentMemberHasPermission("hierarchy.read"))) {
     notFound();
   }
+
+  const { error } = await searchParams;
 
   const supabase = await createServerSupabaseClient();
   const [{ data: organisation }, governance] = await Promise.all([
@@ -77,6 +83,12 @@ export default async function OrganisationSettingsPage() {
             className="flex max-w-xl flex-col gap-3"
             data-testid="multi-site-intent-form"
           >
+            {error === "intent" ? (
+              <p className="text-sm text-destructive" role="alert">
+                Organisation context could not be updated. Ask an organisation
+                administrator if this continues.
+              </p>
+            ) : null}
             <label htmlFor="multiSiteIntent" className="text-sm font-medium">
               Wider multi-site organisation
             </label>

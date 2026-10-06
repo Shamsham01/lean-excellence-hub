@@ -172,7 +172,7 @@ export function RolloutWorkspace({
               setMessage(null);
               startTransition(async () => {
                 const result = await createRolloutSite({ name: siteName });
-                if ("error" in result && result.error) {
+                if ("error" in result) {
                   setMessage(result.error);
                   return;
                 }

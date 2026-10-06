@@ -30,7 +30,11 @@ async function siteBelongsToCurrentOrganisation(siteId: string) {
   return Boolean(data?.id && isSiteUnitType(data.unit_type));
 }
 
-export async function createRolloutSite(input: { name: string }) {
+export async function createRolloutSite(input: {
+  name: string;
+}): Promise<
+  { error: string } | { ok: true; siteId: string | null; siteName: string }
+> {
   const authorised =
     await currentMemberHasOrganisationScopedPermission("hierarchy.manage");
   if (!authorised) {
@@ -62,7 +66,7 @@ export async function createRolloutSite(input: { name: string }) {
   });
 
   if ("error" in created && created.error) {
-    return created;
+    return { error: created.error };
   }
 
   const { data: createdUnit } = await supabase
