@@ -113,3 +113,51 @@ export async function loginAsFoundingUser(page: Page, user: FoundingE2eUser) {
     timeout: 30_000,
   });
 }
+
+export async function completeFoundingCheckout(
+  page: Page,
+  user: FoundingE2eUser,
+  siteQuantity = 1,
+) {
+  await expect(page.getByTestId("create-organisation-page")).toBeVisible();
+  await page.getByLabel("Organisation name").fill(user.organisationName);
+  await page.getByLabel("First site").fill(user.firstSiteName);
+  await page.getByLabel("Paid site quantity").fill(String(siteQuantity));
+  await page.getByRole("button", { name: "Continue to plan" }).click();
+
+  await expect(page).toHaveURL(/\/onboarding(?:\?|$)/);
+  await expect(page.getByTestId("onboarding-plan")).toBeVisible();
+  await page.getByRole("radio", { name: /Professional/ }).check();
+  await page.getByRole("button", { name: "Continue to Checkout" }).click();
+
+  await expect(page.getByTestId("onboarding-wait")).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.getByRole("button", { name: "Complete sandbox payment" }).click();
+  await expect(page.getByTestId("onboarding-setup")).toBeVisible({
+    timeout: 30_000,
+  });
+}
+
+export async function completeStructureFirstSetupToPlatform(page: Page) {
+  await page.getByTestId("structure-first-continue-context").click();
+  await expect(
+    page.getByTestId("structure-first-structure-step"),
+  ).toBeVisible();
+  await page.getByTestId("structure-first-start-simple").click();
+  await expect(
+    page.getByTestId("structure-first-job-functions-step"),
+  ).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("structure-first-skip-job-functions").click();
+  await expect(page.getByTestId("structure-first-people-step")).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.getByTestId("structure-first-skip-people").click();
+  await expect(
+    page.getByTestId("structure-first-readiness-step"),
+  ).toBeVisible();
+  await page.getByTestId("structure-first-continue-setup").click();
+  await expect(page).toHaveURL(/\/platform\/setup(?:\?|$)/, {
+    timeout: 30_000,
+  });
+}

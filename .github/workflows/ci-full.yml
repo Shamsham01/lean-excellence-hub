@@ -227,6 +227,7 @@ jobs:
               tests/e2e/site-security-boundary.spec.ts
               tests/e2e/cookieworks-execution-site-context.spec.ts
               tests/e2e/billing-founding-onboarding.spec.ts
+              tests/e2e/site-capacity.spec.ts
               tests/e2e/leanai-context-readiness.spec.ts
               tests/e2e/leanai-coach.spec.ts
               tests/e2e/leanai-coach-explain.spec.ts
