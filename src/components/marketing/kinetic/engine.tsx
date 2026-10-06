@@ -35,9 +35,13 @@ const SceneRefContext = createContext<RefObject<HTMLElement | null> | null>(
 const LEAN_SEES = [
   "Organisation",
   "Site",
+  "Role, where permitted",
   "Current workflow",
+  "Open record",
   "Relevant framework",
 ] as const;
+
+const LEAN_BEATS = [0.02, 0.16, 0.32, 0.48, 0.62, 0.8] as const;
 
 const LEAN_RECOMMENDATION =
   "Link the Gemba finding to an owned action before the next walk.";
@@ -49,6 +53,10 @@ type SceneCache = {
   leanKey: string;
   focus: number;
   dirty: boolean;
+  stretchTo: number;
+  natural: number;
+  tileFill: number;
+  beat: number;
 };
 
 function mediaQuery(query: string) {
@@ -99,6 +107,83 @@ function measurePlatform(el: HTMLElement, cache: SceneCache) {
   cache.shiftMax = Math.max(0, track.scrollWidth - viewport.clientWidth);
   track.style.transform = previous;
   cache.dirty = false;
+}
+
+function measureHero(el: HTMLElement, cache: SceneCache) {
+  const word = el.querySelector<HTMLElement>("[data-hero-stretch]");
+  const inner = el.querySelector<HTMLElement>("[data-hero-stretch-inner]");
+  const operational = el.querySelector<HTMLElement>(
+    "[data-hero-line='operational']",
+  );
+  const mark = el.querySelector<HTMLElement>("[data-hero-mark]");
+
+  if (!word || !inner || !operational) {
+    return;
+  }
+
+  const previous = word.style.transform;
+  word.style.transform = "none";
+  const natural = inner.getBoundingClientRect().width;
+  const available =
+    operational.getBoundingClientRect().width -
+    (mark?.getBoundingClientRect().width ?? 0) -
+    8;
+  word.style.transform = previous;
+
+  cache.dirty = false;
+
+  if (natural < 1) {
+    return;
+  }
+
+  cache.natural = natural;
+  cache.stretchTo = Math.min(2.05, Math.max(1, available / natural));
+}
+
+function measureFinale(el: HTMLElement, cache: SceneCache) {
+  const tile = el.querySelector<HTMLElement>("[data-finale-tile]");
+  const stage = el.querySelector<HTMLElement>(".kinetic-stage");
+
+  if (!tile || !stage) {
+    cache.dirty = false;
+    return;
+  }
+
+  const previousAssemble = el.style.getPropertyValue("--assemble");
+  const previousScale = el.style.getPropertyValue("--tile-scale");
+  el.style.setProperty("--assemble", "1");
+  el.style.setProperty("--tile-scale", "1");
+  const tileBox = tile.getBoundingClientRect();
+  const stageBox = stage.getBoundingClientRect();
+  const centerX = tileBox.left + tileBox.width / 2;
+  const centerY = tileBox.top + tileBox.height / 2;
+  const reach = Math.max(
+    Math.hypot(stageBox.left - centerX, stageBox.top - centerY),
+    Math.hypot(stageBox.right - centerX, stageBox.top - centerY),
+    Math.hypot(stageBox.left - centerX, stageBox.bottom - centerY),
+    Math.hypot(stageBox.right - centerX, stageBox.bottom - centerY),
+  );
+  const halfDiagonal = Math.hypot(tileBox.width, tileBox.height) / 2;
+
+  if (previousAssemble) {
+    el.style.setProperty("--assemble", previousAssemble);
+  } else {
+    el.style.removeProperty("--assemble");
+  }
+
+  if (previousScale) {
+    el.style.setProperty("--tile-scale", previousScale);
+  } else {
+    el.style.removeProperty("--tile-scale");
+  }
+
+  cache.dirty = false;
+
+  if (halfDiagonal < 1) {
+    return;
+  }
+
+  cache.tileFill = (reach / halfDiagonal) * 1.42;
 }
 
 function applyPlatformShift(
@@ -152,17 +237,17 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
     return;
   }
 
-  const count = Math.round(mapRange(progress, 0.08, 0.4) * LEAN_SEES.length);
+  const count = Math.round(mapRange(progress, 0.04, 0.22) * LEAN_SEES.length);
   const seen = LEAN_SEES.slice(0, count).join("\n");
   const characters = Math.round(
-    mapRange(progress, 0.44, 0.64) * LEAN_RECOMMENDATION.length,
+    mapRange(progress, 0.62, 0.76) * LEAN_RECOMMENDATION.length,
   );
   const typed = LEAN_RECOMMENDATION.slice(0, characters);
   const showReject =
-    mapRange(progress, 0.66, 0.72) > 0 && mapRange(progress, 0.8, 0.88) < 1;
-  const struck = mapRange(progress, 0.74, 0.8) > 0.45;
+    mapRange(progress, 0.74, 0.8) > 0 && mapRange(progress, 0.86, 0.94) < 1;
+  const struck = mapRange(progress, 0.78, 0.84) > 0.45;
   const decision =
-    progress >= 0.84 ? "A person reviews.\nA person decides." : "";
+    progress >= 0.86 ? "A person reviews.\nA person decides." : "";
   const key = `${seen}|${typed}|${showReject}|${struck}|${decision}`;
 
   if (key === cache.leanKey) {
@@ -176,9 +261,24 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
   reject.classList.toggle("is-struck", showReject && struck);
   authority.textContent = decision;
   recommend.dataset.typing =
-    characters < LEAN_RECOMMENDATION.length && progress < 0.66
+    characters < LEAN_RECOMMENDATION.length &&
+    progress >= 0.62 &&
+    progress < 0.76
       ? "true"
       : "false";
+
+  let beat = 0;
+
+  for (let index = 0; index < LEAN_BEATS.length; index += 1) {
+    if (progress >= LEAN_BEATS[index]) {
+      beat = index;
+    }
+  }
+
+  if (beat !== cache.beat) {
+    cache.beat = beat;
+    el.dataset.beat = String(beat);
+  }
 }
 
 function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
@@ -186,24 +286,49 @@ function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
   el.style.setProperty("--p", progress.toFixed(4));
 
   switch (kind) {
-    case "hero":
+    case "hero": {
+      if (cache.dirty) {
+        measureHero(el, cache);
+      }
+
+      const target = cache.stretchTo || 1;
+      const stretch = lerp(
+        Math.min(1, target),
+        target,
+        easeOutCubic(mapRange(progress, 0.24, 0.72)),
+      );
       el.style.setProperty(
         "--lock",
-        easeOutCubic(mapRange(progress, 0, 0.46)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0, 0.42)).toFixed(4),
       );
+      el.style.setProperty("--natural", cache.natural.toFixed(2));
+      el.style.setProperty("--stretch", stretch.toFixed(4));
       break;
+    }
     case "fragments":
       el.style.setProperty(
         "--scatter",
         easeOutCubic(mapRange(progress, 0.06, 0.5)).toFixed(4),
       );
       el.style.setProperty(
+        "--assemble",
+        easeOutCubic(mapRange(progress, 0.08, 0.46)).toFixed(4),
+      );
+      el.style.setProperty(
+        "--grid",
+        easeInOutCubic(mapRange(progress, 0.42, 0.66)).toFixed(4),
+      );
+      el.style.setProperty(
         "--resolve",
-        easeInOutCubic(mapRange(progress, 0.54, 0.84)).toFixed(4),
+        easeInOutCubic(mapRange(progress, 0.64, 0.86)).toFixed(4),
+      );
+      el.style.setProperty(
+        "--bridge",
+        easeInOutCubic(mapRange(progress, 0.78, 0.98)).toFixed(4),
       );
       break;
     case "loop":
-      [0.04, 0.2, 0.36, 0.52, 0.68].forEach((start, index) => {
+      [0, 0.12, 0.24, 0.36, 0.48].forEach((start, index) => {
         el.style.setProperty(
           `--s${index}`,
           easeKnock(mapRange(progress, start, start + 0.16)).toFixed(4),
@@ -211,37 +336,40 @@ function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
       });
       el.style.setProperty(
         "--forward",
-        easeInOutCubic(mapRange(progress, 0.08, 0.78)).toFixed(4),
+        easeInOutCubic(mapRange(progress, 0, 0.16)).toFixed(4),
       );
       el.style.setProperty(
         "--loopback",
-        easeInOutCubic(mapRange(progress, 0.8, 0.98)).toFixed(4),
+        easeInOutCubic(mapRange(progress, 0.72, 0.94)).toFixed(4),
       );
       break;
     case "platform":
       applyPlatformShift(el, progress, cache);
       break;
     case "leanai":
-      el.style.setProperty("--v1", mapRange(progress, 0.1, 0.22).toFixed(4));
-      el.style.setProperty("--v2", mapRange(progress, 0.22, 0.36).toFixed(4));
-      el.style.setProperty("--v3", mapRange(progress, 0.4, 0.58).toFixed(4));
-      el.style.setProperty("--v4", mapRange(progress, 0.82, 0.96).toFixed(4));
       applyLeanAi(el, progress, cache);
       break;
     case "close": {
-      const field = easeInOutCubic(mapRange(progress, 0.22, 0.46));
-      const release = easeInOutCubic(mapRange(progress, 0.74, 0.92));
+      if (cache.dirty) {
+        measureFinale(el, cache);
+      }
+
+      const grow = easeInOutCubic(mapRange(progress, 0.38, 0.7));
+      const filled = grow > 0.985;
       el.style.setProperty(
         "--assemble",
-        easeOutCubic(mapRange(progress, 0.04, 0.36)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.02, 0.32)).toFixed(4),
       );
-      el.style.setProperty("--field", field.toFixed(4));
-      el.style.setProperty("--release", release.toFixed(4));
-      el.style.setProperty("--wash", (field * (1 - release)).toFixed(4));
+      el.style.setProperty(
+        "--tile-scale",
+        lerp(1, cache.tileFill || 1, grow).toFixed(3),
+      );
       el.style.setProperty(
         "--statement",
-        easeOutCubic(mapRange(progress, 0.48, 0.7)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.74, 0.9)).toFixed(4),
       );
+      el.dataset.filled = filled ? "true" : "false";
+      el.dataset.tone = filled ? "cobalt" : "paper";
       break;
     }
     default:
@@ -292,7 +420,13 @@ function syncRail(
   }
 
   const current = root.querySelector<HTMLElement>(`#${currentId}`);
-  root.dataset.railTone = current?.dataset.tone ?? "paper";
+  const tone = current?.dataset.tone ?? "paper";
+  root.dataset.railTone = tone;
+  const header = document.querySelector<HTMLElement>(".marketing-header");
+
+  if (header && header.dataset.sceneTone !== tone) {
+    header.dataset.sceneTone = tone;
+  }
 }
 
 function alignModuleHash(root: HTMLElement) {
@@ -417,6 +551,10 @@ export function KineticRoot({ children }: { children: ReactNode }) {
         leanKey: "",
         focus: -1,
         dirty: true,
+        stretchTo: 1,
+        natural: 0,
+        tileFill: 1,
+        beat: -1,
       };
       caches.set(el, cache);
       return cache;
@@ -455,7 +593,10 @@ export function KineticRoot({ children }: { children: ReactNode }) {
 
         const progress = sceneProgress(rect.top, rect.height, viewport);
 
-        if (!reduced) {
+        if (reduced && el.dataset.kinetic === "close") {
+          el.dataset.tone = "cobalt";
+          el.dataset.filled = "true";
+        } else if (!reduced) {
           applyScene(el, progress, ensureCache(el));
         }
 

@@ -114,7 +114,7 @@ export function MarketingMark({ className }: { className?: string }) {
 
 export function MarketingWordmark({ compact = false }: { compact?: boolean }) {
   return (
-    <span className="flex items-center gap-2.5 text-foreground">
+    <span className="marketing-wordmark flex items-center gap-2.5 text-foreground">
       <MarketingMark />
       <span className="flex flex-col leading-none">
         <span className="text-[0.92rem] font-semibold tracking-tight">
