@@ -83,10 +83,11 @@ test.describe("subscribed site capacity", () => {
     await expect(
       page.getByTestId("billing-site-capacity-remaining"),
     ).toHaveText("No additional site slots available");
+    await expect(page.getByTestId("add-site-capacity-dialog")).toBeVisible();
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByTestId("add-site-capacity-dialog")).toBeHidden();
     await expect(page.getByTestId("add-site-capacity")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Manage billing" }),
-    ).toBeVisible();
+    await expect(page.getByTestId("manage-billing")).toBeVisible();
     await screenshotIfPossible(page, "billing-site-capacity-1-of-1.png");
   });
 

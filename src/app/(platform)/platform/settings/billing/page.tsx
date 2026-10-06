@@ -145,7 +145,9 @@ export default async function OrganisationBillingSettingsPage({
           action={createCustomerPortalSession}
           className="flex flex-col gap-2"
         >
-          <Button type="submit">Manage billing</Button>
+          <Button type="submit" data-testid="manage-billing">
+            Manage billing
+          </Button>
           <p className="text-xs text-muted-foreground">
             Opens Stripe Customer Portal for payment methods and cancellation.
             It does not change Lean Excellence Hub subscribed site quantity.
