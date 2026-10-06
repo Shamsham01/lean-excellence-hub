@@ -18,8 +18,10 @@ jobs:
           cache: npm
           node-version: 24
       - run: npm ci
-      - name: Show Prettier diff
+      - name: Print formatted file
         run: |
           npx prettier --write tests/e2e/password-recovery.spec.ts
-          git diff -- tests/e2e/password-recovery.spec.ts
-          test -z "$(git status --porcelain tests/e2e/password-recovery.spec.ts)"
+          echo "FORMATTED_BASE64_BEGIN"
+          base64 -w 0 tests/e2e/password-recovery.spec.ts
+          echo
+          echo "FORMATTED_BASE64_END"
