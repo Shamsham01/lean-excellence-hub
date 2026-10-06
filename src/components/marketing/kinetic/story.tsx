@@ -172,7 +172,7 @@ const LEAN_CHAPTERS = [
     id: "authority",
     index: "06",
     title: "A person decides",
-    line: "A person reviews. A person decides.",
+    line: "Review stays with a person.",
   },
 ] as const;
 

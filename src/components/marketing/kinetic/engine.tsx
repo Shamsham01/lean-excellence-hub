@@ -270,7 +270,9 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
   let beat = 0;
 
   for (let index = 0; index < LEAN_BEATS.length; index += 1) {
-    if (progress >= LEAN_BEATS[index]) {
+    const threshold = LEAN_BEATS[index];
+
+    if (threshold !== undefined && progress >= threshold) {
       beat = index;
     }
   }
