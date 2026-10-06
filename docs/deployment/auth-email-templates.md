@@ -1,11 +1,7 @@
-# Hosted Auth email templates and redirect URLs
+# Hosted Auth email templates and recovery links
 
-Git does **not** update a hosted Supabase project's Auth email templates or
-redirect allow-list. Local files under `supabase/templates/` apply to local
-Supabase only. Production parity is an operator step.
-
-Do not store management API tokens in this repository. This document is
-read-only guidance. It does not mutate hosted Auth.
+Git does **not** automatically redeploy a hosted Supabase Send Email Hook or
+change hosted Auth email templates. Production parity is an operator step.
 
 ## Production application origin
 
@@ -16,37 +12,70 @@ https://leanexcellencehub.com
 ```
 
 Password recovery, signup confirmation, and invitation confirmation must use
-this origin. Do not trust an attacker-supplied `Host` header or a `next`
-query parameter to choose the callback destination.
+this origin.
 
-## Required Auth redirect URLs
+## Recovery flow
 
-In the hosted Supabase project, **Authentication → URL Configuration**,
-include at least:
+LEH uses a TokenHash link on its own domain:
 
 ```text
-https://leanexcellencehub.com
-https://leanexcellencehub.com/auth/recovery
-https://leanexcellencehub.com/auth/confirm
+https://leanexcellencehub.com/auth/recovery?token_hash=...&type=recovery
+```
+
+The GET request does **not** verify or consume the one-time token. It stages
+the recovery intent in a short-lived HttpOnly, SameSite=Lax cookie, strips the
+token from the browser URL, and redirects to:
+
+```text
+/recover?continue=true
+```
+
+Only the human-triggered **Continue account recovery** POST verifies the OTP.
+This is intentional. Enterprise mail systems and link-security scanners may
+prefetch GET links; consuming a Supabase one-time token on GET can invalidate
+the recovery link before the user clicks it.
+
+Supabase's production guidance specifically warns about this behaviour for
+single-use password-reset and signup links.
+
+## resetPasswordForEmail redirect target
+
+The application keeps:
+
+```text
 https://leanexcellencehub.com/update-password
-https://leanexcellencehub.com/auth/callback
 ```
 
-Site URL must be `https://leanexcellencehub.com`.
+as the `resetPasswordForEmail(..., { redirectTo })` target because that URL is
+already part of the production Auth redirect configuration. LEH's custom
+TokenHash email link goes to `/auth/recovery` directly, so this release does
+not require a new hosted redirect allow-list entry merely to send recovery
+email.
 
-Local development equivalents are configured in `supabase/config.toml`.
+## Hosted Send Email Hook
 
-## Reset Password template (required)
+The hosted project currently uses the `send-email` Edge Function for Auth
+email delivery. After the application route is deployed, redeploy that function
+from the same Git revision so new recovery emails point directly to
+`/auth/recovery`.
 
-Hosted template name: **Reset password** / recovery.
-
-Subject:
+Until the hook is redeployed, existing production recovery emails that still
+point to:
 
 ```text
-Recover your Lean Excellence Hub account
+/auth/confirm?token_hash=...&type=recovery
 ```
 
-Required recovery href:
+remain compatible. `/auth/confirm` forwards recovery traffic into the new
+staged recovery flow without consuming the token.
+
+This compatibility is deliberate so the app can be deployed before the email
+hook without creating an outage window.
+
+## Reset Password template
+
+If the hosted project ever uses Supabase's built-in template instead of the
+Send Email Hook, use:
 
 ```html
 <a
@@ -56,72 +85,35 @@ Required recovery href:
 </a>
 ```
 
-Do **not** use `{{ .ConfirmationURL }}` unless the dedicated `/auth/recovery`
-route has been proven to exchange the resulting PKCE `code` and persist
-session cookies through to `/update-password`. The source-controlled template
-uses the TokenHash form above.
+Subject:
 
-Do **not** point recovery at `/auth/confirm`. That generic confirmation route
-is reserved for signup and invitation confirmation.
+```text
+Recover your Lean Excellence Hub account
+```
 
-Source of truth in Git:
-
-- `supabase/templates/recovery.html`
-- `supabase/config.toml` (`[auth.email.template.recovery]`)
-- `supabase/functions/_shared/auth-email/confirm-url.ts` (Send Email Hook)
+Do not point recovery at a route that verifies the token on GET.
 
 ## Signup and invitation templates
 
-Keep these on `/auth/confirm`. Do not send them through `/auth/recovery`.
-
-Signup:
+Signup and invitations remain on `/auth/confirm`:
 
 ```text
 {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
-```
-
-Invitation:
-
-```text
 {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite
 ```
 
-## Send Email Hook
+## Release sequence
 
-If the hosted project uses the `send-email` Edge Function, Git updates to
-recovery URLs do **not** take effect until that function is redeployed with
-the current `APP_ORIGIN`. See
-[custom-auth-email-delivery.md](../development/custom-auth-email-delivery.md).
+1. Merge and deploy the application route first.
+2. Verify a legacy `/auth/confirm?...&type=recovery` link reaches the staged
+   recovery page.
+3. Redeploy the hosted `send-email` Edge Function from the same Git revision.
+4. Send a new recovery email to a known test account.
+5. Confirm the email GET lands on `/recover?continue=true` without consuming
+   the OTP.
+6. Click **Continue account recovery** and confirm it reaches
+   `/update-password`.
+7. Confirm replaying the same link and pressing Continue gives
+   `/recover?error=expired`.
 
-After AUTH-RECOVERY-01, recovery links generated by the hook must be:
-
-```text
-${APP_ORIGIN}/auth/recovery?token_hash=...&type=recovery
-```
-
-Signup and invite links must remain:
-
-```text
-${APP_ORIGIN}/auth/confirm?token_hash=...&type=signup|invite
-```
-
-## Operator checklist (hosted)
-
-1. Confirm Site URL is `https://leanexcellencehub.com`.
-2. Add `/auth/recovery` to the redirect allow-list.
-3. Replace the hosted Reset Password template with the href above.
-4. Redeploy `send-email` if that hook is enabled.
-5. Send one recovery email to a known test account and confirm the CTA opens
-   `/auth/recovery`, then `/update-password`, with no `/login?error=confirm`.
-6. Confirm a broken/expired link opens `/recover?error=expired` with
-   “This recovery link is invalid or has expired.”
-
-This repository has no read-only hosted Auth config validator that can be
-run without management credentials. Do not add secrets to Git to create one.
-
-## Why this is required
-
-A customer can receive a valid-looking recovery email and still fail if
-hosted templates still point at `/auth/confirm`, omit `token_hash`, or use a
-PKCE URL that the app does not exchange. Failed verification previously
-rendered as “Unable to sign in with those credentials.”
+Do not deploy the new email hook before the application route is live.
