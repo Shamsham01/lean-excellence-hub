@@ -159,6 +159,11 @@ database:
 | No `ai.use` | Unavailable state |
 | Different organisation | Coach session and draft are invisible; `get_ai_session_detail` is denied |
 
+Accepting a proposal also requires builder access. If LeanAI is turned off
+after a proposal was generated, the unsaved proposal cannot be accepted; Quick
+Start and Manual remain available. Coach sessions are creator-only under RLS,
+so a member can only ever accept a proposal from their own conversation.
+
 ## Limits
 
 - 2,000 characters per message, 20 user messages per conversation
