@@ -292,7 +292,10 @@ describe("StructureWorkspace", () => {
     );
     expect(screen.getByTestId("site-capacity-summary-billing")).toHaveAttribute(
       "href",
-      "/platform/settings/billing",
+      "/platform/settings/billing?addCapacity=1",
     );
+    expect(
+      screen.getByTestId("site-capacity-summary-billing"),
+    ).toHaveTextContent("Add site capacity");
   });
 });

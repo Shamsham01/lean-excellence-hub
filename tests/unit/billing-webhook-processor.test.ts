@@ -113,4 +113,69 @@ describe("billing webhook processing", () => {
       expect.objectContaining({ state: "ignored" }),
     );
   });
+
+  it("applies a subscription-updated quantity snapshot through the webhook processor", async () => {
+    const provider = createFakeBillingProvider(createFakeBillingStore());
+    const checkout = await provider.createCheckoutSession({
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      organisationName: "Northwind",
+      planCode: "professional",
+      interval: "monthly",
+      siteQuantity: 1,
+      successUrl: "http://127.0.0.1:3000/success",
+      cancelUrl: "http://127.0.0.1:3000/cancel",
+    });
+    const completed = provider.simulateCheckoutCompletion(checkout.sessionId);
+    await provider.increaseSubscriptionSiteQuantity({
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      subscriptionId: completed.subscriptionId!,
+      customerId: completed.customerId!,
+      desiredSiteQuantity: 2,
+    });
+    const updated = provider.simulateSubscriptionEvent(
+      completed.subscriptionId!,
+      "customer.subscription.updated",
+    );
+
+    await expect(processVerifiedBillingEvent("fake", updated)).resolves.toEqual(
+      {
+        duplicate: false,
+        applied: true,
+      },
+    );
+    expect(applyOrganisationSubscriptionSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ siteQuantity: 2 }),
+    );
+  });
+
+  it("does not re-apply a duplicate subscription-updated event", async () => {
+    claimBillingWebhookEvent.mockResolvedValue({
+      eventId: "evt-row-1",
+      shouldProcess: false,
+      processingState: "processed",
+    });
+    const provider = createFakeBillingProvider(createFakeBillingStore());
+    const checkout = await provider.createCheckoutSession({
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      organisationName: "Northwind",
+      planCode: "professional",
+      interval: "monthly",
+      siteQuantity: 1,
+      successUrl: "http://127.0.0.1:3000/success",
+      cancelUrl: "http://127.0.0.1:3000/cancel",
+    });
+    const completed = provider.simulateCheckoutCompletion(checkout.sessionId);
+    const updated = provider.simulateSubscriptionEvent(
+      completed.subscriptionId!,
+      "customer.subscription.updated",
+    );
+
+    await expect(processVerifiedBillingEvent("fake", updated)).resolves.toEqual(
+      {
+        duplicate: true,
+        applied: false,
+      },
+    );
+    expect(applyOrganisationSubscriptionSnapshot).not.toHaveBeenCalled();
+  });
 });

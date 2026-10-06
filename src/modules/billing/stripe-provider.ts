@@ -12,6 +12,12 @@ import {
 import { MIN_SITE_QUANTITY } from "./catalogue";
 import { getBillingEnvironment, requireStripePriceId } from "./env";
 import { BillingProviderError, type BillingProvider } from "./provider";
+import {
+  SITE_QUANTITY_INCREASE_PRORATION_BEHAVIOR,
+  assertProviderSubscriptionBinding,
+  parseDesiredSiteQuantity,
+  selectLehSubscriptionItem,
+} from "./site-capacity-increase";
 import type {
   CheckoutPlanCode,
   ProviderSubscription,
@@ -115,6 +121,28 @@ function snapshotFromSubscription(
     eventAt,
     ...extras,
   };
+}
+
+function mapStripeProviderError(cause: unknown, fallback: string) {
+  if (cause instanceof BillingProviderError) {
+    return cause;
+  }
+
+  if (cause instanceof Stripe.errors.StripeConnectionError) {
+    return new BillingProviderError(
+      "The billing provider did not respond in time. Refresh Billing to see whether capacity increased.",
+      "misconfigured",
+    );
+  }
+
+  if (cause instanceof Stripe.errors.StripeError) {
+    return new BillingProviderError(
+      cause.message || fallback,
+      cause.statusCode === 404 ? "not_found" : "misconfigured",
+    );
+  }
+
+  return new BillingProviderError(fallback, "misconfigured");
 }
 
 function invoiceSubscriptionId(invoice: Stripe.Invoice) {
@@ -275,6 +303,86 @@ export function createStripeBillingProvider(
     async retrieveSubscription(subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       return toProviderSubscription(subscription);
+    },
+    async increaseSubscriptionSiteQuantity(input) {
+      const desiredSiteQuantity = parseDesiredSiteQuantity(
+        input.desiredSiteQuantity,
+      );
+
+      let subscription: Stripe.Subscription;
+      try {
+        subscription = await stripe.subscriptions.retrieve(
+          input.subscriptionId,
+        );
+      } catch (cause) {
+        throw mapStripeProviderError(
+          cause,
+          "Unable to retrieve the billing subscription.",
+        );
+      }
+
+      assertProviderSubscriptionBinding({
+        organisationId: input.organisationId,
+        customerId: input.customerId,
+        subscriptionOrganisationId: metadataString(
+          subscription.metadata,
+          "organisation_id",
+        ),
+        subscriptionCustomerId: customerIdOf(subscription.customer) ?? "",
+      });
+
+      const item = selectLehSubscriptionItem(subscription.items.data, {
+        expectedPriceId: input.expectedPriceId ?? null,
+        priceIdOf: (subscriptionItem) =>
+          typeof subscriptionItem.price?.id === "string"
+            ? subscriptionItem.price.id
+            : typeof subscriptionItem.plan?.id === "string"
+              ? subscriptionItem.plan.id
+              : null,
+      });
+
+      const currentQuantity = Math.max(
+        MIN_SITE_QUANTITY,
+        item.quantity ?? MIN_SITE_QUANTITY,
+      );
+      if (currentQuantity === desiredSiteQuantity) {
+        return toProviderSubscription(subscription);
+      }
+      if (desiredSiteQuantity < currentQuantity) {
+        throw new BillingProviderError(
+          "Reducing subscribed site quantity is not available in this flow.",
+          "unsupported",
+        );
+      }
+
+      try {
+        const updated = await stripe.subscriptions.update(
+          subscription.id,
+          {
+            items: [
+              {
+                id: item.id,
+                quantity: desiredSiteQuantity,
+              },
+            ],
+            proration_behavior: SITE_QUANTITY_INCREASE_PRORATION_BEHAVIOR,
+          },
+          {
+            idempotencyKey: [
+              "leh_site_qty",
+              input.organisationId,
+              subscription.id,
+              String(desiredSiteQuantity),
+            ].join("_"),
+          },
+        );
+        return toProviderSubscription(updated);
+      } catch (cause) {
+        throw mapStripeProviderError(
+          cause,
+          "The billing provider rejected the site-capacity update.",
+        );
+      }
     },
     async verifyWebhook(input) {
       if (!input.signature) {

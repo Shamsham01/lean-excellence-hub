@@ -10,6 +10,7 @@ import type {
 export const BILLING_CURRENCY = "GBP" as const;
 export const ANNUAL_DISCOUNT_PERCENT = 10;
 export const MIN_SITE_QUANTITY = 1;
+export const MAX_SITE_QUANTITY = 500;
 
 const PROFESSIONAL_ENTITLEMENTS: OrganisationEntitlements = {
   coreModules: true,

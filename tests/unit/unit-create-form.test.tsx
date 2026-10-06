@@ -65,7 +65,7 @@ describe("UnitCreateForm", () => {
   it("explains exhausted site capacity and links billing administrators to Billing", async () => {
     const onCreate = vi.fn().mockResolvedValue({
       error:
-        "This organisation has used all subscribed site capacity. Open Billing to review site capacity. Lean Excellence Hub does not automatically change the Stripe subscription.",
+        "This organisation has used all subscribed site capacity. Add site capacity before creating another site.",
       errorCode: "SITE_CAPACITY_EXHAUSTED",
       canManageBilling: true,
     });
@@ -104,7 +104,7 @@ describe("UnitCreateForm", () => {
     );
     expect(screen.getByTestId("site-capacity-open-billing")).toHaveAttribute(
       "href",
-      "/platform/settings/billing",
+      "/platform/settings/billing?addCapacity=1",
     );
     expect(screen.queryByText(/postgres|23514|P0001/i)).not.toBeInTheDocument();
   });

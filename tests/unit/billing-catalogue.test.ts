@@ -6,6 +6,8 @@ import {
   isCheckoutPlan,
   isSelfServicePlan,
   listPublicPlans,
+  MAX_SITE_QUANTITY,
+  MIN_SITE_QUANTITY,
   PLAN_CATALOGUE,
   resolveListedPriceMinor,
   stripePriceEnvKey,
@@ -61,5 +63,10 @@ describe("plan catalogue", () => {
     expect(stripePriceEnvKey("essentials", "annual")).toBe(
       "STRIPE_PRICE_ESSENTIALS_ANNUAL",
     );
+  });
+
+  it("keeps self-service site quantity bounds at 1 to 500", () => {
+    expect(MIN_SITE_QUANTITY).toBe(1);
+    expect(MAX_SITE_QUANTITY).toBe(500);
   });
 });

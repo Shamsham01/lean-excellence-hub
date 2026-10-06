@@ -1,4 +1,5 @@
 import { AppLink } from "@/components/ui/app-link";
+import { ADD_SITE_CAPACITY_HREF } from "@/modules/billing/site-capacity-increase";
 import {
   formatRemainingSiteSlots,
   formatSubscribedSitesActive,
@@ -44,14 +45,13 @@ export function SiteCapacitySummary({
                 <>
                   Additional sites require subscribed capacity.{" "}
                   <AppLink
-                    href="/platform/settings/billing"
+                    href={ADD_SITE_CAPACITY_HREF}
                     className="font-medium text-foreground underline underline-offset-2"
                     data-testid="site-capacity-summary-billing"
                   >
-                    Review billing
+                    Add site capacity
                   </AppLink>
-                  . Lean Excellence Hub does not automatically change the Stripe
-                  subscription.
+                  . Purchasing capacity does not create the site.
                 </>
               ) : (
                 "Ask your organisation billing administrator to increase capacity before activating another site."

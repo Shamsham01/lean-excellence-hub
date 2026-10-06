@@ -154,7 +154,7 @@ export function isSiteCapacityExhaustedError(error: {
 
 export function siteCapacityExhaustedUserMessage(canManageBilling: boolean) {
   if (canManageBilling) {
-    return "This organisation has used all subscribed site capacity. Open Billing to review site capacity. Lean Excellence Hub does not automatically change the Stripe subscription.";
+    return "This organisation has used all subscribed site capacity. Add site capacity before creating another site.";
   }
   return "This organisation has used all subscribed site capacity. Ask your organisation billing administrator to increase capacity.";
 }
