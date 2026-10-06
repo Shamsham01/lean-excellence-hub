@@ -302,7 +302,7 @@ select throws_ok(
     'Third Site',
     'site'
   ),
-  '23514',
+  'P0001',
   'site quantity is already at the paid subscription limit',
   'paid site quantity is enforced when adding sites'
 );

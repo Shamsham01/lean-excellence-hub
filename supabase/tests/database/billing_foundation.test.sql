@@ -248,7 +248,7 @@ select throws_ok(
     'Billing Site 2',
     'site'
   ),
-  '23514',
+  'P0001',
   'site quantity is already at the paid subscription limit',
   'second site is denied at paid quantity 1'
 );
