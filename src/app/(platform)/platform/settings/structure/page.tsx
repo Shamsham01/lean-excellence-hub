@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { StructureWorkspace } from "@/components/organisation/structure-workspace";
+import { loadCurrentOrganisationBilling } from "@/modules/billing/current-billing";
+import { buildSiteCapacityView } from "@/modules/billing/site-capacity";
 import {
   buildOrganisationUnitTree,
   summariseOrganisationStructure,
@@ -100,6 +102,17 @@ export default async function StructureSettingsPage() {
   const summary = summariseOrganisationStructure(flatUnits);
   const canAddUnit =
     canCreateRoot || activeUnits.some((unit) => manageableUnitIds.has(unit.id));
+  const billing = await loadCurrentOrganisationBilling(supabase);
+  const canManageBilling = await currentMemberHasPermission("billing.manage");
+  const siteCapacity = billing
+    ? buildSiteCapacityView({
+        activeSiteCount: billing.active_site_count,
+        siteQuantity: billing.site_quantity,
+        billingState: billing.billing_state,
+        paidSiteLimit: billing.paid_site_limit,
+        canManageBilling,
+      })
+    : null;
 
   const lifecycleActions = canManage
     ? {
@@ -123,6 +136,7 @@ export default async function StructureSettingsPage() {
       manageableUnitIds={[...manageableUnitIds]}
       existingCodes={(units ?? []).map((unit) => unit.code)}
       onCreate={createOrganisationUnit}
+      {...(siteCapacity ? { siteCapacity } : {})}
       {...(lifecycleActions ? { lifecycleActions } : {})}
     />
   );

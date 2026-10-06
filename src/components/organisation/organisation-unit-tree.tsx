@@ -12,6 +12,8 @@ import type {
   OrganisationUnitNode,
 } from "@/modules/organisation/unit-hierarchy";
 import { formatUnitTypeLabel } from "@/modules/organisation/unit-types";
+import type { SiteCapacityView } from "@/modules/billing/site-capacity";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
 
 type OrganisationUnitTreeProps = {
   nodes: OrganisationUnitNode[];
@@ -34,20 +36,21 @@ type OrganisationUnitTreeProps = {
           unitId: string;
           name: string;
           unitType: string;
-        }) => Promise<{ error?: string; ok?: true }>;
+        }) => Promise<StructureMutationResult>;
         onMove: (input: {
           unitId: string;
           parentUnitId: string | null;
-        }) => Promise<{ error?: string; ok?: true }>;
+        }) => Promise<StructureMutationResult>;
         onRetire: (input: {
           unitId: string;
           reason: string;
-        }) => Promise<{ error?: string; ok?: true }>;
+        }) => Promise<StructureMutationResult>;
         onRestore: (input: {
           unitId: string;
-        }) => Promise<{ error?: string; ok?: true }>;
+        }) => Promise<StructureMutationResult>;
       }
     | undefined;
+  siteCapacity?: SiteCapacityView;
 };
 
 function TreeNode({
@@ -61,6 +64,7 @@ function TreeNode({
   onToggle,
   onAddChild,
   lifecycleActions,
+  siteCapacity,
 }: {
   node: OrganisationUnitNode;
   depth: number;
@@ -72,6 +76,7 @@ function TreeNode({
   onToggle: (unitId: string) => void;
   onAddChild?: ((parentUnitId: string) => void) | undefined;
   lifecycleActions?: OrganisationUnitTreeProps["lifecycleActions"];
+  siteCapacity?: SiteCapacityView;
 }) {
   const flatUnit = flatUnits.find((unit) => unit.id === node.id);
   const canManageUnit = manageableUnitIds.includes(node.id);
@@ -163,6 +168,7 @@ function TreeNode({
                   onMove={lifecycleActions.onMove}
                   onRetire={lifecycleActions.onRetire}
                   onRestore={lifecycleActions.onRestore}
+                  {...(siteCapacity ? { siteCapacity } : {})}
                 />
               </div>
             ) : null}
@@ -184,6 +190,7 @@ function TreeNode({
               onToggle={onToggle}
               onAddChild={onAddChild}
               lifecycleActions={lifecycleActions}
+              {...(siteCapacity ? { siteCapacity } : {})}
             />
           ))}
         </ul>
@@ -203,6 +210,7 @@ export function OrganisationUnitTree({
   emptyAction,
   onAskLeanAi,
   lifecycleActions,
+  siteCapacity,
 }: OrganisationUnitTreeProps) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
     () => new Set(),
@@ -278,6 +286,7 @@ export function OrganisationUnitTree({
           onToggle={toggle}
           onAddChild={onAddChild}
           lifecycleActions={lifecycleActions}
+          {...(siteCapacity ? { siteCapacity } : {})}
         />
       ))}
     </ul>

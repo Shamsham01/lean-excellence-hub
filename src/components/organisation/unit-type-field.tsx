@@ -5,6 +5,10 @@ import { useId, useState } from "react";
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  formatRemainingSiteSlots,
+  type SiteCapacityView,
+} from "@/modules/billing/site-capacity";
 import { isSiteUnitType } from "@/modules/organisation/site-semantics";
 import {
   COMMON_UNIT_TYPES,
@@ -13,16 +17,29 @@ import {
   siteTypeCreationHint,
 } from "@/modules/organisation/unit-types";
 
+function siteTypeCapacityNote(siteCapacity?: SiteCapacityView) {
+  if (!siteCapacity?.enforced) {
+    return null;
+  }
+  if (siteCapacity.remainingSlots === 0) {
+    return "This organisation has used all subscribed site capacity.";
+  }
+  const remaining = formatRemainingSiteSlots(siteCapacity.remainingSlots);
+  return remaining ? `${remaining}.` : null;
+}
+
 export function UnitTypeField({
   id,
   value,
   onChange,
   required = true,
+  siteCapacity,
 }: {
   id?: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  siteCapacity?: SiteCapacityView;
 }) {
   const generatedId = useId();
   const fieldId = id ?? generatedId;
@@ -38,6 +55,10 @@ export function UnitTypeField({
       : resolvedChoice;
   const customValue = choice === CUSTOM_UNIT_TYPE_CHOICE ? value : "";
   const siteHint = siteTypeCreationHint(value);
+  const siteCapacityNote = isSiteUnitType(value)
+    ? siteTypeCapacityNote(siteCapacity)
+    : null;
+  const siteWarning = [siteHint, siteCapacityNote].filter(Boolean).join(" ");
 
   return (
     <div className="flex flex-col gap-2">
@@ -87,9 +108,13 @@ export function UnitTypeField({
         Sites such as plants, factories and locations are billable security
         boundaries. They are not offered as a routine type here.
       </p>
-      {isSiteUnitType(value) ? (
-        <p className="text-xs text-warning-foreground" role="status">
-          {siteHint}
+      {siteWarning ? (
+        <p
+          className="text-xs text-warning-foreground"
+          role="status"
+          data-testid="site-type-capacity-hint"
+        >
+          {siteWarning}
         </p>
       ) : null}
     </div>

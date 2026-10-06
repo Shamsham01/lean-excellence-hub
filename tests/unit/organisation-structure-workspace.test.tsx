@@ -255,4 +255,44 @@ describe("StructureWorkspace", () => {
     );
     expect(screen.getByRole("button", { name: "Reactivate" })).toBeVisible();
   });
+
+  it("shows subscribed site capacity from organisation billing state", () => {
+    render(
+      <StructureWorkspace
+        tree={tree}
+        flatUnits={units}
+        activeUnits={units}
+        retiredUnits={[]}
+        summary={summary}
+        canManage
+        canCreateRoot
+        canAddUnit
+        manageableUnitIds={units.map((unit) => unit.id)}
+        existingCodes={units.map((unit) => unit.code)}
+        onCreate={vi.fn()}
+        siteCapacity={{
+          activeSiteCount: 1,
+          subscribedLimit: 1,
+          remainingSlots: 0,
+          enforced: true,
+          canManageBilling: true,
+        }}
+        lifecycleActions={lifecycleActions}
+      />,
+    );
+
+    expect(screen.getByTestId("site-capacity-summary")).toHaveTextContent(
+      "Sites",
+    );
+    expect(screen.getByTestId("site-capacity-headline")).toHaveTextContent(
+      "1 of 1 subscribed sites active",
+    );
+    expect(screen.getByTestId("site-capacity-remaining")).toHaveTextContent(
+      "No additional site slots available",
+    );
+    expect(screen.getByTestId("site-capacity-summary-billing")).toHaveAttribute(
+      "href",
+      "/platform/settings/billing",
+    );
+  });
 });
