@@ -1,9 +1,12 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FoundingOrganisationForm } from "@/components/onboarding/founding-organisation-form";
 
 describe("FoundingOrganisationForm", () => {
+  afterEach(() => {
+    cleanup();
+  });
   it("keeps organisation and first site as separate fields", () => {
     render(<FoundingOrganisationForm action={vi.fn()} />);
     expect(screen.getByLabelText("Organisation name")).toBeInTheDocument();
@@ -28,7 +31,9 @@ describe("FoundingOrganisationForm", () => {
       target: { value: "Plymouth Factory" },
     });
     fireEvent.click(
-      screen.getByLabelText("Yes, part of a wider multi-site organisation"),
+      screen.getByRole("radio", {
+        name: "Yes, part of a wider multi-site organisation",
+      }),
     );
     expect(screen.getByTestId("identical-name-guidance")).toHaveTextContent(
       "Acme Foods Ltd",
@@ -44,7 +49,9 @@ describe("FoundingOrganisationForm", () => {
       target: { value: "Plymouth Factory" },
     });
     fireEvent.click(
-      screen.getByLabelText("No, this is a single-site organisation"),
+      screen.getByRole("radio", {
+        name: "No, this is a single-site organisation",
+      }),
     );
     expect(
       screen.queryByTestId("identical-name-guidance"),

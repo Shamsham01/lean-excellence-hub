@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { RolloutGovernancePanel } from "@/components/organisation-rollout/rollout-governance-panel";
 import type { OrganisationGovernanceSnapshot } from "@/modules/organisation-rollout/governance";
@@ -43,6 +43,9 @@ function snapshot(
 }
 
 describe("RolloutGovernancePanel", () => {
+  afterEach(() => {
+    cleanup();
+  });
   it("shows organisation, capacity, and a single primary rollout action", () => {
     render(<RolloutGovernancePanel snapshot={snapshot()} />);
     expect(screen.getByTestId("rollout-governance-panel")).toHaveTextContent(
