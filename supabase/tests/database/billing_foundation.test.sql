@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(22);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -160,72 +160,6 @@ select is(
   'active billing state is preserved after out-of-order event'
 );
 
-select is(
-  public.apply_organisation_subscription_snapshot(
-    (select id from billing_core_ids where key = 'organisation_a'),
-    'fake',
-    'cus_fake_org_a',
-    'sub_fake_org_a',
-    'professional',
-    'monthly',
-    2,
-    'price_fake_professional_monthly',
-    'active',
-    'active',
-    statement_timestamp(),
-    statement_timestamp() + interval '30 days',
-    false,
-    timestamptz '2026-09-29 14:00:00+00'
-  ),
-  'applied',
-  'later webhook snapshot increases authoritative site quantity'
-);
-
-select is(
-  (
-    select subscription.site_quantity
-    from public.organisation_subscriptions subscription
-    where subscription.organisation_id = (
-      select id from billing_core_ids where key = 'organisation_a'
-    )
-  ),
-  2,
-  'authoritative site quantity follows the newer webhook snapshot'
-);
-
-select is(
-  public.apply_organisation_subscription_snapshot(
-    (select id from billing_core_ids where key = 'organisation_a'),
-    'fake',
-    'cus_fake_org_a',
-    'sub_fake_org_a',
-    'professional',
-    'monthly',
-    1,
-    'price_fake_professional_monthly',
-    'active',
-    'active',
-    statement_timestamp(),
-    statement_timestamp() + interval '30 days',
-    false,
-    timestamptz '2026-09-29 13:00:00+00'
-  ),
-  'ignored_out_of_order',
-  'older webhook cannot revert a newer subscribed site quantity'
-);
-
-select is(
-  (
-    select subscription.site_quantity
-    from public.organisation_subscriptions subscription
-    where subscription.organisation_id = (
-      select id from billing_core_ids where key = 'organisation_a'
-    )
-  ),
-  2,
-  'out-of-order older quantity snapshot does not reduce site quantity'
-);
-
 insert into billing_core_ids (key, id)
 select 'webhook_first', event_id
 from public.claim_billing_webhook_event(
@@ -320,6 +254,73 @@ select throws_ok(
 );
 
 reset role;
+
+select is(
+  public.apply_organisation_subscription_snapshot(
+    (select id from billing_core_ids where key = 'organisation_a'),
+    'fake',
+    'cus_fake_org_a',
+    'sub_fake_org_a',
+    'professional',
+    'monthly',
+    2,
+    'price_fake_professional_monthly',
+    'active',
+    'active',
+    statement_timestamp(),
+    statement_timestamp() + interval '30 days',
+    false,
+    timestamptz '2026-09-29 14:00:00+00'
+  ),
+  'applied',
+  'later webhook snapshot increases authoritative site quantity'
+);
+
+select is(
+  (
+    select subscription.site_quantity
+    from public.organisation_subscriptions subscription
+    where subscription.organisation_id = (
+      select id from billing_core_ids where key = 'organisation_a'
+    )
+  ),
+  2,
+  'authoritative site quantity follows the newer webhook snapshot'
+);
+
+select is(
+  public.apply_organisation_subscription_snapshot(
+    (select id from billing_core_ids where key = 'organisation_a'),
+    'fake',
+    'cus_fake_org_a',
+    'sub_fake_org_a',
+    'professional',
+    'monthly',
+    1,
+    'price_fake_professional_monthly',
+    'active',
+    'active',
+    statement_timestamp(),
+    statement_timestamp() + interval '30 days',
+    false,
+    timestamptz '2026-09-29 13:00:00+00'
+  ),
+  'ignored_out_of_order',
+  'older webhook cannot revert a newer subscribed site quantity'
+);
+
+select is(
+  (
+    select subscription.site_quantity
+    from public.organisation_subscriptions subscription
+    where subscription.organisation_id = (
+      select id from billing_core_ids where key = 'organisation_a'
+    )
+  ),
+  2,
+  'out-of-order older quantity snapshot does not reduce site quantity'
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a2000000-0000-4000-8000-000000000002","email":"billing-owner-b@example.test"}',
