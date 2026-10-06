@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(25);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -239,6 +239,14 @@ select lives_ok(
   'non-site unit creation does not consume site capacity'
 );
 
+insert into site_capacity_ids (key, id)
+select
+  'org_a_dept',
+  unit.id
+from public.organisation_units unit
+where unit.organisation_id = (select id from site_capacity_ids where key = 'org_a')
+  and unit.code = 'capacity-dept';
+
 select throws_ok(
   format(
     'select public.create_organisation_unit(%L::uuid, null, %L, %L, %L)',
@@ -257,10 +265,7 @@ select throws_ok(
     'select public.update_organisation_unit(%L::uuid, %L::uuid, %L, %L)',
     (select id from site_capacity_ids where key = 'org_a'),
     (
-      select unit.id
-      from public.organisation_units unit
-      where unit.organisation_id = (select id from site_capacity_ids where key = 'org_a')
-        and unit.code = 'capacity-dept'
+      select id from site_capacity_ids where key = 'org_a_dept'
     ),
     'Capacity Department',
     'site'
@@ -268,6 +273,16 @@ select throws_ok(
   '23514',
   'site boundary classification cannot be changed through unit editing',
   'converting a unit to Site cannot bypass capacity'
+);
+
+select ok(
+  public.set_organisation_unit_status(
+    (select id from site_capacity_ids where key = 'org_a'),
+    (select id from site_capacity_ids where key = 'org_a_dept'),
+    'retired',
+    'Archive department before the parent site'
+  ),
+  'department can be archived without consuming site capacity'
 );
 
 select ok(
