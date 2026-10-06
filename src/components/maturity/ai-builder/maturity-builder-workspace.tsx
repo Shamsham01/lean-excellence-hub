@@ -68,9 +68,12 @@ export function MaturityBuilderWorkspace({
   const [discardPending, startDiscard] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const proposalHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const createButtonRef = useRef<HTMLButtonElement | null>(null);
+  const discardButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastRevision = useRef(
     initialConversation?.currentProposal?.revision ?? 0,
   );
+  const headingFocusPending = useRef(false);
 
   const turns = conversation?.turns ?? [];
   const current = conversation?.currentProposal ?? null;
@@ -90,9 +93,18 @@ export function MaturityBuilderWorkspace({
           : `Proposal revision ${revision} is ready to review.`,
       );
       setMobileView("proposal");
-      proposalHeadingRef.current?.focus({ preventScroll: false });
+      headingFocusPending.current = true;
     }
   }, [current?.revision]);
+
+  // The heading is hidden until the proposal view has rendered on narrow layouts.
+  useEffect(() => {
+    if (!headingFocusPending.current || mobileView !== "proposal") {
+      return;
+    }
+    headingFocusPending.current = false;
+    proposalHeadingRef.current?.focus({ preventScroll: false });
+  }, [current?.revision, mobileView]);
 
   function submit(submission: Submission) {
     if (busy) {
@@ -357,7 +369,7 @@ export function MaturityBuilderWorkspace({
                   data-testid="maturity-builder-invalid-proposal"
                 >
                   <AlertTriangle
-                    className="mt-0.5 size-4 shrink-0 text-warning-foreground"
+                    className="mt-0.5 size-4 shrink-0 text-warning-foreground dark:text-warning"
                     aria-hidden="true"
                   />
                   <span>
@@ -418,6 +430,7 @@ export function MaturityBuilderWorkspace({
                 data-testid="maturity-builder-actions"
               >
                 <Button
+                  ref={createButtonRef}
                   type="button"
                   onClick={() => {
                     setCreateError(null);
@@ -429,6 +442,7 @@ export function MaturityBuilderWorkspace({
                   Create draft framework
                 </Button>
                 <Button
+                  ref={discardButtonRef}
                   type="button"
                   variant="ghost"
                   onClick={() => setDiscardOpen(true)}
@@ -449,6 +463,7 @@ export function MaturityBuilderWorkspace({
           {!current && !isEmpty ? (
             <div className="mt-3 flex justify-end">
               <Button
+                ref={discardButtonRef}
                 type="button"
                 variant="ghost"
                 size="sm"
@@ -479,6 +494,7 @@ export function MaturityBuilderWorkspace({
           pending={createPending}
           error={createError}
           onConfirm={handleCreate}
+          returnFocusRef={createButtonRef}
         />
       ) : null}
       <DiscardDialog
@@ -487,6 +503,7 @@ export function MaturityBuilderWorkspace({
         pending={discardPending}
         hasProposal={Boolean(current)}
         onConfirm={handleDiscard}
+        returnFocusRef={discardButtonRef}
       />
     </div>
   );

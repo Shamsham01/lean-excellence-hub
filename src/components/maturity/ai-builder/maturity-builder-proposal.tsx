@@ -40,6 +40,7 @@ export function MaturityBuilderProposal({
         <div className="flex flex-wrap items-center gap-2">
           <Badge
             variant="warning"
+            className="dark:text-warning"
             data-testid="maturity-builder-proposal-badge"
           >
             <Sparkles className="mr-1 size-3" aria-hidden="true" />
@@ -184,7 +185,7 @@ export function MaturityBuilderProposal({
               0,
             );
             return (
-              <li key={pillar.name} className="min-w-0">
+              <li key={pillarIndex} className="min-w-0">
                 <details
                   className="group rounded-lg border border-border bg-card"
                   open={pillarIndex === 0}

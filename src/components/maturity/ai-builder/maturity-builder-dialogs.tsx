@@ -8,10 +8,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { RefObject } from "react";
+
 import { Button } from "@/components/ui/button";
 import type { MaturityBuilderCurrentProposal } from "@/modules/maturity/ai-builder/types";
 
 const DIALOG_CLASS = "w-[calc(100%-2rem)] max-w-md";
+
+type ReturnFocusRef = RefObject<HTMLElement | null>;
+
+// These dialogs open from state rather than a DialogTrigger, so Radix has no
+// trigger to restore focus to.
+function restoreFocus(returnFocusRef: ReturnFocusRef) {
+  return (event: Event) => {
+    const target = returnFocusRef.current;
+    if (target?.isConnected) {
+      event.preventDefault();
+      target.focus();
+    }
+  };
+}
 
 export function CreateDraftDialog({
   open,
@@ -20,6 +36,7 @@ export function CreateDraftDialog({
   pending,
   error,
   onConfirm,
+  returnFocusRef,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,6 +44,7 @@ export function CreateDraftDialog({
   pending: boolean;
   error: string | null;
   onConfirm: () => void;
+  returnFocusRef: ReturnFocusRef;
 }) {
   const { counts } = current;
   return (
@@ -37,6 +55,7 @@ export function CreateDraftDialog({
       <DialogContent
         className={DIALOG_CLASS}
         data-testid="maturity-builder-create-dialog"
+        onCloseAutoFocus={restoreFocus(returnFocusRef)}
       >
         <DialogHeader>
           <DialogTitle>Create an editable draft?</DialogTitle>
@@ -93,12 +112,14 @@ export function DiscardDialog({
   pending,
   hasProposal,
   onConfirm,
+  returnFocusRef,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
   hasProposal: boolean;
   onConfirm: () => void;
+  returnFocusRef: ReturnFocusRef;
 }) {
   return (
     <Dialog
@@ -108,6 +129,7 @@ export function DiscardDialog({
       <DialogContent
         className={DIALOG_CLASS}
         data-testid="maturity-builder-discard-dialog"
+        onCloseAutoFocus={restoreFocus(returnFocusRef)}
       >
         <DialogHeader>
           <DialogTitle>Start over?</DialogTitle>
