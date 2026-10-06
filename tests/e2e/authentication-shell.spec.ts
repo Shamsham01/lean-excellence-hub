@@ -11,6 +11,16 @@ test("exposes email and workforce sign-in without public workforce signup", asyn
   await expect(
     page.getByRole("link", { name: /Forgot password/i }),
   ).toBeVisible();
+  await page.goto("/login?error=invalid");
+  await expect(page.getByTestId("login-error")).toContainText(
+    /unable to sign in\. check your email and password/i,
+  );
+  await expect(
+    page.getByRole("link", { name: "Reset password" }),
+  ).toHaveAttribute("href", "/recover");
+  await expect(
+    page.getByText("Unable to sign in with those credentials."),
+  ).toHaveCount(0);
   await expect(page.getByRole("link", { name: /sign up/i })).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Create your account" }),
@@ -30,6 +40,10 @@ test("exposes email and workforce sign-in without public workforce signup", asyn
       /joining an existing organisation still requires an invitation/i,
     ),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Reset it" })).toHaveAttribute(
+    "href",
+    "/recover",
+  );
 
   await page.goto("/workforce-login");
   await expect(
@@ -37,6 +51,24 @@ test("exposes email and workforce sign-in without public workforce signup", asyn
   ).toBeVisible();
   await expect(page.getByLabel("Organisation code")).toBeVisible();
   await expect(page.getByLabel("Workforce ID or username")).toBeVisible();
+});
+
+test("expired recovery links stay on recover with useful copy", async ({
+  page,
+}) => {
+  await page.goto("/recover?error=expired");
+  await expect(page.getByTestId("recover-expired")).toContainText(
+    /this recovery link is invalid or has expired/i,
+  );
+  await expect(
+    page.getByRole("button", { name: "Request another recovery email" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Back to sign in" }),
+  ).toHaveAttribute("href", "/login");
+  await expect(
+    page.getByText("Unable to sign in with those credentials."),
+  ).toHaveCount(0);
 });
 
 test("check-email signup state stays anti-enumeration-safe", async ({

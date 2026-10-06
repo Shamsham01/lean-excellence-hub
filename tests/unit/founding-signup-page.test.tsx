@@ -65,6 +65,14 @@ describe("founding signup page UX", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByTestId("founding-signup-form")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+    expect(screen.getByRole("link", { name: "Reset it" })).toHaveAttribute(
+      "href",
+      "/recover",
+    );
     expect(
       screen.queryByRole("heading", { name: "Create your organisation" }),
     ).not.toBeInTheDocument();

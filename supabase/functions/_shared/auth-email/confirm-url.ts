@@ -24,7 +24,9 @@ export function buildAuthConfirmUrl(
   }
 
   const validatedOrigin = validateApplicationOrigin(origin);
-  const url = new URL("/auth/confirm", validatedOrigin);
+  const callbackPath =
+    confirmType === "recovery" ? "/auth/recovery" : "/auth/confirm";
+  const url = new URL(callbackPath, validatedOrigin);
   url.searchParams.set("token_hash", tokenHash);
   url.searchParams.set("type", confirmType);
   return url.toString();

@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
+import { AuthStatus } from "@/components/auth/auth-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loginErrorCopy } from "@/modules/identity/auth-copy";
 import { isInvitationPath } from "@/modules/identity/invitation-constants";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
 
@@ -19,6 +21,7 @@ export default async function LoginPage({
   const invitationPreview = invitationToken
     ? await loadInvitationLifecycle(invitationToken)
     : null;
+  const errorCopy = error ? loginErrorCopy(error) : null;
 
   return (
     <AuthCard
@@ -56,13 +59,18 @@ export default async function LoginPage({
         </div>
       }
     >
-      {error ? (
-        <p
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          role="alert"
-        >
-          Unable to sign in with those credentials.
-        </p>
+      {errorCopy ? (
+        <AuthStatus testId="login-error" tone="danger">
+          <p>{errorCopy}</p>
+          <p className="mt-2">
+            <Link
+              href="/recover"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Reset password
+            </Link>
+          </p>
+        </AuthStatus>
       ) : null}
       <form
         action="/api/auth/login"

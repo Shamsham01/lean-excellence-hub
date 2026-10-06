@@ -5,6 +5,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { invitationExpiresAt } from "@/modules/identity/invitation-constants";
 
+import { fetchLatestEmailHref } from "./mailpit";
 import {
   onboardingE2eCredentials,
   onboardingOrgAdminCredentials,
@@ -112,44 +113,7 @@ export async function ensureInvitationLifecycleUser(
 }
 
 export async function fetchLatestConfirmationPath(email: string) {
-  const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
-  const response = await fetch(`${mailpitUrl}/api/v1/messages`);
-  if (!response.ok) {
-    throw new Error(`Unable to read Mailpit messages: ${response.status}`);
-  }
-
-  const payload = (await response.json()) as {
-    messages?: Array<{ ID: string; To?: Array<{ Address: string }> }>;
-  };
-
-  const message = [...(payload.messages ?? [])]
-    .reverse()
-    .find((entry) =>
-      entry.To?.some((recipient) => recipient.Address === email),
-    );
-
-  if (!message?.ID) {
-    throw new Error(`No confirmation email found for ${email}`);
-  }
-
-  const detailResponse = await fetch(
-    `${mailpitUrl}/api/v1/message/${message.ID}`,
-  );
-  if (!detailResponse.ok) {
-    throw new Error(`Unable to read Mailpit message ${message.ID}`);
-  }
-
-  const detail = (await detailResponse.json()) as {
-    HTML?: string;
-    Text?: string;
-  };
-  const body = detail.HTML ?? detail.Text ?? "";
-  const match = body.match(/href="([^"]*\/auth\/confirm[^"]*)"/i);
-  if (!match?.[1]) {
-    throw new Error("Confirmation link was not found in the email body");
-  }
-
-  return match[1].replace(/&amp;/g, "&");
+  return fetchLatestEmailHref(email, "/auth/confirm");
 }
 
 export async function issueInvitationForEmail(

@@ -6,8 +6,13 @@ import {
   invitationContinuePath,
   isInvitationSignupBindingId,
 } from "@/modules/identity/invitation-constants";
+import {
+  RECOVERY_OTP_TYPE,
+  recoveryForwardSearchParams,
+} from "@/modules/identity/recovery-callback";
 import { safeRelativeRedirect } from "@/modules/identity/redirects";
 import {
+  buildCanonicalRedirectUrl,
   normalizeApplicationOrigin,
   resolveApplicationOrigin,
 } from "@/platform/application-origin";
@@ -24,7 +29,6 @@ const OTP_TYPES = new Set<EmailOtpType>([
   "email_change",
   "invite",
   "magiclink",
-  "recovery",
   "signup",
 ]);
 
@@ -98,11 +102,29 @@ function resolveConfirmRedirectOrigin(request: NextRequest) {
   return normalizeApplicationOrigin(getServerEnvironment().APP_ORIGIN);
 }
 
+function forwardRecoveryCallback(request: NextRequest) {
+  const target = buildCanonicalRedirectUrl(
+    "/auth/recovery",
+    getServerEnvironment(),
+  );
+  recoveryForwardSearchParams(request.nextUrl.searchParams).forEach(
+    (value, key) => {
+      target.searchParams.set(key, value);
+    },
+  );
+  return NextResponse.redirect(target, { status: 303 });
+}
+
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
+  const type = url.searchParams.get("type") as EmailOtpType | null;
+
+  if (type === RECOVERY_OTP_TYPE) {
+    return forwardRecoveryCallback(request);
+  }
+
   const redirectOrigin = resolveConfirmRedirectOrigin(request);
   const tokenHash = url.searchParams.get("token_hash");
-  const type = url.searchParams.get("type") as EmailOtpType | null;
 
   if (!tokenHash || !type || !OTP_TYPES.has(type)) {
     return NextResponse.redirect(
@@ -147,36 +169,32 @@ export async function GET(request: NextRequest) {
   });
 
   if (!error) {
-    if (type === "recovery") {
-      redirectPath = "/update-password";
-    } else {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
 
-      if (userId) {
-        const finalised = await finaliseIdentityEnrolment(userId);
-        if (!finalised.error) {
-          const foundingBinding =
-            typeof userData.user?.user_metadata?.founding_signup_binding ===
-            "string"
-              ? userData.user.user_metadata.founding_signup_binding
-              : null;
-          if (foundingBinding) {
-            await finaliseFoundingSignup(foundingBinding, userId);
-          }
-
-          const metadataBinding =
-            typeof userData.user?.user_metadata?.invitation_signup_binding ===
-            "string"
-              ? userData.user.user_metadata.invitation_signup_binding
-              : null;
-
-          redirectPath = await resolvePostConfirmRedirect(
-            supabase,
-            metadataBinding,
-            url.searchParams.get("next"),
-          );
+    if (userId) {
+      const finalised = await finaliseIdentityEnrolment(userId);
+      if (!finalised.error) {
+        const foundingBinding =
+          typeof userData.user?.user_metadata?.founding_signup_binding ===
+          "string"
+            ? userData.user.user_metadata.founding_signup_binding
+            : null;
+        if (foundingBinding) {
+          await finaliseFoundingSignup(foundingBinding, userId);
         }
+
+        const metadataBinding =
+          typeof userData.user?.user_metadata?.invitation_signup_binding ===
+          "string"
+            ? userData.user.user_metadata.invitation_signup_binding
+            : null;
+
+        redirectPath = await resolvePostConfirmRedirect(
+          supabase,
+          metadataBinding,
+          url.searchParams.get("next"),
+        );
       }
     }
   }

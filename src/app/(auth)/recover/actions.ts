@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { normalizeApplicationOrigin } from "@/platform/application-origin";
 import { getServerEnvironment } from "@/platform/env";
 import {
   consumeAuthenticationRateLimit,
@@ -77,7 +78,7 @@ export async function requestRecovery(formData: FormData) {
 
     const supabase = await createServerSupabaseClient();
     const recovery = await supabase.auth.resetPasswordForEmail(recipient, {
-      redirectTo: `${environment.APP_ORIGIN}/update-password`,
+      redirectTo: `${normalizeApplicationOrigin(environment.APP_ORIGIN)}/auth/recovery`,
     });
     await Promise.all(
       reservations.map((reservation) =>

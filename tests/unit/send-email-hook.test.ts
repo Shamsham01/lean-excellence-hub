@@ -60,9 +60,9 @@ describe("auth confirm URLs", () => {
     );
   });
 
-  it("builds recovery URLs through /auth/confirm", () => {
+  it("builds recovery URLs through /auth/recovery", () => {
     expect(buildAuthConfirmUrl(APP_ORIGIN, "abc123tokenhash", "recovery")).toBe(
-      "https://hub.example.test/auth/confirm?token_hash=abc123tokenhash&type=recovery",
+      "https://hub.example.test/auth/recovery?token_hash=abc123tokenhash&type=recovery",
     );
   });
 
@@ -104,7 +104,7 @@ describe("auth email delivery content", () => {
     expect(result.delivery.text).toContain(result.delivery.confirmUrl);
   });
 
-  it("creates recovery delivery through /auth/confirm", () => {
+  it("creates recovery delivery through /auth/recovery", () => {
     const result = buildAuthEmailDelivery(
       buildPayload("recovery") as never,
       APP_ORIGIN,
@@ -116,7 +116,7 @@ describe("auth email delivery content", () => {
     }
 
     expect(result.delivery.confirmUrl).toBe(
-      "https://hub.example.test/auth/confirm?token_hash=abc123tokenhash&type=recovery",
+      "https://hub.example.test/auth/recovery?token_hash=abc123tokenhash&type=recovery",
     );
     expect(result.delivery.subject).toContain(
       "Recover your Lean Excellence Hub account",

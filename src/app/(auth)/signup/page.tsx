@@ -43,12 +43,20 @@ export default async function FoundingSignupPage({
       title="Create your account"
       description="Create a founder account first. Organisation setup follows after you confirm your email. Joining an existing organisation still requires an invitation."
       footer={
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
+        <div className="flex flex-col gap-2 text-center text-sm text-muted-foreground">
+          <p>
+            Already have an account?{" "}
+            <Link href="/login" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+          <p>
+            Forgot your password?{" "}
+            <Link href="/recover" className="text-primary hover:underline">
+              Reset it
+            </Link>
+          </p>
+        </div>
       }
     >
       <form
