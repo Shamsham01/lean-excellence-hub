@@ -20,6 +20,7 @@ function facts(
     organisationLocale: "en-GB",
     organisationTimeZone: "Europe/London",
     reportingCurrency: "GBP",
+    multiSiteIntent: "yes",
     billingPlanCode: "professional",
     billingPlanName: "Professional",
     firstSiteName: "Plymouth Factory",

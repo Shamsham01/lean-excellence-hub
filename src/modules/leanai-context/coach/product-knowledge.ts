@@ -1,6 +1,6 @@
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
 
-export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v3";
+export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v4";
 
 export type CoachProductKnowledge = {
   version: string;
@@ -19,6 +19,8 @@ const KNOWLEDGE: Partial<
     facts: [
       "Billing and onboarding are separate from module configuration.",
       "Platform setup routes stay protected until onboarding is completed.",
+      "The organisation is the company or group. Sites are operational locations inside one organisation.",
+      "LeanAI may advise next setup steps. It must not create a site, buy capacity, grant access, invite people, publish standards, or transfer ownership.",
     ],
     recommendedPath: "/onboarding/setup",
   },
@@ -28,6 +30,8 @@ const KNOWLEDGE: Partial<
     facts: [
       "Maturity, 5S, Gemba and Recognition use active sites rather than floating at organisation level.",
       "Create at least one active billable site in Structure settings.",
+      "Adding a site requires subscribed site capacity. Purchasing capacity does not create the site.",
+      "Roll out another site from Organisation settings. Do not create a separate organisation for each factory.",
     ],
     recommendedPath: "/platform/settings/structure",
   },
@@ -37,6 +41,8 @@ const KNOWLEDGE: Partial<
     facts: [
       "Training and Skills use job functions to describe what people do.",
       "An organisation owner plus at least one active job function is the minimum people setup.",
+      "Organisation-wide access is an explicit grant. Site-scoped access does not include sibling sites.",
+      "Job titles and founder status do not grant organisation-wide authority by themselves.",
     ],
     recommendedPath: "/platform/settings/job-functions",
   },
@@ -46,6 +52,7 @@ const KNOWLEDGE: Partial<
     facts: [
       "A draft-only framework is not ready for operational use.",
       "Publish at least one version so teams assess against a shared standard.",
+      "The framework is organisation-owned. Assessments and results stay local to the site.",
       "The LEH Operational Excellence Standard is an optional Quick Start template. Using it creates an organisation-owned draft; later template updates do not change existing copies.",
       "LeanAI does not deploy or publish frameworks automatically. An authorised person publishes through the Maturity authoring interface.",
     ],
@@ -127,7 +134,7 @@ const KNOWLEDGE: Partial<
     summary:
       "Capture organisation, site, structure, job functions and people before Operational Excellence setup.",
     facts: [
-      "Organisation is the company tenant. A site is an operational location.",
+      "Organisation is the company or group. A site is an operational location inside that organisation.",
       "Job functions describe work. Access roles describe application permissions.",
       "LeanAI is advisory and does not create authoritative configuration automatically.",
     ],

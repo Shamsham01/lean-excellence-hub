@@ -46,7 +46,7 @@ test.describe("M1 workforce provisioning", () => {
     await page.locator("#roleVersionId").selectOption({ label: "Team Member" });
     await page
       .locator("#scopeKey")
-      .selectOption({ label: "Operations subtree" });
+      .selectOption({ label: "Specific site: Operations" });
     await page.locator("#jobFunctionId").selectOption({ label: "Operator" });
     const unitOptionValue = await page
       .locator("#organisationalUnitId option", { hasText: "Operations" })

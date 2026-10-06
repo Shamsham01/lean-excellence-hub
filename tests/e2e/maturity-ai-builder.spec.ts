@@ -428,10 +428,20 @@ test.describe("Maturity framework builder with LeanAI", () => {
       fullPage: false,
     });
 
+    const prompt = "Assess 5S and visual management in our areas";
     const input = page.getByTestId("maturity-builder-input");
-    await input.focus();
-    await page.keyboard.type("Assess 5S and visual management in our areas");
-    await page.keyboard.press("Control+Enter");
+    const send = page.getByTestId("maturity-builder-send");
+    await input.scrollIntoViewIfNeeded();
+    await expect(send).toBeDisabled();
+    await expect(async () => {
+      await input.click();
+      await expect(input).toBeFocused();
+      await input.fill("");
+      await input.pressSequentially(prompt);
+      await expect(input).toHaveValue(prompt);
+      await expect(send).toBeEnabled();
+    }).toPass({ timeout: 15_000 });
+    await input.press("Control+Enter");
     await expect(
       page.getByTestId("maturity-builder-assistant-turn"),
     ).toHaveCount(1, { timeout: 45_000 });

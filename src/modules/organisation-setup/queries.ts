@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isSiteUnitType } from "@/modules/organisation/site-semantics";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import { buildOrganisationSetupSnapshot } from "./readiness";
@@ -15,15 +16,16 @@ function isPermissionDenied(error: { code?: string } | null) {
 async function countActiveUnits(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from("organisation_units")
-    .select("id", { count: "exact", head: true })
+    .select("id, name, unit_type, parent_unit_id, status")
     .eq("status", "active");
 
   if (isPermissionDenied(error)) {
     return { unavailable: true as const };
   }
-  return { count: count ?? 0, unavailable: false as const };
+
+  return { units: data ?? [], unavailable: false as const };
 }
 
 async function hasChildUnits(
@@ -273,6 +275,33 @@ async function checkCurrentAdminPrimaryAssignment(
   };
 }
 
+async function countPublishedMaturity(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+) {
+  const { count, error } = await supabase
+    .from("maturity_model_versions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "published");
+
+  if (isPermissionDenied(error)) {
+    return { unavailable: true as const };
+  }
+  return { count: count ?? 0, unavailable: false as const };
+}
+
+async function countMaturityAssessments(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+) {
+  const { count, error } = await supabase
+    .from("maturity_assessments")
+    .select("id", { count: "exact", head: true });
+
+  if (isPermissionDenied(error)) {
+    return { unavailable: true as const };
+  }
+  return { count: count ?? 0, unavailable: false as const };
+}
+
 async function countTrainingCatalog(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
@@ -303,7 +332,7 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
 
   const { data: organisation, error: orgError } = await supabase
     .from("organisations")
-    .select("name, code, status")
+    .select("name, code, status, multi_site_intent")
     .maybeSingle();
 
   if (orgError && !isPermissionDenied(orgError)) {
@@ -323,6 +352,8 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     adminAssignment,
     leanConfig,
     training,
+    publishedMaturity,
+    assessments,
   ] = await Promise.all([
     countActiveUnits(supabase),
     hasChildUnits(supabase),
@@ -336,14 +367,29 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     checkCurrentAdminPrimaryAssignment(supabase),
     countLeanConfigSignals(supabase),
     countTrainingCatalog(supabase),
+    countPublishedMaturity(supabase),
+    countMaturityAssessments(supabase),
   ]);
+
+  const activeUnits = units.unavailable ? [] : units.units;
+  const firstSite =
+    activeUnits.find((unit) => isSiteUnitType(unit.unit_type)) ??
+    activeUnits.find((unit) => !unit.parent_unit_id) ??
+    null;
+  const activeSiteCount = activeUnits.filter((unit) =>
+    isSiteUnitType(unit.unit_type),
+  ).length;
 
   return {
     organisationStatus: organisation?.status ?? null,
     organisationName: organisation?.name ?? null,
     organisationCode: organisation?.code ?? null,
-    activeUnitCount: units.unavailable ? null : units.count,
+    firstSiteName: firstSite?.name ?? null,
+    multiSiteIntent: organisation?.multi_site_intent ?? null,
+    activeUnitCount: units.unavailable ? null : activeUnits.length,
     activeUnitCountUnavailable: units.unavailable,
+    activeSiteCount: units.unavailable ? null : activeSiteCount,
+    activeSiteCountUnavailable: units.unavailable,
     hasOrganisationOwner: owner.unavailable ? null : owner.hasOwner,
     ownerCheckUnavailable: owner.unavailable,
     activeMembershipCount: memberships.unavailable ? null : memberships.count,
@@ -372,6 +418,12 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
       ? null
       : leanConfig.signalCount,
     leanConfigUnavailable: leanConfig.unavailable,
+    publishedMaturityVersionCount: publishedMaturity.unavailable
+      ? null
+      : publishedMaturity.count,
+    publishedMaturityUnavailable: publishedMaturity.unavailable,
+    maturityAssessmentCount: assessments.unavailable ? null : assessments.count,
+    maturityAssessmentUnavailable: assessments.unavailable,
     trainingCatalogCount: training.unavailable ? null : training.count,
     trainingCatalogUnavailable: training.unavailable,
     hasChildUnits: childUnits.unavailable ? null : childUnits.hasChild,

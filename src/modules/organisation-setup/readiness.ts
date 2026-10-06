@@ -56,9 +56,12 @@ function buildCoreItems(
 
   let unitStatus: SetupItemStatus = "unavailable";
   let unitCanAssess = false;
-  if (data.activeUnitCountUnavailable) {
+  const siteCount = data.activeSiteCount ?? data.activeUnitCount;
+  const siteCountUnavailable =
+    data.activeSiteCountUnavailable && data.activeUnitCountUnavailable;
+  if (siteCountUnavailable) {
     unitStatus = "unavailable";
-  } else if ((data.activeUnitCount ?? 0) >= 1) {
+  } else if ((siteCount ?? 0) >= 1) {
     unitStatus = "complete";
     unitCanAssess = true;
   } else {
@@ -70,9 +73,9 @@ function buildCoreItems(
     {
       id: "organisation_identity",
       tier: "core",
-      title: "Organisation identity",
+      title: "Organisation",
       description:
-        "Your organisation is registered and active in Lean Excellence Hub.",
+        "Your organisation is the company, business or group. Additional sites can be added to it later.",
       status: identityStatus,
       canAssess: true,
       canPerform: false,
@@ -95,9 +98,9 @@ function buildCoreItems(
     {
       id: "operational_unit",
       tier: "core",
-      title: "Operational unit",
+      title: "First site",
       description:
-        "At least one active organisational unit anchors improvement work to your structure.",
+        "An operational site is where work happens. This is the first site in this organisation, not a separate organisation.",
       status: unitStatus,
       canAssess: unitCanAssess,
       canPerform: permissions.canManageHierarchyAtOrgScope,
@@ -203,6 +206,22 @@ function buildRecommendedItems(
       (data.trainingCatalogCount ?? 0) > 0 ? "setup_started" : "not_started";
   }
 
+  let frameworkStatus: SetupItemStatus = "unavailable";
+  if (!data.publishedMaturityUnavailable) {
+    frameworkStatus =
+      (data.publishedMaturityVersionCount ?? 0) > 0
+        ? "complete"
+        : (data.leanConfigSignalCount ?? 0) > 0
+          ? "setup_started"
+          : "not_started";
+  }
+
+  let activityStatus: SetupItemStatus = "unavailable";
+  if (!data.maturityAssessmentUnavailable) {
+    activityStatus =
+      (data.maturityAssessmentCount ?? 0) > 0 ? "complete" : "not_started";
+  }
+
   return [
     {
       id: "expand_structure",
@@ -257,13 +276,35 @@ function buildRecommendedItems(
     {
       id: "lean_configuration",
       tier: "recommended",
-      title: "Configure Lean programme",
+      title: "Choose initial modules",
       description:
-        "Start maturity, 5S, Gemba, suggestions, or templates for your improvement system.",
+        "Pick the parts of Lean Excellence Hub that form your initial operating system. You do not need to configure every module before launch.",
       status: leanStatus,
       canAssess: !data.leanConfigUnavailable,
       canPerform: true,
       href: "/platform/maturity",
+    },
+    {
+      id: "operational_excellence_framework",
+      tier: "recommended",
+      title: "Operational Excellence framework",
+      description:
+        "Create or select an organisation-owned Maturity Framework. Sites reuse this standard; assessments stay local to each site.",
+      status: frameworkStatus,
+      canAssess: !data.publishedMaturityUnavailable,
+      canPerform: true,
+      href: "/platform/maturity/models",
+    },
+    {
+      id: "first_operational_activity",
+      tier: "recommended",
+      title: "First operational activity",
+      description:
+        "Start a site-local Maturity Assessment against the shared framework when you are ready to demonstrate value.",
+      status: activityStatus,
+      canAssess: !data.maturityAssessmentUnavailable,
+      canPerform: true,
+      href: "/platform/maturity/assessments/new",
     },
     {
       id: "training_configuration",
@@ -356,6 +397,8 @@ export function buildOrganisationSetupSnapshot(
   return {
     organisationName: data.organisationName ?? "Your organisation",
     organisationCode: data.organisationCode,
+    firstSiteName: data.firstSiteName,
+    multiSiteIntent: data.multiSiteIntent,
     core,
     recommended,
     nextActionHref: next.href,

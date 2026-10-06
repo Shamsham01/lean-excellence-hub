@@ -53,6 +53,8 @@ export type CoachExplainContext = {
     onboardingRequired: boolean | null;
     activeBillableSiteCount: number | null;
     activeUnitCount: number | null;
+    multiSiteIntent: string;
+    siteNames: string[];
   };
   capabilities: {
     webSearchEnabled: boolean;
@@ -106,6 +108,8 @@ export function assembleCoachExplainContext(input: {
   webSearchEnabled?: boolean;
   page?: CoachPageContext;
   contractVersion?: string;
+  multiSiteIntent?: string | null;
+  siteNames?: string[];
 }): { context: CoachExplainContext; provenanceHash: string } {
   const definition = leanAiInterventionByKey(input.recommendation.key);
   const requiredPermissions = [...(definition?.requiredPermissions ?? [])];
@@ -145,6 +149,13 @@ export function assembleCoachExplainContext(input: {
         "active_billable_site_count",
       ),
       activeUnitCount: numberMetric(sitesItem, "active_unit_count"),
+      multiSiteIntent:
+        input.multiSiteIntent === "yes" ||
+        input.multiSiteIntent === "no" ||
+        input.multiSiteIntent === "not_sure"
+          ? input.multiSiteIntent
+          : "not_sure",
+      siteNames: (input.siteNames ?? []).slice(0, 10),
     },
     capabilities: {
       webSearchEnabled: input.webSearchEnabled === true,

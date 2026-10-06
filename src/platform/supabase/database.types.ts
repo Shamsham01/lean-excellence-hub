@@ -6801,6 +6801,7 @@ export type Database = {
           created_at: string
           id: string
           locale: string
+          multi_site_intent: string | null
           name: string
           onboarding_required: boolean
           reporting_currency: string
@@ -6818,6 +6819,7 @@ export type Database = {
           created_at?: string
           id?: string
           locale?: string
+          multi_site_intent?: string | null
           name: string
           onboarding_required?: boolean
           reporting_currency?: string
@@ -6835,6 +6837,7 @@ export type Database = {
           created_at?: string
           id?: string
           locale?: string
+          multi_site_intent?: string | null
           name?: string
           onboarding_required?: boolean
           reporting_currency?: string
@@ -12689,6 +12692,7 @@ export type Database = {
         Args: {
           billing_provider?: string
           first_site_name: string
+          multi_site_intent?: string
           organisation_country_code: string
           organisation_locale: string
           organisation_name: string
@@ -14358,6 +14362,10 @@ export type Database = {
           target_status: string
         }
         Returns: boolean
+      }
+      set_organisation_multi_site_intent: {
+        Args: { target_intent: string }
+        Returns: string
       }
       set_organisation_open_checkout_session: {
         Args: {

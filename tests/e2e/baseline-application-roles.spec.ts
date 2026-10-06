@@ -116,9 +116,13 @@ test.describe("Baseline application role catalogue", () => {
       await roleSelect.selectOption({ label: roleLabel });
       await expect(scopeSelect).toHaveValue("");
       const scopeLabels = await readScopeOptionLabels(page);
-      expect(scopeLabels).toContain(onboardingE2eRootUnit.name);
+      expect(scopeLabels).toContain(
+        `Specific site: ${onboardingE2eRootUnit.name}`,
+      );
       expect(scopeLabels).not.toContain("Entire organisation");
-      await scopeSelect.selectOption({ label: onboardingE2eRootUnit.name });
+      await scopeSelect.selectOption({
+        label: `Specific site: ${onboardingE2eRootUnit.name}`,
+      });
       await expect(scopeSelect).toHaveValue(/unit_subtree::/);
     }
   });
@@ -154,14 +158,20 @@ test.describe("Baseline application role catalogue", () => {
 
     await roleSelect.selectOption({ label: "Manager" });
     const managerScopeLabels = await readScopeOptionLabels(page);
-    expect(managerScopeLabels).toContain(onboardingE2eRootUnit.name);
+    expect(managerScopeLabels).toContain(
+      `Specific site: ${onboardingE2eRootUnit.name}`,
+    );
     expect(managerScopeLabels).not.toContain("Entire organisation");
 
     await roleSelect.selectOption({ label: "Team Member" });
     const memberScopeLabels = await readScopeOptionLabels(page);
-    expect(memberScopeLabels).toContain(onboardingE2eRootUnit.name);
+    expect(memberScopeLabels).toContain(
+      `Specific site: ${onboardingE2eRootUnit.name}`,
+    );
     expect(memberScopeLabels).not.toContain("Entire organisation");
-    await scopeSelect.selectOption({ label: onboardingE2eRootUnit.name });
+    await scopeSelect.selectOption({
+      label: `Specific site: ${onboardingE2eRootUnit.name}`,
+    });
     await expect(scopeSelect).toHaveValue(/unit_subtree::/);
   });
 });

@@ -16,13 +16,33 @@ import type {
   LeanAiInterventionCandidate,
 } from "@/modules/leanai-context/interventions/types";
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
+import { isSiteUnitType } from "@/modules/organisation/site-semantics";
 import { loadCurrentOrganisationIdentity } from "@/modules/organisations/context";
 import { runCoachAiTurn } from "@/platform/ai/coach-orchestrator";
 import type { CoachEnvelope } from "@/platform/ai/types";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/platform/supabase/database.types";
 
 const MAX_FOLLOW_UP_TURNS = 6;
 const MAX_FOLLOW_UP_CHARS = 2000;
+const MAX_COACH_SITE_NAMES = 10;
+
+async function loadCoachSiteNames(
+  supabase: SupabaseClient<Database>,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("organisation_units")
+    .select("name, unit_type, status")
+    .eq("status", "active");
+  if (error) {
+    return [];
+  }
+  return (data ?? [])
+    .filter((unit) => isSiteUnitType(unit.unit_type))
+    .map((unit) => unit.name)
+    .slice(0, MAX_COACH_SITE_NAMES);
+}
 
 export type CoachExplainResult =
   | {
@@ -146,6 +166,8 @@ export async function explainLeanAiCoachIntervention(input: {
       canUseAi: true,
       organisationName: organisation.organisationName,
       webSearchEnabled: false,
+      multiSiteIntent: organisation.multiSiteIntent,
+      siteNames: await loadCoachSiteNames(supabase),
     });
 
     // The browser cannot select which AI conversation receives a Coach turn.

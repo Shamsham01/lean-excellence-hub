@@ -11,6 +11,7 @@ import {
   responsibilityDisplayName,
   responsibilityScopeLabel,
 } from "@/modules/rbac2/responsibilities";
+import { customerAccessScopeLabel } from "@/modules/rbac2/access-scope";
 
 type AccessGrant = {
   grant_id: string;
@@ -224,9 +225,13 @@ export function MemberAccessManagement({
               <div className="flex flex-col gap-2">
                 <Label htmlFor="grant-scope">
                   <ContextualHelpLabel topic="access-scope">
-                    Scope
+                    Access scope
                   </ContextualHelpLabel>
                 </Label>
+                <p className="text-xs text-muted-foreground">
+                  Entire organisation covers every site. A specific site stays
+                  local unless they are granted access elsewhere.
+                </p>
                 <select
                   id="grant-scope"
                   className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
@@ -238,7 +243,7 @@ export function MemberAccessManagement({
                     const key = `${scope.scope_type}::${scope.scope_unit_id ?? "null"}`;
                     return (
                       <option key={key} value={key}>
-                        {scope.label}
+                        {customerAccessScopeLabel(scope)}
                       </option>
                     );
                   })}

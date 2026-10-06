@@ -38,6 +38,7 @@ export type StructureFirstFacts = {
   organisationLocale: string | null;
   organisationTimeZone: string | null;
   reportingCurrency: string | null;
+  multiSiteIntent: string | null;
   billingPlanCode: string | null;
   billingPlanName: string | null;
   firstSiteName: string | null;

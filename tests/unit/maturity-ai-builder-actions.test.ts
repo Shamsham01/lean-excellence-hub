@@ -23,6 +23,7 @@ vi.mock("@/modules/organisations/context", () => ({
   loadCurrentOrganisationIdentity: vi.fn(async () => ({
     organisationId: "org-a",
     organisationName: "Acme Ltd",
+    multiSiteIntent: null,
   })),
 }));
 vi.mock("@/modules/maturity/ai-builder/load", () => ({

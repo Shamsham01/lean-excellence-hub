@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { getBillingEnvironment } from "@/modules/billing/env";
 import { requireClaims } from "@/modules/identity/session";
+import { parseMultiSiteIntent } from "@/modules/organisation-rollout/multi-site-intent";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -25,6 +26,10 @@ const foundingSchema = z.object({
     .regex(/^[A-Z]{3}$/),
   firstSiteName: z.string().trim().min(1).max(160),
   siteQuantity: z.coerce.number().int().min(1).max(500),
+  multiSiteIntent: z
+    .string()
+    .trim()
+    .transform((value) => parseMultiSiteIntent(value) ?? "not_sure"),
 });
 
 export async function createFoundingOrganisation(formData: FormData) {
@@ -48,6 +53,7 @@ export async function createFoundingOrganisation(formData: FormData) {
     reportingCurrency: formData.get("reportingCurrency") ?? "GBP",
     firstSiteName: formData.get("firstSiteName"),
     siteQuantity: formData.get("siteQuantity") ?? "1",
+    multiSiteIntent: formData.get("multiSiteIntent") ?? "not_sure",
   });
 
   if (!parsed.success) {
@@ -64,6 +70,7 @@ export async function createFoundingOrganisation(formData: FormData) {
     first_site_name: parsed.data.firstSiteName,
     site_quantity: parsed.data.siteQuantity,
     billing_provider: getBillingEnvironment().BILLING_PROVIDER,
+    multi_site_intent: parsed.data.multiSiteIntent,
   });
 
   if (error || !data) {

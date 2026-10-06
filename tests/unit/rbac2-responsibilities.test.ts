@@ -21,13 +21,13 @@ describe("rbac2 responsibilities", () => {
     ).toBe("Suggestions");
   });
 
-  it("formats subtree scope labels", () => {
+  it("formats site-scoped labels without database vocabulary", () => {
     expect(
       responsibilityScopeLabel({
         scope_type: "unit_subtree",
         scope_unit_name: "Production",
       }),
-    ).toBe("Production subtree");
+    ).toBe("Specific site: Production");
   });
 
   it("formats organisation scope labels", () => {

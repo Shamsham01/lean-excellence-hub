@@ -1,22 +1,38 @@
 import { notFound } from "next/navigation";
 
+import { RolloutGovernancePanel } from "@/components/organisation-rollout/rollout-governance-panel";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { loadOrganisationGovernanceSnapshot } from "@/modules/organisation-rollout/queries";
+import {
+  MULTI_SITE_INTENT_LABELS,
+  MULTI_SITE_INTENTS,
+} from "@/modules/organisation-rollout/multi-site-intent";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function OrganisationSettingsPage() {
+import { updateMultiSiteIntent } from "./actions";
+
+export default async function OrganisationSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   if (!(await currentMemberHasPermission("hierarchy.read"))) {
     notFound();
   }
 
+  const { error } = await searchParams;
+
   const supabase = await createServerSupabaseClient();
-  const { data: organisation } = await supabase
-    .from("organisations")
-    .select("name, code, locale, time_zone, reporting_currency, status")
-    .maybeSingle();
+  const [{ data: organisation }, governance] = await Promise.all([
+    supabase
+      .from("organisations")
+      .select("name, code, locale, time_zone, reporting_currency, status")
+      .maybeSingle(),
+    loadOrganisationGovernanceSnapshot(),
+  ]);
 
   if (!organisation) {
     return (
@@ -31,12 +47,12 @@ export default async function OrganisationSettingsPage() {
 
   return (
     <div
-      className="flex flex-col gap-8"
+      className="flex flex-col gap-10"
       data-testid="organisation-settings-page"
     >
       <PageHeader
         title="Organisation"
-        description="Your organisation identity in Lean Excellence Hub."
+        description="The company or group. Sites are operational locations inside this organisation."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">
@@ -46,50 +62,91 @@ export default async function OrganisationSettingsPage() {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Organisation details</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Name</p>
-            <p className="text-sm text-foreground">{organisation.name}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Code</p>
-            <p className="text-sm text-foreground">{organisation.code}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Locale</p>
-            <p className="text-sm text-foreground">{organisation.locale}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">
-              Time zone
+      <section className="flex flex-col gap-4">
+        <h2 className="text-base font-medium text-foreground">
+          Organisation details
+        </h2>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <Detail label="Name" value={organisation.name} />
+          <Detail label="Code" value={organisation.code} />
+          <Detail label="Locale" value={organisation.locale} />
+          <Detail label="Time zone" value={organisation.time_zone} />
+          <Detail
+            label="Reporting currency"
+            value={organisation.reporting_currency}
+          />
+          <Detail label="Status" value={organisation.status} capitalize />
+        </dl>
+        {governance?.canManageHierarchy ? (
+          <form
+            action={updateMultiSiteIntent}
+            className="flex max-w-xl flex-col gap-3"
+            data-testid="multi-site-intent-form"
+          >
+            {error === "intent" ? (
+              <p className="text-sm text-destructive" role="alert">
+                Organisation context could not be updated. Ask an organisation
+                administrator if this continues.
+              </p>
+            ) : null}
+            <label htmlFor="multiSiteIntent" className="text-sm font-medium">
+              Wider multi-site organisation
+            </label>
+            <select
+              id="multiSiteIntent"
+              name="multiSiteIntent"
+              defaultValue={governance.multiSiteIntent}
+              className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+            >
+              {MULTI_SITE_INTENTS.map((value) => (
+                <option key={value} value={value}>
+                  {MULTI_SITE_INTENT_LABELS[value]}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Planning context only. This does not buy capacity or grant access.
             </p>
-            <p className="text-sm text-foreground">{organisation.time_zone}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">
-              Reporting currency
-            </p>
-            <p className="text-sm text-foreground">
-              {organisation.reporting_currency}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Status</p>
-            <p className="text-sm text-foreground capitalize">
-              {organisation.status}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            <Button
+              type="submit"
+              variant="outline"
+              className="min-h-11 self-start"
+            >
+              Save context
+            </Button>
+          </form>
+        ) : null}
+      </section>
 
-      <p className="text-sm text-muted-foreground">
-        Organisation metadata editing will be available in a future release.
-        Contact your platform administrator if details need to change.
-      </p>
+      {governance ? (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-base font-medium text-foreground">
+            Rollout & Governance
+          </h2>
+          <RolloutGovernancePanel snapshot={governance} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Detail({
+  label,
+  value,
+  capitalize = false,
+}: {
+  label: string;
+  value: string;
+  capitalize?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd
+        className={`mt-1 text-sm text-foreground ${capitalize ? "capitalize" : ""}`}
+      >
+        {value}
+      </dd>
     </div>
   );
 }

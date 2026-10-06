@@ -48,7 +48,7 @@ describe("issue #94 people lifecycle helpers", () => {
         scope_unit_name: "Operations",
         scope_unit_path: "Exeter › Operations",
       }),
-    ).toBe("Exeter › Operations subtree");
+    ).toBe("Specific site: Exeter › Operations");
   });
 
   it("filters delegatable offers to the active site subtree", () => {

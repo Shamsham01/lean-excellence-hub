@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
+import { customerAccessScopeLabel } from "@/modules/rbac2/access-scope";
 
 export type DelegatableAccessOffer = {
   role_version_id: string;
@@ -250,6 +251,10 @@ export function InviteColleagueForm({
               Access scope
             </ContextualHelpLabel>
           </Label>
+          <p className="text-xs text-muted-foreground">
+            Entire organisation covers every site. A specific site stays local
+            unless they are granted access elsewhere.
+          </p>
           <select
             id="invite-scope"
             className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
@@ -262,7 +267,7 @@ export function InviteColleagueForm({
               const key = `${scope.scope_type}::${scope.scope_unit_id ?? "null"}`;
               return (
                 <option key={key} value={key}>
-                  {scope.label}
+                  {customerAccessScopeLabel(scope)}
                 </option>
               );
             })}

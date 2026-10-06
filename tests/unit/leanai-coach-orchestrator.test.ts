@@ -153,6 +153,8 @@ const context: CoachExplainContext = {
     onboardingRequired: false,
     activeBillableSiteCount: 2,
     activeUnitCount: 2,
+    multiSiteIntent: "not_sure",
+    siteNames: [],
   },
   capabilities: {
     webSearchEnabled: false,

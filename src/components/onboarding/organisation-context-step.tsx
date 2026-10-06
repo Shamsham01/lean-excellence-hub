@@ -6,6 +6,10 @@ import { confirmOrganisationContext } from "@/app/onboarding/setup/actions";
 import { Button } from "@/components/ui/button";
 import { hardNavigate } from "@/lib/navigation/navigate";
 import type { StructureFirstFacts } from "@/modules/organisation-onboarding";
+import {
+  MULTI_SITE_INTENT_LABELS,
+  resolveMultiSiteIntent,
+} from "@/modules/organisation-rollout/multi-site-intent";
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
@@ -47,12 +51,13 @@ export function OrganisationContextStep({
           Organisation context
         </p>
         <h2 id="organisation-context-heading" className="typography-page-title">
-          This is the organisation LEH is being configured for
+          Organisation and first site
         </h2>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          These details were collected when the organisation was created. LEH
-          will not ask for them again. Organisation means the company or group
-          tenant. A site is an operational location.
+          These details were collected when the organisation was created. Lean
+          Excellence Hub will not ask for them again. The organisation is the
+          company or group. The site is the operational location you are setting
+          up first.
         </p>
       </div>
 
@@ -92,16 +97,23 @@ export function OrganisationContextStep({
           {facts.organisationName ? ` · ${facts.organisationName}` : null}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Company or group tenant. Editing organisation details remains in
-          Settings when that path is authorised.
+          Company, business or group. Additional sites can be added to this
+          organisation later.
         </p>
         <p className="mt-3 text-sm text-foreground">
           <span className="font-medium">First site</span>
           {facts.firstSiteName ? ` · ${facts.firstSiteName}` : null}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Operational location already created during billing onboarding. It
-          will not be recreated here.
+          Operational location already created. It will not be recreated here.
+        </p>
+        <p className="mt-3 text-sm text-foreground">
+          <span className="font-medium">Wider organisation</span>
+          {` · ${MULTI_SITE_INTENT_LABELS[resolveMultiSiteIntent(facts.multiSiteIntent)]}`}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This is planning context only. It does not buy site capacity or grant
+          access.
         </p>
       </div>
 

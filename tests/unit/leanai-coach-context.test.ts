@@ -74,6 +74,8 @@ describe("Coach explain context assembly", () => {
 
     expect(context.organisation.name).toBe("HODL Token Club");
     expect(context.organisation.activeBillableSiteCount).toBe(2);
+    expect(context.organisation.multiSiteIntent).toBe("not_sure");
+    expect(context.organisation.siteNames).toEqual([]);
     expect(context.intervention.key).toBe("maturity_first_setup");
     expect(context.productKnowledge.summary).toMatch(/Maturity Framework/);
     expect(JSON.stringify(context)).not.toMatch(/mouse|keystroke|clickstream/i);

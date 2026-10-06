@@ -13,6 +13,8 @@ export type SetupItemId =
   | "roles_access"
   | "job_functions"
   | "lean_configuration"
+  | "operational_excellence_framework"
+  | "first_operational_activity"
   | "training_configuration";
 
 export type SetupItem = {
@@ -41,6 +43,8 @@ export type RecommendedSetupState = {
 export type OrganisationSetupSnapshot = {
   organisationName: string;
   organisationCode: string | null;
+  firstSiteName: string | null;
+  multiSiteIntent: string | null;
   core: CoreSetupState;
   recommended: RecommendedSetupState;
   nextActionHref: string | null;
@@ -51,8 +55,12 @@ export type SetupQueryResult = {
   organisationStatus: string | null;
   organisationName: string | null;
   organisationCode: string | null;
+  firstSiteName: string | null;
+  multiSiteIntent: string | null;
   activeUnitCount: number | null;
   activeUnitCountUnavailable: boolean;
+  activeSiteCount: number | null;
+  activeSiteCountUnavailable: boolean;
   hasOrganisationOwner: boolean | null;
   ownerCheckUnavailable: boolean;
   activeMembershipCount: number | null;
@@ -69,6 +77,10 @@ export type SetupQueryResult = {
   jobFunctionAssignmentsUnavailable: boolean;
   leanConfigSignalCount: number | null;
   leanConfigUnavailable: boolean;
+  publishedMaturityVersionCount: number | null;
+  publishedMaturityUnavailable: boolean;
+  maturityAssessmentCount: number | null;
+  maturityAssessmentUnavailable: boolean;
   trainingCatalogCount: number | null;
   trainingCatalogUnavailable: boolean;
   hasChildUnits: boolean | null;
