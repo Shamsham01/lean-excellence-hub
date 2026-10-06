@@ -94,6 +94,9 @@ describe("UnitCreateForm", () => {
     fireEvent.change(screen.getByPlaceholderText("For example, ward or cell"), {
       target: { value: "site" },
     });
+    expect(screen.getByTestId("site-type-capacity-hint").textContent).toContain(
+      "teams. This organisation has used all subscribed site capacity.",
+    );
     fireEvent.click(screen.getByTestId("unit-create-submit"));
 
     expect(await screen.findByTestId("site-capacity-error")).toHaveTextContent(
