@@ -108,7 +108,6 @@ test.describe("subscribed site capacity", () => {
       "1 of 1 active",
     );
 
-    await page.getByTestId("add-site-capacity").click();
     const dialog = page.getByTestId("add-site-capacity-dialog");
     await expect(dialog).toBeVisible();
     await expect(page.getByTestId("desired-site-quantity")).toHaveValue("2");
