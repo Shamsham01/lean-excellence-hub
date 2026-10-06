@@ -314,13 +314,142 @@ describe("public marketing homepage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("groups the fragments by loop stage and resolves each into one LEH strip", () => {
+    render(<MarketingHome />);
+
+    const problem = document.getElementById("why") as HTMLElement;
+    const stages = [
+      ...problem.querySelectorAll(".marketing-fragments-stage"),
+    ] as HTMLElement[];
+    expect(stages).toHaveLength(4);
+    for (const stage of stages) {
+      expect(stage.querySelectorAll(".marketing-artefact")).toHaveLength(2);
+      expect(
+        stage.querySelector(".marketing-fragments-resolve"),
+      ).not.toBeNull();
+    }
+    expect(
+      stages.map(
+        (stage) =>
+          stage.querySelector(".marketing-fragments-stage-name")?.textContent,
+      ),
+    ).toEqual(["Observe", "Act", "Improve", "Learn"]);
+    expect(
+      within(problem).getByText("Findings retyped into actions"),
+    ).toBeInTheDocument();
+    expect(
+      within(problem).getByText("Forecast, never validated"),
+    ).toBeInTheDocument();
+    expect(within(problem).queryAllByRole("heading", { level: 3 })).toEqual([]);
+  });
+
+  it("renders the evidence-to-impact journey as one connected ribbon", () => {
+    render(<MarketingHome />);
+
+    const journey = document.getElementById("impact") as HTMLElement;
+    const steps = [
+      ...journey.querySelectorAll(".marketing-process-step"),
+    ] as HTMLElement[];
+    expect(steps).toHaveLength(5);
+    for (const step of steps) {
+      expect(step.querySelector(".marketing-process-node")).not.toBeNull();
+      expect(step.querySelector(".marketing-process-record")).not.toBeNull();
+      expect(
+        step.querySelector(".marketing-process-state .marketing-chip"),
+      ).not.toBeNull();
+    }
+    expect(journey.querySelectorAll(".marketing-process-rail")).toHaveLength(1);
+    expect(
+      within(journey).getByText("Learning feeds the next walk."),
+    ).toBeInTheDocument();
+    expect(within(journey).getByText("Due Friday")).toHaveClass(
+      "marketing-chip-warning",
+    );
+    expect(within(journey).getByText("Connected")).toHaveClass(
+      "marketing-chip-connected",
+    );
+  });
+
+  it("presents one system through scoped perspectives instead of four cards", () => {
+    render(<MarketingHome />);
+
+    const audience = document.getElementById("audience") as HTMLElement;
+    expect(
+      within(audience).getByRole("heading", {
+        level: 2,
+        name: "One system. Different perspectives.",
+      }),
+    ).toBeInTheDocument();
+
+    const tablist = within(audience).getByRole("tablist", {
+      name: "Perspectives",
+    });
+    expect(tablist).toHaveAttribute("aria-orientation", "vertical");
+    const tabs = within(tablist).getAllByRole("tab");
+    expect(tabs).toHaveLength(4);
+    const organisationTab = tabs[0] as HTMLElement;
+    expect(organisationTab).toHaveAttribute("aria-selected", "true");
+
+    const panels = within(audience).getAllByRole("tabpanel");
+    expect(panels).toHaveLength(4);
+    const activePanel = () => {
+      const active = panels.filter(
+        (panel) => panel.getAttribute("data-state") === "active",
+      );
+      expect(active).toHaveLength(1);
+      return active[0] as HTMLElement;
+    };
+    expect(activePanel()).toHaveAttribute(
+      "aria-labelledby",
+      organisationTab.id,
+    );
+    expect(
+      within(activePanel()).getByText(
+        "Where is the system maturing, and where is it drifting?",
+      ),
+    ).toBeInTheDocument();
+
+    const siteTab = within(tablist).getByRole("tab", {
+      name: /site leadership/i,
+    });
+    fireEvent.mouseDown(siteTab);
+    expect(siteTab).toHaveAttribute("aria-selected", "true");
+    expect(organisationTab).toHaveAttribute("aria-selected", "false");
+    const sitePanel = activePanel();
+    expect(sitePanel).toHaveAttribute("aria-labelledby", siteTab.id);
+    expect(
+      within(sitePanel).getByText(
+        "What needs attention at this site this week?",
+      ),
+    ).toBeInTheDocument();
+    expect(within(sitePanel).getByText("North plant")).toBeInTheDocument();
+    expect(
+      within(sitePanel).queryByText(
+        "Where is the system maturing, and where is it drifting?",
+      ),
+    ).not.toBeInTheDocument();
+    expect(audience.querySelector(".marketing-audience")).toBeNull();
+
+    const css = readFileSync("src/app/globals.css", "utf8");
+    expect(css).toMatch(
+      /\.marketing-perspective-panel \{\s*grid-row: 2;\s*grid-column: 1;/,
+    );
+    expect(css).toMatch(
+      /\.marketing-perspective-panel\[data-state="inactive"\] \{\s*visibility: hidden;\s*\}/,
+    );
+  });
+
   it("exposes a labelled System / Light / Dark appearance control", () => {
     render(<MarketingHome />);
 
     const appearanceTriggers = screen.getAllByRole("button", {
-      name: "Appearance",
+      name: "Appearance: System",
     });
     expect(appearanceTriggers.length).toBeGreaterThan(0);
+    for (const trigger of appearanceTriggers) {
+      expect(trigger).toHaveAttribute("data-appearance", "system");
+      expect(trigger.querySelector("svg.lucide-monitor")).not.toBeNull();
+    }
 
     fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
     const appearanceGroup = screen.getByRole("group", { name: "Appearance" });
@@ -389,6 +518,53 @@ describe("marketing appearance persistence", () => {
     await waitFor(() => {
       expect(window.localStorage.getItem("theme")).toBe("system");
     });
+  });
+
+  it("switches the header icon and accessible label with the setting", async () => {
+    render(
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableColorScheme
+        enableSystem
+      >
+        <MarketingHome />
+      </ThemeProvider>,
+    );
+
+    const banner = screen.getByRole("banner");
+    const trigger = () =>
+      within(banner).getByRole("button", { name: /^Appearance: / });
+
+    expect(trigger()).toHaveAccessibleName("Appearance: System");
+    expect(trigger().querySelector("svg.lucide-monitor")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const appearanceGroup = screen.getByRole("group", { name: "Appearance" });
+
+    const cases = [
+      { choice: "Dark", icon: "lucide-moon" },
+      { choice: "Light", icon: "lucide-sun" },
+      { choice: "System", icon: "lucide-monitor" },
+    ] as const;
+
+    for (const { choice, icon } of cases) {
+      fireEvent.click(
+        within(appearanceGroup).getByRole("button", { name: choice }),
+      );
+      await waitFor(() => {
+        expect(trigger()).toHaveAccessibleName(`Appearance: ${choice}`);
+      });
+      expect(trigger()).toHaveAttribute(
+        "data-appearance",
+        choice.toLowerCase(),
+      );
+      expect(trigger().querySelectorAll("svg")).toHaveLength(1);
+      expect(trigger().querySelector(`svg.${icon}`)).not.toBeNull();
+      expect(
+        within(appearanceGroup).getByRole("button", { name: choice }),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
   });
 });
 
@@ -466,6 +642,50 @@ describe("homepage authentication routing", () => {
     expect(css).not.toContain("masonry");
     expect(css).toContain("color-scheme: light dark");
     expect(css).toContain("--warning-foreground: oklch(0.88 0.08 80)");
+  });
+
+  it("keeps the sticky header bound to the viewport when scroll is locked", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const appearance = readFileSync(
+      "src/components/marketing/appearance-menu.tsx",
+      "utf8",
+    );
+    const header = readFileSync("src/components/marketing/header.tsx", "utf8");
+
+    expect(css).toMatch(
+      /html:has\(> body > \.marketing\) \{\s*overflow-x: visible;\s*\}/,
+    );
+    expect(css).toMatch(/\.marketing \{\s*overflow-x: clip;\s*\}/);
+    expect(css).toMatch(/\.marketing-header \{\s*position: sticky;\s*top: 0;/);
+    expect(css).not.toMatch(/\.marketing-header \{[^}]*position: fixed/);
+    expect(css).toContain("scroll-state(stuck: top)");
+    expect(appearance).toContain("<DropdownMenu modal={false}>");
+    expect(header).toContain("marketing-mobile-panel");
+    expect(css).toMatch(/\.marketing-mobile-panel \{\s*position: absolute;/);
+  });
+
+  it("scopes the LEH palette and mixes marketing colours in oklab", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const start = css.indexOf("/* Marketing homepage primitives");
+    const end = css.indexOf("\n.leh-progress {");
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const marketing = css.slice(start, end);
+
+    expect(marketing).toContain(".marketing,\n.marketing-appearance-menu {");
+    expect(marketing).toMatch(/--leh-cobalt: oklch\(/);
+    expect(marketing).toMatch(/--leh-teal: oklch\(/);
+    expect(marketing).toContain("--primary: var(--leh-cobalt);");
+    expect(marketing).not.toContain("color-mix(in oklch");
+    expect(marketing).toContain("color-mix(in oklab");
+    expect(marketing).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(marketing).not.toMatch(/\bfrom var\(/);
+
+    const primitives = readFileSync(
+      "src/components/marketing/primitives.tsx",
+      "utf8",
+    );
+    expect(primitives).not.toContain("in_oklch");
   });
 
   it("reuses next-themes instead of a parallel marketing theme store", () => {

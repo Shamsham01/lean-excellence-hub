@@ -1,43 +1,64 @@
+import { RotateCcw } from "lucide-react";
+
 import {
   MarketingContainer,
   MarketingSection,
-  PreviewCaption,
   SectionIntro,
   StatusChip,
 } from "./primitives";
 
-const STEPS = [
+const STEPS: ReadonlyArray<{
+  title: string;
+  module: string;
+  record: string;
+  body: string;
+  meta: string;
+  state: {
+    label: string;
+    tone: "neutral" | "accent" | "warning" | "connected";
+  };
+}> = [
   {
     title: "Observe",
-    record: "Gemba · Packing cell",
+    module: "Gemba",
+    record: "Finding · Packing cell",
     body: "Label station missing at point of use.",
-    meta: "Finding · today",
+    meta: "Captured on the walk · today",
+    state: { label: "Captured", tone: "neutral" },
   },
   {
     title: "Act",
+    module: "Actions",
     record: "ACT-1042",
     body: "Restore point-of-use labels before Friday.",
-    meta: "Area leader · Open · due Friday",
+    meta: "Owner: area leader · from the finding",
+    state: { label: "Due Friday", tone: "warning" },
   },
   {
     title: "Solve",
-    record: "Problem solving",
+    module: "Problem Solving",
+    record: "Case · standard drift",
     body: "Why did the standard drift after the last changeover?",
-    meta: "Root cause analysis · in progress",
+    meta: "Root cause analysis",
+    state: { label: "In progress", tone: "accent" },
   },
   {
     title: "Improve",
+    module: "Projects & Benefits",
     record: "Project · standard update",
     body: "Countermeasure implemented on the line.",
-    meta: "Benefit forecast captured · awaiting validation",
+    meta: "Benefit forecast captured",
+    state: { label: "Awaiting validation", tone: "neutral" },
   },
   {
     title: "Learn",
+    module: "Training & Maturity",
     record: "Capability + maturity",
     body: "The organisation keeps the evidence, the method and the skill.",
-    meta: "Connecting layer · not a separate scorecard",
+    meta: "Skills + maturity updated",
+    state: { label: "Connected", tone: "connected" },
   },
-] as const;
+];
 
 export function MarketingJourney() {
   return (
@@ -54,38 +75,56 @@ export function MarketingJourney() {
           </p>
         </SectionIntro>
 
-        <figure className="marketing-process">
-          <div className="marketing-process-progress" aria-hidden="true" />
-          <ol className="marketing-process-track" role="list">
-            {STEPS.map((step, index) => (
-              <li key={step.title} className="marketing-process-step">
-                <p className="marketing-process-index">
-                  {String(index + 1).padStart(2, "0")}
-                </p>
-                <h3 className="marketing-subheading mt-3">{step.title}</h3>
-                <div className="marketing-process-record">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs font-semibold tracking-tight text-foreground">
-                      {step.record}
-                    </p>
-                    {index === 1 ? (
-                      <StatusChip tone="warning">Due Friday</StatusChip>
-                    ) : null}
+        <div className="marketing-process">
+          <figure className="marketing-process-surface">
+            <div className="marketing-process-rail" aria-hidden="true">
+              <span className="marketing-process-progress" />
+            </div>
+            <ol className="marketing-process-track" role="list">
+              {STEPS.map((step, index) => (
+                <li key={step.title} className="marketing-process-step">
+                  <span className="marketing-process-node" aria-hidden="true" />
+                  <span className="marketing-process-index" aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="marketing-process-title-block">
+                    <h3 className="marketing-process-title">{step.title}</h3>
+                    <span className="marketing-process-module">
+                      {step.module}
+                    </span>
                   </div>
-                  <p className="mt-1.5 text-sm leading-6 text-foreground">
-                    {step.body}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {step.meta}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <PreviewCaption>
-            The same objects exist in Lean Excellence Hub as one connected loop.
-          </PreviewCaption>
-        </figure>
+                  <div className="marketing-process-record">
+                    <span className="marketing-process-ref">{step.record}</span>
+                    <p className="marketing-process-body">{step.body}</p>
+                    <p className="marketing-process-meta">{step.meta}</p>
+                  </div>
+                  <div className="marketing-process-state">
+                    <StatusChip tone={step.state.tone}>
+                      {step.state.label}
+                    </StatusChip>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <figcaption className="marketing-process-loop">
+              <span
+                className="marketing-process-loop-bracket"
+                aria-hidden="true"
+              />
+              <span className="marketing-process-loop-content">
+                <span className="marketing-process-loop-text">
+                  <RotateCcw aria-hidden="true" className="size-4" />
+                  <span>
+                    <strong>Learning feeds the next walk.</strong>{" "}
+                    <span className="marketing-process-loop-note">
+                      The same objects stay connected in Lean Excellence Hub.
+                    </span>
+                  </span>
+                </span>
+              </span>
+            </figcaption>
+          </figure>
+        </div>
       </MarketingContainer>
     </MarketingSection>
   );

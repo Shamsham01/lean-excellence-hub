@@ -1,3 +1,4 @@
+import { MarketingAudiencePerspectives } from "./audience-perspectives";
 import {
   MarketingContainer,
   MarketingSection,
@@ -23,25 +24,6 @@ const VALUE = [
   },
 ] as const;
 
-const AUDIENCE = [
-  {
-    title: "Operational Excellence leadership",
-    body: "See maturity, activity and results together — the system, not a toolkit.",
-  },
-  {
-    title: "Site leadership",
-    body: "Keep Gemba, 5S, actions and benefits visible at the site that owns them.",
-  },
-  {
-    title: "Area leadership",
-    body: "Own the findings and actions in your area, with a line from observation to close-out.",
-  },
-  {
-    title: "Frontline teams",
-    body: "Raise ideas, take part in Gemba and 5S, and see that improvement work does not disappear.",
-  },
-] as const;
-
 export function MarketingValue() {
   return (
     <MarketingSection className="marketing-defer">
@@ -58,7 +40,7 @@ export function MarketingValue() {
         <ol className="marketing-value-flow" role="list">
           {VALUE.map((item, index) => (
             <li key={item.title}>
-              <p className="marketing-process-index">
+              <p className="marketing-index">
                 {String(index + 1).padStart(2, "0")}
               </p>
               <h3 className="marketing-subheading mt-3">{item.title}</h3>
@@ -82,7 +64,7 @@ export function MarketingAudience() {
       <MarketingContainer>
         <SectionIntro
           kicker="Who it is for"
-          title="Built for every level of Operational Excellence."
+          title="One system. Different perspectives."
         >
           <p>
             Lean Excellence Hub is designed for organisations, not only
@@ -91,16 +73,7 @@ export function MarketingAudience() {
             it.
           </p>
         </SectionIntro>
-        <ol className="marketing-audience" role="list">
-          {AUDIENCE.map((item) => (
-            <li key={item.title}>
-              <h3 className="marketing-subheading">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {item.body}
-              </p>
-            </li>
-          ))}
-        </ol>
+        <MarketingAudiencePerspectives />
       </MarketingContainer>
     </MarketingSection>
   );

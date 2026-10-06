@@ -293,39 +293,82 @@ body {
 }
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
-.marketing {
-  --background: oklch(0.97 0.007 95);
-  --surface: oklch(0.948 0.01 95);
-  --elevated: oklch(0.995 0.003 95);
-  --card: oklch(0.992 0.003 95);
-  --muted: oklch(0.93 0.01 95);
-  --muted-foreground: oklch(0.4 0.022 255);
-  --border: oklch(0.84 0.016 95);
-  --marketing-max: 72rem;
-  --marketing-wide: 76rem;
-  --marketing-gutter: 1.25rem;
-  --marketing-section-y: 3.75rem;
-  --marketing-radius: 0.75rem;
+
+/* LEH marketing palette: industrial cobalt anchor, restrained teal for connected /
+   improvement states, warm neutrals in light mode and graphite in dark mode.
+   Amber, red and green stay semantic (warning, destructive, success) only.
+   The appearance menu is portalled outside `.marketing`, so it shares the tokens. */
+.marketing,
+.marketing-appearance-menu {
+  --leh-ink: oklch(0.22 0.016 258);
+  --leh-ink-muted: oklch(0.43 0.018 258);
+  --leh-paper: oklch(0.975 0.005 85);
+  --leh-paper-band: oklch(0.956 0.007 85);
+  --leh-paper-raised: oklch(0.995 0.002 85);
+  --leh-paper-muted: oklch(0.938 0.008 85);
+  --leh-line: oklch(0.875 0.01 85);
+  --leh-line-strong: oklch(0.79 0.012 85);
+  --leh-cobalt: oklch(0.47 0.13 258);
+  --leh-cobalt-strong: oklch(0.41 0.12 258);
+  --leh-cobalt-ink: oklch(0.39 0.11 258);
+  --leh-cobalt-soft: oklch(0.948 0.022 256);
+  --leh-cobalt-line: oklch(0.79 0.06 257);
+  --leh-teal: oklch(0.56 0.085 192);
+  --leh-teal-ink: oklch(0.41 0.07 194);
+  --leh-teal-soft: oklch(0.952 0.022 190);
+  --leh-teal-line: oklch(0.8 0.05 190);
+  --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.75);
+  --leh-shadow-header: 0 10px 24px -20px oklch(0.25 0.02 258 / 0.5);
+  --leh-shadow-press: 0 1px 2px oklch(0.25 0.02 258 / 0.18);
+  --leh-shadow-hover: 0 6px 14px -8px oklch(0.25 0.02 258 / 0.35);
+
+  --background: var(--leh-paper);
+  --foreground: var(--leh-ink);
+  --surface: var(--leh-paper-band);
+  --elevated: var(--leh-paper-raised);
+  --card: var(--leh-paper-raised);
+  --card-foreground: var(--leh-ink);
+  --muted: var(--leh-paper-muted);
+  --muted-foreground: var(--leh-ink-muted);
+  --border: var(--leh-line);
+  --primary: var(--leh-cobalt);
+  --primary-foreground: oklch(0.985 0.004 85);
+  --accent: var(--leh-cobalt-soft);
+  --accent-foreground: var(--leh-cobalt-ink);
+  --ring: var(--leh-cobalt);
+
   --marketing-shadow:
-    0 1px 1px oklch(0.22 0.02 255 / 0.04),
-    0 10px 28px oklch(0.22 0.02 255 / 0.05);
+    0 1px 2px oklch(0.25 0.02 258 / 0.05),
+    0 8px 20px -10px oklch(0.25 0.02 258 / 0.14);
   --marketing-shadow-lift:
-    0 1px 1px oklch(0.22 0.02 255 / 0.05),
-    0 18px 40px oklch(0.22 0.02 255 / 0.08);
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--foreground);
-  background: var(--background);
+    0 1px 2px oklch(0.25 0.02 258 / 0.06),
+    0 22px 44px -22px oklch(0.25 0.02 258 / 0.28);
 }
 
-.dark .marketing {
-  --background: oklch(0.155 0.014 255);
-  --surface: oklch(0.185 0.016 255);
-  --elevated: oklch(0.24 0.016 255);
-  --card: oklch(0.215 0.016 255);
-  --muted: oklch(0.27 0.017 255);
-  --muted-foreground: oklch(0.74 0.016 255);
-  --border: oklch(0.36 0.018 255);
+.dark .marketing,
+.dark .marketing-appearance-menu {
+  --leh-ink: oklch(0.95 0.005 85);
+  --leh-ink-muted: oklch(0.74 0.012 258);
+  --leh-paper: oklch(0.165 0.009 258);
+  --leh-paper-band: oklch(0.188 0.01 258);
+  --leh-paper-raised: oklch(0.222 0.011 258);
+  --leh-paper-muted: oklch(0.255 0.012 258);
+  --leh-line: oklch(0.31 0.012 258);
+  --leh-line-strong: oklch(0.4 0.014 258);
+  --leh-cobalt: oklch(0.72 0.12 254);
+  --leh-cobalt-strong: oklch(0.79 0.1 254);
+  --leh-cobalt-ink: oklch(0.85 0.07 254);
+  --leh-cobalt-soft: oklch(0.26 0.04 258);
+  --leh-cobalt-line: oklch(0.45 0.08 258);
+  --leh-teal: oklch(0.76 0.09 190);
+  --leh-teal-ink: oklch(0.85 0.07 190);
+  --leh-teal-soft: oklch(0.255 0.03 200);
+  --leh-teal-line: oklch(0.45 0.06 195);
+  --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.055);
+  --leh-shadow-header: 0 10px 24px -18px oklch(0 0 0 / 0.8);
+  --leh-shadow-press: 0 1px 2px oklch(0 0 0 / 0.4);
+  --leh-shadow-hover: 0 6px 14px -8px oklch(0 0 0 / 0.6);
+  --primary-foreground: oklch(0.17 0.012 258);
   --success: oklch(0.72 0.13 145);
   --warning: oklch(0.84 0.12 80);
   --warning-foreground: oklch(0.88 0.08 80);
@@ -336,9 +379,21 @@ body {
   --maturity-4: oklch(0.78 0.1 205);
   --maturity-5: oklch(0.76 0.12 250);
   --marketing-shadow:
-    0 1px 1px oklch(0 0 0 / 0.24), 0 12px 32px oklch(0 0 0 / 0.28);
+    0 1px 2px oklch(0 0 0 / 0.32), 0 10px 24px -12px oklch(0 0 0 / 0.55);
   --marketing-shadow-lift:
-    0 1px 1px oklch(0 0 0 / 0.28), 0 18px 44px oklch(0 0 0 / 0.36);
+    0 1px 2px oklch(0 0 0 / 0.36), 0 24px 48px -24px oklch(0 0 0 / 0.75);
+}
+
+.marketing {
+  --marketing-max: 76rem;
+  --marketing-wide: 76rem;
+  --marketing-gutter: 1.25rem;
+  --marketing-section-y: 3.75rem;
+  --marketing-radius: 0.625rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  background: var(--background);
 }
 
 @media (min-width: 768px) {
@@ -353,6 +408,14 @@ body {
     --marketing-gutter: 2rem;
     --marketing-section-y: 6.25rem;
   }
+}
+
+/* `html { overflow-x: clip }` stops <body>'s overflow from propagating to the
+   viewport. Any body scroll lock then turns <body> into the sticky header's
+   scroll container and the header scrolls away. `.marketing` clips horizontal
+   overflow itself, so the root can stay visible here. */
+html:has(> body > .marketing) {
+  overflow-x: visible;
 }
 
 .marketing-skip {
@@ -391,12 +454,19 @@ body {
 .marketing-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   font-size: 0.6875rem;
   font-weight: 650;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent-foreground);
+}
+
+.marketing-kicker::before {
+  content: "";
+  width: 0.875rem;
+  height: 1px;
+  background: var(--primary);
 }
 
 .marketing-display {
@@ -442,16 +512,70 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--marketing-radius);
   background: var(--card);
-  box-shadow: var(--marketing-shadow);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow);
 }
 
+.marketing-cta {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    var(--leh-shadow-press);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.marketing-cta:hover {
+  background: var(--leh-cobalt-strong);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    var(--leh-shadow-hover);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-cta:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Header */
 .marketing-header {
   position: sticky;
   top: 0;
   z-index: 40;
-  border-bottom: 1px solid color-mix(in oklch, var(--border) 88%, transparent);
-  background: color-mix(in oklch, var(--background) 90%, transparent);
-  backdrop-filter: blur(14px);
+  container: marketing-header / scroll-state;
+}
+
+.marketing-header-bar {
+  position: relative;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  backdrop-filter: blur(12px);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+@container marketing-header scroll-state(stuck: top) {
+  .marketing-header-bar {
+    border-bottom-color: var(--border);
+    box-shadow: var(--leh-shadow-header);
+  }
+}
+
+/* Overlays the page instead of growing the sticky header, so opening the menu
+   never shifts layout or triggers scroll anchoring. */
+.marketing-mobile-panel {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  max-height: calc(100dvh - 4.25rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+  box-shadow: var(--leh-shadow-header);
 }
 
 .marketing-nav-link {
@@ -487,13 +611,40 @@ body {
   gap: 0.4rem;
 }
 
-.marketing-appearance-trigger {
+.marketing-icon-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  flex-shrink: 0;
+  padding: 0;
+  border-color: var(--leh-line-strong);
+  background: var(--elevated);
   color: var(--foreground);
-  border-color: color-mix(in oklch, var(--foreground) 22%, var(--border));
+  box-shadow: var(--leh-highlight);
   transition:
     background-color 160ms ease,
-    color 160ms ease,
-    border-color 160ms ease;
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.marketing-icon-button:hover {
+  border-color: var(--leh-cobalt-line);
+  background: var(--muted);
+}
+
+@media (min-width: 768px) {
+  .marketing-icon-button {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 2.25rem;
+  }
+}
+
+.marketing-appearance-menu {
+  border-color: var(--border);
+  background: var(--elevated);
+  color: var(--foreground);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
 }
 
 .marketing-mark {
@@ -515,6 +666,7 @@ body {
   outline-offset: 0.25rem;
 }
 
+/* Hero */
 .marketing-hero {
   position: relative;
   isolation: isolate;
@@ -541,15 +693,9 @@ body {
 .marketing-system-shell {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: calc(var(--marketing-radius) + 0.1rem);
+  border-radius: calc(var(--marketing-radius) + 0.15rem);
   background: var(--elevated);
-  box-shadow: var(--marketing-shadow-lift);
-}
-
-.marketing-system-shell-hero {
-  box-shadow:
-    var(--marketing-shadow-lift),
-    0 28px 64px oklch(0.22 0.02 255 / 0.1);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
 }
 
 @media (min-width: 640px) {
@@ -563,7 +709,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in oklch, var(--muted) 55%, var(--elevated));
+  background: color-mix(in oklab, var(--muted) 55%, var(--elevated));
   padding: 0.7rem 0.9rem;
 }
 
@@ -576,7 +722,7 @@ body {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--foreground) 18%, transparent);
+  background: color-mix(in oklab, var(--foreground) 18%, transparent);
 }
 
 .marketing-system-body {
@@ -631,7 +777,7 @@ body {
   bottom: 0;
   left: 0.34rem;
   width: 1px;
-  background: color-mix(in oklch, var(--primary) 45%, var(--border));
+  background: var(--leh-cobalt-line);
 }
 
 .marketing-system-flow li:last-child::after {
@@ -640,9 +786,10 @@ body {
 
 .marketing-system-card {
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
+  border-radius: 0.5rem;
   background: var(--card);
   padding: 0.7rem 0.8rem 0.75rem;
+  box-shadow: var(--leh-highlight);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -672,10 +819,11 @@ body {
   flex-direction: column;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid color-mix(in oklch, var(--primary) 28%, var(--border));
-  border-radius: 0.6rem;
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  border: 1px solid var(--leh-cobalt-line);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--accent) 75%, var(--card));
   padding: 0.9rem;
+  box-shadow: var(--leh-highlight);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -684,110 +832,334 @@ body {
   }
 }
 
-.marketing-fragment {
-  position: relative;
+/* The problem — fragmented artefacts resolving into one connected loop. */
+.marketing-fragments {
+  --fragments-gap: 0.75rem;
+  --fragments-strip-bg: color-mix(in oklab, var(--accent) 60%, var(--elevated));
+  margin: 2.25rem 0 0;
+}
+
+.marketing-fragments-head {
   display: grid;
-  gap: 0.7rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.marketing-fragment li {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
   gap: 0.2rem;
-  border: 1px solid var(--border);
-  background: var(--elevated);
-  padding: 0.7rem 0.8rem 0.75rem;
-  box-shadow: var(--marketing-shadow);
+  margin: 0 0 0.9rem;
 }
 
-.marketing-fragment li[data-kind="sheet"] {
-  border-radius: 0.2rem 0.45rem 0.45rem 0.2rem;
-  border-left-width: 3px;
-  border-left-color: color-mix(in oklch, var(--success) 55%, var(--border));
-}
-
-.marketing-fragment li[data-kind="email"] {
-  border-radius: 0.55rem;
-  border-style: dashed;
-  background: color-mix(in oklch, var(--muted) 55%, var(--elevated));
-}
-
-.marketing-fragment li[data-kind="form"] {
-  border-radius: 0.7rem;
-}
-
-.marketing-fragment li[data-kind="report"] {
-  border-radius: 0.25rem;
-  box-shadow:
-    var(--marketing-shadow),
-    0.18rem 0.18rem 0 color-mix(in oklch, var(--border) 80%, transparent);
-}
-
-.marketing-fragment-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.marketing-fragment-source {
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+.marketing-fragments-head-label {
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
 
-@media (min-width: 768px) {
-  .marketing-fragment {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 0.85rem 0.9rem;
-    align-items: start;
-  }
+.marketing-fragments-head-note {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
 
-  .marketing-fragment li:nth-child(1) {
-    grid-column: 1 / span 4;
-  }
+.marketing-fragments-head-system {
+  display: none;
+}
 
-  .marketing-fragment li:nth-child(2) {
-    grid-column: 6 / span 5;
-    margin-top: 0.85rem;
-  }
+.marketing-fragments-grid {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-  .marketing-fragment li:nth-child(3) {
-    grid-column: 2 / span 4;
-  }
+.marketing-fragments-stage {
+  display: grid;
+  min-width: 0;
+  gap: 0.6rem;
+}
 
-  .marketing-fragment li:nth-child(4) {
-    grid-column: 7 / span 4;
-    margin-top: -0.35rem;
-  }
+.marketing-fragments-artefacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-  .marketing-fragment li:nth-child(5) {
-    grid-column: 1 / span 5;
-  }
+.marketing-artefact {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: color-mix(in oklab, var(--elevated) 55%, var(--surface));
+  padding: 0.7rem 0.75rem 0.75rem;
+}
 
-  .marketing-fragment li:nth-child(6) {
-    grid-column: 8 / span 4;
-    margin-top: 0.55rem;
-  }
+.marketing-artefact-top {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
 
-  .marketing-fragment li:nth-child(7) {
-    grid-column: 3 / span 4;
-  }
-
-  .marketing-fragment li:nth-child(8) {
-    grid-column: 8 / span 5;
-    margin-top: -0.2rem;
+@media (min-width: 640px) {
+  .marketing-artefact-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .marketing-fragment li {
-    margin-top: 0;
+.marketing-artefact-glyph {
+  width: 1.75rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
+
+.marketing-artefact-source {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+
+.marketing-artefact-label {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+
+.marketing-artefact-gap {
+  margin-top: auto;
+  border-top: 1px dashed var(--leh-line-strong);
+  padding-top: 0.45rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.marketing-artefact-label + .marketing-artefact-gap {
+  margin-top: 0.55rem;
+}
+
+.marketing-fragments-resolve {
+  --resolve-pad-top: 0.6rem;
+  --resolve-line: 1.25rem;
+  --resolve-node: 0.5rem;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 0.6rem;
+  border: 1px solid var(--leh-cobalt-line);
+  border-radius: 0.5rem;
+  background: var(--fragments-strip-bg);
+  padding: var(--resolve-pad-top) 0.75rem 0.6rem 1.9rem;
+  box-shadow: var(--leh-highlight);
+}
+
+.marketing-fragments-resolve::before {
+  content: "";
+  position: absolute;
+  top: calc(
+    var(--resolve-pad-top) + (var(--resolve-line) - var(--resolve-node)) / 2
+  );
+  left: 0.8rem;
+  z-index: 2;
+  width: var(--resolve-node);
+  height: var(--resolve-node);
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: var(--elevated);
+}
+
+.marketing-fragments-stage-name {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: var(--resolve-line);
+  text-transform: uppercase;
+  color: var(--accent-foreground);
+}
+
+.marketing-fragments-modules {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: var(--resolve-line);
+  color: var(--foreground);
+}
+
+.marketing-fragments-modules span + span::before {
+  content: "·";
+  margin-right: 0.4rem;
+  color: var(--muted-foreground);
+}
+
+.marketing-fragments-caption {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  max-width: 44rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.marketing-fragments-caption .marketing-mark {
+  margin-top: 0.1rem;
+}
+
+@media (min-width: 1024px) {
+  .marketing-fragments {
+    --fragments-head: 10.5rem;
+    --fragments-col-gap: 1rem;
+    display: grid;
+    grid-template-columns: var(--fragments-head) repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto auto auto;
+    column-gap: var(--fragments-col-gap);
+    row-gap: var(--fragments-gap);
+    position: relative;
+  }
+
+  .marketing-fragments::before {
+    content: "";
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 0.75rem;
+    border: 1px solid var(--leh-cobalt-line);
+    border-radius: var(--marketing-radius);
+    background: var(--fragments-strip-bg);
+    box-shadow: var(--leh-highlight), var(--marketing-shadow);
+  }
+
+  .marketing-fragments-head {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-content: start;
+    margin: 0;
+    padding-top: 0.15rem;
+    padding-right: 0.5rem;
+  }
+
+  .marketing-fragments-head-system {
+    display: grid;
+    grid-column: 1;
+    grid-row: 3;
+    align-content: center;
+    gap: 0.2rem;
+    margin-top: 0.75rem;
+    padding: 1rem 0 1rem 1.1rem;
+  }
+
+  .marketing-fragments-head-system .marketing-fragments-head-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--accent-foreground);
+  }
+
+  .marketing-fragments-head-system .marketing-fragments-head-note {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  .marketing-fragments-grid {
+    display: grid;
+    grid-column: 2 / -1;
+    grid-row: 1 / span 3;
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
+    gap: inherit;
+  }
+
+  .marketing-fragments-stage {
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    gap: inherit;
+  }
+
+  .marketing-fragments-artefacts {
+    grid-row: span 2;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: subgrid;
+    gap: inherit;
+  }
+
+  .marketing-fragments-resolve {
+    --resolve-pad-top: 1rem;
+    --resolve-node: 0.625rem;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 0;
+    margin-top: 0.75rem;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: var(--resolve-pad-top) 0.25rem 1.05rem 0;
+    box-shadow: none;
+  }
+
+  .marketing-fragments-resolve::before {
+    left: 0;
+  }
+
+  .marketing-fragments-resolve::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--resolve-pad-top) + var(--resolve-line) / 2 - 0.5px);
+    left: var(--resolve-node);
+    right: calc(var(--fragments-col-gap) * -1);
+    height: 1px;
+    background: var(--leh-cobalt-line);
+  }
+
+  .marketing-fragments-stage:last-child .marketing-fragments-resolve::after {
+    display: none;
+  }
+
+  .marketing-fragments-stage-name {
+    position: relative;
+    z-index: 1;
+    margin-left: var(--resolve-node);
+    background: var(--fragments-strip-bg);
+    padding-inline: 0.55rem 0.5rem;
+  }
+
+  .marketing-fragments-modules {
+    display: grid;
+    gap: 0.15rem;
+    margin-top: 0.35rem;
+    padding-left: calc(var(--resolve-node) + 0.55rem);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .marketing-fragments-modules span + span::before {
+    content: none;
+  }
+
+  .marketing-fragments-caption {
+    grid-column: 1 / -1;
+    margin-top: 0.75rem;
   }
 }
 
+/* Status chips */
 .marketing-chip {
   display: inline-flex;
   align-items: center;
@@ -798,18 +1170,25 @@ body {
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   color: var(--foreground);
 }
 
 .marketing-chip-accent {
-  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  border-color: var(--leh-cobalt-line);
+  background: color-mix(in oklab, var(--accent) 75%, var(--card));
   color: var(--accent-foreground);
 }
 
+.marketing-chip-connected {
+  border-color: var(--leh-teal-line);
+  background: color-mix(in oklab, var(--leh-teal-soft) 80%, var(--card));
+  color: var(--leh-teal-ink);
+}
+
 .marketing-chip-warning {
-  border-color: color-mix(in oklch, var(--warning) 45%, var(--border));
-  background: color-mix(in oklch, var(--warning) 16%, var(--card));
+  border-color: color-mix(in oklab, var(--warning) 45%, var(--border));
+  background: color-mix(in oklab, var(--warning) 16%, var(--card));
   color: var(--warning-foreground);
 }
 
@@ -818,28 +1197,29 @@ body {
 }
 
 .marketing-chip-success {
-  border-color: color-mix(in oklch, var(--success) 40%, var(--border));
-  background: color-mix(in oklch, var(--success) 12%, var(--card));
+  border-color: color-mix(in oklab, var(--success) 40%, var(--border));
+  background: color-mix(in oklab, var(--success) 12%, var(--card));
   color: var(--success);
 }
 
 .marketing-chip-danger {
-  border-color: color-mix(in oklch, var(--destructive) 45%, var(--border));
-  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+  border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
+  background: color-mix(in oklab, var(--destructive) 12%, var(--card));
   color: var(--destructive);
 }
 
+/* Product previews */
 .marketing-preview {
   container: inline-size / preview;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--marketing-radius);
   background: var(--elevated);
-  box-shadow: var(--marketing-shadow);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow);
 }
 
 .marketing-preview-featured {
-  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
+  border-color: var(--leh-cobalt-line);
 }
 
 .marketing-preview-chrome {
@@ -849,7 +1229,7 @@ body {
   justify-content: space-between;
   gap: 0.5rem;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in oklch, var(--muted) 55%, var(--elevated));
+  background: color-mix(in oklab, var(--muted) 55%, var(--elevated));
   padding: 0.65rem 0.85rem;
 }
 
@@ -883,7 +1263,7 @@ body {
 .marketing-preview-record {
   margin-top: 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 0.55rem;
+  border-radius: 0.5rem;
   background: var(--card);
   padding: 0.75rem;
 }
@@ -927,13 +1307,13 @@ body {
 .marketing-heatmap-cell {
   height: 0.7rem;
   border-radius: 0.2rem;
-  background: color-mix(in oklch, var(--border) 80%, var(--muted));
+  background: color-mix(in oklab, var(--border) 80%, var(--muted));
 }
 
 .marketing-heatmap-cell[data-active="true"] {
   outline: 2px solid var(--primary);
   outline-offset: 1px;
-  background: color-mix(in oklch, var(--maturity-3) 55%, var(--muted));
+  background: color-mix(in oklab, var(--maturity-3) 55%, var(--muted));
 }
 
 .marketing-adherence,
@@ -961,8 +1341,8 @@ body {
 }
 
 .marketing-action-list li[data-overdue="true"] {
-  border-color: color-mix(in oklch, var(--warning) 45%, var(--border));
-  background: color-mix(in oklch, var(--warning) 10%, var(--card));
+  border-color: color-mix(in oklab, var(--warning) 45%, var(--border));
+  background: color-mix(in oklab, var(--warning) 10%, var(--card));
 }
 
 .marketing-workflow,
@@ -995,8 +1375,8 @@ body {
 .marketing-workflow li[data-current="true"],
 .marketing-stages li[data-current="true"],
 .marketing-lifecycle li[data-current="true"] {
-  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  border-color: var(--leh-cobalt-line);
+  background: color-mix(in oklab, var(--accent) 75%, var(--card));
   color: var(--accent-foreground);
 }
 
@@ -1061,14 +1441,14 @@ body {
 
 .marketing-matrix td[data-state="meets"] {
   border-radius: 0.25rem;
-  background: color-mix(in oklch, var(--success) 12%, var(--card));
+  background: color-mix(in oklab, var(--success) 12%, var(--card));
   color: var(--success);
   font-weight: 650;
 }
 
 .marketing-matrix td[data-state="gap"] {
   border-radius: 0.25rem;
-  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+  background: color-mix(in oklab, var(--destructive) 12%, var(--card));
   color: var(--destructive);
   font-weight: 650;
 }
@@ -1163,60 +1543,331 @@ body {
   }
 }
 
+/* From evidence to impact — one continuous workflow ribbon. */
 .marketing-process {
+  --process-pad: 1rem;
+  --process-node: 0.625rem;
+  --process-rail-x: 1.25rem;
+  --process-step-top: 1.1rem;
+  --process-title-line: 1.375rem;
+  --process-title-y: calc(
+    var(--process-step-top) + var(--process-title-line) / 2
+  );
   position: relative;
-  margin-top: 2.25rem;
+  margin: 2.25rem 0 0;
 }
 
-.marketing-process-progress {
-  display: none;
+.marketing-process-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--marketing-radius);
+  background: var(--elevated);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
 }
 
 .marketing-process-track {
   display: grid;
-  gap: 0.85rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .marketing-process-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title state"
+    "module module"
+    "record record";
+  align-items: center;
+  gap: 0 0.75rem;
   min-width: 0;
+  padding: var(--process-step-top) var(--process-pad) 1.15rem 2.6rem;
+}
+
+.marketing-process-step + .marketing-process-step {
+  box-shadow: inset 0 1px 0 var(--border);
+}
+
+.marketing-process-node {
+  position: absolute;
+  top: calc(var(--process-title-y) - var(--process-node) / 2);
+  left: calc(var(--process-rail-x) - var(--process-node) / 2 + 0.5px);
+  z-index: 1;
+  width: var(--process-node);
+  height: var(--process-node);
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: var(--elevated);
+}
+
+.marketing-process-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: var(--process-title-y);
+  left: var(--process-rail-x);
+  height: 100%;
+  width: 1px;
+  background: var(--leh-cobalt-line);
 }
 
 .marketing-process-index {
-  font-size: 0.68rem;
+  display: none;
+}
+
+.marketing-process-title-block {
+  display: contents;
+}
+
+.marketing-process-title {
+  grid-area: title;
+  min-width: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: var(--process-title-line);
+  color: var(--foreground);
+}
+
+.marketing-process-module {
+  grid-area: module;
+  margin-top: 0.1rem;
+  font-size: 0.6875rem;
   font-weight: 650;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
 
+.marketing-process-state {
+  grid-area: state;
+  display: flex;
+  align-self: start;
+  justify-content: flex-end;
+  min-height: var(--process-title-line);
+  align-items: center;
+}
+
 .marketing-process-record {
-  margin-top: 0.75rem;
+  grid-area: record;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin-top: 0.65rem;
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
-  background: var(--card);
-  padding: 0.75rem 0.8rem;
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--muted) 40%, var(--elevated));
+  padding: 0.7rem 0.8rem 0.75rem;
+}
+
+.marketing-process-ref {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--accent-foreground);
+}
+
+.marketing-process-body {
+  margin-top: 0.3rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--foreground);
+  text-wrap: pretty;
+}
+
+.marketing-process-meta {
+  margin-top: auto;
+  padding-top: 0.45rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.marketing-process-rail {
+  display: none;
+}
+
+.marketing-process-loop {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--leh-teal-soft) 55%, var(--elevated));
+  padding: 0.75rem var(--process-pad) 0.8rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--foreground);
+}
+
+.marketing-process-loop svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--leh-teal);
+}
+
+.marketing-process-loop-bracket {
+  display: none;
+}
+
+.marketing-process-loop-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.marketing-process-loop-text strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.marketing-process-loop-note {
+  color: var(--muted-foreground);
 }
 
 @media (min-width: 1024px) {
+  .marketing-process {
+    --process-pad: 1.15rem;
+    --process-rail-y: 1.6rem;
+  }
+
   .marketing-process-track {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.9rem;
+    grid-template-rows: repeat(4, auto);
+  }
+
+  .marketing-process-step {
+    grid-row: span 4;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: subgrid;
+    grid-template-areas: none;
+    align-items: start;
+    gap: 0;
+    padding: 1.1rem var(--process-pad) 1.2rem;
+  }
+
+  .marketing-process-step + .marketing-process-step {
+    box-shadow: inset 1px 0 0 var(--border);
+  }
+
+  .marketing-process-step:not(:last-child)::after {
+    display: none;
+  }
+
+  .marketing-process-node {
+    top: calc(var(--process-rail-y) - var(--process-node) / 2);
+    left: var(--process-pad);
+  }
+
+  .marketing-process-index {
+    display: block;
+    position: relative;
+    z-index: 1;
+    justify-self: start;
+    margin-left: var(--process-node);
+    background: var(--elevated);
+    padding-inline: 0.5rem 0.4rem;
+    font-size: 0.6875rem;
+    font-weight: 650;
+    letter-spacing: 0.14em;
+    line-height: 1rem;
+    color: var(--muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .marketing-process-title-block {
+    display: flex;
+    grid-row: 2;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    padding-top: 0.85rem;
+  }
+
+  .marketing-process-module {
+    margin-top: 0;
+  }
+
+  .marketing-process-record {
+    grid-area: auto;
+    grid-row: 3;
+    align-self: stretch;
+    margin-top: 0.85rem;
+  }
+
+  .marketing-process-state {
+    grid-area: auto;
+    grid-row: 4;
+    justify-content: flex-start;
+    padding-top: 0.75rem;
+  }
+
+  .marketing-process-rail {
+    display: block;
+    position: absolute;
+    top: calc(var(--process-rail-y) - 0.5px);
+    left: calc(var(--process-pad) + var(--process-node) / 2);
+    right: calc(20% - var(--process-pad) - var(--process-node) / 2);
+    height: 1px;
+    background: var(--border);
   }
 
   .marketing-process-progress {
     display: block;
-    position: absolute;
-    top: 2.55rem;
-    right: 1.5rem;
-    left: 1.5rem;
-    height: 1px;
-    opacity: 0.55;
-    transform: scaleX(1);
+    height: 100%;
     transform-origin: left center;
-    background: color-mix(in oklch, var(--primary) 45%, var(--border));
+    background: var(--leh-cobalt-line);
+  }
+
+  .marketing-process-loop {
+    position: relative;
+    display: block;
+    border-top: 0;
+    background: none;
+    padding: 0 0 1.1rem;
+  }
+
+  .marketing-process-loop-bracket {
+    display: block;
+    position: relative;
+    height: 1.35rem;
+    margin-left: calc(var(--process-pad) + var(--process-node) / 2);
+    margin-right: calc(20% - var(--process-pad) - var(--process-node) / 2);
+    border: 1px solid var(--leh-teal-line);
+    border-top: 0;
+    border-radius: 0 0 0.6rem 0.6rem;
+  }
+
+  .marketing-process-loop-bracket::before {
+    content: "";
+    position: absolute;
+    top: -0.1rem;
+    left: -0.27rem;
+    border-right: 0.25rem solid transparent;
+    border-bottom: 0.35rem solid var(--leh-teal);
+    border-left: 0.25rem solid transparent;
+  }
+
+  .marketing-process-loop-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-top: -0.6rem;
+  }
+
+  .marketing-process-loop-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--elevated);
+    padding-inline: 0.75rem;
+  }
+
+  .marketing-process-loop svg {
+    margin-top: 0;
   }
 }
 
@@ -1231,28 +1882,28 @@ body {
       transform: scaleX(0);
       animation: marketing-process-fill auto linear both;
       animation-timeline: --leh-process;
-      animation-range: entry 8% cover 62%;
+      animation-range: entry 10% cover 55%;
     }
 
-    .marketing-process-step .marketing-process-record {
-      animation: marketing-process-mark auto linear both;
+    .marketing-process-node {
+      animation: marketing-process-node auto linear both;
       animation-timeline: --leh-process;
     }
 
-    .marketing-process-step:nth-child(1) .marketing-process-record {
-      animation-range: entry 0% cover 28%;
+    .marketing-process-step:nth-child(1) .marketing-process-node {
+      animation-range: entry 0% entry 40%;
     }
-    .marketing-process-step:nth-child(2) .marketing-process-record {
-      animation-range: entry 8% cover 36%;
+    .marketing-process-step:nth-child(2) .marketing-process-node {
+      animation-range: entry 10% cover 30%;
     }
-    .marketing-process-step:nth-child(3) .marketing-process-record {
-      animation-range: entry 16% cover 44%;
+    .marketing-process-step:nth-child(3) .marketing-process-node {
+      animation-range: entry 20% cover 38%;
     }
-    .marketing-process-step:nth-child(4) .marketing-process-record {
-      animation-range: entry 24% cover 52%;
+    .marketing-process-step:nth-child(4) .marketing-process-node {
+      animation-range: entry 30% cover 46%;
     }
-    .marketing-process-step:nth-child(5) .marketing-process-record {
-      animation-range: entry 32% cover 62%;
+    .marketing-process-step:nth-child(5) .marketing-process-node {
+      animation-range: entry 40% cover 54%;
     }
   }
 }
@@ -1266,17 +1917,17 @@ body {
   }
 }
 
-@keyframes marketing-process-mark {
+@keyframes marketing-process-node {
   from {
-    border-color: var(--border);
+    background: var(--elevated);
   }
   to {
-    border-color: color-mix(in oklch, var(--primary) 40%, var(--border));
+    background: var(--primary);
   }
 }
 
+/* Business value + demo outcomes */
 .marketing-value-flow,
-.marketing-audience,
 .marketing-demo-outcomes {
   display: grid;
   gap: 0.9rem;
@@ -1286,14 +1937,12 @@ body {
 }
 
 .marketing-value-flow li,
-.marketing-audience li,
 .marketing-demo-outcomes li {
   min-width: 0;
   padding-bottom: 0.4rem;
 }
 
 .marketing-value-flow li + li,
-.marketing-audience li + li,
 .marketing-demo-outcomes li + li {
   border-top: 1px solid var(--border);
   padding-top: 0.9rem;
@@ -1315,44 +1964,368 @@ body {
     padding-top: 1.1rem;
   }
 
-  .marketing-audience,
   .marketing-demo-outcomes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.25rem 1.75rem;
   }
 
-  .marketing-audience li + li,
   .marketing-demo-outcomes li + li {
     border-top: 0;
     padding-top: 0;
   }
 }
 
-@media (min-width: 1024px) {
-  .marketing-audience {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    position: relative;
-  }
+.marketing-index {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
 
-  .marketing-audience li:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    top: 0.35rem;
-    right: -0.7rem;
-    width: 0.4rem;
-    height: 0.4rem;
-    border-top: 1px solid
-      color-mix(in oklch, var(--foreground) 28%, var(--border));
-    border-right: 1px solid
-      color-mix(in oklch, var(--foreground) 28%, var(--border));
-    transform: rotate(45deg);
-  }
+/* Who it is for — one system, different perspectives. */
+.marketing-perspectives {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
 
-  .marketing-audience li {
-    position: relative;
+.marketing-perspective-rail {
+  --rail-x: 1.2rem;
+  --rail-node: 0.625rem;
+  --rail-tab-top: 0.65rem;
+  --rail-scope-line: 1rem;
+  --rail-node-y: calc(var(--rail-tab-top) + var(--rail-scope-line) / 2);
+  position: relative;
+  grid-row: 1;
+  grid-column: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+
+.marketing-perspective-tab {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: var(--rail-tab-top) 0.9rem 0.7rem 2.5rem;
+  text-align: left;
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.marketing-perspective-tab:hover:not([data-state="active"]) {
+  background: color-mix(in oklab, var(--muted) 45%, transparent);
+}
+
+.marketing-perspective-tab:focus-visible {
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.125rem;
+}
+
+.marketing-perspective-tab[data-state="active"] {
+  border-color: var(--leh-cobalt-line);
+  background: var(--elevated);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow);
+}
+
+.marketing-perspective-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-perspective-tab[data-state="active"] .marketing-perspective-scope {
+  color: var(--accent-foreground);
+}
+
+.marketing-perspective-scope {
+  line-height: var(--rail-scope-line);
+}
+
+.marketing-perspective-scope::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--rail-node-y) - var(--rail-node) / 2);
+  left: calc(var(--rail-x) - var(--rail-node) / 2 + 0.5px);
+  z-index: 2;
+  width: var(--rail-node);
+  height: var(--rail-node);
+  border: 2px solid var(--leh-cobalt-line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.marketing-perspective-tab[data-state="active"]
+  .marketing-perspective-scope::before {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.marketing-perspective-tab:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: var(--rail-node-y);
+  left: var(--rail-x);
+  z-index: 1;
+  width: 1px;
+  height: 100%;
+  background: var(--leh-cobalt-line);
+}
+
+.marketing-perspective-role {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.marketing-perspective-focus {
+  display: none;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+/* Panels share one grid cell so the frame keeps the tallest panel's height. */
+.marketing-perspective-panel {
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.marketing-perspective-panel[data-state="inactive"] {
+  visibility: hidden;
+}
+
+.marketing-perspective-panel:focus-visible {
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.25rem;
+  border-radius: var(--marketing-radius);
+}
+
+.marketing-perspective-frame {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--marketing-radius);
+  background: var(--elevated);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
+}
+
+.marketing-perspective-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 55%, var(--elevated));
+  padding: 0.6rem 0.85rem;
+}
+
+.marketing-perspective-context {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.marketing-perspective-context li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.marketing-perspective-context li + li::before {
+  content: "›";
+  color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+}
+
+.marketing-perspective-context li:last-child {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.marketing-perspective-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 0.95rem 0.95rem 1rem;
+}
+
+.marketing-perspective-question {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+.marketing-perspective-records {
+  display: grid;
+  gap: 0;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+}
+
+.marketing-perspective-records li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.2rem 0.75rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.marketing-perspective-records li + li {
+  border-top: 1px solid var(--border);
+}
+
+.marketing-perspective-module {
+  grid-column: 1 / -1;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-perspective-record-title {
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--foreground);
+}
+
+.marketing-perspective-record-meta {
+  grid-column: 1;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.marketing-perspective-records .marketing-chip {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  align-self: center;
+}
+
+.marketing-perspective-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.marketing-perspective-footer svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--leh-teal);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-perspective-panel[data-state="active"]
+    .marketing-perspective-body {
+    animation: marketing-perspective-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
+@keyframes marketing-perspective-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-perspectives {
+    grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 2.5rem;
+    margin-top: 2.5rem;
+  }
+
+  .marketing-perspective-rail {
+    --rail-tab-top: 0.85rem;
+  }
+
+  .marketing-perspective-tab {
+    gap: 0.2rem;
+    padding: var(--rail-tab-top) 1rem 0.9rem 2.5rem;
+  }
+
+  .marketing-perspective-panel {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .marketing-perspective-tab[data-state="active"]::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 2.5rem;
+    height: 1px;
+    background: var(--leh-cobalt-line);
+  }
+
+  .marketing-perspective-focus {
+    display: block;
+  }
+
+  .marketing-perspective-body {
+    padding: 1.2rem 1.25rem 1.25rem;
+  }
+
+  .marketing-perspective-question {
+    font-size: 1.1875rem;
+  }
+
+  .marketing-perspective-records li {
+    padding: 0.75rem 0.9rem;
+  }
+}
+
+/* Footer */
 .marketing-footer {
   border-top: 1px solid var(--border);
   padding-block: 2.75rem 2rem;
@@ -1444,10 +2417,15 @@ body {
   .marketing-system-card,
   .marketing-maturity-panel,
   .marketing-process-progress,
-  .marketing-process-step .marketing-process-record {
+  .marketing-process-node,
+  .marketing-perspective-panel .marketing-perspective-body {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  .marketing-cta:hover {
+    transform: none;
   }
 }
 
@@ -1468,7 +2446,7 @@ body {
   border-top: 1px solid var(--border);
   background: linear-gradient(
     180deg,
-    color-mix(in oklch, var(--surface) 72%, var(--background)) 0%,
+    color-mix(in oklab, var(--surface) 72%, var(--background)) 0%,
     var(--background) 42%
   );
 }
@@ -1484,7 +2462,7 @@ body {
   overflow: hidden;
   scroll-margin-top: 5.75rem;
   min-height: 34rem;
-  border: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, var(--border));
   border-radius: calc(var(--marketing-radius) + 0.12rem);
   background: var(--elevated);
   box-shadow:
@@ -1504,7 +2482,7 @@ body {
   align-items: center;
   gap: 0.65rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in oklch, var(--muted) 48%, var(--elevated));
+  background: color-mix(in oklab, var(--muted) 48%, var(--elevated));
   padding: 0.7rem 0.85rem;
 }
 
@@ -1548,7 +2526,7 @@ body {
   gap: 0.2rem 0.75rem;
   margin: 0;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in oklch, var(--accent) 42%, var(--elevated));
+  background: color-mix(in oklab, var(--accent) 42%, var(--elevated));
   padding: 0.4rem 0.9rem;
   font-size: 0.66rem;
   font-weight: 700;
@@ -1579,8 +2557,8 @@ body {
 .leh-demo-perspective {
   margin: 0;
   border-bottom: 1px solid
-    color-mix(in oklch, var(--primary) 28%, var(--border));
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+    color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--accent) 70%, var(--card));
   padding: 0.45rem 0.9rem;
   font-size: 0.78rem;
   font-weight: 600;
@@ -1598,7 +2576,7 @@ body {
   overflow-x: auto;
   overscroll-behavior: contain;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in oklch, var(--muted) 28%, var(--elevated));
+  background: color-mix(in oklab, var(--muted) 28%, var(--elevated));
   padding: 0.4rem 0.55rem;
   scrollbar-width: thin;
 }
@@ -1709,7 +2687,7 @@ body {
   min-width: 0;
   max-width: 100%;
   min-height: 2.75rem;
-  border: 1px solid color-mix(in oklch, var(--foreground) 18%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--foreground) 18%, var(--border));
   border-radius: 0.45rem;
   background: var(--elevated);
   padding: 0.55rem 0.7rem;
@@ -1729,7 +2707,7 @@ body {
 }
 
 .leh-demo-input:hover {
-  border-color: color-mix(in oklch, var(--foreground) 22%, var(--border));
+  border-color: color-mix(in oklab, var(--foreground) 22%, var(--border));
 }
 
 .leh-demo-input:focus-visible {
@@ -1738,7 +2716,7 @@ body {
 }
 
 .leh-demo-input:user-invalid {
-  border-color: color-mix(in oklch, var(--destructive) 50%, var(--border));
+  border-color: color-mix(in oklab, var(--destructive) 50%, var(--border));
 }
 
 .leh-demo-hint {
@@ -1769,7 +2747,7 @@ body {
   justify-items: center;
   min-height: 2.75rem;
   min-width: 11.25rem;
-  border: 1px solid color-mix(in oklch, var(--primary) 35%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
   border-radius: 0.45rem;
   background: var(--primary);
   padding: 0.55rem 1rem;
@@ -1777,7 +2755,7 @@ body {
   font-weight: 600;
   color: var(--primary-foreground);
   text-decoration: none;
-  box-shadow: 0 1px 0 color-mix(in oklch, var(--foreground) 18%, transparent);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--foreground) 18%, transparent);
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -1788,7 +2766,7 @@ body {
 
 .leh-async-action:hover,
 .leh-demo-link-action:hover {
-  background: color-mix(in oklch, var(--primary) 88%, var(--foreground));
+  background: color-mix(in oklab, var(--primary) 88%, var(--foreground));
 }
 
 .leh-async-action:active {
@@ -1845,8 +2823,8 @@ body {
 .leh-demo-choice-button:hover,
 .leh-demo-scale-button:hover,
 .leh-demo-scenario:hover {
-  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
-  background: color-mix(in oklch, var(--accent) 45%, var(--card));
+  border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--accent) 45%, var(--card));
 }
 
 .leh-demo-ghost:active,
@@ -1922,20 +2900,20 @@ body {
 }
 
 .leh-demo-status-accent {
-  border-color: color-mix(in oklch, var(--primary) 28%, var(--border));
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--accent) 70%, var(--card));
   color: var(--accent-foreground);
 }
 
 .leh-demo-status-success {
-  border-color: color-mix(in oklch, var(--success) 40%, var(--border));
-  background: color-mix(in oklch, var(--success) 12%, var(--card));
+  border-color: color-mix(in oklab, var(--success) 40%, var(--border));
+  background: color-mix(in oklab, var(--success) 12%, var(--card));
   color: var(--success);
 }
 
 .leh-demo-status-warning {
-  border-color: color-mix(in oklch, var(--warning) 45%, var(--border));
-  background: color-mix(in oklch, var(--warning) 16%, var(--card));
+  border-color: color-mix(in oklab, var(--warning) 45%, var(--border));
+  background: color-mix(in oklab, var(--warning) 16%, var(--card));
   color: var(--warning-foreground);
 }
 
@@ -1944,8 +2922,8 @@ body {
 }
 
 .leh-demo-status-danger {
-  border-color: color-mix(in oklch, var(--destructive) 45%, var(--border));
-  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+  border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
+  background: color-mix(in oklab, var(--destructive) 12%, var(--card));
   color: var(--destructive);
 }
 
@@ -2022,8 +3000,8 @@ body {
 
 .leh-demo-timeline li[data-state="current"],
 .leh-demo-stages li[data-state="current"] {
-  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
+  background: color-mix(in oklab, var(--accent) 70%, var(--card));
   color: var(--accent-foreground);
 }
 
@@ -2031,9 +3009,9 @@ body {
   display: grid;
   gap: 0.55rem;
   max-width: 36rem;
-  border: 1px solid color-mix(in oklch, var(--primary) 22%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, var(--border));
   border-radius: 0.65rem;
-  background: color-mix(in oklch, var(--accent) 28%, var(--card));
+  background: color-mix(in oklab, var(--accent) 28%, var(--card));
   padding: 0.9rem;
 }
 
@@ -2066,9 +3044,9 @@ body {
   gap: 0.55rem;
   width: 100%;
   max-width: 40rem;
-  border: 1px solid color-mix(in oklch, var(--success) 28%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--success) 28%, var(--border));
   border-radius: 0.7rem;
-  background: color-mix(in oklch, var(--success) 8%, var(--card));
+  background: color-mix(in oklab, var(--success) 8%, var(--card));
   padding: 1.05rem 1.1rem 1.15rem;
 }
 
@@ -2088,7 +3066,7 @@ body {
     var(--success) 0 0.28rem,
     transparent 0.3rem
   );
-  box-shadow: 0 0 0 0 color-mix(in oklch, var(--success) 35%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--success) 35%, transparent);
 }
 
 .leh-demo-continue,
@@ -2096,7 +3074,7 @@ body {
 .leh-demo-next {
   border: 1px solid var(--border);
   border-radius: 0.65rem;
-  background: color-mix(in oklch, var(--muted) 35%, var(--card));
+  background: color-mix(in oklab, var(--muted) 35%, var(--card));
   padding: 0.9rem;
 }
 
@@ -2141,10 +3119,10 @@ body {
 
 .leh-demo-scenario[data-featured="true"] {
   min-height: 8.75rem;
-  border-color: color-mix(in oklch, var(--primary) 32%, var(--border));
+  border-color: color-mix(in oklab, var(--primary) 32%, var(--border));
   background: linear-gradient(
     180deg,
-    color-mix(in oklch, var(--accent) 55%, var(--card)),
+    color-mix(in oklab, var(--accent) 55%, var(--card)),
     var(--card)
   );
 }
@@ -2195,8 +3173,8 @@ body {
 
 .leh-demo-choice-button[aria-pressed="true"],
 .leh-demo-scale-button:focus-visible {
-  border-color: color-mix(in oklch, var(--primary) 40%, var(--border));
-  background: color-mix(in oklch, var(--accent) 70%, var(--card));
+  border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
+  background: color-mix(in oklab, var(--accent) 70%, var(--card));
 }
 
 .leh-demo-file {
@@ -2259,7 +3237,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: color-mix(in oklch, var(--foreground) 28%, transparent);
+  background: color-mix(in oklab, var(--foreground) 28%, transparent);
 }
 
 .leh-demo-notify {
@@ -2311,7 +3289,7 @@ body {
 }
 
 .leh-demo-notify-item[data-unread="true"] {
-  border-color: color-mix(in oklch, var(--primary) 32%, var(--border));
+  border-color: color-mix(in oklab, var(--primary) 32%, var(--border));
   box-shadow: inset 2px 0 0 var(--primary);
 }
 
@@ -2415,7 +3393,7 @@ body {
 .leh-progress-connector {
   width: 1.6rem;
   height: 1px;
-  background: color-mix(in oklch, var(--primary) 40%, var(--border));
+  background: color-mix(in oklab, var(--primary) 40%, var(--border));
 }
 
 .leh-progress-track li[data-state="active"],
@@ -2606,7 +3584,7 @@ body {
 
 @keyframes leh-demo-success-pulse {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in oklch, var(--success) 38%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--success) 38%, transparent);
   }
   100% {
     box-shadow: 0 0 0 0.7rem transparent;
@@ -2625,7 +3603,7 @@ body {
 @keyframes leh-demo-node {
   50% {
     box-shadow: 0 0 0 0.28rem
-      color-mix(in oklch, var(--primary) 22%, transparent);
+      color-mix(in oklab, var(--primary) 22%, transparent);
   }
 }
 

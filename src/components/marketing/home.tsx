@@ -10,6 +10,7 @@ import { MarketingPlatform } from "./platform-previews";
 import {
   MarketingContainer,
   MarketingKicker,
+  MarketingMark,
   MarketingSection,
   RequestDemoControl,
   SectionIntro,
@@ -18,48 +19,154 @@ import { MarketingShell } from "./shell";
 import { MarketingSystemVisual } from "./system-visual";
 import { MarketingAudience, MarketingValue } from "./value-audience";
 
-const FRAGMENTS = [
+type ArtefactKind =
+  | "sheet"
+  | "email"
+  | "register"
+  | "form"
+  | "workbook"
+  | "report"
+  | "matrix"
+  | "deck";
+
+const FRAGMENT_STAGES: ReadonlyArray<{
+  stage: string;
+  modules: readonly [string, string];
+  artefacts: ReadonlyArray<{
+    label: string;
+    source: string;
+    kind: ArtefactKind;
+    gap: string;
+  }>;
+}> = [
   {
-    label: "Audit checklist",
-    source: "Shared folder",
-    kind: "sheet",
+    stage: "Observe",
+    modules: ["5S", "Gemba"],
+    artefacts: [
+      {
+        label: "Audit checklist",
+        source: "Shared folder",
+        kind: "sheet",
+        gap: "Findings retyped into actions",
+      },
+      {
+        label: "Gemba findings",
+        source: "Email thread",
+        kind: "email",
+        gap: "No owner, no due date",
+      },
+    ],
   },
   {
-    label: "Gemba findings",
-    source: "Email thread",
-    kind: "email",
+    stage: "Act",
+    modules: ["Actions", "Suggestions"],
+    artefacts: [
+      {
+        label: "Open actions",
+        source: "Exported register",
+        kind: "register",
+        gap: "Status found by chasing",
+      },
+      {
+        label: "Suggestion form",
+        source: "Standalone form",
+        kind: "form",
+        gap: "Ideas wait without review",
+      },
+    ],
   },
   {
-    label: "Open actions",
-    source: "Exported register",
-    kind: "sheet",
+    stage: "Improve",
+    modules: ["Problem Solving", "Projects & Benefits"],
+    artefacts: [
+      {
+        label: "Project tracker",
+        source: "Local workbook",
+        kind: "workbook",
+        gap: "No link back to the finding",
+      },
+      {
+        label: "Benefits forecast",
+        source: "Finance report",
+        kind: "report",
+        gap: "Forecast, never validated",
+      },
+    ],
   },
   {
-    label: "Suggestion form",
-    source: "Standalone form",
-    kind: "form",
+    stage: "Learn",
+    modules: ["Training & Skills", "Maturity"],
+    artefacts: [
+      {
+        label: "Training records",
+        source: "Separate matrix",
+        kind: "matrix",
+        gap: "Skills not tied to standards",
+      },
+      {
+        label: "Maturity scores",
+        source: "Slide deck",
+        kind: "deck",
+        gap: "Frozen at the last review",
+      },
+    ],
   },
-  {
-    label: "Project tracker",
-    source: "Local workbook",
-    kind: "sheet",
-  },
-  {
-    label: "Training records",
-    source: "Separate matrix",
-    kind: "form",
-  },
-  {
-    label: "Maturity scores",
-    source: "Slide deck",
-    kind: "report",
-  },
-  {
-    label: "Benefits forecast",
-    source: "Unvalidated",
-    kind: "report",
-  },
-] as const;
+];
+
+function ArtefactGlyph({ kind }: { kind: ArtefactKind }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="marketing-artefact-glyph"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.25"
+      viewBox="0 0 28 20"
+    >
+      {kind === "email" ? (
+        <>
+          <rect x="1.5" y="3.5" width="25" height="13" rx="2" />
+          <path d="m2.5 4.75 11.5 7.25 11.5-7.25" />
+        </>
+      ) : kind === "workbook" ? (
+        <>
+          <rect x="5" y="1.5" width="21.5" height="14" rx="2" />
+          <path d="M5 6.5h21.5M12 1.5v14M1.5 5v11.5a2 2 0 0 0 2 2H22" />
+        </>
+      ) : kind === "matrix" ? (
+        <>
+          <rect x="1.5" y="1.5" width="25" height="17" rx="2" />
+          <circle cx="8" cy="7" r="1.6" fill="currentColor" />
+          <circle cx="14" cy="7" r="1.6" fill="currentColor" />
+          <circle cx="20" cy="7" r="1.6" />
+          <circle cx="8" cy="13" r="1.6" fill="currentColor" />
+          <circle cx="14" cy="13" r="1.6" />
+          <circle cx="20" cy="13" r="1.6" />
+        </>
+      ) : kind === "deck" ? (
+        <>
+          <rect x="1.5" y="1.5" width="25" height="13.5" rx="2" />
+          <path d="M14 15v3.5M10 18.5h8M8 11.5v-2.5M12.5 11.5V6M17 11.5V8M21 11.5V5" />
+        </>
+      ) : (
+        <>
+          <rect x="1.5" y="1.5" width="25" height="17" rx="2" />
+          {kind === "sheet" ? (
+            <path d="M1.5 7h25M1.5 12.5h25M9 1.5v17" />
+          ) : kind === "register" ? (
+            <path d="M5.5 6.5h1.5M10 6.5h12.5M5.5 10h1.5M10 10h12.5M5.5 13.5h1.5M10 13.5h8" />
+          ) : kind === "form" ? (
+            <path d="M5.5 5.5h17v3h-17zM5.5 11.5h10v3h-10z" />
+          ) : (
+            <path d="m5.5 14 4.5-4 4 2.5 8.5-6.5" strokeDasharray="2 2" />
+          )}
+        </>
+      )}
+    </svg>
+  );
+}
 
 export function MarketingHome() {
   return (
@@ -131,19 +238,70 @@ function Problem() {
             Hub brings them into one connected improvement system.
           </p>
         </SectionIntro>
-        <ul className="marketing-fragment mt-8" role="list">
-          {FRAGMENTS.map((item) => (
-            <li key={item.label} data-kind={item.kind}>
-              <span className="marketing-fragment-label">{item.label}</span>
-              <span className="marketing-fragment-source">{item.source}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-6 max-w-2xl text-sm leading-6 text-muted-foreground">
-          The differentiator is not another Lean toolkit. It is one system in
-          which observation, action, problem solving, capability and benefits
-          stay connected.
-        </p>
+        <figure className="marketing-fragments">
+          <div className="marketing-fragments-head">
+            <span className="marketing-fragments-head-label">Today</span>
+            <span className="marketing-fragments-head-note">
+              Separate files, separate owners.
+            </span>
+          </div>
+          <div className="marketing-fragments-head-system" aria-hidden="true">
+            <span className="marketing-fragments-head-label">
+              <MarketingMark />
+              In LEH
+            </span>
+            <span className="marketing-fragments-head-note">
+              One connected loop
+            </span>
+          </div>
+          <ol className="marketing-fragments-grid" role="list">
+            {FRAGMENT_STAGES.map((group) => (
+              <li key={group.stage} className="marketing-fragments-stage">
+                <ul className="marketing-fragments-artefacts" role="list">
+                  {group.artefacts.map((artefact) => (
+                    <li
+                      key={artefact.label}
+                      className="marketing-artefact"
+                      data-kind={artefact.kind}
+                    >
+                      <span className="marketing-artefact-top">
+                        <span className="marketing-artefact-source">
+                          {artefact.source}
+                        </span>
+                        <ArtefactGlyph kind={artefact.kind} />
+                      </span>
+                      <span className="marketing-artefact-label">
+                        {artefact.label}
+                      </span>
+                      <span className="marketing-artefact-gap">
+                        {artefact.gap}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="marketing-fragments-resolve">
+                  <span className="sr-only">In Lean Excellence Hub: </span>
+                  <span className="marketing-fragments-stage-name">
+                    {group.stage}
+                  </span>
+                  <span className="marketing-fragments-modules">
+                    {group.modules.map((name) => (
+                      <span key={name}>{name}</span>
+                    ))}
+                  </span>
+                </p>
+              </li>
+            ))}
+          </ol>
+          <figcaption className="marketing-fragments-caption">
+            <MarketingMark />
+            <span>
+              The differentiator is not another Lean toolkit. It is one system
+              in which observation, action, problem solving, capability and
+              benefits stay connected.
+            </span>
+          </figcaption>
+        </figure>
       </MarketingContainer>
     </MarketingSection>
   );
@@ -152,19 +310,21 @@ function Problem() {
 function FinalCta() {
   return (
     <MarketingSection>
-      <MarketingContainer className="max-w-3xl">
-        <h2 className="marketing-heading">
-          Build a Continuous Improvement system people actually use.
-        </h2>
-        <p className="marketing-lede mt-5">
-          Connect improvement activity, capability and results in one
-          Operational Excellence platform.
-        </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <RequestDemoControl />
-          <Button asChild variant="outline">
-            <a href="#platform">Explore the platform</a>
-          </Button>
+      <MarketingContainer>
+        <div className="max-w-3xl">
+          <h2 className="marketing-heading">
+            Build a Continuous Improvement system people actually use.
+          </h2>
+          <p className="marketing-lede mt-5">
+            Connect improvement activity, capability and results in one
+            Operational Excellence platform.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <RequestDemoControl />
+            <Button asChild variant="outline">
+              <a href="#platform">Explore the platform</a>
+            </Button>
+          </div>
         </div>
       </MarketingContainer>
     </MarketingSection>
