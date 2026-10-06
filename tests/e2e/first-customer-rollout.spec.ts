@@ -74,7 +74,11 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await expect(page.getByTestId("rollout-state")).toHaveText(
       "Single-site pilot in a wider organisation",
     );
-    await expect(page.getByText("Plymouth Factory")).toBeVisible();
+    await expect(
+      page.getByTestId("rollout-governance-panel").getByRole("cell", {
+        name: "Plymouth Factory",
+      }),
+    ).toBeVisible();
     await screenshotIfPossible(page, "01c-rollout-governance.png");
 
     await page.getByTestId("roll-out-another-site").click();
@@ -123,8 +127,16 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await expect(page.getByTestId("rollout-capacity-headline")).toHaveText(
       "2 of 2 subscribed sites active",
     );
-    await expect(page.getByText("Plymouth Factory")).toBeVisible();
-    await expect(page.getByText("Bristol Factory")).toBeVisible();
+    await expect(
+      page.getByTestId("rollout-governance-panel").getByRole("cell", {
+        name: "Plymouth Factory",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("rollout-governance-panel").getByRole("cell", {
+        name: "Bristol Factory",
+      }),
+    ).toBeVisible();
     await expect(page.getByTestId("rollout-state")).toHaveText(
       "Multi-site organisation",
     );
