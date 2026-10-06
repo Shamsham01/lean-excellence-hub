@@ -7,7 +7,19 @@ import {
   provisionFoundingE2eUser,
 } from "./helpers/founding-onboarding";
 
-const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
+async function screenshotIfPossible(
+  page: import("@playwright/test").Page,
+  name: string,
+) {
+  try {
+    await page.screenshot({
+      path: `/opt/cursor/artifacts/${name}`,
+      fullPage: true,
+    });
+  } catch {
+    // Artifact directory is optional outside Cloud Agent runs.
+  }
+}
 
 async function addCustomSite(
   page: import("@playwright/test").Page,
@@ -47,6 +59,7 @@ test.describe("subscribed site capacity", () => {
     await expect(page.getByTestId("site-capacity-remaining")).toHaveText(
       "No additional site slots available",
     );
+    await screenshotIfPossible(page, "structure-site-capacity-1-of-1.png");
 
     await addCustomSite(page, "Second Site");
     await expect(page.getByTestId("site-capacity-error")).toContainText(
@@ -56,6 +69,7 @@ test.describe("subscribed site capacity", () => {
       /postgres|P0001|23514/i,
     );
     await expect(page.getByTestId("site-capacity-open-billing")).toBeVisible();
+    await screenshotIfPossible(page, "structure-site-capacity-exhausted.png");
     await page.getByTestId("site-capacity-open-billing").click();
     await expect(page.getByTestId("billing-settings-page")).toBeVisible();
     await expect(page.getByTestId("billing-site-capacity-headline")).toHaveText(
@@ -67,6 +81,7 @@ test.describe("subscribed site capacity", () => {
     await expect(
       page.getByRole("button", { name: "Manage billing" }),
     ).toBeVisible();
+    await screenshotIfPossible(page, "billing-site-capacity-1-of-1.png");
   });
 
   test("quantity 2 allows a second site under the same organisation", async ({
@@ -101,6 +116,7 @@ test.describe("subscribed site capacity", () => {
     await expect(page.getByTestId("site-capacity-headline")).toHaveText(
       "2 of 2 subscribed sites active",
     );
+    await screenshotIfPossible(page, "structure-site-capacity-2-of-2.png");
 
     await page.goto("/platform/settings/billing");
     await expect(page.getByTestId("billing-site-capacity-headline")).toHaveText(
