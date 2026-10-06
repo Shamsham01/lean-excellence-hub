@@ -204,12 +204,24 @@ export async function resolveLeanAiAssistantView(
       allowedActions.push(
         "Preview the LEH Operational Excellence Standard",
         "Create an organisation-owned draft from Quick Start",
+        "Build a draft framework with LeanAI",
         "Create a framework manually",
       );
     }
     if (canManageMaturity && maturityItem?.reasonCode === "maturity_none") {
       extraRemaining.push(
         "You can start manually or deploy the LEH Operational Excellence Standard as a draft.",
+      );
+    }
+  }
+
+  if (identity.workflow === "maturity_builder") {
+    relevantState.builderCreatesDraftOnly = true;
+    if (canManageMaturity) {
+      allowedActions.push(
+        "Describe your framework to the builder",
+        "Refine one part of the proposal",
+        "Create an editable draft from the proposal",
       );
     }
   }

@@ -13,6 +13,7 @@ export const ASSISTANT_WORKFLOWS = [
   "people",
   "maturity_overview",
   "maturity_models",
+  "maturity_builder",
   "maturity_template_preview",
   "maturity_authoring",
   "maturity_assessment",

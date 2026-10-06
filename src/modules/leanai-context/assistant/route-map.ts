@@ -121,6 +121,14 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       surface: "maturity",
     };
   }
+  if (pathname === "/platform/maturity/builder") {
+    return {
+      module: "maturity",
+      workflow: "maturity_builder",
+      pageTitle: "Build with LeanAI",
+      surface: "maturity",
+    };
+  }
   const maturityTemplate = pathname.match(
     /^\/platform\/maturity\/templates\/([^/]+)$/,
   );

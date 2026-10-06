@@ -208,6 +208,47 @@ function definitionFor(
     };
   }
 
+  if (identity.workflow === "maturity_builder") {
+    return {
+      module: "maturity",
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel: "Maturity · Build with LeanAI",
+      summary:
+        "Describe how your organisation assesses operations. The builder proposes levels, pillars, criteria and scored questions for you to review and refine. Nothing is saved until you create a draft, and only a person can publish it.",
+      terminology: [
+        {
+          term: "LeanAI proposal",
+          meaning:
+            "An unsaved suggestion shown for review. It is not a framework until you choose Create draft framework.",
+        },
+        {
+          term: "Draft framework",
+          meaning:
+            "An organisation-owned, editable framework version. Assessments cannot use it until someone publishes it.",
+        },
+        {
+          term: "Refine",
+          meaning:
+            "Ask the builder to change one part of the proposal, such as a pillar or criterion, while keeping the rest.",
+        },
+      ],
+      starterPrompts: [
+        "How should I describe our framework?",
+        "How many maturity levels should we use?",
+        "What makes a good scored question?",
+        "When should I use Quick Start instead?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "The builder conversation happens in the main page. This assistant explains the process; it does not change the proposal.",
+        "Creating a draft is an explicit human action. Publishing happens later in the framework editor.",
+        "LEH is the engine, not the methodology: the framework should reflect the organisation's own standards.",
+        "Quick Start and manual setup remain available at any time.",
+      ],
+    };
+  }
+
   if (identity.workflow === "maturity_models") {
     return {
       module: "maturity",
@@ -215,7 +256,7 @@ function definitionFor(
       pageTitle: identity.pageTitle,
       contextLabel: "Maturity · Frameworks",
       summary:
-        "Create a framework from scratch or start with an LEH template and tailor it to your organisation.",
+        "Start from an LEH template, build a framework with LeanAI, or create one manually. Every route creates an editable draft that a person publishes.",
       terminology: [
         {
           term: "Maturity Framework",
@@ -241,7 +282,7 @@ function definitionFor(
       ],
       facts: [
         ...knowledge.facts,
-        "You can start manually or deploy the LEH Operational Excellence Standard as a draft.",
+        "You can start manually, deploy the LEH Operational Excellence Standard as a draft, or use Build with LeanAI to translate your own framework into a draft.",
         "Quick Start is a starting point, not the one correct Lean system.",
         "LeanAI must not deploy or publish a framework.",
       ],
