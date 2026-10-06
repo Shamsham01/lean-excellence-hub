@@ -71,7 +71,10 @@ test.describe("subscribed site capacity", () => {
       /postgres|P0001|23514/i,
     );
     await expect(page.getByTestId("site-capacity-open-billing")).toBeVisible();
-    await screenshotIfPossible(page, "structure-site-capacity-exhausted.png");
+    await screenshotIfPossible(
+      page,
+      "structure-add-site-capacity-exhausted.png",
+    );
     await page.getByTestId("site-capacity-open-billing").click();
     await expect(page.getByTestId("billing-settings-page")).toBeVisible();
     await expect(page.getByTestId("billing-site-capacity-headline")).toHaveText(
