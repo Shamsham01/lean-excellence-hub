@@ -143,8 +143,12 @@ export function buildSiteGovernanceRows(input: {
         consumesCapacity: status === "active",
         leadership: siteLeadershipState(unit.id, input.grants),
         readiness: siteReadinessState({
-          childUnitCount: input.childCountBySiteId?.get(unit.id) ?? null,
-          assessmentCount: input.assessmentCountBySiteId?.get(unit.id) ?? null,
+          childUnitCount: input.childCountBySiteId
+            ? (input.childCountBySiteId.get(unit.id) ?? 0)
+            : null,
+          assessmentCount: input.assessmentCountBySiteId
+            ? (input.assessmentCountBySiteId.get(unit.id) ?? 0)
+            : null,
         }),
       };
     })

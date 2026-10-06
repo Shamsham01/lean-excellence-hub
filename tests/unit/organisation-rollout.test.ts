@@ -116,6 +116,7 @@ describe("rollout governance", () => {
     expect(snapshot.sites[0]?.consumesCapacity).toBe(true);
     expect(snapshot.sites[0]?.leadership).toBe("assigned");
     expect(snapshot.sites[1]?.consumesCapacity).toBe(false);
+    expect(snapshot.sites[1]?.readiness).toBe("ready_to_configure");
     expect(snapshot.ownerTransferAvailable).toBe(false);
   });
 

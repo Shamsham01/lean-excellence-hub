@@ -140,8 +140,7 @@ export async function loadOrganisationGovernanceSnapshot(): Promise<Organisation
     units,
     grants,
     childCountBySiteId,
-    assessmentCountBySiteId:
-      assessmentCountBySiteId.size > 0 ? assessmentCountBySiteId : null,
+    assessmentCountBySiteId,
     siteCapacity,
     canManageHierarchy,
     canManageBilling,
