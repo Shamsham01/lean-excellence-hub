@@ -4,6 +4,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+import {
+  RECOVERY_CODE_COOKIE,
+  RECOVERY_TOKEN_COOKIE,
+} from "@/modules/identity/recovery-callback";
+
 const verifyOtp = vi.fn();
 const exchangeCodeForSession = vi.fn();
 const getUser = vi.fn();
@@ -30,7 +35,7 @@ vi.mock("@/platform/supabase/route-handler", () => ({
   }),
 }));
 
-import { GET } from "@/app/auth/recovery/route";
+import { GET, POST } from "@/app/auth/recovery/route";
 
 const canonicalEnvironment = {
   APP_ORIGIN: "https://leanexcellencehub.com",
@@ -39,11 +44,16 @@ const canonicalEnvironment = {
   SUPABASE_SECRET_KEY: "test-secret-key",
 };
 
-function recoveryRequest(path: string, host = "evil.example") {
-  return new NextRequest(`https://${host}${path}`, {
+function recoveryRequest(
+  path: string,
+  options: { method?: "GET" | "POST"; cookie?: string } = {},
+) {
+  return new NextRequest(`https://leanexcellencehub.com${path}`, {
+    method: options.method ?? "GET",
     headers: {
-      host,
-      "x-forwarded-host": host,
+      host: "leanexcellencehub.com",
+      origin: "https://leanexcellencehub.com",
+      ...(options.cookie ? { cookie: options.cookie } : {}),
     },
   });
 }
@@ -60,11 +70,43 @@ describe("password recovery callback", () => {
     });
   });
 
-  it("verifies recovery TokenHash and redirects to update-password on APP_ORIGIN", async () => {
+  it("stages a recovery TokenHash on GET without consuming it", async () => {
     const response = await GET(
       recoveryRequest(
         "/auth/recovery?token_hash=abc123tokenhash&type=recovery&next=https://evil.example",
       ),
+    );
+
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe(
+      "https://leanexcellencehub.com/recover?continue=true",
+    );
+    expect(response.cookies.get(RECOVERY_TOKEN_COOKIE)?.value).toBe(
+      "abc123tokenhash",
+    );
+    expect(response.cookies.get(RECOVERY_TOKEN_COOKIE)?.httpOnly).toBe(true);
+  });
+
+  it("stages a PKCE code on GET without exchanging it", async () => {
+    const response = await GET(
+      recoveryRequest("/auth/recovery?code=pkce-code"),
+    );
+
+    expect(exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(response.headers.get("Location")).toBe(
+      "https://leanexcellencehub.com/recover?continue=true",
+    );
+    expect(response.cookies.get(RECOVERY_CODE_COOKIE)?.value).toBe("pkce-code");
+  });
+
+  it("consumes a staged TokenHash only on an explicit same-origin POST", async () => {
+    const response = await POST(
+      recoveryRequest("/auth/recovery", {
+        method: "POST",
+        cookie: `${RECOVERY_TOKEN_COOKIE}=abc123tokenhash`,
+      }),
     );
 
     expect(verifyOtp).toHaveBeenCalledWith({
@@ -72,15 +114,18 @@ describe("password recovery callback", () => {
       type: "recovery",
     });
     expect(exchangeCodeForSession).not.toHaveBeenCalled();
-    expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe(
       "https://leanexcellencehub.com/update-password",
     );
+    expect(response.cookies.get(RECOVERY_TOKEN_COOKIE)?.value ?? "").toBe("");
   });
 
-  it("exchanges a PKCE code and does not keep it in the destination URL", async () => {
-    const response = await GET(
-      recoveryRequest("/auth/recovery?code=pkce-code"),
+  it("consumes a staged PKCE code only on POST", async () => {
+    const response = await POST(
+      recoveryRequest("/auth/recovery", {
+        method: "POST",
+        cookie: `${RECOVERY_CODE_COOKIE}=pkce-code`,
+      }),
     );
 
     expect(exchangeCodeForSession).toHaveBeenCalledWith("pkce-code");
@@ -106,18 +151,21 @@ describe("password recovery callback", () => {
     expect(verifyOtp).not.toHaveBeenCalled();
   });
 
-  it("sends expired and malformed callbacks to recover, not login credentials", async () => {
-    verifyOtp.mockResolvedValue({ error: { message: "Token has expired" } });
-
-    const expired = await GET(
-      recoveryRequest("/auth/recovery?token_hash=used-token&type=recovery"),
-    );
+  it("fails safely for malformed callbacks and consumed tokens", async () => {
     const malformed = await GET(recoveryRequest("/auth/recovery"));
-
-    expect(expired.headers.get("Location")).toBe(
+    expect(malformed.headers.get("Location")).toBe(
       "https://leanexcellencehub.com/recover?error=expired",
     );
-    expect(malformed.headers.get("Location")).toBe(
+
+    verifyOtp.mockResolvedValue({ error: { message: "Token has expired" } });
+    const expired = await POST(
+      recoveryRequest("/auth/recovery", {
+        method: "POST",
+        cookie: `${RECOVERY_TOKEN_COOKIE}=used-token`,
+      }),
+    );
+
+    expect(expired.headers.get("Location")).toBe(
       "https://leanexcellencehub.com/recover?error=expired",
     );
     expect(expired.headers.get("Location")).not.toContain("login");
