@@ -14,7 +14,10 @@ import {
   buildSiteCapacityView,
 } from "@/modules/billing/site-capacity";
 import { siteQuantityIncreaseStateDecision } from "@/modules/billing/site-capacity-increase";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  currentMemberHasOrganisationScopedPermission,
+  currentMemberHasPermission,
+} from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function OrganisationBillingSettingsPage({
@@ -43,6 +46,8 @@ export default async function OrganisationBillingSettingsPage({
     snapshot?.plan_code ?? null,
   );
   const pendingDesired = await loadProviderPendingSiteQuantity();
+  const canCreateSite =
+    await currentMemberHasOrganisationScopedPermission("hierarchy.manage");
 
   return (
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
@@ -84,6 +89,7 @@ export default async function OrganisationBillingSettingsPage({
               remainingSlots={siteCapacity.remainingSlots}
               enforced={siteCapacity.enforced}
               canIncrease={increaseDecision.action !== "reject"}
+              canCreateSite={canCreateSite}
               blockedReason={
                 increaseDecision.action === "reject"
                   ? increaseDecision.message

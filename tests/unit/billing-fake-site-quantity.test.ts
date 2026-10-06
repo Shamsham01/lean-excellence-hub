@@ -103,4 +103,29 @@ describe("fake provider site quantity increase", () => {
     expect(event.snapshot?.siteQuantity).toBe(2);
     expect(event.eventType).toBe("customer.subscription.updated");
   });
+
+  it("maps same-second subscription updates to current provider quantity", async () => {
+    const { provider, completed } = await provisionActiveSubscription();
+    await provider.increaseSubscriptionSiteQuantity({
+      organisationId: "11111111-1111-4111-8111-111111111111",
+      subscriptionId: completed.subscriptionId!,
+      customerId: completed.customerId!,
+      desiredSiteQuantity: 3,
+    });
+    const sameSecond = "2026-10-06T11:00:00.000Z";
+    const first = provider.simulateSubscriptionEvent(
+      completed.subscriptionId!,
+      "customer.subscription.updated",
+      sameSecond,
+    );
+    const second = provider.simulateSubscriptionEvent(
+      completed.subscriptionId!,
+      "customer.subscription.updated",
+      sameSecond,
+    );
+    expect(first.snapshot?.siteQuantity).toBe(3);
+    expect(second.snapshot?.siteQuantity).toBe(3);
+    expect(first.createdAt).toBe(sameSecond);
+    expect(second.createdAt).toBe(sameSecond);
+  });
 });

@@ -15,6 +15,8 @@ export const SITE_QUANTITY_INCREASE_PRORATION_BEHAVIOR =
 export const ADD_SITE_CAPACITY_HREF =
   "/platform/settings/billing?addCapacity=1" as const;
 export const ADD_SITE_HREF = "/platform/settings/structure" as const;
+export const CAPACITY_AVAILABLE_HIERARCHY_REQUIRED =
+  "Capacity is available. Ask an authorised hierarchy administrator to create the site." as const;
 
 export const SITE_QUANTITY_INCREASE_ALLOWED_STATES: BillingState[] = [
   "active",
@@ -42,6 +44,49 @@ export type SiteQuantityIncreaseDecision =
       reason: SiteQuantityIncreaseBlockReason;
       message: string;
     };
+
+export type SiteQuantityIncreaseClaim = {
+  action: "update" | "noop" | "reject";
+  reason: "superseded" | "already_at_or_above" | "missing_subscription" | null;
+  highestRequestedSiteQuantity: number | null;
+  persistedSiteQuantity: number | null;
+  message: string | null;
+};
+
+export function parseSiteQuantityIncreaseClaim(
+  value: unknown,
+): SiteQuantityIncreaseClaim {
+  const record =
+    value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
+  const action =
+    record.action === "update" ||
+    record.action === "noop" ||
+    record.action === "reject"
+      ? record.action
+      : "reject";
+  const reason =
+    record.reason === "superseded" ||
+    record.reason === "already_at_or_above" ||
+    record.reason === "missing_subscription"
+      ? record.reason
+      : null;
+  const highestRequestedSiteQuantity =
+    typeof record.highest_requested_site_quantity === "number"
+      ? record.highest_requested_site_quantity
+      : null;
+  const persistedSiteQuantity =
+    typeof record.site_quantity === "number" ? record.site_quantity : null;
+
+  return {
+    action,
+    reason,
+    highestRequestedSiteQuantity,
+    persistedSiteQuantity,
+    message: typeof record.message === "string" ? record.message : null,
+  };
+}
 
 /**
  * Subscription-state matrix for this increase-only slice.

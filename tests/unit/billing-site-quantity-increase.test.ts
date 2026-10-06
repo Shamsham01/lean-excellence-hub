@@ -5,6 +5,7 @@ import {
   evaluateSiteQuantityIncrease,
   formatSiteQuantityIncreaseReview,
   parseDesiredSiteQuantity,
+  parseSiteQuantityIncreaseClaim,
   selectLehSubscriptionItem,
   SITE_QUANTITY_INCREASE_PRORATION_BEHAVIOR,
   siteQuantityIncreaseStateDecision,
@@ -114,6 +115,22 @@ describe("site quantity increase policy", () => {
     expect(() => parseDesiredSiteQuantity("1.5")).toThrow(BillingProviderError);
     expect(() => parseDesiredSiteQuantity("0")).toThrow(/at least 1/);
     expect(() => parseDesiredSiteQuantity("501")).toThrow(/cannot exceed 500/);
+  });
+
+  it("parses a monotonic increase claim", () => {
+    expect(
+      parseSiteQuantityIncreaseClaim({
+        action: "noop",
+        reason: "superseded",
+        highest_requested_site_quantity: 3,
+        site_quantity: 1,
+        message: "A higher subscribed site quantity is already requested or confirmed.",
+      }),
+    ).toMatchObject({
+      action: "noop",
+      reason: "superseded",
+      highestRequestedSiteQuantity: 3,
+    });
   });
 
   it("makes Stripe proration explicit and keeps review copy non-fabricated", () => {

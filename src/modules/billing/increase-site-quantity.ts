@@ -13,7 +13,10 @@ import {
   getFakeBillingProvider,
 } from "@/modules/billing/get-provider";
 import { BillingProviderError } from "@/modules/billing/provider";
-import { loadCurrentOrganisationSubscriptionBinding } from "@/modules/billing/repository";
+import {
+  claimSiteQuantityIncrease,
+  loadCurrentOrganisationSubscriptionBinding,
+} from "@/modules/billing/repository";
 import {
   evaluateSiteQuantityIncrease,
   parseDesiredSiteQuantity,
@@ -210,6 +213,17 @@ export async function increaseCurrentOrganisationSiteQuantity(
       };
     }
 
+    const claim = await claimSiteQuantityIncrease(desiredSiteQuantity);
+    if (claim.action === "reject") {
+      return {
+        ok: false,
+        code:
+          claim.reason === "missing_subscription" ? "not_found" : "unsupported",
+        message:
+          claim.message ?? "Unable to increase subscribed site quantity.",
+      };
+    }
+
     const provider = getBillingProvider();
     if (provider.name === "fake") {
       hydrateFakeSubscriptionIfNeeded({
@@ -225,15 +239,45 @@ export async function increaseCurrentOrganisationSiteQuantity(
       });
     }
 
-    const providerSubscription = await provider.retrieveSubscription(
+    const providerInput = {
+      organisationId,
+      subscriptionId: binding.provider_subscription_id,
+      customerId: snapshot.provider_customer_id,
+      expectedPriceId: binding.provider_price_id,
+    };
+
+    let providerSubscription = await provider.retrieveSubscription(
       binding.provider_subscription_id,
     );
+
+    if (claim.reason === "superseded") {
+      const latest = await loadCurrentOrganisationBillingManagement(supabase);
+      const persistedSiteQuantity =
+        latest?.organisation_id === organisationId
+          ? latest.site_quantity
+          : snapshot.site_quantity;
+      return {
+        ok: true,
+        status:
+          persistedSiteQuantity >=
+          (claim.highestRequestedSiteQuantity ?? desiredSiteQuantity)
+            ? "already_confirmed"
+            : "awaiting_confirmation",
+        desiredSiteQuantity:
+          claim.highestRequestedSiteQuantity ?? desiredSiteQuantity,
+        persistedSiteQuantity,
+        providerSiteQuantity: providerSubscription.siteQuantity,
+      };
+    }
+
     const providerState = normaliseBillingState({
       providerStatus: providerSubscription.status,
       cancelAtPeriodEnd: providerSubscription.cancelAtPeriodEnd,
     });
+    const targetQuantity =
+      claim.highestRequestedSiteQuantity ?? desiredSiteQuantity;
     const decision = evaluateSiteQuantityIncrease({
-      desiredSiteQuantity,
+      desiredSiteQuantity: targetQuantity,
       providerSiteQuantity: providerSubscription.siteQuantity,
       billingState: providerState,
       planCode: providerSubscription.planCode ?? binding.plan_code,
@@ -247,16 +291,42 @@ export async function increaseCurrentOrganisationSiteQuantity(
       };
     }
 
-    const updated =
-      decision.action === "noop"
-        ? providerSubscription
-        : await provider.increaseSubscriptionSiteQuantity({
-            organisationId,
-            subscriptionId: binding.provider_subscription_id,
-            customerId: snapshot.provider_customer_id,
-            desiredSiteQuantity,
-            expectedPriceId: binding.provider_price_id,
-          });
+    if (decision.action === "update") {
+      try {
+        providerSubscription = await provider.increaseSubscriptionSiteQuantity({
+          ...providerInput,
+          desiredSiteQuantity: targetQuantity,
+        });
+      } catch (cause) {
+        if (
+          !(cause instanceof BillingProviderError) ||
+          cause.code !== "unsupported"
+        ) {
+          throw cause;
+        }
+        providerSubscription = await provider.retrieveSubscription(
+          binding.provider_subscription_id,
+        );
+      }
+    }
+
+    providerSubscription = await provider.retrieveSubscription(
+      binding.provider_subscription_id,
+    );
+    const latestBinding =
+      await loadCurrentOrganisationSubscriptionBinding(supabase);
+    const repairTo = Math.max(
+      targetQuantity,
+      latestBinding?.organisation_id === organisationId
+        ? (latestBinding.highest_requested_site_quantity ?? targetQuantity)
+        : targetQuantity,
+    );
+    if (providerSubscription.siteQuantity < repairTo) {
+      providerSubscription = await provider.increaseSubscriptionSiteQuantity({
+        ...providerInput,
+        desiredSiteQuantity: repairTo,
+      });
+    }
 
     const latest = await loadCurrentOrganisationBillingManagement(supabase);
     const persistedSiteQuantity =
@@ -272,7 +342,7 @@ export async function increaseCurrentOrganisationSiteQuantity(
           : "awaiting_confirmation",
       desiredSiteQuantity,
       persistedSiteQuantity,
-      providerSiteQuantity: updated.siteQuantity,
+      providerSiteQuantity: providerSubscription.siteQuantity,
     };
   } catch (cause) {
     return resultFromProviderError(cause);

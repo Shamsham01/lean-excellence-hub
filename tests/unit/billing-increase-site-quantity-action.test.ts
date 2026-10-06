@@ -11,6 +11,7 @@ const listEligibleOrganisations = vi.fn();
 const currentCanManageBilling = vi.fn();
 const loadCurrentOrganisationBillingManagement = vi.fn();
 const loadCurrentOrganisationSubscriptionBinding = vi.fn();
+const claimSiteQuantityIncrease = vi.fn();
 const retrieveSubscription = vi.fn();
 const increaseSubscriptionSiteQuantity = vi.fn();
 const hydrateSubscription = vi.fn();
@@ -36,6 +37,8 @@ vi.mock("@/modules/billing/current-billing", () => ({
 vi.mock("@/modules/billing/repository", () => ({
   loadCurrentOrganisationSubscriptionBinding: () =>
     loadCurrentOrganisationSubscriptionBinding(),
+  claimSiteQuantityIncrease: (desired: number) =>
+    claimSiteQuantityIncrease(desired),
 }));
 
 vi.mock("@/platform/supabase/server", () => ({
@@ -88,31 +91,46 @@ const binding = {
 };
 
 describe("increaseCurrentOrganisationSiteQuantity", () => {
+  let providerQty = 1;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    providerQty = 1;
     loadCurrentOrganisationId.mockResolvedValue(organisation.organisation_id);
     listEligibleOrganisations.mockResolvedValue([organisation]);
     currentCanManageBilling.mockResolvedValue(true);
     loadCurrentOrganisationBillingManagement.mockResolvedValue(snapshot);
     loadCurrentOrganisationSubscriptionBinding.mockResolvedValue(binding);
-    retrieveSubscription.mockResolvedValue({
+    claimSiteQuantityIncrease.mockImplementation(async (desired: number) => ({
+      action: "update",
+      reason: null,
+      highestRequestedSiteQuantity: desired,
+      persistedSiteQuantity: 1,
+      message: null,
+    }));
+    retrieveSubscription.mockImplementation(async () => ({
       subscriptionId: "sub_fake_1",
       customerId: "cus_fake_1",
       status: "active",
       cancelAtPeriodEnd: false,
-      siteQuantity: 1,
+      siteQuantity: providerQty,
       planCode: "professional",
       billingInterval: "monthly",
       organisationId: organisation.organisation_id,
-    });
-    increaseSubscriptionSiteQuantity.mockResolvedValue({
-      subscriptionId: "sub_fake_1",
-      customerId: "cus_fake_1",
-      status: "active",
-      cancelAtPeriodEnd: false,
-      siteQuantity: 2,
-      planCode: "professional",
-      organisationId: organisation.organisation_id,
+    }));
+    increaseSubscriptionSiteQuantity.mockImplementation(async (input: {
+      desiredSiteQuantity: number;
+    }) => {
+      providerQty = input.desiredSiteQuantity;
+      return {
+        subscriptionId: "sub_fake_1",
+        customerId: "cus_fake_1",
+        status: "active",
+        cancelAtPeriodEnd: false,
+        siteQuantity: providerQty,
+        planCode: "professional",
+        organisationId: organisation.organisation_id,
+      };
     });
   });
 
@@ -148,15 +166,7 @@ describe("increaseCurrentOrganisationSiteQuantity", () => {
   });
 
   it("converges a stale request when the provider is already at the desired quantity", async () => {
-    retrieveSubscription.mockResolvedValue({
-      subscriptionId: "sub_fake_1",
-      customerId: "cus_fake_1",
-      status: "active",
-      cancelAtPeriodEnd: false,
-      siteQuantity: 2,
-      planCode: "professional",
-      organisationId: organisation.organisation_id,
-    });
+    providerQty = 2;
     const result = await increaseCurrentOrganisationSiteQuantity(2);
     expect(result).toMatchObject({
       ok: true,
@@ -203,5 +213,143 @@ describe("increaseCurrentOrganisationSiteQuantity", () => {
       message: expect.stringMatching(/scheduled cancellation/i),
     });
     expect(increaseSubscriptionSiteQuantity).not.toHaveBeenCalled();
+  });
+
+  it("does not send a lower target after a concurrent 3 claim", async () => {
+    let highest = 1;
+    let qty = 1;
+    claimSiteQuantityIncrease.mockImplementation(async (desired: number) => {
+      const floor = Math.max(highest, 1);
+      if (desired < floor) {
+        return {
+          action: "noop" as const,
+          reason: "superseded" as const,
+          highestRequestedSiteQuantity: floor,
+          persistedSiteQuantity: 1,
+          message: "A higher subscribed site quantity is already requested or confirmed.",
+        };
+      }
+      highest = Math.max(floor, desired);
+      return {
+        action: "update" as const,
+        reason: null,
+        highestRequestedSiteQuantity: highest,
+        persistedSiteQuantity: 1,
+        message: null,
+      };
+    });
+    loadCurrentOrganisationSubscriptionBinding.mockImplementation(async () => ({
+      ...binding,
+      highest_requested_site_quantity: highest,
+    }));
+    retrieveSubscription.mockImplementation(async () => ({
+      subscriptionId: "sub_fake_1",
+      customerId: "cus_fake_1",
+      status: "active",
+      cancelAtPeriodEnd: false,
+      siteQuantity: qty,
+      planCode: "professional",
+      organisationId: organisation.organisation_id,
+    }));
+    increaseSubscriptionSiteQuantity.mockImplementation(async (input: {
+      desiredSiteQuantity: number;
+    }) => {
+      qty = input.desiredSiteQuantity;
+      return {
+        subscriptionId: "sub_fake_1",
+        customerId: "cus_fake_1",
+        status: "active",
+        cancelAtPeriodEnd: false,
+        siteQuantity: qty,
+        planCode: "professional",
+        organisationId: organisation.organisation_id,
+      };
+    });
+
+    await expect(
+      increaseCurrentOrganisationSiteQuantity(3),
+    ).resolves.toMatchObject({ ok: true, providerSiteQuantity: 3 });
+    await expect(
+      increaseCurrentOrganisationSiteQuantity(2),
+    ).resolves.toMatchObject({ ok: true });
+    expect(qty).toBe(3);
+    expect(increaseSubscriptionSiteQuantity).toHaveBeenCalledTimes(1);
+    expect(increaseSubscriptionSiteQuantity).toHaveBeenCalledWith(
+      expect.objectContaining({ desiredSiteQuantity: 3 }),
+    );
+  });
+
+  it("repairs a stale 2 write after 3 is accepted when 2 claimed first", async () => {
+    let highest = 1;
+    let qty = 1;
+    let releaseTwo: () => void = () => undefined;
+    const twoGate = new Promise<void>((resolve) => {
+      releaseTwo = resolve;
+    });
+    let twoStarted: () => void = () => undefined;
+    const twoStartedGate = new Promise<void>((resolve) => {
+      twoStarted = resolve;
+    });
+
+    claimSiteQuantityIncrease.mockImplementation(async (desired: number) => {
+      const floor = Math.max(highest, 1);
+      if (desired < floor) {
+        return {
+          action: "noop" as const,
+          reason: "superseded" as const,
+          highestRequestedSiteQuantity: floor,
+          persistedSiteQuantity: 1,
+          message: "superseded",
+        };
+      }
+      highest = Math.max(floor, desired);
+      return {
+        action: "update" as const,
+        reason: null,
+        highestRequestedSiteQuantity: highest,
+        persistedSiteQuantity: 1,
+        message: null,
+      };
+    });
+    loadCurrentOrganisationSubscriptionBinding.mockImplementation(async () => ({
+      ...binding,
+      highest_requested_site_quantity: highest,
+    }));
+    retrieveSubscription.mockImplementation(async () => ({
+      subscriptionId: "sub_fake_1",
+      customerId: "cus_fake_1",
+      status: "active",
+      cancelAtPeriodEnd: false,
+      siteQuantity: qty,
+      planCode: "professional",
+      organisationId: organisation.organisation_id,
+    }));
+    increaseSubscriptionSiteQuantity.mockImplementation(async (input: {
+      desiredSiteQuantity: number;
+    }) => {
+      if (input.desiredSiteQuantity === 2) {
+        twoStarted();
+        await twoGate;
+      }
+      qty = input.desiredSiteQuantity;
+      return {
+        subscriptionId: "sub_fake_1",
+        customerId: "cus_fake_1",
+        status: "active",
+        cancelAtPeriodEnd: false,
+        siteQuantity: qty,
+        planCode: "professional",
+        organisationId: organisation.organisation_id,
+      };
+    });
+
+    const two = increaseCurrentOrganisationSiteQuantity(2);
+    await twoStartedGate;
+    await expect(
+      increaseCurrentOrganisationSiteQuantity(3),
+    ).resolves.toMatchObject({ ok: true, providerSiteQuantity: 3 });
+    releaseTwo();
+    await expect(two).resolves.toMatchObject({ ok: true });
+    expect(qty).toBe(3);
   });
 });

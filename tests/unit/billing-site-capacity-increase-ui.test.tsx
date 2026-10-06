@@ -14,6 +14,7 @@ vi.mock("@/app/billing/actions", () => ({
 import { AddSiteCapacityDialog } from "@/components/billing/add-site-capacity-dialog";
 import { BillingSiteCapacityPanel } from "@/components/billing/billing-site-capacity-panel";
 import { increaseSiteCapacity } from "@/app/billing/actions";
+import { CAPACITY_AVAILABLE_HIERARCHY_REQUIRED } from "@/modules/billing/site-capacity-increase";
 
 afterEach(() => {
   cleanup();
@@ -38,6 +39,7 @@ describe("billing site capacity increase UI", () => {
         remainingSlots={0}
         fakeBillingEnabled
         canIncrease
+        canCreateSite
         blockedReason={null}
       />,
     );
@@ -63,6 +65,7 @@ describe("billing site capacity increase UI", () => {
         remainingSlots={1}
         enforced
         canIncrease
+        canCreateSite
         blockedReason={null}
         fakeBillingEnabled
       />,
@@ -81,6 +84,27 @@ describe("billing site capacity increase UI", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not offer Add site to a billing-only member", () => {
+    render(
+      <BillingSiteCapacityPanel
+        activeSiteCount={1}
+        subscribedLimit={2}
+        remainingSlots={1}
+        enforced
+        canIncrease
+        canCreateSite={false}
+        blockedReason={null}
+        fakeBillingEnabled
+      />,
+    );
+
+    expect(screen.queryByTestId("billing-add-site")).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("billing-site-capacity-hierarchy-required"),
+    ).toHaveTextContent(CAPACITY_AVAILABLE_HIERARCHY_REQUIRED);
+    expect(screen.getByTestId("add-site-capacity")).toBeVisible();
+  });
+
   it("keeps Add site capacity as the exhausted primary action", () => {
     render(
       <BillingSiteCapacityPanel
@@ -89,6 +113,7 @@ describe("billing site capacity increase UI", () => {
         remainingSlots={0}
         enforced
         canIncrease
+        canCreateSite
         blockedReason={null}
         fakeBillingEnabled
       />,

@@ -6608,6 +6608,7 @@ export type Database = {
           provider_status: string | null
           provider_subscription_id: string | null
           retention_eligible_at: string | null
+          highest_requested_site_quantity: number
           site_quantity: number
           updated_at: string
         }
@@ -6621,6 +6622,7 @@ export type Database = {
           current_period_start?: string | null
           ended_at?: string | null
           grace_expires_at?: string | null
+          highest_requested_site_quantity?: number
           id?: string
           last_provider_event_at?: string | null
           organisation_id: string
@@ -6643,6 +6645,7 @@ export type Database = {
           current_period_start?: string | null
           ended_at?: string | null
           grace_expires_at?: string | null
+          highest_requested_site_quantity?: number
           id?: string
           last_provider_event_at?: string | null
           organisation_id?: string
@@ -12282,6 +12285,10 @@ export type Database = {
           processing_state: string
           should_process: boolean
         }[]
+      }
+      claim_site_quantity_increase: {
+        Args: { target_desired_site_quantity: number }
+        Returns: Json
       }
       claim_domain_events_for_worker: {
         Args: { batch_size?: number; lease_seconds?: number }

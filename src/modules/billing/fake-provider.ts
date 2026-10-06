@@ -71,6 +71,39 @@ export function createFakeBillingStore(): FakeBillingStore {
   };
 }
 
+const increaseLocks = new WeakMap<
+  FakeBillingStore,
+  Map<string, Promise<void>>
+>();
+
+function withSubscriptionLock<T>(
+  store: FakeBillingStore,
+  subscriptionId: string,
+  run: () => T | Promise<T>,
+): Promise<T> {
+  let locks = increaseLocks.get(store);
+  if (!locks) {
+    locks = new Map();
+    increaseLocks.set(store, locks);
+  }
+  const previous = locks.get(subscriptionId) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  locks.set(
+    subscriptionId,
+    previous.then(() => gate),
+  );
+  return previous.then(async () => {
+    try {
+      return await run();
+    } finally {
+      release();
+    }
+  });
+}
+
 const defaultStore = createFakeBillingStore();
 
 function periodWindow(now = Date.now()) {
@@ -305,36 +338,38 @@ export function createFakeBillingProvider(
       return toProviderSubscription(subscription);
     },
     async increaseSubscriptionSiteQuantity(input) {
-      const desiredSiteQuantity = parseDesiredSiteQuantity(
-        input.desiredSiteQuantity,
-      );
-      const subscription = store.subscriptions.get(input.subscriptionId);
-      if (!subscription) {
-        throw new BillingProviderError(
-          "Subscription was not found.",
-          "not_found",
+      return withSubscriptionLock(store, input.subscriptionId, () => {
+        const desiredSiteQuantity = parseDesiredSiteQuantity(
+          input.desiredSiteQuantity,
         );
-      }
+        const subscription = store.subscriptions.get(input.subscriptionId);
+        if (!subscription) {
+          throw new BillingProviderError(
+            "Subscription was not found.",
+            "not_found",
+          );
+        }
 
-      assertProviderSubscriptionBinding({
-        organisationId: input.organisationId,
-        customerId: input.customerId,
-        subscriptionOrganisationId: subscription.organisationId,
-        subscriptionCustomerId: subscription.customerId,
-      });
+        assertProviderSubscriptionBinding({
+          organisationId: input.organisationId,
+          customerId: input.customerId,
+          subscriptionOrganisationId: subscription.organisationId,
+          subscriptionCustomerId: subscription.customerId,
+        });
 
-      if (subscription.siteQuantity === desiredSiteQuantity) {
+        if (subscription.siteQuantity === desiredSiteQuantity) {
+          return toProviderSubscription(subscription);
+        }
+        if (desiredSiteQuantity < subscription.siteQuantity) {
+          throw new BillingProviderError(
+            "Reducing subscribed site quantity is not available in this flow.",
+            "unsupported",
+          );
+        }
+
+        subscription.siteQuantity = desiredSiteQuantity;
         return toProviderSubscription(subscription);
-      }
-      if (desiredSiteQuantity < subscription.siteQuantity) {
-        throw new BillingProviderError(
-          "Reducing subscribed site quantity is not available in this flow.",
-          "unsupported",
-        );
-      }
-
-      subscription.siteQuantity = desiredSiteQuantity;
-      return toProviderSubscription(subscription);
+      });
     },
     async verifyWebhook(input) {
       if (!input.payload) {

@@ -23,6 +23,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { MAX_SITE_QUANTITY } from "@/modules/billing/catalogue";
 import {
   ADD_SITE_HREF,
+  CAPACITY_AVAILABLE_HIERARCHY_REQUIRED,
   formatSiteQuantityIncreaseReview,
 } from "@/modules/billing/site-capacity-increase";
 
@@ -37,6 +38,7 @@ export function AddSiteCapacityDialog({
   persistedSiteQuantity,
   fakeBillingEnabled,
   canIncrease,
+  canCreateSite,
   blockedReason,
   initialPendingDesired = null,
 }: {
@@ -46,6 +48,7 @@ export function AddSiteCapacityDialog({
   remainingSlots: number | null;
   fakeBillingEnabled: boolean;
   canIncrease: boolean;
+  canCreateSite: boolean;
   blockedReason: string | null;
   initialPendingDesired?: number | null;
 }) {
@@ -344,14 +347,23 @@ export function AddSiteCapacityDialog({
             </>
           ) : null}
           {step === "confirmed" ? (
-            <Button variant="default" className={FOCUS_RING} asChild>
-              <AppLink
-                href={ADD_SITE_HREF}
-                data-testid="site-capacity-add-site"
+            canCreateSite ? (
+              <Button variant="default" className={FOCUS_RING} asChild>
+                <AppLink
+                  href={ADD_SITE_HREF}
+                  data-testid="site-capacity-add-site"
+                >
+                  Add site
+                </AppLink>
+              </Button>
+            ) : (
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="site-capacity-hierarchy-required"
               >
-                Add site
-              </AppLink>
-            </Button>
+                {CAPACITY_AVAILABLE_HIERARCHY_REQUIRED}
+              </p>
+            )
           ) : null}
         </DialogFooter>
       </DialogContent>

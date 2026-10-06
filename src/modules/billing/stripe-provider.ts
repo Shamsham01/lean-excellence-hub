@@ -42,18 +42,27 @@ function metadataString(
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function subscriptionPeriod(subscription: Stripe.Subscription) {
-  const item = subscription.items.data[0];
+function priceIdOfItem(item: Stripe.SubscriptionItem) {
+  return typeof item.price?.id === "string"
+    ? item.price.id
+    : typeof item.plan?.id === "string"
+      ? item.plan.id
+      : null;
+}
+
+function subscriptionPeriod(
+  subscription: Stripe.Subscription,
+  expectedPriceId?: string | null,
+) {
+  const item = selectLehSubscriptionItem(subscription.items.data, {
+    expectedPriceId: expectedPriceId ?? null,
+    priceIdOf: priceIdOfItem,
+  });
   return {
-    currentPeriodStart: unixSecondsToIso(item?.current_period_start),
-    currentPeriodEnd: unixSecondsToIso(item?.current_period_end),
-    siteQuantity: Math.max(MIN_SITE_QUANTITY, item?.quantity ?? 1),
-    priceId:
-      typeof item?.price?.id === "string"
-        ? item.price.id
-        : typeof item?.plan?.id === "string"
-          ? item.plan.id
-          : null,
+    currentPeriodStart: unixSecondsToIso(item.current_period_start),
+    currentPeriodEnd: unixSecondsToIso(item.current_period_end),
+    siteQuantity: Math.max(MIN_SITE_QUANTITY, item.quantity ?? 1),
+    priceId: priceIdOfItem(item),
   };
 }
 
@@ -70,8 +79,9 @@ function customerIdOf(value: unknown) {
 
 function toProviderSubscription(
   subscription: Stripe.Subscription,
+  expectedPriceId?: string | null,
 ): ProviderSubscription {
-  const period = subscriptionPeriod(subscription);
+  const period = subscriptionPeriod(subscription, expectedPriceId);
   const planCode = metadataString(subscription.metadata, "plan_code");
   const interval = metadataString(subscription.metadata, "billing_interval");
   return {
@@ -333,12 +343,7 @@ export function createStripeBillingProvider(
 
       const item = selectLehSubscriptionItem(subscription.items.data, {
         expectedPriceId: input.expectedPriceId ?? null,
-        priceIdOf: (subscriptionItem) =>
-          typeof subscriptionItem.price?.id === "string"
-            ? subscriptionItem.price.id
-            : typeof subscriptionItem.plan?.id === "string"
-              ? subscriptionItem.plan.id
-              : null,
+        priceIdOf: priceIdOfItem,
       });
 
       const currentQuantity = Math.max(
@@ -376,7 +381,7 @@ export function createStripeBillingProvider(
             ].join("_"),
           },
         );
-        return toProviderSubscription(updated);
+        return toProviderSubscription(updated, input.expectedPriceId);
       } catch (cause) {
         throw mapStripeProviderError(
           cause,
@@ -433,7 +438,15 @@ async function mapStripeEvent(
 
   let subscription: Stripe.Subscription | null = null;
   if (event.type.startsWith("customer.subscription")) {
-    subscription = event.data.object as Stripe.Subscription;
+    const eventSubscription = event.data.object as Stripe.Subscription;
+    try {
+      subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
+    } catch (cause) {
+      throw mapStripeProviderError(
+        cause,
+        "Unable to retrieve the billing subscription.",
+      );
+    }
   } else if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const subscriptionId = customerIdOf(session.subscription);

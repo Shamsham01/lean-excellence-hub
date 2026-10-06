@@ -5,7 +5,10 @@ import { useState } from "react";
 import { AddSiteCapacityDialog } from "@/components/billing/add-site-capacity-dialog";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { ADD_SITE_HREF } from "@/modules/billing/site-capacity-increase";
+import {
+  ADD_SITE_HREF,
+  CAPACITY_AVAILABLE_HIERARCHY_REQUIRED,
+} from "@/modules/billing/site-capacity-increase";
 import {
   formatBillingSiteCapacityHeadline,
   formatRemainingSiteSlots,
@@ -20,6 +23,7 @@ export function BillingSiteCapacityPanel({
   remainingSlots,
   enforced,
   canIncrease,
+  canCreateSite,
   blockedReason,
   fakeBillingEnabled,
   initialOpen = false,
@@ -30,6 +34,7 @@ export function BillingSiteCapacityPanel({
   remainingSlots: number | null;
   enforced: boolean;
   canIncrease: boolean;
+  canCreateSite: boolean;
   blockedReason: string | null;
   fakeBillingEnabled: boolean;
   initialOpen?: boolean;
@@ -77,12 +82,20 @@ export function BillingSiteCapacityPanel({
         </p>
       ) : null}
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {hasSpareCapacity ? (
+        {hasSpareCapacity && canCreateSite ? (
           <Button size="sm" className={`self-start ${FOCUS_RING}`} asChild>
             <AppLink href={ADD_SITE_HREF} data-testid="billing-add-site">
               Add site
             </AppLink>
           </Button>
+        ) : null}
+        {hasSpareCapacity && !canCreateSite ? (
+          <p
+            className="text-xs text-muted-foreground"
+            data-testid="billing-site-capacity-hierarchy-required"
+          >
+            {CAPACITY_AVAILABLE_HIERARCHY_REQUIRED}
+          </p>
         ) : null}
         {canIncrease ? (
           <Button
@@ -107,6 +120,7 @@ export function BillingSiteCapacityPanel({
           remainingSlots={remainingSlots}
           fakeBillingEnabled={fakeBillingEnabled}
           canIncrease={canIncrease}
+          canCreateSite={canCreateSite}
           blockedReason={blockedReason}
           initialPendingDesired={initialPendingDesired}
         />
