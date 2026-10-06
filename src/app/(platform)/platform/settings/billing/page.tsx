@@ -1,24 +1,35 @@
 import { notFound } from "next/navigation";
 
 import { createCustomerPortalSession } from "@/app/billing/actions";
+import { BillingSiteCapacityPanel } from "@/components/billing/billing-site-capacity-panel";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
+import { isFakeBillingEnabled } from "@/modules/billing/env";
+import { loadProviderPendingSiteQuantity } from "@/modules/billing/increase-site-quantity";
 import {
+  asBillingState,
   buildSiteCapacityView,
-  formatBillingSiteCapacityHeadline,
-  formatRemainingSiteSlots,
 } from "@/modules/billing/site-capacity";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { siteQuantityIncreaseStateDecision } from "@/modules/billing/site-capacity-increase";
+import {
+  currentMemberHasOrganisationScopedPermission,
+  currentMemberHasPermission,
+} from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function OrganisationBillingSettingsPage() {
+export default async function OrganisationBillingSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ addCapacity?: string }>;
+}) {
   if (!(await currentMemberHasPermission("billing.manage"))) {
     notFound();
   }
 
+  const params = await searchParams;
   const supabase = await createServerSupabaseClient();
   const snapshot = await loadCurrentOrganisationBillingManagement(supabase);
   const siteCapacity = snapshot
@@ -30,15 +41,19 @@ export default async function OrganisationBillingSettingsPage() {
         canManageBilling: true,
       })
     : null;
-  const remaining = siteCapacity
-    ? formatRemainingSiteSlots(siteCapacity.remainingSlots)
-    : null;
+  const increaseDecision = siteQuantityIncreaseStateDecision(
+    asBillingState(snapshot?.billing_state),
+    snapshot?.plan_code ?? null,
+  );
+  const pendingDesired = await loadProviderPendingSiteQuantity();
+  const canCreateSite =
+    await currentMemberHasOrganisationScopedPermission("hierarchy.manage");
 
   return (
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
       <PageHeader
         title="Billing"
-        description="Subscription state for this organisation. Stripe Customer Portal manages payment methods and cancellation."
+        description="Subscription state for this organisation. Increase subscribed site capacity here. Stripe Customer Portal manages payment methods and cancellation."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">
@@ -67,34 +82,35 @@ export default async function OrganisationBillingSettingsPage() {
               {snapshot?.billing_interval ?? "—"}
             </p>
           </div>
-          <div data-testid="billing-site-capacity">
-            <p className="text-xs font-medium text-muted-foreground">
-              Site capacity
-            </p>
-            <p
-              className="text-sm text-foreground"
-              data-testid="billing-site-capacity-headline"
-            >
-              {siteCapacity?.enforced && siteCapacity.subscribedLimit !== null
-                ? formatBillingSiteCapacityHeadline(
-                    siteCapacity.activeSiteCount,
-                    siteCapacity.subscribedLimit,
-                  )
-                : siteCapacity
-                  ? `${siteCapacity.activeSiteCount} active`
-                  : (snapshot?.site_quantity ??
-                    snapshot?.intended_site_quantity ??
-                    "—")}
-            </p>
-            {remaining ? (
-              <p
-                className="mt-1 text-xs text-muted-foreground"
-                data-testid="billing-site-capacity-remaining"
-              >
-                {remaining}
+          {siteCapacity ? (
+            <BillingSiteCapacityPanel
+              activeSiteCount={siteCapacity.activeSiteCount}
+              subscribedLimit={siteCapacity.subscribedLimit}
+              remainingSlots={siteCapacity.remainingSlots}
+              enforced={siteCapacity.enforced}
+              canIncrease={increaseDecision.action !== "reject"}
+              canCreateSite={canCreateSite}
+              blockedReason={
+                increaseDecision.action === "reject"
+                  ? increaseDecision.message
+                  : null
+              }
+              fakeBillingEnabled={isFakeBillingEnabled()}
+              initialOpen={params.addCapacity === "1"}
+              initialPendingDesired={pendingDesired}
+            />
+          ) : (
+            <div data-testid="billing-site-capacity">
+              <p className="text-xs font-medium text-muted-foreground">
+                Site capacity
               </p>
-            ) : null}
-          </div>
+              <p className="text-sm text-foreground">
+                {snapshot?.site_quantity ??
+                  snapshot?.intended_site_quantity ??
+                  "—"}
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-xs font-medium text-muted-foreground">State</p>
             <p className="text-sm text-foreground">
@@ -129,10 +145,12 @@ export default async function OrganisationBillingSettingsPage() {
           action={createCustomerPortalSession}
           className="flex flex-col gap-2"
         >
-          <Button type="submit">Manage billing</Button>
+          <Button type="submit" data-testid="manage-billing">
+            Manage billing
+          </Button>
           <p className="text-xs text-muted-foreground">
             Opens Stripe Customer Portal for payment methods and cancellation.
-            It does not automatically change subscribed site quantity.
+            It does not change Lean Excellence Hub subscribed site quantity.
           </p>
         </form>
       ) : null}

@@ -1,10 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { currentCanManageBilling } from "@/modules/billing/authority";
+import { confirmFakeSiteQuantityIncrease } from "@/modules/billing/confirm-fake-site-quantity";
 import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
 import { getBillingProvider } from "@/modules/billing/get-provider";
+import {
+  increaseCurrentOrganisationSiteQuantity,
+  loadAuthoritativeSiteCapacity,
+} from "@/modules/billing/increase-site-quantity";
+import { BillingProviderError } from "@/modules/billing/provider";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import {
@@ -59,4 +66,49 @@ export async function createCustomerPortalSession() {
     returnUrl: `${origin}${returnPath}`,
   });
   redirect(session.url);
+}
+
+export async function increaseSiteCapacity(formData: FormData) {
+  return increaseCurrentOrganisationSiteQuantity(
+    formData.get("desiredSiteQuantity"),
+  );
+}
+
+export async function refreshAuthoritativeSiteCapacity() {
+  return loadAuthoritativeSiteCapacity();
+}
+
+export async function confirmFakeSiteCapacityIncrease() {
+  try {
+    const result = await confirmFakeSiteQuantityIncrease();
+    revalidatePath("/platform/settings/billing");
+    revalidatePath("/platform/settings/structure");
+    const capacity = await loadAuthoritativeSiteCapacity();
+    return {
+      ok: true as const,
+      applied: result.applied,
+      duplicate: result.duplicate,
+      ...(capacity.ok
+        ? {
+            persistedSiteQuantity: capacity.persistedSiteQuantity,
+            remainingSlots: capacity.remainingSlots,
+            activeSiteCount: capacity.activeSiteCount,
+            paidSiteLimit: capacity.paidSiteLimit,
+          }
+        : {}),
+    };
+  } catch (cause) {
+    if (cause instanceof BillingProviderError) {
+      return {
+        ok: false as const,
+        code: cause.code,
+        message: cause.message,
+      };
+    }
+    return {
+      ok: false as const,
+      code: "misconfigured" as const,
+      message: "Unable to confirm the sandbox billing update.",
+    };
+  }
 }

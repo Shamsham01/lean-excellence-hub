@@ -7,6 +7,10 @@ import {
   unixSecondsToIso,
 } from "./billing-state";
 import { BillingProviderError, type BillingProvider } from "./provider";
+import {
+  assertProviderSubscriptionBinding,
+  parseDesiredSiteQuantity,
+} from "./site-capacity-increase";
 import type {
   BillingInterval,
   CheckoutPlanCode,
@@ -65,6 +69,39 @@ export function createFakeBillingStore(): FakeBillingStore {
     subscriptions: new Map(),
     processedEvents: new Map(),
   };
+}
+
+const increaseLocks = new WeakMap<
+  FakeBillingStore,
+  Map<string, Promise<void>>
+>();
+
+function withSubscriptionLock<T>(
+  store: FakeBillingStore,
+  subscriptionId: string,
+  run: () => T | Promise<T>,
+): Promise<T> {
+  let locks = increaseLocks.get(store);
+  if (!locks) {
+    locks = new Map();
+    increaseLocks.set(store, locks);
+  }
+  const previous = locks.get(subscriptionId) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  locks.set(
+    subscriptionId,
+    previous.then(() => gate),
+  );
+  return previous.then(async () => {
+    try {
+      return await run();
+    } finally {
+      release();
+    }
+  });
 }
 
 const defaultStore = createFakeBillingStore();
@@ -145,6 +182,17 @@ export function createFakeBillingProvider(
     eventType: "invoice.paid" | "invoice.payment_failed",
     createdAt?: string,
   ): VerifiedWebhookEvent;
+  hydrateSubscription(input: {
+    subscriptionId: string;
+    customerId: string;
+    organisationId: string;
+    planCode: PlanCode;
+    billingInterval: BillingInterval;
+    siteQuantity: number;
+    priceId: string;
+    status?: string;
+    cancelAtPeriodEnd?: boolean;
+  }): void;
 } {
   return {
     name: "fake",
@@ -289,6 +337,40 @@ export function createFakeBillingProvider(
       }
       return toProviderSubscription(subscription);
     },
+    async increaseSubscriptionSiteQuantity(input) {
+      return withSubscriptionLock(store, input.subscriptionId, () => {
+        const desiredSiteQuantity = parseDesiredSiteQuantity(
+          input.desiredSiteQuantity,
+        );
+        const subscription = store.subscriptions.get(input.subscriptionId);
+        if (!subscription) {
+          throw new BillingProviderError(
+            "Subscription was not found.",
+            "not_found",
+          );
+        }
+
+        assertProviderSubscriptionBinding({
+          organisationId: input.organisationId,
+          customerId: input.customerId,
+          subscriptionOrganisationId: subscription.organisationId,
+          subscriptionCustomerId: subscription.customerId,
+        });
+
+        if (subscription.siteQuantity === desiredSiteQuantity) {
+          return toProviderSubscription(subscription);
+        }
+        if (desiredSiteQuantity < subscription.siteQuantity) {
+          throw new BillingProviderError(
+            "Reducing subscribed site quantity is not available in this flow.",
+            "unsupported",
+          );
+        }
+
+        subscription.siteQuantity = desiredSiteQuantity;
+        return toProviderSubscription(subscription);
+      });
+    },
     async verifyWebhook(input) {
       if (!input.payload) {
         throw new BillingProviderError(
@@ -370,6 +452,38 @@ export function createFakeBillingProvider(
         url: `/onboarding/confirm?session_id=${input.sessionId}`,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         open: true,
+      });
+      if (!store.customers.has(input.customerId)) {
+        store.customers.set(input.customerId, {
+          customerId: input.customerId,
+          organisationId: input.organisationId,
+          organisationName: input.organisationId,
+          email: null,
+        });
+        store.customersByOrganisation.set(
+          input.organisationId,
+          input.customerId,
+        );
+      }
+    },
+    hydrateSubscription(input) {
+      const existing = store.subscriptions.get(input.subscriptionId);
+      if (existing) {
+        return;
+      }
+
+      const periods = periodWindow();
+      store.subscriptions.set(input.subscriptionId, {
+        subscriptionId: input.subscriptionId,
+        customerId: input.customerId,
+        organisationId: input.organisationId,
+        planCode: input.planCode,
+        billingInterval: input.billingInterval,
+        siteQuantity: Math.max(MIN_SITE_QUANTITY, input.siteQuantity),
+        priceId: input.priceId,
+        status: input.status ?? "active",
+        cancelAtPeriodEnd: input.cancelAtPeriodEnd === true,
+        ...periods,
       });
       if (!store.customers.has(input.customerId)) {
         store.customers.set(input.customerId, {

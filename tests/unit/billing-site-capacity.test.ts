@@ -117,9 +117,11 @@ describe("site capacity", () => {
         message: "parent unit is not active in organisation",
       }),
     ).toBe(false);
-    expect(siteCapacityExhaustedUserMessage(true)).toContain("Open Billing");
     expect(siteCapacityExhaustedUserMessage(true)).toContain(
-      "does not automatically change the Stripe subscription",
+      "Add site capacity",
+    );
+    expect(siteCapacityExhaustedUserMessage(true)).not.toContain(
+      "automatically change the Stripe subscription",
     );
     expect(siteCapacityExhaustedUserMessage(false)).toContain(
       "organisation billing administrator",

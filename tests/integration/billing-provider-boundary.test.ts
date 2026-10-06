@@ -54,4 +54,27 @@ describe("billing provider boundary", () => {
     expect(store.customers.size).toBe(1);
     expect(store.checkouts.size).toBe(1);
   });
+
+  it("cannot increase another organisation's subscription quantity", async () => {
+    const provider = createFakeBillingProvider(createFakeBillingStore());
+    const checkout = await provider.createCheckoutSession({
+      organisationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      organisationName: "Own Org",
+      planCode: "professional",
+      interval: "monthly",
+      siteQuantity: 1,
+      successUrl: "http://127.0.0.1:3000/success",
+      cancelUrl: "http://127.0.0.1:3000/cancel",
+    });
+    const completed = provider.simulateCheckoutCompletion(checkout.sessionId);
+
+    await expect(
+      provider.increaseSubscriptionSiteQuantity({
+        organisationId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        subscriptionId: completed.subscriptionId!,
+        customerId: completed.customerId!,
+        desiredSiteQuantity: 2,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
 });

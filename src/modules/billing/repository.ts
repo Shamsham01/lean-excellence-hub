@@ -1,9 +1,15 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
 import type { Database, Json } from "@/platform/supabase/database.types";
+import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { BillingProviderError } from "./provider";
+import {
+  parseSiteQuantityIncreaseClaim,
+  type SiteQuantityIncreaseClaim,
+} from "./site-capacity-increase";
 import type { BillingProviderName, SubscriptionSnapshot } from "./types";
 
 function createSecretClient() {
@@ -183,4 +189,39 @@ export async function applyOrganisationSubscriptionSnapshot(
   }
 
   return data === "ignored_out_of_order" ? "ignored_out_of_order" : "applied";
+}
+
+export async function claimSiteQuantityIncrease(
+  desiredSiteQuantity: number,
+): Promise<SiteQuantityIncreaseClaim> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("claim_site_quantity_increase", {
+    target_desired_site_quantity: desiredSiteQuantity,
+  });
+
+  if (error) {
+    throw new BillingProviderError(
+      error.message,
+      error.code === "42501" ? "forbidden" : "misconfigured",
+    );
+  }
+
+  return parseSiteQuantityIncreaseClaim(data);
+}
+
+export async function loadCurrentOrganisationSubscriptionBinding(
+  supabase: SupabaseClient<Database>,
+) {
+  const { data, error } = await supabase
+    .from("organisation_subscriptions")
+    .select(
+      "organisation_id, provider, provider_subscription_id, provider_price_id, site_quantity, highest_requested_site_quantity, billing_state, plan_code, billing_interval, provider_status, cancel_at_period_end",
+    )
+    .maybeSingle();
+
+  if (error) {
+    return null;
+  }
+
+  return data;
 }

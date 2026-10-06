@@ -1,5 +1,6 @@
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { ADD_SITE_CAPACITY_HREF } from "@/modules/billing/site-capacity-increase";
 import { SITE_CAPACITY_EXHAUSTED } from "@/modules/billing/site-capacity";
 
 export function SiteCapacityFailure({
@@ -23,10 +24,10 @@ export function SiteCapacityFailure({
       {exhausted && canManageBilling ? (
         <Button variant="outline" size="sm" className="self-start" asChild>
           <AppLink
-            href="/platform/settings/billing"
+            href={ADD_SITE_CAPACITY_HREF}
             data-testid="site-capacity-open-billing"
           >
-            Open Billing
+            Add site capacity
           </AppLink>
         </Button>
       ) : null}

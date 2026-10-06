@@ -28,6 +28,14 @@ export type CreateCheckoutSessionInput = {
   existingCheckoutSessionId?: string | null;
 };
 
+export type IncreaseSubscriptionSiteQuantityInput = {
+  organisationId: string;
+  subscriptionId: string;
+  customerId: string;
+  desiredSiteQuantity: number;
+  expectedPriceId?: string | null;
+};
+
 export type BillingProvider = {
   readonly name: BillingProviderName;
   createOrRetrieveCustomer(
@@ -45,6 +53,9 @@ export type BillingProvider = {
     subscriptionId: string,
   ): Promise<ProviderSubscription>;
   retrieveSubscription(subscriptionId: string): Promise<ProviderSubscription>;
+  increaseSubscriptionSiteQuantity(
+    input: IncreaseSubscriptionSiteQuantityInput,
+  ): Promise<ProviderSubscription>;
   verifyWebhook(input: {
     payload: string;
     signature: string | null;
@@ -56,6 +67,7 @@ export class BillingProviderError extends Error {
     message: string,
     readonly code:
       | "invalid_webhook"
+      | "invalid_request"
       | "not_found"
       | "unauthorized"
       | "forbidden"

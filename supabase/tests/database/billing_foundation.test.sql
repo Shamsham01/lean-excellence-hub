@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(29);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -254,6 +254,165 @@ select throws_ok(
 );
 
 reset role;
+
+select is(
+  public.apply_organisation_subscription_snapshot(
+    (select id from billing_core_ids where key = 'organisation_a'),
+    'fake',
+    'cus_fake_org_a',
+    'sub_fake_org_a',
+    'professional',
+    'monthly',
+    2,
+    'price_fake_professional_monthly',
+    'active',
+    'active',
+    statement_timestamp(),
+    statement_timestamp() + interval '30 days',
+    false,
+    timestamptz '2026-09-29 14:00:00+00'
+  ),
+  'applied',
+  'later webhook snapshot increases authoritative site quantity'
+);
+
+select is(
+  (
+    select subscription.site_quantity
+    from public.organisation_subscriptions subscription
+    where subscription.organisation_id = (
+      select id from billing_core_ids where key = 'organisation_a'
+    )
+  ),
+  2,
+  'authoritative site quantity follows the newer webhook snapshot'
+);
+
+select is(
+  public.apply_organisation_subscription_snapshot(
+    (select id from billing_core_ids where key = 'organisation_a'),
+    'fake',
+    'cus_fake_org_a',
+    'sub_fake_org_a',
+    'professional',
+    'monthly',
+    1,
+    'price_fake_professional_monthly',
+    'active',
+    'active',
+    statement_timestamp(),
+    statement_timestamp() + interval '30 days',
+    false,
+    timestamptz '2026-09-29 13:00:00+00'
+  ),
+  'ignored_out_of_order',
+  'older webhook cannot revert a newer subscribed site quantity'
+);
+
+select is(
+  (
+    select subscription.site_quantity
+    from public.organisation_subscriptions subscription
+    where subscription.organisation_id = (
+      select id from billing_core_ids where key = 'organisation_a'
+    )
+  ),
+  2,
+  'out-of-order older quantity snapshot does not reduce site quantity'
+);
+
+select is(
+  public.apply_organisation_subscription_snapshot(
+    (select id from billing_core_ids where key = 'organisation_a'),
+    'fake',
+    'cus_fake_org_a',
+    'sub_fake_org_a',
+    'professional',
+    'monthly',
+    3,
+    'price_fake_professional_monthly',
+    'active',
+    'active',
+    statement_timestamp(),
+    statement_timestamp() + interval '30 days',
+    false,
+    timestamptz '2026-09-29 15:00:00+00'
+  ),
+  'applied',
+  'later same-granularity snapshot can increase quantity'
+);
+
+select is(
+  public.apply_organisation_subscription_snapshot(
+    (select id from billing_core_ids where key = 'organisation_a'),
+    'fake',
+    'cus_fake_org_a',
+    'sub_fake_org_a',
+    'professional',
+    'monthly',
+    2,
+    'price_fake_professional_monthly',
+    'active',
+    'active',
+    statement_timestamp(),
+    statement_timestamp() + interval '30 days',
+    false,
+    timestamptz '2026-09-29 15:00:00+00'
+  ),
+  'applied',
+  'same-timestamp lower snapshot is still accepted for non-quantity fields'
+);
+
+select is(
+  (
+    select subscription.site_quantity
+    from public.organisation_subscriptions subscription
+    where subscription.organisation_id = (
+      select id from billing_core_ids where key = 'organisation_a'
+    )
+  ),
+  3,
+  'same-timestamp lower quantity does not regress site quantity'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a2000000-0000-4000-8000-000000000001","email":"billing-owner-a@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from billing_core_ids where key = 'organisation_a')),
+  'owner reselects organisation A for increase claims'
+);
+
+select is(
+  public.claim_site_quantity_increase(4) ->> 'action',
+  'update',
+  'claiming 4 after quantity 3 is an increase'
+);
+
+select is(
+  public.claim_site_quantity_increase(2) ->> 'reason',
+  'superseded',
+  'claiming 2 after 4 is superseded and does not lower the high-water mark'
+);
+
+reset role;
+
+select is(
+  (
+    select subscription.highest_requested_site_quantity
+    from public.organisation_subscriptions subscription
+    where subscription.organisation_id = (
+      select id from billing_core_ids where key = 'organisation_a'
+    )
+  ),
+  4,
+  'highest requested site quantity stays at 4 after a stale 2 claim'
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a2000000-0000-4000-8000-000000000002","email":"billing-owner-b@example.test"}',

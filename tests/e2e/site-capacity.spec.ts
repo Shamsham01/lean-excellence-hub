@@ -83,10 +83,89 @@ test.describe("subscribed site capacity", () => {
     await expect(
       page.getByTestId("billing-site-capacity-remaining"),
     ).toHaveText("No additional site slots available");
-    await expect(
-      page.getByRole("button", { name: "Manage billing" }),
-    ).toBeVisible();
+    await expect(page.getByTestId("add-site-capacity-dialog")).toBeVisible();
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByTestId("add-site-capacity-dialog")).toBeHidden();
+    await expect(page.getByTestId("add-site-capacity")).toBeVisible();
+    await expect(page.getByTestId("manage-billing")).toBeVisible();
     await screenshotIfPossible(page, "billing-site-capacity-1-of-1.png");
+  });
+
+  test("authorised quantity increase 1 → 2 then creates the second Site", async ({
+    page,
+  }) => {
+    test.setTimeout(150_000);
+    const user = await provisionFoundingE2eUser();
+    await loginAsFoundingUser(page, user);
+    await completeFoundingCheckout(page, user, 1);
+    await completeStructureFirstSetupToPlatform(page);
+
+    await page.goto("/platform/settings/structure");
+    await addCustomSite(page, "Second Site");
+    await expect(page.getByTestId("site-capacity-error")).toBeVisible();
+    await page.getByTestId("site-capacity-open-billing").click();
+    await expect(page.getByTestId("billing-settings-page")).toBeVisible();
+    await expect(page.getByTestId("billing-site-capacity-headline")).toHaveText(
+      "1 of 1 active",
+    );
+
+    const dialog = page.getByTestId("add-site-capacity-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId("desired-site-quantity")).toHaveValue("2");
+    await page.getByTestId("site-capacity-continue").click();
+    await expect(page.getByTestId("site-capacity-confirm")).toBeFocused();
+    await page.getByTestId("site-capacity-confirm").click();
+    await expect(page.getByTestId("site-capacity-pending")).toBeVisible();
+    await screenshotIfPossible(page, "billing-site-capacity-awaiting.png");
+    await page.getByTestId("site-capacity-confirm-sandbox").click();
+    await expect(page.getByTestId("billing-site-capacity-headline")).toHaveText(
+      "1 of 2 active",
+      { timeout: 30_000 },
+    );
+    await expect(page.getByTestId("site-capacity-confirmed")).toBeVisible();
+    await screenshotIfPossible(page, "billing-site-capacity-1-of-2.png");
+    await page.getByTestId("site-capacity-add-site").click();
+
+    await expect(page.getByTestId("structure-settings-page")).toBeVisible();
+    await expect(page.getByTestId("site-capacity-headline")).toHaveText(
+      "1 of 2 subscribed sites active",
+    );
+    await addCustomSite(page, "Second Site");
+    await expect(
+      page.locator('[data-testid^="org-unit-node-"]').filter({
+        hasText: "Second Site",
+      }),
+    ).toBeVisible();
+    await expect(page.getByTestId("site-capacity-headline")).toHaveText(
+      "2 of 2 subscribed sites active",
+    );
+    await screenshotIfPossible(
+      page,
+      "structure-site-capacity-after-increase.png",
+    );
+  });
+
+  test("confirmation UI remains usable at 390×844", async ({ page }) => {
+    test.setTimeout(150_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const user = await provisionFoundingE2eUser();
+    await loginAsFoundingUser(page, user);
+    await completeFoundingCheckout(page, user, 1);
+    await completeStructureFirstSetupToPlatform(page);
+
+    await page.goto("/platform/settings/billing?addCapacity=1");
+    await expect(page.getByTestId("add-site-capacity-dialog")).toBeVisible();
+    const box = await page
+      .getByTestId("add-site-capacity-dialog")
+      .boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeLessThanOrEqual(390);
+    await page.getByTestId("site-capacity-continue").click();
+    await expect(page.getByTestId("site-capacity-confirm")).toBeFocused();
+    await screenshotIfPossible(
+      page,
+      "billing-site-capacity-mobile-confirm.png",
+    );
   });
 
   test("quantity 2 allows a second site under the same organisation", async ({
