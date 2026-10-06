@@ -362,7 +362,13 @@ export async function sendMaturityBuilderMessageAction(input: {
       conversation: updated,
     };
   } catch (error) {
-    const rawMessage = error instanceof Error ? error.message : "";
+    const rawMessage =
+      error !== null &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof error.message === "string"
+        ? error.message
+        : "";
     const reason = mapCoachRpcError(rawMessage);
     const conversation =
       supabase && sessionId && organisationId
