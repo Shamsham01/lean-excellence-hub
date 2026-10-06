@@ -35,6 +35,7 @@ const facts: StructureFirstSnapshotView["facts"] = {
   organisationLocale: "en-GB",
   organisationTimeZone: "Europe/London",
   reportingCurrency: "GBP",
+  multiSiteIntent: "yes",
   billingPlanCode: "professional",
   billingPlanName: "Professional",
   firstSiteName: "Plymouth Factory",
@@ -104,6 +105,9 @@ describe("structure-first onboarding workspace", () => {
     expect(
       screen.getByTestId("structure-first-site-distinction"),
     ).toHaveTextContent("Plymouth Factory");
+    expect(
+      screen.getByTestId("structure-first-site-distinction"),
+    ).toHaveTextContent("Yes, part of a wider multi-site organisation");
     expect(screen.getByText(/will not be recreated here/i)).toBeInTheDocument();
   });
 

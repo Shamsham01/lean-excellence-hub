@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
 import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
+import { customerAccessScopeLabel } from "@/modules/rbac2/access-scope";
 
 import type { CreateWorkforceUserResult } from "@/app/(platform)/platform/settings/people/create/actions";
 
@@ -283,7 +284,7 @@ export function CreateWorkforceUserForm({
             const key = `${option.scope_type}::${option.scope_unit_id ?? "null"}`;
             return (
               <option key={key} value={key}>
-                {option.label}
+                {customerAccessScopeLabel(option)}
               </option>
             );
           })}

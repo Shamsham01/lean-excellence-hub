@@ -46,12 +46,8 @@ export function responsibilityScopeLabel(input: {
   }
 
   if (input.scope_type === "unit_subtree") {
-    if (input.scope_unit_path) {
-      return `${input.scope_unit_path} subtree`;
-    }
-    if (input.scope_unit_name) {
-      return `${input.scope_unit_name} subtree`;
-    }
+    const place = input.scope_unit_path ?? input.scope_unit_name;
+    return place ? `Specific site: ${place}` : "Specific site";
   }
 
   if (input.scope_type === "self") {

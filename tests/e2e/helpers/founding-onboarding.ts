@@ -118,10 +118,18 @@ export async function completeFoundingCheckout(
   page: Page,
   user: FoundingE2eUser,
   siteQuantity = 1,
+  multiSiteIntent: "yes" | "no" | "not_sure" = "not_sure",
 ) {
   await expect(page.getByTestId("create-organisation-page")).toBeVisible();
   await page.getByLabel("Organisation name").fill(user.organisationName);
   await page.getByLabel("First site").fill(user.firstSiteName);
+  const intentLabel =
+    multiSiteIntent === "yes"
+      ? "Yes, part of a wider multi-site organisation"
+      : multiSiteIntent === "no"
+        ? "No, this is a single-site organisation"
+        : "Not sure yet";
+  await page.getByLabel(intentLabel).check();
   await page.getByLabel("Paid site quantity").fill(String(siteQuantity));
   await page.getByRole("button", { name: "Continue to plan" }).click();
 

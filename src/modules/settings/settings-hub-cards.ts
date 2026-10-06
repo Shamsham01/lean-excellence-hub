@@ -26,8 +26,7 @@ export function buildSettingsHubCards(
   return [
     {
       title: "Organisation",
-      description:
-        "View your organisation identity, locale, and reporting settings.",
+      description: "View organisation identity, sites, and rollout governance.",
       href: "/platform/settings/organisation",
       available: access.canReadHierarchy,
     },

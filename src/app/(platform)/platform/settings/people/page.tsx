@@ -156,8 +156,8 @@ export default async function PeopleSettingsPage() {
         grant.scope_type === "organisation"
           ? "Entire organisation"
           : scopeUnitId
-            ? `${formatUnitPath(scopeUnitId, allUnits)} subtree`
-            : "Scoped access",
+            ? `Specific site: ${formatUnitPath(scopeUnitId, allUnits)}`
+            : "Specific site",
     });
   }
 

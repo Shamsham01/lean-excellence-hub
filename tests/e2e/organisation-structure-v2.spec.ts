@@ -311,7 +311,9 @@ test.describe("Organisation Structure V2", () => {
       const scopeSelect = grantForm.locator("#grant-scope");
 
       await responsibilitySelect.selectOption({ label: "Suggestions" });
-      await scopeSelect.selectOption({ label: "Cornwall Plant subtree" });
+      await scopeSelect.selectOption({
+        label: "Specific site: Cornwall Plant",
+      });
       await grantForm
         .getByRole("button", { name: "Add responsibility" })
         .click();
@@ -325,7 +327,7 @@ test.describe("Organisation Structure V2", () => {
       ).toBeVisible();
 
       await responsibilitySelect.selectOption({ label: "5S" });
-      await scopeSelect.selectOption({ label: "Operations subtree" });
+      await scopeSelect.selectOption({ label: "Specific site: Operations" });
       await grantForm
         .getByRole("button", { name: "Add responsibility" })
         .click();

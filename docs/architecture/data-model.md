@@ -16,6 +16,10 @@ Approved Milestone 3 foundations:
   anonymisation must not cascade away historical evidence.
 - `organisations`: tenant root, reporting currency, locale/time zone, optimistic
   version, and `provisioning | active | suspended | closed` lifecycle.
+  `multi_site_intent` (`yes | no | not_sure`, nullable) is first-customer
+  product context only. Legacy `NULL` means not sure in UX. It never grants
+  access or site capacity. See
+  [shared standards vs site-local execution](./shared-standards-and-site-execution.md).
 - `organisation_memberships`: a unique user-to-organisation binding with
   tenant-specific person attributes and `pending | active | inactive`
   lifecycle. `pending` is allowed only after an Auth user is bound but before

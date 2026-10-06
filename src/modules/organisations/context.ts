@@ -49,6 +49,7 @@ export const loadCurrentOrganisationId = cache(async () => {
 export type CurrentOrganisationIdentity = {
   organisationId: string;
   organisationName: string;
+  multiSiteIntent: string | null;
 };
 
 /**
@@ -62,7 +63,7 @@ export const loadCurrentOrganisationIdentity = cache(
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("organisations")
-      .select("id, name")
+      .select("id, name, multi_site_intent")
       .maybeSingle();
 
     if (error) {
@@ -81,6 +82,7 @@ export const loadCurrentOrganisationIdentity = cache(
     return {
       organisationId: data.id,
       organisationName: data.name,
+      multiSiteIntent: data.multi_site_intent,
     };
   },
 );

@@ -32,8 +32,12 @@ function baseQuery(
     organisationStatus: "active",
     organisationName: "Acme Ltd",
     organisationCode: "acme",
+    firstSiteName: null,
+    multiSiteIntent: null,
     activeUnitCount: 0,
     activeUnitCountUnavailable: false,
+    activeSiteCount: 0,
+    activeSiteCountUnavailable: false,
     hasOrganisationOwner: true,
     ownerCheckUnavailable: false,
     activeMembershipCount: 1,
@@ -50,6 +54,10 @@ function baseQuery(
     jobFunctionAssignmentsUnavailable: false,
     leanConfigSignalCount: 0,
     leanConfigUnavailable: false,
+    publishedMaturityVersionCount: 0,
+    publishedMaturityUnavailable: false,
+    maturityAssessmentCount: 0,
+    maturityAssessmentUnavailable: false,
     trainingCatalogCount: 0,
     trainingCatalogUnavailable: false,
     hasChildUnits: false,
@@ -65,6 +73,7 @@ describe("organisation setup readiness", () => {
     const snapshot = buildOrganisationSetupSnapshot(
       baseQuery({
         activeUnitCount: 1,
+        activeSiteCount: 1,
         currentAdminHasPrimaryAssignment: true,
       }),
       basePermissions,
@@ -128,6 +137,26 @@ describe("organisation setup readiness", () => {
       (i) => i.id === "lean_configuration",
     );
     expect(lean?.status).toBe("setup_started");
+  });
+
+  it("marks a published Maturity Framework complete without treating an assessment as visited", () => {
+    const snapshot = buildOrganisationSetupSnapshot(
+      baseQuery({
+        leanConfigSignalCount: 1,
+        publishedMaturityVersionCount: 1,
+        maturityAssessmentCount: 0,
+      }),
+      basePermissions,
+    );
+
+    const framework = snapshot.recommended.items.find(
+      (i) => i.id === "operational_excellence_framework",
+    );
+    const activity = snapshot.recommended.items.find(
+      (i) => i.id === "first_operational_activity",
+    );
+    expect(framework?.status).toBe("complete");
+    expect(activity?.status).toBe("not_started");
   });
 
   it("marks training configuration setup_started from catalogue count, not UI state", () => {

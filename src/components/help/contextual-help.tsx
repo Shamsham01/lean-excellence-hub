@@ -53,7 +53,7 @@ const helpContent: Record<
   },
   "access-scope": {
     title: "Access scope",
-    body: "Access scope limits where an application role applies. For example, a manager might have authority across an entire site, or only within a specific department and its teams.",
+    body: "Access scope limits where an application role applies. Entire organisation covers permitted work across all sites. A specific site stays local to that site unless the person is granted access elsewhere. Job titles do not grant access on their own.",
   },
   "primary-organisational-unit": {
     title: "Primary organisation unit",

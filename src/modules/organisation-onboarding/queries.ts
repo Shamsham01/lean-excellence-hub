@@ -158,7 +158,9 @@ export async function loadStructureFirstSnapshot(
   ] = await Promise.all([
     supabase
       .from("organisations")
-      .select("name, locale, time_zone, reporting_currency, status")
+      .select(
+        "name, locale, time_zone, reporting_currency, status, multi_site_intent",
+      )
       .maybeSingle(),
     loadCurrentOrganisationBilling(supabase),
     supabase
@@ -296,8 +298,8 @@ export async function loadStructureFirstSnapshot(
         grant.scope_type === "organisation"
           ? "Entire organisation"
           : scopeUnitId
-            ? `${formatUnitPath(scopeUnitId, allUnits)} subtree`
-            : "Scoped access",
+            ? `Specific site: ${formatUnitPath(scopeUnitId, allUnits)}`
+            : "Specific site",
     });
   }
 
@@ -336,6 +338,7 @@ export async function loadStructureFirstSnapshot(
     organisationLocale: organisation?.locale ?? null,
     organisationTimeZone: organisation?.time_zone ?? null,
     reportingCurrency: organisation?.reporting_currency ?? null,
+    multiSiteIntent: organisation?.multi_site_intent ?? null,
     billingPlanCode: planCode,
     billingPlanName: planCode ? PLAN_CATALOGUE[planCode].name : null,
     firstSiteName: firstSite?.name ?? null,

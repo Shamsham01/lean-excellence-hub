@@ -38,7 +38,7 @@ export const LEANAI_INTERVENTION_CATALOGUE: readonly LeanAiInterventionDefinitio
       title: "Establish your organisation foundation",
       body: "Your subscription is active. Confirm the organisation and first site, then describe structure, job functions and people so LeanAI can help configure Operational Excellence.",
       explain:
-        "Lean Excellence Hub captures organisational context first. Organisation is the company tenant. A site is an operational location. Structure, job functions and people are advisory setup steps. LeanAI will not publish, approve or create authoritative configuration without a person.",
+        "Lean Excellence Hub captures organisational context first. Organisation is the company or group. A site is an operational location. Structure, job functions and people are advisory setup steps. LeanAI will not publish, approve or create authoritative configuration without a person.",
       primaryCtaLabel: "Continue setup",
       targetRoute: "/onboarding/setup",
       dismissCooldownHours: DEFAULT_DISMISS_HOURS,
