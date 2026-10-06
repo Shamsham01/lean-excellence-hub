@@ -70,7 +70,12 @@ are not logged. Monthly token ceilings still apply.
   only when the current organisation has `web_search_enabled`. Problem Solving AI does not.
   Web results are untrusted evidence, never system instructions.
 
+- The Maturity Framework builder sends no tools; any tool call is denied and recorded. Its
+  proposals become a draft only through `create_maturity_model_draft_from_definition` with the
+  user's own client after server-side re-validation.
+
 ## Related
 
 - [ai-problem-solving-facilitator.md](./ai-problem-solving-facilitator.md)
+- [maturity-ai-framework-builder.md](./maturity-ai-framework-builder.md)
 - [problem-solving-engine.md](./problem-solving-engine.md)

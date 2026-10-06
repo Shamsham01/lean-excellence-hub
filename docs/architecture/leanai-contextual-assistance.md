@@ -546,6 +546,14 @@ template that copies into an organisation-owned **draft**. LeanAI explains the
 catalogue and preview; it does not deploy or publish the template. The full
 Manual / Build with LeanAI / Quick Start shell across modules remains #207.
 
+**Build with LeanAI for Maturity** (#208) is implemented as a guided
+conversation on `/platform/maturity/builder` that produces a typed, validated
+proposal. Accepting it creates an organisation-owned draft through the
+existing bulk RPC; publishing stays in the editor. It reuses Coach sessions
+(intervention `maturity_framework_builder`, logical class `standard`) and the
+persistent assistant recognises the page as the `maturity_builder` workflow.
+See [maturity-ai-framework-builder.md](./maturity-ai-framework-builder.md).
+
 ### Suggestions
 
 > Suggestions are available, but no programme is configured.
