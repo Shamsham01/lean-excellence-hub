@@ -14363,6 +14363,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_organisation_multi_site_intent: {
+        Args: { target_intent: string }
+        Returns: string
+      }
       set_organisation_open_checkout_session: {
         Args: {
           target_checkout_context?: Json
@@ -14371,10 +14375,6 @@ export type Database = {
           target_session_id: string
         }
         Returns: boolean
-      }
-      set_organisation_multi_site_intent: {
-        Args: { target_intent: string }
-        Returns: string
       }
       set_organisation_unit_status: {
         Args: {
