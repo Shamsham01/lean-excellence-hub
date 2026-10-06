@@ -89,6 +89,9 @@ application code, not rows seeded into every tenant. Choosing **Use this
 template** copies the definition into the organisation's `maturity_models` /
 template-engine draft. See
 [maturity-quick-start-templates.md](./maturity-quick-start-templates.md).
+LeanAI builder proposals live only in Coach session messages until a human
+accepts one; acceptance writes the same draft tables. See
+[maturity-ai-framework-builder.md](./maturity-ai-framework-builder.md).
 
 ## Workflow, audit, events, and history
 

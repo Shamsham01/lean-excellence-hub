@@ -1,3 +1,5 @@
+import { MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/maturity-framework-builder";
+import { fakeMaturityBuilderResponse } from "@/platform/ai/providers/fake-maturity-builder";
 import type {
   AIProvider,
   CreateResponseInput,
@@ -20,6 +22,13 @@ export class FakeAIProvider implements AIProvider {
 
     if (input.structuredOutputFormat?.name === "coach_envelope") {
       return this.coachResponse(lastUser, input.tools);
+    }
+
+    if (
+      input.structuredOutputFormat?.name ===
+      MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME
+    ) {
+      return fakeMaturityBuilderResponse(lastUser);
     }
 
     if (

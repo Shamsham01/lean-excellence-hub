@@ -3,10 +3,12 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BuildWithLeanAiCard } from "@/components/maturity/ai-builder/build-with-leanai-card";
 import { CreateMaturityFrameworkForm } from "@/components/maturity/create-maturity-framework-form";
 import { MaturityQuickStartCard } from "@/components/maturity/maturity-quick-start-card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import { loadMaturityBuilderPageData } from "@/modules/maturity/ai-builder/load";
 import {
   scopeTypeLabel,
   type MaturityAssessmentScopeType,
@@ -19,6 +21,7 @@ export default async function MaturityModelsPage() {
     MATURITY_PERMISSIONS.modelsManage,
   );
   const supabase = await createServerSupabaseClient();
+  const builder = canManage ? await loadMaturityBuilderPageData() : null;
   const { data: models } = await supabase
     .from("maturity_models")
     .select("id, display_name, description, created_at")
@@ -73,7 +76,7 @@ export default async function MaturityModelsPage() {
     <div className="flex flex-col gap-8" data-testid="maturity-models-page">
       <PageHeader
         title="Maturity frameworks"
-        description="Create a framework from scratch or start with an LEH template and tailor it to your organisation."
+        description="Your framework. Your standards. Your way of working. Start from an LEH template, build one with LeanAI, or create it manually — every route creates an editable draft that only you publish."
         actions={
           <Button variant="outline" asChild>
             <AppLink
@@ -107,9 +110,30 @@ export default async function MaturityModelsPage() {
         ))}
       </section>
 
-      {canManage ? (
+      {canManage && builder?.access.canManage ? (
         <section
           className="flex flex-col gap-4"
+          data-testid="maturity-build-with-leanai-section"
+        >
+          <div className="flex flex-col gap-1">
+            <h2 className="typography-section-title">Build with LeanAI</h2>
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              Already have a way of assessing operations? LeanAI helps you
+              translate it into levels, pillars, criteria and questions. You
+              review every part, and nothing is saved until you create a draft.
+            </p>
+          </div>
+          <BuildWithLeanAiCard
+            access={builder.access}
+            hasConversation={Boolean(builder.conversation?.turns.length)}
+          />
+        </section>
+      ) : null}
+
+      {canManage ? (
+        <section
+          id="maturity-manual-create"
+          className="flex scroll-mt-6 flex-col gap-4"
           data-testid="maturity-manual-create-section"
         >
           <div className="flex flex-col gap-1">

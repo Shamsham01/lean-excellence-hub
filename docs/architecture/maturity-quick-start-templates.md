@@ -107,6 +107,11 @@ not call a model merely because the page loaded.
 When no framework exists, deterministic setup guidance may mention starting
 manually or deploying the LEH Operational Excellence Standard as a draft.
 
+**Build with LeanAI** (#208) is the third path beside Quick Start and Manual.
+It reuses the same bulk RPC with declared key `leanai-maturity-builder`, so it
+never claims Quick Start provenance. See
+[maturity-ai-framework-builder.md](./maturity-ai-framework-builder.md).
+
 ## Future direction (not implemented)
 
 **Operational evidence-linked maturity scoring** is a later capability. An

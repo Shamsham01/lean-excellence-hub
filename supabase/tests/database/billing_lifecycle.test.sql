@@ -161,7 +161,7 @@ select is(
     statement_timestamp() + interval '30 days',
     false,
     timestamptz '2026-09-29 14:00:00+00',
-    timestamptz '2026-10-06 00:00:00+00'
+    statement_timestamp() + interval '7 days'
   ),
   'applied',
   'past_due snapshot with remaining grace applies'
