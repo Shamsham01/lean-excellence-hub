@@ -6,6 +6,11 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
+import {
+  buildSiteCapacityView,
+  formatBillingSiteCapacityHeadline,
+  formatRemainingSiteSlots,
+} from "@/modules/billing/site-capacity";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -16,6 +21,18 @@ export default async function OrganisationBillingSettingsPage() {
 
   const supabase = await createServerSupabaseClient();
   const snapshot = await loadCurrentOrganisationBillingManagement(supabase);
+  const siteCapacity = snapshot
+    ? buildSiteCapacityView({
+        activeSiteCount: snapshot.active_site_count,
+        siteQuantity: snapshot.site_quantity,
+        billingState: snapshot.billing_state,
+        paidSiteLimit: snapshot.paid_site_limit,
+        canManageBilling: true,
+      })
+    : null;
+  const remaining = siteCapacity
+    ? formatRemainingSiteSlots(siteCapacity.remainingSlots)
+    : null;
 
   return (
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
@@ -50,15 +67,33 @@ export default async function OrganisationBillingSettingsPage() {
               {snapshot?.billing_interval ?? "—"}
             </p>
           </div>
-          <div>
+          <div data-testid="billing-site-capacity">
             <p className="text-xs font-medium text-muted-foreground">
-              Site quantity
+              Site capacity
             </p>
-            <p className="text-sm text-foreground">
-              {snapshot?.site_quantity ??
-                snapshot?.intended_site_quantity ??
-                "—"}
+            <p
+              className="text-sm text-foreground"
+              data-testid="billing-site-capacity-headline"
+            >
+              {siteCapacity?.enforced && siteCapacity.subscribedLimit !== null
+                ? formatBillingSiteCapacityHeadline(
+                    siteCapacity.activeSiteCount,
+                    siteCapacity.subscribedLimit,
+                  )
+                : siteCapacity
+                  ? `${siteCapacity.activeSiteCount} active`
+                  : (snapshot?.site_quantity ??
+                    snapshot?.intended_site_quantity ??
+                    "—")}
             </p>
+            {remaining ? (
+              <p
+                className="mt-1 text-xs text-muted-foreground"
+                data-testid="billing-site-capacity-remaining"
+              >
+                {remaining}
+              </p>
+            ) : null}
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground">State</p>
@@ -90,8 +125,15 @@ export default async function OrganisationBillingSettingsPage() {
       </Card>
 
       {snapshot?.provider_customer_id ? (
-        <form action={createCustomerPortalSession}>
+        <form
+          action={createCustomerPortalSession}
+          className="flex flex-col gap-2"
+        >
           <Button type="submit">Manage billing</Button>
+          <p className="text-xs text-muted-foreground">
+            Opens Stripe Customer Portal for payment methods and cancellation.
+            It does not automatically change subscribed site quantity.
+          </p>
         </form>
       ) : null}
     </div>

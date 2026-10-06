@@ -5,6 +5,10 @@ import { useId, useState } from "react";
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  formatRemainingSiteSlots,
+  type SiteCapacityView,
+} from "@/modules/billing/site-capacity";
 import { isSiteUnitType } from "@/modules/organisation/site-semantics";
 import {
   COMMON_UNIT_TYPES,
@@ -18,11 +22,13 @@ export function UnitTypeField({
   value,
   onChange,
   required = true,
+  siteCapacity,
 }: {
   id?: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  siteCapacity?: SiteCapacityView;
 }) {
   const generatedId = useId();
   const fieldId = id ?? generatedId;
@@ -90,6 +96,11 @@ export function UnitTypeField({
       {isSiteUnitType(value) ? (
         <p className="text-xs text-warning-foreground" role="status">
           {siteHint}
+          {siteCapacity?.enforced && siteCapacity.remainingSlots === 0
+            ? " This organisation has used all subscribed site capacity."
+            : siteCapacity?.enforced
+              ? ` ${formatRemainingSiteSlots(siteCapacity.remainingSlots)}.`
+              : ""}
         </p>
       ) : null}
     </div>

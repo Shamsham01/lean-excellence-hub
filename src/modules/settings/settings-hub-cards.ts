@@ -33,7 +33,7 @@ export function buildSettingsHubCards(
     },
     {
       title: "Billing",
-      description: "View plan, site quantity, and manage billing in Stripe.",
+      description: "View plan, site capacity, and manage billing.",
       href: "/platform/settings/billing",
       available: access.canManageBilling,
     },

@@ -4,6 +4,7 @@ import { MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { UnitTypeField } from "@/components/organisation/unit-type-field";
+import { SiteCapacityFailure } from "@/components/organisation/site-capacity-failure";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +26,12 @@ import {
   formatUnitPath,
   type FlatOrganisationUnit,
 } from "@/modules/organisation/unit-hierarchy";
+import {
+  SITE_CAPACITY_EXHAUSTED,
+  type SiteCapacityView,
+} from "@/modules/billing/site-capacity";
+import { isSiteUnitType } from "@/modules/organisation/site-semantics";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
 
 type UnitLifecycleActionsProps = {
   unit: FlatOrganisationUnit;
@@ -35,18 +42,17 @@ type UnitLifecycleActionsProps = {
     unitId: string;
     name: string;
     unitType: string;
-  }) => Promise<{ error?: string; ok?: true }>;
+  }) => Promise<StructureMutationResult>;
   onMove: (input: {
     unitId: string;
     parentUnitId: string | null;
-  }) => Promise<{ error?: string; ok?: true }>;
+  }) => Promise<StructureMutationResult>;
   onRetire: (input: {
     unitId: string;
     reason: string;
-  }) => Promise<{ error?: string; ok?: true }>;
-  onRestore: (input: {
-    unitId: string;
-  }) => Promise<{ error?: string; ok?: true }>;
+  }) => Promise<StructureMutationResult>;
+  onRestore: (input: { unitId: string }) => Promise<StructureMutationResult>;
+  siteCapacity?: SiteCapacityView;
 };
 
 function isDescendant(
@@ -76,6 +82,7 @@ export function UnitLifecycleActions({
   onMove,
   onRetire,
   onRestore,
+  siteCapacity,
 }: UnitLifecycleActionsProps) {
   const [dialog, setDialog] = useState<
     "edit" | "move" | "archive" | "reactivate" | null
@@ -85,6 +92,10 @@ export function UnitLifecycleActions({
   const [parentUnitId, setParentUnitId] = useState(unit.parent_unit_id ?? "");
   const [archiveReason, setArchiveReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [capacityError, setCapacityError] = useState<{
+    message: string;
+    canManageBilling?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const moveParentOptions = useMemo(
@@ -100,19 +111,57 @@ export function UnitLifecycleActions({
   function closeDialog() {
     setDialog(null);
     setMessage(null);
+    setCapacityError(null);
     setLoading(false);
+  }
+
+  function applyMutationError(result: StructureMutationResult) {
+    if (!result.error) {
+      return;
+    }
+    if (result.errorCode === SITE_CAPACITY_EXHAUSTED) {
+      setCapacityError({
+        message: result.error,
+        canManageBilling: result.canManageBilling === true,
+      });
+      setMessage(null);
+      return;
+    }
+    setCapacityError(null);
+    setMessage(result.error);
+  }
+
+  function mutationFeedback() {
+    if (capacityError) {
+      return (
+        <SiteCapacityFailure
+          message={capacityError.message}
+          errorCode={SITE_CAPACITY_EXHAUSTED}
+          canManageBilling={capacityError.canManageBilling === true}
+        />
+      );
+    }
+    if (message) {
+      return (
+        <p className="text-sm text-muted-foreground" role="status">
+          {message}
+        </p>
+      );
+    }
+    return null;
   }
 
   async function handleUpdate() {
     setLoading(true);
     setMessage(null);
+    setCapacityError(null);
     const result = await onUpdate({
       unitId: unit.id,
       name,
       unitType,
     });
     if (result.error) {
-      setMessage(result.error);
+      applyMutationError(result);
       setLoading(false);
       return;
     }
@@ -122,6 +171,7 @@ export function UnitLifecycleActions({
   async function handleMove() {
     setLoading(true);
     setMessage(null);
+    setCapacityError(null);
     const resolvedParent = parentUnitId || null;
     if (resolvedParent === null && !canCreateRoot) {
       setMessage(
@@ -135,7 +185,7 @@ export function UnitLifecycleActions({
       parentUnitId: resolvedParent,
     });
     if (result.error) {
-      setMessage(result.error);
+      applyMutationError(result);
       setLoading(false);
       return;
     }
@@ -145,12 +195,13 @@ export function UnitLifecycleActions({
   async function handleArchive() {
     setLoading(true);
     setMessage(null);
+    setCapacityError(null);
     const result = await onRetire({
       unitId: unit.id,
       reason: archiveReason,
     });
     if (result.error) {
-      setMessage(result.error);
+      applyMutationError(result);
       setLoading(false);
       return;
     }
@@ -160,9 +211,10 @@ export function UnitLifecycleActions({
   async function handleReactivate() {
     setLoading(true);
     setMessage(null);
+    setCapacityError(null);
     const result = await onRestore({ unitId: unit.id });
     if (result.error) {
-      setMessage(result.error);
+      applyMutationError(result);
       setLoading(false);
       return;
     }
@@ -184,6 +236,7 @@ export function UnitLifecycleActions({
             size="sm"
             onClick={() => {
               setMessage(null);
+              setCapacityError(null);
               setDialog("reactivate");
             }}
           >
@@ -200,6 +253,7 @@ export function UnitLifecycleActions({
               setName(unit.name);
               setUnitType(unit.unit_type ?? "unit");
               setMessage(null);
+              setCapacityError(null);
               setDialog("edit");
             }}
           >
@@ -223,6 +277,7 @@ export function UnitLifecycleActions({
                 onSelect={() => {
                   setParentUnitId(unit.parent_unit_id ?? "");
                   setMessage(null);
+                  setCapacityError(null);
                   setDialog("move");
                 }}
               >
@@ -233,6 +288,7 @@ export function UnitLifecycleActions({
                 onSelect={() => {
                   setArchiveReason("");
                   setMessage(null);
+                  setCapacityError(null);
                   setDialog("archive");
                 }}
               >
@@ -274,11 +330,7 @@ export function UnitLifecycleActions({
               Code: {unit.code} (immutable)
             </p>
           </div>
-          {message ? (
-            <p className="text-sm text-muted-foreground" role="status">
-              {message}
-            </p>
-          ) : null}
+          {mutationFeedback()}
           <DialogFooter>
             <Button
               type="button"
@@ -326,11 +378,7 @@ export function UnitLifecycleActions({
               ))}
             </select>
           </div>
-          {message ? (
-            <p className="text-sm text-muted-foreground" role="status">
-              {message}
-            </p>
-          ) : null}
+          {mutationFeedback()}
           <DialogFooter>
             <Button
               type="button"
@@ -368,11 +416,7 @@ export function UnitLifecycleActions({
               placeholder="Why is this unit being archived?"
             />
           </div>
-          {message ? (
-            <p className="text-sm text-muted-foreground" role="status">
-              {message}
-            </p>
-          ) : null}
+          {mutationFeedback()}
           <DialogFooter>
             <Button
               type="button"
@@ -404,13 +448,14 @@ export function UnitLifecycleActions({
             <DialogDescription>
               Restores the unit to the active hierarchy when its parent
               relationship remains valid.
+              {isSiteUnitType(unit.unit_type) &&
+              siteCapacity?.enforced &&
+              siteCapacity.remainingSlots === 0
+                ? " Reactivating this Site requires subscribed capacity."
+                : ""}
             </DialogDescription>
           </DialogHeader>
-          {message ? (
-            <p className="text-sm text-muted-foreground" role="status">
-              {message}
-            </p>
-          ) : null}
+          {mutationFeedback()}
           <DialogFooter>
             <Button
               type="button"

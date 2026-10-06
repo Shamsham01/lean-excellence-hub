@@ -8,6 +8,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import type { SiteCapacityView } from "@/modules/billing/site-capacity";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
 
 type UnitOption = {
   id: string;
@@ -24,6 +26,7 @@ export function AddUnitDrawer({
   initialParentUnitId,
   existingCodes,
   onCreate,
+  siteCapacity,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,7 +39,8 @@ export function AddUnitDrawer({
     code: string;
     name: string;
     unitType: string;
-  }) => Promise<{ error?: string; ok?: true }>;
+  }) => Promise<StructureMutationResult>;
+  siteCapacity?: SiteCapacityView;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -62,6 +66,7 @@ export function AddUnitDrawer({
               initialParentUnitId={initialParentUnitId}
               existingCodes={existingCodes}
               onCreate={onCreate}
+              {...(siteCapacity ? { siteCapacity } : {})}
               onSuccess={() => onOpenChange(false)}
               onCancel={() => onOpenChange(false)}
             />

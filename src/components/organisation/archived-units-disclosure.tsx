@@ -4,6 +4,8 @@ import { UnitLifecycleActions } from "@/components/organisation/unit-lifecycle-a
 import { Badge } from "@/components/ui/badge";
 import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 import { formatUnitTypeLabel } from "@/modules/organisation/unit-types";
+import type { SiteCapacityView } from "@/modules/billing/site-capacity";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
 
 export function ArchivedUnitsDisclosure({
   units,
@@ -11,6 +13,7 @@ export function ArchivedUnitsDisclosure({
   canCreateRoot,
   manageableUnitIds,
   lifecycleActions,
+  siteCapacity,
 }: {
   units: FlatOrganisationUnit[];
   activeUnits: FlatOrganisationUnit[];
@@ -21,19 +24,18 @@ export function ArchivedUnitsDisclosure({
       unitId: string;
       name: string;
       unitType: string;
-    }) => Promise<{ error?: string; ok?: true }>;
+    }) => Promise<StructureMutationResult>;
     onMove: (input: {
       unitId: string;
       parentUnitId: string | null;
-    }) => Promise<{ error?: string; ok?: true }>;
+    }) => Promise<StructureMutationResult>;
     onRetire: (input: {
       unitId: string;
       reason: string;
-    }) => Promise<{ error?: string; ok?: true }>;
-    onRestore: (input: {
-      unitId: string;
-    }) => Promise<{ error?: string; ok?: true }>;
+    }) => Promise<StructureMutationResult>;
+    onRestore: (input: { unitId: string }) => Promise<StructureMutationResult>;
   };
+  siteCapacity?: SiteCapacityView;
 }) {
   if (units.length === 0) {
     return null;
@@ -78,6 +80,7 @@ export function ArchivedUnitsDisclosure({
                 onMove={lifecycleActions.onMove}
                 onRetire={lifecycleActions.onRetire}
                 onRestore={lifecycleActions.onRestore}
+                {...(siteCapacity ? { siteCapacity } : {})}
               />
             ) : null}
           </li>

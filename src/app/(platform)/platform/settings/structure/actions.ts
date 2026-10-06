@@ -2,30 +2,40 @@
 
 import { revalidatePath } from "next/cache";
 
+import {
+  isSiteCapacityExhaustedError,
+  SITE_CAPACITY_EXHAUSTED,
+  siteCapacityExhaustedUserMessage,
+} from "@/modules/billing/site-capacity";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
+import { friendlyRpcError } from "@/modules/organisation/structure-errors";
 import { validateOrganisationUnitCode } from "@/modules/organisation-setup/unit-code";
 import {
   currentMemberHasOrganisationScopedPermission,
+  currentMemberHasPermission,
   currentMemberHasScopedPermission,
 } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-function friendlyRpcError(
-  error: { code?: string; message?: string },
+async function mapStructureError(
+  error: {
+    code?: string;
+    details?: string;
+    hint?: string;
+    message?: string;
+  },
   fallback: string,
-) {
-  if (error.code === "42501") {
-    return "You are not authorised to perform this action.";
+): Promise<StructureMutationResult> {
+  if (isSiteCapacityExhaustedError(error)) {
+    const canManageBilling = await currentMemberHasPermission("billing.manage");
+    return {
+      error: siteCapacityExhaustedUserMessage(canManageBilling),
+      errorCode: SITE_CAPACITY_EXHAUSTED,
+      canManageBilling,
+    };
   }
-  if (error.code === "23505") {
-    return "A unit with this code already exists.";
-  }
-  if (error.code === "23514" && error.message) {
-    return error.message;
-  }
-  if (error.code === "23514") {
-    return "This change is not permitted. Check the unit state and try again.";
-  }
-  return fallback;
+
+  return { error: friendlyRpcError(error, fallback) };
 }
 
 async function resolveOrganisationId() {
@@ -42,7 +52,7 @@ export async function createOrganisationUnit(input: {
   code: string;
   name: string;
   unitType: string;
-}) {
+}): Promise<StructureMutationResult> {
   const validation = validateOrganisationUnitCode(input.code);
   if (!validation.ok) {
     return { error: validation.message };
@@ -75,12 +85,10 @@ export async function createOrganisationUnit(input: {
   });
 
   if (error) {
-    return {
-      error: friendlyRpcError(
-        error,
-        "Unable to create the unit. Check the details and try again.",
-      ),
-    };
+    return mapStructureError(
+      error,
+      "Unable to create the unit. Check the details and try again.",
+    );
   }
 
   revalidateStructurePaths();
@@ -91,7 +99,7 @@ export async function updateOrganisationUnit(input: {
   unitId: string;
   name: string;
   unitType: string;
-}) {
+}): Promise<StructureMutationResult> {
   const authorised = await currentMemberHasScopedPermission(
     "hierarchy.manage",
     input.unitId,
@@ -121,12 +129,10 @@ export async function updateOrganisationUnit(input: {
   });
 
   if (error) {
-    return {
-      error: friendlyRpcError(
-        error,
-        "Unable to update the unit. Check the details and try again.",
-      ),
-    };
+    return mapStructureError(
+      error,
+      "Unable to update the unit. Check the details and try again.",
+    );
   }
 
   revalidateStructurePaths();
@@ -136,7 +142,7 @@ export async function updateOrganisationUnit(input: {
 export async function moveOrganisationUnit(input: {
   unitId: string;
   parentUnitId: string | null;
-}) {
+}): Promise<StructureMutationResult> {
   const canManageUnit = await currentMemberHasScopedPermission(
     "hierarchy.manage",
     input.unitId,
@@ -166,12 +172,10 @@ export async function moveOrganisationUnit(input: {
   });
 
   if (error) {
-    return {
-      error: friendlyRpcError(
-        error,
-        "Unable to move the unit. Check placement authority and try again.",
-      ),
-    };
+    return mapStructureError(
+      error,
+      "Unable to move the unit. Check placement authority and try again.",
+    );
   }
 
   revalidateStructurePaths();
@@ -181,7 +185,7 @@ export async function moveOrganisationUnit(input: {
 export async function retireOrganisationUnit(input: {
   unitId: string;
   reason: string;
-}) {
+}): Promise<StructureMutationResult> {
   const authorised = await currentMemberHasScopedPermission(
     "hierarchy.manage",
     input.unitId,
@@ -208,19 +212,19 @@ export async function retireOrganisationUnit(input: {
   });
 
   if (error) {
-    return {
-      error: friendlyRpcError(
-        error,
-        "Unable to archive the unit. Resolve blockers and try again.",
-      ),
-    };
+    return mapStructureError(
+      error,
+      "Unable to archive the unit. Resolve blockers and try again.",
+    );
   }
 
   revalidateStructurePaths();
   return { ok: true as const };
 }
 
-export async function restoreOrganisationUnit(input: { unitId: string }) {
+export async function restoreOrganisationUnit(input: {
+  unitId: string;
+}): Promise<StructureMutationResult> {
   const authorised = await currentMemberHasScopedPermission(
     "hierarchy.manage",
     input.unitId,
@@ -243,12 +247,10 @@ export async function restoreOrganisationUnit(input: { unitId: string }) {
   });
 
   if (error) {
-    return {
-      error: friendlyRpcError(
-        error,
-        "Unable to reactivate the unit. Check the parent unit is active.",
-      ),
-    };
+    return mapStructureError(
+      error,
+      "Unable to reactivate the unit. Check the parent unit is active.",
+    );
   }
 
   revalidateStructurePaths();
@@ -257,6 +259,7 @@ export async function restoreOrganisationUnit(input: { unitId: string }) {
 
 function revalidateStructurePaths() {
   revalidatePath("/platform/settings/structure");
+  revalidatePath("/platform/settings/billing");
   revalidatePath("/platform/setup");
   revalidatePath("/platform");
   revalidatePath("/platform/people");

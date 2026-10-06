@@ -6,16 +6,19 @@ import { useMemo, useState } from "react";
 import { AddUnitDrawer } from "@/components/organisation/add-unit-drawer";
 import { ArchivedUnitsDisclosure } from "@/components/organisation/archived-units-disclosure";
 import { OrganisationUnitTree } from "@/components/organisation/organisation-unit-tree";
+import { SiteCapacitySummary } from "@/components/organisation/site-capacity-summary";
 import { StructureSummary } from "@/components/organisation/structure-summary";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { requestLeanAiAssistantOpen } from "@/modules/leanai-context/assistant/open-request";
+import type { SiteCapacityView } from "@/modules/billing/site-capacity";
 import type {
   FlatOrganisationUnit,
   OrganisationStructureSummary,
   OrganisationUnitNode,
 } from "@/modules/organisation/unit-hierarchy";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
 
 type StructureWorkspaceProps = {
   tree: OrganisationUnitNode[];
@@ -28,29 +31,28 @@ type StructureWorkspaceProps = {
   canAddUnit: boolean;
   manageableUnitIds: string[];
   existingCodes: string[];
+  siteCapacity?: SiteCapacityView;
   onCreate: (input: {
     parentUnitId: string | null;
     code: string;
     name: string;
     unitType: string;
-  }) => Promise<{ error?: string; ok?: true }>;
+  }) => Promise<StructureMutationResult>;
   lifecycleActions?: {
     onUpdate: (input: {
       unitId: string;
       name: string;
       unitType: string;
-    }) => Promise<{ error?: string; ok?: true }>;
+    }) => Promise<StructureMutationResult>;
     onMove: (input: {
       unitId: string;
       parentUnitId: string | null;
-    }) => Promise<{ error?: string; ok?: true }>;
+    }) => Promise<StructureMutationResult>;
     onRetire: (input: {
       unitId: string;
       reason: string;
-    }) => Promise<{ error?: string; ok?: true }>;
-    onRestore: (input: {
-      unitId: string;
-    }) => Promise<{ error?: string; ok?: true }>;
+    }) => Promise<StructureMutationResult>;
+    onRestore: (input: { unitId: string }) => Promise<StructureMutationResult>;
   };
 };
 
@@ -65,6 +67,7 @@ export function StructureWorkspace({
   canAddUnit,
   manageableUnitIds,
   existingCodes,
+  siteCapacity,
   onCreate,
   lifecycleActions,
 }: StructureWorkspaceProps) {
@@ -116,6 +119,8 @@ export function StructureWorkspace({
         }
       />
 
+      {siteCapacity ? <SiteCapacitySummary capacity={siteCapacity} /> : null}
+
       <StructureSummary summary={summary} />
 
       <section className="flex flex-col gap-3">
@@ -137,6 +142,7 @@ export function StructureWorkspace({
               ? () => requestLeanAiAssistantOpen("Recommend a structure")
               : undefined
           }
+          {...(siteCapacity ? { siteCapacity } : {})}
           {...(lifecycleActions ? { lifecycleActions } : {})}
         />
       </section>
@@ -146,6 +152,7 @@ export function StructureWorkspace({
         activeUnits={activeUnits}
         canCreateRoot={canCreateRoot}
         manageableUnitIds={manageableUnitIds}
+        {...(siteCapacity ? { siteCapacity } : {})}
         {...(lifecycleActions ? { lifecycleActions } : {})}
       />
 
@@ -168,6 +175,7 @@ export function StructureWorkspace({
         initialParentUnitId={parentUnitId}
         existingCodes={existingCodes}
         onCreate={onCreate}
+        {...(siteCapacity ? { siteCapacity } : {})}
       />
     </div>
   );

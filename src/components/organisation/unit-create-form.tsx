@@ -3,11 +3,17 @@
 import { useState } from "react";
 
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
+import { SiteCapacityFailure } from "@/components/organisation/site-capacity-failure";
 import { UnitTypeField } from "@/components/organisation/unit-type-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  SITE_CAPACITY_EXHAUSTED,
+  type SiteCapacityView,
+} from "@/modules/billing/site-capacity";
 import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
+import type { StructureMutationResult } from "@/modules/organisation/structure-mutation";
 import {
   suggestOrganisationUnitCode,
   validateOrganisationUnitCode,
@@ -28,6 +34,7 @@ export function UnitCreateForm({
   existingCodes = [],
   onSuccess,
   onCancel,
+  siteCapacity,
 }: {
   units: UnitOption[];
   canCreateRoot: boolean;
@@ -36,11 +43,12 @@ export function UnitCreateForm({
     code: string;
     name: string;
     unitType: string;
-  }) => Promise<{ error?: string; ok?: true }>;
+  }) => Promise<StructureMutationResult>;
   initialParentUnitId?: string;
   existingCodes?: readonly string[];
   onSuccess?: () => void;
   onCancel?: () => void;
+  siteCapacity?: SiteCapacityView;
 }) {
   const [parentUnitId, setParentUnitId] = useState(initialParentUnitId);
   const [code, setCode] = useState("");
@@ -49,6 +57,10 @@ export function UnitCreateForm({
   const [name, setName] = useState("");
   const [unitType, setUnitType] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [capacityError, setCapacityError] = useState<{
+    message: string;
+    canManageBilling?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   function resetForm() {
@@ -59,6 +71,7 @@ export function UnitCreateForm({
     setName("");
     setUnitType("");
     setMessage(null);
+    setCapacityError(null);
   }
 
   function updateName(nextName: string) {
@@ -72,6 +85,7 @@ export function UnitCreateForm({
     event.preventDefault();
     setLoading(true);
     setMessage(null);
+    setCapacityError(null);
 
     const validation = validateOrganisationUnitCode(code);
     if (!validation.ok) {
@@ -109,7 +123,14 @@ export function UnitCreateForm({
     });
 
     if (result.error) {
-      setMessage(result.error);
+      if (result.errorCode === SITE_CAPACITY_EXHAUSTED) {
+        setCapacityError({
+          message: result.error,
+          canManageBilling: result.canManageBilling === true,
+        });
+      } else {
+        setMessage(result.error);
+      }
     } else {
       resetForm();
       setMessage("Unit created.");
@@ -170,7 +191,12 @@ export function UnitCreateForm({
         />
       </div>
 
-      <UnitTypeField id="unit-type" value={unitType} onChange={setUnitType} />
+      <UnitTypeField
+        id="unit-type"
+        value={unitType}
+        onChange={setUnitType}
+        {...(siteCapacity ? { siteCapacity } : {})}
+      />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor={codeUnlocked ? "unit-code" : undefined}>
@@ -220,6 +246,14 @@ export function UnitCreateForm({
           </div>
         )}
       </div>
+
+      {capacityError ? (
+        <SiteCapacityFailure
+          message={capacityError.message}
+          errorCode={SITE_CAPACITY_EXHAUSTED}
+          canManageBilling={capacityError.canManageBilling === true}
+        />
+      ) : null}
 
       {message ? (
         <p className="text-sm text-muted-foreground" role="status">
