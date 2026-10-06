@@ -59,31 +59,14 @@ describe("interactive LEH product experience", () => {
     cleanup();
   });
 
-  it("places the workspace after the evidence-to-impact story and before platform", () => {
+  it("does not mount the interactive playground on the homepage", () => {
     render(<MarketingHome />);
-    const tryLeh = document.getElementById("try-leh");
-    const impact = document.getElementById("impact");
-    const platform = document.getElementById("platform");
-    expect(tryLeh).toBeTruthy();
-    expect(impact).toBeTruthy();
-    expect(platform).toBeTruthy();
+    expect(document.getElementById("try-leh")).toBeNull();
     expect(
-      Boolean(
-        impact &&
-        tryLeh &&
-        platform &&
-        impact.compareDocumentPosition(tryLeh) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ),
-    ).toBe(true);
-    expect(
-      Boolean(
-        tryLeh &&
-        platform &&
-        tryLeh.compareDocumentPosition(platform) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ),
-    ).toBe(true);
+      screen.queryByTestId("leh-demo-start-suggestion"),
+    ).not.toBeInTheDocument();
+    expect(document.getElementById("platform")).toBeTruthy();
+    expect(document.getElementById("loop")).toBeTruthy();
   });
 
   it("starts the suggestion scenario from the section CTA", () => {

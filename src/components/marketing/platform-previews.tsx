@@ -389,6 +389,24 @@ function TrainingSkillsPreview() {
   );
 }
 
+const MODULE_FIGURES = {
+  maturity: MaturityPreview,
+  gemba: GembaPreview,
+  "five-s": FiveSPreview,
+  suggestions: SuggestionsPreview,
+  actions: ActionsPreview,
+  "problem-solving": ProblemSolvingPreview,
+  "projects-benefits": ProjectsBenefitsPreview,
+  "training-skills": TrainingSkillsPreview,
+} as const;
+
+export type MarketingModuleId = keyof typeof MODULE_FIGURES;
+
+export function MarketingModuleFigure({ id }: { id: MarketingModuleId }) {
+  const Figure = MODULE_FIGURES[id];
+  return <Figure />;
+}
+
 export function MarketingPlatform() {
   return (
     <MarketingSection
@@ -402,18 +420,13 @@ export function MarketingPlatform() {
         >
           <p>
             Each area is useful on its own. Together they are how Operational
-            Excellence actually runs. Try Suggestions, Gemba, Actions, Problem
-            Solving and Maturity in the interactive workspace, then use these
-            previews for the rest of the system.
+            Excellence actually runs — one system, not a stack of separate
+            tools.
           </p>
         </SectionIntro>
         <p className="marketing-platform-disclosure">
           Product previews use illustrative example records. They are not
-          customer performance data.{" "}
-          <a href="#try-leh" className="underline-offset-2 hover:underline">
-            Try the interactive workspace
-          </a>{" "}
-          to run a live example.
+          customer performance data.
         </p>
         <div className="marketing-platform-grid mt-10">
           <MaturityPreview />

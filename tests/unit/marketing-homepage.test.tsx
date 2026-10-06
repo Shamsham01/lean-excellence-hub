@@ -53,9 +53,10 @@ describe("public marketing homepage", () => {
     cleanup();
   });
 
-  it("renders the hero, connected-system story and commercial CTAs", () => {
+  it("renders one H1 and the connected-system story", () => {
     render(<MarketingHome />);
 
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(
       screen.getByRole("heading", {
         level: 1,
@@ -68,14 +69,13 @@ describe("public marketing homepage", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("From signal to measurable improvement"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Observation identified")).toBeInTheDocument();
-    expect(
       screen.getByRole("heading", {
-        name: "Experience improvement, not another product tour.",
+        name: "Improvement shouldn't live in fragments.",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getAllByText("One connected improvement system.").length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", {
         name: "One connected improvement system.",
@@ -83,11 +83,19 @@ describe("public marketing homepage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Context, assistance, then a person decides.",
+        name: "Context first. Assistance second. You decide.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Your framework. Your standards. Your way of working.",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/leh supplies the engine, not the doctrine/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/extend across the organisation/i),
     ).toBeInTheDocument();
   });
 
@@ -108,9 +116,17 @@ describe("public marketing homepage", () => {
       expect(link).toHaveAttribute("href", "#platform");
     }
 
-    const tryLinks = screen.getAllByRole("link", { name: "Try LEH" });
-    expect(tryLinks.length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("link", { name: "Create account" }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("link", { name: "Try LEH" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/£49|\$49|49\/month/i)).not.toBeInTheDocument();
+    expect(document.getElementById("try-leh")).toBeNull();
+    expect(
+      screen.queryByTestId("leh-demo-start-suggestion"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps sign-in on the login route and out of the hero CTA pair", () => {
@@ -245,7 +261,7 @@ describe("public marketing homepage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("uses an editorial platform grid order rather than masonry", () => {
+  it("represents the platform as one module sequence", () => {
     render(<MarketingHome />);
 
     const platform = document.getElementById("platform");
@@ -263,16 +279,26 @@ describe("public marketing homepage", () => {
       "Projects & Benefits",
       "Training & Skills",
     ]);
-
-    expect(document.getElementById("maturity")).toHaveClass(
-      "marketing-platform-maturity",
-    );
-    expect(document.getElementById("gemba")).toHaveClass(
-      "marketing-platform-gemba",
-    );
-    expect(document.getElementById("actions")).toHaveClass(
-      "marketing-platform-actions",
-    );
+    expect(
+      within(platform as HTMLElement).getByRole("heading", {
+        name: "Maturity",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(platform as HTMLElement).getByRole("heading", {
+        name: "Problem Solving",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(platform as HTMLElement).getByText(
+        "Define your operating standard.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(platform as HTMLElement).getByText(
+        "Build capability against your standards.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps one platform disclosure instead of repeating illustrative captions", () => {
@@ -301,142 +327,58 @@ describe("public marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows disconnected operational fragments rather than generic labels", () => {
-    render(<MarketingHome />);
-
-    expect(screen.getByText("Audit checklist")).toBeInTheDocument();
-    expect(screen.getByText("Email thread")).toBeInTheDocument();
-    expect(screen.getByText("Standalone form")).toBeInTheDocument();
-    expect(screen.getByText("Slide deck")).toBeInTheDocument();
-    expect(screen.queryAllByText(/\bexcel\b|\bpowerpoint\b/i)).toHaveLength(0);
-    expect(
-      screen.queryByAltText(/excel|microsoft|teams/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("groups the fragments by loop stage and resolves each into one LEH strip", () => {
+  it("shows improvement work coming out of fragments", () => {
     render(<MarketingHome />);
 
     const problem = document.getElementById("why") as HTMLElement;
-    const stages = [
-      ...problem.querySelectorAll(".marketing-fragments-stage"),
-    ] as HTMLElement[];
-    expect(stages).toHaveLength(4);
-    for (const stage of stages) {
-      expect(stage.querySelectorAll(".marketing-artefact")).toHaveLength(2);
-      expect(
-        stage.querySelector(".marketing-fragments-resolve"),
-      ).not.toBeNull();
+    for (const label of [
+      "Spreadsheet",
+      "Email",
+      "Audit",
+      "Action",
+      "Training",
+      "Project",
+      "Suggestion",
+      "Gemba",
+      "5S",
+      "Benefits",
+      "Maturity",
+    ]) {
+      expect(within(problem).getByText(label)).toBeInTheDocument();
     }
     expect(
-      stages.map(
-        (stage) =>
-          stage.querySelector(".marketing-fragments-stage-name")?.textContent,
-      ),
-    ).toEqual(["Observe", "Act", "Improve", "Learn"]);
-    expect(
-      within(problem).getByText("Findings retyped into actions"),
+      within(problem).getByText("One connected improvement system."),
     ).toBeInTheDocument();
-    expect(
-      within(problem).getByText("Forecast, never validated"),
-    ).toBeInTheDocument();
-    expect(within(problem).queryAllByRole("heading", { level: 3 })).toEqual([]);
+    expect(screen.queryAllByText(/\bexcel\b|\bpowerpoint\b/i)).toHaveLength(0);
   });
 
-  it("renders the evidence-to-impact journey as one connected ribbon", () => {
+  it("tells LeanAI governance without autonomous authority", () => {
     render(<MarketingHome />);
 
-    const journey = document.getElementById("impact") as HTMLElement;
-    const steps = [
-      ...journey.querySelectorAll(".marketing-process-step"),
-    ] as HTMLElement[];
-    expect(steps).toHaveLength(5);
-    for (const step of steps) {
-      expect(step.querySelector(".marketing-process-node")).not.toBeNull();
-      expect(step.querySelector(".marketing-process-record")).not.toBeNull();
-      expect(
-        step.querySelector(".marketing-process-state .marketing-chip"),
-      ).not.toBeNull();
-    }
-    expect(journey.querySelectorAll(".marketing-process-rail")).toHaveLength(1);
+    const leanai = document.getElementById("leanai") as HTMLElement;
     expect(
-      within(journey).getByText("Learning feeds the next walk."),
+      within(leanai).getAllByText(/a person reviews\. a person decides/i)
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(leanai).getByText(
+        /does not publish frameworks, close actions, grant access or purchase site capacity/i,
+      ),
     ).toBeInTheDocument();
-    expect(within(journey).getByText("Due Friday")).toHaveClass(
-      "marketing-chip-warning",
-    );
-    expect(within(journey).getByText("Connected")).toHaveClass(
-      "marketing-chip-connected",
-    );
+    expect(
+      within(leanai).getByText(/find, explain and recommend/i),
+    ).toBeInTheDocument();
   });
 
-  it("presents one system through scoped perspectives instead of four cards", () => {
-    render(<MarketingHome />);
-
-    const audience = document.getElementById("audience") as HTMLElement;
-    expect(
-      within(audience).getByRole("heading", {
-        level: 2,
-        name: "One system. Different perspectives.",
-      }),
-    ).toBeInTheDocument();
-
-    const tablist = within(audience).getByRole("tablist", {
-      name: "Perspectives",
-    });
-    expect(tablist).toHaveAttribute("aria-orientation", "vertical");
-    const tabs = within(tablist).getAllByRole("tab");
-    expect(tabs).toHaveLength(4);
-    const organisationTab = tabs[0] as HTMLElement;
-    expect(organisationTab).toHaveAttribute("aria-selected", "true");
-
-    const panels = within(audience).getAllByRole("tabpanel");
-    expect(panels).toHaveLength(4);
-    const activePanel = () => {
-      const active = panels.filter(
-        (panel) => panel.getAttribute("data-state") === "active",
-      );
-      expect(active).toHaveLength(1);
-      return active[0] as HTMLElement;
-    };
-    expect(activePanel()).toHaveAttribute(
-      "aria-labelledby",
-      organisationTab.id,
+  it("keeps a static reading path for reduced motion", () => {
+    const css = readFileSync(
+      "src/components/marketing/kinetic/kinetic.css",
+      "utf8",
     );
-    expect(
-      within(activePanel()).getByText(
-        "Where is the system maturing, and where is it drifting?",
-      ),
-    ).toBeInTheDocument();
-
-    const siteTab = within(tablist).getByRole("tab", {
-      name: /site leadership/i,
-    });
-    fireEvent.mouseDown(siteTab);
-    expect(siteTab).toHaveAttribute("aria-selected", "true");
-    expect(organisationTab).toHaveAttribute("aria-selected", "false");
-    const sitePanel = activePanel();
-    expect(sitePanel).toHaveAttribute("aria-labelledby", siteTab.id);
-    expect(
-      within(sitePanel).getByText(
-        "What needs attention at this site this week?",
-      ),
-    ).toBeInTheDocument();
-    expect(within(sitePanel).getByText("North plant")).toBeInTheDocument();
-    expect(
-      within(sitePanel).queryByText(
-        "Where is the system maturing, and where is it drifting?",
-      ),
-    ).not.toBeInTheDocument();
-    expect(audience.querySelector(".marketing-audience")).toBeNull();
-
-    const css = readFileSync("src/app/globals.css", "utf8");
-    expect(css).toMatch(
-      /\.marketing-perspective-panel \{\s*grid-row: 2;\s*grid-column: 1;/,
-    );
-    expect(css).toMatch(
-      /\.marketing-perspective-panel\[data-state="inactive"\] \{\s*visibility: hidden;\s*\}/,
-    );
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
+    expect(css).toMatch(/position: relative !important/);
+    expect(css).toMatch(/transform: none !important/);
+    expect(css).not.toMatch(/scroll-timeline|animation-timeline|lenis|gsap/i);
   });
 
   it("exposes a labelled System / Light / Dark appearance control", () => {
@@ -655,7 +597,9 @@ describe("homepage authentication routing", () => {
     expect(css).toMatch(
       /html:has\(> body > \.marketing\) \{\s*overflow-x: visible;\s*\}/,
     );
-    expect(css).toMatch(/\.marketing \{\s*overflow-x: clip;\s*\}/);
+    expect(css).toMatch(
+      /\.marketing \{\s*overflow-anchor: none;\s*overflow-x: clip;\s*\}/,
+    );
     expect(css).toMatch(/\.marketing-header \{\s*position: sticky;\s*top: 0;/);
     expect(css).not.toMatch(/\.marketing-header \{[^}]*position: fixed/);
     expect(css).toContain("scroll-state(stuck: top)");

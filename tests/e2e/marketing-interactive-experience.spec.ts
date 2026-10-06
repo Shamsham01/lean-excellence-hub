@@ -1,23 +1,18 @@
 import { expect, test } from "@playwright/test";
 
-test("public interactive workspace submits a suggestion without leaving the homepage", async ({
-  page,
-}) => {
+test("homepage does not host the interactive playground", async ({ page }) => {
   await page.goto("/");
+
+  await expect(
+    page.getByRole("heading", {
+      name: "Operational excellence. Connected.",
+    }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", {
       name: "Experience improvement, not another product tour.",
     }),
-  ).toBeVisible();
-
-  await page.getByTestId("leh-demo-start-suggestion").click();
-  await expect(page.getByTestId("leh-demo-suggestion-form")).toBeVisible();
-  await page.getByTestId("leh-demo-submit-idea").click();
-  await expect(
-    page.getByRole("heading", { name: "Idea submitted" }),
-  ).toBeVisible();
-  await expect(
-    page.getByTestId("leh-demo-success").getByText("SUG-DEMO-001"),
-  ).toBeVisible();
-  await expect(page.getByTestId("leh-demo-notification-count")).toHaveText("1");
+  ).toHaveCount(0);
+  await expect(page.getByTestId("leh-demo-start-suggestion")).toHaveCount(0);
+  await expect(page.locator("#try-leh")).toHaveCount(0);
 });

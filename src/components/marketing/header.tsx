@@ -15,7 +15,6 @@ import {
 } from "./primitives";
 
 const NAV_LINKS = [
-  { href: "/#try-leh", label: "Try LEH" },
   { href: "/#platform", label: "Platform" },
   { href: "/#why", label: "Why LEH" },
   { href: "/#leanai", label: "LeanAI" },
