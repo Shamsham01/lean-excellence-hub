@@ -7,6 +7,8 @@ import {
   provisionFoundingE2eUser,
 } from "./helpers/founding-onboarding";
 
+const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
+
 async function screenshotIfPossible(
   page: import("@playwright/test").Page,
   name: string,
