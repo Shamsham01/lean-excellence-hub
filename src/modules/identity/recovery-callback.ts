@@ -1,6 +1,10 @@
 export const RECOVERY_OTP_TYPE = "recovery" as const;
 export const RECOVERY_FAILURE_PATH = "/recover?error=expired";
+export const RECOVERY_STAGED_PATH = "/recover?continue=true";
 export const RECOVERY_SUCCESS_PATH = "/update-password";
+export const RECOVERY_TOKEN_COOKIE = "leh_recovery_token_hash";
+export const RECOVERY_CODE_COOKIE = "leh_recovery_code";
+export const RECOVERY_INTENT_MAX_AGE_SECONDS = 10 * 60;
 
 export type RecoveryCallbackParams = {
   tokenHash: string | null;
