@@ -300,7 +300,7 @@ describe("MaturityBuilderWorkspace", () => {
     expect(
       await screen.findByTestId("maturity-builder-error"),
     ).toHaveTextContent("Nothing changed");
-    fireEvent.click(screen.getByTestId("maturity-builder-retry"));
+    fireEvent.click(await screen.findByTestId("maturity-builder-retry"));
     await waitFor(() => expect(sendAction).toHaveBeenCalledTimes(2));
     expect(sendAction.mock.calls[1]?.[0]).toMatchObject({
       intent: "answer",
