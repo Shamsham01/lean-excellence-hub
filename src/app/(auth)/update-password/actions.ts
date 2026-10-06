@@ -22,7 +22,11 @@ export async function updatePassword(formData: FormData) {
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
   if (!userId) {
-    redirect("/login");
+    // Supabase does not expose a reliable "this session came from recovery"
+    // claim after verifyOtp. Require a live authenticated session, which
+    // covers recovery and workforce password_change_required. Do not accept
+    // an unauthenticated update, and do not trust a browser-set flag.
+    redirect("/update-password?error=session");
   }
 
   const { error } = await supabase.auth.updateUser({

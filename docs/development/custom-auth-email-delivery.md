@@ -1,6 +1,6 @@
 # Custom Auth Email Delivery
 
-Lean Excellence Hub routes Supabase Auth transactional email through a Send Email Hook, a Supabase Edge Function, and Resend. This ensures signup confirmation and password recovery links always pass through the application's `/auth/confirm` SSR route so identity enrolment finalisation runs correctly.
+Lean Excellence Hub routes Supabase Auth transactional email through a Send Email Hook, a Supabase Edge Function, and Resend. Signup confirmation and organisation invitations pass through `/auth/confirm` so identity enrolment finalisation runs correctly. Password recovery uses the dedicated `/auth/recovery` callback.
 
 ## Architecture
 
@@ -16,6 +16,7 @@ The Edge Function:
 - verifies Standard Webhooks signatures using `SEND_EMAIL_HOOK_SECRET`
 - builds branded transactional email content
 - generates confirmation links as `${APP_ORIGIN}/auth/confirm?token_hash=...&type=...`
+- generates recovery links as `${APP_ORIGIN}/auth/recovery?token_hash=...&type=recovery`
 - sends email through Resend using configurable sender values
 
 Signup confirmation **must not** use Supabase's default `ConfirmationURL`.
@@ -113,12 +114,13 @@ Confirm all of the following on hosted Supabase:
 - `APP_ORIGIN` is present in Auth redirect allow-list settings
 - Resend domain/sender is verified for `AUTH_EMAIL_FROM`
 - Signup confirmation email CTA opens `/auth/confirm?token_hash=...&type=signup`
-- Recovery email CTA opens `/auth/confirm?token_hash=...&type=recovery`
+- Recovery email CTA opens `/auth/recovery?token_hash=...&type=recovery`
+- Hosted Reset Password template and redirect URLs match [auth-email-templates.md](../deployment/auth-email-templates.md)
 
 ### Step 6 — Smoke test
 
 1. Start a brand-new invitation activation on production.
-2. Confirm the email link lands on `/auth/confirm`.
+2. Confirm the email link lands on `/auth/confirm` for signup/invite, or `/auth/recovery` for password recovery.
 3. Verify the user reaches the invitation continue flow without a second password login.
 4. Verify `identity_controls.enrolment_status` becomes `complete` after confirmation.
 

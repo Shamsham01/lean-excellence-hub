@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { normalizeApplicationOrigin } from "@/platform/application-origin";
 import { getServerEnvironment } from "@/platform/env";
 import {
   consumeAuthenticationRateLimit,
@@ -76,8 +77,11 @@ export async function requestRecovery(formData: FormData) {
     }
 
     const supabase = await createServerSupabaseClient();
+    // Keep the existing allow-listed redirect target. LEH's TokenHash email
+    // link uses /auth/recovery directly; redirectTo remains a safe fallback
+    // and does not require a new hosted Auth redirect entry for this release.
     const recovery = await supabase.auth.resetPasswordForEmail(recipient, {
-      redirectTo: `${environment.APP_ORIGIN}/update-password`,
+      redirectTo: `${normalizeApplicationOrigin(environment.APP_ORIGIN)}/update-password`,
     });
     await Promise.all(
       reservations.map((reservation) =>
