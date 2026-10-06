@@ -387,7 +387,7 @@ $$;
 revoke all on function public.claim_site_quantity_increase(integer)
   from public, anon, authenticated, service_role;
 
+-- Expose only the permission-checked public wrapper. The private helper remains
+-- non-callable by authenticated even though the private schema has USAGE.
 grant execute on function public.claim_site_quantity_increase(integer)
-  to authenticated;
-grant execute on function private.claim_site_quantity_increase(integer)
   to authenticated;
