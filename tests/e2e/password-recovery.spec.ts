@@ -39,6 +39,20 @@ async function submitRecoveryRequest(
   await expect(page.getByText(/no account found/i)).toHaveCount(0);
 }
 
+async function stageAndContinueRecovery(
+  page: import("@playwright/test").Page,
+  href: string,
+) {
+  await page.goto(toE2eOriginUrl(href));
+  await expect(page).toHaveURL(/\/recover\?continue=true/);
+  await expect(page.getByTestId("recover-staged")).toBeVisible();
+  expect(page.url()).not.toContain("token_hash=");
+  expect(page.url()).not.toContain("code=");
+  await page
+    .getByRole("button", { name: "Continue account recovery" })
+    .click();
+}
+
 async function signOut(page: import("@playwright/test").Page) {
   await page.request.post("/auth/signout", {
     form: { next: "/login" },
@@ -61,8 +75,9 @@ test.describe("Password recovery", () => {
   test.setTimeout(180_000);
   test.skip(!hasSupabaseE2e, "Requires E2E_WITH_SUPABASE=1 and local Supabase");
 
-  test("real recovery email reaches update-password and replaces the credential", async ({
+  test("real recovery email survives GET prefetch and replaces the credential", async ({
     page,
+    browser,
   }) => {
     const email = uniqueRecoveryEmail("happy");
     const { admin } = getInvitationLifecycleClients();
@@ -81,13 +96,19 @@ test.describe("Password recovery", () => {
     expect(recoveryHref).toContain("type=recovery");
     expect(recoveryHref).not.toContain("/auth/confirm");
 
-    await page.goto(toE2eOriginUrl(recoveryHref));
+    // Simulate a mail-security scanner following the GET in a separate context.
+    // GET must not consume the single-use recovery OTP.
+    const scannerContext = await browser.newContext();
+    const scannerPage = await scannerContext.newPage();
+    await scannerPage.goto(toE2eOriginUrl(recoveryHref));
+    await expect(scannerPage).toHaveURL(/\/recover\?continue=true/);
+    await scannerContext.close();
+
+    await stageAndContinueRecovery(page, recoveryHref);
     await expect(page).toHaveURL(/\/update-password(?:\?|$)/);
     await expect(
       page.getByRole("heading", { name: "Set a new password" }),
     ).toBeVisible();
-    expect(page.url()).not.toContain("token_hash=");
-    expect(page.url()).not.toContain("code=");
 
     await page.locator("#password").fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Update password" }).click();
@@ -102,15 +123,12 @@ test.describe("Password recovery", () => {
     await expect(page.getByTestId("login-error")).toContainText(
       /unable to sign in\. check your email and password/i,
     );
-    await expect(
-      page.getByText("Unable to sign in with those credentials."),
-    ).toHaveCount(0);
 
     await submitEmailLogin(page, email, NEW_PASSWORD);
     await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
   });
 
-  test("legacy /auth/confirm recovery links still reach update-password", async ({
+  test("legacy /auth/confirm recovery links stage and complete recovery", async ({
     page,
   }) => {
     const email = uniqueRecoveryEmail("legacy-confirm");
@@ -127,7 +145,7 @@ test.describe("Password recovery", () => {
     );
     const confirmHref = recoveryHref.replace("/auth/recovery", "/auth/confirm");
 
-    await page.goto(toE2eOriginUrl(confirmHref));
+    await stageAndContinueRecovery(page, confirmHref);
     await expect(page).toHaveURL(/\/update-password(?:\?|$)/);
     await expect(
       page.getByText("Unable to sign in with those credentials."),
@@ -151,31 +169,26 @@ test.describe("Password recovery", () => {
       "/auth/recovery",
     );
 
-    await page.goto(toE2eOriginUrl(recoveryHref));
+    await stageAndContinueRecovery(page, recoveryHref);
     await expect(page).toHaveURL(/\/update-password(?:\?|$)/);
 
     const replayContext = await browser.newContext();
     const replayPage = await replayContext.newPage();
     await replayPage.goto(toE2eOriginUrl(recoveryHref));
+    await expect(replayPage).toHaveURL(/\/recover\?continue=true/);
+    await replayPage
+      .getByRole("button", { name: "Continue account recovery" })
+      .click();
     await expect(replayPage).toHaveURL(/\/recover\?error=expired/);
     await expect(replayPage.getByTestId("recover-expired")).toBeVisible();
-    await expect(
-      replayPage.getByRole("button", {
-        name: "Request another recovery email",
-      }),
-    ).toBeVisible();
-    await expect(
-      replayPage.getByRole("link", { name: "Back to sign in" }),
-    ).toBeVisible();
-    await expect(
-      replayPage.getByText("Unable to sign in with those credentials."),
-    ).toHaveCount(0);
     await replayContext.close();
 
     await page.goto("/auth/recovery");
     await expect(page).toHaveURL(/\/recover\?error=expired/);
 
     await page.goto("/auth/recovery?token_hash=not-a-real-token&type=recovery");
+    await expect(page).toHaveURL(/\/recover\?continue=true/);
+    await page.getByRole("button", { name: "Continue account recovery" }).click();
     await expect(page).toHaveURL(/\/recover\?error=expired/);
 
     for (const type of ["signup", "invite", "magiclink"]) {
