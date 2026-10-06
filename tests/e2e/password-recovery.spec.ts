@@ -78,9 +78,10 @@ test.describe("Password recovery", () => {
     "Requires E2E_WITH_SUPABASE=1 and local Supabase",
   );
 
-  test(
-    "real recovery email survives GET prefetch and replaces the credential",
-    async ({ page, browser }) => {
+  test("real recovery email survives GET prefetch and replaces the credential", async ({
+    page,
+    browser,
+  }) => {
       const email = uniqueRecoveryEmail("happy");
       const { admin } = getInvitationLifecycleClients();
       await ensureInvitationLifecycleUser(admin, {
@@ -126,14 +127,13 @@ test.describe("Password recovery", () => {
         /unable to sign in\. check your email and password/i,
       );
 
-      await submitEmailLogin(page, email, NEW_PASSWORD);
-      await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
-    },
-  );
+    await submitEmailLogin(page, email, NEW_PASSWORD);
+    await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
+  });
 
-  test(
-    "legacy /auth/confirm recovery links stage and complete recovery",
-    async ({ page }) => {
+  test("legacy /auth/confirm recovery links stage and complete recovery", async ({
+    page,
+  }) => {
       const email = uniqueRecoveryEmail("legacy-confirm");
       const { admin } = getInvitationLifecycleClients();
       await ensureInvitationLifecycleUser(admin, {
@@ -153,15 +153,15 @@ test.describe("Password recovery", () => {
 
       await stageAndContinueRecovery(page, confirmHref);
       await expect(page).toHaveURL(/\/update-password(?:\?|$)/);
-      await expect(
-        page.getByText("Unable to sign in with those credentials."),
-      ).toHaveCount(0);
-    },
-  );
+    await expect(
+      page.getByText("Unable to sign in with those credentials."),
+    ).toHaveCount(0);
+  });
 
-  test(
-    "expired, malformed, replayed, and wrong-type links show recovery error UX",
-    async ({ page, browser }) => {
+  test("expired, malformed, replayed, and wrong-type links show recovery error UX", async ({
+    page,
+    browser,
+  }) => {
       const email = uniqueRecoveryEmail("replay");
       const { admin } = getInvitationLifecycleClients();
       await ensureInvitationLifecycleUser(admin, {
@@ -201,14 +201,13 @@ test.describe("Password recovery", () => {
         .click();
       await expect(page).toHaveURL(/\/recover\?error=expired/);
 
-      for (const type of ["signup", "invite", "magiclink"]) {
-        await page.goto(
-          `/auth/recovery?token_hash=abc123tokenhash&type=${type}`,
-        );
-        await expect(page).toHaveURL(/\/recover\?error=expired/);
-      }
-    },
-  );
+    for (const type of ["signup", "invite", "magiclink"]) {
+      await page.goto(
+        `/auth/recovery?token_hash=abc123tokenhash&type=${type}`,
+      );
+      await expect(page).toHaveURL(/\/recover\?error=expired/);
+    }
+  });
 
   test("anonymous update-password cannot change a password", async ({ page }) => {
     await page.goto("/update-password");
@@ -218,9 +217,9 @@ test.describe("Password recovery", () => {
     ).toHaveCount(0);
   });
 
-  test(
-    "unknown and known recovery emails share the same sent state",
-    async ({ page }) => {
+  test("unknown and known recovery emails share the same sent state", async ({
+    page,
+  }) => {
       const knownEmail = uniqueRecoveryEmail("known-sent");
       const { admin } = getInvitationLifecycleClients();
       await ensureInvitationLifecycleUser(admin, {
@@ -231,8 +230,7 @@ test.describe("Password recovery", () => {
       await submitRecoveryRequest(page, knownEmail);
       const knownCopy = await page.getByTestId("recover-sent").innerText();
 
-      await submitRecoveryRequest(page, uniqueRecoveryEmail("unknown-sent"));
-      await expect(page.getByTestId("recover-sent")).toHaveText(knownCopy);
-    },
-  );
+    await submitRecoveryRequest(page, uniqueRecoveryEmail("unknown-sent"));
+    await expect(page.getByTestId("recover-sent")).toHaveText(knownCopy);
+  });
 });
