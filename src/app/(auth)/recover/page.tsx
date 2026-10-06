@@ -11,11 +11,16 @@ import { AUTH_COPY } from "@/modules/identity/auth-copy";
 export default async function RecoverPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
+  searchParams: Promise<{
+    sent?: string;
+    error?: string;
+    continue?: string;
+  }>;
 }) {
-  const { sent, error } = await searchParams;
+  const { sent, error, continue: continueRecovery } = await searchParams;
   const expired = error === "expired";
   const requested = sent === "true";
+  const staged = continueRecovery === "true";
 
   return (
     <AuthCard
@@ -31,6 +36,24 @@ export default async function RecoverPage({
         <AuthStatus testId="recover-sent" tone="info">
           {AUTH_COPY.recoverSent}
         </AuthStatus>
+      ) : staged ? (
+        <div className="flex flex-col gap-4">
+          <AuthStatus testId="recover-staged" tone="info">
+            Your recovery link is ready. Continue below to verify it and choose
+            a new password.
+          </AuthStatus>
+          <form action="/auth/recovery" method="post">
+            <Button type="submit" className="w-full">
+              Continue account recovery
+            </Button>
+          </form>
+          <Link
+            href="/recover"
+            className="text-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            Request a different recovery email
+          </Link>
+        </div>
       ) : (
         <form action={requestRecovery} className="flex flex-col gap-4">
           {expired ? (
