@@ -225,6 +225,21 @@ describe("LeanAI assistant route context", () => {
     ]);
     expect(previewPage.facts.join(" ")).toMatch(/must not deploy or publish/i);
   });
+
+  it("maps Build with LeanAI to a builder context that never publishes", () => {
+    const builder = parseAssistantRoute("/platform/maturity/builder");
+    const builderPage = assistantPageDefinitionFor(builder);
+    expect(builder.workflow).toBe("maturity_builder");
+    expect(builder.module).toBe("maturity");
+    expect(builderPage.contextLabel).toBe("Maturity · Build with LeanAI");
+    expect(builderPage.facts.join(" ")).toMatch(
+      /Publishing happens later in the framework editor/,
+    );
+    expect(builderPage.facts.join(" ")).toMatch(/LEH is the engine/);
+    expect(
+      parseAssistantRoute("/platform/maturity/builder/other").workflow,
+    ).toBe("maturity_overview");
+  });
 });
 
 describe("LeanAI programme versus category product knowledge", () => {

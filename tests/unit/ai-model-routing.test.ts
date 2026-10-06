@@ -21,6 +21,10 @@ describe("logical model routing", () => {
     expect(selectCoachTaskModelClass("setup_conversation")).toBe("standard");
   });
 
+  it("routes the Maturity framework builder to standard", () => {
+    expect(selectCoachTaskModelClass("framework_builder")).toBe("standard");
+  });
+
   it("reserves deep for complex reasoning", () => {
     expect(selectCoachTaskModelClass("complex_reasoning")).toBe("deep");
   });
