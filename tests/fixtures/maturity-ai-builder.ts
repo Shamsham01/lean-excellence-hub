@@ -20,7 +20,11 @@ export function rawBuilderProposal(): RawMaturityBuilderProposal {
         guidance: "Check point of use.",
       },
       { name: "Practising", description: "Consistent use.", guidance: "" },
-      { name: "Sustaining", description: "Team-led improvement.", guidance: null },
+      {
+        name: "Sustaining",
+        description: "Team-led improvement.",
+        guidance: null,
+      },
     ],
     pillars: [
       {
@@ -74,7 +78,9 @@ export function rawBuilderProposal(): RawMaturityBuilderProposal {
             description: "Root cause for significant problems.",
             guidance: null,
             questions: [
-              { prompt: "Are significant problems investigated to root cause?" },
+              {
+                prompt: "Are significant problems investigated to root cause?",
+              },
               { prompt: "Are countermeasures checked for effectiveness?" },
             ],
           },
@@ -110,7 +116,9 @@ export function storedProposalFromRaw(raw: RawMaturityBuilderProposal) {
   };
 }
 
-export function understandingPayload(purpose: string | null = "Site standards") {
+export function understandingPayload(
+  purpose: string | null = "Site standards",
+) {
   return {
     assessmentPurpose: purpose,
     assessmentScope: "Sites and areas",

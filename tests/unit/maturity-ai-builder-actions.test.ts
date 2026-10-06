@@ -29,8 +29,7 @@ vi.mock("@/modules/maturity/ai-builder/load", () => ({
   loadMaturityBuilderAccess: () => access(),
   findActiveMaturityBuilderSessionId: (...args: unknown[]) =>
     findSession(...args),
-  readMaturityBuilderSessionDetail: (...args: unknown[]) =>
-    readDetail(...args),
+  readMaturityBuilderSessionDetail: (...args: unknown[]) => readDetail(...args),
   readMaturityBuilderBoundary: (...args: unknown[]) => readBoundary(...args),
   writeMaturityBuilderBoundary: (...args: unknown[]) => writeBoundary(...args),
   loadMaturityBuilderOrganisationFacts: (...args: unknown[]) =>
@@ -384,7 +383,9 @@ describe("discardMaturityBuilderConversationAction", () => {
       "org-a",
       "2026-10-06T10:01:02.001Z",
     );
-    expect(rpc.mock.calls.filter(([name]) => name !== "get_ai_session_detail")).toEqual([]);
+    expect(
+      rpc.mock.calls.filter(([name]) => name !== "get_ai_session_detail"),
+    ).toEqual([]);
   });
 
   it("denies members who cannot manage frameworks", async () => {
@@ -394,7 +395,9 @@ describe("discardMaturityBuilderConversationAction", () => {
       reason: "manage_permission_required",
       message: "x",
     });
-    await expect(discardMaturityBuilderConversationAction()).resolves.toMatchObject({
+    await expect(
+      discardMaturityBuilderConversationAction(),
+    ).resolves.toMatchObject({
       ok: false,
     });
     expect(writeBoundary).not.toHaveBeenCalled();

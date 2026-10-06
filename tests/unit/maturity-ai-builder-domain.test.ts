@@ -257,9 +257,9 @@ describe("Maturity builder envelope parsing", () => {
       const record = node as Record<string, unknown>;
       if (record.type === "object") {
         expect(record.additionalProperties).toBe(false);
-        expect(
-          [...(record.required as string[])].sort(),
-        ).toEqual(Object.keys(record.properties as object).sort());
+        expect([...(record.required as string[])].sort()).toEqual(
+          Object.keys(record.properties as object).sort(),
+        );
       }
       for (const value of Object.values(record)) {
         if (Array.isArray(value)) value.forEach(assertStrict);
@@ -287,11 +287,12 @@ describe("Maturity builder focus", () => {
       resolveMaturityBuilderFocus({ kind: "pillar", pillarIndex: 5 }, proposal),
     ).toBeNull();
     expect(
-      resolveMaturityBuilderFocus({ kind: "pillar", pillarIndex: "1" }, proposal),
+      resolveMaturityBuilderFocus(
+        { kind: "pillar", pillarIndex: "1" },
+        proposal,
+      ),
     ).toBeNull();
-    expect(
-      resolveMaturityBuilderFocus({ kind: "levels" }, null),
-    ).toBeNull();
+    expect(resolveMaturityBuilderFocus({ kind: "levels" }, null)).toBeNull();
   });
 });
 
@@ -354,7 +355,9 @@ describe("Maturity builder bounded context", () => {
     });
     const wrapped = wrapMaturityBuilderContext(context);
     expect(wrapped).toContain("untrusted organisation data");
-    const extracted = extractMaturityBuilderContext(`${wrapped}\n\nUser request:\nhi`);
+    const extracted = extractMaturityBuilderContext(
+      `${wrapped}\n\nUser request:\nhi`,
+    );
     expect(extracted?.current_proposal?.pillars).toHaveLength(3);
     expect(extracted?.request).toEqual({
       intent: "refine",

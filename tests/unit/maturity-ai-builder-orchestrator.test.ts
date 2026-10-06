@@ -9,8 +9,7 @@ vi.mock("server-only", () => ({}));
 
 const providerCalls: CreateResponseInput[] = [];
 let providerOverride:
-  | ((input: CreateResponseInput) => Promise<CreateResponseResult>)
-  | null = null;
+  ((input: CreateResponseInput) => Promise<CreateResponseResult>) | null = null;
 
 vi.mock("@/platform/ai/registry", async () => {
   const { FakeAIProvider } = await import("@/platform/ai/providers/fake");
@@ -283,7 +282,10 @@ describe("runMaturityBuilderTurn", () => {
   it("does not call the provider when the run cannot start", async () => {
     rpc.mockImplementation(async (fn: string) =>
       fn === "start_ai_run"
-        ? { data: null, error: { message: "organisation ai monthly token ceiling reached" } }
+        ? {
+            data: null,
+            error: { message: "organisation ai monthly token ceiling reached" },
+          }
         : { data: null, error: null },
     );
     await expect(run("Hello")).rejects.toMatchObject({
