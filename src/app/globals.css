@@ -549,8 +549,7 @@ html:has(> body > .marketing) {
 .marketing-header-bar {
   position: relative;
   border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
-  background: color-mix(in oklab, var(--background) 92%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--background);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease;
@@ -654,6 +653,7 @@ html:has(> body > .marketing) {
 }
 
 .marketing {
+  overflow-anchor: none;
   overflow-x: clip;
 }
 
