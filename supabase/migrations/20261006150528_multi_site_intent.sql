@@ -255,11 +255,9 @@ alter function private.create_founding_organisation(text, text, text, text, text
 alter function private.set_organisation_multi_site_intent(text)
   owner to lean_hub_private_owner;
 
+-- Expose only the permission-checked public wrappers. Keep private helpers
+-- non-callable directly by authenticated roles.
 grant execute on function public.create_founding_organisation(text, text, text, text, text, text, integer, text, text)
   to authenticated;
-grant execute on function private.create_founding_organisation(text, text, text, text, text, text, integer, text, text)
-  to authenticated;
 grant execute on function public.set_organisation_multi_site_intent(text)
-  to authenticated;
-grant execute on function private.set_organisation_multi_site_intent(text)
   to authenticated;
