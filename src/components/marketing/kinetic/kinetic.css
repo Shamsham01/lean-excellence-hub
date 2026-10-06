@@ -168,14 +168,19 @@
 }
 
 .kinetic-hero-line-final {
+  display: flex;
+  align-items: center;
+  gap: 0.18em;
+  width: fit-content;
+  max-width: 100%;
   color: #161b22;
 }
 
 .kinetic-hero-mark {
   width: 0.86em;
   height: 0.86em;
-  margin-left: 0.14em;
-  vertical-align: -0.02em;
+  margin-left: 0;
+  vertical-align: 0;
   color: #161b22;
   overflow: visible;
 }
@@ -696,6 +701,18 @@
   border-color: rgb(248 247 243 / 14%);
   background: #0c0e12;
   color: #f8f7f3;
+}
+
+@media (max-width: 719px) {
+  .kinetic-hero-title {
+    font-size: 2.15rem;
+  }
+
+  .kinetic-hero-mark {
+    width: 0.68em;
+    height: 0.68em;
+    margin-left: 0.18em;
+  }
 }
 
 @media (min-width: 720px) {
