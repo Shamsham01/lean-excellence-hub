@@ -118,20 +118,20 @@ describe("increaseCurrentOrganisationSiteQuantity", () => {
       billingInterval: "monthly",
       organisationId: organisation.organisation_id,
     }));
-    increaseSubscriptionSiteQuantity.mockImplementation(async (input: {
-      desiredSiteQuantity: number;
-    }) => {
-      providerQty = input.desiredSiteQuantity;
-      return {
-        subscriptionId: "sub_fake_1",
-        customerId: "cus_fake_1",
-        status: "active",
-        cancelAtPeriodEnd: false,
-        siteQuantity: providerQty,
-        planCode: "professional",
-        organisationId: organisation.organisation_id,
-      };
-    });
+    increaseSubscriptionSiteQuantity.mockImplementation(
+      async (input: { desiredSiteQuantity: number }) => {
+        providerQty = input.desiredSiteQuantity;
+        return {
+          subscriptionId: "sub_fake_1",
+          customerId: "cus_fake_1",
+          status: "active",
+          cancelAtPeriodEnd: false,
+          siteQuantity: providerQty,
+          planCode: "professional",
+          organisationId: organisation.organisation_id,
+        };
+      },
+    );
   });
 
   it("lets a billing admin request 1 → 2 without writing LEH quantity", async () => {
@@ -226,7 +226,8 @@ describe("increaseCurrentOrganisationSiteQuantity", () => {
           reason: "superseded" as const,
           highestRequestedSiteQuantity: floor,
           persistedSiteQuantity: 1,
-          message: "A higher subscribed site quantity is already requested or confirmed.",
+          message:
+            "A higher subscribed site quantity is already requested or confirmed.",
         };
       }
       highest = Math.max(floor, desired);
@@ -251,20 +252,20 @@ describe("increaseCurrentOrganisationSiteQuantity", () => {
       planCode: "professional",
       organisationId: organisation.organisation_id,
     }));
-    increaseSubscriptionSiteQuantity.mockImplementation(async (input: {
-      desiredSiteQuantity: number;
-    }) => {
-      qty = input.desiredSiteQuantity;
-      return {
-        subscriptionId: "sub_fake_1",
-        customerId: "cus_fake_1",
-        status: "active",
-        cancelAtPeriodEnd: false,
-        siteQuantity: qty,
-        planCode: "professional",
-        organisationId: organisation.organisation_id,
-      };
-    });
+    increaseSubscriptionSiteQuantity.mockImplementation(
+      async (input: { desiredSiteQuantity: number }) => {
+        qty = input.desiredSiteQuantity;
+        return {
+          subscriptionId: "sub_fake_1",
+          customerId: "cus_fake_1",
+          status: "active",
+          cancelAtPeriodEnd: false,
+          siteQuantity: qty,
+          planCode: "professional",
+          organisationId: organisation.organisation_id,
+        };
+      },
+    );
 
     await expect(
       increaseCurrentOrganisationSiteQuantity(3),
@@ -324,24 +325,24 @@ describe("increaseCurrentOrganisationSiteQuantity", () => {
       planCode: "professional",
       organisationId: organisation.organisation_id,
     }));
-    increaseSubscriptionSiteQuantity.mockImplementation(async (input: {
-      desiredSiteQuantity: number;
-    }) => {
-      if (input.desiredSiteQuantity === 2) {
-        twoStarted();
-        await twoGate;
-      }
-      qty = input.desiredSiteQuantity;
-      return {
-        subscriptionId: "sub_fake_1",
-        customerId: "cus_fake_1",
-        status: "active",
-        cancelAtPeriodEnd: false,
-        siteQuantity: qty,
-        planCode: "professional",
-        organisationId: organisation.organisation_id,
-      };
-    });
+    increaseSubscriptionSiteQuantity.mockImplementation(
+      async (input: { desiredSiteQuantity: number }) => {
+        if (input.desiredSiteQuantity === 2) {
+          twoStarted();
+          await twoGate;
+        }
+        qty = input.desiredSiteQuantity;
+        return {
+          subscriptionId: "sub_fake_1",
+          customerId: "cus_fake_1",
+          status: "active",
+          cancelAtPeriodEnd: false,
+          siteQuantity: qty,
+          planCode: "professional",
+          organisationId: organisation.organisation_id,
+        };
+      },
+    );
 
     const two = increaseCurrentOrganisationSiteQuantity(2);
     await twoStartedGate;

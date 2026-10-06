@@ -124,7 +124,8 @@ describe("site quantity increase policy", () => {
         reason: "superseded",
         highest_requested_site_quantity: 3,
         site_quantity: 1,
-        message: "A higher subscribed site quantity is already requested or confirmed.",
+        message:
+          "A higher subscribed site quantity is already requested or confirmed.",
       }),
     ).toMatchObject({
       action: "noop",
