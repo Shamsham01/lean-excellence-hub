@@ -17,11 +17,13 @@ const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 async function screenshotIfPossible(
   page: import("@playwright/test").Page,
   name: string,
+  testId?: string,
 ) {
   try {
-    await page.screenshot({
+    const target = testId ? page.getByTestId(testId) : page;
+    await target.screenshot({
       path: `/opt/cursor/artifacts/${name}`,
-      fullPage: true,
+      ...(testId ? {} : { fullPage: true }),
     });
   } catch {
     // Artifact directory is optional outside Cloud Agent runs.
@@ -68,7 +70,11 @@ test.describe("organisation ownership transfer", () => {
     await page
       .getByTestId("organisation-ownership-section")
       .scrollIntoViewIfNeeded();
-    await screenshotIfPossible(page, "01d-ownership-desktop.png");
+    await screenshotIfPossible(
+      page,
+      "01d-ownership-desktop.png",
+      "organisation-ownership-section",
+    );
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/platform/settings/organisation");
@@ -162,6 +168,10 @@ test.describe("organisation ownership transfer", () => {
     await page
       .getByTestId("organisation-ownership-section")
       .scrollIntoViewIfNeeded();
-    await screenshotIfPossible(page, "01d-ownership-new-owner.png");
+    await screenshotIfPossible(
+      page,
+      "01d-ownership-new-owner.png",
+      "organisation-ownership-section",
+    );
   });
 });
