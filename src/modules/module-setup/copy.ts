@@ -8,8 +8,7 @@ export const MODULE_SETUP_COPY = {
   manual: {
     mode: "Manual",
     title: "Build your own",
-    description:
-      "Start with an empty draft and define the structure yourself.",
+    description: "Start with an empty draft and define the structure yourself.",
     action: "Start manually",
   },
   quickStart: {
