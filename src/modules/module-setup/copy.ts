@@ -9,7 +9,7 @@ export const MODULE_SETUP_COPY = {
     mode: "Manual",
     title: "Build your own",
     description:
-      "Start with an empty draft and define every category and question yourself.",
+      "Start with an empty draft and define the structure yourself.",
     action: "Start manually",
   },
   quickStart: {
