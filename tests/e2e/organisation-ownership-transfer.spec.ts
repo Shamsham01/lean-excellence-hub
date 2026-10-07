@@ -129,6 +129,12 @@ test.describe("organisation ownership transfer", () => {
       0,
     );
     await expect(
+      page.getByRole("heading", { name: "Page not found" }),
+    ).toBeVisible();
+
+    await page.goto("/platform/settings/organisation");
+    await expect(page.getByTestId("organisation-settings-page")).toBeVisible();
+    await expect(
       page
         .getByTestId("rollout-governance-panel")
         .getByText("Plymouth Factory", { exact: true }),

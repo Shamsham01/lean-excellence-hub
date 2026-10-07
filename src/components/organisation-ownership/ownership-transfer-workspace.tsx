@@ -274,8 +274,8 @@ export function OwnershipTransferWorkspace({
               member.
             </li>
             <li>
-              The current owner keeps their other explicit grants. This
-              transfer does not assign site administration.
+              The current owner keeps their other explicit grants. This transfer
+              does not assign site administration.
             </li>
             <li>
               Sites, billing, subscribed capacity and historical records stay
