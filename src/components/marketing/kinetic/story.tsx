@@ -34,32 +34,19 @@ const FRAGMENT_WORDS = [
   "Maturity",
 ] as const;
 
-const FRAGMENT_HOME = [
-  [-18, 2],
-  [2, -2],
-  [18, 4],
-  [-16, 12],
-  [4, 14],
-  [20, 10],
-  [-18, 22],
-  [0, 20],
-  [18, 22],
-  [28, -1],
-  [-6, 24],
-] as const;
-
-const FRAGMENT_SLOTS = [
-  [-24, 6],
-  [-8, 6],
-  [8, 6],
-  [24, 6],
-  [-22, 15],
-  [-6, 15],
-  [10, 15],
-  [24, 15],
-  [-14, 24],
-  [2, 24],
-  [18, 24],
+/** Three-column poster. Columns stay clear of each other during the hold. */
+const FRAGMENT_POSTER = [
+  { col: 1, row: 2, s: 1.02, ox: 2, oy: 2 },
+  { col: 3, row: 2, s: 1.28, ox: -2, oy: 2 },
+  { col: 2, row: 3, s: 1.12, ox: 1, oy: 1 },
+  { col: 3, row: 3, s: 0.96, ox: -2, oy: 1 },
+  { col: 1, row: 3, s: 1.08, ox: 2, oy: 0 },
+  { col: 1, row: 4, s: 1.16, ox: 2, oy: -1 },
+  { col: 2, row: 4, s: 0.88, ox: 1, oy: -1 },
+  { col: 3, row: 4, s: 1.24, ox: -2, oy: -1 },
+  { col: 1, row: 5, s: 1.32, ox: 1, oy: -2 },
+  { col: 3, row: 5, s: 0.92, ox: -1, oy: -2 },
+  { col: 2, row: 5, s: 1.02, ox: 0, oy: -2 },
 ] as const;
 
 const LOOP = [
@@ -138,49 +125,19 @@ const MODULES: ReadonlyArray<{
 ];
 
 const LEAN_CHAPTERS = [
-  {
-    id: "context",
-    index: "01",
-    title: "Context",
-    line: "Organisation, site, permitted role, workflow, open record, framework.",
-  },
-  {
-    id: "understand",
-    index: "02",
-    title: "Understand",
-    line: "Where you are, and what this workflow is for.",
-  },
-  {
-    id: "connect",
-    index: "03",
-    title: "Connect",
-    line: "Related work and the organisation's standard.",
-  },
-  {
-    id: "coach",
-    index: "04",
-    title: "Coach",
-    line: "The next step, explained. The change stays yours.",
-  },
-  {
-    id: "recommend",
-    index: "05",
-    title: "Recommend",
-    line: "A governed next action. Not an automatic decision.",
-  },
-  {
-    id: "authority",
-    index: "06",
-    title: "A person decides",
-    line: "Review stays with a person.",
-  },
+  { id: "context", index: "01", nav: "Context", display: "Context" },
+  { id: "understand", index: "02", nav: "Understand", display: "Understand" },
+  { id: "connect", index: "03", nav: "Connect", display: "Connect" },
+  { id: "coach", index: "04", nav: "Coach", display: "Coach" },
+  { id: "recommend", index: "05", nav: "Recommend", display: "Recommend" },
+  { id: "authority", index: "06", nav: "You decide", display: "You decide" },
 ] as const;
 
 const FINALE_TILES = [
-  { fx: "-168", fy: "-96", cobalt: false },
-  { fx: "154", fy: "-128", cobalt: false },
-  { fx: "-142", fy: "118", cobalt: false },
-  { fx: "176", fy: "104", cobalt: true },
+  { fx: "-78", fy: "-48", cobalt: false },
+  { fx: "72", fy: "-62", cobalt: false },
+  { fx: "-68", fy: "56", cobalt: false },
+  { fx: "84", fy: "52", cobalt: true },
 ] as const;
 
 function unit(index: number) {
@@ -230,79 +187,52 @@ function StoryRail() {
 function HeroLine({
   word,
   seed,
-  measure = false,
+  phase,
 }: {
   word: string;
   seed: number;
-  measure?: boolean;
+  phase: "operational" | "excellence" | "connected";
 }) {
   return (
-    <span
-      className="kinetic-hero-line"
-      {...(measure ? { "data-hero-line": "operational" } : {})}
-    >
+    <span className="kinetic-hero-line" data-hero-line={phase}>
       {word.split("").map((character, index) => (
         <span
           key={`${word}-${index}`}
           className="kinetic-hero-glyph"
           style={
             {
-              "--gx": ((unit(seed + index) - 0.5) * 8).toFixed(2),
-              "--gy": ((unit(seed + index + 8) - 0.5) * 6).toFixed(2),
+              "--gx": ((unit(seed + index) - 0.5) * 14).toFixed(2),
+              "--gy": ((unit(seed + index + 8) - 0.5) * 10).toFixed(2),
+              "--gr": ((unit(seed + index + 3) - 0.5) * 8).toFixed(2),
+              "--sd": (0.15 + unit(seed + index + 11) * 0.7).toFixed(3),
             } as CSSProperties
           }
         >
           {character}
         </span>
       ))}
+      {phase === "connected" ? (
+        <>
+          <HeroPunct />
+          <span className="kinetic-hero-baseline" aria-hidden="true" />
+        </>
+      ) : null}
     </span>
   );
 }
 
-function HeroMark() {
+function HeroPunct() {
   return (
-    <svg
-      className="kinetic-hero-mark"
-      data-hero-mark
-      viewBox="0 0 46 46"
-      aria-hidden="true"
-    >
-      <rect
-        x="0.8"
-        y="0.8"
-        width="17.2"
-        height="17.2"
-        rx="3.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <rect
-        x="28"
-        y="0.8"
-        width="17.2"
-        height="17.2"
-        rx="3.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <rect
-        x="0.8"
-        y="28"
-        width="17.2"
-        height="17.2"
-        rx="3.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <rect x="28" y="28" width="17.2" height="17.2" rx="3.2" fill="#2759a2" />
-      <rect x="18" y="8.2" width="10" height="2" fill="currentColor" />
-      <rect x="8.2" y="18" width="2" height="10" fill="currentColor" />
-      <rect x="35.8" y="18" width="2" height="10" fill="currentColor" />
-      <rect x="18" y="35.8" width="10" height="2" fill="currentColor" />
-    </svg>
+    <span className="kinetic-hero-punct" aria-hidden="true">
+      <span className="kinetic-hero-square" />
+      <span className="kinetic-hero-tile kinetic-hero-tile-tl" />
+      <span className="kinetic-hero-tile kinetic-hero-tile-tr" />
+      <span className="kinetic-hero-tile kinetic-hero-tile-bl" />
+      <i className="kinetic-hero-bridge kinetic-hero-bridge-top" />
+      <i className="kinetic-hero-bridge kinetic-hero-bridge-mid" />
+      <i className="kinetic-hero-bridge kinetic-hero-bridge-left" />
+      <i className="kinetic-hero-bridge kinetic-hero-bridge-right" />
+    </span>
   );
 }
 
@@ -325,8 +255,13 @@ function FragmentField() {
       </ul>
       <div className="kinetic-glyph-stage" aria-hidden="true">
         {FRAGMENT_GLYPHS.map((group) => {
-          const slot = FRAGMENT_SLOTS[group.wordIndex] ?? [0, 0];
-          const home = FRAGMENT_HOME[group.wordIndex] ?? [0, 0];
+          const poster = FRAGMENT_POSTER[group.wordIndex] ?? {
+            col: 1,
+            row: 1,
+            s: 1,
+            ox: 0,
+            oy: 0,
+          };
           const { word, glyphs, start } = group;
 
           return (
@@ -335,10 +270,11 @@ function FragmentField() {
               className="kinetic-word"
               style={
                 {
-                  "--wx": String(home[0]),
-                  "--wy": String(home[1]),
-                  "--tx": String(slot[0]),
-                  "--ty": String(slot[1]),
+                  "--col": String(poster.col),
+                  "--row": String(poster.row),
+                  "--scale": String(poster.s),
+                  "--ox": String(poster.ox),
+                  "--oy": String(poster.oy),
                 } as CSSProperties
               }
             >
@@ -350,8 +286,8 @@ function FragmentField() {
                     className="kinetic-glyph"
                     style={
                       {
-                        "--sx": ((unit(seed) - 0.5) * 58).toFixed(2),
-                        "--sy": ((unit(seed + 19) - 0.5) * 32).toFixed(2),
+                        "--sx": ((unit(seed) - 0.5) * 78).toFixed(2),
+                        "--sy": ((unit(seed + 19) - 0.5) * 48).toFixed(2),
                         "--sr": ((unit(seed + 31) - 0.5) * 28).toFixed(2),
                         "--ss": (0.84 + unit(seed + 47) * 0.32).toFixed(3),
                         "--sd": (unit(seed + 61) * 0.52).toFixed(3),
@@ -434,8 +370,8 @@ export function KineticStory() {
         id="connect"
         kinetic="hero"
         tone="paper"
-        length={148}
-        lengthSm={124}
+        length={186}
+        lengthSm={132}
       >
         <div className="kinetic-stage kinetic-hero-stage">
           <p className="kinetic-anno">01 / Connect</p>
@@ -445,14 +381,9 @@ export function KineticStory() {
           <h1 id="connect-title" className="kinetic-hero-title">
             <span className="sr-only">Operational excellence. Connected.</span>
             <span className="kinetic-hero-visual" aria-hidden="true">
-              <HeroLine word="OPERATIONAL" seed={4} measure />
-              <HeroLine word="EXCELLENCE" seed={28} />
-              <span className="kinetic-hero-line kinetic-hero-line-final">
-                <span className="kinetic-hero-stretch" data-hero-stretch>
-                  <span data-hero-stretch-inner>CONNECTED</span>
-                </span>
-                <HeroMark />
-              </span>
+              <HeroLine word="OPERATIONAL" seed={4} phase="operational" />
+              <HeroLine word="EXCELLENCE." seed={28} phase="excellence" />
+              <HeroLine word="CONNECTED" seed={52} phase="connected" />
             </span>
           </h1>
           <p className="kinetic-lede">
@@ -468,8 +399,8 @@ export function KineticStory() {
         id="why"
         kinetic="fragments"
         tone="ink"
-        length={268}
-        lengthSm={196}
+        length={320}
+        lengthSm={220}
       >
         <div className="kinetic-stage kinetic-fragment-stage">
           <div className="kinetic-fragment-copy">
@@ -575,8 +506,8 @@ export function KineticStory() {
         id="leanai"
         kinetic="leanai"
         tone="ink"
-        length={340}
-        lengthSm={228}
+        length={500}
+        lengthSm={120}
       >
         <div className="kinetic-stage kinetic-leanai-stage">
           <div className="kinetic-leanai-copy">
@@ -591,31 +522,35 @@ export function KineticStory() {
             </p>
           </div>
           <div className="kinetic-plain">
-            <p>Context</p>
+            <p>01 Context</p>
             <ul>
               <li>Organisation</li>
               <li>Site</li>
-              <li>Role, where permitted</li>
+              <li>Role where permitted</li>
               <li>Current workflow</li>
               <li>Open record</li>
               <li>Relevant framework</li>
             </ul>
+            <p>02 Understand</p>
             <p>
-              LeanAI understands where you are and what this workflow is for.
+              LeanAI understands where the user is and what the workflow is for.
             </p>
+            <p>03 Connect</p>
             <p>
-              It connects the open record to related work and the
-              organisation&apos;s standard.
+              It can bring related work and the organisation&apos;s current
+              standard into the conversation.
             </p>
+            <p>04 Coach</p>
             <p>
-              It explains the next step, including how to set up the
-              organisation, a site and the operating standards. It will not make
-              the change for you.
+              It explains the next governed step and helps the user operate and
+              set up the platform.
             </p>
+            <p>05 Recommend</p>
             <p>
               Example recommendation: link the Gemba finding to an owned action
               before the next walk.
             </p>
+            <p>06 You decide</p>
             <p>A person reviews. A person decides.</p>
             <p>
               LeanAI does not publish frameworks, close actions, grant access or
@@ -623,48 +558,88 @@ export function KineticStory() {
             </p>
           </div>
           <div className="kinetic-leanai-board" aria-hidden="true">
-            <ol className="kinetic-leanai-chapters">
-              {LEAN_CHAPTERS.map((chapter) => (
-                <li key={chapter.id} data-lean-beat={chapter.id}>
-                  <span className="kinetic-anno">{chapter.index}</span>
-                  <strong>{chapter.title}</strong>
-                  <p>{chapter.line}</p>
+            <ol className="kinetic-lean-nav">
+              {LEAN_CHAPTERS.map((chapter, index) => (
+                <li
+                  key={chapter.id}
+                  style={{ ["--b" as string]: `var(--b${index})` }}
+                >
+                  <span>{chapter.index}</span> {chapter.nav}
                 </li>
               ))}
             </ol>
-            <div className="kinetic-live">
-              <div data-lean-panel="context">
-                <p className="kinetic-panel-label">Context</p>
-                <p className="kinetic-context" data-leanai-context />
+            <div className="kinetic-lean-main">
+              <div className="kinetic-lean-titles">
+                {LEAN_CHAPTERS.map((chapter, index) => (
+                  <p
+                    key={chapter.id}
+                    className="kinetic-lean-title"
+                    data-lean-title={chapter.id}
+                    style={{ ["--b" as string]: `var(--b${index})` }}
+                  >
+                    {chapter.display}
+                  </p>
+                ))}
               </div>
-              <div data-lean-panel="understand">
-                <p className="kinetic-panel-label">Understand</p>
-                <p className="kinetic-beat-copy">
-                  LeanAI understands where you are and what this workflow is
-                  for.
-                </p>
-              </div>
-              <div data-lean-panel="connect">
-                <p className="kinetic-panel-label">Connect</p>
-                <p className="kinetic-beat-copy">
-                  Related work. The organisation&apos;s standard.
-                </p>
-              </div>
-              <div data-lean-panel="coach">
-                <p className="kinetic-panel-label">Coach</p>
-                <p className="kinetic-beat-copy">
-                  It explains the next step, including setup. It will not make
-                  the change for you.
-                </p>
-              </div>
-              <div data-lean-panel="recommend">
-                <p className="kinetic-panel-label">Recommend</p>
-                <p className="kinetic-recommend" data-leanai-recommend />
-                <p className="kinetic-reject" data-leanai-reject />
-              </div>
-              <div data-lean-panel="authority">
-                <p className="kinetic-panel-label">Human authority</p>
-                <p className="kinetic-authority" data-leanai-authority />
+              <div className="kinetic-live">
+                <div
+                  data-lean-panel="context"
+                  style={{ ["--b" as string]: "var(--b0)" }}
+                >
+                  <p className="kinetic-panel-label">Context</p>
+                  <p className="kinetic-context" data-leanai-context />
+                </div>
+                <div
+                  data-lean-panel="understand"
+                  style={{ ["--b" as string]: "var(--b1)" }}
+                >
+                  <p className="kinetic-panel-label">Understand</p>
+                  <p className="kinetic-beat-copy">
+                    LeanAI understands where the user is and what the workflow
+                    is for.
+                  </p>
+                </div>
+                <div
+                  data-lean-panel="connect"
+                  style={{ ["--b" as string]: "var(--b2)" }}
+                >
+                  <p className="kinetic-panel-label">Connect</p>
+                  <p className="kinetic-beat-copy">
+                    It can bring related work and the organisation&apos;s
+                    current standard into the conversation.
+                  </p>
+                </div>
+                <div
+                  data-lean-panel="coach"
+                  style={{ ["--b" as string]: "var(--b3)" }}
+                >
+                  <p className="kinetic-panel-label">Coach</p>
+                  <p className="kinetic-beat-copy">
+                    It explains the next governed step and helps the user
+                    operate and set up the platform.
+                  </p>
+                </div>
+                <div
+                  data-lean-panel="recommend"
+                  style={{ ["--b" as string]: "var(--b4)" }}
+                >
+                  <p className="kinetic-panel-label">Recommend</p>
+                  <p className="kinetic-recommend" data-leanai-recommend />
+                  <p className="kinetic-reject" data-leanai-reject />
+                </div>
+                <div
+                  data-lean-panel="authority"
+                  style={{ ["--b" as string]: "var(--b5)" }}
+                >
+                  <p className="kinetic-panel-label">You decide</p>
+                  <p className="kinetic-authority">
+                    A person reviews. A person decides.{" "}
+                    <span className="kinetic-governance">
+                      LeanAI does not independently publish frameworks, close
+                      actions, grant access or purchase site capacity.
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>

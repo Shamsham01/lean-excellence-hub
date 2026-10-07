@@ -167,6 +167,165 @@ test("vertical wheel over the skills matrix continues the page", async ({
     .toBeGreaterThan(mid + 8);
 });
 
+test("LeanAI stays inside the sticky stage at 1366×768", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/");
+  await expect(page.locator(".kinetic-story")).toHaveAttribute(
+    "data-motion",
+    "on",
+  );
+
+  const positions = [0.08, 0.22, 0.36, 0.5, 0.66, 0.9];
+
+  for (const progress of positions) {
+    await page.evaluate((target) => {
+      const scene = document.getElementById("leanai");
+      if (!scene) {
+        return;
+      }
+      const top = window.scrollY + scene.getBoundingClientRect().top;
+      const scrollable = scene.offsetHeight - window.innerHeight;
+      window.scrollTo(0, top + scrollable * target);
+    }, progress);
+
+    await expect
+      .poll(async () =>
+        page.locator("#leanai").evaluate((el) => el.dataset.beat ?? ""),
+      )
+      .not.toBe("");
+
+    const fit = await page.evaluate(() => {
+      const stage = document.querySelector<HTMLElement>(
+        "#leanai .kinetic-stage",
+      );
+      if (!stage) {
+        return { ok: false, reason: "missing stage" };
+      }
+      const stageBox = stage.getBoundingClientRect();
+      const safe = 8;
+      const visible = [
+        ...stage.querySelectorAll<HTMLElement>("[data-lean-visible='true']"),
+      ];
+      const nodes = [
+        ...stage.querySelectorAll<HTMLElement>(
+          ".kinetic-leanai-copy, .kinetic-lean-nav li",
+        ),
+        ...visible.flatMap((root) => [
+          root,
+          ...root.querySelectorAll<HTMLElement>("p, li"),
+        ]),
+      ];
+      const offenders = nodes
+        .filter((node) => {
+          const style = getComputedStyle(node);
+          if (style.display === "none" || style.visibility === "hidden") {
+            return false;
+          }
+          let ancestor: HTMLElement | null = node;
+          let visual = 1;
+          while (ancestor && ancestor !== stage) {
+            visual *= Number.parseFloat(
+              getComputedStyle(ancestor).opacity || "1",
+            );
+            ancestor = ancestor.parentElement;
+          }
+          if (visual < 0.4) {
+            return false;
+          }
+          const box = node.getBoundingClientRect();
+          return (
+            box.height > 2 &&
+            box.width > 2 &&
+            (box.bottom > stageBox.bottom - safe || box.top < stageBox.top + 2)
+          );
+        })
+        .map(
+          (node) =>
+            node.dataset.leanTitle ||
+            node.dataset.leanPanel ||
+            node.textContent?.trim().slice(0, 42) ||
+            node.className,
+        );
+
+      return {
+        ok: offenders.length === 0,
+        reason: offenders.join(" | "),
+        beat: document.getElementById("leanai")?.dataset.beat ?? "",
+      };
+    });
+
+    expect(fit.ok, `progress ${progress} beat ${fit.beat}: ${fit.reason}`).toBe(
+      true,
+    );
+  }
+});
+
+test("LeanAI beats advance and reverse under large wheel deltas", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/#leanai");
+  await expect(page.locator(".kinetic-story")).toHaveAttribute(
+    "data-motion",
+    "on",
+  );
+
+  await page.mouse.move(680, 380);
+  await page.evaluate(() => {
+    const scene = document.getElementById("leanai");
+    if (!scene) {
+      return;
+    }
+    const top = window.scrollY + scene.getBoundingClientRect().top;
+    window.scrollTo(0, top + 24);
+  });
+
+  const read = () =>
+    page.locator("#leanai").evaluate((el) => ({
+      progress: Number.parseFloat(el.style.getPropertyValue("--p") || "0"),
+      beat: Number.parseInt(el.dataset.beat || "0", 10),
+    }));
+
+  await expect.poll(async () => (await read()).progress).toBeLessThan(0.2);
+
+  const forward: number[] = [];
+  for (let step = 0; step < 12; step += 1) {
+    const before = await read();
+    if (before.progress > 0.9) {
+      break;
+    }
+    await page.mouse.wheel(0, 420);
+    await expect
+      .poll(async () => (await read()).progress)
+      .toBeGreaterThan(before.progress + 0.03);
+    forward.push((await read()).beat);
+  }
+
+  expect(forward[forward.length - 1]).toBeGreaterThanOrEqual(4);
+  for (let index = 1; index < forward.length; index += 1) {
+    expect(forward[index] ?? 0).toBeGreaterThanOrEqual(forward[index - 1] ?? 0);
+  }
+  expect(new Set(forward).size).toBeGreaterThanOrEqual(4);
+
+  const backward: number[] = [];
+  for (let step = 0; step < 12; step += 1) {
+    const before = await read();
+    if (before.progress < 0.08) {
+      break;
+    }
+    await page.mouse.wheel(0, -420);
+    await expect
+      .poll(async () => (await read()).progress)
+      .toBeLessThan(before.progress - 0.03);
+    backward.push((await read()).beat);
+  }
+
+  for (let index = 1; index < backward.length; index += 1) {
+    expect(backward[index] ?? 0).toBeLessThanOrEqual(backward[index - 1] ?? 0);
+  }
+  expect(backward[backward.length - 1]).toBeLessThanOrEqual(2);
+});
+
 test("keyboard reaches the hero actions", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
