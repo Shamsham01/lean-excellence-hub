@@ -2,7 +2,7 @@
 -- Ownership remains an organisation-scoped grant of the published
 -- organisation-owner role (roles.is_owner_role). This migration adds a
 -- narrow atomic RPC; it does not invent a parallel ownership model.
--- Do not apply this migration to hosted Supabase from this change.
+-- Hosted Supabase applied this migration as ledger version 20261007143820; filename reconciled to preserve source/hosted migration parity.
 
 -- ---------------------------------------------------------------------------
 -- Helpers
