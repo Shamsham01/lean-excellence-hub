@@ -74,7 +74,11 @@ test.describe("Training course catalogue bootstrap", () => {
     }
     await expect(page.getByTestId("training-course-create-form")).toBeVisible();
 
-    await page.getByTestId("training-course-name-input").fill(courseName);
+    const courseNameInput = page.getByTestId("training-course-name-input");
+    await courseNameInput.click();
+    await courseNameInput.fill("");
+    await courseNameInput.pressSequentially(courseName, { delay: 1 });
+    await expect(courseNameInput).toHaveValue(courseName);
     await expect(
       page.getByTestId("training-course-auto-code-preview"),
     ).toContainText(expectedCode);
