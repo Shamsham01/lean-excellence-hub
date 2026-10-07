@@ -72,5 +72,23 @@ export function toCustomerErrorMessage(
     return "The selected application role or scope is outside your authority to delegate.";
   }
 
+  if (
+    normalised.includes("organisation ownership transfer is not authorised")
+  ) {
+    return "Only the current organisation owner can transfer ownership.";
+  }
+
+  if (normalised.includes("ownership transfer target is not eligible")) {
+    return "Choose an active member of this organisation. Invite them first if they are not yet a member.";
+  }
+
+  if (
+    normalised.includes(
+      "organisation ownership cannot be transferred to the current owner",
+    )
+  ) {
+    return "Choose a different person. You already hold organisation ownership.";
+  }
+
   return fallback;
 }

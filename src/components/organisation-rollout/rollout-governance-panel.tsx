@@ -158,11 +158,57 @@ export function RolloutGovernancePanel({
         ) : null}
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Organisation ownership stays with the current organisation owner.
-        Transferring ownership is a separate, security-sensitive change and is
-        not available in this flow.
-      </p>
+      <section
+        className="flex flex-col gap-3 border-t border-border/70 pt-6"
+        data-testid="organisation-ownership-section"
+      >
+        <h3 className="text-sm font-medium text-foreground">
+          Organisation owner
+        </h3>
+        {snapshot.owners && snapshot.owners.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {snapshot.owners.map((owner) => (
+              <li
+                key={owner.membershipId}
+                className="text-sm text-foreground"
+                data-testid={`organisation-owner-${owner.membershipId}`}
+              >
+                <span className="font-medium">{owner.displayName}</span>
+                {owner.email ? (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {owner.email}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : snapshot.owners ? (
+          <p className="text-sm text-muted-foreground">
+            No organisation owner is currently recorded.
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Organisation owner details are not available with your access.
+          </p>
+        )}
+        {snapshot.ownerTransferAvailable ? (
+          <Button asChild variant="outline" className="min-h-11 self-start">
+            <AppLink
+              href="/platform/settings/organisation/ownership"
+              data-testid="transfer-organisation-ownership"
+            >
+              Transfer ownership
+            </AppLink>
+          </Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Only the current organisation owner can transfer ownership. This
+            does not recreate the organisation or change sites, billing or
+            history.
+          </p>
+        )}
+      </section>
     </section>
   );
 }

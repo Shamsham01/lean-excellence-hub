@@ -1,6 +1,6 @@
 # Shared standards vs site-local execution
 
-Status: **MULTISITE-EXPAND-01C implementation record**
+Status: **MULTISITE-EXPAND-01C + 01D implementation record**
 
 Date: **2026-10-06**
 
@@ -79,9 +79,117 @@ Null `scope_unit_id` alone is not organisation-wide (`self` also uses null). Del
 
 ## Ownership transfer
 
-No first-class owner-transfer RPC exists. Ownership is an organisation-scoped grant of the organisation-owner role. Last-owner revoke/inactivate is blocked.
+Status: **MULTISITE-EXPAND-01D** (#251)
 
-This slice does **not** invent an owner-transfer capability. Follow-up: #251.
+Organisation ownership is an organisation-scoped grant of the protected
+`organisation-owner` role (`roles.is_owner_role`) bound to the current published
+role version. There is no separate owner column and no parallel ownership model.
+
+### Authority
+
+Only a current effective organisation owner may initiate a transfer
+(`private.current_membership_is_owner` / `private.membership_is_effective_owner`).
+
+`hierarchy.manage`, `billing.manage`, site-scoped manager grants, and
+`roles.delegate` alone are not sufficient.
+
+### Target eligibility (v1)
+
+The target must already be an **active** member of the **same** organisation,
+with complete identity enrolment.
+
+Not eligible:
+
+- an email that is not yet a member
+- a pending invitation
+- pending or inactive membership
+- a member of another organisation
+- inferred users from email domain or job title
+
+If the desired person is not yet an active member, invite them first through
+People. Invitation and ownership transfer remain two explicit steps.
+
+The eligible-target query is organisation-scoped in the database. It never loads
+platform memberships for client-side filtering. The current owner is excluded.
+A member who is already an owner may be listed as **Already an owner**; transfer
+still completes by removing the source owner grant and does not create a
+duplicate owner grant.
+
+### Transaction
+
+`public.transfer_organisation_ownership(target_membership_id)` is a narrow domain
+RPC. The public wrapper is `SECURITY INVOKER`; the implementation is private
+`SECURITY DEFINER` with `search_path = ''`.
+
+Inside one transaction:
+
+1. Authenticate the current membership and organisation
+2. Take the organisation advisory lock (`pg_advisory_xact_lock`)
+3. Verify the source is an active organisation owner
+4. Lock source/target memberships and owner grants (`FOR UPDATE`)
+5. Verify the target is an eligible active member of the same organisation
+6. Resolve the current published organisation-owner role version
+7. Grant that version to the target if they do not already hold an effective
+   organisation-owner grant (reuses `private.grant_role_version`)
+8. Revoke only the source organisation-owner grant(s) (reuses
+   `private.revoke_access_grant`)
+9. Preserve source membership and all other source grants
+10. Verify at least one effective owner remains
+11. Append `organisation.ownership_transferred`
+12. Commit
+
+Any failure rolls back. The browser must not grant then revoke in two calls.
+
+### Concurrency and last-owner safety
+
+Two tabs are serialised on the organisation advisory lock. After a successful
+transfer the former owner is no longer authorised; a replay returns
+`organisation ownership transfer is not authorised` (`42501`). That is not an
+idempotent success path.
+
+Existing last-owner revoke/inactivate protections remain fail-closed.
+
+### Former owner
+
+The former owner remains an organisation member. Unrelated grants, including
+site-scoped CI/admin access, are unchanged. Transfer does **not** invent a
+replacement role. If they still need site administration, assign it through
+People.
+
+### Audit
+
+Successful transfers append `organisation.ownership_transferred` with
+organisation, source membership, target membership, grant ids, timestamp, and
+`succeeded`. Failed attempts follow the existing grant/revoke pattern: raise and
+roll back without a noisy denied event that could leak cross-tenant membership
+data. Metadata does not store secrets or tokens.
+
+### Failure and recovery
+
+Because the operation is atomic:
+
+- If the database call fails, ownership is unchanged and the source remains
+  owner. The UI shows a retryable error.
+- If the client disconnects after commit, reload shows the authoritative
+  owner. Do not attempt automatic rollback.
+- Hosted manual SQL is not part of the normal process.
+
+### Product UI
+
+Settings → Organisation → Rollout & Governance shows the current owner where
+`memberships.read` allows, and **Transfer ownership** only for the current
+owner. The dedicated flow is
+`/platform/settings/organisation/ownership`.
+
+This implements #219 acceptance criterion 10 (ownership can evolve from site
+pilot owner to corporate owner without tenant recreation). Parent #219 remains
+open until remaining criteria are complete.
+
+### LeanAI / billing / site effects
+
+Ownership transfer must not change subscription quantity, Stripe customer,
+sites, multi-site intent, published Maturity frameworks, operational records,
+or other members. LeanAI must not transfer ownership.
 
 ## LeanAI
 
