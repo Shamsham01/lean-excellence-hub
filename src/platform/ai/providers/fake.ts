@@ -1,5 +1,6 @@
 import { MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/maturity-framework-builder";
 import { fakeMaturityBuilderResponse } from "@/platform/ai/providers/fake-maturity-builder";
+import { fakeModuleSetupBuilderResponse } from "@/platform/ai/providers/fake-module-setup-builder";
 import type {
   AIProvider,
   CreateResponseInput,
@@ -29,6 +30,14 @@ export class FakeAIProvider implements AIProvider {
       MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME
     ) {
       return fakeMaturityBuilderResponse(lastUser);
+    }
+
+    const moduleSetupResponse = fakeModuleSetupBuilderResponse(
+      input.structuredOutputFormat?.name,
+      lastUser,
+    );
+    if (moduleSetupResponse) {
+      return moduleSetupResponse;
     }
 
     if (

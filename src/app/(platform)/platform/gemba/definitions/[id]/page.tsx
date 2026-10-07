@@ -225,6 +225,15 @@ export default async function GembaDefinitionPage({
           </Badge>
         ))}
       </div>
+      {draftVersion && !publishedVersion ? (
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="gemba-draft-boundary"
+        >
+          This is an editable draft. Review the sections and prompts, then
+          publish when it matches how you work.
+        </p>
+      ) : null}
 
       {activeWalks.length > 0 ? (
         <Card data-testid="gemba-definition-active-walks">

@@ -25,6 +25,10 @@ describe("logical model routing", () => {
     expect(selectCoachTaskModelClass("framework_builder")).toBe("standard");
   });
 
+  it("routes module setup builders to standard", () => {
+    expect(selectCoachTaskModelClass("setup_builder")).toBe("standard");
+  });
+
   it("reserves deep for complex reasoning", () => {
     expect(selectCoachTaskModelClass("complex_reasoning")).toBe("deep");
   });
