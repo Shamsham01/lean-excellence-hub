@@ -43,8 +43,8 @@ const LEAN_SEES = [
 
 /** Enter, hold, exit. Windows overlap so a beat crossfades instead of popping. */
 const LEAN_WINDOWS = [
-  { enter: 0, holdStart: 0.035, holdEnd: 0.12, exit: 0.17 },
-  { enter: 0.13, holdStart: 0.17, holdEnd: 0.27, exit: 0.32 },
+  { enter: 0, holdStart: 0.02, holdEnd: 0.145, exit: 0.185 },
+  { enter: 0.16, holdStart: 0.195, holdEnd: 0.27, exit: 0.32 },
   { enter: 0.28, holdStart: 0.32, holdEnd: 0.42, exit: 0.47 },
   { enter: 0.43, holdStart: 0.47, holdEnd: 0.57, exit: 0.62 },
   { enter: 0.58, holdStart: 0.62, holdEnd: 0.78, exit: 0.84 },
@@ -278,10 +278,13 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
     return;
   }
 
-  const count = Math.ceil(mapRange(progress, 0, 0.032) * LEAN_SEES.length);
+  const count = Math.min(
+    LEAN_SEES.length,
+    Math.ceil(mapRange(progress, 0, 0.018) * LEAN_SEES.length),
+  );
   const seen = LEAN_SEES.slice(0, count).join("\n");
   const characters = Math.round(
-    mapRange(progress, 0.58, 0.68) * LEAN_RECOMMENDATION.length,
+    mapRange(progress, 0.56, 0.62) * LEAN_RECOMMENDATION.length,
   );
   const typed = LEAN_RECOMMENDATION.slice(0, characters);
   const showReject = progress >= 0.64 && progress < 0.72;
@@ -299,8 +302,8 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
   reject.classList.toggle("is-struck", showReject && struck);
   recommend.dataset.typing =
     characters < LEAN_RECOMMENDATION.length &&
-    progress >= 0.58 &&
-    progress < 0.68
+    progress >= 0.56 &&
+    progress < 0.62
       ? "true"
       : "false";
 }
