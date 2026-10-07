@@ -1,17 +1,29 @@
-# RELEASE-SMOKE-01 — CookieWorks human-smoke protocol
+# RELEASE-SMOKE-01 — CookieWorks isolation / persona protocol
 
-Executable checklist for **CookieWorks Manufacturing** (Bodmin + Exeter) against current `main` (`ad6edce`, FIRST-CUSTOMER-READINESS-01).
+Secondary hosted checklist for **CookieWorks Manufacturing** (Bodmin + Exeter).
 
-This checklist records hosted evidence. It is **not** a gate that must finish before organisation-onboarding and Stripe sandbox work starts. A FAIL that matches a release-stopping condition below is a new P0/P1. A PASS/FAIL log by itself is not.
+The **primary** first-customer release test is a brand-new organisation:
 
-Companion files:
+[QA-NEW-ORG-001-runbook.md](./QA-NEW-ORG-001-runbook.md)
 
-- Register: `docs/qa/RELEASE-SMOKE-01-register.md`
-- Deploy / billing boundary: `docs/qa/RELEASE-SMOKE-01-go-live.md`
-- Personas: `docs/development/qa-tenant.md`
-- Isolation contract: `docs/qa/cookieworks-two-site-smoke-runbook.md`
+Use this CookieWorks pack to record **hostile two-site isolation** and
+persona evidence on a published SHA. It does **not** replace the fresh-org
+journey and it does **not** need to finish before Sandbox onboarding work.
 
-**Do not** run a hosted destructive reset, apply or replay migrations, send invitation email, publish Netlify, or change Auth/billing while executing this pack from an implementation or docs PR.
+Canonical current-state: [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md).
+Cutover: [FIRST-CUSTOMER-CUTOVER-CHECKLIST.md](./FIRST-CUSTOMER-CUTOVER-CHECKLIST.md).
+Historical finding register: [RELEASE-SMOKE-01-register.md](./RELEASE-SMOKE-01-register.md)
+(stale SHA/migration rows — do not treat that file as the current gate).
+
+Personas: `docs/development/qa-tenant.md`.
+Isolation contract: `docs/qa/cookieworks-two-site-smoke-runbook.md`.
+
+**Do not** run a hosted destructive reset, apply or replay migrations, send
+invitation email, publish Netlify, or change Auth/billing while executing
+this pack from an implementation or docs PR.
+
+Current `main` at the FIRST-CUSTOMER-READINESS-02 audit:
+`a183ff6b5257636b01110693fd046788147ea882`.
 
 ---
 
@@ -19,11 +31,12 @@ Companion files:
 
 | Check | Pass if |
 | --- | --- |
-| Hosted app | Sign-in at the intended URL responds. Record the SHA if the deployment UI shows it. Public HTML does not expose the git SHA. |
-| Hosted DB | Latest applied migration is `20260928210635_maturity_assessor_review_and_action_lineage`. `20260928210634`, `20260925160321`, and `20260925122602` are already applied. **Do not replay. Nothing later is outstanding.** |
+| Hosted app | Sign-in at the intended URL responds. Record the SHA if the deployment UI shows it. Public HTML does not expose the git SHA |
+| Hosted DB | Latest applied migration is `20261007143820_organisation_ownership_transfer` (or later only if that later file is on the published SHA). **Do not replay.** Coach-04 `20260930103004` and ownership `20261007143820` are already in source history as applied |
 | CookieWorks foundation | 1 org, 2 site roots, 16 units, 8 personas, 8 role grants, 3 job functions, 4 placements |
 | Module data | Foundation-only **or** a recorded existing-smoke dataset (do not wipe without approval) |
 | Credentials | Hosted disposable passwords — **not** the local `docs/development/qa-tenant.md` values unless this is local |
+| Billing on CookieWorks | CookieWorks is a legacy unmetered QA tenant. Do not run Stripe Checkout against it. Do not reset it to “test billing” |
 
 Local compiled-production (safe):
 
@@ -42,17 +55,18 @@ export CREDENTIAL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcde
 npx playwright test tests/e2e/cookieworks-ci-loop.spec.ts tests/e2e/cookieworks-two-site-hostile.spec.ts --workers=1
 ```
 
-Each CookieWorks spec performs its own `qa:cookie:reset` (CW-RESET-001 / #155, merged in #153).
+Each CookieWorks spec performs its own `qa:cookie:reset` (CW-RESET-001 / #155).
 
 ---
 
 ## 1. Persona and permissions matrix
 
-Scope: **Org** = whole CookieWorks; **Bodmin Ops** = Operations subtree; **Exeter Ops** = Exeter Operations subtree; **Self** = own membership.
+Scope: **Org** = whole CookieWorks; **Bodmin Ops** = Operations subtree;
+**Exeter Ops** = Exeter Operations subtree; **Self** = own membership.
 
 | Persona | Email key | Scope | Typical smoke jobs | Must not |
 | --- | --- | --- | --- | --- |
-| **Admin** | `admin` | Org owner | Structure, People, site switcher, Auth/settings, Lean AI settings | None within tenant; still cannot see other tenants |
+| **Admin** | `admin` | Org owner | Structure, People, site switcher, Auth/settings, Lean AI settings, ownership transfer UI | None within tenant; still cannot see other tenants |
 | **CI Manager** | `ciManager` | Org | Maturity/5S/Gemba authoring, Suggestions programme/category setup, projects, benefits (CI), training/skills catalog, PS create/facilitate, Lean AI use | Not site-locked; still cannot cross tenant boundaries |
 | **Bodmin PM** | `productionManager` | Bodmin Ops | 5S/Gemba execute, schedules, suggestion review, actions, projects, PS | Enumerate/manage Exeter units |
 | **Exeter PM** | `exeterProductionManager` | Exeter Ops | Same as Bodmin PM on Exeter | Enumerate/manage Bodmin operational units |
@@ -61,9 +75,12 @@ Scope: **Org** = whole CookieWorks; **Bodmin Ops** = Operations subtree; **Exete
 | **Assessor** | `assessor` | Org | Formal maturity review (Lead Assessor) | Configure frameworks, finance, CI project manage |
 | **Finance** | `finance` | Org | Benefits finance validation / realisation | Unrelated admin modules |
 
-CI Manager **has** `suggestions.programmes.manage` (CW-CI-MGR-001 / #156). Operator and Finance do not.
+CI Manager **has** `suggestions.programmes.manage` (CW-CI-MGR-001 / #156).
+Operator and Finance do not.
 
-Active-site switcher: **Admin** and **CI Manager** use it to disambiguate duplicate unit names (Packing × 2). Security remains RLS/RPC. The switcher is UX context only.
+Active-site switcher: **Admin** and **CI Manager** use it to disambiguate
+duplicate unit names (Packing × 2). Security remains RLS/RPC. The switcher
+is UX context only.
 
 ---
 
@@ -99,7 +116,9 @@ Stop and file a **new** P0/P1 issue if any of these occur on hosted CookieWorks:
 8. Authentication lockout / session corruption affecting multiple personas.
 9. Hosted app 5xx so the pack cannot run.
 
-P2/P3 (slow pages, information architecture, mobile form overflow, dark-mode select contrast): **log and continue**.
+P2/P3 (slow pages, information architecture, mobile form overflow, dark-mode
+select contrast): **log and continue**. PERF-001 code is already merged;
+hosted slowness is P2 evidence, not a reason to reopen optimisation.
 
 Do not file a P0/P1 because an older GitHub issue still says OPEN.
 
@@ -108,6 +127,9 @@ Do not file a P0/P1 because an older GitHub issue still says OPEN.
 ## 3. Ordered hosted checklist
 
 Run in this order. Do not skip isolation because demo E2E passed.
+
+Billing, founder checkout, site-quantity increase, and ownership transfer
+on a **new** organisation belong in QA-NEW-ORG-001, not here.
 
 ### A. Organisation / People / isolation
 
@@ -190,7 +212,7 @@ Validate the current administration and normal-user journeys. Do not expand scop
 | TRN-01 | CI Manager / Admin | Catalogue: draft course → publish | Appears in the catalogue. Operator cannot manage courses |
 | TRN-02 | CI Manager | Curricula: requirements with named course / job function / unit → publish | Published version immutable; successor if a change is required |
 | TRN-03 | Operator | Own training view | Sees assigned/published training. Cannot open catalogue admin |
-| SKL-01 | CI Manager | Skill + scale; PM records an operator assessment | Matrix updates and survives reload |
+| SKL-01 | CI Manager | Skill + scale; PM records an operator assessment | Matrix updates and survives reload. If CookieWorks already has skills, assess; do not fail the pack because empty-org skill **authoring** UI is PARTIAL |
 | REC-01 | Bodmin PM or Team Leader if permitted | Award operator | Recipient picker shows a name. Operator sees the award and cannot award others |
 
 ### G. Lean AI
@@ -201,8 +223,11 @@ Validate current functionality only. Do not expand Lean AI scope.
 | --- | --- | --- | --- |
 | AI-01 | Admin | Settings: usage summary is human-readable (runs, tokens, tool calls). Empty state if none | Operator cannot open AI settings |
 | AI-02 | CI Manager | On one Problem Solving case, use Lean AI in **that case’s** context | Proposals stay on the case. No other-tenant or other-site leakage |
+| AI-03 | CI Manager or Admin | Contextual Coach on a platform page: deterministic card renders; **Explain** is explicit | No model call on render. Fallback if AI disabled |
 
-Scheduling (recurring 5S/Gemba occurrence, Exeter unit absent from the Bodmin picker) may be logged if time remains. It is not required to call this checklist complete.
+Scheduling (recurring 5S/Gemba occurrence, Exeter unit absent from the Bodmin picker) may be logged if time remains. It is not required to call this isolation checklist complete.
+
+PERF-PPL / PERF-SUG (optional P2): note whether People/settings and Suggestions feel acceptable on hosted. Do not start optimisation from a feeling.
 
 ---
 
@@ -212,12 +237,13 @@ Scheduling (recurring 5S/Gemba occurrence, Exeter unit absent from the Bodmin pi
 | --- | --- | --- |
 | Two-site structure isolation | Full Regression `cookieworks` shard: `cookieworks-ci-loop.spec.ts`, `cookieworks-two-site-hostile.spec.ts` | ISO-04 reparent on hosted |
 | 5S/Gemba execution site context | `cookieworks-execution-site-context.spec.ts` (platform shard) | Hosted image evidence on a completed 5S audit |
-| Gemba prompt completion | `gemba-journeys.spec.ts` (platform shard): observation, image, canonical URL without `?prompt=`, reload | Hosted CookieWorks persona |
+| Gemba prompt completion | `gemba-journeys.spec.ts` | Hosted CookieWorks persona |
 | Suggestion → action → project loop | `cookieworks-ci-loop.spec.ts`; improvement shard lineage specs | Hosted evidence upload, charter, finance validation |
-| Maturity authoring, draft Review, formal assessor loop | `maturity-journeys.spec.ts` and `maturity-authoring-step-reload.spec.ts` (platform shard) | Hosted CookieWorks official result on the successor draft |
-| People settings reload | `people-settings-reload.spec.ts` (workforce shard) | Hosted 5× refresh as Admin |
-| Training catalogue and curriculum | `training-course-authoring.spec.ts`, `training-curriculum-authoring.spec.ts` (workforce shard) | One hosted admin pass (TRN-01, TRN-02) |
-| Lean AI closure | `milestone12-closure.spec.ts` (`ai-closure` shard) | AI-01 / AI-02 on hosted if AI is entitled |
+| Maturity authoring, draft Review, formal assessor loop | `maturity-journeys.spec.ts` | Hosted CookieWorks official result on the successor draft |
+| People settings reload | `people-settings-reload.spec.ts` | Hosted 5× refresh as Admin |
+| Training catalogue and curriculum | `training-course-authoring.spec.ts`, `training-curriculum-authoring.spec.ts` | One hosted admin pass (TRN-01, TRN-02) |
+| Lean AI Coach / PS | `leanai-coach.spec.ts`, `leanai-coach-explain.spec.ts`, `milestone12-closure.spec.ts` | AI-01..03 on hosted if AI is entitled |
+| Founding / billing / rollout / ownership | `billing-founding-onboarding.spec.ts`, `first-customer-rollout.spec.ts`, `organisation-ownership-transfer.spec.ts` | **QA-NEW-ORG-001 on hosted Sandbox** — not this CookieWorks pack |
 | Demo module happy paths | platform / workforce / improvement / ai-closure shards | Do **not** treat an Apex demo PASS as a CookieWorks PASS |
 
-`cookieworks-maturity-smoke.spec.ts` remains a local MAT0 smoke and is outside the CI duration budget. The platform shard already covers the formal assessor and draft-Review paths, so no extra CookieWorks suite was added for this reconciliation.
+`cookieworks-maturity-smoke.spec.ts` remains a local MAT0 smoke and is outside the CI duration budget.

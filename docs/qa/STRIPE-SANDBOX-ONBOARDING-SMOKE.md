@@ -1,25 +1,38 @@
 # Stripe Sandbox onboarding smoke — configuration
 
-Planning document for **BILLING-001 / QA-NEW-ORG-001**. Automated agents and
-implementation PRs must not create Stripe live objects, apply hosted
-migrations, mutate CookieWorks, or write secrets into the repository.
+Planning document for the **hosted billing rehearsal** that QA-NEW-ORG-001
+needs. Automated agents and implementation PRs must not create Stripe live
+objects, apply hosted migrations, mutate CookieWorks, or write secrets into
+the repository.
 
-Companion: `docs/qa/QA-NEW-ORG-001-runbook.md`.
-
+Companion: [QA-NEW-ORG-001-runbook.md](./QA-NEW-ORG-001-runbook.md).
+Current-state: [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md).
 Product baseline: `docs/product/pricing-subscription-onboarding-v1.md`.
+
+Application billing (accounts, subscriptions, fake provider, Stripe
+provider, Checkout, webhooks, portal, period-end cancel, grace, site
+quantity increase) is **implemented on `main`**. This file is the operator
+configuration for proving that path in Stripe **Sandbox**.
+
+CookieWorks stays the historical regression tenant. Do not wipe it.
+
+Use **Sandbox only**. `sk_live` is rejected by the application. Live mode is
+a later LIVE-CUTOVER gate, not this runbook.
 
 ---
 
 ## Purpose
 
 Configure a dedicated **Stripe general Sandbox** so an operator can run a
-brand-new Professional organisation through Checkout, webhooks, Customer
-Portal, cancellation, payment failure, and reactivation.
+brand-new Professional organisation through:
 
-CookieWorks stays the historical regression tenant. Do not wipe it.
-
-Use **Sandbox only**. `sk_live` is rejected by the application. Live mode is a
-later LIVE-CUTOVER gate, not this runbook.
+- Checkout
+- webhook-authoritative activation
+- Customer Portal
+- site-quantity increase (1 → 2)
+- cancel at period end
+- payment failure / recovery
+- reactivation
 
 ---
 
@@ -31,10 +44,11 @@ These rows require a maintainer. This PR does not perform them.
 | --- | --- | --- |
 | Create/reuse a dedicated LEH Stripe Sandbox | Before first Sandbox smoke | Mix Sandbox IDs with live IDs |
 | Create Products/Prices listed below | Before `BILLING_PROVIDER=stripe` | Put prices in git |
-| Create webhook endpoint `POST /api/billing/stripe/webhook` | After the billing slices are deployed to the target app | Use a live endpoint |
+| Create webhook endpoint `POST /api/billing/stripe/webhook` | After the billing application is on the target SHA | Use a live endpoint for this rehearsal |
 | Put server-only env vars on the target runtime (Netlify / local) | After webhook signing secret exists | Prefix any Stripe secret with `NEXT_PUBLIC_` |
-| Apply hosted Supabase migrations for billing | Explicit approval, after CORE+LIFECYCLE+ONBOARD merge | Replay already-applied versions |
+| Confirm hosted Supabase migrations through `20261007143820` | Explicit approval | Replay already-applied versions, including ownership transfer |
 | Run QA-NEW-ORG-001 against hosted | Explicit approval | Reset CookieWorks to do it |
+| Enable Customer Portal cancel-at-period-end | Before cancellation steps | Immediate-cancel as the only option |
 
 ---
 
@@ -55,6 +69,8 @@ Annual prices are **10% off** the monthly site rate (`monthly × 12 × 0.9`).
 Founder Pilot must not appear on the public plan picker. Leave founder price
 IDs empty until an operator is ready to attach that private offer.
 
+QA-NEW-ORG-001 requires **Professional monthly** at minimum.
+
 Checkout `line_items` use `price` + `quantity` (site quantity). Metadata on
 both the Checkout Session and the Subscription must include:
 
@@ -64,6 +80,10 @@ both the Checkout Session and the Subscription must include:
 
 The application already writes those fields.
 
+Quantity increases (MULTISITE-EXPAND-01B) update the existing subscription
+quantity. They must not create a second subscription for the same
+organisation.
+
 ---
 
 ## 2. Environment variables (server-only)
@@ -72,7 +92,7 @@ Never commit real values. Never expose them through `NEXT_PUBLIC_*`.
 
 | Name | Sandbox smoke | Notes |
 | --- | --- | --- |
-| `BILLING_PROVIDER` | `stripe` | Must be set explicitly. Local/CI must set `fake`. Missing provider or Stripe secrets never fall back to fake; the app fails closed and reports billing unavailable. |
+| `BILLING_PROVIDER` | `stripe` | Must be set explicitly. Local/CI must set `fake`. Missing provider or Stripe secrets never fall back to fake; the app fails closed and reports billing unavailable |
 | `STRIPE_SECRET_KEY` | `sk_test_…` (Sandbox) | `sk_live` is rejected |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | Required when provider is `stripe` |
 | `STRIPE_PRICE_PROFESSIONAL_MONTHLY` | `price_…` | Required for QA-NEW-ORG-001 |
@@ -103,6 +123,9 @@ Subscribe at least:
 - `customer.subscription.deleted`
 - `invoice.paid`
 - `invoice.payment_failed`
+
+`customer.subscription.updated` is required for quantity increase and
+cancel-at-period-end.
 
 Other event types are accepted and ignored after idempotent claim.
 
@@ -142,6 +165,7 @@ Typical exercises:
 | Payment failure / past_due | A card Stripe documents as failing recurring charge |
 | Recovery | Update payment method in Customer Portal, then pay the invoice |
 | Period end without waiting | Billing Test Clocks — https://docs.stripe.com/billing/testing/test-clocks |
+| Quantity increase | Application **Add site capacity** then confirm `customer.subscription.updated` |
 
 Advance a Test Clock to:
 
@@ -164,6 +188,13 @@ further Stripe event. LEH must still deny operational access and route to
 Cancellation v1 is **period-end**, then suspend, retain data, allow
 reactivation. There is **no automatic tenant deletion**. After 90 days the
 org is eligible for operator-managed closure only.
+
+Site quantity:
+
+| Purchased quantity | Active sites allowed |
+| ---: | ---: |
+| 1 | First site only. Second site rejected until quantity increases |
+| 2 | First + second site under the same organisation |
 
 ---
 

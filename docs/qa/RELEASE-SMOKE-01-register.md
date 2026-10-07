@@ -1,7 +1,14 @@
 # RELEASE-SMOKE-01 — CookieWorks master register (reconciled)
 
+> **Stale as a current gate (7 October 2026).** SHA, hosted migration tip,
+> and “billing not implemented” rows below are FIRST-CUSTOMER-READINESS-01
+> history (29 September). For what is true on `main` today, use
+> [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md). Keep this file as
+> the CookieWorks finding archive for #67. Do not copy its migration table
+> into a deploy.
+
 Canonical GitHub tracker: **[#67](https://github.com/Shamsham01/lean-excellence-hub/issues/67)**.
-This file is the repository snapshot for **FIRST-CUSTOMER-READINESS-01**, reconciled against current `main` on 2026-09-29.
+This file is the repository snapshot for **FIRST-CUSTOMER-READINESS-01**, reconciled against then-current `main` on 2026-09-29.
 
 Companion files:
 
