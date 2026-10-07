@@ -2,13 +2,17 @@
 
 Manual acceptance tracker for the CookieWorks Manufacturing (`cookieworks-manufacturing`) QA tenant.
 
-**Current first-customer protocol:** `docs/qa/RELEASE-SMOKE-01-protocol.md`. Historical module tables below remain available as an expanded worksheet; do not treat empty result columns as open product defects.
+**Primary first-customer protocol:** `docs/qa/QA-NEW-ORG-001-runbook.md`.
+CookieWorks isolation: `docs/qa/RELEASE-SMOKE-01-protocol.md`.
+Current-state: `docs/qa/PROJECT-CURRENT-STATE.md`.
+
+Historical module tables below remain an expanded CookieWorks worksheet; do not treat empty result columns as open product defects.
 
 Clean-organisation billing smoke (do not wipe CookieWorks):
 
 - Sandbox configuration: `docs/qa/STRIPE-SANDBOX-ONBOARDING-SMOKE.md`
 - Runbook: `docs/qa/QA-NEW-ORG-001-runbook.md`
-- Operator report: `docs/qa/BILLING-001-operator-report.md`
+- Cutover: `docs/qa/FIRST-CUSTOMER-CUTOVER-CHECKLIST.md`
 
 ## Preconditions
 

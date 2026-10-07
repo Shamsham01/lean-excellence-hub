@@ -1,10 +1,10 @@
 # BILLING-001 — Architecture and operator report
 
-> **Current-state note (30 September 2026):** The report below was written
-> before billing was merged. It is retained as an implementation/decision
-> record, **not** as the current release status. Use
-> [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md) and the live migration
-> ledger for deployment decisions.
+> **Current-state note (7 October 2026):** Billing application foundation is
+> merged. This file is an implementation/decision record, **not** the current
+> release status. Use [PROJECT-CURRENT-STATE.md](./PROJECT-CURRENT-STATE.md),
+> [QA-NEW-ORG-001-runbook.md](./QA-NEW-ORG-001-runbook.md) and
+> [FIRST-CUSTOMER-CUTOVER-CHECKLIST.md](./FIRST-CUSTOMER-CUTOVER-CHECKLIST.md).
 
 **Verified after the original report was written:**
 

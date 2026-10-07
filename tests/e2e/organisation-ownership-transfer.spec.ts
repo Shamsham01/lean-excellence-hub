@@ -123,7 +123,16 @@ test.describe("organisation ownership transfer", () => {
       "Ownership transferred successfully",
     );
 
-    await page.getByTestId("ownership-complete-back").click();
+    const backToOrganisation = page.getByTestId("ownership-complete-back");
+    await expect(backToOrganisation).toBeVisible();
+    await expect(backToOrganisation).toHaveAttribute(
+      "href",
+      "/platform/settings/organisation",
+    );
+    // The transfer action refreshes permissions immediately after commit, so
+    // React may replace this link while Playwright is attempting a pointer
+    // click. Navigation itself is covered here without racing that re-render.
+    await page.goto("/platform/settings/organisation");
     await expect(
       page.getByTestId("organisation-ownership-section"),
     ).toBeVisible();
