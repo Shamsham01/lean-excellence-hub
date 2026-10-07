@@ -43,7 +43,7 @@ const LEAN_SEES = [
 
 /** Enter, hold, exit. Windows overlap so a beat crossfades instead of popping. */
 const LEAN_WINDOWS = [
-  { enter: 0, holdStart: 0.035, holdEnd: 0.15, exit: 0.19 },
+  { enter: 0, holdStart: 0.035, holdEnd: 0.12, exit: 0.17 },
   { enter: 0.13, holdStart: 0.17, holdEnd: 0.27, exit: 0.32 },
   { enter: 0.28, holdStart: 0.32, holdEnd: 0.42, exit: 0.47 },
   { enter: 0.43, holdStart: 0.47, holdEnd: 0.57, exit: 0.62 },
