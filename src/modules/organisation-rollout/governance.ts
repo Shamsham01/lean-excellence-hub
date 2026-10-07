@@ -42,7 +42,12 @@ export type OrganisationGovernanceSnapshot = {
   canManageBilling: boolean;
   canDelegateRoles: boolean;
   canInvite: boolean;
-  ownerTransferAvailable: false;
+  ownerTransferAvailable: boolean;
+  owners: Array<{
+    membershipId: string;
+    displayName: string;
+    email: string | null;
+  }> | null;
 };
 
 export type GovernanceUnit = {
@@ -173,6 +178,12 @@ export function buildOrganisationGovernanceSnapshot(input: {
   canManageBilling: boolean;
   canDelegateRoles: boolean;
   canInvite: boolean;
+  ownerTransferAvailable?: boolean;
+  owners?: Array<{
+    membershipId: string;
+    displayName: string;
+    email: string | null;
+  }> | null;
 }): OrganisationGovernanceSnapshot {
   const sites = buildSiteGovernanceRows({
     units: input.units,
@@ -197,6 +208,7 @@ export function buildOrganisationGovernanceSnapshot(input: {
     canManageBilling: input.canManageBilling,
     canDelegateRoles: input.canDelegateRoles,
     canInvite: input.canInvite,
-    ownerTransferAvailable: false,
+    ownerTransferAvailable: input.ownerTransferAvailable === true,
+    owners: input.owners ?? null,
   };
 }

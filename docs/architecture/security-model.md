@@ -58,6 +58,9 @@ and [ADR-0010](../adr/ADR-0010-provider-neutral-authentication-boundary.md).
   an exact role version and self, unit-subtree, or organisation scope.
 - Administration requires explicit permission and containment: no actor may
   delegate permissions or scope they do not currently possess.
+- Organisation ownership is an organisation-scoped `organisation-owner` grant.
+  Transfer is a single atomic RPC (`transfer_organisation_ownership`) authorised
+  only by the current effective owner. Last-owner protection stays fail-closed.
 - Every exposed tenant table enables RLS immediately with explicit default-deny `SELECT`, `INSERT`, `UPDATE`, and `DELETE` policies. Updates require the row to be selectable and the new row to satisfy checks.
 - Narrow authorisation helpers live in an unexposed private schema. Any security-definer helper sets a safe `search_path`, is non-user-writable, and never lives in an exposed schema.
 - Exposed views use `security_invoker`.

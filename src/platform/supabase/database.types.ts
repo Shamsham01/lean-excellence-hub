@@ -13478,6 +13478,7 @@ export type Database = {
           text_body: string
         }[]
       }
+      get_organisation_ownership: { Args: never; Returns: Json }
       get_organisation_setup_readiness: { Args: never; Returns: Json }
       get_people_directory: {
         Args: {
@@ -13805,6 +13806,10 @@ export type Database = {
           organisation_status: string
           selected: boolean
         }[]
+      }
+      list_organisation_ownership_transfer_targets: {
+        Args: never
+        Returns: Json
       }
       lookup_open_checkout_session: {
         Args: { target_session_id: string }
@@ -14529,6 +14534,10 @@ export type Database = {
       switch_organisation: {
         Args: { target_organisation_id: string }
         Returns: boolean
+      }
+      transfer_organisation_ownership: {
+        Args: { target_membership_id: string }
+        Returns: Json
       }
       transition_action_status: {
         Args: {

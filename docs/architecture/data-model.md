@@ -39,7 +39,10 @@ Approved Milestone 3 foundations:
 - `role_versions` and `role_permissions`: immutable published permission
   snapshots with explicit draft, published, and retired lifecycle.
 - `access_grants`: revocable membership grants bound to an exact role version
-  and `self`, `unit_subtree`, or `organisation` scope.
+  and `self`, `unit_subtree`, or `organisation` scope. Organisation ownership is
+  the organisation-scoped grant of the published `organisation-owner` role.
+  Transfer is `public.transfer_organisation_ownership` — see
+  [shared standards vs site-local execution](./shared-standards-and-site-execution.md).
 - private session organisation contexts: one selected organisation and
   membership per matching Supabase Auth session and user.
 - private workforce accounts and aliases: at most one global account and

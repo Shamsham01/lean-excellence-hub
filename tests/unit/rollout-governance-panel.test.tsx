@@ -38,6 +38,13 @@ function snapshot(
     canDelegateRoles: true,
     canInvite: true,
     ownerTransferAvailable: false,
+    owners: [
+      {
+        membershipId: "owner-1",
+        displayName: "Plymouth CI Manager",
+        email: "plymouth@example.test",
+      },
+    ],
     ...overrides,
   };
 }
@@ -60,6 +67,23 @@ describe("RolloutGovernancePanel", () => {
     expect(
       screen.queryByText(/tenant|RPC|scope_unit_id/i),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("organisation-ownership-section"),
+    ).toHaveTextContent("Plymouth CI Manager");
+    expect(
+      screen.queryByTestId("transfer-organisation-ownership"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers transfer ownership only to the current organisation owner", () => {
+    render(
+      <RolloutGovernancePanel
+        snapshot={snapshot({ ownerTransferAvailable: true })}
+      />,
+    );
+    expect(
+      screen.getByTestId("transfer-organisation-ownership"),
+    ).toBeInTheDocument();
   });
 
   it("explains missing hierarchy permission instead of offering create", () => {

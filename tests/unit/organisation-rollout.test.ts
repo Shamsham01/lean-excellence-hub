@@ -106,6 +106,8 @@ describe("rollout governance", () => {
       canManageBilling: true,
       canDelegateRoles: true,
       canInvite: true,
+      ownerTransferAvailable: false,
+      owners: null,
     });
 
     expect(snapshot.activeSiteCount).toBe(1);
@@ -118,6 +120,34 @@ describe("rollout governance", () => {
     expect(snapshot.sites[1]?.consumesCapacity).toBe(false);
     expect(snapshot.sites[1]?.readiness).toBe("ready_to_configure");
     expect(snapshot.ownerTransferAvailable).toBe(false);
+    expect(snapshot.owners).toBeNull();
+  });
+
+  it("records owner-transfer availability from current owner authority", () => {
+    const snapshot = buildOrganisationGovernanceSnapshot({
+      organisationName: "Acme Foods Group",
+      organisationCode: "acme",
+      multiSiteIntent: "yes",
+      units: [],
+      grants: [],
+      childCountBySiteId: new Map(),
+      assessmentCountBySiteId: new Map(),
+      siteCapacity: null,
+      canManageHierarchy: true,
+      canManageBilling: true,
+      canDelegateRoles: true,
+      canInvite: true,
+      ownerTransferAvailable: true,
+      owners: [
+        {
+          membershipId: "plymouth",
+          displayName: "Plymouth CI Manager",
+          email: "plymouth@example.test",
+        },
+      ],
+    });
+    expect(snapshot.ownerTransferAvailable).toBe(true);
+    expect(snapshot.owners?.[0]?.displayName).toBe("Plymouth CI Manager");
   });
 
   it("does not invent local leadership when grants cannot be assessed", () => {

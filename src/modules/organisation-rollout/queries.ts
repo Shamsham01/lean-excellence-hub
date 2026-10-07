@@ -10,6 +10,7 @@ import {
   type OrganisationGovernanceSnapshot,
 } from "@/modules/organisation-rollout/governance";
 import { isSiteUnitType } from "@/modules/organisation/site-semantics";
+import { loadOrganisationOwnership } from "@/modules/organisation-ownership/queries";
 import {
   currentMemberCanDelegateRoles,
   currentMemberHasOrganisationScopedPermission,
@@ -61,6 +62,7 @@ export async function loadOrganisationGovernanceSnapshot(): Promise<Organisation
     canManageBilling,
     canDelegateRoles,
     canInvite,
+    ownership,
   ] = await Promise.all([
     supabase
       .from("organisation_units")
@@ -74,6 +76,7 @@ export async function loadOrganisationGovernanceSnapshot(): Promise<Organisation
     currentMemberHasPermission("billing.manage"),
     currentMemberCanDelegateRoles(),
     currentMemberHasPermission("invitations.manage"),
+    loadOrganisationOwnership(),
   ]);
 
   const units: GovernanceUnit[] = (unitsResult.data ?? []).map((unit) => ({
@@ -147,6 +150,8 @@ export async function loadOrganisationGovernanceSnapshot(): Promise<Organisation
     canDelegateRoles,
     canInvite:
       canInvite && (await currentMemberHasPermission("roles.delegate")),
+    ownerTransferAvailable: ownership?.canTransfer === true,
+    owners: ownership?.canViewOwners ? ownership.owners : null,
   });
 }
 
