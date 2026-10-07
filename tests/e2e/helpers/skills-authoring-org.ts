@@ -126,9 +126,10 @@ export async function ensureSkillsAuthoringOrganisation(): Promise<SkillsAuthori
   }
 
   const membershipId = (
-    organisations as
-      | Array<{ organisation_id: string; membership_id: string }>
-      | null
+    organisations as Array<{
+      organisation_id: string;
+      membership_id: string;
+    }> | null
   )?.find(
     (organisation) => organisation.organisation_id === organisationId,
   )?.membership_id;
@@ -185,8 +186,9 @@ export async function ensureSkillsAuthoringOrganisation(): Promise<SkillsAuthori
   const people = (
     directory as { people?: Array<{ display_name?: string | null }> } | null
   )?.people;
-  const resolvedName = people?.find((person) => person.display_name)
-    ?.display_name;
+  const resolvedName = people?.find(
+    (person) => person.display_name,
+  )?.display_name;
 
   return {
     email: skillsAuthoringUser.email,
