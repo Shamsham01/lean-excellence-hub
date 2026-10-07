@@ -1,7 +1,7 @@
 -- Skills authoring stays on the existing private RPCs.
 -- Published and archived versions cannot gain levels or requirements.
 -- Publish rejects an incomplete scale or skills standard.
--- Hosted Supabase is not modified by this migration file until it is applied there.
+-- Hosted Supabase applied this migration as ledger version 20261007220929; filename reconciled to preserve source/hosted migration parity.
 
 create or replace function private.assert_skill_requirement_targets(
   target_organisation_id uuid,
