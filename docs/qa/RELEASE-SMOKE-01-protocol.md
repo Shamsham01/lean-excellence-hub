@@ -212,7 +212,7 @@ Validate the current administration and normal-user journeys. Do not expand scop
 | TRN-01 | CI Manager / Admin | Catalogue: draft course → publish | Appears in the catalogue. Operator cannot manage courses |
 | TRN-02 | CI Manager | Curricula: requirements with named course / job function / unit → publish | Published version immutable; successor if a change is required |
 | TRN-03 | Operator | Own training view | Sees assigned/published training. Cannot open catalogue admin |
-| SKL-01 | CI Manager | Skill + scale; PM records an operator assessment | Matrix updates and survives reload. If CookieWorks already has skills, assess; do not fail the pack because empty-org skill **authoring** UI is PARTIAL |
+| SKL-01 | CI Manager | Skill + scale; PM records an operator assessment | Matrix updates and survives reload. CookieWorks may already have a framework — assess the existing one. A brand-new organisation authors the framework in Skills (QA-NEW-ORG-001 step 20) |
 | REC-01 | Bodmin PM or Team Leader if permitted | Award operator | Recipient picker shows a name. Operator sees the award and cannot award others |
 
 ### G. Lean AI

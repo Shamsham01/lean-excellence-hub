@@ -94,7 +94,7 @@ titles.
 | Projects | **IMPLEMENTED** | Charter lifecycle, methodologies, site scope |
 | Benefits | **IMPLEMENTED** | Forecast/realisation/validation queue |
 | Training | **IMPLEMENTED** | Catalogue, curriculum, sessions, matrix |
-| Skills | **PARTIAL** | Catalogue/matrix/assessment exist; **no in-app `create_skill` authoring UI**. Empty-org smoke may record PRODUCT GAP. Not a first-customer P0/P1 |
+| Skills | **IMPLEMENTED** | Empty organisation can publish a proficiency scale, create skills, publish a skills standard against existing job functions, and record a validated assessment that the matrix keeps. Draft levels and requirements are append-only; published versions are read-only until a later versioning RPC exists. Matrix uses the latest published skills standard |
 | Recognition | **IMPLEMENTED** | Types + award flow |
 | Scheduling | **IMPLEMENTED** | Recurrence + `.ics` download |
 | LeanAI contextual Coach | **IMPLEMENTED** | Deterministic Coach, explicit Explain, economy/standard/deep routing, `store:false`, usage ledger |
@@ -192,7 +192,7 @@ Headline:
 | #235 LEH Lite | P3 / product | Keep open as backlog. Do not implement now |
 | Domain-based “existing organisation” onboarding hint (#219 AC11) | P3 / privacy-sensitive | **#264** `ONBOARD-SAFE-ORG-HINT-01`. Then close #219. Not required for first customer. No domain disclosure |
 | Cross-module Manual / LeanAI / Quick Start shell | P3 | **#267** `LEANAI-MODULE-SETUP-01`. Maturity already has three modes |
-| Skills catalogue authoring UI | P3 | **#266** `SKILLS-AUTHORING-01`. Consume/assess works; empty-org create UI is missing |
+| Skills catalogue authoring UI | Delivered | **#266** `SKILLS-AUTHORING-01`. Empty-org setup is in the application. Close when this change merges |
 | BILLING-02 Essentials vs Professional module gating | After smoke | Catalogue + resolver exist; first customer should be Professional or Founder Pilot |
 | Authenticated SECURITY DEFINER advisor volume | Deferred | Do **not** globally revoke. Invitation anon RPCs stay |
 | CookieWorks P2/P3 UX register items | P2/P3 | Historical #67 register. Not first-customer blockers |
@@ -393,7 +393,7 @@ the known deferred audit, not a mass-revoke candidate.
 | Projects | PASS | PASS | Fresh-org smoke | No |
 | Benefits | PASS | PASS | Fresh-org smoke | No |
 | Training | PASS | PASS | Fresh-org smoke | No |
-| Skills | PARTIAL | PASS for consume/assess | Empty-org authoring may GAP | No (P3) |
+| Skills | PASS | Empty-org authoring E2E + existing consume/assess | Fresh-org smoke should follow the updated step 20 | No |
 | Recognition | PASS | PASS | Fresh-org smoke | No |
 | LeanAI Coach | PASS | PASS | Hosted Explain with real or fake provider | No (code) |
 | Multi-site capacity / increase | PASS | PASS | Fresh-org steps 25–28 | No (code) |
