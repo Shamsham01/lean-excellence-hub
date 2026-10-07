@@ -1422,7 +1422,8 @@ html:has(> body > .marketing) {
 
 .marketing-matrix-scroll {
   overflow-x: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
 }
 
 .marketing-matrix {

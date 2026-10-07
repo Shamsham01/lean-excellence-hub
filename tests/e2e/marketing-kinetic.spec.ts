@@ -132,6 +132,41 @@ test("reduced motion lays the story out without pinned scenes", async ({
   expect(positions.every((position) => position === "relative")).toBeTruthy();
 });
 
+test("vertical wheel over the skills matrix continues the page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#training-skills");
+  await expect(page.locator(".kinetic-story")).toHaveAttribute(
+    "data-motion",
+    "on",
+  );
+
+  const matrix = page.locator("#training-skills .marketing-matrix-scroll");
+  await expect(matrix).toBeVisible();
+  const box = await matrix.boundingBox();
+
+  if (!box) {
+    throw new Error("Training skills matrix has no box");
+  }
+
+  await page.mouse.move(
+    box.x + box.width / 2,
+    box.y + Math.min(box.height / 2, 48),
+  );
+  const before = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 480);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(before + 40);
+
+  const mid = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 48);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(mid + 8);
+});
+
 test("keyboard reaches the hero actions", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
