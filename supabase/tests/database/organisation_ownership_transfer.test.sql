@@ -170,7 +170,7 @@ create temporary table transfer_ids (
   key text primary key,
   id uuid not null
 ) on commit drop;
-grant all on transfer_ids to authenticated, service_role;
+grant all on transfer_ids to anon, authenticated, service_role;
 
 insert into transfer_ids (key, id)
 values (
