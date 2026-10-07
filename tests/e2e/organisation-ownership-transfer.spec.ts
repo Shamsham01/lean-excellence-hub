@@ -65,6 +65,9 @@ test.describe("organisation ownership transfer", () => {
     await expect(
       page.getByTestId("transfer-organisation-ownership"),
     ).toBeVisible();
+    await page
+      .getByTestId("organisation-ownership-section")
+      .scrollIntoViewIfNeeded();
     await screenshotIfPossible(page, "01d-ownership-desktop.png");
 
     await page.setViewportSize({ width: 390, height: 844 });
@@ -156,6 +159,9 @@ test.describe("organisation ownership transfer", () => {
         .getByTestId("rollout-governance-panel")
         .getByText("Plymouth Factory", { exact: true }),
     ).toBeVisible();
+    await page
+      .getByTestId("organisation-ownership-section")
+      .scrollIntoViewIfNeeded();
     await screenshotIfPossible(page, "01d-ownership-new-owner.png");
   });
 });
