@@ -35,13 +35,21 @@ const SceneRefContext = createContext<RefObject<HTMLElement | null> | null>(
 const LEAN_SEES = [
   "Organisation",
   "Site",
-  "Role, where permitted",
+  "Role where permitted",
   "Current workflow",
   "Open record",
   "Relevant framework",
 ] as const;
 
-const LEAN_BEATS = [0.02, 0.16, 0.32, 0.48, 0.62, 0.8] as const;
+/** Enter, hold, exit. Windows overlap so a beat crossfades instead of popping. */
+const LEAN_WINDOWS = [
+  { enter: 0, holdStart: 0.02, holdEnd: 0.145, exit: 0.185 },
+  { enter: 0.16, holdStart: 0.195, holdEnd: 0.27, exit: 0.32 },
+  { enter: 0.28, holdStart: 0.32, holdEnd: 0.42, exit: 0.47 },
+  { enter: 0.43, holdStart: 0.47, holdEnd: 0.57, exit: 0.62 },
+  { enter: 0.58, holdStart: 0.62, holdEnd: 0.78, exit: 0.84 },
+  { enter: 0.8, holdStart: 0.84, holdEnd: 1, exit: 1.08 },
+] as const;
 
 const LEAN_RECOMMENDATION =
   "Link the Gemba finding to an owned action before the next walk.";
@@ -53,8 +61,6 @@ type SceneCache = {
   leanKey: string;
   focus: number;
   dirty: boolean;
-  stretchTo: number;
-  natural: number;
   tileFill: number;
   beat: number;
 };
@@ -109,35 +115,29 @@ function measurePlatform(el: HTMLElement, cache: SceneCache) {
   cache.dirty = false;
 }
 
-function measureHero(el: HTMLElement, cache: SceneCache) {
-  const word = el.querySelector<HTMLElement>("[data-hero-stretch]");
-  const inner = el.querySelector<HTMLElement>("[data-hero-stretch-inner]");
-  const operational = el.querySelector<HTMLElement>(
-    "[data-hero-line='operational']",
-  );
-  const mark = el.querySelector<HTMLElement>("[data-hero-mark]");
-
-  if (!word || !inner || !operational) {
-    return;
+function beatEnvelope(
+  progress: number,
+  enter: number,
+  holdStart: number,
+  holdEnd: number,
+  exit: number,
+) {
+  if (progress <= enter || progress >= exit) {
+    return 0;
   }
 
-  const previous = word.style.transform;
-  word.style.transform = "none";
-  const natural = inner.getBoundingClientRect().width;
-  const available =
-    operational.getBoundingClientRect().width -
-    (mark?.getBoundingClientRect().width ?? 0) -
-    8;
-  word.style.transform = previous;
-
-  cache.dirty = false;
-
-  if (natural < 1) {
-    return;
+  if (progress < holdStart) {
+    const span = holdStart - enter;
+    return span <= 0 ? 1 : easeOutCubic((progress - enter) / span);
   }
 
-  cache.natural = natural;
-  cache.stretchTo = Math.min(2.05, Math.max(1, available / natural));
+  if (progress <= holdEnd) {
+    return 1;
+  }
+
+  const span = exit - holdEnd;
+  const amount = span <= 0 ? 1 : (progress - holdEnd) / span;
+  return 1 - easeOutCubic(Math.min(1, amount * 1.8));
 }
 
 function measureFinale(el: HTMLElement, cache: SceneCache) {
@@ -231,24 +231,65 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
   const context = el.querySelector<HTMLElement>("[data-leanai-context]");
   const recommend = el.querySelector<HTMLElement>("[data-leanai-recommend]");
   const reject = el.querySelector<HTMLElement>("[data-leanai-reject]");
-  const authority = el.querySelector<HTMLElement>("[data-leanai-authority]");
 
-  if (!context || !recommend || !reject || !authority) {
+  const beats = LEAN_WINDOWS.map((window) =>
+    beatEnvelope(
+      progress,
+      window.enter,
+      window.holdStart,
+      window.holdEnd,
+      window.exit,
+    ),
+  );
+
+  beats.forEach((value, index) => {
+    el.style.setProperty(`--b${index}`, value.toFixed(4));
+  });
+
+  let beat = 0;
+  let best = -1;
+
+  beats.forEach((value, index) => {
+    if (value > best) {
+      best = value;
+      beat = index;
+    }
+  });
+
+  if (beat !== cache.beat) {
+    cache.beat = beat;
+    el.dataset.beat = String(beat);
+  }
+
+  const markVisible = (nodes: NodeListOf<HTMLElement>) => {
+    nodes.forEach((node, index) => {
+      const visible = (beats[index] ?? 0) >= 0.45 ? "true" : "false";
+
+      if (node.dataset.leanVisible !== visible) {
+        node.dataset.leanVisible = visible;
+      }
+    });
+  };
+
+  markVisible(el.querySelectorAll<HTMLElement>("[data-lean-title]"));
+  markVisible(el.querySelectorAll<HTMLElement>("[data-lean-panel]"));
+
+  if (!context || !recommend || !reject) {
     return;
   }
 
-  const count = Math.round(mapRange(progress, 0.04, 0.22) * LEAN_SEES.length);
+  const count = Math.min(
+    LEAN_SEES.length,
+    Math.ceil(mapRange(progress, 0, 0.018) * LEAN_SEES.length),
+  );
   const seen = LEAN_SEES.slice(0, count).join("\n");
   const characters = Math.round(
-    mapRange(progress, 0.62, 0.76) * LEAN_RECOMMENDATION.length,
+    mapRange(progress, 0.56, 0.62) * LEAN_RECOMMENDATION.length,
   );
   const typed = LEAN_RECOMMENDATION.slice(0, characters);
-  const showReject =
-    mapRange(progress, 0.74, 0.8) > 0 && mapRange(progress, 0.86, 0.94) < 1;
-  const struck = mapRange(progress, 0.78, 0.84) > 0.45;
-  const decision =
-    progress >= 0.86 ? "A person reviews.\nA person decides." : "";
-  const key = `${seen}|${typed}|${showReject}|${struck}|${decision}`;
+  const showReject = progress >= 0.64 && progress < 0.72;
+  const struck = progress >= 0.675 && progress < 0.72;
+  const key = `${seen}|${typed}|${showReject}|${struck}`;
 
   if (key === cache.leanKey) {
     return;
@@ -259,28 +300,12 @@ function applyLeanAi(el: HTMLElement, progress: number, cache: SceneCache) {
   recommend.textContent = typed;
   reject.textContent = showReject ? "Decide for you" : "";
   reject.classList.toggle("is-struck", showReject && struck);
-  authority.textContent = decision;
   recommend.dataset.typing =
     characters < LEAN_RECOMMENDATION.length &&
-    progress >= 0.62 &&
-    progress < 0.76
+    progress >= 0.56 &&
+    progress < 0.62
       ? "true"
       : "false";
-
-  let beat = 0;
-
-  for (let index = 0; index < LEAN_BEATS.length; index += 1) {
-    const threshold = LEAN_BEATS[index];
-
-    if (threshold !== undefined && progress >= threshold) {
-      beat = index;
-    }
-  }
-
-  if (beat !== cache.beat) {
-    cache.beat = beat;
-    el.dataset.beat = String(beat);
-  }
 }
 
 function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
@@ -289,22 +314,28 @@ function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
 
   switch (kind) {
     case "hero": {
-      if (cache.dirty) {
-        measureHero(el, cache);
-      }
-
-      const target = cache.stretchTo || 1;
-      const stretch = lerp(
-        Math.min(1, target),
-        target,
-        easeOutCubic(mapRange(progress, 0.24, 0.72)),
-      );
+      const reveal = easeOutCubic(mapRange(progress, 0.04, 0.4));
+      const bloomIn = easeOutCubic(mapRange(progress, 0.48, 0.58));
+      const bloomOut = easeInOutCubic(mapRange(progress, 0.64, 0.74));
       el.style.setProperty(
         "--lock",
-        easeOutCubic(mapRange(progress, 0, 0.42)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.02, 0.2)).toFixed(4),
       );
-      el.style.setProperty("--natural", cache.natural.toFixed(2));
-      el.style.setProperty("--stretch", stretch.toFixed(4));
+      el.style.setProperty(
+        "--lock-ex",
+        easeOutCubic(mapRange(progress, 0.12, 0.34)).toFixed(4),
+      );
+      el.style.setProperty("--reveal", reveal.toFixed(4));
+      el.style.setProperty(
+        "--line",
+        (reveal * (1 - easeOutCubic(mapRange(progress, 0.34, 0.46)))).toFixed(
+          4,
+        ),
+      );
+      el.style.setProperty(
+        "--bloom",
+        Math.min(bloomIn, 1 - bloomOut).toFixed(4),
+      );
       break;
     }
     case "fragments":
@@ -314,19 +345,19 @@ function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
       );
       el.style.setProperty(
         "--assemble",
-        easeOutCubic(mapRange(progress, 0.08, 0.46)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.28, 0.52)).toFixed(4),
       );
       el.style.setProperty(
-        "--grid",
-        easeInOutCubic(mapRange(progress, 0.42, 0.66)).toFixed(4),
+        "--organise",
+        easeInOutCubic(mapRange(progress, 0.72, 0.9)).toFixed(4),
       );
       el.style.setProperty(
         "--resolve",
-        easeInOutCubic(mapRange(progress, 0.64, 0.86)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.86, 0.98)).toFixed(4),
       );
       el.style.setProperty(
         "--bridge",
-        easeInOutCubic(mapRange(progress, 0.78, 0.98)).toFixed(4),
+        easeInOutCubic(mapRange(progress, 0.72, 0.92)).toFixed(4),
       );
       break;
     case "loop":
@@ -356,11 +387,11 @@ function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
         measureFinale(el, cache);
       }
 
-      const grow = easeInOutCubic(mapRange(progress, 0.38, 0.7));
+      const grow = easeInOutCubic(mapRange(progress, 0.36, 0.58));
       const filled = grow > 0.985;
       el.style.setProperty(
         "--assemble",
-        easeOutCubic(mapRange(progress, 0.02, 0.32)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.02, 0.16)).toFixed(4),
       );
       el.style.setProperty(
         "--tile-scale",
@@ -368,7 +399,7 @@ function applyScene(el: HTMLElement, progress: number, cache: SceneCache) {
       );
       el.style.setProperty(
         "--statement",
-        easeOutCubic(mapRange(progress, 0.74, 0.9)).toFixed(4),
+        easeOutCubic(mapRange(progress, 0.62, 0.78)).toFixed(4),
       );
       el.dataset.filled = filled ? "true" : "false";
       el.dataset.tone = filled ? "cobalt" : "paper";
@@ -553,8 +584,6 @@ export function KineticRoot({ children }: { children: ReactNode }) {
         leanKey: "",
         focus: -1,
         dirty: true,
-        stretchTo: 1,
-        natural: 0,
         tileFill: 1,
         beat: -1,
       };
