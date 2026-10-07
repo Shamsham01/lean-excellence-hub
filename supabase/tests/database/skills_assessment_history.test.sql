@@ -73,6 +73,12 @@ select ok(
   'add scale A level'
 );
 
+select public.add_skill_proficiency_level(
+  (select id from skills_history_ids where key = 'scale_a_version'),
+  2,
+  'Level 2'
+);
+
 select ok(
   public.publish_skill_proficiency_scale_version(
     (select id from skills_history_ids where key = 'scale_a_version')
@@ -96,6 +102,12 @@ select ok(
     'Level 1 B'
   ) is not null,
   'add scale B level'
+);
+
+select public.add_skill_proficiency_level(
+  (select id from skills_history_ids where key = 'scale_b_version'),
+  2,
+  'Level 2 B'
 );
 
 select ok(

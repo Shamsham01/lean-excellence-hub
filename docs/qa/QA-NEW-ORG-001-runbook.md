@@ -108,9 +108,10 @@ PANs, or webhook signing secrets.
 7. Password recovery lockout / token consumed on GET
 8. Hosted app 5xx so the pack cannot run
 
-P2/P3 (slow pages, mobile overflow, missing Skills authoring UI): **log and
-continue**. Skills catalogue create UI is a known PARTIAL — mark PRODUCT
-GAP if the empty org cannot author a skill.
+P2/P3 (slow pages, mobile overflow): **log and continue**. Skills authoring
+is implemented. If an empty organisation still cannot publish a scale, create
+a skill, publish a skills standard, and see that requirement on the matrix,
+record **FAIL**, not a known product gap.
 
 ---
 
@@ -229,9 +230,27 @@ the UI cannot create a course (it should).
 
 ### 20. Skills
 
-Profile / matrix empty path. If no skill can be created in-app, record
-**PRODUCT GAP (P3)** and continue. Do not fail the release for missing
-skill-authoring UI.
+Empty-organisation path, as an authorised administrator:
+
+1. Open Skills. The empty state offers **Set up skills**.
+2. Create a proficiency scale, add at least two levels, and publish it.
+3. Create a skill. The name is the label; the code can stay suggested.
+4. Create a skills standard. Assign that skill to an existing job function
+   at a published proficiency level, then publish the standard.
+5. Open the skills matrix. A person whose primary job function matches shows
+   **Not assessed** for that skill.
+6. Record a validated assessment from that person's capability profile.
+7. Reload the matrix. The cell shows meets, below, or above the requirement,
+   and the same state is still there after another reload.
+
+If job functions do not exist yet, the standard explains that and links to
+job function setup. Do not create job functions from inside Skills.
+
+Saved levels and saved requirements cannot be edited or removed in this
+version. Published scales and standards are read-only. The database rejects
+adding a level or requirement to a published or archived version, and it
+rejects publishing a scale with fewer than two levels or a skills standard
+whose requirements are missing or no longer valid.
 
 ### 21. Recognition
 

@@ -73,7 +73,7 @@ export default async function SkillsMatrixPage() {
     <div className="flex flex-col gap-8" data-testid="skills-matrix-page">
       <PageHeader
         title="Skills matrix"
-        description="Current proficiency vs role requirements."
+        description="Validated capability against the latest published skills standard, for each person's primary job function."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink
@@ -85,6 +85,12 @@ export default async function SkillsMatrixPage() {
           </Button>
         }
       />
+      {!skills?.length ? (
+        <p className="max-w-xl text-sm text-muted-foreground">
+          The matrix fills in after you publish a skills standard. Start from
+          Skills if this organisation has not configured capability yet.
+        </p>
+      ) : null}
       <SkillsMatrix
         memberships={memberships ?? []}
         skills={skills ?? []}

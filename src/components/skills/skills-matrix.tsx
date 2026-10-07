@@ -18,20 +18,37 @@ type SkillsMatrixProps = {
 };
 
 function cellLabel(gap: SkillsMatrixGapRow["gap"] | undefined) {
-  if (!gap) return "Not Required";
+  if (!gap) return "Not required";
   switch (gap.status) {
     case "meets_requirement":
       return "Meets requirement";
     case "below_requirement":
-      return `Gap: ${gap.gap ?? 0}`;
+      return "Below requirement";
     case "above_requirement":
       return "Above requirement";
     case "not_assessed":
       return "Not assessed";
     case "incompatible_scale":
       return "Incompatible scale";
+    case "not_required":
+      return "Not required";
     default:
-      return "Not Required";
+      return "Not required";
+  }
+}
+
+function cellTone(status: string | undefined) {
+  switch (status) {
+    case "meets_requirement":
+      return "text-success";
+    case "above_requirement":
+      return "text-information";
+    case "below_requirement":
+      return "text-warning-foreground";
+    case "incompatible_scale":
+      return "text-destructive";
+    default:
+      return "text-muted-foreground";
   }
 }
 
@@ -44,6 +61,16 @@ export function SkillsMatrix({ memberships, skills, gaps }: SkillsMatrixProps) {
 
   return (
     <div className="space-y-4" data-testid="skills-matrix">
+      <ul
+        className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
+        data-testid="skills-matrix-legend"
+      >
+        <li>Not assessed</li>
+        <li>Below requirement</li>
+        <li>Meets requirement</li>
+        <li>Above requirement</li>
+        <li>Incompatible scale</li>
+      </ul>
       <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
@@ -86,13 +113,21 @@ export function SkillsMatrix({ memberships, skills, gaps }: SkillsMatrixProps) {
                     return (
                       <td key={skill.id} className="px-3 py-3">
                         <span
-                          className="inline-flex min-h-11 flex-col items-start justify-center"
+                          className={`inline-flex min-h-11 flex-col items-start justify-center ${cellTone(gap?.status)}`}
                           aria-label={`${personName} — ${skill.name}: ${label}`}
+                          data-testid={`skills-matrix-status-${membership.id}-${skill.id}`}
+                          data-status={gap?.status ?? "not_required"}
                         >
                           <span>{label}</span>
                           {current != null && target != null ? (
                             <span className="text-xs text-muted-foreground">
                               {current} / {target}
+                            </span>
+                          ) : null}
+                          {gap?.status === "below_requirement" &&
+                          gap.gap != null ? (
+                            <span className="text-xs text-muted-foreground">
+                              Gap {gap.gap}
                             </span>
                           ) : null}
                         </span>
@@ -131,11 +166,17 @@ export function SkillsMatrix({ memberships, skills, gaps }: SkillsMatrixProps) {
                     <li key={skill.id} className="flex justify-between gap-2">
                       <AppLink
                         href={`/platform/skills/${skill.id}`}
-                        className="hover:underline"
+                        className="min-w-0 hover:underline"
                       >
                         {skill.name}
                       </AppLink>
-                      <span className="text-muted-foreground">{label}</span>
+                      <span
+                        className={`shrink-0 text-right ${cellTone(gap?.status)}`}
+                        data-testid={`skills-matrix-status-${membership.id}-${skill.id}`}
+                        data-status={gap?.status ?? "not_required"}
+                      >
+                        {label}
+                      </span>
                     </li>
                   );
                 })}
