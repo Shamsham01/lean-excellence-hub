@@ -219,6 +219,36 @@ describe("skills authoring errors", () => {
     );
 
     expect(
+      toSkillsAuthoringError(
+        {
+          code: "22023",
+          message: "proficiency scale needs at least two levels",
+        },
+        "fallback",
+      ),
+    ).toBe("Add at least two proficiency levels before publishing.");
+
+    expect(
+      toSkillsAuthoringError(
+        {
+          code: "22023",
+          message: "skill is not active",
+        },
+        "fallback",
+      ),
+    ).toBe("Choose an active skill.");
+
+    expect(
+      toSkillsAuthoringError(
+        {
+          code: "P0002",
+          message: "draft capability set version not found",
+        },
+        "fallback",
+      ),
+    ).toBe("That draft is no longer available. Reload and try again.");
+
+    expect(
       toSkillsAuthoringError({ message: "relation skills" }, "fallback"),
     ).toBe("fallback");
   });

@@ -94,7 +94,7 @@ titles.
 | Projects | **IMPLEMENTED** | Charter lifecycle, methodologies, site scope |
 | Benefits | **IMPLEMENTED** | Forecast/realisation/validation queue |
 | Training | **IMPLEMENTED** | Catalogue, curriculum, sessions, matrix |
-| Skills | **IMPLEMENTED** | Empty organisation can publish a proficiency scale, create skills, publish a skills standard against existing job functions, and record a validated assessment that the matrix keeps. Draft levels and requirements are append-only; published versions are read-only until a later versioning RPC exists. Matrix uses the latest published skills standard |
+| Skills | **IMPLEMENTED** | Empty organisation can publish a proficiency scale, create skills, publish a skills standard against existing job functions, and record a validated assessment that the matrix keeps. The database rejects levels and requirements on any version that is not a draft, and it rejects an incomplete publish. Saved rows still cannot be edited in place, and there is no successor-version RPC yet. Matrix uses the latest published skills standard |
 | Recognition | **IMPLEMENTED** | Types + award flow |
 | Scheduling | **IMPLEMENTED** | Recurrence + `.ics` download |
 | LeanAI contextual Coach | **IMPLEMENTED** | Deterministic Coach, explicit Explain, economy/standard/deep routing, `store:false`, usage ledger |

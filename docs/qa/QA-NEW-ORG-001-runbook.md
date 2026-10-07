@@ -247,7 +247,10 @@ If job functions do not exist yet, the standard explains that and links to
 job function setup. Do not create job functions from inside Skills.
 
 Saved levels and saved requirements cannot be edited or removed in this
-version. Published scales and standards are read-only.
+version. Published scales and standards are read-only. The database rejects
+adding a level or requirement to a published or archived version, and it
+rejects publishing a scale with fewer than two levels or a skills standard
+whose requirements are missing or no longer valid.
 
 ### 21. Recognition
 

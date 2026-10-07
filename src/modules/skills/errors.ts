@@ -82,8 +82,31 @@ export function toSkillsAuthoringError(error: unknown, fallback: string) {
     return "That draft is no longer available. Reload and try again.";
   }
 
+  if (normalised.includes("at least two levels")) {
+    return "Add at least two proficiency levels before publishing.";
+  }
+
+  if (normalised.includes("at least one requirement")) {
+    return "Add at least one requirement before publishing.";
+  }
+
+  if (normalised.includes("skill is not active")) {
+    return "Choose an active skill.";
+  }
+
+  if (normalised.includes("job function is not active")) {
+    return "Choose an active job function.";
+  }
+
+  if (normalised.includes("organisational unit is not active")) {
+    return "Choose an active organisational unit, or leave the unit unset.";
+  }
+
+  if (normalised.includes("proficiency scale version is not published")) {
+    return "Choose a level from a published proficiency scale.";
+  }
+
   if (
-    code === "22023" ||
     normalised.includes("incompatible with scale") ||
     normalised.includes("target proficiency level")
   ) {
