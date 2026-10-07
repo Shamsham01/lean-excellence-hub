@@ -120,18 +120,18 @@ security definer
 set search_path = ''
 as $$
 declare
-  organisation_id uuid := private.current_organisation_id();
+  actor_organisation_id uuid := private.current_organisation_id();
   actor_membership_id uuid;
   can_view_owners boolean := false;
   can_transfer boolean := false;
   owners jsonb := '[]'::jsonb;
 begin
-  if organisation_id is null then
+  if actor_organisation_id is null then
     raise exception 'organisation ownership is not authorised'
       using errcode = '42501';
   end if;
 
-  actor_membership_id := private.current_membership_id(organisation_id);
+  actor_membership_id := private.current_membership_id(actor_organisation_id);
   if actor_membership_id is null then
     raise exception 'organisation ownership is not authorised'
       using errcode = '42501';
@@ -139,10 +139,10 @@ begin
 
   can_transfer := private.membership_is_effective_owner(
     actor_membership_id,
-    organisation_id
+    actor_organisation_id
   );
   can_view_owners := private.has_scoped_permission(
-    organisation_id,
+    actor_organisation_id,
     'memberships.read',
     null,
     null
@@ -165,28 +165,28 @@ begin
       select
         membership.id as membership_id,
         private.membership_ownership_display_name(
-          organisation_id,
+          actor_organisation_id,
           membership.id
         ) as display_name,
         private.membership_ownership_email(
-          organisation_id,
+          actor_organisation_id,
           membership.id
         ) as email
       from public.organisation_memberships membership
-      where membership.organisation_id = organisation_id
+      where membership.organisation_id = actor_organisation_id
         and private.membership_is_effective_owner(
           membership.id,
-          organisation_id
+          actor_organisation_id
         )
     ) owner_row;
   end if;
 
   return jsonb_build_object(
-    'organisation_id', organisation_id,
+    'organisation_id', actor_organisation_id,
     'organisation_name', (
       select organisation.name
       from public.organisations organisation
-      where organisation.id = organisation_id
+      where organisation.id = actor_organisation_id
     ),
     'can_transfer', can_transfer,
     'can_view_owners', can_view_owners,
@@ -217,20 +217,20 @@ security definer
 set search_path = ''
 as $$
 declare
-  organisation_id uuid := private.current_organisation_id();
+  actor_organisation_id uuid := private.current_organisation_id();
   actor_membership_id uuid;
   targets jsonb := '[]'::jsonb;
 begin
-  if organisation_id is null then
+  if actor_organisation_id is null then
     raise exception 'organisation ownership transfer is not authorised'
       using errcode = '42501';
   end if;
 
-  actor_membership_id := private.current_membership_id(organisation_id);
+  actor_membership_id := private.current_membership_id(actor_organisation_id);
   if actor_membership_id is null
     or not private.membership_is_effective_owner(
       actor_membership_id,
-      organisation_id
+      actor_organisation_id
     ) then
     raise exception 'organisation ownership transfer is not authorised'
       using errcode = '42501';
@@ -254,16 +254,16 @@ begin
     select
       membership.id as membership_id,
       private.membership_ownership_display_name(
-        organisation_id,
+        actor_organisation_id,
         membership.id
       ) as display_name,
       private.membership_ownership_email(
-        organisation_id,
+        actor_organisation_id,
         membership.id
       ) as email,
       private.membership_is_effective_owner(
         membership.id,
-        organisation_id
+        actor_organisation_id
       ) as is_already_owner,
       coalesce(
         (
@@ -295,7 +295,7 @@ begin
           left join public.organisation_units scope_unit
             on scope_unit.organisation_id = grant_row.organisation_id
            and scope_unit.id = grant_row.scope_unit_id
-          where grant_row.organisation_id = organisation_id
+          where grant_row.organisation_id = actor_organisation_id
             and grant_row.grantee_membership_id = membership.id
             and grant_row.status = 'active'
             and (
@@ -306,10 +306,10 @@ begin
         '[]'::jsonb
       ) as grants
     from public.organisation_memberships membership
-    where membership.organisation_id = organisation_id
+    where membership.organisation_id = actor_organisation_id
       and membership.id <> actor_membership_id
       and private.membership_is_ownership_transfer_eligible(
-        organisation_id,
+        actor_organisation_id,
         membership.id
       )
   ) target_row;
@@ -342,7 +342,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  organisation_id uuid := private.current_organisation_id();
+  actor_organisation_id uuid := private.current_organisation_id();
   source_membership_id uuid;
   owner_role_version_id uuid;
   target_owner_grant_id uuid;
@@ -351,24 +351,24 @@ declare
   remaining_owners integer;
   locked_membership uuid;
 begin
-  if organisation_id is null then
+  if actor_organisation_id is null then
     raise exception 'organisation ownership transfer is not authorised'
       using errcode = '42501';
   end if;
 
-  source_membership_id := private.current_membership_id(organisation_id);
+  source_membership_id := private.current_membership_id(actor_organisation_id);
   if source_membership_id is null then
     raise exception 'organisation ownership transfer is not authorised'
       using errcode = '42501';
   end if;
 
   perform pg_catalog.pg_advisory_xact_lock(
-    pg_catalog.hashtextextended(organisation_id::text, 0)
+    pg_catalog.hashtextextended(actor_organisation_id::text, 0)
   );
 
   perform 1
   from public.organisations organisation
-  where organisation.id = organisation_id
+  where organisation.id = actor_organisation_id
     and organisation.status = 'active'
   for update;
 
@@ -379,7 +379,7 @@ begin
 
   if not private.membership_is_effective_owner(
     source_membership_id,
-    organisation_id
+    actor_organisation_id
   ) then
     raise exception 'organisation ownership transfer is not authorised'
       using errcode = '42501';
@@ -394,7 +394,7 @@ begin
   for locked_membership in
     select membership.id
     from public.organisation_memberships membership
-    where membership.organisation_id = organisation_id
+    where membership.organisation_id = actor_organisation_id
       and membership.id in (source_membership_id, target_membership_id)
     order by membership.id
     for update
@@ -403,7 +403,7 @@ begin
   end loop;
 
   if not private.membership_is_ownership_transfer_eligible(
-    organisation_id,
+    actor_organisation_id,
     target_membership_id
   ) then
     raise exception 'ownership transfer target is not eligible'
@@ -418,7 +418,7 @@ begin
   join public.roles role_row
     on role_row.organisation_id = role_version.organisation_id
    and role_row.id = role_version.role_id
-  where grant_row.organisation_id = organisation_id
+  where grant_row.organisation_id = actor_organisation_id
     and grant_row.status = 'active'
     and grant_row.scope_type = 'organisation'
     and (
@@ -437,14 +437,14 @@ begin
 
   if not private.membership_is_effective_owner(
     source_membership_id,
-    organisation_id
+    actor_organisation_id
   ) then
     raise exception 'organisation ownership transfer is not authorised'
       using errcode = '42501';
   end if;
 
   owner_role_version_id := private.published_organisation_owner_role_version_id(
-    organisation_id
+    actor_organisation_id
   );
   if owner_role_version_id is null then
     raise exception 'organisation owner role version is not published'
@@ -460,7 +460,7 @@ begin
   join public.roles role_row
     on role_row.organisation_id = role_version.organisation_id
    and role_row.id = role_version.role_id
-  where grant_row.organisation_id = organisation_id
+  where grant_row.organisation_id = actor_organisation_id
     and grant_row.grantee_membership_id = target_membership_id
     and grant_row.status = 'active'
     and grant_row.scope_type = 'organisation'
@@ -476,7 +476,7 @@ begin
 
   if target_owner_grant_id is null then
     target_owner_grant_id := private.grant_role_version(
-      organisation_id,
+      actor_organisation_id,
       target_membership_id,
       owner_role_version_id,
       'organisation',
@@ -493,7 +493,7 @@ begin
   join public.roles role_row
     on role_row.organisation_id = role_version.organisation_id
    and role_row.id = role_version.role_id
-  where grant_row.organisation_id = organisation_id
+  where grant_row.organisation_id = actor_organisation_id
     and grant_row.grantee_membership_id = source_membership_id
     and grant_row.status = 'active'
     and grant_row.scope_type = 'organisation'
@@ -513,7 +513,7 @@ begin
   foreach source_grant_id in array source_owner_grant_ids
   loop
     perform private.revoke_access_grant(
-      organisation_id,
+      actor_organisation_id,
       source_grant_id,
       'Organisation ownership transferred'
     );
@@ -522,16 +522,16 @@ begin
   select count(*)::integer
   into remaining_owners
   from public.organisation_memberships membership
-  where membership.organisation_id = organisation_id
+  where membership.organisation_id = actor_organisation_id
     and private.membership_is_effective_owner(
       membership.id,
-      organisation_id
+      actor_organisation_id
     );
 
   if remaining_owners < 1
     or not private.membership_is_effective_owner(
       target_membership_id,
-      organisation_id
+      actor_organisation_id
     ) then
     raise exception 'organisation would have no owner'
       using errcode = '23514';
@@ -546,7 +546,7 @@ begin
     join public.roles role_row
       on role_row.organisation_id = role_version.organisation_id
      and role_row.id = role_version.role_id
-    where grant_row.organisation_id = organisation_id
+    where grant_row.organisation_id = actor_organisation_id
       and grant_row.grantee_membership_id = source_membership_id
       and grant_row.status = 'active'
       and grant_row.scope_type = 'organisation'
@@ -563,10 +563,10 @@ begin
   end if;
 
   perform private.append_security_audit(
-    organisation_id,
+    actor_organisation_id,
     'organisation.ownership_transferred',
     'organisation',
-    organisation_id,
+    actor_organisation_id,
     'succeeded',
     jsonb_build_object(
       'source_membership_id', source_membership_id,
@@ -577,7 +577,7 @@ begin
   );
 
   return jsonb_build_object(
-    'organisation_id', organisation_id,
+    'organisation_id', actor_organisation_id,
     'source_membership_id', source_membership_id,
     'target_membership_id', target_membership_id,
     'source_owner_grant_ids', to_jsonb(source_owner_grant_ids),

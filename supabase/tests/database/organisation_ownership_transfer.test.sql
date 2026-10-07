@@ -30,9 +30,13 @@ select ok(
 );
 
 select ok(
-  pg_catalog.pg_get_functiondef(
-    'public.transfer_organisation_ownership(uuid)'::regprocedure
-  ) like '%security invoker%',
+  (
+    select not p.prosecdef
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'transfer_organisation_ownership'
+  ),
   'public transfer wrapper is SECURITY INVOKER'
 );
 
