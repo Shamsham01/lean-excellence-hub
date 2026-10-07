@@ -118,9 +118,9 @@ Authoritative workflows: Fast CI, path-filtered Database CI, Full Regression
 | Check | Status at audit time |
 | --- | --- |
 | PR #261 (ownership transfer) Fast CI / Database CI / Full Regression | Green on reviewed head `a1891d7380dc48e54a4de27eb9d97098d908f797` — [Full Regression #37632016497](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37632016497) |
-| Post-merge `ec6d879` Full Regression | Failed **E2E platform** only: Playwright detached-DOM click in `organisation-ownership-transfer.spec.ts` after a successful transfer. 115 passed. Treat as **flake candidate**, not a product defect, until the in-progress `main` rerun settles |
+| Post-merge `ec6d879` Full Regression | Failed **E2E platform** only: Playwright click on `ownership-complete-back` in `organisation-ownership-transfer.spec.ts`. 115 passed. Treat as **CI flake**, not a product defect |
 | PR #262 (ledger rename, SQL unchanged) Fast CI / Database CI / Full Regression | Green on `8a8683934776b6c32d46da2b1374ac0326255530` |
-| `main` `a183ff6` Full Regression | Started at merge of #262: [run #37640294086](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37640294086). Quality, Database core, E2E smoke/workforce/improvement/cookieworks/ai-closure already green when this audit began; E2E platform still running |
+| `main` `a183ff6` Full Regression | [run #37640294086](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37640294086): Quality, Database core, E2E smoke/workforce/improvement/cookieworks/ai-closure **green**. E2E platform **failed** again on the same ownership-transfer back-click (240s timeout; webserver also logged destination-stream closures). Not a missing feature |
 | This reconciliation PR | Fast CI on the docs head. Full Regression waits until the PR is marked Ready after orchestrator review |
 
 Do **not** call `a183ff6` an operator-approved published SHA merely because
@@ -190,9 +190,9 @@ Headline:
 | Item | Severity | Recommendation |
 | --- | --- | --- |
 | #235 LEH Lite | P3 / product | Keep open as backlog. Do not implement now |
-| Domain-based “existing organisation” onboarding hint (#219 AC11) | P3 / privacy-sensitive | File `ONBOARD-SAFE-ORG-HINT-01` then close #219. Not required for first customer. No domain disclosure |
-| Cross-module Manual / LeanAI / Quick Start shell | P3 | File `LEANAI-MODULE-SETUP-01`. Maturity already has three modes |
-| Skills catalogue authoring UI | P3 | File `SKILLS-AUTHORING-01`. Consume/assess works; empty-org create UI is missing |
+| Domain-based “existing organisation” onboarding hint (#219 AC11) | P3 / privacy-sensitive | **#264** `ONBOARD-SAFE-ORG-HINT-01`. Then close #219. Not required for first customer. No domain disclosure |
+| Cross-module Manual / LeanAI / Quick Start shell | P3 | **#267** `LEANAI-MODULE-SETUP-01`. Maturity already has three modes |
+| Skills catalogue authoring UI | P3 | **#266** `SKILLS-AUTHORING-01`. Consume/assess works; empty-org create UI is missing |
 | BILLING-02 Essentials vs Professional module gating | After smoke | Catalogue + resolver exist; first customer should be Professional or Founder Pilot |
 | Authenticated SECURITY DEFINER advisor volume | Deferred | Do **not** globally revoke. Invitation anon RPCs stay |
 | CookieWorks P2/P3 UX register items | P2/P3 | Historical #67 register. Not first-customer blockers |
@@ -228,7 +228,7 @@ orchestrator:
 | **#170** BILLING-001 | Sub-issues #172–#175 closed. Application foundation + fake E2E complete | Hosted Stripe Sandbox smoke; live cutover; legal | Issue reads as unimplemented programme | **SPLIT remaining work into operator smoke / LIVE-CUTOVER** (this issue #263 + cutover checklist). Then **CLOSE** the code umbrella |
 | **#183** LEANAI-CONTEXT-001 | Coach foundation + #206–#210 Maturity/onboarding slices in code | Cross-module three-mode shell (P3) | Body still says “complete the fresh-organisation smoke before starting these enhancements” | **CLOSE**. Remaining cross-module setup is P3 backlog, not this programme |
 | **#195** LEANAI-CONTEXT-04 | PRs #196/#197 delivered general Coach sessions, Explain, routing, fallback, usage, `store:false`, PS compatibility | None in the issue acceptance | Issue never commented after merge | **CLOSE** |
-| **#219** MULTISITE-EXPAND-01 | AC 1–10 and 12. Slices 01A–01D closed | AC11 domain hint **not implemented** and **not required** for v1 | Parent still open with 4/4 children complete | **SPLIT AC11** to a later privacy-sensitive issue, then **CLOSE** |
+| **#219** MULTISITE-EXPAND-01 | AC 1–10 and 12. Slices 01A–01D closed | AC11 domain hint **not implemented** and **not required** for v1 | Parent still open with 4/4 children complete | **CLOSE** — remaining AC11 is **#264** |
 | **#235** LEH Lite | None (intentionally) | Entire starter product | None — correctly backlog | **BACKLOG ONLY**. Keep open. Do not implement |
 | **#263** this reconciliation | This document pack | Orchestrator review, Fast CI, later Ready + Full Regression | n/a | Keep open until the gate is accepted |
 
@@ -435,10 +435,14 @@ recorded. #235 stays backlog.
 
 **E. Exact next implementation task?**
 
-**None.** Next work is operator: publish + Sandbox + QA-NEW-ORG-001.
-Optional tiny follow-up only if `main` Full Regression keeps failing the
-ownership-transfer back-click flake — that is a Playwright stability fix,
-not a product slice.
+**No product slice.** Next work is operator: publish + Sandbox +
+QA-NEW-ORG-001.
+
+The only optional **code** follow-up is Playwright stability for
+`organisation-ownership-transfer.spec.ts` (`ownership-complete-back` click
+timed out on two consecutive `main` Full Regression platform shards after
+#261; the reviewed PR head itself was green). That is CI hygiene, not a
+customer workflow gap. Do not start LEH Lite, SSO, or AC11 (#264).
 
 **F. When to run the final human fresh-organisation smoke?**
 
