@@ -14535,6 +14535,10 @@ export type Database = {
         Args: { target_organisation_id: string }
         Returns: boolean
       }
+      transfer_organisation_ownership: {
+        Args: { target_membership_id: string }
+        Returns: Json
+      }
       transition_action_status: {
         Args: {
           target_action_id: string
@@ -14543,10 +14547,6 @@ export type Database = {
           target_to_status: string
         }
         Returns: boolean
-      }
-      transfer_organisation_ownership: {
-        Args: { target_membership_id: string }
-        Returns: Json
       }
       update_action: {
         Args: {
