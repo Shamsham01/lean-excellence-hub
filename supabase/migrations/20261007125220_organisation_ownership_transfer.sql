@@ -349,7 +349,6 @@ declare
   source_owner_grant_ids uuid[] := '{}'::uuid[];
   source_grant_id uuid;
   remaining_owners integer;
-  locked_membership uuid;
 begin
   if actor_organisation_id is null then
     raise exception 'organisation ownership transfer is not authorised'
@@ -391,16 +390,12 @@ begin
       using errcode = '23514';
   end if;
 
-  for locked_membership in
-    select membership.id
-    from public.organisation_memberships membership
-    where membership.organisation_id = actor_organisation_id
-      and membership.id in (source_membership_id, target_membership_id)
-    order by membership.id
-    for update
-  loop
-    null;
-  end loop;
+  perform membership.id
+  from public.organisation_memberships membership
+  where membership.organisation_id = actor_organisation_id
+    and membership.id in (source_membership_id, target_membership_id)
+  order by membership.id
+  for update;
 
   if not private.membership_is_ownership_transfer_eligible(
     actor_organisation_id,
