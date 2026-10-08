@@ -1,18 +1,25 @@
 # Lean Excellence Hub — Current Project and Release State
 
-Updated: **2026-10-07**. Canonical as of
-[FIRST-CUSTOMER-READINESS-02 (#263)](https://github.com/Shamsham01/lean-excellence-hub/issues/263).
+Updated: **2026-10-08**. Tracking:
+[#274](https://github.com/Shamsham01/lean-excellence-hub/issues/274).
+Canonical detail:
+[QA-NEW-ORG-001-PREFLIGHT-REPORT.md](./QA-NEW-ORG-001-PREFLIGHT-REPORT.md).
 
 This is the release-state entry point. Reconcile GitHub checks, `main`, and
 the hosted Supabase migration ledger immediately before any deploy. The
-figures below are a dated audit of **code on `main`**, not an automatic
-publication authorisation.
+figures below are a dated audit, not an automatic publication authorisation.
+
+The 2026-10-07 FIRST-CUSTOMER-READINESS-02 snapshot (`a183ff6`, 228 files,
+latest `20261007143820`) is historical. Do not use it as the current gate.
+Later sections that still quote that snapshot are labelled as that audit.
 
 Do **not** use older snapshots in this folder as current gates:
 
 - 30 September Coach-04 checkpoint
 - 29 September FIRST-CUSTOMER-READINESS-01 (`ad6edce` / `4ae04302`)
+- 7 October FIRST-CUSTOMER-READINESS-02 (`a183ff6` / `20261007143820`)
 - CookieWorks register wording that still says billing is unimplemented
+- Retired filename `20261007224043_create_module_setup_drafts_from_definition`
 
 ---
 
@@ -20,13 +27,15 @@ Do **not** use older snapshots in this folder as current gates:
 
 | Item | Value |
 | --- | --- |
-| Git `main` audited | `a183ff6b5257636b01110693fd046788147ea882` |
-| Tip commit | `chore: reconcile ownership migration ledger timestamp (#262)` |
-| Immediately previous | `ec6d879` — MULTISITE-EXPAND-01D organisation ownership transfer (#261) |
+| Git `main` audited | `90286dd3b6fdb4bcf5e40e03c6f025fe5881805d` |
+| Tip commit | `chore: reconcile module setup migration ledger timestamp (#273)` |
+| Audit date | 2026-10-08 |
+| Open pull requests | None |
 | Production published SHA | **Unverified.** `https://leanexcellencehub.com` is not an approved publication of this tip |
 
-This tip includes, among other merged work since the stale 30 September
-docs:
+Since the historical `a183ff6` snapshot, `main` has added Skills empty-organisation authoring (#269), the Skills ledger reconciliation (#270), guided 5S and Gemba setup (#272), and the module-setup ledger reconciliation (#273). #271 is closed. #267 stays open for later modules and is P3.
+
+Historical context still true of this tip, from work merged before that snapshot:
 
 - billing / Stripe Sandbox application foundation
 - founder onboarding and structure-first setup
@@ -44,38 +53,40 @@ docs:
 
 ## CURRENT HOSTED MIGRATION PARITY
 
-Known from **source history**, not from a live hosted ledger query in this
-audit. This PR did **not** link to hosted Supabase and must **not** replay
-anything.
+Read-only hosted ledger query on **2026-10-08** against
+`zsadfvjtknbbfomlmttv` (`eu-west-1`). This audit did not apply or replay
+migrations.
 
 | Item | Value |
 | --- | --- |
-| Hosted project | `zsadfvjtknbbfomlmttv` (`eu-west-1`) |
-| Repository migration files | **228** SQL files |
-| Latest repository version | `20261007143820_organisation_ownership_transfer` |
-| Coach-04 | `20260930103004_leanai_general_coach_sessions` applied 30 September 2026 via official linked CLI. Do not replay |
-| Ownership transfer | Hosted applied as ledger version `20261007143820`. Source filename reconciled in #262. **Do not replay** |
-| Intermediate files after Coach-04 | Applied with their respective merged slices (billing, LeanAI, Maturity, site capacity, quantity increase, multi-site intent, SEC-BILLING-002). Operator must confirm hosted `migration list` is **228/228 name-and-version matched** before smoke |
+| Repository migration files | **230** SQL files |
+| Hosted `schema_migrations` rows | **230** |
+| Latest version and name | `20261008072255` / `create_module_setup_drafts_from_definition` |
+| Source vs hosted | Versions and names match. Both intentional `multi_site_intent` rows (`20261006150528` and `20261006165240`) are preserved. No pending or divergent rows |
+| Retired filename | `20261007224043_create_module_setup_drafts_from_definition` was reconciled to `20261008072255` in #273. Do not recreate it |
+| Coach-04 | `20260930103004_leanai_general_coach_sessions`. **Do not replay** |
+| Ownership transfer | `20261007143820_organisation_ownership_transfer`. **Do not replay** |
 | CookieWorks | Preserve. Do not reset for first-customer smoke |
 
-Operator dry-run immediately before smoke:
+Operator dry-run immediately before smoke, even though this audit already matched 230/230:
 
 ```bash
 npx supabase link --project-ref zsadfvjtknbbfomlmttv
 npx supabase migration list
 ```
 
-Expect latest remote version `20261007143820` / name
-`organisation_ownership_transfer` and **no pending files**. If anything is
-pending, stop and get an explicit apply approval. Never use a tool that
-generates an untracked replacement timestamp.
+Expect latest remote version `20261008072255` / name
+`create_module_setup_drafts_from_definition` and **no pending files**. If
+anything is pending, stop and get an explicit apply approval. Never use a
+tool that generates an untracked replacement timestamp.
 
 ---
 
 ## CURRENT PRODUCT CAPABILITIES
 
-Classifications are from **code and tests on `a183ff6`**, not from issue
-titles.
+Classifications are from **code and tests on `90286dd`**, not from issue
+titles. Rows that only quote the 2026-10-07 audit are still accurate unless
+the 2026-10-08 preflight report says otherwise.
 
 | Area | Classification | Evidence (short) |
 | --- | --- | --- |
@@ -86,8 +97,8 @@ titles.
 | People / invitations | **IMPLEMENTED** | Invite lifecycle, role picker, workforce provision, CSV/XLSX import |
 | RBAC | **IMPLEMENTED** | Versioned roles, org vs unit-subtree grants, batched permission probes |
 | Maturity | **IMPLEMENTED** | Authoring, Self/Formal, Quick Start, AI builder |
-| 5S | **IMPLEMENTED** | Standards, audits, evidence, journeys E2E |
-| Gemba | **IMPLEMENTED** | Definitions, walks, completion URL rules |
+| 5S | **IMPLEMENTED** | Standards, audits, evidence, journeys E2E. Guided setup (Manual / Quick Start / LeanAI) creates an editable organisation-owned draft and does not publish |
+| Gemba | **IMPLEMENTED** | Definitions, walks, completion URL rules. Guided setup follows the same draft-only pattern |
 | Suggestions | **IMPLEMENTED** | Programmes, submit+evidence, reviewer workflow |
 | Actions | **IMPLEMENTED** | Lifecycle + lineage |
 | Problem Solving | **IMPLEMENTED** | Cases + backward-compatible case-bound AI |
@@ -117,14 +128,19 @@ Authoritative workflows: Fast CI, path-filtered Database CI, Full Regression
 
 | Check | Status at audit time |
 | --- | --- |
-| PR #261 (ownership transfer) Fast CI / Database CI / Full Regression | Green on reviewed head `a1891d7380dc48e54a4de27eb9d97098d908f797` — [Full Regression #37632016497](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37632016497) |
-| Post-merge `ec6d879` Full Regression | Failed **E2E platform** only: Playwright click on `ownership-complete-back` in `organisation-ownership-transfer.spec.ts`. 115 passed. Treat as **CI flake**, not a product defect |
-| PR #262 (ledger rename, SQL unchanged) Fast CI / Database CI / Full Regression | Green on `8a8683934776b6c32d46da2b1374ac0326255530` |
-| `main` `a183ff6` Full Regression | [run #37640294086](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37640294086): Quality, Database core, E2E smoke/workforce/improvement/cookieworks/ai-closure **green**. E2E platform **failed** again on the same ownership-transfer back-click (240s timeout; webserver also logged destination-stream closures). Not a missing feature |
-| This reconciliation PR | Fast CI on the docs head. Full Regression waits until the PR is marked Ready after orchestrator review |
+| `main` `90286dd` Full Regression | [run #37745078910](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37745078910) **success** on the exact tip. Quality, Database core, Database gate, E2E smoke, E2E platform, E2E workforce, E2E improvement, E2E cookieworks, E2E ai-closure, QA hosted replacement, and Windows QA harness succeeded. Prepare quality gate was skipped because this was a `main` push, not a pull request |
+| `main` `244c18b` (#272) Full Regression | [run #37743261305](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37743261305) failed E2E platform on `platform-reliability.spec.ts` Gemba Next/Previous (180s click timeout, destination-stream closures). The following ledger-only commit `90286dd` passed the same suite. Treat as CI flake history, not an open product defect |
+| Historical `a183ff6` Full Regression | [run #37640294086](https://github.com/Shamsham01/lean-excellence-hub/actions/runs/37640294086) failed the ownership-transfer back-click. Superseded. The ownership E2E passed on `90286dd` and again in the 2026-10-08 local rehearsal |
 
-Do **not** call `a183ff6` an operator-approved published SHA merely because
-PR checks were green.
+Do **not** call `90286dd` an operator-approved published SHA merely because
+exact-head CI is green.
+
+These first-customer specs are **not** in the Full Regression matrix. The
+2026-10-08 local production rehearsal ran them: `onboarding-setup.spec.ts`,
+`first-customer-rollout.spec.ts`, `module-setup-5s-gemba.spec.ts`,
+`skills-authoring-empty-org.spec.ts`. Billing, site capacity, ownership
+transfer, and password recovery are in the matrix and were also re-run
+locally.
 
 Local Fast CI equivalent:
 
@@ -174,7 +190,7 @@ Caveats that stay **operator / evidence**, not missing features:
 See [FIRST-CUSTOMER-CUTOVER-CHECKLIST.md](./FIRST-CUSTOMER-CUTOVER-CHECKLIST.md).
 Headline:
 
-- Confirm hosted migration parity through `20261007143820`
+- Confirm hosted migration parity through `20261008072255` (230/230). This audit already matched that ledger read-only; reconfirm immediately before publish
 - Publish an approved application SHA to Netlify
 - Configure Stripe **Sandbox** products, webhook, Customer Portal, env
 - Run QA-NEW-ORG-001 on that pair
@@ -204,8 +220,8 @@ Headline:
 
 Human only. This PR does not perform them.
 
-1. Confirm hosted `migration list` = 228/228 through `20261007143820`.
-2. Do **not** replay `20261007143820` or any earlier version.
+1. Confirm hosted `migration list` = 230/230 through `20261008072255`.
+2. Do **not** replay `20261008072255` or any earlier version.
 3. Configure Stripe Sandbox per [STRIPE-SANDBOX-ONBOARDING-SMOKE.md](./STRIPE-SANDBOX-ONBOARDING-SMOKE.md).
 4. Set server-only Netlify env (`BILLING_PROVIDER=stripe`, Sandbox keys, price IDs). Never `NEXT_PUBLIC_STRIPE_*`.
 5. Publish an approved SHA only after explicit approval.
@@ -348,8 +364,12 @@ as a reason to start speculative optimisation.
 
 ## SECURITY REVIEW (read-only)
 
-This audit did not globally revoke authenticated EXECUTE and did not query
-the hosted Security Advisor.
+The 2026-10-07 review did not globally revoke authenticated EXECUTE. The
+2026-10-08 preflight **did** query the hosted Security Advisor read-only.
+Findings and the decision not to revoke invitation or `rls_auto_enable`
+permissions are in
+[QA-NEW-ORG-001-PREFLIGHT-REPORT.md](./QA-NEW-ORG-001-PREFLIGHT-REPORT.md).
+The notes below remain the code-review record from the earlier audit.
 
 | Surface | Finding |
 | --- | --- |
@@ -422,9 +442,11 @@ substantial feature before the fresh-organisation smoke.
 
 **C. Remaining OPERATOR blockers?**
 
-Hosted migration confirmation, approved Netlify publish, Stripe Sandbox
-rehearsal, QA-NEW-ORG-001, Auth email hook/templates, then — before real
-money — Supabase Pro, leaked-password protection, legal pack, Stripe LIVE.
+Reconfirm hosted migration parity immediately before publish (230/230 through
+`20261008072255` matched read-only on 2026-10-08), approved Netlify publish,
+Stripe Sandbox rehearsal, QA-NEW-ORG-001, Auth email hook/templates, then —
+before real money — Supabase Pro, leaked-password protection, legal pack,
+Stripe LIVE.
 
 **D. Stale issues that can close?**
 
@@ -438,20 +460,21 @@ recorded. #235 stays backlog.
 **No product slice.** Next work is operator: publish + Sandbox +
 QA-NEW-ORG-001.
 
-The only optional **code** follow-up is Playwright stability for
-`organisation-ownership-transfer.spec.ts` (`ownership-complete-back` click
-timed out on two consecutive `main` Full Regression platform shards after
-#261; the reviewed PR head itself was green). That is CI hygiene, not a
-customer workflow gap. Do not start LEH Lite, SSO, or AC11 (#264).
+The ownership-transfer click timeout recorded against historical `a183ff6`
+did not reproduce on exact-head Full Regression `90286dd` or in the
+2026-10-08 local rehearsal. A Gemba RSC click timeout on `244c18b` also
+passed on the next exact-head run. Those are CI hygiene history, not a
+customer workflow gap. Do not start LEH Lite, SSO, AC11 (#264), or
+LEANAI-MODULE-SETUP-01B.
 
 **F. When to run the final human fresh-organisation smoke?**
 
 After:
 
-1. hosted ledger confirmed through `20261007143820`
+1. hosted ledger confirmed through `20261008072255` (matched read-only on 2026-10-08; reconfirm if `main` moves)
 2. an approved SHA is published (or a Deploy Preview explicitly chosen)
 3. Stripe Sandbox products, webhook, and server env are set
-4. Fast CI is green on that SHA and Full Regression on `main`/`a183ff6` (or
+4. Fast CI is green on that SHA and Full Regression on `main`/`90286dd` (or
    the published SHA) is green
 
 Do **not** run it from this documentation PR. Do **not** wipe CookieWorks.
@@ -469,6 +492,7 @@ Pilot agreement, support owner, rollback/incident procedures.
 
 | Need | Document |
 | --- | --- |
+| 2026-10-08 preflight evidence | [QA-NEW-ORG-001-PREFLIGHT-REPORT.md](./QA-NEW-ORG-001-PREFLIGHT-REPORT.md) |
 | Fresh-org executable checklist | [QA-NEW-ORG-001-runbook.md](./QA-NEW-ORG-001-runbook.md) |
 | Stripe Sandbox configuration | [STRIPE-SANDBOX-ONBOARDING-SMOKE.md](./STRIPE-SANDBOX-ONBOARDING-SMOKE.md) |
 | CookieWorks isolation regression | [RELEASE-SMOKE-01-protocol.md](./RELEASE-SMOKE-01-protocol.md) |

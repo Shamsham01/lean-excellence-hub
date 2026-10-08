@@ -18,7 +18,7 @@ or P3 polish.
 
 ## APPLICATION
 
-- [ ] Chosen `main` SHA recorded (candidate at audit: `a183ff6b5257636b01110693fd046788147ea882` — replace with the SHA actually published)
+- [ ] Chosen `main` SHA recorded (candidate at the 2026-10-08 preflight: `90286dd3b6fdb4bcf5e40e03c6f025fe5881805d` — replace with the SHA actually published. `a183ff6` is the historical 7 October snapshot)
 - [ ] Fast CI / Quality green on that exact SHA
 - [ ] Database CI green if database paths changed on that SHA
 - [ ] Full Regression green on that exact SHA (Quality, Database, E2E smoke, E2E shards, Windows QA harness)
@@ -30,9 +30,11 @@ or P3 polish.
 ## DATABASE
 
 - [ ] Hosted project `zsadfvjtknbbfomlmttv` migration list is **name-and-version matched** to the published SHA
-- [ ] Latest hosted version is `20261007143820_organisation_ownership_transfer` (or later **only** if that later file is on the published SHA)
+- [ ] Latest hosted version is `20261008072255_create_module_setup_drafts_from_definition` (230 source files / 230 hosted rows on the 2026-10-08 read-only check; or later **only** if that later file is on the published SHA)
 - [ ] **No pending migrations**
-- [ ] Do **not** replay `20261007143820` or any earlier file, including Coach-04 `20260930103004`
+- [ ] Both `multi_site_intent` versions `20261006150528` and `20261006165240` remain. Do not delete either
+- [ ] Do **not** replay `20261008072255` or any earlier file, including Coach-04 `20260930103004` and ownership `20261007143820`
+- [ ] Do **not** recreate the retired filename `20261007224043_create_module_setup_drafts_from_definition`
 - [ ] Backup / point-in-time recovery posture reviewed on the hosted plan
 - [ ] CookieWorks tenant still present; no hosted reset was used as a shortcut
 

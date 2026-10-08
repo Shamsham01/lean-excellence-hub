@@ -50,24 +50,28 @@ What it does **not** prove:
 
 | Check | Pass if |
 | --- | --- |
-| SHA | Exact published git SHA recorded. Candidate at audit: `a183ff6b5257636b01110693fd046788147ea882` |
+| SHA | Exact published git SHA recorded. Candidate at the 2026-10-08 preflight: `90286dd3b6fdb4bcf5e40e03c6f025fe5881805d`. The 7 October candidate `a183ff6` is historical |
 | CookieWorks | Still present. Not reset |
 | Billing provider | Hosted: `BILLING_PROVIDER=stripe` + Sandbox keys. Local rehearsal: explicit `BILLING_PROVIDER=fake`. Missing secrets never fall back to fake |
 | Stripe Sandbox | Products, prices, webhook, Customer Portal from the companion doc |
-| Hosted DB | `migration list` matches the SHA. Latest expected: `20261007143820_organisation_ownership_transfer`. **Do not replay** |
+| Hosted DB | `migration list` matches the SHA. Latest expected on this candidate: `20261008072255_create_module_setup_drafts_from_definition` (230 files). Read-only parity was confirmed 2026-10-08. **Do not replay**. Reconfirm if `main` has moved |
 | Auth | Recovery links reach `/auth/recovery`. Send Email Hook matches the app revision |
 | Netlify / app env | Server-only Stripe vars. No `NEXT_PUBLIC_STRIPE_*` |
 
-Local fake rehearsal (does **not** replace this human pack):
+Local fake rehearsal on 2026-10-08 against a disposable local Supabase and a compiled production server (`BILLING_PROVIDER=fake`): **23 passed, 0 failed**. That does **not** replace this human pack. `onboarding-setup.spec.ts`, `first-customer-rollout.spec.ts`, `module-setup-5s-gemba.spec.ts`, and `skills-authoring-empty-org.spec.ts` are not in the Full Regression matrix; the other four specs below are.
+
+Command:
 
 ```bash
-E2E_WITH_SUPABASE=1 npx playwright test \
+E2E_WITH_SUPABASE=1 BILLING_PROVIDER=fake npx playwright test \
   tests/e2e/billing-founding-onboarding.spec.ts \
   tests/e2e/onboarding-setup.spec.ts \
   tests/e2e/first-customer-rollout.spec.ts \
   tests/e2e/site-capacity.spec.ts \
   tests/e2e/organisation-ownership-transfer.spec.ts \
   tests/e2e/password-recovery.spec.ts \
+  tests/e2e/module-setup-5s-gemba.spec.ts \
+  tests/e2e/skills-authoring-empty-org.spec.ts \
   --workers=1
 ```
 
@@ -92,7 +96,41 @@ E2E_WITH_SUPABASE=1 npx playwright test \
 
 ## 3. Result recording
 
-Record each step **PASS / FAIL / BLOCKED / PRODUCT GAP**.
+Record each step **PASS / FAIL / BLOCKED / PRODUCT GAP**. This audit did **not** execute the hosted pack. Leave every hosted result blank until an operator fills it.
+
+| Step | Result | Operator | Notes |
+| --- | --- | --- | --- |
+| 1 Account creation |  | Human |  |
+| 2 Email confirmation |  | Human | Hosted Auth template |
+| 3 Password recovery |  | Human | GET must not consume the token |
+| 4 Organisation + first site |  | Human |  |
+| 5 Stripe Sandbox Checkout |  | Human | Professional monthly, quantity 1 |
+| 6 Webhook activation |  | Human | Success URL is not activation |
+| 7 Structure-first onboarding |  | Human |  |
+| 8 Job functions / people |  | Human |  |
+| 9 Invitation + acceptance |  | Human | Second browser |
+| 10 Maturity |  | Human |  |
+| 11 5S |  | Human | Include guided setup draft; do not require publish unless the operator chooses it |
+| 12 Gemba |  | Human | Same draft rule. Completed walk URL has no leftover `?prompt=` |
+| 13 Scheduling |  | Human |  |
+| 14 Suggestions |  | Human |  |
+| 15 Actions |  | Human |  |
+| 16 Problem Solving |  | Human |  |
+| 17 Projects |  | Human |  |
+| 18 Benefits |  | Human |  |
+| 19 Training |  | Human |  |
+| 20 Skills |  | Human | Empty-org path in the step below |
+| 21 Recognition |  | Human |  |
+| 22 LeanAI |  | Human | Explain stays advice-only |
+| 23 Mobile sanity |  | Human | About 390px |
+| 24 Billing settings |  | Human | Portal return |
+| 25 Second-site capacity denial |  | Human | Must not claim Stripe quantity already changed |
+| 26 Quantity increase 1 → 2 |  | Human | Webhook authoritative |
+| 27 Second site |  | Human | Same organisation |
+| 28 Sibling-site isolation |  | Human |  |
+| 29 Ownership transfer |  | Human |  |
+| 30 Cancellation / reactivation |  | Human | Test Clock or wait. No auto-delete |
+| CookieWorks still present |  | Human | Do not reset |
 
 Screenshot FAILs with URL + persona. Do not paste secrets, Stripe live
 PANs, or webhook signing secrets.
@@ -189,12 +227,16 @@ second persona exists.
 ### 11. 5S
 
 Author a standard or execute the empty path on the first site. Persist
-answers after reload.
+answers after reload. Guided setup (Manual, LEH Quick Start, Build with
+LeanAI) must leave an editable organisation-owned **draft**. LeanAI must not
+publish, choose applicability, or grant permissions. The operator selects
+applicable units.
 
 ### 12. Gemba
 
 Author/execute a walk on the first site. Completed walk uses the canonical
-URL without a leftover `?prompt=`.
+URL without a leftover `?prompt=`. Guided setup follows the same draft-only
+rule as 5S.
 
 ### 13. Scheduling
 
@@ -332,7 +374,7 @@ After the smoke:
 
 ## 6. Operator follow-ups (not this PR)
 
-- Confirm hosted migrations through `20261007143820`. Do not replay.
+- Confirm hosted migrations through `20261008072255` (230/230). Do not replay. The 2026-10-07 expectation `20261007143820` / 228 files is historical.
 - Set Netlify server-only Stripe Sandbox env vars.
 - Point the Sandbox webhook at the deployed `/api/billing/stripe/webhook`.
 - Record the SHA under test.

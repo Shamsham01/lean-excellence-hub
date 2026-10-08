@@ -83,7 +83,9 @@ threshold, which remains editable.
 
 Migration:
 
-`supabase/migrations/20261007224043_create_module_setup_drafts_from_definition.sql`
+`supabase/migrations/20261008072255_create_module_setup_drafts_from_definition.sql`
+
+The earlier filename `20261007224043_create_module_setup_drafts_from_definition.sql` was reconciled in #273 so the source version matches the hosted ledger. Do not recreate `20261007224043`.
 
 Public functions are `SECURITY INVOKER` with `search_path = ''` and no `anon`
 execute grant:
