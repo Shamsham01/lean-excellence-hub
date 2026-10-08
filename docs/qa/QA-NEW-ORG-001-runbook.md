@@ -110,17 +110,17 @@ Record each step **PASS / FAIL / BLOCKED / PRODUCT GAP**. This audit did **not**
 | 8 Job functions / people |  | Human |  |
 | 9 Invitation + acceptance |  | Human | Second browser |
 | 10 Maturity |  | Human |  |
-| 11 5S |  | Human | Include guided setup draft; do not require publish unless the operator chooses it |
-| 12 Gemba |  | Human | Same draft rule. Completed walk URL has no leftover `?prompt=` |
+| 11 5S |  | Human | PASS: published standard, operator-chosen applicable area, completed audit, answers and evidence still present after reload. A draft alone is FAIL |
+| 12 Gemba |  | Human | PASS: published definition and a completed walk. Completed URL is `/platform/gemba/walks/{id}` with no `?prompt=`. A draft alone is FAIL |
 | 13 Scheduling |  | Human |  |
 | 14 Suggestions |  | Human |  |
 | 15 Actions |  | Human |  |
 | 16 Problem Solving |  | Human |  |
 | 17 Projects |  | Human |  |
 | 18 Benefits |  | Human |  |
-| 19 Training |  | Human |  |
+| 19 Training |  | Human | PASS: one published curriculum with a mandatory requirement shows Required for an applicable person on Training matrix, and stays after reload. A published course alone is FAIL |
 | 20 Skills |  | Human | Empty-org path in the step below |
-| 21 Recognition |  | Human |  |
+| 21 Recognition |  | Human | PASS: a persisted award whose recipient is a person's name. Empty history is FAIL |
 | 22 LeanAI |  | Human | Explain stays advice-only |
 | 23 Mobile sanity |  | Human | About 390px |
 | 24 Billing settings |  | Human | Portal return |
@@ -226,17 +226,45 @@ second persona exists.
 
 ### 11. 5S
 
-Author a standard or execute the empty path on the first site. Persist
-answers after reload. Guided setup (Manual, LEH Quick Start, Build with
-LeanAI) must leave an editable organisation-owned **draft**. LeanAI must not
-publish, choose applicability, or grant permissions. The operator selects
-applicable units.
+Use the first site of the new organisation. Prefer **LEH Quick Start** so
+the questions are already present. Manual is valid if you add at least one
+question yourself. Leave **Build with LeanAI** unused for this pass. If you
+do open it, stop at a draft you review: LeanAI must not publish, choose
+applicable areas, or grant permissions.
+
+1. Open 5S. The empty organisation offers **Set up 5S**.
+2. On **Choose how to start**, open **LEH Quick Start** (**Preview starting point**). Confirm the starting point is **LEH Workplace 5S Standard**.
+3. Under **Applicable areas**, tick the first site. The form says the template does not guess this. If the list is empty, select the active site in the sidebar first.
+4. Leave **Target threshold (%)** at 80 unless you are deliberately changing it, then **Use this starting point**.
+5. Confirm the copy **This creates an editable draft. Nothing is published until you publish it.** The version badge is **v1 · draft**, and the page says this is an editable draft. Change one question prompt, or use **Add question**, and confirm the edit remains.
+6. **Publish standard** stays unavailable until there is at least one question and at least one applicable area. Publish it yourself with **Publish standard**. The badge becomes **v1 · published**. There is no automatic publish.
+7. On the published standard, **Start audit for unit** for the first site, then **Start audit**.
+8. Answer questions with **Yes** or **No**. Each answer shows **Saved**. On one question, **Select file** and wait for **Evidence attached**. Use **Next** to move through the standard.
+9. **Complete audit**. The page title becomes **5S audit result**, with a score, the target, and the unit.
+10. Reload that result. The score, answers, and attached evidence are still there.
+
+**PASS:** a published standard was used to complete an audit, and the
+answers, completion, and evidence survive a reload. A draft that was never
+published, or a published standard that was never audited, is **FAIL**.
 
 ### 12. Gemba
 
-Author/execute a walk on the first site. Completed walk uses the canonical
-URL without a leftover `?prompt=`. Guided setup follows the same draft-only
-rule as 5S.
+Same organisation and first site.
+
+1. Open Gemba. The empty organisation offers **Set up Gemba**.
+2. On **Choose how to start**, open **LEH Quick Start**. Confirm **LEH Operational Gemba Walk**.
+3. Tick the first site under **Applicable areas**, then **Use this starting point**.
+4. Confirm **v1 · Draft** and the editable-draft notice. Change one prompt, or use **Add prompt**, and confirm the edit remains. LeanAI is not used on this pass and must not publish or choose applicability.
+5. **Publish definition**. It stays unavailable until there is at least one prompt and one applicable area. The badge becomes **v1 · Published**.
+6. **Start walk for unit** for the first site, then **Start walk**.
+7. Enter **Notes** for the prompts you answer. **Saved** appears. While you use **Next**, the address may include `?prompt=`. That is expected during the walk. Attach evidence with **Select file** where the uploader is shown (**Evidence attached**).
+8. **Capture observation**. Choose a type (**Positive practice**, **Improvement opportunity**, or **Issue**), enter the observation, and **Save**.
+9. **Complete walk**. **Required prompts unanswered** must be 0 before **Confirm completion** is available. Add a **Summary / overall conclusion**, then **Confirm completion**.
+10. The address is `/platform/gemba/walks/{id}` with no `?prompt=`. The title is **Gemba walk summary** and the status is **Completed**. Reload. The summary, observations, and evidence are still there.
+
+**PASS:** a published definition was used to complete a walk, the walk
+persists after reload, and the completed address has no `?prompt=`. A draft
+or an unfinished walk is **FAIL**.
 
 ### 13. Scheduling
 
@@ -267,8 +295,37 @@ finance persona exists; otherwise owner path.
 
 ### 19. Training
 
-Catalogue empty path: draft course → publish, or record PRODUCT GAP only if
-the UI cannot create a course (it should).
+Start from an empty catalogue. The owner can manage the catalogue and the
+curriculum. Publish **one** curriculum in this rehearsal. The Training matrix
+reads a single published curriculum version, with no chosen order, so a
+second published curriculum can hide this requirement.
+
+1. Open Training. Courses says **No courses yet**. **Manage catalogue** says **No training courses yet**.
+2. **New course**. **Course name** is required. Leave the generated course code. **Create draft course**.
+3. On **Edit draft**, enter **Learning objectives**. Duration, validity, delivery method, trainer requirements, and evidence notes are optional. The publish notice says extra fields are not required. **Save draft**, then **Publish course**. The catalogue status becomes **Published**.
+4. From Training, open **Curriculum editor** under **Setup**. The page title is **Training curricula**. An empty list already shows **New curriculum**. **Curriculum name** is required. Leave the generated code. **Create draft curriculum**.
+5. **Add requirement**. Choose the course you just published. Under **Who this applies to**, select **Everyone in the organisation**. Under **Requirement status**, select **Mandatory**. Leave **Completion deadline (days)** and **Validity override (days)** blank. Those values are stored, and current compliance does not use them to show or hide a matrix cell. **Add requirement**.
+6. In **Review before publishing**, confirm the course, **mandatory**, and **Everyone in the organisation needs this course.** Then **Publish curriculum**.
+7. Open **Training matrix** (**Who needs what training, and where are the gaps?**).
+8. The founder row shows the course with **Required**. The invited colleague appears the same way when they are an active member in the people directory. Reload. The same **Required** cell is still there.
+
+Job function and unit choices do not filter who appears on this matrix.
+**Job function, with a recorded organisational unit** says it does not
+currently restrict compliance. Use **Everyone in the organisation** for this
+pass.
+
+Recording a completion is a separate session workspace: **Bulk completion**
+on an existing session. The sessions list has no control to create a
+session, so a fresh organisation cannot record a completion from this
+journey. Leave completion out of this pass. If a session already exists,
+**Bulk completion** is optional and the matrix cell can then show
+**Completed**.
+
+**PASS:** the authored mandatory requirement is visible as **Required** for
+an applicable person on the Training matrix, and it is still there after
+reload. A published course with no curriculum, or an optional requirement,
+is **FAIL**. If the matrix cannot show that cell after this sequence,
+record **PRODUCT GAP** with the URL and what the cell showed.
 
 ### 20. Skills
 
@@ -296,7 +353,28 @@ whose requirements are missing or no longer valid.
 
 ### 21. Recognition
 
-Award or empty list. Recipient shows a human name, not a UUID.
+The founder is the award issuer. The Organisation Owner has every
+permission, including **recognition.manage** (**Types**) and
+**recognition.award** (**Award recognition**). A new organisation has no
+recognition type, and an award cannot be issued until one exists.
+
+The recipient can be the founder, when the founder appears under
+**Recipient**, or the colleague from step 9. A second member is required
+only for the unauthorised check, and that persona must be a **Team Member**.
+Team Member has **recognition.read** only. A **Manager** can award, so do
+not use a Manager for the denial check. If step 9 invited a Manager and no
+Team Member exists, issue the award anyway and record the denial check as
+**BLOCKED** with that reason.
+
+1. Open Recognition. Confirm **Award recognition** and **Types** are both present for the owner. The feed may say **No recognition awards yet.** That empty state is the starting point, not the result.
+2. Open **Types**. Under **Create recognition type**, enter **Name** and **Code**. Description is optional. **Create type**. The new type is listed.
+3. **Award recognition**. **Recognition type** shows the type you created. Enter **Title** and **Message**. Choose the first site under **Organisation unit** and a person under **Recipient**. If **Organisation unit** is empty, select the active site in the sidebar first. **Award**.
+4. The detail page title is the award title. Under **Recipients**, the link text is the person's name. A membership id in the profile address is expected. A membership UUID as the visible name is **FAIL**. If the name is the fallback **Person**, the membership has no display name: record that and treat it as **FAIL** for this check.
+5. Return to Recognition. The award is in the feed and in **History**, with its title, message, and type. Reload. It is still there.
+6. Sign in as the Team Member. **Award recognition** is absent. Opening `/platform/recognition/new` directly does not show the award form.
+
+**PASS:** one award was issued, it is still in History after reload, and
+the recipient is shown as a person's name. Empty History is **FAIL**.
 
 ### 22. LeanAI contextual Coach
 

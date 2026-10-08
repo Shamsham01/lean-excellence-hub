@@ -245,6 +245,14 @@ and Playwright run still completed.
 | LeanAI hosted provider | HUMAN REQUIRED | Local and CI use the fake provider |
 | Stripe Sandbox Checkout, webhook, portal, quantity increase on hosted | HUMAN REQUIRED | Fake provider does not prove Stripe |
 
+The hosted runbook steps for 5S, Gemba, Training, and Recognition were
+strengthened after this audit. Step 11 now requires a published standard
+used in a completed audit. Step 12 requires a published definition used in
+a completed walk. Step 19 requires a mandatory curriculum requirement
+visible on the Training matrix. Step 21 requires a persisted recognition
+award. Those four hosted steps are still unexecuted. The CI and local
+results in this report do not mark them PASS.
+
 ---
 
 ## First-customer gate
@@ -281,8 +289,11 @@ These are operator gates, not code remediation:
 Account email delivery, hosted password-recovery mail, Stripe Sandbox
 Checkout and webhook activation, Customer Portal, Test Clock cancellation,
 second-site quantity on real Stripe, sibling isolation on the new
-organisation, CookieWorks ISO-01..05, and a phone pass on the published
-origin.
+organisation, CookieWorks ISO-01..05, a phone pass on the published
+origin, and the strengthened hosted checks for a completed 5S audit, a
+completed Gemba walk, Training matrix visibility, and a persisted
+recognition award. Those four checks are rehearsal requirements. They
+have not been executed.
 
 ---
 
