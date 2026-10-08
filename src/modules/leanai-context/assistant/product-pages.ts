@@ -323,6 +323,109 @@ function definitionFor(
     };
   }
 
+  if (
+    identity.workflow === "five_s_setup" ||
+    identity.workflow === "gemba_setup"
+  ) {
+    const moduleLabel = identity.workflow === "five_s_setup" ? "5S" : "Gemba";
+    return {
+      module: identity.module,
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel: `${moduleLabel} · Setup`,
+      summary: `Choose Manual, LEH Quick Start, or Build with LeanAI for ${moduleLabel}. Each path creates an organisation-owned draft. LeanAI proposes. You review and decide.`,
+      terminology: [
+        {
+          term: "Draft",
+          meaning:
+            "An organisation-owned configuration that is not operational until a person publishes it.",
+        },
+      ],
+      starterPrompts: [
+        "Which setup path should we use?",
+        "What does Quick Start create?",
+        "Does LeanAI publish anything?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "Manual, Quick Start, and LeanAI all stop at an editable draft.",
+        "LeanAI must not publish, choose applicability, or overwrite an existing standard.",
+        "The person selects the organisational units the draft applies to.",
+      ],
+    };
+  }
+
+  if (
+    identity.workflow === "five_s_quick_start" ||
+    identity.workflow === "gemba_quick_start"
+  ) {
+    return {
+      module: identity.module,
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel:
+        identity.workflow === "five_s_quick_start"
+          ? "5S · Quick Start"
+          : "Gemba · Quick Start",
+      summary:
+        "Preview an optional LEH starting point. Using it creates an organisation-owned draft you can edit. Nothing is published until you publish it.",
+      terminology: [
+        {
+          term: "Quick Start",
+          meaning:
+            "A source-controlled starting point. Deploying it copies the content into your organisation as a draft.",
+        },
+      ],
+      starterPrompts: [
+        "Is this starting point right for us?",
+        "What will deploying do?",
+        "Can we change the questions afterwards?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "Quick Start is a starting point, not a prescribed Lean method.",
+        "Use this starting point creates a draft only.",
+        "LeanAI must not deploy the template or choose where it applies.",
+      ],
+    };
+  }
+
+  if (
+    identity.workflow === "five_s_builder" ||
+    identity.workflow === "gemba_builder"
+  ) {
+    return {
+      module: identity.module,
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel:
+        identity.workflow === "five_s_builder"
+          ? "5S · Build with LeanAI"
+          : "Gemba · Build with LeanAI",
+      summary:
+        "Describe how your organisation works. LeanAI proposes a draft for review. Nothing is saved until you create a draft, and only a person can publish it.",
+      terminology: [
+        {
+          term: "Proposal",
+          meaning:
+            "An unsaved suggestion stored with your conversation. It becomes configuration only when you create a draft.",
+        },
+      ],
+      starterPrompts: [
+        "What should I tell the builder?",
+        "When should I use Quick Start instead?",
+        "Does creating a draft publish it?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        "Opening the builder does not call a model. A message or Propose draft does.",
+        "Create draft re-reads the trusted proposal. The browser copy is not authoritative.",
+        "LeanAI must not publish, assign owners, or choose organisational applicability.",
+        "Manual setup and LEH Quick Start remain available.",
+      ],
+    };
+  }
+
   if (identity.workflow === "structure") {
     return {
       module: "sites",
@@ -443,8 +546,20 @@ function defaultContextLabel(identity: AssistantRouteIdentity): string {
       return "People";
     case "five_s":
       return "5S";
+    case "five_s_setup":
+      return "5S · Setup";
+    case "five_s_quick_start":
+      return "5S · Quick Start";
+    case "five_s_builder":
+      return "5S · Build with LeanAI";
     case "gemba":
       return "Gemba";
+    case "gemba_setup":
+      return "Gemba · Setup";
+    case "gemba_quick_start":
+      return "Gemba · Quick Start";
+    case "gemba_builder":
+      return "Gemba · Build with LeanAI";
     case "training":
       return "Training";
     case "skills":

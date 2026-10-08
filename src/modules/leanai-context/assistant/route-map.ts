@@ -193,11 +193,59 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       surface: "suggestions",
     };
   }
+  if (pathname === "/platform/5s/setup/leanai") {
+    return {
+      module: "five_s",
+      workflow: "five_s_builder",
+      pageTitle: "Build 5S with LeanAI",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/5s/setup/quick-start") {
+    return {
+      module: "five_s",
+      workflow: "five_s_quick_start",
+      pageTitle: "5S Quick Start",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/5s/setup") {
+    return {
+      module: "five_s",
+      workflow: "five_s_setup",
+      pageTitle: "Set up 5S",
+      surface: "workspace",
+    };
+  }
   if (pathname === "/platform/5s" || pathname.startsWith("/platform/5s/")) {
     return {
       module: "five_s",
       workflow: "five_s",
       pageTitle: "5S",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/gemba/setup/leanai") {
+    return {
+      module: "gemba",
+      workflow: "gemba_builder",
+      pageTitle: "Build Gemba with LeanAI",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/gemba/setup/quick-start") {
+    return {
+      module: "gemba",
+      workflow: "gemba_quick_start",
+      pageTitle: "Gemba Quick Start",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/gemba/setup") {
+    return {
+      module: "gemba",
+      workflow: "gemba_setup",
+      pageTitle: "Set up Gemba",
       surface: "workspace",
     };
   }

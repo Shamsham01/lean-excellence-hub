@@ -15,10 +15,14 @@ export default async function FiveSOverviewPage() {
     FIVE_S_PERMISSIONS.standardsManage,
   );
 
+  const { count: standardCount } = await supabase
+    .from("five_s_standards")
+    .select("id", { count: "exact", head: true });
   const { data: standards } = await supabase
     .from("five_s_standards")
     .select("id, display_name")
-    .limit(1);
+    .order("created_at", { ascending: false })
+    .limit(5);
   const { count: auditCount } = await supabase
     .from("five_s_audits")
     .select("id", { count: "exact", head: true })
@@ -37,7 +41,7 @@ export default async function FiveSOverviewPage() {
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
 
-  if (!standards?.length) {
+  if (!standardCount) {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader
@@ -46,12 +50,12 @@ export default async function FiveSOverviewPage() {
         />
         <EmptyState
           title="No 5S standards yet"
-          description="Create a configurable 5S standard for your areas and teams."
+          description="Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
           icon={<Sparkles className="size-5" />}
           {...(canManage
             ? {
-                actionLabel: "Create standard",
-                actionHref: "/platform/5s/standards",
+                actionLabel: "Set up 5S",
+                actionHref: "/platform/5s/setup",
               }
             : {})}
         />
@@ -60,19 +64,31 @@ export default async function FiveSOverviewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="five-s-overview-page">
       <PageHeader
         title="5S Audits"
         description="Score, evidence, and trend your 5S programme."
         actions={
-          <Button variant="outline" size="sm" asChild>
-            <AppLink
-              href="/platform/schedule"
-              data-testid="five-s-upcoming-link"
-            >
-              Upcoming
-            </AppLink>
-          </Button>
+          <>
+            {canManage ? (
+              <Button size="sm" asChild>
+                <AppLink
+                  href="/platform/5s/setup"
+                  data-testid="five-s-new-standard"
+                >
+                  New standard
+                </AppLink>
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" asChild>
+              <AppLink
+                href="/platform/schedule"
+                data-testid="five-s-upcoming-link"
+              >
+                Upcoming
+              </AppLink>
+            </Button>
+          </>
         }
       />
 
@@ -92,8 +108,28 @@ export default async function FiveSOverviewPage() {
         />
         <MetricCard label="Completed audits" value={auditCount ?? 0} />
         <MetricCard label="Open schedule slots" value={openOccurrences ?? 0} />
-        <MetricCard label="Standards" value={standards.length} />
+        <MetricCard label="Standards" value={standardCount ?? 0} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Standards</CardTitle>
+        </CardHeader>
+        <CardContent
+          className="flex flex-col gap-2"
+          data-testid="five-s-standard-list"
+        >
+          {standards?.map((standard) => (
+            <AppLink
+              key={standard.id}
+              href={`/platform/5s/standards/${standard.id}`}
+              className="text-sm font-medium underline-offset-4 hover:underline"
+            >
+              {standard.display_name}
+            </AppLink>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

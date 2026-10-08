@@ -39,9 +39,19 @@ export default async function GembaDefinitionsPage() {
     <div className="flex flex-col gap-8" data-testid="gemba-definitions-page">
       <PageHeader
         title="Gemba definitions"
-        description="Templates for structured walks."
+        description="Templates for structured walks. Setup mode → Draft → Review → Publish."
+        actions={
+          <Button variant="outline" asChild>
+            <AppLink
+              href="/platform/gemba/setup"
+              data-testid="gemba-choose-setup"
+            >
+              Choose how to start
+            </AppLink>
+          </Button>
+        }
       />
-      <Card>
+      <Card id="create-definition">
         <CardHeader>
           <CardTitle>Create definition</CardTitle>
         </CardHeader>

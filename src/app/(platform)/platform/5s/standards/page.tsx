@@ -36,10 +36,20 @@ export default async function FiveSStandardsPage() {
     <div className="flex flex-col gap-8" data-testid="five-s-standards-page">
       <PageHeader
         title="5S standards"
-        description="Configurable audit templates per area."
+        description="Configurable audit templates per area. Setup mode → Draft → Review → Publish."
+        actions={
+          <Button variant="outline" asChild>
+            <AppLink
+              href="/platform/5s/setup"
+              data-testid="five-s-choose-setup"
+            >
+              Choose how to start
+            </AppLink>
+          </Button>
+        }
       />
 
-      <Card>
+      <Card id="create-standard">
         <CardHeader>
           <CardTitle>Create standard</CardTitle>
         </CardHeader>

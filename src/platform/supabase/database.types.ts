@@ -12684,6 +12684,14 @@ export type Database = {
         }
         Returns: string
       }
+      create_five_s_standard_draft_from_definition: {
+        Args: {
+          target_declared_template_key: string
+          target_definition: Json
+          target_unit_ids: string[]
+        }
+        Returns: string
+      }
       create_five_s_standard_successor_version: {
         Args: { target_standard_id: string }
         Returns: string
@@ -12721,6 +12729,14 @@ export type Database = {
           target_display_name: string
           target_expected_duration_minutes?: number
           target_unit_ids?: string[]
+        }
+        Returns: string
+      }
+      create_gemba_definition_draft_from_definition: {
+        Args: {
+          target_declared_template_key: string
+          target_definition: Json
+          target_unit_ids: string[]
         }
         Returns: string
       }

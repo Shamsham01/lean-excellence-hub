@@ -30,6 +30,7 @@ export const COACH_AI_TASKS = [
   "explain_follow_up",
   "setup_conversation",
   "framework_builder",
+  "setup_builder",
   "complex_reasoning",
 ] as const;
 
@@ -74,6 +75,7 @@ export function selectCoachTaskModelClass(
       return "economy";
     case "setup_conversation":
     case "framework_builder":
+    case "setup_builder":
       return "standard";
     case "complex_reasoning":
       return "deep";

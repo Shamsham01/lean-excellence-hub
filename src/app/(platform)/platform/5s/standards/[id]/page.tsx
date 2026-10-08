@@ -222,6 +222,15 @@ export default async function FiveSStandardDetailPage({
           </Badge>
         ))}
       </div>
+      {draftVersion && !publishedVersion ? (
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="five-s-draft-boundary"
+        >
+          This is an editable draft. Review the categories and questions, then
+          publish when it matches how you work.
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>
