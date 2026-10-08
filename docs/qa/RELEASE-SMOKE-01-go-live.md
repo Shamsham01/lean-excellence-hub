@@ -12,17 +12,18 @@ billing.
 
 ---
 
-## Current gate (7 October 2026)
+## Current gate (8 October 2026)
 
-Inspected from **source and GitHub CI**, not from a live hosted ledger query:
+Evidence: [QA-NEW-ORG-001-PREFLIGHT-REPORT.md](./QA-NEW-ORG-001-PREFLIGHT-REPORT.md).
+The 7 October gate (`a183ff6`, 228 files, `20261007143820`) is historical.
 
 | Item | Value |
 | --- | --- |
-| Git `main` | `a183ff6b5257636b01110693fd046788147ea882` (#262) |
-| Includes | #261 ownership transfer + ledger rename to `20261007143820` |
+| Git `main` | `90286dd3b6fdb4bcf5e40e03c6f025fe5881805d` (#273) |
+| Includes | #269 Skills authoring, #272 guided 5S/Gemba drafts, #273 ledger reconciliation |
 | Hosted project | `zsadfvjtknbbfomlmttv` (`eu-west-1`) |
-| Latest **repository** migration | `20261007143820_organisation_ownership_transfer` (228 files) |
-| Ownership hosted apply | Source history: applied and ledger reconciled. **Do not replay** |
+| Latest migration | `20261008072255_create_module_setup_drafts_from_definition` (230 source files, 230 hosted rows, read-only match) |
+| Ownership hosted apply | `20261007143820`. **Do not replay** |
 | Production `https://leanexcellencehub.com` | Exact published git SHA **unverified**. Do not publish from this docs PR |
 | Application billing | **Implemented** (fake + Stripe Sandbox providers). Hosted Sandbox smoke **not** recorded as PASS |
 | Legal pages | **Missing** |
@@ -32,7 +33,7 @@ Inspected from **source and GitHub CI**, not from a live hosted ledger query:
 | Gate | Status | Blocks first **controlled** customer? |
 | --- | --- | --- |
 | P0/P1 **product-code** blockers on `main` | **None identified** in FIRST-CUSTOMER-READINESS-02 | No |
-| Hosted schema vs `main` | Operator must confirm 228/228 through `20261007143820` | Yes, until confirmed |
+| Hosted schema vs `main` | Read-only 230/230 match through `20261008072255` on 2026-10-08. Reconfirm immediately before publish | Reconfirm; do not replay |
 | Hosted Stripe Sandbox rehearsal | Outstanding | Yes, before treating billing as proven |
 | QA-NEW-ORG-001 human smoke | Outstanding | Yes, before inviting a real customer |
 | CookieWorks ISO-01..05 | Outstanding as hosted evidence | Isolation is P0 if it fails; the pack itself is evidence, not missing code |
@@ -52,7 +53,7 @@ or to take live payment from this reconciliation.
 ### A. Pre-flight (read-only)
 
 - [ ] `main` SHA recorded for the intended publish
-- [ ] Hosted `supabase migration list` latest = `20261007143820` (or the SHA’s true tip). Names match. Nothing pending
+- [ ] Hosted `supabase migration list` latest = `20261008072255` (or the SHA’s true tip). Names match. Nothing pending
 - [ ] Fast CI + Full Regression green on **that** SHA
 - [ ] Dry-run only, if a tenant reset is ever approved: `npm run qa:cookie:hosted-replacement -- --dry-run`
 
@@ -61,7 +62,9 @@ or to take live payment from this reconciliation.
 Do not paste historical “latest = 20260928210635” rows into a deploy
 decision. That was 29 September.
 
-Operator must list remote versions against the 228 repository files.
+Operator must list remote versions against the 230 repository files.
+The 7 October instruction to expect 228 files through `20261007143820` is
+historical.
 Known already-applied from source history (non-exhaustive; all earlier
 files are also applied if the ledger is healthy):
 
@@ -73,6 +76,8 @@ files are also applied if the ledger is healthy):
 | `20261006130432` | `site_quantity_increase_monotonic_claim` | Do not replay |
 | `20261006150528` / `20261006165240` | `multi_site_intent` | Do not replay |
 | `20261007143820` | `organisation_ownership_transfer` | Do not replay |
+| `20261007220929` | `skills_authoring_draft_integrity` | Do not replay |
+| `20261008072255` | `create_module_setup_drafts_from_definition` | Do not replay |
 
 If a hosted apply ever fails part-way: **stop**. Do not re-run historical
 migrations. Do not use MCP `apply_migration` in a way that generates an

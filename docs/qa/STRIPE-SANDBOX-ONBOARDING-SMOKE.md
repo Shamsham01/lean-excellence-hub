@@ -46,7 +46,7 @@ These rows require a maintainer. This PR does not perform them.
 | Create Products/Prices listed below | Before `BILLING_PROVIDER=stripe` | Put prices in git |
 | Create webhook endpoint `POST /api/billing/stripe/webhook` | After the billing application is on the target SHA | Use a live endpoint for this rehearsal |
 | Put server-only env vars on the target runtime (Netlify / local) | After webhook signing secret exists | Prefix any Stripe secret with `NEXT_PUBLIC_` |
-| Confirm hosted Supabase migrations through `20261007143820` | Explicit approval | Replay already-applied versions, including ownership transfer |
+| Confirm hosted Supabase migrations through `20261008072255` (230/230 on the 2026-10-08 read-only check) | Explicit approval | Replay already-applied versions, including ownership transfer and module-setup drafts |
 | Run QA-NEW-ORG-001 against hosted | Explicit approval | Reset CookieWorks to do it |
 | Enable Customer Portal cancel-at-period-end | Before cancellation steps | Immediate-cancel as the only option |
 

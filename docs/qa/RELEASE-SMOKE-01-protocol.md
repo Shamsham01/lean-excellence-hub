@@ -22,8 +22,10 @@ Isolation contract: `docs/qa/cookieworks-two-site-smoke-runbook.md`.
 invitation email, publish Netlify, or change Auth/billing while executing
 this pack from an implementation or docs PR.
 
-Current `main` at the FIRST-CUSTOMER-READINESS-02 audit:
-`a183ff6b5257636b01110693fd046788147ea882`.
+Current `main` at the 2026-10-08 preflight:
+`90286dd3b6fdb4bcf5e40e03c6f025fe5881805d`.
+The FIRST-CUSTOMER-READINESS-02 audit SHA
+`a183ff6b5257636b01110693fd046788147ea882` is historical.
 
 ---
 
@@ -32,7 +34,7 @@ Current `main` at the FIRST-CUSTOMER-READINESS-02 audit:
 | Check | Pass if |
 | --- | --- |
 | Hosted app | Sign-in at the intended URL responds. Record the SHA if the deployment UI shows it. Public HTML does not expose the git SHA |
-| Hosted DB | Latest applied migration is `20261007143820_organisation_ownership_transfer` (or later only if that later file is on the published SHA). **Do not replay.** Coach-04 `20260930103004` and ownership `20261007143820` are already in source history as applied |
+| Hosted DB | Latest applied migration on the 2026-10-08 read-only check is `20261008072255_create_module_setup_drafts_from_definition` (or later only if that later file is on the published SHA). **Do not replay.** Coach-04 `20260930103004`, ownership `20261007143820`, and the retired filename `20261007224043` stay historical |
 | CookieWorks foundation | 1 org, 2 site roots, 16 units, 8 personas, 8 role grants, 3 job functions, 4 placements |
 | Module data | Foundation-only **or** a recorded existing-smoke dataset (do not wipe without approval) |
 | Credentials | Hosted disposable passwords — **not** the local `docs/development/qa-tenant.md` values unless this is local |
