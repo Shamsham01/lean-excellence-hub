@@ -3,8 +3,8 @@
 -- resolved in application code; these RPCs do not verify LEH provenance and
 -- never publish.
 --
--- Local migration only. Do not apply this file to hosted Supabase from the
--- agent that introduced it.
+-- Hosted Supabase applied this migration as ledger version 20261008072255;
+-- filename reconciled to preserve source/hosted migration parity.
 
 create or replace function private.module_setup_require_object(
   candidate jsonb,
