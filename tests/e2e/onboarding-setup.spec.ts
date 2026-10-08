@@ -45,11 +45,15 @@ test.describe("organisation onboarding", () => {
     await expect(page).toHaveURL(/\/platform\/setup/);
     await expect(page.getByTestId("setup-page")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Core setup" }),
+      page.getByRole("heading", { name: "Get the first site ready" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Recommended next steps" }),
+      page.getByRole("heading", { name: "Before this site can run" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Choose what to configure next" }),
+    ).toBeVisible();
+    await expect(page.getByText("Core setup", { exact: true })).toBeVisible();
   });
 
   test("organisation admin can create a root unit", async ({ page }) => {
@@ -64,8 +68,9 @@ test.describe("organisation onboarding", () => {
     await page.getByTestId("add-unit-button").click();
     await expect(page.getByTestId("unit-create-form")).toBeVisible();
 
+    const unitName = `E2E Site ${Date.now()}`;
     const unitCode = `e2e-site-${Date.now()}`;
-    await page.locator("#unit-name").fill("E2E Site");
+    await page.locator("#unit-name").fill(unitName);
     await page.getByTestId("unit-type-choice").selectOption("custom");
     await expect(page.getByTestId("unit-type")).toBeVisible();
     await page.getByTestId("unit-type").fill("site");
@@ -77,7 +82,7 @@ test.describe("organisation onboarding", () => {
       page
         .getByTestId("structure-settings-page")
         .locator('[data-testid^="org-unit-node-"]')
-        .filter({ hasText: "E2E Site" }),
+        .filter({ hasText: unitName }),
     ).toBeVisible();
   });
 
@@ -85,10 +90,12 @@ test.describe("organisation onboarding", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: /Continuous improvement/i,
+        name: "Operational excellence. Connected.",
       }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+    await expect(
+      page.getByRole("banner").getByRole("link", { name: "Sign in" }),
+    ).toBeVisible();
     await expect(page.getByText("Application baseline")).toHaveCount(0);
   });
 });
