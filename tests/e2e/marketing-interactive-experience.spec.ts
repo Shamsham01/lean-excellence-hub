@@ -5,7 +5,7 @@ test("homepage does not host the interactive playground", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "Operational excellence. Connected.",
+      name: "Make continuous improvement visible, accountable and measurable.",
     }),
   ).toBeVisible();
   await expect(

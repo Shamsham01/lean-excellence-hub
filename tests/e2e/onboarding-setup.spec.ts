@@ -90,7 +90,7 @@ test.describe("organisation onboarding", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "Operational excellence. Connected.",
+        name: "Make continuous improvement visible, accountable and measurable.",
       }),
     ).toBeVisible();
     await expect(
