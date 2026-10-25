@@ -213,7 +213,7 @@ export function ContinuationCard() {
         Actions, Projects, Benefits and the full LEH improvement system.
       </p>
       <a className="leh-async-action leh-demo-link-action" href="/demo">
-        Request a demo
+        Book a live demo
       </a>
       <p className="leh-demo-planned">
         Later: send this experience to your inbox, or continue with Microsoft.

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
+
 import { MarketingAppearanceMenu } from "./appearance-menu";
 import { MarketingContainer, MarketingWordmark } from "./primitives";
 
@@ -58,7 +60,7 @@ export function MarketingFooter() {
             <p className="marketing-footer-heading">Access</p>
             <ul className="marketing-footer-list" role="list">
               <li>
-                <Link href="/demo">Request a demo</Link>
+                <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
               </li>
               <li>
                 <Link href="/login">Sign in</Link>
