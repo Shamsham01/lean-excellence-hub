@@ -53,7 +53,7 @@ export function MarketingHeader() {
 
           <nav
             aria-label="Primary"
-            className="ml-2 hidden items-center gap-6 md:flex lg:gap-7"
+            className="ml-2 hidden items-center gap-6 lg:flex lg:gap-7"
           >
             {NAV_LINKS.map((item) => (
               <a
@@ -68,7 +68,7 @@ export function MarketingHeader() {
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             <MarketingAppearanceMenu />
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden items-center gap-2 lg:flex">
               <Button asChild variant="ghost" size="sm">
                 <Link href="/login">Sign in</Link>
               </Button>
@@ -78,7 +78,7 @@ export function MarketingHeader() {
               type="button"
               variant="outline"
               size="icon"
-              className="marketing-icon-button md:hidden"
+              className="marketing-icon-button lg:hidden"
               aria-expanded={open}
               aria-controls={panelId}
               aria-label={open ? "Close menu" : "Open menu"}
@@ -97,7 +97,7 @@ export function MarketingHeader() {
           id={panelId}
           hidden={!open}
           className={cn(
-            "marketing-mobile-panel md:hidden",
+            "marketing-mobile-panel lg:hidden",
             open ? "block" : "hidden",
           )}
         >

@@ -60,17 +60,17 @@ describe("public marketing homepage", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Operational excellence. Connected.",
+        name: "Make continuous improvement visible, accountable and measurable.",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /connect frontline evidence to owned action, structured solving/i,
+        /connect frontline observations, actions, problem solving and organisational learning/i,
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Improvement shouldn't live in fragments.",
+        name: "One finding. Every next step connected.",
       }),
     ).toBeInTheDocument();
     expect(
@@ -99,8 +99,30 @@ describe("public marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("uses Request a demo as the primary CTA and keeps explore in-page", () => {
+  it("uses Explore the platform as the hero CTA and keeps account creation on /signup", () => {
     render(<MarketingHome />);
+
+    const hero = screen
+      .getByRole("heading", {
+        name: "Make continuous improvement visible, accountable and measurable.",
+      })
+      .closest("section");
+    expect(hero).toBeTruthy();
+    expect(
+      within(hero as HTMLElement).getByRole("link", {
+        name: "Explore the platform",
+      }),
+    ).toHaveAttribute("href", "#platform");
+    expect(
+      within(hero as HTMLElement).getByRole("link", {
+        name: "Create an account",
+      }),
+    ).toHaveAttribute("href", "/signup");
+    expect(
+      within(hero as HTMLElement).queryByRole("link", {
+        name: "Request a demo",
+      }),
+    ).not.toBeInTheDocument();
 
     const demoLinks = screen.getAllByRole("link", { name: "Request a demo" });
     expect(demoLinks.length).toBeGreaterThan(0);
@@ -117,7 +139,7 @@ describe("public marketing homepage", () => {
     }
 
     expect(
-      screen.getAllByRole("link", { name: "Create account" }).length,
+      screen.getAllByRole("link", { name: "Create an account" }).length,
     ).toBeGreaterThan(0);
     expect(
       screen.queryByRole("link", { name: "Try LEH" }),
@@ -140,7 +162,7 @@ describe("public marketing homepage", () => {
 
     const hero = screen
       .getByRole("heading", {
-        name: "Operational excellence. Connected.",
+        name: "Make continuous improvement visible, accountable and measurable.",
       })
       .closest("section");
     expect(hero).toBeTruthy();
@@ -327,29 +349,42 @@ describe("public marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows improvement work coming out of fragments", () => {
+  it("connects one fictional finding through the improvement lifecycle", () => {
     render(<MarketingHome />);
 
     const problem = document.getElementById("why") as HTMLElement;
-    for (const label of [
-      "Spreadsheet",
-      "Email",
-      "Audit",
-      "Action",
-      "Training",
-      "Project",
-      "Suggestion",
-      "Gemba",
-      "5S",
-      "Benefits",
-      "Maturity",
-    ]) {
-      expect(within(problem).getByText(label)).toBeInTheDocument();
-    }
     expect(
-      within(problem).getByText("One connected improvement system."),
+      within(problem).getByText(
+        "Gemba identifies packaging misalignment on Packing Line 1.",
+      ),
     ).toBeInTheDocument();
+    expect(
+      within(problem).getByText(
+        "A corrective action receives an accountable owner and due date.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(problem).getByText(/harbourfield foods group — bodmin bakery/i),
+    ).toBeInTheDocument();
+    expect(within(problem).getAllByText("GEM-214").length).toBeGreaterThan(0);
+    expect(within(problem).queryByText("Spreadsheet")).not.toBeInTheDocument();
     expect(screen.queryAllByText(/\bexcel\b|\bpowerpoint\b/i)).toHaveLength(0);
+    expect(
+      screen.queryByText(/£|\$\d|verified savings/i),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(within(problem).getByRole("button", { name: /Improve/ }));
+    expect(
+      within(problem).getByRole("heading", {
+        name: "Packing Line 1 film-path countermeasures",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(problem).getByText("BEN-019 awaiting validation"),
+    ).toBeInTheDocument();
+    expect(
+      within(problem).getByText("Nothing is shown as verified yet"),
+    ).toBeInTheDocument();
   });
 
   it("tells LeanAI governance without autonomous authority", () => {
@@ -371,14 +406,20 @@ describe("public marketing homepage", () => {
   });
 
   it("keeps a static reading path for reduced motion", () => {
+    render(<MarketingHome />);
     const css = readFileSync(
-      "src/components/marketing/kinetic/kinetic.css",
+      "src/components/marketing/editorial/home.css",
+      "utf8",
+    );
+    const source = readFileSync(
+      "src/components/marketing/editorial/home.tsx",
       "utf8",
     );
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
-    expect(css).toMatch(/position: relative !important/);
-    expect(css).toMatch(/transform: none !important/);
+    expect(css).toMatch(/animation: none/);
     expect(css).not.toMatch(/scroll-timeline|animation-timeline|lenis|gsap/i);
+    expect(source).not.toMatch(/data-kinetic|scrollTo\(|onWheel/);
+    expect(document.getElementById("loop")).toBeNull();
   });
 
   it("exposes a labelled System / Light / Dark appearance control", () => {
@@ -556,7 +597,7 @@ describe("homepage authentication routing", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Operational excellence. Connected.",
+        name: "Make continuous improvement visible, accountable and measurable.",
       }),
     ).toBeInTheDocument();
     expect(routeAfterAuthentication).not.toHaveBeenCalled();

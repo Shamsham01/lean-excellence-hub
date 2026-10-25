@@ -66,7 +66,8 @@ describe("interactive LEH product experience", () => {
       screen.queryByTestId("leh-demo-start-suggestion"),
     ).not.toBeInTheDocument();
     expect(document.getElementById("platform")).toBeTruthy();
-    expect(document.getElementById("loop")).toBeTruthy();
+    expect(document.getElementById("why")).toBeTruthy();
+    expect(document.getElementById("loop")).toBeNull();
   });
 
   it("starts the suggestion scenario from the section CTA", () => {

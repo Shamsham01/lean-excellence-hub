@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
-import { KineticStory } from "./kinetic/story";
+import { EditorialHome } from "./editorial/home";
 import {
   MarketingContainer,
   MarketingKicker,
@@ -14,7 +14,7 @@ import { MarketingShell } from "./shell";
 export function MarketingHome() {
   return (
     <MarketingShell>
-      <KineticStory />
+      <EditorialHome />
     </MarketingShell>
   );
 }
