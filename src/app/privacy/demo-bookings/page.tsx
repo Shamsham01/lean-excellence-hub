@@ -46,10 +46,15 @@ export default function DemoBookingPrivacyPage() {
             <section aria-labelledby="demo-privacy-controller">
               <h2 id="demo-privacy-controller" className="text-xl font-semibold">Who is responsible?</h2>
               <p className="mt-2">
-                The organisation operating Lean Excellence Hub arranges the
-                demonstration and determines why booking information is used.
-                <strong> Legal controller name: [OWNER TO CONFIRM].</strong>
+                Lean Excellence Hub is the proposed brand of a company the
+                founder intends to register before the first production customer.
+                The company has not yet been incorporated and cannot currently
+                be named as the legal controller.
+                <strong> Controller operating at the time bookings begin:
+                [IDENTIFY ACTUAL PERSON OR INCORPORATED ENTITY BEFORE ACTIVATION].</strong>
                 {" "}Privacy contact: <strong>[VERIFIED EMAIL TO CONFIRM]</strong>.
+                Once incorporated, replace this draft with the verified
+                registered company name and relevant identification details.
                 Cal.com provides the booking form and processes attendee booking
                 information for the event organiser.
               </p>
