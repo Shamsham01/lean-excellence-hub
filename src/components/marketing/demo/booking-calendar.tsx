@@ -17,15 +17,19 @@ type CalFn = {
   loaded?: boolean;
 };
 
-const inlineStarted = new Set<string>();
+/** How long to wait before treating a silent embed script as failed. */
+export const DEMO_EMBED_LOAD_TIMEOUT_MS = 15_000;
 
-/** Clears the one-time inline guard. Unit tests call this between renders. */
-export function resetDemoBookingEmbedState() {
-  inlineStarted.clear();
-}
+const EMBED_STATUS_ATTRIBUTE = "data-leh-embed-status";
 
 /**
  * Official Cal.com inline embed.
+ *
+ * Each mount issues `inline` for the element that is on the page now.
+ * A previous visit must not suppress that call: the embed node from the
+ * last visit is gone after a client-side navigation. React Strict Mode
+ * can also queue two `inline` commands before the script runs, so this
+ * component keeps only the latest frame.
  *
  * The snippet queues instructions until `/embed/embed.js` loads. Times,
  * timezone and daylight-saving behaviour come from Cal.com. `linkReady`
@@ -43,7 +47,6 @@ export function DemoBookingCalendar({
   const mountRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<DemoEmbedTheme | null>(null);
   const [phase, setPhase] = useState<"loading" | "ready" | "failed">("loading");
-  const inlineKey = `${booking.origin}/${booking.calLink}`;
 
   useEffect(() => {
     const apply = () => setTheme(resolvedTheme());
@@ -63,34 +66,62 @@ export function DemoBookingCalendar({
     const element = mountRef.current;
     if (!element) return;
 
-    const cal = installCalEmbed(booking.embedScriptUrl);
-    if (!inlineStarted.has(inlineKey)) {
-      inlineStarted.add(inlineKey);
-      cal("init", DEMO_EMBED_NAMESPACE, { origin: booking.origin });
-      const api = cal.ns[DEMO_EMBED_NAMESPACE];
-      api?.("inline", {
-        elementOrSelector: element,
-        calLink: booking.calLink,
-        config: demoEmbedConfig(theme),
-      });
-      api?.("on", {
-        action: "linkFailed",
-        callback: () => setPhase("failed"),
-      });
-      api?.("on", {
-        action: "linkReady",
-        callback: () => setPhase("ready"),
-      });
-    }
+    let alive = true;
+    setPhase("loading");
 
-    cal.ns[DEMO_EMBED_NAMESPACE]?.("ui", demoEmbedUi(theme));
-  }, [
-    booking.calLink,
-    booking.embedScriptUrl,
-    booking.origin,
-    inlineKey,
-    theme,
-  ]);
+    const cal = installCalEmbed(booking.embedScriptUrl);
+    const timeout = window.setTimeout(() => {
+      if (!alive) return;
+      setPhase((current) => {
+        if (current !== "loading") return current;
+        return element.querySelector("iframe") ? "ready" : "failed";
+      });
+    }, DEMO_EMBED_LOAD_TIMEOUT_MS);
+
+    const onScriptError = () => {
+      if (!alive) return;
+      window.clearTimeout(timeout);
+      setPhase("failed");
+    };
+
+    cal("init", DEMO_EMBED_NAMESPACE, { origin: booking.origin });
+    const api = cal.ns[DEMO_EMBED_NAMESPACE];
+    api?.("inline", {
+      elementOrSelector: element,
+      calLink: booking.calLink,
+      config: demoEmbedConfig(theme),
+    });
+    api?.("on", {
+      action: "linkFailed",
+      callback: () => {
+        if (alive) setPhase("failed");
+      },
+    });
+    api?.("on", {
+      action: "linkReady",
+      callback: () => {
+        if (alive) setPhase("ready");
+      },
+    });
+    api?.("ui", demoEmbedUi(theme));
+
+    // The script tag is inserted on the first queued call, so listen after it.
+    const script = embedScriptElement(booking.embedScriptUrl);
+    script?.addEventListener("error", onScriptError);
+
+    const prune = () => keepLatestFrame(element);
+    const frameObserver = new MutationObserver(prune);
+    frameObserver.observe(element, { childList: true, subtree: true });
+    prune();
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timeout);
+      script?.removeEventListener("error", onScriptError);
+      frameObserver.disconnect();
+      element.replaceChildren();
+    };
+  }, [booking.calLink, booking.embedScriptUrl, booking.origin, theme]);
 
   const status =
     phase === "failed"
@@ -147,8 +178,33 @@ function watchColorScheme(onChange: () => void) {
   return () => media.removeEventListener("change", onChange);
 }
 
+function embedScriptElement(embedJsUrl: string) {
+  return document.querySelector<HTMLScriptElement>(
+    `script[src="${embedJsUrl}"]`,
+  );
+}
+
+function keepLatestFrame(element: HTMLElement) {
+  const frames = element.querySelectorAll("iframe");
+  if (frames.length < 2) return;
+  const latest = frames[frames.length - 1];
+  if (!latest) return;
+  for (const child of [...element.children]) {
+    if (child !== latest && !child.contains(latest)) child.remove();
+  }
+}
+
 function installCalEmbed(embedJsUrl: string): CalFn {
   const root = window as Window & { Cal?: CalFn };
+  for (const script of document.querySelectorAll<HTMLScriptElement>(
+    `script[src="${embedJsUrl}"]`,
+  )) {
+    if (script.getAttribute(EMBED_STATUS_ATTRIBUTE) === "error") {
+      script.remove();
+      delete root.Cal;
+    }
+  }
+
   if (root.Cal) return root.Cal;
 
   const push = (api: CalFn, args: unknown[]) => {
@@ -163,6 +219,11 @@ function installCalEmbed(embedJsUrl: string): CalFn {
       const script = document.createElement("script");
       script.src = embedJsUrl;
       script.async = true;
+      script.setAttribute("referrerpolicy", "no-referrer");
+      script.addEventListener("error", () => {
+        script.setAttribute(EMBED_STATUS_ATTRIBUTE, "error");
+        if (root.Cal === current) delete root.Cal;
+      });
       document.head.appendChild(script);
       current.loaded = true;
     }

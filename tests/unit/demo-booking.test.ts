@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   demoEmbedConfig,
   demoEmbedUi,
+  readDemoBookingOverride,
   resolveDemoBookingUrl,
 } from "@/lib/marketing/demo-booking";
 
@@ -100,5 +101,33 @@ describe("resolveDemoBookingUrl", () => {
     expect(source).not.toContain("bookingSuccessful");
     expect(source).not.toContain("rescheduleBooking");
     expect(source).not.toContain("bookingCancelled");
+    expect(source).not.toContain("inlineStarted");
+    expect(source).not.toContain("resetDemoBookingEmbedState");
+  });
+});
+
+describe("readDemoBookingOverride", () => {
+  it("keeps the published URL when the test header is empty", () => {
+    expect(readDemoBookingOverride(null, undefined)).toEqual({
+      status: "unconfigured",
+    });
+    expect(readDemoBookingOverride("  ", FIXTURE)).toMatchObject({
+      status: "ready",
+      pageUrl: FIXTURE,
+    });
+  });
+
+  it("still rejects an unapproved address from the test header", () => {
+    expect(
+      readDemoBookingOverride(
+        "https://evil.example/fixture-organiser/product-demonstration",
+        undefined,
+      ),
+    ).toEqual({ status: "invalid" });
+    expect(readDemoBookingOverride(FIXTURE, undefined)).toMatchObject({
+      status: "ready",
+      pageUrl: FIXTURE,
+      embedScriptUrl: "https://cal.com/embed/embed.js",
+    });
   });
 });

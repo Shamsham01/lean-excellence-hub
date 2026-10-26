@@ -35,6 +35,12 @@ export const DEMO_EMBED_NAMESPACE = "leh-demo";
 
 export const DEMO_BOOKING_CTA = "Book a live demo";
 
+/**
+ * Playwright sends this header only when `DEMO_BOOKING_E2E=1`.
+ * Production ignores it. The value still has to pass the host allowlist.
+ */
+export const DEMO_BOOKING_E2E_HEADER = "x-leh-e2e-demo-booking-url";
+
 export type DemoBookingReady = {
   status: "ready";
   pageUrl: string;
@@ -52,6 +58,19 @@ export function readDemoBooking(
   raw: string | undefined = process.env.NEXT_PUBLIC_DEMO_BOOKING_URL,
 ): DemoBookingState {
   return resolveDemoBookingUrl(raw);
+}
+
+/**
+ * A non-empty override replaces the published URL. An empty override
+ * keeps the published URL. Both paths use the same allowlist.
+ */
+export function readDemoBookingOverride(
+  override: string | null | undefined,
+  published: string | undefined = process.env.NEXT_PUBLIC_DEMO_BOOKING_URL,
+): DemoBookingState {
+  const value = override?.trim() ?? "";
+  if (!value) return readDemoBooking(published);
+  return resolveDemoBookingUrl(value);
 }
 
 export function resolveDemoBookingUrl(

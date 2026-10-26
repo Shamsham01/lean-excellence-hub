@@ -1,5 +1,71 @@
 import { expect, test } from "@playwright/test";
 
+const E2E_BOOKING_URL =
+  "https://cal.com/fixture-organiser/product-demonstration";
+
+const MOCK_CAL_EMBED = `
+(() => {
+  const stub = window.Cal;
+  const namespaces = {};
+
+  function mountInline(options) {
+    const element = options && options.elementOrSelector;
+    if (!element || typeof element.appendChild !== "function") return;
+    const next = (window.__lehMockEmbedGeneration || 0) + 1;
+    window.__lehMockEmbedGeneration = next;
+    const frame = document.createElement("iframe");
+    frame.setAttribute("data-leh-mock-embed", String(next));
+    frame.title =
+      (options.config &&
+        options.config.iframeAttrs &&
+        options.config.iframeAttrs.title) ||
+      "Cal.com booking calendar";
+    element.appendChild(frame);
+  }
+
+  function handle(args) {
+    const action = args[0];
+    if (action === "init" && typeof args[1] === "string") {
+      if (!namespaces[args[1]]) {
+        const api = (...nsArgs) => handle(nsArgs);
+        api.q = [];
+        namespaces[args[1]] = api;
+      }
+      return;
+    }
+    if (action === "inline") {
+      mountInline(args[1]);
+      return;
+    }
+    if (action === "on") {
+      const spec = args[1] || {};
+      if (spec.action === "linkReady" && typeof spec.callback === "function") {
+        spec.callback();
+      }
+    }
+  }
+
+  function cal(...args) {
+    handle(args);
+  }
+
+  cal.ns = namespaces;
+  cal.q = [];
+  cal.loaded = true;
+
+  const pending = [];
+  if (stub && Array.isArray(stub.q)) pending.push(...stub.q);
+  if (stub && stub.ns) {
+    for (const api of Object.values(stub.ns)) {
+      if (api && Array.isArray(api.q)) pending.push(...api.q);
+    }
+  }
+
+  window.Cal = cal;
+  for (const args of pending) handle(args);
+})();
+`;
+
 test("homepage demo CTA opens the booking page", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -71,6 +137,72 @@ test("mobile menu books a demo and reduced motion still shows the page", async (
     "href",
     "https://cal.com/privacy",
   );
+});
+
+test("client navigation remounts the mocked calendar", async ({ page }) => {
+  await page.setExtraHTTPHeaders({
+    "x-leh-e2e-demo-booking-url": E2E_BOOKING_URL,
+  });
+  await page.route("**/embed/embed.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: MOCK_CAL_EMBED,
+    }),
+  );
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  const book = page
+    .getByRole("banner")
+    .locator(".marketing-header-bar")
+    .getByRole("link", { name: "Book a live demo" });
+  await book.click();
+  await expect(page).toHaveURL(/\/demo$/);
+  const first = page.locator("[data-leh-mock-embed]");
+  await expect(first).toHaveCount(1);
+  const firstGeneration = await first.getAttribute("data-leh-mock-embed");
+
+  await page.getByRole("link", { name: "Lean Excellence Hub home" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator("[data-leh-mock-embed]")).toHaveCount(0);
+
+  await book.click();
+  await expect(page).toHaveURL(/\/demo$/);
+  const second = page.locator("[data-leh-mock-embed]");
+  await expect(second).toHaveCount(1);
+  await expect(second).not.toHaveAttribute(
+    "data-leh-mock-embed",
+    firstGeneration ?? "",
+  );
+  await expect(
+    page.getByRole("link", { name: "Open the booking page" }),
+  ).toHaveAttribute("href", E2E_BOOKING_URL);
+  await expect(
+    page.getByText(/Loading the calendar from Cal\.com/),
+  ).toHaveCount(0);
+});
+
+test("a blocked embed script keeps the direct booking link", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "x-leh-e2e-demo-booking-url": E2E_BOOKING_URL,
+  });
+  await page.route("**/embed/embed.js", (route) => route.abort("failed"));
+  await page.goto("/demo");
+  await expect(
+    page.getByText(/The Cal\.com calendar did not load/),
+  ).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(
+    page.getByRole("link", { name: "Open the booking page" }),
+  ).toHaveAttribute("href", E2E_BOOKING_URL);
+  await expect(
+    page.getByText(/Loading the calendar from Cal\.com/),
+  ).toHaveCount(0);
+  await expect(page.locator("iframe")).toHaveCount(0);
 });
 
 test("demo page stays readable in dark theme", async ({ page }) => {

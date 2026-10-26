@@ -16,7 +16,7 @@ Show only capabilities that are healthy in the demo environment. If a module fai
 
 ## Before the meeting
 
-Follow [LEH-DEMO-PRESENTER-CHECKLIST.md](./LEH-DEMO-PRESENTER-CHECKLIST.md). Read the attendee's booking answers in Cal.com. Those answers set the first five minutes. They are not a script to repeat back as if they were LEH claims.
+Follow [LEH-DEMO-PRESENTER-CHECKLIST.md](./LEH-DEMO-PRESENTER-CHECKLIST.md). Read the answers the attendee actually submitted in Cal.com. Those answers set the first five minutes. Do not treat a recommended question as asked unless it is on the published event. The answers are not a script to repeat back as if they were LEH claims.
 
 ## 0–5 minutes: Understand the customer
 

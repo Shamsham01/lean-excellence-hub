@@ -4,7 +4,7 @@ Use this before a Lean Excellence Hub product demonstration. The booking itself 
 
 ## Customer
 
-- [ ] Open the booking in Cal.com and read the answers: name, business email, organisation, role, approximate number of sites, and the challenge they named.
+- [ ] Open the booking in Cal.com and read the answers that were actually submitted. Do not assume which questions were asked until you see them on the event.
 - [ ] Note their words for the current system and the friction. Do not rewrite them into a slogan.
 - [ ] Confirm the attendee list and the meeting link from the Cal.com confirmation or the connected calendar. Do not invent a conferencing link.
 - [ ] If they rescheduled or cancelled, use the Cal.com booking. Do not keep a parallel appointment list in LEH.

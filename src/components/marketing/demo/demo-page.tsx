@@ -89,20 +89,16 @@ export function MarketingDemoPage({
                 </li>
               </ol>
 
-              <h2>Your details</h2>
+              <h2>Booking and privacy</h2>
               <p>
-                If scheduling is connected, Cal.com asks for your name, business
-                email, organisation, role, approximate number of operational
-                sites, and the improvement challenge you want to discuss. It
-                does not ask for financial results or confidential documents.
-                Cal.com collects those answers and sends the confirmation,
-                calendar invitation and meeting link. Lean Excellence Hub does
-                not keep a separate booking record in this release, and this
-                page does not publish its own confirmation.
+                When scheduling is connected, the form belongs to Cal.com. It
+                asks the questions configured on that event. Do not send
+                financial results or confidential documents. Cal.com sends the
+                confirmation, calendar invitation and meeting link. Lean
+                Excellence Hub does not keep a separate booking record, and this
+                page does not confirm a meeting.
               </p>
               <p>
-                Lean Excellence Hub has not published a privacy policy for this
-                form.{" "}
                 <a href="https://cal.com/privacy">Cal.com privacy notice</a>.
               </p>
               <p className="demo-secondary">
