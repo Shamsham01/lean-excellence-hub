@@ -6,8 +6,8 @@ import { MarketingShell } from "@/components/marketing/shell";
 
 /**
  * DRAFT ONLY. Owner/legal sign-off is required before publishing this notice:
- * - Confirm the legal identity of the booking controller and verified contact.
- * - Approve the lawful basis and retention period/criteria.
+ * - Verify the legal spelling of the sole-trader controller's name.
+ * - Approve lawful basis and an operationally enforced retention policy.
  * - Verify Cal.com event questions, video/calendar integrations, transfer and
  *   marketing practices, then remove the draft warning and noindex.
  *
@@ -36,27 +36,34 @@ export default function DemoBookingPrivacyPage() {
             Effective date: [OWNER TO APPROVE PUBLICATION DATE]
           </p>
           <div role="alert" className="mt-6 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground">
-            <strong>Draft — not approved for publication.</strong> The controller&apos;s
-            legal identity, contact details, retention period and final processing
-            choices must be confirmed before this notice can be used for live
-            customer bookings.
+            <strong>Draft — not approved for publication.</strong> Before
+            activating public bookings, confirm the sole-trader legal name,
+            approve a real retention policy and lawful basis, and verify the
+            calendar/video integrations and international transfers.
           </div>
 
           <div className="mt-8 space-y-8 text-sm leading-7 text-foreground sm:text-base">
             <section aria-labelledby="demo-privacy-controller">
               <h2 id="demo-privacy-controller" className="text-xl font-semibold">Who is responsible?</h2>
               <p className="mt-2">
-                Lean Excellence Hub is the proposed brand of a company the
-                founder intends to register before the first production customer.
-                The company has not yet been incorporated and cannot currently
-                be named as the legal controller.
-                <strong> Controller operating at the time bookings begin:
-                [IDENTIFY ACTUAL PERSON OR INCORPORATED ENTITY BEFORE ACTIVATION].</strong>
-                {" "}Privacy contact: <strong>[VERIFIED EMAIL TO CONFIRM]</strong>.
-                Once incorporated, replace this draft with the verified
-                registered company name and relevant identification details.
-                Cal.com provides the booking form and processes attendee booking
-                information for the event organiser.
+                Before incorporation, Lean Excellence Hub is operated as a
+                sole-trader business under the trading name
+                {" "}<strong>Lean Excellence Hub</strong>. The responsible data
+                controller is <strong>Przemyslaw Rząsa (sole trader, trading as
+                Lean Excellence Hub)</strong>. This spelling must be verified
+                by the operator before this draft is published.
+                {" "}For demo-booking privacy enquiries or rights requests,
+                email{" "}
+                <a className="underline underline-offset-4" href="mailto:admin.lean.excellence.hub@gmail.com">
+                  admin.lean.excellence.hub@gmail.com
+                </a>.
+                The proposed Lean Excellence Hub company has
+                <strong> not yet been incorporated</strong> and is not
+                currently the controller. If a limited company later takes
+                over the service, we will update this notice to identify that
+                company and explain any relevant changes to processing
+                responsibilities. Cal.com provides the booking form on behalf
+                of the current event organiser.
               </p>
             </section>
 
@@ -146,8 +153,13 @@ export default function DemoBookingPrivacyPage() {
                 for access, correction, deletion or restriction of your personal
                 information, object to relevant processing, or request portability
                 where applicable. You may cancel or reschedule using the links
-                sent by Cal.com. Contact the organiser using the verified privacy
-                contact above to exercise rights concerning the demo booking.
+                sent by Cal.com. To exercise your rights in relation to
+                demo bookings, email{" "}
+                <a href="mailto:admin.lean.excellence.hub@gmail.com" className="underline underline-offset-4">
+                  admin.lean.excellence.hub@gmail.com
+                </a>.
+                If we rely on legitimate interests, you also have the
+                right to object to processing based on that lawful basis.
               </p>
               <p className="mt-2">
                 You may complain to the UK Information Commissioner&apos;s Office:
