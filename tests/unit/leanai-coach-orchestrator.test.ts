@@ -121,15 +121,15 @@ vi.mock("@/platform/ai/registry", () => ({
 
 vi.mock("@/platform/ai/config", () => ({
   AI_DEFAULTS: {
-    model: "gpt-4.1-mini",
+    model: "gpt-6.1-sol",
     maxOutputTokens: 6000,
     maxToolCalls: 8,
     runTimeoutMs: 45_000,
   },
   getAiEnvironment: () => ({
-    AI_MODEL_ECONOMY: "gpt-4.1-nano",
-    AI_MODEL_STANDARD: "gpt-4.1-mini",
-    AI_MODEL_DEFAULT: "gpt-4.1-mini",
+    AI_MODEL_ECONOMY: "gpt-6-luna",
+    AI_MODEL_STANDARD: "gpt-6.1-terra",
+    AI_MODEL_DEFAULT: "gpt-6.1-sol",
   }),
   isApplicationAiProviderAvailable: () => true,
 }));
@@ -222,8 +222,10 @@ describe("runCoachAiTurn", () => {
     });
 
     expect(result.logicalModelClass).toBe("economy");
-    expect(result.model).toBe("gpt-4.1-nano");
-    expect(createResponseCalls[0]?.model).toBe("gpt-4.1-nano");
+    expect(result.model).toBe("gpt-6-luna");
+    expect(createResponseCalls[0]?.model).toBe("gpt-6-luna");
+    expect(createResponseCalls[0]?.reasoningEffort).toBe("none");
+    expect(createResponseCalls[0]?.maxOutputTokens).toBe(1500);
     expect(createResponseCalls[0]?.tools).toEqual([]);
     expect(createResponseCalls[0]?.structuredOutputFormat?.name).toBe(
       "coach_envelope",
@@ -311,7 +313,10 @@ describe("runCoachAiTurn", () => {
     });
 
     expect(result.envelope.message).toMatch(/Maturity Framework/);
+    expect(result.model).toBe("gpt-6-luna");
     expect(createResponseCalls).toHaveLength(1);
+    expect(createResponseCalls[0]?.reasoningEffort).toBe("none");
+    expect(createResponseCalls[0]?.maxOutputTokens).toBe(1500);
     expect(createResponseCalls[0]?.messages).toEqual([
       ...conversationHistory,
       {
@@ -348,7 +353,8 @@ describe("runCoachAiTurn", () => {
     });
 
     expect(result.logicalModelClass).toBe("economy");
-    expect(result.model).toBe("gpt-4.1-nano");
+    expect(result.model).toBe("gpt-6-luna");
+    expect(createResponseCalls[0]?.model).not.toBe("gpt-6.1-sol");
   });
 
   it("uses standard routing for workspace assistant setup_conversation", async () => {
@@ -376,7 +382,10 @@ describe("runCoachAiTurn", () => {
     });
 
     expect(result.logicalModelClass).toBe("standard");
-    expect(result.model).toBe("gpt-4.1-mini");
+    expect(result.model).toBe("gpt-6.1-terra");
+    expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
+    expect(createResponseCalls[0]?.maxOutputTokens).toBe(3000);
+    expect(createResponseCalls[0]?.model).not.toBe("gpt-6.1-sol");
     expect(createResponseCalls[0]?.tools).toEqual([]);
     expect(createResponseCalls[0]?.systemPrompt).toMatch(
       /do not have a web search tool/i,

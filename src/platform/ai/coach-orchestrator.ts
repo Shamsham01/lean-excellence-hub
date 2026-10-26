@@ -14,12 +14,19 @@ import {
   isApplicationAiProviderAvailable,
 } from "@/platform/ai/config";
 import {
+  prepareWorkflowModelCall,
+  reasoningManifestFields,
+} from "@/platform/ai/model-compatibility";
+import {
   assertModelClassNotEscalated,
   resolveLogicalModelId,
   selectCoachTaskModelClass,
   type CoachAiTask,
 } from "@/platform/ai/model-routing";
-import { AiProviderError } from "@/platform/ai/providers/errors";
+import {
+  AiProviderError,
+  aiRunFailureCategory,
+} from "@/platform/ai/providers/errors";
 import {
   COACH_ENVELOPE_JSON_SCHEMA,
   COACH_EXPLAIN_PROMPT_KEY,
@@ -102,10 +109,11 @@ export async function runCoachAiTurn(
   const provider = resolveAIProvider();
   const logicalModelClass = allowedClass;
   const model = resolveLogicalModelId(logicalModelClass, env);
-  const maxOutputTokens = Math.min(
-    env.AI_MAX_OUTPUT_TOKENS ?? AI_DEFAULTS.maxOutputTokens,
-    1500,
-  );
+  const prepared = prepareWorkflowModelCall({
+    workflow: input.task,
+    model,
+    environment: env,
+  });
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
   const isAssistantTurn = input.task === "setup_conversation";
   const webSearchEnabled =
@@ -166,8 +174,9 @@ export async function runCoachAiTurn(
         { role: "user", content: userMessage },
       ],
       tools,
-      maxOutputTokens,
+      maxOutputTokens: prepared.maxOutputTokens,
       timeoutMs,
+      reasoningEffort: prepared.reasoningEffort,
       expectsStructuredOutput: true,
       structuredOutputFormat: {
         name: "coach_envelope",
@@ -243,6 +252,7 @@ export async function runCoachAiTurn(
     const manifest = {
       context_type: "coach",
       logical_model_class: logicalModelClass,
+      ...reasoningManifestFields(prepared),
       context_contract_version: input.context.contractVersion,
       product_knowledge_version: input.context.productKnowledgeVersion,
       intervention_key: input.context.intervention.key,
@@ -294,11 +304,7 @@ export async function runCoachAiTurn(
   } catch (error) {
     await input.supabase.rpc("fail_ai_run", {
       target_ai_run_id: runId,
-      target_error_category:
-        error instanceof Error &&
-        error.message.toLowerCase().includes("timeout")
-          ? "timeout"
-          : "provider_error",
+      target_error_category: aiRunFailureCategory(error),
       target_final_output:
         error instanceof AiProviderError
           ? error.message

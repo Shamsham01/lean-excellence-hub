@@ -9,8 +9,15 @@ import {
   getAiEnvironment,
   isApplicationAiProviderAvailable,
 } from "@/platform/ai/config";
+import {
+  prepareWorkflowModelCall,
+  reasoningManifestFields,
+} from "@/platform/ai/model-compatibility";
 import { problemSolvingModelId } from "@/platform/ai/model-routing";
-import { AiProviderError } from "@/platform/ai/providers/errors";
+import {
+  AiProviderError,
+  aiRunFailureCategory,
+} from "@/platform/ai/providers/errors";
 import {
   PROMPT_KEY,
   PROMPT_VERSION,
@@ -69,11 +76,16 @@ export async function runAiTurn(
   const env = getAiEnvironment();
   const provider = resolveAIProvider();
   const model = problemSolvingModelId(env);
-  const maxOutputTokens =
-    env.AI_MAX_OUTPUT_TOKENS ?? AI_DEFAULTS.maxOutputTokens;
+  const prepared = prepareWorkflowModelCall({
+    workflow:
+      input.mode === "challenge"
+        ? "problem_solving_challenge"
+        : "problem_solving",
+    model,
+    environment: env,
+  });
   const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
-  const reasoningEffort = env.AI_MODEL_REASONING;
   const expectsStructuredOutput = provider.name === "openai";
 
   const systemPrompt = buildSystemPrompt(input.mode, input.stageKey);
@@ -125,9 +137,9 @@ export async function runAiTurn(
         systemPrompt,
         messages,
         tools: buildOpenAiTools(),
-        maxOutputTokens,
+        maxOutputTokens: prepared.maxOutputTokens,
         timeoutMs,
-        ...(reasoningEffort ? { reasoningEffort } : {}),
+        reasoningEffort: prepared.reasoningEffort,
         ...(expectsStructuredOutput ? { expectsStructuredOutput: true } : {}),
       });
 
@@ -244,6 +256,7 @@ export async function runAiTurn(
       mode: input.mode,
       stage_key: input.stageKey ?? null,
       allowlist_size: allowlist.size,
+      ...reasoningManifestFields(prepared),
     };
 
     const { data: assistantMessageId, error: finishError } =
@@ -278,10 +291,7 @@ export async function runAiTurn(
   } catch (error) {
     await input.supabase.rpc("fail_ai_run", {
       target_ai_run_id: runId,
-      target_error_category:
-        error instanceof Error && error.message.includes("timeout")
-          ? "timeout"
-          : "provider_error",
+      target_error_category: aiRunFailureCategory(error),
       target_final_output:
         error instanceof AiProviderError
           ? error.message

@@ -9,6 +9,13 @@ import type {
 
 vi.mock("server-only", () => ({}));
 
+const { getAiEnvironment } = vi.hoisted(() => ({
+  getAiEnvironment: vi.fn(() => ({
+    AI_MODEL_DEFAULT: "gpt-test",
+    AI_MODEL_REASONING: "low" as const,
+  })),
+}));
+
 const createResponseCalls: CreateResponseInput[] = [];
 
 class TrackingOpenAiProvider implements AIProvider {
@@ -88,10 +95,7 @@ vi.mock("@/platform/ai/config", () => ({
     maxToolCalls: 8,
     runTimeoutMs: 45_000,
   },
-  getAiEnvironment: () => ({
-    AI_MODEL_DEFAULT: "gpt-test",
-    AI_MODEL_REASONING: "low",
-  }),
+  getAiEnvironment: () => getAiEnvironment(),
   isApplicationAiProviderAvailable: () => true,
 }));
 
@@ -108,6 +112,10 @@ import { runAiTurn } from "@/platform/ai/orchestrator";
 describe("runAiTurn stateless tool continuation", () => {
   beforeEach(() => {
     createResponseCalls.length = 0;
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: "low",
+    });
   });
 
   it("replays authorised tool results without previous_response_id chaining", async () => {
@@ -136,6 +144,9 @@ describe("runAiTurn stateless tool continuation", () => {
     });
 
     expect(createResponseCalls).toHaveLength(2);
+    expect(createResponseCalls[0]?.model).toBe("gpt-test");
+    expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
+    expect(createResponseCalls[1]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]).not.toHaveProperty("previousResponseId");
     expect(createResponseCalls[1]).not.toHaveProperty("previousResponseId");
 
@@ -155,5 +166,54 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(result.envelope.message).toBe(
       "Based on authorised case context, consider a hypothesis test.",
     );
+  });
+
+  it("uses high reasoning for challenge mode without changing the Problem Solving model", async () => {
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: undefined as never,
+    });
+    const finishPayloads: Array<{
+      target_manifest_json: Record<string, unknown>;
+    }> = [];
+    const supabase = {
+      rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "run-challenge", error: null });
+        }
+        if (name === "finish_ai_run") {
+          finishPayloads.push(
+            args as { target_manifest_json: Record<string, unknown> },
+          );
+          return Promise.resolve({ data: "assistant-challenge", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    await runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-challenge",
+      caseId: "case-1",
+      mode: "challenge",
+      userMessage: "Challenge the operator-rushing assumption.",
+      idempotencyKey: "idem-challenge",
+      conversationHistory: [],
+    });
+
+    expect(createResponseCalls[0]?.model).toBe("gpt-test");
+    expect(createResponseCalls[0]?.reasoningEffort).toBe("high");
+    expect(createResponseCalls[0]?.maxOutputTokens).toBe(14_000);
+    const toolNames = (createResponseCalls[0]?.tools ?? []).map(
+      (tool) => (tool as { name?: string }).name,
+    );
+    expect(toolNames).not.toContain("close_case");
+    expect(toolNames).not.toContain("verify_root_cause");
+    expect(finishPayloads[0]?.target_manifest_json.reasoning_effort).toBe(
+      "high",
+    );
+    expect(
+      finishPayloads[0]?.target_manifest_json.reasoning_effort_source,
+    ).toBe("task_default");
   });
 });

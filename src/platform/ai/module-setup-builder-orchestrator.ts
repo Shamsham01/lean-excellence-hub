@@ -15,15 +15,18 @@ import {
   isApplicationAiProviderAvailable,
 } from "@/platform/ai/config";
 import {
+  prepareWorkflowModelCall,
+  reasoningManifestFields,
+} from "@/platform/ai/model-compatibility";
+import {
   assertModelClassNotEscalated,
   resolveLogicalModelId,
   selectCoachTaskModelClass,
 } from "@/platform/ai/model-routing";
+import { aiRunFailureCategory } from "@/platform/ai/providers/errors";
 import { resolveAIProvider } from "@/platform/ai/registry";
 import type { Json } from "@/platform/supabase/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const BUILDER_MAX_OUTPUT_TOKENS = 4000;
 
 export const MODULE_SETUP_BUILDER_INVALID_RESPONSE_MESSAGE =
   "LeanAI's reply could not be used, so nothing changed. Try again or rephrase your request.";
@@ -86,10 +89,11 @@ export async function runModuleSetupBuilderTurn(
   const env = getAiEnvironment();
   const provider = resolveAIProvider();
   const model = resolveLogicalModelId(logicalModelClass, env);
-  const maxOutputTokens = Math.min(
-    env.AI_MAX_OUTPUT_TOKENS ?? AI_DEFAULTS.maxOutputTokens,
-    BUILDER_MAX_OUTPUT_TOKENS,
-  );
+  const prepared = prepareWorkflowModelCall({
+    workflow: "setup_builder",
+    model,
+    environment: env,
+  });
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
   const contextHash = hashJson(input.context);
   const storedUserMessage = `[${input.adapter.moduleKey} setup builder · context ${contextHash.slice(0, 12)}]\n\nUser request:\n${input.userRequest}`;
@@ -122,8 +126,9 @@ export async function runModuleSetupBuilderTurn(
         { role: "user", content: providerUserMessage },
       ],
       tools: [],
-      maxOutputTokens,
+      maxOutputTokens: prepared.maxOutputTokens,
       timeoutMs,
+      reasoningEffort: prepared.reasoningEffort,
       expectsStructuredOutput: true,
       structuredOutputFormat: {
         name: input.adapter.formatName,
@@ -187,6 +192,7 @@ export async function runModuleSetupBuilderTurn(
       module_key: input.adapter.moduleKey,
       intervention_key: input.adapter.interventionKey,
       logical_model_class: logicalModelClass,
+      ...reasoningManifestFields(prepared),
       context_contract_version: input.context.contract,
       context_hash: contextHash,
       intent: input.intent,
@@ -227,11 +233,7 @@ export async function runModuleSetupBuilderTurn(
   } catch (error) {
     await input.supabase.rpc("fail_ai_run", {
       target_ai_run_id: runId,
-      target_error_category:
-        error instanceof Error &&
-        error.message.toLowerCase().includes("timeout")
-          ? "timeout"
-          : "provider_error",
+      target_error_category: aiRunFailureCategory(error),
       target_final_output:
         error instanceof Error ? error.message.slice(0, 500) : "provider_error",
     });

@@ -52,6 +52,10 @@ core domains continue without AI.
 `ai_usage_events` is append-only authoritative telemetry (input/output/cached/reasoning tokens,
 provider, model). No hard-coded pricing. Logical model classes (`economy`, `standard`, `deep`)
 are mapped server-side; see [ADR-0018](../adr/ADR-0018-general-leanai-coach-sessions.md).
+Current API defaults are `gpt-6-luna`, `gpt-6.1-terra`, and `gpt-6.1-sol`.
+Problem Solving uses `AI_MODEL_DEFAULT` (`gpt-6.1-sol` when unset). The
+operator procedure, reasoning precedence, and illustrative costs are in
+[LEANAI-MODEL-MIGRATION](../operations/LEANAI-MODEL-MIGRATION.md).
 
 Public web research is an additional provider cost. Organisation admins opt in through
 `organisation_ai_settings.web_search_enabled` (default false). Workspace assistant runs record

@@ -30,13 +30,14 @@ vi.mock("@/platform/ai/registry", async () => {
 
 vi.mock("@/platform/ai/config", () => ({
   AI_DEFAULTS: {
-    model: "gpt-4.1-mini",
+    model: "gpt-6.1-sol",
     maxOutputTokens: 6000,
     maxToolCalls: 8,
     runTimeoutMs: 45_000,
   },
   getAiEnvironment: () => ({
-    AI_MODEL_STANDARD: "gpt-4.1-mini",
+    AI_MODEL_STANDARD: "gpt-6.1-terra",
+    AI_MODEL_DEFAULT: "gpt-6.1-sol",
     AI_MAX_OUTPUT_TOKENS: 9000,
   }),
   isApplicationAiProviderAvailable: () => true,
@@ -127,7 +128,7 @@ describe("runMaturityBuilderTurn", () => {
     const [start] = rpcCalls("start_ai_run");
     const startArgs = start?.[1] as Record<string, string>;
     expect(startArgs.target_ai_session_id).toBe(BUILDER_SESSION_ID);
-    expect(startArgs.target_model).toBe("gpt-4.1-mini");
+    expect(startArgs.target_model).toBe("gpt-6.1-terra");
     expect(startArgs.target_prompt_key).toBe(
       "leanai-maturity-framework-builder",
     );
@@ -138,7 +139,9 @@ describe("runMaturityBuilderTurn", () => {
 
     const [call] = providerCalls;
     expect(call?.tools).toEqual([]);
-    expect(call?.maxOutputTokens).toBe(6000);
+    expect(call?.model).toBe("gpt-6.1-terra");
+    expect(call?.reasoningEffort).toBe("medium");
+    expect(call?.maxOutputTokens).toBe(9000);
     expect(call?.structuredOutputFormat?.name).toBe(
       MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME,
     );

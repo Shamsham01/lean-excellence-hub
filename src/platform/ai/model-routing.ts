@@ -5,18 +5,21 @@ import { AI_LOGICAL_MODEL_CLASSES } from "@/platform/ai/types";
 
 /**
  * Official OpenAI Responses API identifiers (not ChatGPT product names).
- * Checked against OpenAI model docs on 2026-09-30:
- * - gpt-4.1-nano — $0.10 / $0.40 per 1M tokens
- * - gpt-4.1-mini — $0.40 / $1.60 per 1M tokens (existing LEH default)
- * - gpt-4.1 — same family, higher capability; reserved for deep tasks
+ * Checked against OpenAI model docs on 2026-10-26:
+ * - gpt-6-luna — $0.10 / $0.50 per 1M tokens; economy explanations
+ * - gpt-6.1-terra — $1 / $5 per 1M tokens; standard coaching and builders
+ * - gpt-6.1-sol — $2 / $10 per 1M tokens; deep work and Problem Solving
  *
+ * `gpt-4.1-nano` was retired on 2026-10-23 and must not be a default.
  * Operators may remap via AI_MODEL_ECONOMY / AI_MODEL_STANDARD / AI_MODEL_DEEP.
- * Problem Solving continues to use AI_MODEL_DEFAULT and is not silently retargeted.
+ * Problem Solving uses AI_MODEL_DEFAULT only. Standard does not fall back to
+ * that variable: the Problem Solving default is the deep model, and reusing it
+ * would silently promote coaching onto a more expensive model.
  */
 export const AI_MODEL_CLASS_DEFAULTS: Record<AiLogicalModelClass, string> = {
-  economy: "gpt-4.1-nano",
-  standard: "gpt-4.1-mini",
-  deep: "gpt-4.1",
+  economy: "gpt-6-luna",
+  standard: "gpt-6.1-terra",
+  deep: "gpt-6.1-sol",
 };
 
 export const AI_MODEL_CLASS_PURPOSES: Record<AiLogicalModelClass, string> = {
@@ -54,7 +57,6 @@ export function resolveLogicalModelId(
     case "standard":
       return (
         environment.AI_MODEL_STANDARD?.trim() ||
-        environment.AI_MODEL_DEFAULT?.trim() ||
         AI_MODEL_CLASS_DEFAULTS.standard
       );
     case "deep":
