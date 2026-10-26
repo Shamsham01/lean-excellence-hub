@@ -26,9 +26,9 @@ describe("resolveDemoBookingUrl", () => {
     ).toEqual({
       status: "ready",
       pageUrl: FIXTURE,
-      origin: "https://cal.com",
+      origin: "https://app.cal.com",
       calLink: "fixture-organiser/product-demonstration",
-      embedScriptUrl: "https://cal.com/embed/embed.js",
+      embedScriptUrl: "https://app.cal.com/embed/embed.js",
     });
   });
 
@@ -37,7 +37,7 @@ describe("resolveDemoBookingUrl", () => {
       resolveDemoBookingUrl(
         "https://www.cal.com/fixture-organiser/product-demonstration",
       ),
-    ).toMatchObject({ origin: "https://cal.com", pageUrl: FIXTURE });
+    ).toMatchObject({ origin: "https://app.cal.com", pageUrl: FIXTURE });
 
     expect(
       resolveDemoBookingUrl(
@@ -55,8 +55,20 @@ describe("resolveDemoBookingUrl", () => {
       ),
     ).toMatchObject({
       status: "ready",
-      origin: "https://cal.eu",
-      embedScriptUrl: "https://cal.eu/embed/embed.js",
+      origin: "https://app.cal.eu",
+      embedScriptUrl: "https://app.cal.eu/embed/embed.js",
+    });
+  });
+
+  it("uses the official app.cal.com embed origin for the actual LEH event URL", () => {
+    expect(
+      resolveDemoBookingUrl("https://cal.com/lean-excellence-hub/demo"),
+    ).toMatchObject({
+      status: "ready",
+      pageUrl: "https://cal.com/lean-excellence-hub/demo",
+      origin: "https://app.cal.com",
+      calLink: "lean-excellence-hub/demo",
+      embedScriptUrl: "https://app.cal.com/embed/embed.js",
     });
   });
 
@@ -127,7 +139,7 @@ describe("readDemoBookingOverride", () => {
     expect(readDemoBookingOverride(FIXTURE, undefined)).toMatchObject({
       status: "ready",
       pageUrl: FIXTURE,
-      embedScriptUrl: "https://cal.com/embed/embed.js",
+      embedScriptUrl: "https://app.cal.com/embed/embed.js",
     });
   });
 });
