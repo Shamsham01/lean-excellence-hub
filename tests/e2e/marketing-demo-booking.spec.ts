@@ -110,6 +110,15 @@ test("demo page links to LEH and Cal.com privacy information", async ({ page }) 
   await expect(
     page.getByRole("heading", { name: "Demo booking privacy notice" }),
   ).toBeVisible();
+  await expect(page.getByText(/sole-trader business/i)).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "admin.lean.excellence.hub@gmail.com",
+    }).first(),
+  ).toHaveAttribute(
+    "href",
+    "mailto:admin.lean.excellence.hub@gmail.com",
+  );
   await expect(
     page.getByText(/Draft — not approved for publication/i),
   ).toBeVisible();
