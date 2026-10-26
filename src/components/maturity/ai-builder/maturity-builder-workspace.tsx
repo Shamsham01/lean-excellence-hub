@@ -18,7 +18,6 @@ import type {
   MaturityBuilderRequestIntent,
 } from "@/modules/maturity/ai-builder/types";
 
-import { pruneGuidedSelections } from "./compose-guided-answers";
 import {
   MATURITY_BUILDER_STARTERS,
   MaturityBuilderComposer,
@@ -133,9 +132,11 @@ export function MaturityBuilderWorkspace({
         return;
       }
       setDraft("");
-      setSelections((current) =>
-        pruneGuidedSelections(result.conversation.pendingQuestions, current),
-      );
+      // A successful reply consumes the choices that were actually submitted.
+      // If someone edited a choice after a failed request, Retry still sends
+      // the original payload: retaining the newer selection would falsely
+      // imply LeanAI had accepted that different answer.
+      setSelections({});
       setRefineTarget(null);
       if (result.outcome !== "ok") {
         setAnnouncement(
