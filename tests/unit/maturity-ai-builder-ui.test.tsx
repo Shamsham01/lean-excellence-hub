@@ -18,6 +18,7 @@ import {
   assistantPayload,
   proposalTurnMessages,
   sessionDetail,
+  userMessage,
 } from "../fixtures/maturity-ai-builder";
 
 const push = vi.fn();
@@ -46,15 +47,78 @@ function proposalState(): MaturityBuilderConversationState {
   return state;
 }
 
+const SCOPE = "At what scope should assessments be carried out?";
+const LEVELS = "How many maturity levels do you want?";
+const PILLARS =
+  "Should Engineering, Supply Chain and People be separate pillars?";
+
+const DISCOVERY_QUESTIONS = [
+  {
+    question: SCOPE,
+    suggestedAnswers: ["Site", "Department", "All three"],
+  },
+  {
+    question: LEVELS,
+    suggestedAnswers: [
+      "Five levels: starting to continuously improving",
+      "Four levels",
+    ],
+  },
+  {
+    question: PILLARS,
+    suggestedAnswers: [
+      "Separate pillars; no existing standards",
+      "Use our existing standards",
+    ],
+  },
+];
+
+function discoveryState(
+  questions: Array<{
+    question: string;
+    suggestedAnswers: string[];
+  }> = DISCOVERY_QUESTIONS,
+): MaturityBuilderConversationState {
+  const state = deriveMaturityBuilderConversation(
+    sessionDetail([
+      userMessage(
+        "a0000000-0000-4000-8000-000000000011",
+        "Assess site standards",
+        "2026-10-06T10:00:00.000000+00:00",
+      ),
+      {
+        id: "a0000000-0000-4000-8000-000000000012",
+        role: "assistant",
+        content: "A couple of questions.",
+        created_at: "2026-10-06T10:00:01.000000+00:00",
+        structured_payload: assistantPayload({ questions }),
+      },
+    ]),
+    { sessionId: BUILDER_SESSION_ID, conversationStartedAt: null },
+  );
+  if (!state) {
+    throw new Error("fixture");
+  }
+  return state;
+}
+
 function renderWorkspace(
   conversation: MaturityBuilderConversationState | null,
+  maxMessageChars = 2000,
 ) {
   return render(
     <MaturityBuilderWorkspace
       initialConversation={conversation}
-      maxMessageChars={2000}
+      maxMessageChars={maxMessageChars}
       maxTurns={20}
     />,
+  );
+}
+
+function answerButton(question: string, answer: string) {
+  return within(screen.getByRole("group", { name: question })).getByRole(
+    "button",
+    { name: answer },
   );
 }
 
@@ -322,6 +386,234 @@ describe("MaturityBuilderWorkspace", () => {
     expect(
       await screen.findByTestId("maturity-builder-starters"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("guided maturity builder answers", () => {
+  it("selects, replaces and clears one answer per question without filling the notes", () => {
+    renderWorkspace(discoveryState());
+
+    const site = answerButton(SCOPE, "Site");
+    const department = answerButton(SCOPE, "Department");
+    const allThree = answerButton(SCOPE, "All three");
+    const levels = answerButton(
+      LEVELS,
+      "Five levels: starting to continuously improving",
+    );
+    expect(site).toHaveAttribute("aria-pressed", "false");
+    expect(site).toHaveAttribute("tabindex", "0");
+    expect(department).toHaveAttribute("tabindex", "-1");
+
+    site.focus();
+    fireEvent.keyDown(site, { key: "ArrowDown" });
+    expect(department).toHaveFocus();
+    fireEvent.click(department);
+    expect(department).toHaveAttribute("aria-pressed", "true");
+    expect(site).toHaveAttribute("aria-pressed", "false");
+    expect(allThree).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(site);
+    expect(site).toHaveAttribute("aria-pressed", "true");
+    expect(department).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(levels);
+    expect(levels).toHaveAttribute("aria-pressed", "true");
+    expect(site).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByTestId("maturity-builder-selection-summary"),
+    ).toHaveTextContent("2 of 3 answered");
+
+    fireEvent.click(site);
+    expect(site).toHaveAttribute("aria-pressed", "false");
+    expect(levels).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("maturity-builder-input")).toHaveValue("");
+    expect(
+      screen.getByLabelText("Additional instructions (optional)"),
+    ).toHaveValue("");
+  });
+
+  it("sends structured answers with optional notes and keeps questions independent", async () => {
+    sendAction.mockResolvedValue({
+      ok: true,
+      outcome: "ok",
+      conversation: discoveryState([
+        {
+          question: "Who will own the assessments?",
+          suggestedAnswers: ["Site leaders"],
+        },
+      ]),
+    });
+    renderWorkspace(discoveryState());
+
+    fireEvent.click(answerButton(SCOPE, "Site"));
+    fireEvent.click(
+      answerButton(LEVELS, "Five levels: starting to continuously improving"),
+    );
+    fireEvent.click(
+      answerButton(PILLARS, "Separate pillars; no existing standards"),
+    );
+    fireEvent.change(screen.getByTestId("maturity-builder-input"), {
+      target: { value: "Keep the bakery wording." },
+    });
+    fireEvent.click(screen.getByTestId("maturity-builder-send"));
+
+    await waitFor(() => expect(sendAction).toHaveBeenCalledTimes(1));
+    expect(sendAction.mock.calls[0]?.[0]).toMatchObject({
+      intent: "answer",
+      focus: null,
+      message: [
+        `Question: ${SCOPE}`,
+        "Answer: Site",
+        "",
+        `Question: ${LEVELS}`,
+        "Answer: Five levels: starting to continuously improving",
+        "",
+        `Question: ${PILLARS}`,
+        "Answer: Separate pillars; no existing standards",
+        "",
+        "Additional instructions:",
+        "Keep the bakery wording.",
+      ].join("\n"),
+    });
+    expect(
+      await screen.findByRole("button", { name: "Site leaders" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.queryByRole("button", { name: "Site" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("maturity-builder-input")).toHaveValue("");
+  });
+
+  it("sends a free-form reply on its own and includes selections in draft proposal", async () => {
+    sendAction.mockResolvedValue({
+      ok: true,
+      outcome: "ok",
+      conversation: discoveryState(),
+    });
+    renderWorkspace(discoveryState());
+
+    fireEvent.change(screen.getByTestId("maturity-builder-input"), {
+      target: { value: "We already use a four-level model." },
+    });
+    fireEvent.click(screen.getByTestId("maturity-builder-send"));
+    await waitFor(() => expect(sendAction).toHaveBeenCalledTimes(1));
+    expect(sendAction.mock.calls[0]?.[0]).toMatchObject({
+      intent: "answer",
+      message: "We already use a four-level model.",
+    });
+    expect(String(sendAction.mock.calls[0]?.[0].message)).not.toContain(
+      "Question:",
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("maturity-builder-input")).toHaveValue("");
+      expect(screen.getByTestId("maturity-builder-send")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
+    });
+
+    fireEvent.click(answerButton(SCOPE, "All three"));
+    fireEvent.click(screen.getByTestId("maturity-builder-propose"));
+    await waitFor(() => expect(sendAction).toHaveBeenCalledTimes(2));
+    expect(sendAction.mock.calls[1]?.[0]).toMatchObject({
+      intent: "propose",
+      focus: null,
+      message: `Question: ${SCOPE}\nAnswer: All three`,
+    });
+  });
+
+  it("retries the original payload and clears unsent edited choices after success", async () => {
+    const sameQuestions = discoveryState();
+    sendAction
+      .mockResolvedValueOnce({
+        ok: false,
+        reason: "timeout",
+        message: "LeanAI took too long to reply. Nothing changed. Try again.",
+        conversation: null,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        outcome: "ok",
+        conversation: sameQuestions,
+      });
+    renderWorkspace(discoveryState());
+    fireEvent.click(answerButton(SCOPE, "Site"));
+    fireEvent.change(screen.getByTestId("maturity-builder-input"), {
+      target: { value: "Bakery lines." },
+    });
+    fireEvent.click(screen.getByTestId("maturity-builder-send"));
+    expect(
+      await screen.findByTestId("maturity-builder-error"),
+    ).toHaveTextContent("Try again");
+    expect(answerButton(SCOPE, "Site")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("maturity-builder-input")).toHaveValue(
+      "Bakery lines.",
+    );
+
+    fireEvent.click(answerButton(SCOPE, "Department"));
+    fireEvent.change(screen.getByTestId("maturity-builder-input"), {
+      target: { value: "Changed after the failure." },
+    });
+    fireEvent.click(screen.getByTestId("maturity-builder-retry"));
+    await waitFor(() => expect(sendAction).toHaveBeenCalledTimes(2));
+    expect(sendAction.mock.calls[1]?.[0]).toMatchObject({
+      intent: "answer",
+      message: sendAction.mock.calls[0]?.[0].message,
+    });
+    expect(sendAction.mock.calls[0]?.[0].message).toBe(
+      `Question: ${SCOPE}\nAnswer: Site\n\nAdditional instructions:\nBakery lines.`,
+    );
+    expect(sendAction.mock.calls[1]?.[0].idempotencyKey).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByTestId("maturity-builder-input")).toHaveValue(""),
+    );
+    // The retry sent "Site", not the later edit to "Department".
+    // Never leave the edited answer highlighted as if LeanAI accepted it.
+    await waitFor(() => {
+      expect(answerButton(SCOPE, "Department")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+      expect(answerButton(SCOPE, "Site")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    });
+  });
+
+  it("blocks an over-long reply before the server action and preserves every answer", () => {
+    renderWorkspace(discoveryState(), 40);
+    fireEvent.click(answerButton(SCOPE, "Site"));
+    fireEvent.change(screen.getByTestId("maturity-builder-input"), {
+      target: { value: "Extra detail that must not be cut off." },
+    });
+    expect(
+      screen.getByTestId("maturity-builder-length-error"),
+    ).toHaveTextContent("40 characters");
+    expect(screen.getByTestId("maturity-builder-send")).toBeDisabled();
+    fireEvent.submit(screen.getByTestId("maturity-builder-composer"));
+    expect(sendAction).not.toHaveBeenCalled();
+    expect(answerButton(SCOPE, "Site")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("maturity-builder-input")).toHaveValue(
+      "Extra detail that must not be cut off.",
+    );
+  });
+
+  it("clears guided answers on start over", async () => {
+    discardAction.mockResolvedValue({ ok: true });
+    renderWorkspace(discoveryState());
+    fireEvent.click(answerButton(SCOPE, "Site"));
+    fireEvent.click(screen.getByTestId("maturity-builder-discard"));
+    fireEvent.click(
+      within(
+        await screen.findByTestId("maturity-builder-discard-dialog"),
+      ).getByTestId("maturity-builder-confirm-discard"),
+    );
+    expect(
+      await screen.findByTestId("maturity-builder-starters"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("maturity-builder-questions"),
+    ).not.toBeInTheDocument();
   });
 });
 

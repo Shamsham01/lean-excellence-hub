@@ -27,6 +27,13 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(chrome).toContain('title="Open LeanAI"');
     expect(chrome).toContain("leanai-assistant-rail-guidance");
     expect(chrome).toContain("view?.recommendation");
+    expect(chrome).toContain("isDedicatedLeanAiRoute");
+    expect(
+      read("src/components/leanai/dedicated-assistant-routes.ts"),
+    ).toContain("MATURITY_BUILDER_ROUTE");
+    expect(read("src/modules/maturity/ai-builder/types.ts")).toContain(
+      'export const MATURITY_BUILDER_ROUTE = "/platform/maturity/builder"',
+    );
 
     const assistantShell = read(
       "src/components/leanai/leanai-assistant-shell.tsx",

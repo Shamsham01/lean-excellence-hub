@@ -211,6 +211,9 @@ test.describe("Maturity framework builder with LeanAI", () => {
     await expect(
       page.getByTestId("maturity-builder-assistant-turn"),
     ).toHaveCount(1, { timeout: 45_000 });
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-open")).toHaveCount(0);
     await expect(page.getByTestId("maturity-builder-questions")).toContainText(
       "Where will you run assessments?",
     );
@@ -223,14 +226,61 @@ test.describe("Maturity framework builder with LeanAI", () => {
       "maturity-ai-builder-discovery-desktop.png",
     );
 
-    await page
-      .getByTestId("maturity-builder-questions")
-      .getByRole("button", { name: "Sites" })
-      .click();
-    await expect(page.getByTestId("maturity-builder-input")).toHaveValue(
-      /Sites/,
+    const questions = page.getByTestId("maturity-builder-questions");
+    const sites = questions.getByRole("button", { name: "Sites" });
+    const departments = questions.getByRole("button", { name: "Departments" });
+    await sites.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(departments).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(departments).toHaveAttribute("aria-pressed", "true");
+    await expect(sites).toHaveAttribute("aria-pressed", "false");
+    await sites.click();
+    await expect(sites).toHaveAttribute("aria-pressed", "true");
+    await expect(departments).toHaveAttribute("aria-pressed", "false");
+    await questions.getByRole("button", { name: "Four levels" }).click();
+    await expect(page.getByTestId("maturity-builder-input")).toHaveValue("");
+    await expect(
+      page.getByTestId("maturity-builder-selection-summary"),
+    ).toHaveText("2 of 2 answered");
+    await expectNoHorizontalOverflow(page);
+    await screenshotIfPossible(
+      page,
+      "maturity-builder-selections-desktop-light.png",
     );
-    await page.getByTestId("maturity-builder-input").fill("");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await screenshotIfPossible(
+      page,
+      "maturity-builder-selections-desktop-dark.png",
+    );
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expectNoHorizontalOverflow(page);
+    await screenshotIfPossible(
+      page,
+      "maturity-builder-selections-tablet-dark.png",
+    );
+    await page.emulateMedia({ colorScheme: "light" });
+    await screenshotIfPossible(
+      page,
+      "maturity-builder-selections-tablet-light.png",
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await questions.scrollIntoViewIfNeeded();
+    await expect(page.getByTestId("leanai-assistant-open")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await screenshotIfPossible(
+      page,
+      "maturity-builder-selections-mobile-light.png",
+      { fullPage: false },
+    );
+    await page.emulateMedia({ colorScheme: "dark" });
+    await screenshotIfPossible(
+      page,
+      "maturity-builder-selections-mobile-dark.png",
+      { fullPage: false },
+    );
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByTestId("maturity-builder-propose").click();
 
     const proposal = page.getByTestId("maturity-builder-proposal");
@@ -516,6 +566,64 @@ test.describe("Maturity framework builder with LeanAI", () => {
     await page.emulateMedia({ colorScheme: "light" });
 
     expect((await tenantCounts(user, user.organisationAName)).models).toBe(1);
+  });
+
+  test("global LeanAI is hidden on the builder and restored with its previous state", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await page.goto("/platform/maturity/models");
+    const desktop = page.getByTestId("leanai-assistant-desktop");
+    await expect(desktop).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
+    const openWidth = await page
+      .getByTestId("platform-main")
+      .evaluate((node) => node.getBoundingClientRect().width);
+
+    await page.goto("/platform/maturity/builder");
+    await expect(page.getByTestId("maturity-builder-page")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-open")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-pane")).toHaveCount(0);
+    const builderWidth = await page
+      .getByTestId("platform-main")
+      .evaluate((node) => node.getBoundingClientRect().width);
+    expect(builderWidth).toBeGreaterThan(openWidth + 200);
+    await expectNoHorizontalOverflow(page);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/platform\/maturity\/models$/);
+    await expect(page.getByTestId("leanai-assistant-desktop")).toBeVisible();
+    await page.goForward();
+    await expect(page).toHaveURL(/\/platform\/maturity\/builder$/);
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
+
+    await page.goto("/platform/maturity/models");
+    await page.getByTestId("leanai-assistant-close").click();
+    await expect(page.getByTestId("leanai-assistant-rail")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+    await page.goto("/platform/maturity/builder");
+    await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+    await page.goBack();
+    await expect(page.getByTestId("leanai-assistant-rail")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByTestId("leanai-assistant-open")).toBeVisible();
+    await page.goto("/platform/maturity/builder");
+    await expect(page.getByTestId("leanai-assistant-open")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await page.goto("/platform/maturity");
+    await expect(page.getByTestId("leanai-assistant-open")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-desktop")).toHaveCount(0);
   });
 
   test("sibling organisation sees no builder conversation or draft", async ({
