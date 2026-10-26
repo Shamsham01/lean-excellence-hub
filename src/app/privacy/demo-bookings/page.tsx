@@ -32,6 +32,9 @@ export default function DemoBookingPrivacyPage() {
             How personal information is used when someone books and attends a
             Lean Excellence Hub product demonstration.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Effective date: [OWNER TO APPROVE PUBLICATION DATE]
+          </p>
           <div role="alert" className="mt-6 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground">
             <strong>Draft — not approved for publication.</strong> The controller&apos;s
             legal identity, contact details, retention period and final processing
@@ -62,6 +65,13 @@ export default function DemoBookingPrivacyPage() {
                 improvement topics you want to discuss. The scheduling provider
                 may also process technical information such as your IP address,
                 browser and time zone in order to operate its service.
+              </p>
+              <p className="mt-2">
+                A name, contact email and available meeting slot are normally
+                needed to arrange a demonstration. Optional booking questions
+                need not be answered unless the event explicitly marks them
+                required. Without the basic meeting details, we cannot process
+                a request for a live booking.
               </p>
               <p className="mt-2">Please do not submit financial results, personal health information, confidential customer records or other sensitive materials in the booking form.</p>
             </section>
