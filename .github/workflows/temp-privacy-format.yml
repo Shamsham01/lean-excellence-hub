@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   prettify:
-    if: github.event.head_commit.message == 'ci(privacy): run one-time prettier fix'
+    if: "${{ github.event.head_commit.message == 'ci(privacy): retry one-time prettier' }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
