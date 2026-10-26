@@ -41,7 +41,7 @@ Until the notice is approved and linked, leave `NEXT_PUBLIC_DEMO_BOOKING_URL` em
    - Primary Continuous Improvement or Operational Excellence challenge
 
    Keep only name and business email mandatory unless the organiser decides otherwise. Do not ask for financial results, savings figures or confidential documents. Do not require payment. `/demo` must not list specific questions until they are the questions on the published event. See [Booking questions](https://cal.com/help/event-types/booking-questions).
-8. Copy the public booking link. It looks like `https://cal.com/<organiser>/<event-slug>`. That is the only value LEH needs.
+8. Copy the public booking link. It looks like `https://cal.com/<organiser>/<event-slug>`. That is the only value LEH needs. For the owner-provided event the exact public value is `https://cal.com/lean-excellence-hub/demo`; no HTML snippet or API key is needed.
 
 ## 2. Publish the link to LEH
 
@@ -69,7 +69,7 @@ An embed event in the browser is not treated as a booking. `bookingSuccessful` i
 
 `X-Frame-Options: DENY` stops other sites from framing Lean Excellence Hub. It does not stop `/demo` from embedding Cal.com. No CSP allowlist change is required for the current headers.
 
-The embed loads `{origin}/embed/embed.js` and frames the booking page. If a Content-Security-Policy is added later, allow the booking origin on `script-src`, `frame-src`, `connect-src` and `img-src`. A policy that omits the existing Next.js, Supabase and Stripe origins would break the rest of the product, so do not add a partial policy only for `/demo`.
+The public event URL may be on `cal.com` but the official generated snippet loads `https://app.cal.com/embed/embed.js` and uses `https://app.cal.com` as the embed origin (EU: `app.cal.eu`). LEH preserves the customer-facing `cal.com`/`cal.eu` event URL for the direct booking link while using the application origin for the inline frame. If a Content-Security-Policy is added later, allow the booking origin on `script-src`, `frame-src`, `connect-src` and `img-src`. A policy that omits the existing Next.js, Supabase and Stripe origins would break the rest of the product, so do not add a partial policy only for `/demo`.
 
 Playwright sets `DEMO_BOOKING_E2E=1` on its own server so a test can pass `x-leh-e2e-demo-booking-url`. The header is still checked against the allowlist. Do not set `DEMO_BOOKING_E2E` on a deployed environment. Without that flag, `/demo` ignores the header.
 
