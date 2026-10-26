@@ -127,9 +127,7 @@ export function resolveDemoBookingUrl(
   // inline embed uses app.cal.com (app.cal.eu for EU events). Keep the
   // customer-facing booking link distinct from the embed runtime origin.
   const pageOrigin = canonicalOrigin(host);
-  const origin = host === "cal.eu" || host.endsWith(".cal.eu")
-    ? "https://app.cal.eu"
-    : "https://app.cal.com";
+  const origin = embedOrigin(host);
   const calLink = decoded.join("/");
 
   return {
@@ -172,4 +170,11 @@ function canonicalOrigin(host: string) {
   if (host === "www.cal.com") return "https://cal.com";
   if (host === "www.cal.eu") return "https://cal.eu";
   return `https://${host}`;
+}
+
+function embedOrigin(host: string) {
+  if (host === "cal.eu" || host.endsWith(".cal.eu")) {
+    return "https://app.cal.eu";
+  }
+  return "https://app.cal.com";
 }
