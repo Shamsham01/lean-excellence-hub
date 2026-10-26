@@ -140,6 +140,11 @@ describe("demo booking page", () => {
       within(article).getByRole("link", { name: "Sign in" }),
     ).toHaveAttribute("href", "/login");
     expect(
+      screen.getByRole("link", {
+        name: "Lean Excellence Hub demo booking privacy notice",
+      }),
+    ).toHaveAttribute("href", "/privacy/demo-bookings");
+    expect(
       screen.getByRole("link", { name: "Cal.com privacy notice" }),
     ).toHaveAttribute("href", "https://cal.com/privacy");
     expect(

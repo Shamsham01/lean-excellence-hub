@@ -91,6 +91,46 @@ test("homepage demo CTA opens the booking page", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("demo page links to LEH and Cal.com privacy information", async ({
+  page,
+}) => {
+  await page.goto("/demo");
+
+  const organiser = page.getByRole("link", {
+    name: "Lean Excellence Hub demo booking privacy notice",
+  });
+  await expect(organiser).toHaveAttribute("href", "/privacy/demo-bookings");
+  await expect(
+    page.getByRole("link", { name: "Cal.com privacy notice" }),
+  ).toHaveAttribute("href", "https://cal.com/privacy");
+
+  await organiser.click();
+  await expect(page).toHaveURL(/\/privacy\/demo-bookings$/);
+  await expect(
+    page.getByRole("heading", { name: "Demo booking privacy notice" }),
+  ).toBeVisible();
+  await expect(page.getByText(/sole-trader business/i)).toBeVisible();
+  await expect(page.getByText(/Przemyslaw Rzasa, sole trader/i)).toBeVisible();
+  await expect(page.getByText(/12 months after the last/i)).toBeVisible();
+  await expect(
+    page
+      .getByRole("link", {
+        name: "admin.lean.excellence.hub@gmail.com",
+      })
+      .first(),
+  ).toHaveAttribute("href", "mailto:admin.lean.excellence.hub@gmail.com");
+  await expect(
+    page.getByText(/Draft — not approved for publication/i),
+  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+  await expect(
+    page.getByRole("link", { name: "Demo booking privacy", exact: true }),
+  ).toHaveAttribute("href", "/privacy/demo-bookings");
+});
+
 test("demo page has no horizontal overflow at mobile, tablet and desktop", async ({
   page,
 }) => {

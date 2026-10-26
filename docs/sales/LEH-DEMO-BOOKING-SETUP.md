@@ -16,9 +16,13 @@ Do not set `NEXT_PUBLIC_DEMO_BOOKING_URL` on a public site until all of the foll
 2. That notice is published at a stable address and linked from `/demo`.
 3. The questions on the Cal.com event have been checked against that notice.
 
-Do not draft that notice in this repository, and do not describe it as published before it is. `/demo` links the [Cal.com privacy notice](https://cal.com/privacy). That link does not stand in for the Lean Excellence Hub notice.
+A proposed, **unapproved draft** is prepared at `src/app/privacy/demo-bookings/page.tsx` under `/privacy/demo-bookings`. The page is explicitly marked as a draft, includes required owner-review placeholders, and is set to `noindex`. See `docs/legal/DEMO-BOOKING-PRIVACY-APPROVAL.md` for the approval checklist. Do **not** publish the current draft as a real notice: replace all placeholders, approve the lawful-basis and retention statements, remove the draft warning, and review its publication metadata first.
 
-Until the notice is approved and linked, leave `NEXT_PUBLIC_DEMO_BOOKING_URL` empty.
+Both `/demo` and the marketing footer are prepared to link to the LEH demo-booking notice. `/demo` also links [Cal.com's privacy notice](https://cal.com/privacy); that provider notice does not stand in for the organiser's own notice.
+
+After the LEH notice is published, add the same full URL `https://leanexcellencehub.com/privacy/demo-bookings` to the Cal.com event's public description or supported booking-form description so people booking directly through Cal.com can read it as well.
+
+Until all owner approval gates pass, leave `NEXT_PUBLIC_DEMO_BOOKING_URL` empty.
 
 ## 1. Create the Cal.com event
 

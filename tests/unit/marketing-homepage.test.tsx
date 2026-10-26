@@ -253,7 +253,10 @@ describe("public marketing homepage", () => {
       within(footer).getByText(/© 2026 Lean Excellence Hub/),
     ).toBeInTheDocument();
     expect(
-      within(footer).queryByRole("link", { name: /privacy|terms|company/i }),
+      within(footer).getByRole("link", { name: "Demo booking privacy" }),
+    ).toHaveAttribute("href", "/privacy/demo-bookings");
+    expect(
+      within(footer).queryByRole("link", { name: /terms|company/i }),
     ).not.toBeInTheDocument();
   });
 
