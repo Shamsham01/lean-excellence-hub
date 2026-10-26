@@ -123,12 +123,18 @@ export function resolveDemoBookingUrl(
     return { status: "invalid" };
   }
 
-  const origin = canonicalOrigin(host);
+  // Public Cal.com event links can use cal.com, while the generated official
+  // inline embed uses app.cal.com (app.cal.eu for EU events). Keep the
+  // customer-facing booking link distinct from the embed runtime origin.
+  const pageOrigin = canonicalOrigin(host);
+  const origin = host === "cal.eu" || host.endsWith(".cal.eu")
+    ? "https://app.cal.eu"
+    : "https://app.cal.com";
   const calLink = decoded.join("/");
 
   return {
     status: "ready",
-    pageUrl: `${origin}/${calLink}`,
+    pageUrl: `${pageOrigin}/${calLink}`,
     origin,
     calLink,
     embedScriptUrl: `${origin}/embed/embed.js`,
