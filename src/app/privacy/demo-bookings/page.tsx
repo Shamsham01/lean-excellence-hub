@@ -6,8 +6,8 @@ import { MarketingShell } from "@/components/marketing/shell";
 
 /**
  * DRAFT ONLY. Owner/legal sign-off is required before publishing this notice:
- * - Verify the legal spelling of the sole-trader controller's name.
- * - Approve lawful basis and an operationally enforced retention policy.
+ * - Confirm lawfulness, configured third parties and international transfers.
+ * - Operationalise and verify the agreed 12-month retention schedule.
  * - Verify Cal.com event questions, video/calendar integrations, transfer and
  *   marketing practices, then remove the draft warning and noindex.
  *
@@ -33,13 +33,14 @@ export default function DemoBookingPrivacyPage() {
             Lean Excellence Hub product demonstration.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Effective date: [OWNER TO APPROVE PUBLICATION DATE]
+            Draft reviewed 26 October 2026 · effective when published
           </p>
           <div role="alert" className="mt-6 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground">
-            <strong>Draft — not approved for publication.</strong> Before
-            activating public bookings, confirm the sole-trader legal name,
-            approve a real retention policy and lawful basis, and verify the
-            calendar/video integrations and international transfers.
+            <strong>Draft — not approved for publication.</strong> The sole-trader
+            identity and 12-month retention policy have been confirmed by the
+            operator. Before making bookings public, confirm lawful basis,
+            implement retention/deletion controls and verify the actual
+            calendar/video providers and any international transfers.
           </div>
 
           <div className="mt-8 space-y-8 text-sm leading-7 text-foreground sm:text-base">
@@ -49,9 +50,9 @@ export default function DemoBookingPrivacyPage() {
                 Before incorporation, Lean Excellence Hub is operated as a
                 sole-trader business under the trading name
                 {" "}<strong>Lean Excellence Hub</strong>. The responsible data
-                controller is <strong>Przemyslaw Rząsa (sole trader, trading as
-                Lean Excellence Hub)</strong>. This spelling must be verified
-                by the operator before this draft is published.
+                controller is <strong>Przemyslaw Rzasa, sole trader trading as
+                Lean Excellence Hub</strong>. This spelling was confirmed by
+                the operator on 26 October 2026.
                 {" "}For demo-booking privacy enquiries or rights requests,
                 email{" "}
                 <a className="underline underline-offset-4" href="mailto:admin.lean.excellence.hub@gmail.com">
@@ -136,13 +137,18 @@ export default function DemoBookingPrivacyPage() {
             <section aria-labelledby="demo-privacy-retention">
               <h2 id="demo-privacy-retention" className="text-xl font-semibold">How long information is kept</h2>
               <p className="mt-2">
-                <strong>[OWNER TO CONFIRM A REAL RETENTION PERIOD OR CLEAR CRITERIA]</strong>.
-                Booking information is kept in Cal.com and in the organiser&apos;s
-                connected calendar; this release of Lean Excellence Hub does
-                not create a separate database record for demo bookings.
-                Any ordinary follow-up correspondence may be held in the
-                organiser&apos;s email or business records subject to the approved
-                retention policy.
+                We retain identifiable demo booking information and related
+                correspondence for up to <strong>12 months after the last
+                relevant booking or demo-related interaction</strong>, unless
+                a longer period is needed to comply with a legal obligation
+                or establish, exercise or defend a legal claim. We review
+                records and delete or anonymise them when this period ends,
+                or sooner if no longer necessary. This policy covers our
+                booking account, connected organiser calendar and relevant
+                follow-up email records; any provider backups may be subject
+                to the provider&apos;s separate deletion cycles. This release
+                of Lean Excellence Hub does not create a separate application
+                database record for demo bookings.
               </p>
             </section>
 
