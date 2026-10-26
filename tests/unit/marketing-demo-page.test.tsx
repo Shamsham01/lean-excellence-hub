@@ -189,7 +189,7 @@ describe("demo booking page", () => {
     await waitFor(() => {
       expect(
         document.head.querySelector(
-          'script[src="https://cal.com/embed/embed.js"]',
+          'script[src="https://app.cal.com/embed/embed.js"]',
         ),
       ).not.toBeNull();
     });
@@ -201,6 +201,13 @@ describe("demo booking page", () => {
     ).Cal;
     const commands = [...(cal?.q ?? []), ...(cal?.ns["leh-demo"]?.q ?? [])];
     expect(commands.some((args) => args[0] === "initNamespace")).toBe(true);
+    expect(
+      commands.some(
+        (args) =>
+          args[0] === "init" &&
+          (args[2] as { origin?: string })?.origin === "https://app.cal.com",
+      ),
+    ).toBe(true);
     const inline = commands.find((args) => args[0] === "inline");
     expect(inline?.[1]).toMatchObject({
       calLink: "fixture-organiser/product-demonstration",
@@ -308,7 +315,7 @@ describe("demo booking page", () => {
     await waitFor(() => {
       expect(
         document.head.querySelector(
-          'script[src="https://cal.com/embed/embed.js"]:not([data-leh-embed-status="error"])',
+          'script[src="https://app.cal.com/embed/embed.js"]:not([data-leh-embed-status="error"])',
         ),
       ).not.toBeNull();
     });
