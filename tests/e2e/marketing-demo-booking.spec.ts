@@ -111,6 +111,10 @@ test("demo page links to LEH and Cal.com privacy information", async ({ page }) 
     page.getByRole("heading", { name: "Demo booking privacy notice" }),
   ).toBeVisible();
   await expect(page.getByText(/sole-trader business/i)).toBeVisible();
+  await expect(page.getByText(/Przemyslaw Rzasa, sole trader/i)).toBeVisible();
+  await expect(
+    page.getByText(/12 months after the last/i),
+  ).toBeVisible();
   await expect(
     page.getByRole("link", {
       name: "admin.lean.excellence.hub@gmail.com",
