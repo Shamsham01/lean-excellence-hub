@@ -6,7 +6,9 @@ This draft exists to enable review. It is not legal advice and must not be repre
 
 ## Owner approval required
 
-- [ ] Confirm the legal name of the individual or registered entity actually operating the LEH demo service. If trading as Lean Excellence Hub, disclose the legally responsible controller, not only the brand.
+- [ ] **Owner decision confirmed (2026-10-26):** the intended legal operator is a new `Lean Excellence Hub` company to be registered before production/first paying customer. **It is not incorporated yet.** Do not identify the proposed company as an existing controller or invent a registration number.
+- [ ] Decide the pre-incorporation path: **(A)** pause direct Cal.com public bookings until incorporation; **or (B)** if genuine demos/bookings occur first, identify the actual responsible person/entity as an interim controller and approve an accurate notice before collecting attendee details. An incorporated legal controller cannot be retroactively assumed for earlier bookings.
+- [ ] After incorporation, confirm and insert the registered legal company name, registration number (if used in notice), business contact and applicable registered address/details; amend notice and any contracts when processing responsibility changes.
 - [ ] Confirm an actively monitored **public** privacy contact email (and any additional contact details required), suitable for data-rights requests. Never substitute or publish a personal address without consent.
 - [ ] Agree the lawful basis for handling requested business demo bookings; confirm any legitimate interests assessment or pre-contract steps relied on. The draft suggests alternatives, not a final conclusion.
 - [ ] Confirm a *real* retention period or clear criteria for Cal.com bookings, organiser calendar entries and demo follow-up correspondence. Check Cal.com and the connected calendar's deletion/export and retention controls before promising automatic deletion.
