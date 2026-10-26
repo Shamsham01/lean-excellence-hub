@@ -521,7 +521,7 @@ describe("guided maturity builder answers", () => {
     });
   });
 
-  it("keeps the same payload for retry and drops selections only when questions change", async () => {
+  it("retries the original payload and clears unsent edited choices after success", async () => {
     const sameQuestions = discoveryState();
     sendAction
       .mockResolvedValueOnce({
@@ -566,14 +566,18 @@ describe("guided maturity builder answers", () => {
     await waitFor(() =>
       expect(screen.getByTestId("maturity-builder-input")).toHaveValue(""),
     );
-    expect(answerButton(SCOPE, "Department")).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(answerButton(SCOPE, "Site")).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    // The retry sent "Site", not the later edit to "Department".
+    // Never leave the edited answer highlighted as if LeanAI accepted it.
+    await waitFor(() => {
+      expect(answerButton(SCOPE, "Department")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+      expect(answerButton(SCOPE, "Site")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    });
   });
 
   it("blocks an over-long reply before the server action and preserves every answer", () => {
