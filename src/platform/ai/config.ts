@@ -49,7 +49,7 @@ export function getAiEnvironment(): AiEnvironment {
 }
 
 export const AI_DEFAULTS = {
-  model: "gpt-4.1-mini",
+  model: "gpt-6.1-sol",
   maxOutputTokens: 6000,
   maxToolCalls: 8,
   runTimeoutMs: 45_000,

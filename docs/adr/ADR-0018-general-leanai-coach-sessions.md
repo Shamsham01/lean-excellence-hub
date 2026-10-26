@@ -59,17 +59,23 @@ Extend the current AI session model with an explicit context type.
 Provider-independent classes `economy`, `standard`, and `deep` map to
 server-side model IDs. Credentials and mappings are never sent to the browser.
 
-Official OpenAI API identifiers (not ChatGPT product names) used as defaults:
+Official OpenAI API identifiers (not ChatGPT product names) used as defaults.
+The September 2026 identifiers (`gpt-4.1-nano`, `gpt-4.1-mini`, `gpt-4.1`) were
+replaced on 26 October 2026 after `gpt-4.1-nano` was retired on 23 October 2026.
+Operational steps live in
+[LEANAI-MODEL-MIGRATION](../operations/LEANAI-MODEL-MIGRATION.md).
 
 | Class | Default API ID | Why |
 | --- | --- | --- |
-| `economy` | `gpt-4.1-nano` | Short explanations; 4× cheaper than the current default; supports structured output and tools |
-| `standard` | `gpt-4.1-mini` | Same identifier as the existing Problem Solving default (`AI_MODEL_DEFAULT`) |
-| `deep` | `gpt-4.1` | Higher-capability model in the same family; reserved for complex reasoning |
+| `economy` | `gpt-6-luna` | Short explanations; structured output and tools; `reasoning.effort=none` |
+| `standard` | `gpt-6.1-terra` | Setup conversations, coaching, and module or framework builders |
+| `deep` | `gpt-6.1-sol` | Complex reasoning. Does not accept `reasoning.effort=none` |
 
-Problem Solving continues to use `AI_MODEL_DEFAULT` and is **not** silently
-retargeted through class routing. Ordinary Coach Explain uses `economy` only.
-There is no automatic cost escalation or unbounded retry.
+Problem Solving continues to use `AI_MODEL_DEFAULT` (default `gpt-6.1-sol`) and
+is **not** silently retargeted through class routing. Standard does not fall
+back to `AI_MODEL_DEFAULT`, because that variable is now the deep model.
+Ordinary Coach Explain uses `economy` only. There is no automatic cost
+escalation or unbounded retry.
 
 ### 16-question summary
 

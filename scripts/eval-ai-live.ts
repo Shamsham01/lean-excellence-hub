@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { prepareWorkflowModelCall } from "../src/platform/ai/model-compatibility";
 import { OpenAIResponsesProvider } from "../src/platform/ai/providers/openai-responses-core";
 import { buildSystemPrompt } from "../src/platform/ai/prompts/problem-solving-facilitator";
 import { buildOpenAiTools } from "../src/platform/ai/tools/problem-solving-schemas";
@@ -29,14 +30,20 @@ async function main(): Promise<void> {
 
   const provider = new OpenAIResponsesProvider(apiKey);
   const systemPrompt = buildSystemPrompt("challenge", null);
+  const prepared = prepareWorkflowModelCall({
+    workflow: "problem_solving_challenge",
+    model: process.env.AI_MODEL_DEFAULT?.trim() || "gpt-6.1-sol",
+    environment: {},
+  });
 
   const response = await provider.createResponse({
-    model: process.env.AI_MODEL_DEFAULT ?? "gpt-4.1-mini",
+    model: prepared.model,
     systemPrompt,
     messages: [{ role: "user", content: fixture.userMessage }],
     tools: buildOpenAiTools(),
-    maxOutputTokens: 800,
+    maxOutputTokens: prepared.maxOutputTokens,
     timeoutMs: 45_000,
+    reasoningEffort: prepared.reasoningEffort,
   });
 
   if (!response.structuredOutput?.message) {

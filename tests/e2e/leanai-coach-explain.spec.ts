@@ -144,7 +144,7 @@ test.describe("LeanAI Coach intelligent Explain", () => {
 
     const after = await countUsage(user, user.organisationAName);
     expect(after.count).toBeGreaterThan(0);
-    expect(after.rows.some((row) => row.model === "gpt-4.1-nano")).toBe(true);
+    expect(after.rows.some((row) => row.model === "gpt-6-luna")).toBe(true);
 
     const followUp = await ensureCoachFollowUpReady(page);
     await followUp.fill("What should we do after the first site exists?");

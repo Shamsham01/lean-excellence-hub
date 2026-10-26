@@ -44,6 +44,22 @@ describe("buildResponsesCreateParams", () => {
     });
 
     expect(params.reasoning).toEqual({ effort: "low" });
+    expect(params).not.toHaveProperty("temperature");
+    expect(params).not.toHaveProperty("top_p");
+  });
+
+  it("sends explicit none so economy models do not default to medium", () => {
+    const params = buildResponsesCreateParams({
+      ...baseInput,
+      model: "gpt-6-luna",
+      reasoningEffort: "none",
+    });
+
+    expect(params.model).toBe("gpt-6-luna");
+    expect(params.reasoning).toEqual({ effort: "none" });
+    expect(params.store).toBe(false);
+    expect(params).not.toHaveProperty("previous_response_id");
+    expect(params.text?.format).toMatchObject({ strict: true });
   });
 
   it("does not invent reasoning effort when omitted", () => {

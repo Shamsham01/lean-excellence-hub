@@ -35,43 +35,49 @@ describe("logical model routing", () => {
 
   it("maps classes to official OpenAI API identifiers, not ChatGPT product names", () => {
     const env = parseAiEnvironment({});
-    expect(resolveLogicalModelId("economy", env)).toBe("gpt-4.1-nano");
-    expect(resolveLogicalModelId("standard", env)).toBe("gpt-4.1-mini");
-    expect(resolveLogicalModelId("deep", env)).toBe("gpt-4.1");
+    expect(resolveLogicalModelId("economy", env)).toBe("gpt-6-luna");
+    expect(resolveLogicalModelId("standard", env)).toBe("gpt-6.1-terra");
+    expect(resolveLogicalModelId("deep", env)).toBe("gpt-6.1-sol");
+    expect(problemSolvingModelId(env)).toBe("gpt-6.1-sol");
     expect(AI_MODEL_CLASS_DEFAULTS.economy).not.toMatch(
-      /gpt-4o-mini|o4-mini|chatgpt/i,
+      /gpt-4o-mini|o4-mini|chatgpt|gpt-4\.1/i,
     );
   });
 
   it("honours server-side class overrides without exposing them as defaults", () => {
     const env = parseAiEnvironment({
-      AI_MODEL_ECONOMY: "gpt-6-luna",
-      AI_MODEL_STANDARD: "gpt-4.1-mini",
-      AI_MODEL_DEEP: "gpt-6.1-sol",
+      AI_MODEL_ECONOMY: "operator-economy",
+      AI_MODEL_STANDARD: "operator-standard",
+      AI_MODEL_DEEP: "operator-deep",
     });
-    expect(resolveLogicalModelId("economy", env)).toBe("gpt-6-luna");
-    expect(resolveLogicalModelId("deep", env)).toBe("gpt-6.1-sol");
+    expect(resolveLogicalModelId("economy", env)).toBe("operator-economy");
+    expect(resolveLogicalModelId("standard", env)).toBe("operator-standard");
+    expect(resolveLogicalModelId("deep", env)).toBe("operator-deep");
+    expect(AI_MODEL_CLASS_DEFAULTS.economy).toBe("gpt-6-luna");
   });
 
   it("keeps Problem Solving on AI_MODEL_DEFAULT rather than class routing", () => {
     const env = parseAiEnvironment({
-      AI_MODEL_DEFAULT: "gpt-4.1-mini",
-      AI_MODEL_ECONOMY: "gpt-4.1-nano",
-      AI_MODEL_DEEP: "gpt-4.1",
+      AI_MODEL_DEFAULT: "operator-problem-solving",
+      AI_MODEL_ECONOMY: "gpt-6-luna",
+      AI_MODEL_DEEP: "gpt-6.1-sol",
     });
-    expect(problemSolvingModelId(env)).toBe("gpt-4.1-mini");
+    expect(problemSolvingModelId(env)).toBe("operator-problem-solving");
     expect(problemSolvingModelId(env)).not.toBe(
       resolveLogicalModelId("economy", env),
     );
+    expect(problemSolvingModelId(env)).not.toBe(
+      resolveLogicalModelId("deep", env),
+    );
   });
 
-  it("falls standard back to AI_MODEL_DEFAULT when the class override is omitted", () => {
+  it("does not route standard tasks through the Problem Solving model", () => {
     const env = parseAiEnvironment({
-      AI_MODEL_DEFAULT: "operator-standard-model",
+      AI_MODEL_DEFAULT: "gpt-6.1-sol",
     });
-    expect(resolveLogicalModelId("standard", env)).toBe(
-      "operator-standard-model",
-    );
+    expect(resolveLogicalModelId("standard", env)).toBe("gpt-6.1-terra");
+    expect(resolveLogicalModelId("economy", env)).toBe("gpt-6-luna");
+    expect(problemSolvingModelId(env)).toBe("gpt-6.1-sol");
   });
 
   it("refuses silent model-class escalation", () => {

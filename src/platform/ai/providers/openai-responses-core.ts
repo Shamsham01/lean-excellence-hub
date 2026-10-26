@@ -1,10 +1,15 @@
 import OpenAI from "openai";
 
+import {
+  guardOpenAiResponsesRequest,
+  mapOpenAiSdkError,
+} from "@/platform/ai/providers/openai-error-map";
 import { facilitatorEnvelopeJsonSchema } from "@/platform/ai/providers/openai-transport";
 import {
   parseStructuredOpenAiResponse,
   type OpenAiResponseSnapshot,
 } from "@/platform/ai/providers/openai-response-parser";
+import { AiProviderError } from "@/platform/ai/providers/errors";
 import type {
   AIProvider,
   CreateResponseInput,
@@ -88,8 +93,8 @@ export class OpenAIResponsesProvider implements AIProvider {
   readonly name = "openai";
   private client: OpenAI;
 
-  constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+  constructor(apiKey: string, client?: OpenAI) {
+    this.client = client ?? new OpenAI({ apiKey });
   }
 
   async healthCheck() {
@@ -99,16 +104,29 @@ export class OpenAIResponsesProvider implements AIProvider {
   async createResponse(
     input: CreateResponseInput,
   ): Promise<CreateResponseResult> {
-    const response = await this.client.responses.create(
-      buildResponsesCreateParams(input),
-      { timeout: input.timeoutMs },
-    );
+    const prepared = guardOpenAiResponsesRequest(input);
+    let response: OpenAI.Responses.Response;
+    try {
+      response = await this.client.responses.create(
+        buildResponsesCreateParams(prepared),
+        { timeout: prepared.timeoutMs },
+      );
+    } catch (error) {
+      if (error instanceof AiProviderError) throw error;
+      throw mapOpenAiSdkError(error, {
+        model: prepared.model,
+        ...(prepared.reasoningEffort
+          ? { reasoningEffort: prepared.reasoningEffort }
+          : {}),
+        maxOutputTokens: prepared.maxOutputTokens,
+      });
+    }
 
-    const formatName = input.structuredOutputFormat?.name;
+    const formatName = prepared.structuredOutputFormat?.name;
     return parseStructuredOpenAiResponse(response as OpenAiResponseSnapshot, {
       provider: this.name,
-      model: input.model,
-      maxOutputTokens: input.maxOutputTokens,
+      model: prepared.model,
+      maxOutputTokens: prepared.maxOutputTokens,
       ...(formatName ? { formatName } : {}),
     });
   }

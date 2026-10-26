@@ -19,11 +19,18 @@ import {
   isApplicationAiProviderAvailable,
 } from "@/platform/ai/config";
 import {
+  prepareWorkflowModelCall,
+  reasoningManifestFields,
+} from "@/platform/ai/model-compatibility";
+import {
   assertModelClassNotEscalated,
   resolveLogicalModelId,
   selectCoachTaskModelClass,
 } from "@/platform/ai/model-routing";
-import { AiProviderError } from "@/platform/ai/providers/errors";
+import {
+  AiProviderError,
+  aiRunFailureCategory,
+} from "@/platform/ai/providers/errors";
 import {
   MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME,
   MATURITY_FRAMEWORK_BUILDER_JSON_SCHEMA,
@@ -33,8 +40,6 @@ import {
   hashMaturityFrameworkBuilderPrompt,
 } from "@/platform/ai/prompts/maturity-framework-builder";
 import { resolveAIProvider } from "@/platform/ai/registry";
-
-const BUILDER_MAX_OUTPUT_TOKENS = 6000;
 
 export const MATURITY_BUILDER_INVALID_RESPONSE_MESSAGE =
   "LeanAI's reply could not be used, so nothing changed. Try again or rephrase your request.";
@@ -77,10 +82,11 @@ export async function runMaturityBuilderTurn(
   const env = getAiEnvironment();
   const provider = resolveAIProvider();
   const model = resolveLogicalModelId(logicalModelClass, env);
-  const maxOutputTokens = Math.min(
-    env.AI_MAX_OUTPUT_TOKENS ?? AI_DEFAULTS.maxOutputTokens,
-    BUILDER_MAX_OUTPUT_TOKENS,
-  );
+  const prepared = prepareWorkflowModelCall({
+    workflow: "framework_builder",
+    model,
+    environment: env,
+  });
   const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
   const systemPrompt = buildMaturityFrameworkBuilderSystemPrompt();
   const promptHash = hashMaturityFrameworkBuilderPrompt(systemPrompt);
@@ -117,8 +123,9 @@ export async function runMaturityBuilderTurn(
         { role: "user", content: providerUserMessage },
       ],
       tools: [],
-      maxOutputTokens,
+      maxOutputTokens: prepared.maxOutputTokens,
       timeoutMs,
+      reasoningEffort: prepared.reasoningEffort,
       expectsStructuredOutput: true,
       structuredOutputFormat: {
         name: MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME,
@@ -191,6 +198,7 @@ export async function runMaturityBuilderTurn(
       module_key: "maturity",
       intervention_key: "maturity_framework_builder",
       logical_model_class: logicalModelClass,
+      ...reasoningManifestFields(prepared),
       context_contract_version: input.context.contract,
       context_hash: contextHash,
       intent: input.intent,
@@ -242,11 +250,7 @@ export async function runMaturityBuilderTurn(
   } catch (error) {
     await input.supabase.rpc("fail_ai_run", {
       target_ai_run_id: runId,
-      target_error_category:
-        error instanceof Error &&
-        error.message.toLowerCase().includes("timeout")
-          ? "timeout"
-          : "provider_error",
+      target_error_category: aiRunFailureCategory(error),
       target_final_output:
         error instanceof AiProviderError || error instanceof Error
           ? error.message
