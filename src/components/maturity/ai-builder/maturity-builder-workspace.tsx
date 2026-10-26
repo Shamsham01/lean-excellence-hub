@@ -18,6 +18,7 @@ import type {
   MaturityBuilderRequestIntent,
 } from "@/modules/maturity/ai-builder/types";
 
+import { pruneGuidedSelections } from "./compose-guided-answers";
 import {
   MATURITY_BUILDER_STARTERS,
   MaturityBuilderComposer,
@@ -50,6 +51,7 @@ export function MaturityBuilderWorkspace({
   const router = useRouter();
   const [conversation, setConversation] = useState(initialConversation);
   const [draft, setDraft] = useState("");
+  const [selections, setSelections] = useState<Record<string, string>>({});
   const [refineTarget, setRefineTarget] =
     useState<MaturityBuilderRefineTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +133,9 @@ export function MaturityBuilderWorkspace({
         return;
       }
       setDraft("");
+      setSelections((current) =>
+        pruneGuidedSelections(result.conversation.pendingQuestions, current),
+      );
       setRefineTarget(null);
       if (result.outcome !== "ok") {
         setAnnouncement(
@@ -142,9 +147,8 @@ export function MaturityBuilderWorkspace({
     });
   }
 
-  function handleSend() {
-    const message = draft.trim();
-    if (!message) {
+  function handleSend(message: string) {
+    if (!message.trim()) {
       return;
     }
     submit(
@@ -152,6 +156,18 @@ export function MaturityBuilderWorkspace({
         ? { intent: "refine", message, focus: refineTarget.focus }
         : { intent: "answer", message, focus: null },
     );
+  }
+
+  function toggleAnswer(question: string, answer: string) {
+    setSelections((current) => {
+      const next = { ...current };
+      if (next[question] === answer) {
+        delete next[question];
+      } else {
+        next[question] = answer;
+      }
+      return next;
+    });
   }
 
   function handleRetry() {
@@ -192,6 +208,7 @@ export function MaturityBuilderWorkspace({
       }
       setConversation(null);
       setDraft("");
+      setSelections({});
       setRefineTarget(null);
       setError(null);
       setFailedSubmission(null);
@@ -267,6 +284,12 @@ export function MaturityBuilderWorkspace({
                     ? "Choose Refine on any part of the proposal, or ask a question."
                     : "Describe what you want to assess. LeanAI asks a few short questions, then proposes a structure in your language."}
                 </p>
+                <p
+                  className="text-xs text-muted-foreground"
+                  data-testid="maturity-builder-dedicated-note"
+                >
+                  This conversation is the LeanAI workflow for your framework.
+                </p>
               </div>
 
               {isEmpty ? (
@@ -332,8 +355,8 @@ export function MaturityBuilderWorkspace({
                 value={draft}
                 onChange={setDraft}
                 onSubmit={handleSend}
-                onPropose={() =>
-                  submit({ intent: "propose", message: "", focus: null })
+                onPropose={(message) =>
+                  submit({ intent: "propose", message, focus: null })
                 }
                 showPropose={!current && !isEmpty}
                 pending={pending}
@@ -341,6 +364,8 @@ export function MaturityBuilderWorkspace({
                 refineTarget={refineTarget}
                 onCancelRefine={() => setRefineTarget(null)}
                 questions={conversation?.pendingQuestions ?? []}
+                selections={selections}
+                onToggleAnswer={toggleAnswer}
                 maxChars={maxMessageChars}
                 textareaRef={textareaRef}
                 isEmpty={isEmpty}

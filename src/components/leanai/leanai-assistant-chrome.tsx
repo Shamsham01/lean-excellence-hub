@@ -1,13 +1,16 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
 
+import { isDedicatedLeanAiRoute } from "@/components/leanai/dedicated-assistant-routes";
 import { LeanAiAssistantPanel } from "@/components/leanai/leanai-assistant-panel";
 import { useLeanAiAssistant } from "@/components/leanai/leanai-assistant-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 export function LeanAiAssistantChrome() {
+  const pathname = usePathname() ?? "";
   const {
     desktopOpen,
     setDesktopOpen,
@@ -17,6 +20,11 @@ export function LeanAiAssistantChrome() {
     view,
   } = useLeanAiAssistant();
   const hasGuidance = Boolean(view?.recommendation);
+  const dedicatedBuilder = isDedicatedLeanAiRoute(pathname);
+
+  if (dedicatedBuilder) {
+    return null;
+  }
 
   if (isDesktop) {
     if (!desktopOpen) {
