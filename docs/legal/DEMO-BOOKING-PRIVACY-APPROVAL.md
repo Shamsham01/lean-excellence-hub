@@ -7,11 +7,14 @@ This draft exists to enable review. It is not legal advice and must not be repre
 ## Owner approval required
 
 - [ ] **Owner decision confirmed (2026-10-26):** the intended legal operator is a new `Lean Excellence Hub` company to be registered before production/first paying customer. **It is not incorporated yet.** Do not identify the proposed company as an existing controller or invent a registration number.
-- [ ] Decide the pre-incorporation path: **(A)** pause direct Cal.com public bookings until incorporation; **or (B)** if genuine demos/bookings occur first, identify the actual responsible person/entity as an interim controller and approve an accurate notice before collecting attendee details. An incorporated legal controller cannot be retroactively assumed for earlier bookings.
+- [x] **Owner decision confirmed (2026-10-26): Option B.** Accept demo enquiries ahead of incorporation with the individual sole trader acting as the interim data controller. The future limited company must not be described as if it already exists.
+- [ ] **Verify exact legal name spelling before publishing:** proposed `Przemyslaw Rząsa, sole trader trading as Lean Excellence Hub`. This name has been inserted in the draft only. Obtain the owner's explicit confirmation that it is the exact name they want publicly disclosed.
+- [x] **Privacy contact specified by owner:** `admin.lean.excellence.hub@gmail.com`. Confirm the inbox is actively monitored for rights requests (and secured with two-factor authentication).
 - [ ] After incorporation, confirm and insert the registered legal company name, registration number (if used in notice), business contact and applicable registered address/details; amend notice and any contracts when processing responsibility changes.
-- [ ] Confirm an actively monitored **public** privacy contact email (and any additional contact details required), suitable for data-rights requests. Never substitute or publish a personal address without consent.
+- [ ] Check if any further controller contact/location information is needed for the published notice; use a genuine business contact/address as appropriate, without exposing the individual's home address unnecessarily.
 - [ ] Agree the lawful basis for handling requested business demo bookings; confirm any legitimate interests assessment or pre-contract steps relied on. The draft suggests alternatives, not a final conclusion.
-- [ ] Confirm a *real* retention period or clear criteria for Cal.com bookings, organiser calendar entries and demo follow-up correspondence. Check Cal.com and the connected calendar's deletion/export and retention controls before promising automatic deletion.
+- [ ] **Retention decision required:** recommend keeping prospect booking records and associated follow-up correspondence for no longer than **12 months after the last relevant demo/enquiry interaction**, unless needed for a lawful dispute or other legal obligation. Owner to approve duration and document a real deletion/review process covering Cal.com, connected calendar and email. Cal.com can otherwise retain booking data while the account remains active; do not promise automated deletion without implementing it.
+- [ ] Check whether the sole-trader use of booking/contact data triggers an ICO data-protection fee obligation or an exemption (https://ico.org.uk/for-organisations/data-protection-fee/). If a fee applies, arrange registration and payment before routine business use.
 - [ ] Confirm which calendar/video providers are actually linked to the event and how data transfers outside the UK are safeguarded. Review the effective **current** Cal.com DPA, transfer commitments and connected provider documentation on the release date.
 - [ ] Review the live Cal.com booking form questions and their optional/required settings. Remove questions not described in the final notice; do not request confidential or special category information.
 - [ ] Confirm that booking attendees are **not** automatically added to a promotional mailing list. If separate email marketing is intended, design appropriate PECR/UK GDPR handling and notices independently.
@@ -32,3 +35,15 @@ Sources consulted (check for changes before final approval):
 - Cal.com: https://cal.com/privacy and https://cal.com/dpa
 
 **Provider effective-date caution:** The Cal.com policy/DPA displayed during drafting referred to 1 November 2026, which is after the drafting date (26 October 2026). Check the binding terms effective when activating the event.
+
+## Transition from sole trader to incorporated company
+
+Once the new Lean Excellence Hub company is registered and actually assumes responsibility for the demo-booking service:
+
+1. Verify its registered legal name and company number, plus valid contact details.
+2. Determine whether existing prospect booking records will transfer to the company; document the lawful basis and any required communication before doing so.
+3. Update the controller section, effective date and contact links on the published notice before changing operational responsibility.
+4. Review Cal.com account ownership, its processing agreement and connected calendar/conferencing service agreements.
+5. Keep prior versions of the notice and maintain a record of when each controller was responsible.
+
+A new company is not automatically responsible for booking data gathered beforehand; do not retrospectively rewrite the historic sole-trader controller identity.
