@@ -27,6 +27,10 @@ This draft exists to enable review. The **controller name and retention interval
 - [ ] Add `https://leanexcellencehub.com/privacy/demo-bookings` to the Cal.com **demo event's description or supported booking-question explanation**, so attendees arriving directly via `https://cal.com/lean-excellence-hub/demo` also see the LEH notice before submitting. Do not claim this event configuration has already been changed.
 - [ ] After the page is live, set `NEXT_PUBLIC_DEMO_BOOKING_URL=https://cal.com/lean-excellence-hub/demo` in Netlify, rebuild, test book/reschedule/cancel, and verify confirmation, organiser calendar and meeting link.
 
+## CI / publication gate
+
+Formatting for the new notice, demo disclosure and E2E checks was corrected on this branch using the repository's Prettier tooling. CI checks must pass on the final commit. The notice remains a legal draft until its processing disclosures and retention operations are reviewed; green CI does not replace legal approval.
+
 ## Implementation boundary
 
 The notice concerns **demo scheduling only**, not every LEH product processing activity. A broader platform/customer privacy notice, terms and retention/security documentation are separate tasks. Do not widen the scope by claiming the demo notice covers platform tenants, training and employee data.
