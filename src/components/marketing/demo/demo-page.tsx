@@ -99,7 +99,9 @@ export function MarketingDemoPage({
                 page does not confirm a meeting.
               </p>
               <p>
-                <Link href="/privacy/demo-bookings">Lean Excellence Hub demo booking privacy notice</Link>
+                <Link href="/privacy/demo-bookings">
+                  Lean Excellence Hub demo booking privacy notice
+                </Link>
                 {" · "}
                 <a href="https://cal.com/privacy">Cal.com privacy notice</a>.
               </p>
