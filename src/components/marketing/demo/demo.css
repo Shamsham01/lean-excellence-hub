@@ -1,0 +1,225 @@
+.demo-page {
+  padding-block: 2.75rem 4.5rem;
+}
+
+.demo-page h1 {
+  margin: 0.85rem 0 0;
+  max-width: 14em;
+  font-size: clamp(2.15rem, 4.6vw, 3.55rem);
+  font-weight: 600;
+  letter-spacing: -0.042em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.demo-page h2 {
+  margin: 2.25rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.demo-lede {
+  max-width: 38rem;
+  margin: 1.1rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+
+.demo-proposition {
+  max-width: 36rem;
+  margin: 1.25rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.45;
+}
+
+.demo-copy > p {
+  max-width: 40rem;
+  color: var(--muted-foreground);
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.demo-copy > p + p {
+  margin-top: 0.85rem;
+}
+
+.demo-copy a {
+  color: var(--foreground);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.demo-layout {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.demo-layout > * {
+  min-width: 0;
+}
+
+.demo-facts {
+  margin: 1.75rem 0 0;
+  padding: 0;
+}
+
+.demo-facts div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.demo-facts dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.demo-facts dd {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.demo-agenda {
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: agenda;
+}
+
+.demo-agenda li {
+  counter-increment: agenda;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.demo-agenda li::before {
+  content: counter(agenda, decimal-leading-zero);
+  grid-row: span 2;
+  padding-top: 0.15rem;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.demo-agenda p {
+  margin: 0;
+}
+
+.demo-agenda p:first-child {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.demo-agenda p:last-child {
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.demo-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.demo-calendar {
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--elevated);
+  box-shadow: var(--marketing-shadow);
+}
+
+.demo-calendar-empty,
+.demo-calendar-intro {
+  padding: 1.25rem 1.3rem 1.35rem;
+}
+
+.demo-calendar h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.demo-calendar p {
+  margin: 0.75rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.demo-external {
+  display: inline-flex;
+  margin-top: 0.9rem;
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.demo-calendar-status {
+  margin: 0;
+  padding: 0 1.3rem 0.85rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.demo-embed {
+  width: 100%;
+  min-height: 36rem;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+
+.demo-embed iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+}
+
+@media (min-width: 40rem) {
+  .demo-facts div {
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+}
+
+@media (min-width: 64rem) {
+  .demo-layout {
+    grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+    gap: 3.5rem;
+  }
+
+  .demo-calendar {
+    position: sticky;
+    top: 5.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-page {
+    scroll-behavior: auto;
+  }
+}

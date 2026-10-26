@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import {
   MarketingModuleFigure,
   type MarketingModuleId,
@@ -556,7 +557,7 @@ export function EditorialHome() {
           </p>
           <div className="editorial-actions">
             <Button asChild className="marketing-cta">
-              <Link href="/demo">Request a demo</Link>
+              <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
             </Button>
             <Button asChild variant="outline">
               <Link href="/signup">Create an account</Link>
@@ -566,8 +567,9 @@ export function EditorialHome() {
             </Button>
           </div>
           <p className="editorial-note">
-            Request a demo opens an explanation of the walkthrough. It is not a
-            live booking calendar.
+            Book a live demo opens the demonstration page. A meeting is
+            confirmed only after the scheduling provider accepts the time you
+            choose.
           </p>
         </MarketingContainer>
       </section>

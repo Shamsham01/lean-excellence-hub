@@ -15,7 +15,7 @@ test("renders the commercial landing page", async ({ page }) => {
     page.getByRole("link", { name: "Sign in" }).first(),
   ).toHaveAttribute("href", "/login");
   await expect(
-    page.getByRole("link", { name: "Request a demo" }).first(),
+    page.getByRole("link", { name: "Book a live demo" }).first(),
   ).toHaveAttribute("href", "/demo");
   await expect(
     page.getByRole("link", { name: "Explore the platform" }).first(),
@@ -72,15 +72,24 @@ test("marketing appearance menu persists light and dark", async ({ page }) => {
     .toBe("dark");
 });
 
-test("request a demo page stays truthful", async ({ page }) => {
+test("demo page stays truthful when booking is not configured", async ({
+  page,
+}) => {
   await page.goto("/demo");
 
   await expect(
     page.getByRole("heading", {
-      name: /see how lean excellence hub can connect your continuous improvement system/i,
+      name: "See operational excellence connected.",
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Live booking is not connected" }),
+  ).toBeVisible();
   await expect(page.locator("form")).toHaveCount(0);
+  await expect(page.locator("iframe")).toHaveCount(0);
+  await expect(page.getByText(/does not show sample times/i)).toBeVisible();
+  await expect(page.getByText("09:00")).toHaveCount(0);
+  await expect(page.getByText("10:30")).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Explore the platform" }),
   ).toHaveAttribute("href", "/#platform");

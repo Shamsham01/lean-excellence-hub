@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { HTMLAttributes, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import { cn } from "@/lib/utils";
 
 export function MarketingContainer({
@@ -139,7 +140,7 @@ export function RequestDemoControl({
 }) {
   return (
     <Button asChild size={size} className={cn("marketing-cta", className)}>
-      <Link href="/demo">Request a demo</Link>
+      <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
     </Button>
   );
 }

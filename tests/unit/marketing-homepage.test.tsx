@@ -46,7 +46,7 @@ vi.mock("@/modules/identity/session", () => ({
 
 import Home, { metadata } from "@/app/page";
 import { ThemeProvider } from "@/app/theme-provider";
-import { MarketingDemoPage, MarketingHome } from "@/components/marketing/home";
+import { MarketingHome } from "@/components/marketing/home";
 
 describe("public marketing homepage", () => {
   afterEach(() => {
@@ -120,11 +120,14 @@ describe("public marketing homepage", () => {
     ).toHaveAttribute("href", "/signup");
     expect(
       within(hero as HTMLElement).queryByRole("link", {
-        name: "Request a demo",
+        name: "Book a live demo",
       }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Request a demo" }),
+    ).not.toBeInTheDocument();
 
-    const demoLinks = screen.getAllByRole("link", { name: "Request a demo" });
+    const demoLinks = screen.getAllByRole("link", { name: "Book a live demo" });
     expect(demoLinks.length).toBeGreaterThan(0);
     for (const link of demoLinks) {
       expect(link).toHaveAttribute("href", "/demo");
@@ -234,7 +237,7 @@ describe("public marketing homepage", () => {
 
     const footer = screen.getByRole("contentinfo");
     expect(
-      within(footer).getByRole("link", { name: "Request a demo" }),
+      within(footer).getByRole("link", { name: "Book a live demo" }),
     ).toHaveAttribute("href", "/demo");
     expect(
       within(footer).getByRole("link", { name: "Sign in" }),
@@ -548,32 +551,6 @@ describe("marketing appearance persistence", () => {
         within(appearanceGroup).getByRole("button", { name: choice }),
       ).toHaveAttribute("aria-pressed", "true");
     }
-  });
-});
-
-describe("request a demo page", () => {
-  afterEach(() => {
-    cleanup();
-  });
-
-  it("explains the demo without inventing booking or an email address", () => {
-    render(<MarketingDemoPage />);
-
-    expect(
-      screen.getByRole("heading", {
-        name: /see how lean excellence hub can connect your continuous improvement system/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /not yet connected to a scheduling or inbox destination/i,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("form")).not.toBeInTheDocument();
-    expect(screen.queryByText(/@/)).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Explore the platform" }),
-    ).toHaveAttribute("href", "/#platform");
   });
 });
 
