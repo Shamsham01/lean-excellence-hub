@@ -2,24 +2,26 @@
 
 **Status: DRAFT / NOT APPROVED FOR PUBLICATION**
 
-This draft exists to enable review. It is not legal advice and must not be represented as a published or approved customer notice before the checks below are completed. The prepared route is `/privacy/demo-bookings`. Its current source displays unverified placeholders and a DRAFT warning, and its metadata prevents search indexing.
+This draft exists to enable review. The **controller name and retention interval are now confirmed** but the remaining provider, basis, retention-execution and publication checks below still apply. It is not legal advice and must not be represented as an approved customer notice before those checks are completed. The prepared route is `/privacy/demo-bookings`. Its current source displays unverified placeholders and a DRAFT warning, and its metadata prevents search indexing.
 
 ## Owner approval required
 
 - [ ] **Owner decision confirmed (2026-10-26):** the intended legal operator is a new `Lean Excellence Hub` company to be registered before production/first paying customer. **It is not incorporated yet.** Do not identify the proposed company as an existing controller or invent a registration number.
 - [x] **Owner decision confirmed (2026-10-26): Option B.** Accept demo enquiries ahead of incorporation with the individual sole trader acting as the interim data controller. The future limited company must not be described as if it already exists.
-- [ ] **Verify exact legal name spelling before publishing:** proposed `Przemyslaw Rząsa, sole trader trading as Lean Excellence Hub`. This name has been inserted in the draft only. Obtain the owner's explicit confirmation that it is the exact name they want publicly disclosed.
+- [x] **Legal name confirmed by owner (2026-10-26):** `Przemyslaw Rzasa` (without Polish accents), **sole trader trading as Lean Excellence Hub**. Use exactly this spelling in the published controller notice until incorporation.
 - [x] **Privacy contact specified by owner:** `admin.lean.excellence.hub@gmail.com`. Confirm the inbox is actively monitored for rights requests (and secured with two-factor authentication).
 - [ ] After incorporation, confirm and insert the registered legal company name, registration number (if used in notice), business contact and applicable registered address/details; amend notice and any contracts when processing responsibility changes.
 - [ ] Check if any further controller contact/location information is needed for the published notice; use a genuine business contact/address as appropriate, without exposing the individual's home address unnecessarily.
 - [ ] Agree the lawful basis for handling requested business demo bookings; confirm any legitimate interests assessment or pre-contract steps relied on. The draft suggests alternatives, not a final conclusion.
-- [ ] **Retention decision required:** recommend keeping prospect booking records and associated follow-up correspondence for no longer than **12 months after the last relevant demo/enquiry interaction**, unless needed for a lawful dispute or other legal obligation. Owner to approve duration and document a real deletion/review process covering Cal.com, connected calendar and email. Cal.com can otherwise retain booking data while the account remains active; do not promise automated deletion without implementing it.
+- [x] **Retention period confirmed by owner (2026-10-26): 12 months** after the last relevant booking/demo enquiry interaction, with exceptions where legally required or reasonably necessary for legal claims.
+- [ ] **Operationalise the 12-month period**: at least monthly review Cal.com booking history, organiser calendar and related Gmail conversation threads; delete or anonymise expired records wherever supported. If Cal.com lacks automatic individual-booking retention controls, document and perform manual deletion/review. Provider backups may follow their own retention cycle. Do not claim automatic data purging exists without testing it.
 - [ ] Check whether the sole-trader use of booking/contact data triggers an ICO data-protection fee obligation or an exemption (https://ico.org.uk/for-organisations/data-protection-fee/). If a fee applies, arrange registration and payment before routine business use.
 - [ ] Confirm which calendar/video providers are actually linked to the event and how data transfers outside the UK are safeguarded. Review the effective **current** Cal.com DPA, transfer commitments and connected provider documentation on the release date.
 - [ ] Review the live Cal.com booking form questions and their optional/required settings. Remove questions not described in the final notice; do not request confidential or special category information.
 - [ ] Confirm that booking attendees are **not** automatically added to a promotional mailing list. If separate email marketing is intended, design appropriate PECR/UK GDPR handling and notices independently.
 - [ ] Agree who can access bookings and who acts on subject-rights requests.
-- [ ] Replace all `[OWNER TO CONFIRM]` and other unfinished statements in `src/app/privacy/demo-bookings/page.tsx`; remove draft warning; set metadata to the accurate publication title, effective date and index setting.
+- [x] Controller name spelling and retention-period placeholders removed from `src/app/privacy/demo-bookings/page.tsx`.
+- [ ] Confirm all remaining disclosures and processing choices, remove the draft warning, and set the metadata to an accurate **publication** title, effective date and indexing setting.
 - [ ] Ensure `/demo` links to the **approved LEH** notice as well as Cal.com's separate notice, and footer shows a working link.
 - [ ] Publish the approved page on `https://leanexcellencehub.com/privacy/demo-bookings` before enabling the live embedded calendar.
 - [ ] Add `https://leanexcellencehub.com/privacy/demo-bookings` to the Cal.com **demo event's description or supported booking-question explanation**, so attendees arriving directly via `https://cal.com/lean-excellence-hub/demo` also see the LEH notice before submitting. Do not claim this event configuration has already been changed.
