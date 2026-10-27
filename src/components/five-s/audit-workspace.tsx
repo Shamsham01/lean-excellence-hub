@@ -15,12 +15,17 @@ import {
   type SaveStatus,
 } from "@/components/five-s/audit-answer-state";
 import { FiveSEvidenceBlock } from "@/components/five-s/five-s-evidence-block";
+import { FiveSScoreControl } from "@/components/five-s/score-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  LEGACY_FIVE_S_SCORING_SCALE,
+  scoreIsOnFiveSScale,
+  type FiveSScoringScale,
+} from "@/modules/5s/scoring-scale";
 
 type Section = {
   id: string;
@@ -50,6 +55,7 @@ type AuditWorkspaceProps = {
   evidence: EvidenceItem[];
   canEdit: boolean;
   canComplete?: boolean;
+  scoringScale?: FiveSScoringScale;
   onComplete?: typeof completeFiveSAudit;
 };
 
@@ -58,11 +64,13 @@ function AnswerSaveFeedback({
   error,
   canRetry,
   onRetry,
+  suppressSaved = false,
 }: {
   status: SaveStatus;
   error: string | null;
   canRetry: boolean;
   onRetry: () => void;
+  suppressSaved?: boolean;
 }) {
   return (
     <div
@@ -73,7 +81,7 @@ function AnswerSaveFeedback({
       {status === "saving" ? (
         <p className="text-sm text-muted-foreground">Saving…</p>
       ) : null}
-      {status === "saved" ? (
+      {status === "saved" && !suppressSaved ? (
         <p className="text-sm text-success">Saved</p>
       ) : null}
       {status === "error" ? (
@@ -113,6 +121,7 @@ export function FiveSAuditWorkspace({
   evidence,
   canEdit,
   canComplete = false,
+  scoringScale = LEGACY_FIVE_S_SCORING_SCALE,
   onComplete = completeFiveSAudit,
 }: AuditWorkspaceProps) {
   const router = useRouter();
@@ -135,15 +144,18 @@ export function FiveSAuditWorkspace({
     isQuestionBusy,
     selectYesNo,
     selectNotApplicable,
+    selectScore,
     changeText,
     changeNumber,
     flushQuestion,
     flushAllQuestions,
     retryQuestion,
+    isScoreDraftInvalid,
   } = useAuditAnswerState({
     auditId,
     answers,
     canEdit,
+    scoringScale,
     saveAnswer: saveFiveSAuditAnswer,
   });
 
@@ -165,6 +177,29 @@ export function FiveSAuditWorkspace({
     setCompleting(true);
     setCompleteError(null);
     try {
+      const offScale = flatQuestions.some((item) => {
+        const questionType = item.question.question_type;
+        if (
+          questionType !== "score" &&
+          questionType !== "number" &&
+          questionType !== "percentage"
+        ) {
+          return false;
+        }
+        const currentAnswer = getAnswer(item.question.id);
+        if (currentAnswer.is_not_applicable) return false;
+        if (isScoreDraftInvalid(item.question.id)) return true;
+        return (
+          currentAnswer.number_value != null &&
+          !scoreIsOnFiveSScale(currentAnswer.number_value, scoringScale)
+        );
+      });
+      if (offScale) {
+        setCompleteError(
+          "A score is outside the published scale. Choose a permitted value before completing.",
+        );
+        return;
+      }
       const flushed = await flushAllQuestions(
         flatQuestions.map((item) => item.question.id),
       );
@@ -206,6 +241,17 @@ export function FiveSAuditWorkspace({
   const questionBusy = navigating || isQuestionBusy(current.question.id);
   const yesSelected = !answer.is_not_applicable && answer.text_value === "yes";
   const noSelected = !answer.is_not_applicable && answer.text_value === "no";
+  const numericQuestion =
+    current.question.question_type === "score" ||
+    current.question.question_type === "number" ||
+    current.question.question_type === "percentage";
+  const draftInvalid = isScoreDraftInvalid(current.question.id);
+  const storedOffScale =
+    numericQuestion &&
+    !answer.is_not_applicable &&
+    !draftInvalid &&
+    answer.number_value != null &&
+    !scoreIsOnFiveSScale(answer.number_value, scoringScale);
 
   return (
     <div
@@ -304,24 +350,37 @@ export function FiveSAuditWorkspace({
                   );
                 })}
               </div>
-            ) : current.question.question_type === "score" ||
-              current.question.question_type === "number" ||
-              current.question.question_type === "percentage" ? (
+            ) : numericQuestion ? (
               <div>
-                <Label htmlFor="answer-number">Score</Label>
-                <Input
-                  id="answer-number"
-                  type="number"
-                  className="mt-2 min-h-11 max-w-xs text-lg"
-                  value={getNumberDraft(current.question.id)}
-                  disabled={!canEdit}
-                  onChange={(e) =>
-                    changeNumber(current.question.id, e.target.value)
+                <FiveSScoreControl
+                  questionId={current.question.id}
+                  scale={scoringScale}
+                  draft={getNumberDraft(current.question.id)}
+                  selectedValue={
+                    answer.is_not_applicable
+                      ? null
+                      : (answer.number_value ?? null)
                   }
+                  disabled={!canEdit}
+                  invalid={draftInvalid}
+                  onDraftChange={(value) =>
+                    changeNumber(current.question.id, value)
+                  }
+                  onSelect={(value) => selectScore(current.question.id, value)}
                   onBlur={() => {
                     void flushQuestion(current.question.id);
                   }}
                 />
+                {storedOffScale ? (
+                  <p
+                    className="mt-2 text-sm text-destructive"
+                    role="alert"
+                    data-testid="five-s-score-correction"
+                  >
+                    This saved score is outside the published scale. Choose a
+                    permitted value. It stays unchanged until you do.
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div>
@@ -360,6 +419,7 @@ export function FiveSAuditWorkspace({
               status={saveStatus}
               error={saveError}
               canRetry={canEdit}
+              suppressSaved={draftInvalid || storedOffScale}
               onRetry={() => retryQuestion(current.question.id)}
             />
           </div>

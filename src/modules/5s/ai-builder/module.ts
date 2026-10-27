@@ -66,6 +66,17 @@ export const fiveSSetupBuilderModule: ModuleSetupBuilderModule<FiveSBuilderPropo
       if (threshold == null) {
         return { error: "Enter a target threshold between 0 and 100." };
       }
+      const hasScoredQuestion = proposal.categories.some((category) =>
+        category.questions.some(
+          (question) => question.questionType === "score",
+        ),
+      );
+      if (hasScoredQuestion && !proposal.scoringScale) {
+        return {
+          error:
+            "Scored questions need an explicit scoring scale. A pass threshold is not a scoring range.",
+        };
+      }
       return {
         definition: fiveSBuilderProposalToDefinition(
           proposal,

@@ -5,6 +5,7 @@ import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { formatFiveSScaleRange } from "@/modules/5s/scoring-scale";
 import {
   fiveSQuestionTypeLabel,
   fiveSTemplateCounts,
@@ -52,6 +53,10 @@ export default async function FiveSQuickStartPage() {
           {
             label: "Starting threshold",
             value: `${template.startingThresholdPercent}%`,
+          },
+          {
+            label: "Scoring scale",
+            value: formatFiveSScaleRange(template.scoringScale),
           },
         ]}
         sections={template.categories.map((category) => ({

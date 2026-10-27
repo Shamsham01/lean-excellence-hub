@@ -336,6 +336,14 @@ export function SetupBuilderWorkspace({
                     Suggested threshold {proposal.thresholdPercent}%
                   </p>
                 ) : null}
+                {proposal.scoringScaleLabel ? (
+                  <p
+                    className="mt-1 text-sm"
+                    data-testid="module-setup-scoring-scale"
+                  >
+                    {proposal.scoringScaleLabel}
+                  </p>
+                ) : null}
               </div>
               {nameWarning ? (
                 <p

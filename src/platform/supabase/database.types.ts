@@ -3619,6 +3619,7 @@ export type Database = {
           published_at: string | null
           published_by_membership_id: string | null
           result_status_mappings: Json
+          scoring_scale: Json | null
           standard_id: string
           status: string
           target_threshold_percent: number
@@ -3635,6 +3636,7 @@ export type Database = {
           published_at?: string | null
           published_by_membership_id?: string | null
           result_status_mappings?: Json
+          scoring_scale?: Json | null
           standard_id: string
           status?: string
           target_threshold_percent?: number
@@ -3651,6 +3653,7 @@ export type Database = {
           published_at?: string | null
           published_by_membership_id?: string | null
           result_status_mappings?: Json
+          scoring_scale?: Json | null
           standard_id?: string
           status?: string
           target_threshold_percent?: number
@@ -14365,6 +14368,15 @@ export type Database = {
       }
       set_five_s_standard_applicable_units: {
         Args: { target_standard_id: string; target_unit_ids: string[] }
+        Returns: boolean
+      }
+      set_five_s_standard_scoring_scale: {
+        Args: {
+          target_max: number
+          target_min: number
+          target_standard_version_id: string
+          target_step: number
+        }
         Returns: boolean
       }
       set_gemba_definition_applicable_units: {

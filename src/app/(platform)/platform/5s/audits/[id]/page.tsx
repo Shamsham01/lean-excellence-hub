@@ -8,6 +8,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -34,7 +35,7 @@ export default async function FiveSAuditPage({
 
   const { data: version } = await supabase
     .from("five_s_standard_versions")
-    .select("template_version_id")
+    .select("template_version_id, scoring_scale")
     .eq("id", audit.standard_version_id)
     .maybeSingle();
 
@@ -183,6 +184,7 @@ export default async function FiveSAuditPage({
         evidence={evidence}
         canEdit={canEdit && audit.status === "in_progress"}
         canComplete={canEdit && audit.status === "in_progress"}
+        scoringScale={resolveFiveSScoringScale(version?.scoring_scale)}
         onComplete={completeFiveSAudit}
       />
     </div>

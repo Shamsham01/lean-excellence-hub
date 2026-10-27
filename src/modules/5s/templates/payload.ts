@@ -9,6 +9,7 @@ export function buildFiveSQuickStartDefinition(
     name: template.name,
     description: template.description,
     thresholdPercent,
+    scoringScale: template.scoringScale,
     categories: template.categories.map((category) => ({
       name: category.name,
       questions: category.questions.map((question) => ({

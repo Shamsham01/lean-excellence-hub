@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 import { boundedText } from "@/modules/module-setup/text";
+import {
+  explicitFiveSScalesFromPreference,
+  parseFiveSScoringScale,
+  scalesMatch,
+  type FiveSScoringScale,
+} from "@/modules/5s/scoring-scale";
 import type { FiveSDraftDefinition } from "@/modules/5s/templates";
 
 import {
@@ -24,10 +30,17 @@ const rawCategorySchema = z.object({
   questions: z.array(rawQuestionSchema),
 });
 
+const rawScoringScaleSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+  step: z.number(),
+});
+
 export const rawFiveSBuilderProposalSchema = z.object({
   name: z.string(),
   description: z.string(),
   threshold_percent: z.number(),
+  scoring_scale: rawScoringScaleSchema.nullable().optional(),
   categories: z.array(rawCategorySchema),
 });
 
@@ -72,6 +85,7 @@ export type ParsedFiveSBuilderEnvelope = {
 
 export function validateFiveSBuilderProposal(
   raw: z.infer<typeof rawFiveSBuilderProposalSchema>,
+  scoringPreference?: string | null,
 ):
   | { ok: true; proposal: FiveSBuilderProposal }
   | { ok: false; issues: string[] } {
@@ -177,6 +191,41 @@ export function validateFiveSBuilderProposal(
     issues.push(`Use at most ${LIMITS.maxQuestionsTotal} questions.`);
   }
 
+  const hasScoredQuestion = categories.some((category) =>
+    category.questions.some((question) => question.questionType === "score"),
+  );
+  let scoringScale: FiveSScoringScale | null = parseFiveSScoringScale(
+    raw.scoring_scale,
+  );
+  if (raw.scoring_scale != null && !scoringScale) {
+    issues.push("Scoring scale must include a minimum, maximum and step.");
+  }
+  const requestedScales = explicitFiveSScalesFromPreference(scoringPreference);
+  if (hasScoredQuestion && !scoringScale && requestedScales.length === 1) {
+    const preserved = requestedScales[0];
+    if (preserved) scoringScale = preserved;
+  }
+  if (hasScoredQuestion && !scoringScale) {
+    issues.push(
+      "Scored questions need an explicit scoring scale. A pass threshold is not a scoring range.",
+    );
+  }
+  if (
+    scoringScale &&
+    requestedScales.length === 1 &&
+    requestedScales[0] &&
+    !scalesMatch(scoringScale, requestedScales[0])
+  ) {
+    issues.push(
+      "The scoring scale does not match the scoring preference already captured.",
+    );
+  }
+  if (requestedScales.length > 1) {
+    issues.push(
+      "The scoring preference names more than one scale. Keep a single scoring scale.",
+    );
+  }
+
   if (
     issues.length > 0 ||
     !name.ok ||
@@ -193,6 +242,7 @@ export function validateFiveSBuilderProposal(
       name: name.value,
       description: description.value,
       thresholdPercent: Math.round(threshold * 100) / 100,
+      scoringScale,
       categories,
     },
   };
@@ -273,7 +323,10 @@ export function parseFiveSBuilderEnvelope(
     };
   }
 
-  const proposal = validateFiveSBuilderProposal(parsed.data.proposal);
+  const proposal = validateFiveSBuilderProposal(
+    parsed.data.proposal,
+    understanding.scoring,
+  );
   if (!proposal.ok) {
     return {
       ok: true,
@@ -316,6 +369,7 @@ export function revalidateStoredFiveSProposal(
     name: record.name,
     description: record.description,
     threshold_percent: record.thresholdPercent,
+    scoring_scale: record.scoringScale ?? null,
     categories: (record.categories ?? []).map((category) => ({
       name: category.name,
       description: category.description,
@@ -343,6 +397,7 @@ export function fiveSBuilderProposalToDefinition(
     name: proposal.name,
     description: proposal.description,
     thresholdPercent,
+    scoringScale: proposal.scoringScale,
     categories: proposal.categories.map((category) => ({
       name: category.name,
       questions: category.questions.map((question) => ({

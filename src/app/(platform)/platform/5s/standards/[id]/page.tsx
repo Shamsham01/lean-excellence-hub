@@ -6,8 +6,13 @@ import {
   createFiveSStandardSuccessorFromForm,
   publishFiveSStandardFromForm,
   setFiveSStandardApplicableUnitsFromForm,
+  setFiveSStandardScoringScaleFromForm,
   startFiveSAuditFromForm,
 } from "@/app/(platform)/platform/5s/actions";
+import {
+  FiveSScoringScaleFields,
+  FiveSScoringScaleSummary,
+} from "@/components/five-s/scoring-scale-fields";
 import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
@@ -41,6 +46,7 @@ import {
 } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { parseFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function fiveSQuestionTypeLabel(questionType: string): string {
@@ -81,7 +87,9 @@ export default async function FiveSStandardDetailPage({
 
   const { data: versions, error: versionsError } = await supabase
     .from("five_s_standard_versions")
-    .select("id, version_number, status, template_version_id")
+    .select(
+      "id, version_number, status, template_version_id, scoring_scale, target_threshold_percent",
+    )
     .eq("standard_id", id)
     .order("version_number", { ascending: false });
 
@@ -149,7 +157,20 @@ export default async function FiveSStandardDetailPage({
   );
   const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
   const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
-  const canPublish = canPublishQuestions && hasApplicableUnits;
+  const draftScale = parseFiveSScoringScale(draftVersion?.scoring_scale);
+  const publishedScale = parseFiveSScoringScale(
+    publishedVersion?.scoring_scale,
+  );
+  const hasScoredQuestion = authoring.sections.some((section) =>
+    section.questions.some(
+      (question) =>
+        question.questionType === "score" ||
+        question.questionType === "number" ||
+        question.questionType === "percentage",
+    ),
+  );
+  const scaleReady = !draftVersion || !hasScoredQuestion || draftScale != null;
+  const canPublish = canPublishQuestions && hasApplicableUnits && scaleReady;
 
   const managementActions =
     (publishedVersion && !draftVersion && canManage) ||
@@ -284,12 +305,54 @@ export default async function FiveSStandardDetailPage({
         </CardContent>
       </Card>
 
+      {publishedVersion ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Published scoring scale v{publishedVersion.version_number}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FiveSScoringScaleSummary
+              scale={publishedScale}
+              thresholdPercent={publishedVersion.target_threshold_percent}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
       {draftVersion ? (
         <Card>
           <CardHeader>
             <CardTitle>Draft v{draftVersion.version_number}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            <FiveSScoringScaleSummary
+              scale={draftScale}
+              thresholdPercent={draftVersion.target_threshold_percent}
+            />
+            {canManage ? (
+              <form
+                action={setFiveSStandardScoringScaleFromForm}
+                className="flex max-w-lg flex-col gap-4"
+              >
+                <input type="hidden" name="versionId" value={draftVersion.id} />
+                <input type="hidden" name="standardId" value={id} />
+                <FiveSScoringScaleFields
+                  initial={draftScale}
+                  saved={draftScale != null}
+                  idPrefix={`draft-scale-${draftVersion.id}`}
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="min-h-11"
+                  data-testid="save-five-s-scoring-scale"
+                >
+                  Save scoring scale
+                </Button>
+              </form>
+            ) : null}
             <form
               action={addFiveSSectionFromForm}
               className="flex flex-wrap items-end gap-3"
@@ -396,6 +459,14 @@ export default async function FiveSStandardDetailPage({
                 >
                   Assign at least one applicable area before publishing this
                   standard.
+                </p>
+              ) : null}
+              {canPublishQuestions && hasApplicableUnits && !scaleReady ? (
+                <p
+                  className="mb-3 text-sm text-muted-foreground"
+                  data-testid="publish-blocked-reason"
+                >
+                  Save a scoring scale before publishing scored questions.
                 </p>
               ) : null}
               <Button

@@ -110,6 +110,7 @@ function fiveSEnvelope(
         name: string;
         description: string;
         thresholdPercent: number;
+        scoringScale?: { min: number; max: number; step: number } | null;
         categories: Array<{
           name: string;
           description: string | null;
@@ -167,6 +168,7 @@ function fiveSEnvelope(
         name: current.name,
         description: current.description,
         threshold_percent: current.thresholdPercent,
+        scoring_scale: current.scoringScale ?? { min: 1, max: 5, step: 1 },
         categories: current.categories.map((category) => ({
           name: category.name,
           description: category.description,
@@ -182,6 +184,7 @@ function fiveSEnvelope(
         description:
           "A short workplace standard for noticing whether the packing area is sorted, ordered and sustained.",
         threshold_percent: 80,
+        scoring_scale: { min: 1, max: 5, step: 1 },
         categories: [
           {
             name: "Sort",
@@ -236,7 +239,7 @@ function fiveSEnvelope(
       ...emptyFiveSUnderstanding(),
       environment: "Packing",
       purpose: "See whether the workplace matches the team's own standard.",
-      scoring: "Yes/no and a simple score.",
+      scoring: "Yes/no and a 1 to 5 score.",
     },
     questions: [],
     change_summary: changeSummary,

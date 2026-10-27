@@ -16,6 +16,7 @@ import {
   COMPLETE_AUDIT_SAVE_ERROR_MESSAGE,
 } from "@/components/five-s/audit-answer-state";
 import { FiveSAuditWorkspace } from "@/components/five-s/audit-workspace";
+import type { FiveSScoringScale } from "@/modules/5s/scoring-scale";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -95,6 +96,7 @@ function workspaceTree({
   evidence = [],
   canEdit = true,
   canComplete = false,
+  scoringScale,
   onComplete,
 }: {
   questions?: Question[];
@@ -109,6 +111,7 @@ function workspaceTree({
   }>;
   canEdit?: boolean;
   canComplete?: boolean;
+  scoringScale?: FiveSScoringScale;
   onComplete?: typeof completeFiveSAudit;
 } = {}) {
   return (
@@ -120,6 +123,7 @@ function workspaceTree({
       evidence={evidence}
       canEdit={canEdit}
       canComplete={canComplete}
+      {...(scoringScale ? { scoringScale } : {})}
       {...(onComplete ? { onComplete } : {})}
     />
   );
@@ -1278,5 +1282,95 @@ describe("FiveSAuditWorkspace answer state", () => {
       { numberValue: 2 },
       { numberValue: 1 },
     ]);
+  });
+});
+
+describe("FiveSAuditWorkspace scoring scale", () => {
+  const oneToFive = { min: 1, max: 5, step: 1 };
+
+  it("offers only the published 1 to 5 scores and saves a replacement", async () => {
+    renderWorkspace({
+      questions: [question(NUMBER_ID, "Score the area", "score")],
+      scoringScale: oneToFive,
+    });
+
+    expect(
+      screen.getByRole("radiogroup", { name: "Score — choose 1 to 5" }),
+    ).toBeInTheDocument();
+    const options = screen.getAllByTestId("five-s-score-option");
+    expect(options.map((option) => (option as HTMLInputElement).value)).toEqual(
+      ["1", "2", "3", "4", "5"],
+    );
+    expect(screen.queryByLabelText("Score")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("radio", { name: "3" }));
+    await waitFor(() => {
+      expect(saveAnswer).toHaveBeenCalledWith("audit-1", NUMBER_ID, {
+        numberValue: 3,
+      });
+    });
+    expect(screen.getByRole("radio", { name: "3" })).toBeChecked();
+
+    fireEvent.click(screen.getByRole("radio", { name: "5" }));
+    await waitFor(() => {
+      expect(saveAnswer).toHaveBeenCalledWith("audit-1", NUMBER_ID, {
+        numberValue: 5,
+      });
+    });
+    expect(screen.getByRole("radio", { name: "5" })).toBeChecked();
+    expect(saveAnswer).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects an out-of-range numeric draft without saving it", async () => {
+    renderWorkspace({
+      questions: [question(NUMBER_ID, "Score the area", "score")],
+      answers: { [NUMBER_ID]: { number_value: 40 } },
+    });
+
+    const input = screen.getByLabelText("Score");
+    fireEvent.change(input, { target: { value: "101" } });
+    fireEvent.blur(input);
+    expect(screen.getByTestId("five-s-score-invalid")).toBeInTheDocument();
+    expect(saveAnswer).not.toHaveBeenCalled();
+    expect(input).toHaveValue(101);
+
+    fireEvent.change(input, { target: { value: "5.5" } });
+    fireEvent.change(input, { target: { value: "-1" } });
+    fireEvent.change(input, { target: { value: "NaN" } });
+    fireEvent.change(input, { target: { value: "" } });
+    expect(saveAnswer).not.toHaveBeenCalled();
+  });
+
+  it("keeps a previously stored invalid score visible until the auditor changes it", () => {
+    renderWorkspace({
+      questions: [question(NUMBER_ID, "Score the area", "score")],
+      answers: { [NUMBER_ID]: { number_value: 13 } },
+      scoringScale: oneToFive,
+      canComplete: true,
+    });
+
+    expect(screen.getByTestId("five-s-score-correction")).toHaveTextContent(
+      "outside the published scale",
+    );
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("five-s-complete-audit"));
+    expect(completeAudit).not.toHaveBeenCalled();
+    expect(screen.getByTestId("five-s-complete-error")).toHaveTextContent(
+      "outside the published scale",
+    );
+  });
+
+  it("keeps score options reachable on a narrow screen", () => {
+    renderWorkspace({
+      width: 390,
+      questions: [question(NUMBER_ID, "Score the area", "score", true)],
+      scoringScale: oneToFive,
+    });
+
+    for (const option of screen.getAllByTestId("five-s-score-option")) {
+      expect(option.closest("label")).toHaveClass("min-h-11");
+    }
+    expect(screen.getByRole("button", { name: "N/A" })).toBeInTheDocument();
+    expect(screen.getByTestId("mobile-frame")).toHaveStyle({ width: "390px" });
   });
 });

@@ -20,6 +20,7 @@ export type ModuleSetupBuilderSnapshot = {
     name: string;
     description: string;
     thresholdPercent: number | null;
+    scoringScaleLabel?: string | null;
     changeSummary: string[];
     sections: Array<{
       name: string;

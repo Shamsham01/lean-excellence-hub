@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -27,6 +28,9 @@ export default async function FiveSStandardsPage() {
   async function createAction(formData: FormData) {
     "use server";
     const result = await createFiveSStandard(formData);
+    if (result.error) {
+      throw new Error(result.error);
+    }
     if (result.standardId) {
       redirect(`/platform/5s/standards/${result.standardId}`);
     }
@@ -64,15 +68,21 @@ export default async function FiveSStandardsPage() {
               <Textarea id="description" name="description" className="mt-2" />
             </div>
             <div>
-              <Label htmlFor="threshold">Target threshold (%)</Label>
+              <Label htmlFor="threshold">Pass threshold (%)</Label>
               <Input
                 id="threshold"
                 name="threshold"
                 type="number"
+                min={0}
+                max={100}
                 defaultValue={90}
                 className="mt-2"
               />
+              <p className="mt-2 text-sm text-muted-foreground">
+                The pass mark for the audit result. It is not the scoring range.
+              </p>
             </div>
+            <FiveSScoringScaleFields idPrefix="create-scoring-scale" saved />
             <ApplicableUnitsField
               options={creationUnits.units}
               requiresSiteSelection={creationUnits.requiresSiteSelection}

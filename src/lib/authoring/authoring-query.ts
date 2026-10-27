@@ -4,6 +4,7 @@ export const AUTHORING_STEP_CHANGE_EVENT = "leh:authoring-step-change";
 
 export type AuthoringSavedKey =
   | "applicability"
+  | "scale"
   | "section"
   | "question"
   | "publish"
@@ -15,6 +16,7 @@ export type AuthoringSavedKey =
 
 const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "applicability",
+  "scale",
   "section",
   "question",
   "publish",
@@ -68,6 +70,8 @@ export function authoringSaveMessage(key: AuthoringSavedKey): string {
   switch (key) {
     case "applicability":
       return "Applicable areas saved.";
+    case "scale":
+      return "Scoring scale saved.";
     case "section":
       return "Category saved.";
     case "question":

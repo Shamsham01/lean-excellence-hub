@@ -1,3 +1,4 @@
+import type { FiveSScoringScale } from "@/modules/5s/scoring-scale";
 import type { FiveSTemplateQuestionType } from "@/modules/5s/templates";
 
 export const FIVE_S_BUILDER_MODULE_KEY = "five_s" as const;
@@ -47,6 +48,7 @@ export type FiveSBuilderProposal = {
   name: string;
   description: string;
   thresholdPercent: number;
+  scoringScale: FiveSScoringScale | null;
   categories: FiveSBuilderCategory[];
 };
 
