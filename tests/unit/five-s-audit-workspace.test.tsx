@@ -1341,6 +1341,120 @@ describe("FiveSAuditWorkspace scoring scale", () => {
     expect(saveAnswer).not.toHaveBeenCalled();
   });
 
+  it("clears Saved when a persisted score becomes invalid, then saves the correction", async () => {
+    let resolveSave: (value: { ok: true }) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    renderWorkspace({
+      canComplete: true,
+      questions: [
+        question(NUMBER_ID, "Score the area", "score"),
+        question(SECOND_ID, "Second score", "score"),
+      ],
+    });
+
+    const input = screen.getByLabelText("Score");
+    fireEvent.change(input, { target: { value: "40" } });
+    fireEvent.blur(input);
+    await waitFor(() => {
+      expect(saveAnswer).toHaveBeenCalledWith("audit-1", NUMBER_ID, {
+        numberValue: 40,
+      });
+    });
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+
+    fireEvent.change(input, { target: { value: "50" } });
+    expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+      "Saving…",
+    );
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "101" } });
+    fireEvent.blur(input);
+    expect(screen.getByTestId("five-s-score-invalid")).toHaveTextContent(
+      "not on the scale",
+    );
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
+    expect(input).toHaveValue(101);
+    expect(saveAnswer).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(
+      screen.getByRole("heading", { name: "Score the area" }),
+    ).toBeInTheDocument();
+    expect(saveAnswer).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByTestId("five-s-complete-audit"));
+    expect(completeAudit).not.toHaveBeenCalled();
+    expect(screen.getByTestId("five-s-complete-error")).toHaveTextContent(
+      "outside the published scale",
+    );
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "60" } });
+    fireEvent.blur(input);
+    await waitFor(() => {
+      expect(saveAnswer).toHaveBeenCalledWith("audit-1", NUMBER_ID, {
+        numberValue: 60,
+      });
+    });
+    expect(
+      screen.queryByTestId("five-s-score-invalid"),
+    ).not.toBeInTheDocument();
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.getByTestId("answer-save-status")).toHaveTextContent(
+        "Saved",
+      );
+    });
+    expect(saveAnswer.mock.calls.map((call) => call[2])).toEqual([
+      { numberValue: 40 },
+      { numberValue: 60 },
+    ]);
+  });
+
+  it("does not paint Saved when an in-flight save finishes on an invalid draft", async () => {
+    let resolveSave: (value: { ok: true }) => void = () => undefined;
+    saveAnswer.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    renderWorkspace({
+      questions: [question(NUMBER_ID, "Score the area", "score")],
+    });
+
+    const input = screen.getByLabelText("Score");
+    fireEvent.change(input, { target: { value: "40" } });
+    fireEvent.blur(input);
+    await waitFor(() => {
+      expect(saveAnswer).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.change(input, { target: { value: "101" } });
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+    expect(screen.getByTestId("five-s-score-invalid")).toBeInTheDocument();
+
+    resolveSave({ ok: true });
+    await waitFor(() => {
+      expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+    expect(input).toHaveValue(101);
+    expect(saveAnswer).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps a previously stored invalid score visible until the auditor changes it", () => {
     renderWorkspace({
       questions: [question(NUMBER_ID, "Score the area", "score")],

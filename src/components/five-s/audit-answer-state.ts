@@ -125,12 +125,15 @@ function isRuntimeActive(runtime: QuestionRuntime | undefined) {
 function shouldPreserveLocalAnswer(
   runtime: QuestionRuntime | undefined,
   status: SaveStatus | undefined,
+  questionId: string,
+  invalidScores: Record<string, boolean>,
 ) {
   return (
     isRuntimeActive(runtime) ||
     status === "saving" ||
     status === "error" ||
-    Boolean(runtime?.lastFailed)
+    Boolean(runtime?.lastFailed) ||
+    Boolean(invalidScores[questionId])
   );
 }
 
@@ -334,7 +337,12 @@ export function useAuditAnswerState({
         const runtime = runtimes.get(questionId);
         const status = statusRef.current[questionId];
         if (
-          shouldPreserveLocalAnswer(runtime, status) &&
+          shouldPreserveLocalAnswer(
+            runtime,
+            status,
+            questionId,
+            invalidScoreRef.current,
+          ) &&
           currentLocal[questionId] !== undefined
         ) {
           next[questionId] = currentLocal[questionId];
@@ -346,7 +354,14 @@ export function useAuditAnswerState({
       const next = buildNumberDrafts(snapshot);
       for (const [questionId, draft] of Object.entries(currentDrafts)) {
         const runtime = runtimes.get(questionId);
-        if (shouldPreserveLocalAnswer(runtime, statusRef.current[questionId])) {
+        if (
+          shouldPreserveLocalAnswer(
+            runtime,
+            statusRef.current[questionId],
+            questionId,
+            invalidScoreRef.current,
+          )
+        ) {
           next[questionId] = draft;
         }
       }
@@ -362,12 +377,20 @@ export function useAuditAnswerState({
       for (const questionId of questionIds) {
         const runtime = runtimes.get(questionId);
         const status = currentStatuses[questionId];
-        if (shouldPreserveLocalAnswer(runtime, status)) {
-          if (status) next[questionId] = status;
+        if (
+          shouldPreserveLocalAnswer(
+            runtime,
+            status,
+            questionId,
+            invalidScoreRef.current,
+          )
+        ) {
+          if (status && status !== "saved") next[questionId] = status;
           continue;
         }
         if (
           status === "saved" &&
+          !invalidScoreRef.current[questionId] &&
           answersEqual(
             localAnswersRef.current[questionId],
             snapshot[questionId],
@@ -384,7 +407,12 @@ export function useAuditAnswerState({
         const runtime = runtimes.get(questionId);
         if (
           error != null &&
-          shouldPreserveLocalAnswer(runtime, statusRef.current[questionId])
+          shouldPreserveLocalAnswer(
+            runtime,
+            statusRef.current[questionId],
+            questionId,
+            invalidScoreRef.current,
+          )
         ) {
           next[questionId] = error;
         }
@@ -498,7 +526,10 @@ export function useAuditAnswerState({
         if (runtime.pending) {
           continue;
         }
-        setStatuses((current) => ({ ...current, [questionId]: "saved" }));
+        setStatuses((current) => ({
+          ...current,
+          [questionId]: invalidScoreRef.current[questionId] ? "idle" : "saved",
+        }));
         setErrors((current) => ({ ...current, [questionId]: null }));
       }
     } finally {
@@ -553,6 +584,10 @@ export function useAuditAnswerState({
     runtime: QuestionRuntime,
   ) {
     if (runtime.inFlight || runtime.pending) return;
+    if (invalidScoreRef.current[questionId]) {
+      setStatuses((current) => ({ ...current, [questionId]: "idle" }));
+      return;
+    }
     setStatuses((current) => ({ ...current, [questionId]: "saved" }));
     setErrors((current) => ({ ...current, [questionId]: null }));
   }
@@ -620,28 +655,28 @@ export function useAuditAnswerState({
       clearTimeout(runtime.debounceTimer);
       runtime.debounceTimer = null;
     }
-    if (runtime.inFlight || runtime.pending || runtime.current) return;
-    runtime.latest = null;
-    setLocalAnswers((current) => ({
-      ...current,
-      [questionId]: confirmedRef.current[questionId] ?? {
-        text_value: null,
-        number_value: null,
-        is_not_applicable: false,
-      },
-    }));
-    setStatuses((current) => {
-      if (current[questionId] !== "saving") return current;
-      const confirmed = confirmedRef.current[questionId];
-      return {
+    const requestOpen = Boolean(
+      runtime.inFlight || runtime.pending || runtime.current,
+    );
+    if (!requestOpen) {
+      runtime.latest = null;
+      setLocalAnswers((current) => ({
         ...current,
-        [questionId]:
-          confirmed?.number_value != null ||
-          confirmed?.text_value != null ||
-          confirmed?.is_not_applicable
-            ? "saved"
-            : "idle",
-      };
+        [questionId]: confirmedRef.current[questionId] ?? {
+          text_value: null,
+          number_value: null,
+          is_not_applicable: false,
+        },
+      }));
+    }
+    // An invalid draft must not keep a previous success. A request already
+    // in flight is the last valid value; its completion settles the status.
+    setStatuses((current) => {
+      if (requestOpen || current[questionId] === "error") return current;
+      if (current[questionId] == null || current[questionId] === "idle") {
+        return current;
+      }
+      return { ...current, [questionId]: "idle" };
     });
   }
 
