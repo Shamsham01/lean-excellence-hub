@@ -1,6 +1,6 @@
 begin;
 
-select plan(46);
+select plan(57);
 
 select is(
   private.five_s_resolve_scoring_scale(null),
@@ -808,15 +808,136 @@ select throws_ok(
   'a Bodmin auditor cannot score an Exeter audit'
 );
 
+select ok(
+  private.has_scoped_permission(
+    (select id from scale_ids where key = 'organisation'),
+    'five_s.audit.perform',
+    null,
+    (select id from scale_ids where key = 'bodmin_packing')
+  ),
+  'the Bodmin auditor can perform a 5S audit in their packing area'
+);
+
+select ok(
+  not private.has_scoped_permission(
+    (select id from scale_ids where key = 'organisation'),
+    'submissions.create',
+    null,
+    null
+  ),
+  'a valid 5S answer does not require organisation-wide submissions.create'
+);
+
+select lives_ok(
+  format(
+    'select public.upsert_five_s_audit_answer(%L::uuid, %L::uuid, false, null, 2)',
+    (select id from scale_ids where key = 'legacy_audit'),
+    (select id from scale_ids where key = 'score_question')
+  ),
+  'a Bodmin auditor can save a valid answer on their Bodmin audit'
+);
+
+set local role postgres;
+
+select is(
+  (
+    select answer_row.number_value
+    from public.template_answers answer_row
+    join public.five_s_audits audit_row
+      on audit_row.submission_id = answer_row.submission_id
+    where audit_row.id = (select id from scale_ids where key = 'legacy_audit')
+      and answer_row.question_id = (select id from scale_ids where key = 'score_question')
+  ),
+  2::numeric,
+  'the site-scoped save replaces the invalid in-progress score'
+);
+
+set local role authenticated;
+
+select throws_ok(
+  format(
+    'select public.upsert_five_s_audit_answer(%L::uuid, %L::uuid, false, null, 13)',
+    (select id from scale_ids where key = 'legacy_audit'),
+    (select id from scale_ids where key = 'score_question')
+  ),
+  '22023',
+  '5S score is not on the published scale',
+  'an authorised site auditor is still rejected for an invalid score'
+);
+
+set local role postgres;
+
+select is(
+  (
+    select answer_row.number_value
+    from public.template_answers answer_row
+    join public.five_s_audits audit_row
+      on audit_row.submission_id = answer_row.submission_id
+    where audit_row.id = (select id from scale_ids where key = 'legacy_audit')
+      and answer_row.question_id = (select id from scale_ids where key = 'score_question')
+  ),
+  2::numeric,
+  'a rejected score does not overwrite the site auditor''s valid answer'
+);
+
+set local role authenticated;
+
 select throws_ok(
   format(
     'select public.upsert_five_s_audit_answer(%L::uuid, %L::uuid, false, null, 1)',
+    (select id from scale_ids where key = 'legacy_audit'),
+    (select id from scale_ids where key = 'hundred_question')
+  ),
+  '23503',
+  'question does not belong to audit template version',
+  'a question outside the audit template version is rejected'
+);
+
+set local role postgres;
+
+select is(
+  (
+    select answer_row.number_value
+    from public.template_answers answer_row
+    join public.five_s_audits audit_row
+      on audit_row.submission_id = answer_row.submission_id
+    where audit_row.id = (select id from scale_ids where key = 'hundred_audit')
+      and answer_row.question_id = (select id from scale_ids where key = 'hundred_question')
+  ),
+  13::numeric,
+  'the 5S answer writer does not modify an unrelated submission'
+);
+
+set local role authenticated;
+
+select throws_ok(
+  format(
+    $sql$
+      select public.upsert_template_answer(
+        (select submission_id from public.five_s_audits where id = %L::uuid),
+        %L::uuid,
+        false,
+        null,
+        1
+      )
+    $sql$,
     (select id from scale_ids where key = 'legacy_audit'),
     (select id from scale_ids where key = 'score_question')
   ),
   '42501',
   'template answer upsert is not authorised',
-  'a site-scoped auditor passes the audit check and is still blocked by submissions.create'
+  'the shared template writer still requires organisation-wide submissions.create'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_five_s_audit_answer(%L::uuid, %L::uuid, false, null, 1)',
+    (select id from scale_ids where key = 'audit'),
+    (select id from scale_ids where key = 'score_question')
+  ),
+  '42501',
+  '5S audit answer upsert is not authorised',
+  'a completed audit rejects modifications'
 );
 
 select set_config(
@@ -832,12 +953,12 @@ select public.switch_organisation(
 select throws_ok(
   format(
     'select public.upsert_five_s_audit_answer(%L::uuid, %L::uuid, false, null, 1)',
-    (select id from scale_ids where key = 'exeter_audit'),
+    (select id from scale_ids where key = 'legacy_audit'),
     (select id from scale_ids where key = 'score_question')
   ),
   '42501',
   '5S audit answer upsert is not authorised',
-  'another organisation cannot score this audit'
+  'another organisation cannot score the Bodmin audit'
 );
 
 select set_config(
@@ -861,6 +982,29 @@ select is(
   ),
   4::numeric,
   'hostile score attempts leave the Exeter answer unchanged'
+);
+
+select is(
+  (
+    select answer_row.number_value
+    from public.template_answers answer_row
+    join public.five_s_audits audit_row
+      on audit_row.submission_id = answer_row.submission_id
+    where audit_row.id = (select id from scale_ids where key = 'legacy_audit')
+      and answer_row.question_id = (select id from scale_ids where key = 'score_question')
+  ),
+  2::numeric,
+  'hostile attempts leave the Bodmin answer unchanged'
+);
+
+select is(
+  (
+    select audit_row.overall_score_percent
+    from public.five_s_audits audit_row
+    where audit_row.id = (select id from scale_ids where key = 'audit')
+  ),
+  50::numeric,
+  'a completed audit keeps its historical percentage'
 );
 
 select * from finish();
