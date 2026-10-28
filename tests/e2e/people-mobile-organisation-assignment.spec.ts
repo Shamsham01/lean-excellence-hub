@@ -1,5 +1,3 @@
-import { mkdirSync } from "node:fs";
-
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
@@ -281,9 +279,8 @@ async function expectAssignmentLayout(
   );
 
   if (viewport.width === 390 || viewport.width === 1440) {
-    mkdirSync("/opt/cursor/artifacts", { recursive: true });
     await section.screenshot({
-      path: `/opt/cursor/artifacts/people-mobile-001-${viewport.width}.png`,
+      path: test.info().outputPath(`people-mobile-001-${viewport.width}.png`),
     });
   }
 }
@@ -580,6 +577,21 @@ test.describe("PEOPLE-MOBILE-001 organisation assignment", () => {
     await expect(unitSelect).toHaveAttribute("id", "member-primary-unit");
     await expect(jobSelect).toHaveJSProperty("tagName", "SELECT");
     await expect(unitSelect).toHaveJSProperty("tagName", "SELECT");
+
+    // Persist different values first so the long-label save below cannot pass
+    // simply by reloading the assignment installed by beforeAll.
+    await jobSelect.selectOption(fixture.originalJobFunctionId);
+    await unitSelect.selectOption(fixture.originalUnitId);
+    await page.getByTestId("save-organisation-assignment").click();
+    await expect(page.getByRole("status")).toHaveText(
+      "Organisation assignment updated.",
+      { timeout: 30_000 },
+    );
+    await page.reload();
+    await expect(jobSelect).toHaveValue(fixture.originalJobFunctionId);
+    await expect(unitSelect).toHaveValue(fixture.originalUnitId);
+    expect(fixture.originalJobFunctionId).not.toBe(fixture.jobFunctionId);
+    expect(fixture.originalUnitId).not.toBe(fixture.lineUnitId);
 
     await jobSelect.focus();
     await expect(jobSelect).toBeFocused();
