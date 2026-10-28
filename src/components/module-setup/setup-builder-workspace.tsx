@@ -479,7 +479,7 @@ export function SetupBuilderWorkspace({
           </DialogHeader>
           {proposal ? (
             <form
-              className="flex flex-col gap-4"
+              className="flex min-w-0 flex-col gap-4"
               action={(formData) => {
                 setCreateError(null);
                 startTransition(async () => {

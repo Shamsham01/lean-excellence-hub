@@ -53,7 +53,7 @@ export function ApplicableUnitsField({
 
   return (
     <fieldset
-      className="flex flex-col gap-2"
+      className="flex min-w-0 flex-col gap-2"
       data-testid="applicable-units-field"
     >
       <legend className="text-sm font-medium">Applicable areas</legend>
@@ -71,21 +71,21 @@ export function ApplicableUnitsField({
           {staleWarning}
         </p>
       ) : null}
-      <div className="mt-1 flex flex-col gap-2">
+      <div className="mt-1 flex min-w-0 flex-col gap-2">
         {options.map((unit) => (
           <label
             key={unit.id}
-            className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+            className="flex min-h-11 min-w-0 items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
           >
             <input
               type="checkbox"
               name="applicableUnitIds"
               value={unit.id}
               defaultChecked={selectedIds?.has(unit.id) ?? false}
-              className="size-4"
+              className="size-4 shrink-0"
               data-testid="applicable-unit-checkbox"
             />
-            <span>{unit.name}</span>
+            <span className="min-w-0 break-words">{unit.name}</span>
           </label>
         ))}
       </div>
