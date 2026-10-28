@@ -6,6 +6,11 @@ import { redirect } from "next/navigation";
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { readApplicableUnitIds } from "@/modules/operational/five-s-applicability";
 import {
+  readFiveSScoringScaleForm,
+  resolveFiveSScoringScale,
+  scoreIsOnFiveSScale,
+} from "@/modules/5s/scoring-scale";
+import {
   loadTemplateAuthoringChildren,
   nextQuestionPosition,
 } from "@/modules/operational/template-authoring";
@@ -64,6 +69,17 @@ export async function createFiveSStandard(formData: FormData) {
     return { error: "Select at least one applicable area" };
   }
 
+  const hasScaleInput =
+    formData.has("scaleMin") ||
+    formData.has("scaleMax") ||
+    formData.has("scaleStep");
+  const scale = readFiveSScoringScaleForm(formData);
+  if (hasScaleInput && !scale) {
+    return {
+      error: "Enter a valid scoring scale with a minimum, maximum and step.",
+    };
+  }
+
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("create_five_s_standard_draft", {
     target_display_name: name,
@@ -73,7 +89,30 @@ export async function createFiveSStandard(formData: FormData) {
   });
 
   if (error) return { error: error.message };
-  return { standardId: data as string };
+  const standardId = data as string;
+  if (scale) {
+    const { data: version, error: versionError } = await supabase
+      .from("five_s_standard_versions")
+      .select("id")
+      .eq("standard_id", standardId)
+      .eq("status", "draft")
+      .maybeSingle();
+    if (versionError) return { error: versionError.message };
+    if (!version) {
+      return { error: "5S standard draft could not be prepared" };
+    }
+    const { error: scaleError } = await supabase.rpc(
+      "set_five_s_standard_scoring_scale",
+      {
+        target_standard_version_id: version.id,
+        target_min: scale.min,
+        target_max: scale.max,
+        target_step: scale.step,
+      },
+    );
+    if (scaleError) return { error: scaleError.message };
+  }
+  return { standardId };
 }
 
 export async function setFiveSStandardApplicableUnitsFromForm(
@@ -195,6 +234,40 @@ export async function startFiveSAudit(
   return { auditId: data as string };
 }
 
+const NUMERIC_SCORE_TYPES = new Set(["score", "number", "percentage"]);
+
+export async function setFiveSStandardScoringScaleFromForm(formData: FormData) {
+  const versionId = String(formData.get("versionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  const scale = readFiveSScoringScaleForm(formData);
+  if (!versionId || !standardId) {
+    throw new Error("Standard is required");
+  }
+  if (!scale) {
+    throw new Error(
+      "Enter a valid scoring scale with a minimum, maximum and step.",
+    );
+  }
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("set_five_s_standard_scoring_scale", {
+    target_standard_version_id: versionId,
+    target_min: scale.min,
+    target_max: scale.max,
+    target_step: scale.step,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "scale",
+    ),
+  );
+}
+
 export async function saveFiveSAuditAnswer(
   auditId: string,
   questionId: string,
@@ -205,6 +278,51 @@ export async function saveFiveSAuditAnswer(
   },
 ) {
   const supabase = await createServerSupabaseClient();
+  if (!payload.isNotApplicable) {
+    const { data: audit, error: auditError } = await supabase
+      .from("five_s_audits")
+      .select("id, standard_version_id")
+      .eq("id", auditId)
+      .maybeSingle();
+    if (auditError) return { error: auditError.message };
+    if (!audit) {
+      return { error: "5S audit answer upsert is not authorised" };
+    }
+
+    const { data: version, error: versionError } = await supabase
+      .from("five_s_standard_versions")
+      .select("template_version_id, scoring_scale")
+      .eq("id", audit.standard_version_id)
+      .maybeSingle();
+    if (versionError) return { error: versionError.message };
+    if (!version) {
+      return { error: "5S audit answer upsert is not authorised" };
+    }
+
+    const { data: question, error: questionError } = await supabase
+      .from("template_questions")
+      .select("id, question_type, template_version_id")
+      .eq("id", questionId)
+      .maybeSingle();
+    if (questionError) return { error: questionError.message };
+    if (
+      !question ||
+      question.template_version_id !== version.template_version_id
+    ) {
+      return { error: "question does not belong to audit template version" };
+    }
+
+    if (NUMERIC_SCORE_TYPES.has(question.question_type)) {
+      const scale = resolveFiveSScoringScale(version.scoring_scale);
+      if (
+        payload.numberValue == null ||
+        !scoreIsOnFiveSScale(payload.numberValue, scale)
+      ) {
+        return { error: "5S score is not on the published scale" };
+      }
+    }
+  }
+
   const rpcArgs: {
     target_audit_id: string;
     target_question_id: string;

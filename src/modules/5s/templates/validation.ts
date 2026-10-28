@@ -1,3 +1,5 @@
+import { fiveSScoringScaleIsValid } from "@/modules/5s/scoring-scale";
+
 import { FIVE_S_TEMPLATE_QUESTION_TYPES } from "./types";
 import type {
   FiveSQuickStartTemplate,
@@ -54,6 +56,7 @@ export function validateFiveSQuickStartTemplate(
   }
   const names = new Set<string>();
   let questions = 0;
+  let scoredQuestions = 0;
   for (const category of template.categories) {
     const name = category.name.trim().toLocaleLowerCase("en-GB");
     if (!category.name.trim() || category.name.trim().length > 160) {
@@ -74,6 +77,9 @@ export function validateFiveSQuickStartTemplate(
       if (!QUESTION_TYPES.has(question.questionType)) {
         issues.push(`Unsupported question type on “${category.name}”.`);
       }
+      if (question.questionType === "score") {
+        scoredQuestions += 1;
+      }
       if (question.guidance && question.guidance.trim().length > 400) {
         issues.push("Question guidance must be 400 characters or fewer.");
       }
@@ -81,6 +87,13 @@ export function validateFiveSQuickStartTemplate(
   }
   if (questions > 30) {
     issues.push("A Quick Start standard can contain at most 30 questions.");
+  }
+  if (!fiveSScoringScaleIsValid(template.scoringScale)) {
+    issues.push(
+      scoredQuestions > 0
+        ? "Scored questions need an explicit scoring scale."
+        : "The scoring scale must include a minimum, maximum and step.",
+    );
   }
   return issues;
 }

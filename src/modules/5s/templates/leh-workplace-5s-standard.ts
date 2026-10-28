@@ -17,8 +17,9 @@ export const LEH_WORKPLACE_5S_STANDARD: FiveSQuickStartTemplate = {
   description:
     "An optional starting point for checking whether a workplace is sorted, set in order, clean enough to see problems, standardised, and sustained by the people who work there.",
   notes:
-    "Adapt the categories, questions, scoring and threshold to how your organisation actually works. This template does not choose where the standard applies.",
+    "Adapt the categories, questions, scoring scale and pass threshold to how your organisation actually works. This starting point scores numeric questions from 1 to 5. The 80% figure is the pass threshold, not the scoring range. This template does not choose where the standard applies.",
   startingThresholdPercent: LEH_WORKPLACE_5S_STARTING_THRESHOLD,
+  scoringScale: { min: 1, max: 5, step: 1 },
   categories: [
     {
       name: "Sort",

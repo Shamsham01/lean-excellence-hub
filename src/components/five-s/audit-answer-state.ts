@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 
 import { saveFiveSAuditAnswer } from "@/app/(platform)/platform/5s/actions";
+import {
+  LEGACY_FIVE_S_SCORING_SCALE,
+  parseFiveSScoreInput,
+  scoreIsOnFiveSScale,
+  type FiveSScoringScale,
+} from "@/modules/5s/scoring-scale";
 
 export type AuditAnswer = {
   text_value?: string | null;
@@ -119,12 +125,15 @@ function isRuntimeActive(runtime: QuestionRuntime | undefined) {
 function shouldPreserveLocalAnswer(
   runtime: QuestionRuntime | undefined,
   status: SaveStatus | undefined,
+  questionId: string,
+  invalidScores: Record<string, boolean>,
 ) {
   return (
     isRuntimeActive(runtime) ||
     status === "saving" ||
     status === "error" ||
-    Boolean(runtime?.lastFailed)
+    Boolean(runtime?.lastFailed) ||
+    Boolean(invalidScores[questionId])
   );
 }
 
@@ -133,12 +142,13 @@ function retagJobEpoch(job: SaveJob | null, epoch: number) {
   return { ...job, epoch };
 }
 
-function parseNumberDraft(value: string): number | null | undefined {
-  const trimmed = value.trim();
-  if (trimmed === "") return null;
-  const parsed = Number(trimmed);
-  if (Number.isNaN(parsed)) return undefined;
-  return parsed;
+function scoreDraftIsSavable(
+  value: string,
+  scale: FiveSScoringScale,
+): number | null {
+  const parsed = parseFiveSScoreInput(value);
+  if (typeof parsed !== "number") return null;
+  return scoreIsOnFiveSScale(parsed, scale) ? parsed : null;
 }
 
 /**
@@ -186,11 +196,13 @@ export function useAuditAnswerState({
   auditId,
   answers,
   canEdit,
+  scoringScale = LEGACY_FIVE_S_SCORING_SCALE,
   saveAnswer = saveFiveSAuditAnswer,
 }: {
   auditId: string;
   answers: Record<string, AuditAnswer>;
   canEdit: boolean;
+  scoringScale?: FiveSScoringScale;
   saveAnswer?: SaveAnswerFn;
 }) {
   const [localAnswers, setLocalAnswers] = useState(() => cloneAnswers(answers));
@@ -202,6 +214,9 @@ export function useAuditAnswerState({
   const [numberDrafts, setNumberDrafts] = useState(() =>
     buildNumberDrafts(answers),
   );
+  const [invalidScores, setInvalidScores] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const confirmedRef = useRef(confirmedAnswers);
   const statusRef = useRef(statuses);
@@ -211,6 +226,8 @@ export function useAuditAnswerState({
   const epochRef = useRef(0);
   const runtimesRef = useRef(new Map<string, QuestionRuntime>());
   const saveAnswerRef = useRef(saveAnswer);
+  const scoringScaleRef = useRef(scoringScale);
+  const invalidScoreRef = useRef(invalidScores);
   const auditIdRef = useRef(auditId);
   const canEditRef = useRef(canEdit);
   const answersSnapshotRef = useRef(answers);
@@ -232,6 +249,8 @@ export function useAuditAnswerState({
     errorsRef.current = errors;
     numberDraftsRef.current = numberDrafts;
     saveAnswerRef.current = saveAnswer;
+    scoringScaleRef.current = scoringScale;
+    invalidScoreRef.current = invalidScores;
     auditIdRef.current = auditId;
     canEditRef.current = canEdit;
     answersSnapshotRef.current = answers;
@@ -242,8 +261,10 @@ export function useAuditAnswerState({
     confirmedAnswers,
     errors,
     localAnswers,
+    invalidScores,
     numberDrafts,
     saveAnswer,
+    scoringScale,
     statuses,
   ]);
 
@@ -293,6 +314,7 @@ export function useAuditAnswerState({
       setStatuses({});
       setErrors({});
       setNumberDrafts(buildNumberDrafts(snapshot));
+      setInvalidScores({});
       return;
     }
 
@@ -315,7 +337,12 @@ export function useAuditAnswerState({
         const runtime = runtimes.get(questionId);
         const status = statusRef.current[questionId];
         if (
-          shouldPreserveLocalAnswer(runtime, status) &&
+          shouldPreserveLocalAnswer(
+            runtime,
+            status,
+            questionId,
+            invalidScoreRef.current,
+          ) &&
           currentLocal[questionId] !== undefined
         ) {
           next[questionId] = currentLocal[questionId];
@@ -327,7 +354,14 @@ export function useAuditAnswerState({
       const next = buildNumberDrafts(snapshot);
       for (const [questionId, draft] of Object.entries(currentDrafts)) {
         const runtime = runtimes.get(questionId);
-        if (shouldPreserveLocalAnswer(runtime, statusRef.current[questionId])) {
+        if (
+          shouldPreserveLocalAnswer(
+            runtime,
+            statusRef.current[questionId],
+            questionId,
+            invalidScoreRef.current,
+          )
+        ) {
           next[questionId] = draft;
         }
       }
@@ -343,12 +377,20 @@ export function useAuditAnswerState({
       for (const questionId of questionIds) {
         const runtime = runtimes.get(questionId);
         const status = currentStatuses[questionId];
-        if (shouldPreserveLocalAnswer(runtime, status)) {
-          if (status) next[questionId] = status;
+        if (
+          shouldPreserveLocalAnswer(
+            runtime,
+            status,
+            questionId,
+            invalidScoreRef.current,
+          )
+        ) {
+          if (status && status !== "saved") next[questionId] = status;
           continue;
         }
         if (
           status === "saved" &&
+          !invalidScoreRef.current[questionId] &&
           answersEqual(
             localAnswersRef.current[questionId],
             snapshot[questionId],
@@ -365,7 +407,12 @@ export function useAuditAnswerState({
         const runtime = runtimes.get(questionId);
         if (
           error != null &&
-          shouldPreserveLocalAnswer(runtime, statusRef.current[questionId])
+          shouldPreserveLocalAnswer(
+            runtime,
+            statusRef.current[questionId],
+            questionId,
+            invalidScoreRef.current,
+          )
         ) {
           next[questionId] = error;
         }
@@ -479,7 +526,10 @@ export function useAuditAnswerState({
         if (runtime.pending) {
           continue;
         }
-        setStatuses((current) => ({ ...current, [questionId]: "saved" }));
+        setStatuses((current) => ({
+          ...current,
+          [questionId]: invalidScoreRef.current[questionId] ? "idle" : "saved",
+        }));
         setErrors((current) => ({ ...current, [questionId]: null }));
       }
     } finally {
@@ -534,6 +584,10 @@ export function useAuditAnswerState({
     runtime: QuestionRuntime,
   ) {
     if (runtime.inFlight || runtime.pending) return;
+    if (invalidScoreRef.current[questionId]) {
+      setStatuses((current) => ({ ...current, [questionId]: "idle" }));
+      return;
+    }
     setStatuses((current) => ({ ...current, [questionId]: "saved" }));
     setErrors((current) => ({ ...current, [questionId]: null }));
   }
@@ -584,6 +638,48 @@ export function useAuditAnswerState({
     }, TEXT_NUMBER_SAVE_DEBOUNCE_MS);
   }
 
+  function markScoreInvalid(questionId: string, invalid: boolean) {
+    invalidScoreRef.current = {
+      ...invalidScoreRef.current,
+      [questionId]: invalid,
+    };
+    setInvalidScores((current) => {
+      if (Boolean(current[questionId]) === invalid) return current;
+      return { ...current, [questionId]: invalid };
+    });
+  }
+
+  function abandonUnsentScore(questionId: string) {
+    const runtime = ensureRuntime(questionId);
+    if (runtime.debounceTimer) {
+      clearTimeout(runtime.debounceTimer);
+      runtime.debounceTimer = null;
+    }
+    const requestOpen = Boolean(
+      runtime.inFlight || runtime.pending || runtime.current,
+    );
+    if (!requestOpen) {
+      runtime.latest = null;
+      setLocalAnswers((current) => ({
+        ...current,
+        [questionId]: confirmedRef.current[questionId] ?? {
+          text_value: null,
+          number_value: null,
+          is_not_applicable: false,
+        },
+      }));
+    }
+    // An invalid draft must not keep a previous success. A request already
+    // in flight is the last valid value; its completion settles the status.
+    setStatuses((current) => {
+      if (requestOpen || current[questionId] === "error") return current;
+      if (current[questionId] == null || current[questionId] === "idle") {
+        return current;
+      }
+      return { ...current, [questionId]: "idle" };
+    });
+  }
+
   function getAnswer(questionId: string): AuditAnswer {
     return localAnswers[questionId] ?? {};
   }
@@ -605,6 +701,7 @@ export function useAuditAnswerState({
   }
 
   function selectYesNo(questionId: string, value: "yes" | "no") {
+    markScoreInvalid(questionId, false);
     enqueue(
       questionId,
       { textValue: value },
@@ -618,6 +715,7 @@ export function useAuditAnswerState({
   }
 
   function selectNotApplicable(questionId: string) {
+    markScoreInvalid(questionId, false);
     enqueue(
       questionId,
       {
@@ -646,32 +744,65 @@ export function useAuditAnswerState({
     );
   }
 
-  function changeNumber(questionId: string, value: string) {
-    setNumberDrafts((current) => ({ ...current, [questionId]: value }));
-    const parsed = parseNumberDraft(value);
-    if (parsed === undefined) {
-      setLocalAnswers((current) => ({
-        ...current,
-        [questionId]: {
-          text_value: null,
-          number_value: current[questionId]?.number_value ?? null,
-          is_not_applicable: false,
-        },
-      }));
-      return;
-    }
+  function persistScore(questionId: string, value: number) {
+    markScoreInvalid(questionId, false);
+    setNumberDrafts((current) => ({
+      ...current,
+      [questionId]: String(value),
+    }));
     schedulePersist(
       questionId,
-      { numberValue: parsed },
+      { numberValue: value },
       {
         text_value: null,
-        number_value: parsed,
+        number_value: value,
+        is_not_applicable: false,
+      },
+    );
+  }
+
+  function changeNumber(questionId: string, value: string) {
+    setNumberDrafts((current) => ({ ...current, [questionId]: value }));
+    const parsed = scoreDraftIsSavable(value, scoringScaleRef.current);
+    if (parsed == null) {
+      markScoreInvalid(questionId, true);
+      abandonUnsentScore(questionId);
+      return;
+    }
+    persistScore(questionId, parsed);
+  }
+
+  function selectScore(questionId: string, value: number) {
+    if (!scoreIsOnFiveSScale(value, scoringScaleRef.current)) {
+      markScoreInvalid(questionId, true);
+      abandonUnsentScore(questionId);
+      return;
+    }
+    const runtime = ensureRuntime(questionId);
+    if (runtime.debounceTimer) {
+      clearTimeout(runtime.debounceTimer);
+      runtime.debounceTimer = null;
+    }
+    markScoreInvalid(questionId, false);
+    setNumberDrafts((current) => ({
+      ...current,
+      [questionId]: String(value),
+    }));
+    enqueue(
+      questionId,
+      { numberValue: value },
+      {
+        text_value: null,
+        number_value: value,
         is_not_applicable: false,
       },
     );
   }
 
   async function flushQuestion(questionId: string) {
+    if (invalidScoreRef.current[questionId]) {
+      return false;
+    }
     const runtime = ensureRuntime(questionId);
     if (runtime.debounceTimer) {
       clearTimeout(runtime.debounceTimer);
@@ -723,8 +854,11 @@ export function useAuditAnswerState({
     isQuestionBusy,
     selectYesNo,
     selectNotApplicable,
+    selectScore,
     changeText,
     changeNumber,
+    isScoreDraftInvalid: (questionId: string) =>
+      Boolean(invalidScores[questionId]),
     flushQuestion,
     flushAllQuestions,
     retryQuestion,

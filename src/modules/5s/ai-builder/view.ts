@@ -1,5 +1,6 @@
 import type { ModuleSetupBuilderConversationState } from "@/modules/module-setup/ai-builder/types";
 import type { ModuleSetupBuilderSnapshot } from "@/modules/module-setup/ai-builder/snapshot";
+import { formatFiveSScaleRange } from "@/modules/5s/scoring-scale";
 import { fiveSQuestionTypeLabel } from "@/modules/5s/templates";
 
 import {
@@ -39,6 +40,9 @@ export function fiveSBuilderSnapshot(
           name: proposal.proposal.name,
           description: proposal.proposal.description,
           thresholdPercent: proposal.proposal.thresholdPercent,
+          scoringScaleLabel: proposal.proposal.scoringScale
+            ? `Scoring scale ${formatFiveSScaleRange(proposal.proposal.scoringScale)}`
+            : null,
           changeSummary: proposal.changeSummary,
           sections: proposal.proposal.categories.map((category) => ({
             name: category.name,

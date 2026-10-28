@@ -37,6 +37,7 @@ describe("module setup templates", () => {
     );
     expect(definition.key).toBe("leh-workplace-5s-standard");
     expect(definition.thresholdPercent).toBe(80);
+    expect(definition.scoringScale).toEqual({ min: 1, max: 5, step: 1 });
     expect(definition.categories[0]?.name).toBe("Sort");
   });
 
@@ -180,6 +181,63 @@ describe("module setup proposal validation", () => {
     if (invalid.ok) {
       expect(invalid.envelope.proposalStatus).toBe("invalid");
       expect(invalid.envelope.proposal).toBeNull();
+    }
+  });
+
+  it("preserves an explicit 1 to 5 scoring preference on scored proposals", () => {
+    const envelope = {
+      message: "Review this draft.",
+      phase: "proposal",
+      understanding: {
+        environment: null,
+        purpose: null,
+        audit_style: null,
+        depth: null,
+        evidence: null,
+        scoring: "Use a 1 to 5 scale.",
+        terminology: null,
+      },
+      questions: [],
+      change_summary: [],
+      proposal: {
+        name: "Packing 5S Standard",
+        description: "A short standard for the packing area.",
+        threshold_percent: 80,
+        categories: [
+          {
+            name: "Sustain",
+            description: null,
+            questions: [
+              {
+                prompt: "How reliably is the area reset?",
+                question_type: "score",
+                guidance: null,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const adopted = parseFiveSBuilderEnvelope(envelope);
+    expect(adopted.ok).toBe(true);
+    if (adopted.ok && adopted.envelope.proposal) {
+      expect(adopted.envelope.proposal.scoringScale).toEqual({
+        min: 1,
+        max: 5,
+        step: 1,
+      });
+    }
+
+    const conflicting = parseFiveSBuilderEnvelope({
+      ...envelope,
+      proposal: {
+        ...envelope.proposal,
+        scoring_scale: { min: 0, max: 10, step: 1 },
+      },
+    });
+    expect(conflicting.ok).toBe(true);
+    if (conflicting.ok) {
+      expect(conflicting.envelope.proposalStatus).toBe("invalid");
     }
   });
 

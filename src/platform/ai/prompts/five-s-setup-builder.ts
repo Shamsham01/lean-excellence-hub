@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const FIVE_S_SETUP_BUILDER_PROMPT_KEY = "leanai-five-s-setup-builder";
-export const FIVE_S_SETUP_BUILDER_PROMPT_VERSION = "v1";
+export const FIVE_S_SETUP_BUILDER_PROMPT_VERSION = "v2";
 export const FIVE_S_SETUP_BUILDER_FORMAT_NAME = "five_s_setup_builder_envelope";
 
 const nullableString = { type: ["string", "null"] } as const;
@@ -12,6 +12,21 @@ const PROPOSAL_SCHEMA = {
     name: { type: "string" },
     description: { type: "string" },
     threshold_percent: { type: "number" },
+    scoring_scale: {
+      anyOf: [
+        {
+          type: "object",
+          properties: {
+            min: { type: "number" },
+            max: { type: "number" },
+            step: { type: "number" },
+          },
+          required: ["min", "max", "step"],
+          additionalProperties: false,
+        },
+        { type: "null" },
+      ],
+    },
     categories: {
       type: "array",
       items: {
@@ -111,7 +126,10 @@ When you propose, stay inside the limits in the context block:
 - 1–6 questions per category
 - at most 30 questions
 - question_type is only yes_no, score, short_text, or long_text
-- threshold_percent is 0–100
+- threshold_percent is 0–100. It is the pass mark, not the scoring range.
+- When any question_type is score, scoring_scale is required: { min, max, step }.
+- Use a preset of 0–5, 1–5, 0–10 or 0–100, or a custom numeric range with a positive step that lands on exact increments.
+- If the user asks for a scoring scale, put that scale in scoring_scale. Do not leave it only in the scoring note.
 Keep the standard compact. Prefer observable operational questions over a giant checklist.
 
 On refine, return a complete new proposal that changes only the requested part and list what changed.
