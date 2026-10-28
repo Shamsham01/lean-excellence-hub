@@ -2,10 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { DEMO_USERS } from "../../scripts/demo-seed/constants";
-import {
-  createDemoAdminSession,
-  queryDatabase,
-} from "./helpers/workforce-provisioning";
+import { createDemoAdminSession } from "./helpers/workforce-provisioning";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -295,51 +292,59 @@ test.describe("PEOPLE-MOBILE-001 organisation assignment", () => {
   );
 
   test.beforeAll(async () => {
-    const rows = queryDatabase<{
-      operator_membership_id: string;
-      admin_membership_id: string;
-      organisation_id: string;
-      operations_unit_id: string;
-      original_job_function_id: string | null;
-      original_unit_id: string | null;
-    }>(`
-      select
-        operator_membership.id as operator_membership_id,
-        admin_membership.id as admin_membership_id,
-        operator_membership.organisation_id,
-        operations.id as operations_unit_id,
-        assignment.job_function_id as original_job_function_id,
-        assignment.organisational_unit_id as original_unit_id
-      from public.organisation_memberships operator_membership
-      join auth.users operator_user
-        on operator_user.id = operator_membership.user_id
-      join public.organisation_memberships admin_membership
-        on admin_membership.organisation_id = operator_membership.organisation_id
-      join auth.users admin_user
-        on admin_user.id = admin_membership.user_id
-      join public.organisation_units operations
-        on operations.organisation_id = operator_membership.organisation_id
-       and operations.code = 'operations'
-       and operations.status = 'active'
-      left join public.membership_job_function_assignments assignment
-        on assignment.organisation_id = operator_membership.organisation_id
-       and assignment.membership_id = operator_membership.id
-       and assignment.is_primary = true
-       and assignment.valid_to is null
-      where operator_user.email = 'operator@apex.local'
-        and admin_user.email = 'admin@apex.local'
-    `);
-
-    const baseline = rows[0];
-    if (
-      !baseline?.original_job_function_id ||
-      !baseline.original_unit_id ||
-      !baseline.operations_unit_id
-    ) {
+    const { client, organisationId } = await createDemoAdminSession();
+    // Read structured API results rather than parsing CLI output, whose JSON
+    // envelope can differ between local and CI Supabase CLI versions.
+    const { data: operator, error: operatorError } = await client
+      .from("organisation_memberships")
+      .select("id")
+      .eq("organisation_id", organisationId)
+      .eq("user_id", DEMO_USERS.operator.id)
+      .single();
+    if (operatorError || !operator) {
+      throw new Error(operatorError?.message ?? "Demo operator was not found.");
+    }
+    const { data: admin, error: adminError } = await client
+      .from("organisation_memberships")
+      .select("id")
+      .eq("organisation_id", organisationId)
+      .eq("user_id", DEMO_USERS.admin.id)
+      .single();
+    if (adminError || !admin) {
+      throw new Error(adminError?.message ?? "Demo admin was not found.");
+    }
+    const { data: operations, error: operationsError } = await client
+      .from("organisation_units")
+      .select("id")
+      .eq("organisation_id", organisationId)
+      .eq("code", "operations")
+      .eq("status", "active")
+      .single();
+    if (operationsError || !operations) {
       throw new Error(
-        "Demo operator assignment is unavailable for PEOPLE-MOBILE-001.",
+        operationsError?.message ?? "Demo Operations unit was not found.",
       );
     }
+    const { data: assignment, error: assignmentError } = await client
+      .from("membership_job_function_assignments")
+      .select("job_function_id, organisational_unit_id")
+      .eq("organisation_id", organisationId)
+      .eq("membership_id", operator.id)
+      .eq("is_primary", true)
+      .is("valid_to", null)
+      .single();
+    if (assignmentError || !assignment?.organisational_unit_id) {
+      throw new Error(
+        assignmentError?.message ?? "Demo operator assignment was not found.",
+      );
+    }
+    const baseline = {
+      operator_membership_id: operator.id,
+      admin_membership_id: admin.id,
+      operations_unit_id: operations.id,
+      original_job_function_id: assignment.job_function_id,
+      original_unit_id: assignment.organisational_unit_id,
+    };
 
     const runKey = Date.now().toString(36);
     const jobFunctionName = unbrokenLabel("JobFunction", 160);
@@ -353,11 +358,6 @@ test.describe("PEOPLE-MOBILE-001 organisation assignment", () => {
     expect(areaName.length).toBeLessThanOrEqual(160);
     expect(jobFunctionName).not.toMatch(/\s/);
     expect(lineName).not.toMatch(/\s/);
-
-    const { client, organisationId } = await createDemoAdminSession();
-    if (organisationId !== baseline.organisation_id) {
-      throw new Error("Demo admin session resolved a different organisation.");
-    }
 
     const { data: jobFunctionId, error: jobFunctionError } = await client.rpc(
       "create_job_function",
