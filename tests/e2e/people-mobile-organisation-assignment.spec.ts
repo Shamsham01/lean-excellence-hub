@@ -593,6 +593,7 @@ test.describe("PEOPLE-MOBILE-001 organisation assignment", () => {
     expect(fixture.originalJobFunctionId).not.toBe(fixture.jobFunctionId);
     expect(fixture.originalUnitId).not.toBe(fixture.lineUnitId);
 
+    await jobSelect.selectOption(fixture.jobFunctionId);
     await jobSelect.focus();
     await expect(jobSelect).toBeFocused();
     const valueBeforeKeyboard = await jobSelect.inputValue();
