@@ -271,6 +271,94 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       surface: "workspace",
     };
   }
+  if (pathname === "/platform/skills/setup/leanai") {
+    return {
+      module: "skills",
+      workflow: "skills_builder",
+      pageTitle: "Build Skills with LeanAI",
+      surface: "workspace",
+    };
+  }
+  if (
+    pathname === "/platform/skills/setup/quick-start" ||
+    pathname.startsWith("/platform/skills/setup/quick-start/")
+  ) {
+    return {
+      module: "skills",
+      workflow: "skills_quick_start",
+      pageTitle: "Skills Quick Start",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/skills/setup/manual") {
+    return {
+      module: "skills",
+      workflow: "skills_manual",
+      pageTitle: "Guided Skills setup",
+      surface: "workspace",
+    };
+  }
+  if (pathname.startsWith("/platform/skills/setup/drafts/")) {
+    return {
+      module: "skills",
+      workflow: "skills_draft",
+      pageTitle: "Skills setup draft",
+      surface: "workspace",
+      entityId: pathname.split("/")[5] ?? null,
+    };
+  }
+  if (pathname === "/platform/skills/setup") {
+    return {
+      module: "skills",
+      workflow: "skills_setup",
+      pageTitle: "Set up Skills",
+      surface: "workspace",
+    };
+  }
+  if (
+    pathname === "/platform/skills/scales" ||
+    pathname.startsWith("/platform/skills/scales/")
+  ) {
+    return {
+      module: "skills",
+      workflow: "skills_scale",
+      pageTitle: "Proficiency scale",
+      surface: "workspace",
+    };
+  }
+  if (
+    pathname === "/platform/skills/catalog" ||
+    pathname.startsWith("/platform/skills/catalog/")
+  ) {
+    return {
+      module: "skills",
+      workflow: "skills_catalogue",
+      pageTitle: "Skills catalogue",
+      surface: "workspace",
+    };
+  }
+  if (
+    pathname === "/platform/skills/standards" ||
+    pathname.startsWith("/platform/skills/standards/")
+  ) {
+    return {
+      module: "skills",
+      workflow: "skills_requirements",
+      pageTitle: "Capability requirements",
+      surface: "workspace",
+    };
+  }
+  if (
+    pathname === "/platform/skills/matrix" ||
+    pathname.startsWith("/platform/skills/matrix/")
+  ) {
+    return {
+      module: "skills",
+      workflow: "skills_matrix",
+      pageTitle: "Skills matrix",
+      surface: "workspace",
+    };
+  }
   if (
     pathname === "/platform/skills" ||
     pathname.startsWith("/platform/skills/")

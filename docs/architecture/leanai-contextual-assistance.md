@@ -457,6 +457,15 @@ Use the right representation for each context:
 
 The model should retrieve only what is needed for the current task.
 
+Skills field-level knowledge ships in `src/modules/leanai-context/product-knowledge/` with release version `LEH_PRODUCT_KNOWLEDGE_VERSION`. It is compiled into the application. The runtime assistant does not read GitHub, secrets, or unpublished branches.
+
+Maintenance contract for that bundle:
+
+- A change to a Skills field, permission, publish rule, route, or setup path updates the matching article in the same change.
+- The change also updates `explainSkillsQuestion` cases and `tests/unit/skills-setup-and-knowledge.test.ts` when the user-facing answer changes.
+- `PLATFORM_KNOWLEDGE_COVERAGE` stays honest. Skills being complete does not imply another module is complete.
+- Do not add a vector database for this bundle unless retrieval needs exceed the route-scoped articles.
+
 ---
 
 ## 11. Privacy / customer policy position
