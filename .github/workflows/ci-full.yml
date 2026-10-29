@@ -246,6 +246,7 @@ jobs:
               tests/e2e/workforce-provisioning.spec.ts
               tests/e2e/workforce-bulk-import.spec.ts
               tests/e2e/training-skills-recognition-nav-click.spec.ts
+              tests/e2e/skills-setup.spec.ts
               tests/e2e/training-course-authoring.spec.ts
               tests/e2e/training-curriculum-authoring.spec.ts
               tests/e2e/people-mobile-organisation-assignment.spec.ts
