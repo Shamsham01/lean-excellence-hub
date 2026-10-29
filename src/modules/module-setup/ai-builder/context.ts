@@ -4,6 +4,7 @@ export type ModuleSetupOrganisationFacts = {
   unitNames: string[];
   existingConfigurationNames: string[];
   configurationCount: number;
+  jobFunctionNames?: string[];
 };
 
 export type ModuleSetupBuilderContext = {
@@ -14,6 +15,7 @@ export type ModuleSetupBuilderContext = {
     unit_names: string[];
     existing_configuration_names: string[];
     configuration_count: number;
+    job_function_names: string[];
   };
   understanding_so_far: Record<string, string | null> | null;
   current_proposal: unknown;
@@ -44,6 +46,7 @@ export function buildModuleSetupBuilderContext(input: {
       existing_configuration_names:
         input.facts.existingConfigurationNames.slice(0, 20),
       configuration_count: input.facts.configurationCount,
+      job_function_names: (input.facts.jobFunctionNames ?? []).slice(0, 40),
     },
     understanding_so_far: input.understanding,
     current_proposal: input.currentProposal,

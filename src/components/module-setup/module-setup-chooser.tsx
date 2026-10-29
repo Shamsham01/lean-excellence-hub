@@ -5,7 +5,7 @@ import { moduleSetupReadiness } from "@/modules/module-setup/readiness";
 
 type ModuleSetupChooserProps = {
   moduleLabel: string;
-  configurationNoun: "standard" | "definition";
+  configurationNoun: "standard" | "definition" | "framework";
   existingCount: number;
   manualHref: string;
   quickStartHref: string;

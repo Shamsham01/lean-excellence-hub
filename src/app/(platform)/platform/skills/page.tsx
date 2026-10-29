@@ -41,6 +41,7 @@ export default async function SkillsOverviewPage() {
     { count: skillCount },
     { data: scaleVersions },
     { data: standardVersions },
+    { data: setupDrafts },
   ] = await Promise.all([
     supabase
       .from("skills")
@@ -52,6 +53,12 @@ export default async function SkillsOverviewPage() {
     supabase
       .from("skill_capability_set_versions")
       .select("id, capability_set_id, status, created_at"),
+    supabase
+      .from("skill_setup_bundles")
+      .select("id, title, source, status")
+      .eq("status", "draft")
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   const snapshot: SkillsSetupSnapshot = {
@@ -85,6 +92,14 @@ export default async function SkillsOverviewPage() {
         description="Set up how capability is measured, which skills the organisation needs, and what each job function requires."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" asChild>
+              <AppLink
+                href="/platform/skills/setup"
+                data-testid="skills-setup-link"
+              >
+                Set up skills
+              </AppLink>
+            </Button>
             <Button variant="outline" size="sm" asChild>
               <AppLink
                 href="/platform/skills/catalog"
@@ -111,6 +126,30 @@ export default async function SkillsOverviewPage() {
         />
         <MetricCard label="Active skills" value={skillCount ?? 0} />
       </div>
+      {(setupDrafts ?? []).length > 0 ? (
+        <section
+          className="flex flex-col gap-2"
+          data-testid="skills-setup-drafts"
+        >
+          <h2 className="text-base font-medium">Setup drafts</h2>
+          <ul className="flex flex-col gap-2">
+            {(setupDrafts ?? []).map((draft) => (
+              <li key={draft.id}>
+                <AppLink
+                  href={`/platform/skills/setup/drafts/${draft.id}`}
+                  className="text-sm underline"
+                >
+                  {draft.title}
+                </AppLink>
+                <span className="text-sm text-muted-foreground">
+                  {" "}
+                  · {draft.source} · not published
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <SkillsFrameworkPath
         snapshot={snapshot}
         canManageCatalog={canManageCatalog}

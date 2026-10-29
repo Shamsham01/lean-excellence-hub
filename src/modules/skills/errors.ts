@@ -132,6 +132,42 @@ export function toSkillsAuthoringError(error: unknown, fallback: string) {
     return "Enter a level label between 1 and 120 characters.";
   }
 
+  if (normalised.includes("existing proficiency scale differs")) {
+    return "A proficiency scale with this name already exists and its levels differ. Nothing was changed. Choose to keep the existing scale or create a separate draft.";
+  }
+
+  if (normalised.includes("compatible proficiency scale was not found")) {
+    return "No published scale matches this name and these levels. Nothing was changed.";
+  }
+
+  if (normalised.includes("job function is not in this organisation")) {
+    return "Choose a job function from this organisation. Nothing was saved.";
+  }
+
+  if (normalised.includes("organisational unit is not in this organisation")) {
+    return "Choose an organisational unit from this organisation. Nothing was saved.";
+  }
+
+  if (normalised.includes("published setup bundles are kept")) {
+    return "This setup is already published. Use versioning to change it. History was not deleted.";
+  }
+
+  if (normalised.includes("discarded setup bundles cannot be published")) {
+    return "This draft was discarded. Start a new setup.";
+  }
+
+  if (normalised.includes("draft skills cannot be assessed")) {
+    return "Publish the setup before assessing this skill. Completing training does not make someone competent.";
+  }
+
+  if (normalised.includes("module setup definition")) {
+    return "Check the setup and try again. Nothing was saved or published.";
+  }
+
+  if (normalised.includes("skill setup bundle was not found")) {
+    return "That setup draft could not be found.";
+  }
+
   if (classified === "infrastructure") {
     return fallback;
   }
