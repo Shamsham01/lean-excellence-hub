@@ -81,3 +81,12 @@ A member who can use a module at one site and view another site keeps the normal
 Workplace Viewer does not add attachment download, module export, or workplace search. Those routes keep their existing authorization. There is no workplace search index. LeanAI may explain a module the person can view. It does not retrieve records outside the table above, and it does not describe conversation as available unless that separate capability is turned on. Existing read functions that return restricted columns stay unchanged, so holding Workplace Viewer does not open financial amounts, draft detail, or another person’s assessment.
 
 Operator access is an invitation preset. It adds Workplace Viewer and Suggestions Contributor at the chosen site. An administrator can remove or change either row before creating the invitation. Assigning Workplace Viewer to someone who is already a member uses the existing access grant, which records the grantor, role, and scope. Publishing the role does not grant it to existing members, and it does not change Team Member or Suggestions.
+
+## Self-profile rollout verification
+
+Apply `20261030231303_self_skill_gap_access.sql` after the workplace feed
+pagination migration. It aligns the nested skill-gap check with self-profile
+access for current published requirements, without allowing self-only callers
+to select draft capability versions or read another member. The regression
+fixture includes a published requirement and a validated assessment; an empty
+skills catalogue alone does not exercise this path.

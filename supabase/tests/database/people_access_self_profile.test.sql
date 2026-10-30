@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(32);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -326,6 +326,124 @@ select ok(
   'missing skills data is an empty list'
 );
 
+-- An empty catalogue never calls derive_skill_gap. Exercise real published
+-- requirements and an authoritative assessment before checking self access.
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b2000000-0000-0000-0000-000000000001","email":"self-profile-owner@example.test"}',
+  true
+);
+
+insert into self_profile_ids (key, id)
+select 'skill', public.create_skill('Safe Operation', 'safe-operation');
+
+insert into self_profile_ids (key, id)
+select 'scale', public.create_skill_proficiency_scale_draft('Operator Scale');
+
+insert into self_profile_ids (key, id)
+select 'scale_version', id from public.skill_proficiency_scale_versions
+where scale_id = (select id from self_profile_ids where key = 'scale')
+  and version_number = 1;
+
+insert into self_profile_ids (key, id)
+select 'level_1', public.add_skill_proficiency_level(
+  (select id from self_profile_ids where key = 'scale_version'), 1, 'Learning'
+);
+insert into self_profile_ids (key, id)
+select 'level_2', public.add_skill_proficiency_level(
+  (select id from self_profile_ids where key = 'scale_version'), 2, 'Independent'
+);
+select public.publish_skill_proficiency_scale_version(
+  (select id from self_profile_ids where key = 'scale_version')
+);
+
+insert into self_profile_ids (key, id)
+select 'capability_set', public.create_skill_capability_set_draft('Operator Skills', 'operator-skills');
+insert into self_profile_ids (key, id)
+select 'capability_version', id from public.skill_capability_set_versions
+where capability_set_id = (select id from self_profile_ids where key = 'capability_set')
+  and version_number = 1;
+select public.add_skill_requirement(
+  (select id from self_profile_ids where key = 'capability_version'),
+  (select id from self_profile_ids where key = 'skill'),
+  (select id from self_profile_ids where key = 'operator_job_function'),
+  (select id from self_profile_ids where key = 'scale_version'),
+  (select id from self_profile_ids where key = 'level_2')
+);
+select public.publish_skill_capability_set_version(
+  (select id from self_profile_ids where key = 'capability_version')
+);
+select public.record_skill_validation(
+  (select id from self_profile_ids where key = 'suggestions_membership'),
+  (select id from self_profile_ids where key = 'skill'),
+  (select id from self_profile_ids where key = 'scale_version'),
+  (select id from self_profile_ids where key = 'level_1'),
+  statement_timestamp(), null, 'manager_assessment', null,
+  'Manager-only assessment note'
+);
+insert into self_profile_ids (key, id)
+select 'draft_set', public.create_skill_capability_set_draft('Draft Skills', 'draft-skills');
+insert into self_profile_ids (key, id)
+select 'draft_version', id from public.skill_capability_set_versions
+where capability_set_id = (select id from self_profile_ids where key = 'draft_set')
+  and version_number = 1;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"b2000000-0000-0000-0000-000000000002","email":"self-profile-suggestions@example.test"}',
+  true
+);
+
+select is(
+  jsonb_array_length(public.get_membership_skills_profile(
+    (select id from self_profile_ids where key = 'suggestions_membership')
+  ) -> 'gaps'),
+  1,
+  'self skills profile works with a populated catalogue'
+);
+select is(
+  public.get_membership_skills_profile(
+    (select id from self_profile_ids where key = 'suggestions_membership')
+  ) -> 'gaps' -> 0 -> 'gap' ->> 'status',
+  'below_requirement',
+  'self gap uses the published requirement and authoritative assessment'
+);
+select is(
+  (public.derive_skill_gap(
+    (select id from self_profile_ids where key = 'suggestions_membership'),
+    (select id from self_profile_ids where key = 'skill')
+  ) ->> 'gap')::integer,
+  1,
+  'self gap calculation returns the actual proficiency difference'
+);
+select is(
+  jsonb_array_length(public.get_membership_skills_profile(
+    (select id from self_profile_ids where key = 'suggestions_membership')
+  ) -> 'assessments'),
+  1,
+  'self profile includes employee-visible assessment fields'
+);
+select ok(
+  position('Manager-only assessment note' in public.get_membership_skills_profile(
+    (select id from self_profile_ids where key = 'suggestions_membership')
+  )::text) = 0,
+  'self profile excludes confidential assessment notes'
+);
+select throws_ok(
+  format('select public.get_membership_skills_profile(%L::uuid)',
+    (select id from self_profile_ids where key = 'other_membership')),
+  '42501', 'membership skills profile is not authorised',
+  'populated skills do not permit another member profile'
+);
+select throws_ok(
+  format('select public.derive_skill_gap(%L::uuid, %L::uuid, %L::uuid)',
+    (select id from self_profile_ids where key = 'suggestions_membership'),
+    (select id from self_profile_ids where key = 'skill'),
+    (select id from self_profile_ids where key = 'draft_version')),
+  '42501', 'skill gap derivation is not authorised',
+  'self-only access cannot select draft capability requirements'
+);
+
 select ok(
   not public.member_has_permission('memberships.read')
   and not public.member_has_permission('roles.read')
@@ -396,6 +514,14 @@ select throws_ok(
   '42501',
   'membership capability profile header is not authorised',
   'cross-organisation capability profile access is denied'
+);
+
+select throws_ok(
+  format('select public.derive_skill_gap(%L::uuid, %L::uuid)',
+    (select id from self_profile_ids where key = 'suggestions_membership'),
+    (select id from self_profile_ids where key = 'skill')),
+  '42501', 'skill gap derivation is not authorised',
+  'self gap access does not cross organisation boundaries'
 );
 
 select set_config(
