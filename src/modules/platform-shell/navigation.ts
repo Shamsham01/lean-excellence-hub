@@ -24,6 +24,7 @@ export type PlatformNavItem = {
   href: string;
   label: string;
   permission: string;
+  viewPermission?: string;
   icon: PlatformNavIcon;
   organisationScopeOnly?: boolean;
   universalAccess?: boolean;
@@ -53,6 +54,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform",
     label: "Home",
     permission: "maturity.read",
+    viewPermission: "workplace.view",
     icon: "home",
     section: "main",
   },
@@ -60,6 +62,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/maturity",
     label: "Maturity",
     permission: "maturity.read",
+    viewPermission: "workplace.view",
     icon: "maturity",
     section: "improvement",
   },
@@ -67,6 +70,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/5s",
     label: "5S",
     permission: "five_s.read",
+    viewPermission: "workplace.view",
     icon: "five-s",
     section: "improvement",
   },
@@ -74,6 +78,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/gemba",
     label: "Gemba",
     permission: "gemba.read",
+    viewPermission: "workplace.view",
     icon: "gemba",
     section: "improvement",
   },
@@ -81,6 +86,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/actions",
     label: "Actions",
     permission: "actions.read",
+    viewPermission: "workplace.view",
     icon: "actions",
     section: "improvement",
   },
@@ -88,6 +94,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/projects",
     label: "Projects",
     permission: "projects.read",
+    viewPermission: "workplace.view",
     icon: "projects",
     section: "improvement",
   },
@@ -95,6 +102,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/benefits",
     label: "Benefits",
     permission: "benefits.read",
+    viewPermission: "workplace.view",
     icon: "benefits",
     section: "improvement",
   },
@@ -102,6 +110,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/problem-solving",
     label: "Problem solving",
     permission: "problem_solving.view",
+    viewPermission: "workplace.view",
     icon: "problem-solving",
     section: "improvement",
   },
@@ -109,6 +118,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/suggestions",
     label: "Suggestions",
     permission: "suggestions.read",
+    viewPermission: "workplace.view",
     icon: "suggestions",
     section: "improvement",
   },
@@ -123,6 +133,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/training",
     label: "Training",
     permission: "training.read",
+    viewPermission: "workplace.view",
     icon: "training",
     section: "people",
   },
@@ -130,6 +141,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/skills",
     label: "Skills",
     permission: "skills.read",
+    viewPermission: "workplace.view",
     icon: "skills",
     section: "people",
   },
@@ -137,6 +149,7 @@ export const platformNavigation: PlatformNavItem[] = [
     href: "/platform/recognition",
     label: "Recognition",
     permission: "recognition.read",
+    viewPermission: "workplace.view",
     icon: "recognition",
     section: "people",
   },
@@ -225,5 +238,9 @@ export function filterPlatformNavigation(
       ? grantedPermissions
       : (permissionKey: string) => grantedPermissions.has(permissionKey);
 
-  return platformNavigation.filter((item) => hasPermission(item.permission));
+  return platformNavigation.filter(
+    (item) =>
+      hasPermission(item.permission) ||
+      (item.viewPermission ? hasPermission(item.viewPermission) : false),
+  );
 }

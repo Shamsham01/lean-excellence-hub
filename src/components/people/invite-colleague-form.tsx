@@ -71,6 +71,31 @@ function createGrantDraft(key: string): GrantDraft {
   return { key, roleVersionId: "", scopeKey: "" };
 }
 
+function operatorSiteOptions(offers: DelegatableAccessOffer[]) {
+  const viewer = offers.find(
+    (offer) => offer.role_canonical_name === "workplace-viewer",
+  );
+  const contributor = offers.find(
+    (offer) => offer.role_canonical_name === "suggestions-contributor",
+  );
+  if (!viewer || !contributor) return [];
+
+  const contributorSites = new Set(
+    contributor.scope_options
+      .filter(
+        (scope) => scope.scope_type === "unit_subtree" && scope.scope_unit_id,
+      )
+      .map((scope) => accessScopeKey(scope)),
+  );
+
+  return viewer.scope_options.filter(
+    (scope) =>
+      scope.scope_type === "unit_subtree" &&
+      scope.scope_unit_id &&
+      contributorSites.has(accessScopeKey(scope)),
+  );
+}
+
 export function InviteColleagueForm({
   offers,
   units,
@@ -89,6 +114,8 @@ export function InviteColleagueForm({
   const [successUrl, setSuccessUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [operatorSiteKey, setOperatorSiteKey] = useState("");
+  const operatorSites = useMemo(() => operatorSiteOptions(offers), [offers]);
 
   const resolvedGrants = useMemo(
     () =>
@@ -125,6 +152,37 @@ export function InviteColleagueForm({
 
   function removeGrant(key: string) {
     setGrants((current) => current.filter((grant) => grant.key !== key));
+  }
+
+  function applyOperatorPreset() {
+    const viewer = offers.find(
+      (offer) => offer.role_canonical_name === "workplace-viewer",
+    );
+    const contributor = offers.find(
+      (offer) => offer.role_canonical_name === "suggestions-contributor",
+    );
+    if (!viewer || !contributor || !operatorSiteKey) {
+      setMessage("Choose a site before applying Operator access.");
+      return;
+    }
+
+    setGrantSequence((current) => current + 2);
+    setGrants([
+      {
+        key: `grant-operator-view-${grantSequence + 1}`,
+        roleVersionId: viewer.role_version_id,
+        scopeKey: operatorSiteKey,
+      },
+      {
+        key: `grant-operator-submit-${grantSequence + 2}`,
+        roleVersionId: contributor.role_version_id,
+        scopeKey: operatorSiteKey,
+      },
+    ]);
+    setMessage(
+      "Operator access is ready to edit. Workplace Viewer and Suggestions Contributor use the site you chose.",
+    );
+    setSuccessUrl(null);
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -301,6 +359,56 @@ export function InviteColleagueForm({
           </select>
         </div>
       </div>
+
+      {operatorSites.length > 0 ? (
+        <section
+          className="flex flex-col gap-3"
+          aria-labelledby="operator-access-heading"
+          data-testid="operator-access-preset"
+        >
+          <h3
+            id="operator-access-heading"
+            className="text-sm font-medium text-foreground"
+          >
+            Operator access
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Adds Workplace Viewer and Suggestions Contributor at one site. You
+            can change or remove either role before creating the invitation.
+            Job function does not grant these permissions.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Label htmlFor="operator-access-site">Operator site</Label>
+              <select
+                id="operator-access-site"
+                className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                value={operatorSiteKey}
+                onChange={(event) => setOperatorSiteKey(event.target.value)}
+              >
+                <option value="">Select a site</option>
+                {operatorSites.map((site) => {
+                  const key = accessScopeKey(site);
+                  return (
+                    <option key={key} value={key}>
+                      {customerAccessScopeLabel(site)}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              data-testid="apply-operator-access"
+              onClick={applyOperatorPreset}
+            >
+              Apply Operator access
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       <fieldset className="flex flex-col gap-4">
         <legend className="text-sm font-medium text-foreground">

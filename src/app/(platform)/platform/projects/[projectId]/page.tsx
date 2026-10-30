@@ -10,7 +10,9 @@ import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-optio
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
 import type { ProjectDetail } from "@/lib/projects/types";
 import { resolvePersonDisplayName } from "@/modules/organisation/site-context";
+import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProjectDetailPage({
@@ -19,6 +21,15 @@ export default async function ProjectDetailPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: PROJECTS_PERMISSIONS.read,
+    module: "projects",
+    recordId: projectId,
+    title: "Project",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
 
   const { data: detail, error } = await callProjectRpc<ProjectDetail>(

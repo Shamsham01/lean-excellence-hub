@@ -8,9 +8,19 @@ import {
   mapActiveWalkRow,
 } from "@/modules/operational/gemba-active-walks";
 import { formatGembaWalkStatus } from "@/modules/operational/gemba-display";
+import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaHistoryPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    title: "Gemba",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: activeWalkRows } = await supabase
     .from("gemba_walks")

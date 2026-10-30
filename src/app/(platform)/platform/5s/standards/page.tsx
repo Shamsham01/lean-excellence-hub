@@ -12,9 +12,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
+import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function FiveSStandardsPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    title: "5S",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: standards } = await supabase
     .from("five_s_standards")

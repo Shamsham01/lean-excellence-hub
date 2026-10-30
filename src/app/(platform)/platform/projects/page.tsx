@@ -13,7 +13,9 @@ import type {
   ProjectPortfolioItem,
   ProjectPortfolioResponse,
 } from "@/lib/projects/types";
+import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProjectsPortfolioPage({
@@ -22,6 +24,14 @@ export default async function ProjectsPortfolioPage({
   searchParams: Promise<{ status?: string; search?: string }>;
 }) {
   const params = await searchParams;
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: PROJECTS_PERMISSIONS.read,
+    module: "projects",
+    title: "Projects",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission("projects.manage");
   const selectorOptions = await loadSiteScopedSelectorOptions();

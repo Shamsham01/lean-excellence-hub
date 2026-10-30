@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
@@ -20,6 +18,7 @@ import {
   currentMemberHasPermission,
   prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -29,10 +28,12 @@ export default async function SuggestionsOverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await prefetchMemberPermissions([...suggestionsOverviewPermissionKeys]);
-  const canView = await currentMemberHasPermission("suggestions.read");
-  if (!canView) {
-    notFound();
-  }
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: "suggestions.read",
+    module: "suggestions",
+    title: "Suggestions",
+  });
+  if (workplaceView) return workplaceView;
 
   const params = await searchParams;
   const filters = parseSuggestionPortfolioSearchParams(params);

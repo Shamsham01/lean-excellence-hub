@@ -1,10 +1,20 @@
 import { PageHeader } from "@/components/platform/page-header";
+import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 
 export default async function AssessmentsListPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    title: "Maturity",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: assessments } = await supabase
     .from("maturity_assessments")

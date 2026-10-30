@@ -7,7 +7,9 @@ import type {
   BenefitsListResponse,
   BenefitsOverview,
 } from "@/lib/benefits/types";
+import { BENEFITS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitsPortfolioPage({
@@ -20,6 +22,14 @@ export default async function BenefitsPortfolioPage({
   }>;
 }) {
   const params = await searchParams;
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: BENEFITS_PERMISSIONS.read,
+    module: "benefits",
+    title: "Benefits",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canCreate = await currentMemberHasPermission("benefits.create");
 

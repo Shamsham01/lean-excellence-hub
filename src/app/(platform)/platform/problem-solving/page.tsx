@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -10,6 +8,7 @@ import type {
   ProblemSolvingOverview,
 } from "@/lib/problem-solving/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProblemSolvingPortfolioPage({
@@ -22,8 +21,12 @@ export default async function ProblemSolvingPortfolioPage({
   }>;
 }) {
   const params = await searchParams;
-  const canView = await currentMemberHasPermission("problem_solving.view");
-  if (!canView) notFound();
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: "problem_solving.view",
+    module: "problem_solving",
+    title: "Problem solving",
+  });
+  if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
   const canCreate = await currentMemberHasPermission("problem_solving.create");

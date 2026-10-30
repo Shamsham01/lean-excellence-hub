@@ -9,6 +9,15 @@ export function describeInvitationAccess(offer: {
   role_display_name: string;
   responsibility_kind?: string | null;
 }): InvitationAccessPreview {
+  if (offer.role_canonical_name === "workplace-viewer") {
+    return {
+      viewing:
+        "Published and shared workplace records in the chosen scope",
+      contribution: "No contribution from Workplace Viewer",
+      management: "No administration",
+    };
+  }
+
   if (offer.role_canonical_name === "suggestions-contributor") {
     return {
       viewing: "Their own suggestions",

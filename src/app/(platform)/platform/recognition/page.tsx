@@ -2,10 +2,20 @@ import { PageHeader } from "@/components/platform/page-header";
 import { RecognitionHistory } from "@/components/recognition/recognition-history";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { RECOGNITION_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function RecognitionPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: RECOGNITION_PERMISSIONS.read,
+    module: "recognition",
+    title: "Recognition",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canAward = await currentMemberHasPermission("recognition.award");
   const canManage = await currentMemberHasPermission("recognition.manage");

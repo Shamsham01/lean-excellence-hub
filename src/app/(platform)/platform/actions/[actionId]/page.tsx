@@ -7,6 +7,7 @@ import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type DirectoryPayload = {
@@ -22,6 +23,15 @@ export default async function ActionDetailPage({
   params: Promise<{ actionId: string }>;
 }) {
   const { actionId } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: ACTIONS_PERMISSIONS.read,
+    module: "actions",
+    recordId: actionId,
+    title: "Action",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
 
   const { data: detail, error } = await callActionRpc<ActionDetail>(

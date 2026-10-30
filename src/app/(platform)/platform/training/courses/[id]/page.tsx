@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import {
   parseTrainingEvidenceNotes,
   trainingCourseVersionStatusLabel,
@@ -38,6 +39,15 @@ export default async function TrainingCourseDetailPage({
   searchParams,
 }: PageProps) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: TRAINING_PERMISSIONS.read,
+    module: "training",
+    recordId: id,
+    title: "Training course",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const savedKey = parseAuthoringSavedKey(
     Array.isArray(query.saved) ? query.saved[0] : query.saved,

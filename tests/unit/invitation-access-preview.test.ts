@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import { describeInvitationAccess } from "@/modules/people/invitation-access-preview";
 
 describe("describeInvitationAccess", () => {
+  it("describes workplace viewing without contribution or administration", () => {
+    expect(
+      describeInvitationAccess({
+        role_canonical_name: "workplace-viewer",
+        role_display_name: "Workplace Viewer",
+      }),
+    ).toEqual({
+      viewing: "Published and shared workplace records in the chosen scope",
+      contribution: "No contribution from Workplace Viewer",
+      management: "No administration",
+    });
+  });
+
   it("describes a suggestions contributor without review or management", () => {
     expect(
       describeInvitationAccess({

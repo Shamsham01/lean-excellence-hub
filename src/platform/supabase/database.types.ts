@@ -13886,6 +13886,11 @@ export type Database = {
           target_membership_id: string
         }[]
       }
+      get_workplace_feed: { Args: { target_module: string }; Returns: Json }
+      get_workplace_record: {
+        Args: { target_module: string; target_record_id: string }
+        Returns: Json
+      }
       grant_role_version: {
         Args: {
           target_grantee_membership_id: string

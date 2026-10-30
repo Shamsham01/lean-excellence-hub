@@ -1,9 +1,19 @@
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent } from "@/components/ui/card";
+import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function FiveSHistoryPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    title: "5S",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: audits } = await supabase
     .from("five_s_audits")

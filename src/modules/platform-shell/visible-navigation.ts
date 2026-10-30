@@ -32,7 +32,10 @@ export async function buildVisibleNavigation() {
     platformNavigation.map(async (item) => {
       const canAccess = item.organisationScopeOnly
         ? await currentMemberHasScopedPermission(item.permission)
-        : await currentMemberHasPermission(item.permission);
+        : (await currentMemberHasPermission(item.permission)) ||
+          (item.viewPermission
+            ? await currentMemberHasPermission(item.viewPermission)
+            : false);
       return { item, canAccess };
     }),
   );

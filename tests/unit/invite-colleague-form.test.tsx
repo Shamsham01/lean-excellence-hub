@@ -218,4 +218,62 @@ describe("InviteColleagueForm invitation link UX", () => {
       );
     });
   });
+
+  it("applies Operator access as two editable site grants", () => {
+    const onInvite = vi.fn().mockResolvedValue({ ok: true });
+    render(
+      <InviteColleagueForm
+        offers={[
+          {
+            role_version_id: "viewer-role",
+            role_display_name: "Workplace Viewer",
+            role_canonical_name: "workplace-viewer",
+            scope_options: [
+              {
+                scope_type: "unit_subtree",
+                scope_unit_id: "site-a",
+                label: "North Site",
+              },
+            ],
+          },
+          {
+            role_version_id: "contributor-role",
+            role_display_name: "Suggestions Contributor",
+            role_canonical_name: "suggestions-contributor",
+            scope_options: [
+              {
+                scope_type: "unit_subtree",
+                scope_unit_id: "site-a",
+                label: "North Site",
+              },
+            ],
+          },
+        ]}
+        units={[]}
+        jobFunctions={[]}
+        onInvite={onInvite}
+      />,
+    );
+
+    expect(screen.getByTestId("operator-access-preset")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Operator site"), {
+      target: { value: "unit_subtree::site-a" },
+    });
+    fireEvent.click(screen.getByTestId("apply-operator-access"));
+
+    expect(
+      (document.getElementById("invite-role") as HTMLSelectElement).value,
+    ).toBe("viewer-role");
+    expect(
+      (document.getElementById("invite-role-1") as HTMLSelectElement).value,
+    ).toBe("contributor-role");
+    expect(
+      screen.getByText(
+        "Viewing: Published and shared workplace records in the chosen scope",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Contribution: Submit suggestions"),
+    ).toBeInTheDocument();
+  });
 });

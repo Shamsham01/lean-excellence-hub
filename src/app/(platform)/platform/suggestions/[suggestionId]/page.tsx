@@ -7,6 +7,8 @@ import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { WorkplaceReadOnlyRecord } from "@/components/workplace/workplace-read-only-record";
+import { WORKPLACE_VIEW_PERMISSION } from "@/modules/workplace/access";
 import { suggestionStatusAllowsAuthorEvidenceUpload } from "@/lib/suggestions/status";
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -19,12 +21,29 @@ export default async function SuggestionDetailPage({
   const { suggestionId } = await params;
 
   const supabase = await createServerSupabaseClient();
+  const canReadSuggestions = await currentMemberHasPermission(
+    "suggestions.read",
+  );
 
   const { data: detail, error } = await supabase.rpc("get_suggestion_detail", {
     target_suggestion_id: suggestionId,
   });
 
-  if (error || !detail) notFound();
+  if (error || !detail) {
+    if (
+      !canReadSuggestions &&
+      (await currentMemberHasPermission(WORKPLACE_VIEW_PERMISSION))
+    ) {
+      return (
+        <WorkplaceReadOnlyRecord
+          module="suggestions"
+          recordId={suggestionId}
+          title="Suggestion"
+        />
+      );
+    }
+    notFound();
+  }
 
   const canManage = await currentMemberHasPermission("suggestions.manage");
 

@@ -8,11 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { TrainingCatalogueScopeNote } from "@/components/training/training-catalogue-scope-note";
 import { resolveTrainingCatalogListResult } from "@/modules/training/resolve-catalog-load";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function TrainingOverviewPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: TRAINING_PERMISSIONS.read,
+    module: "training",
+    title: "Training",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const [canManageCatalog, { context }] = await Promise.all([
     currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),

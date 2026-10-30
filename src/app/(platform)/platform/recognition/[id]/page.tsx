@@ -9,6 +9,8 @@ import {
   recognitionSourceHref,
   recognitionSourceOpenLabel,
 } from "@/lib/recognition/source";
+import { RECOGNITION_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -58,6 +60,15 @@ async function resolveSourceLink(
 
 export default async function RecognitionDetailPage({ params }: PageProps) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: RECOGNITION_PERMISSIONS.read,
+    module: "recognition",
+    recordId: id,
+    title: "Recognition",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: award } = await supabase
     .from("recognition_awards")

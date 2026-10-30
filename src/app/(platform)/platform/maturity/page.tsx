@@ -11,6 +11,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
   AssessmentStatusBadge,
@@ -19,6 +20,14 @@ import {
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function MaturityOverviewPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    title: "Maturity",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     MATURITY_PERMISSIONS.modelsManage,

@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-
 import { ActionCreateForm } from "@/components/actions/action-create-form";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionList } from "@/components/actions/action-list";
@@ -9,6 +7,7 @@ import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ActionsPage({
@@ -16,8 +15,12 @@ export default async function ActionsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const canRead = await currentMemberHasPermission(ACTIONS_PERMISSIONS.read);
-  if (!canRead) notFound();
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: ACTIONS_PERMISSIONS.read,
+    module: "actions",
+    title: "Actions",
+  });
+  if (workplaceView) return workplaceView;
 
   const canCreate = await currentMemberHasPermission(
     ACTIONS_PERMISSIONS.create,

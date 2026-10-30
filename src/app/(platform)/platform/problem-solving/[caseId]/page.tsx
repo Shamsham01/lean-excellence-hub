@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-
 import { CaseWorkspace } from "@/components/problem-solving/case-workspace";
 import { AppLink } from "@/components/ui/app-link";
 import { formatLongDate } from "@/lib/dates/format-long-date";
@@ -9,6 +7,7 @@ import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -18,8 +17,13 @@ export default async function ProblemSolvingCaseDetailPage({
   params: Promise<{ caseId: string }>;
 }) {
   const { caseId } = await params;
-  const canView = await currentMemberHasPermission("problem_solving.view");
-  if (!canView) notFound();
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: "problem_solving.view",
+    module: "problem_solving",
+    recordId: caseId,
+    title: "Problem solving",
+  });
+  if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
 

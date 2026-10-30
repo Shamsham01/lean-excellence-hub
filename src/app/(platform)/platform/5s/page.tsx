@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Sparkles } from "lucide-react";
 
 export default async function FiveSOverviewPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    title: "5S",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
