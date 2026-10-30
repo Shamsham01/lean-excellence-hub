@@ -42,6 +42,25 @@ export function toCustomerErrorMessage(
     return "You do not have permission to send invitations with the selected access.";
   }
 
+  if (normalised.includes("invitation contains a duplicate role and scope")) {
+    return "Each role can only be offered once for the same scope. Remove the duplicate before creating the invitation.";
+  }
+
+  if (normalised.includes("invitation requires between 1 and 10 roles")) {
+    return "Add between 1 and 10 roles to this invitation.";
+  }
+
+  if (
+    normalised.includes("invitation authority is no longer delegable") ||
+    normalised.includes("role scope is not permitted")
+  ) {
+    return "One of the selected roles or scopes is no longer available to delegate. Review each role and try again.";
+  }
+
+  if (normalised.includes("invitation has no valid authority offer")) {
+    return "This invitation no longer contains a valid role. Reissue it with current access before the person accepts.";
+  }
+
   if (normalised.includes("invitation authority is not contained")) {
     return "The selected application role or scope is outside your authority to delegate.";
   }

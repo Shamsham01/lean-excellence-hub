@@ -92,7 +92,7 @@ test.describe("Site security boundary focused E2E", () => {
 
     const roleSelect = page.locator("#invite-role");
     const scopeSelect = page.locator("#invite-scope");
-    await roleSelect.selectOption({ index: 0 });
+    await roleSelect.selectOption({ index: 1 });
 
     const scopeLabels = await scopeSelect
       .locator("option")

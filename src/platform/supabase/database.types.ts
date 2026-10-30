@@ -13953,6 +13953,19 @@ export type Database = {
         }
         Returns: string
       }
+      issue_organisation_member_invitation_grants: {
+        Args: {
+          intended_display_name?: string
+          intended_job_function_id?: string
+          intended_organisational_unit_id?: string
+          invitation_canonical_recipient: string
+          invitation_expires_at: string
+          invitation_recipient_type: string
+          invitation_token_digest: string
+          offered_grants: Json
+        }
+        Returns: string
+      }
       link_benefit_evidence: {
         Args: { target_attachment_id: string; target_benefit_id: string }
         Returns: string

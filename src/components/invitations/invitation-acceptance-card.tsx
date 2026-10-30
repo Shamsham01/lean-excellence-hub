@@ -50,22 +50,45 @@ function InvitationDetails({
           </dd>
         </div>
       ) : null}
-      {lifecycle.roleDisplayName ? (
+      {lifecycle.grants && lifecycle.grants.length > 0 ? (
         <div>
-          <dt className="text-muted-foreground">Application role</dt>
-          <dd className="font-medium text-foreground">
-            {lifecycle.roleDisplayName}
+          <dt className="text-muted-foreground">Application access</dt>
+          <dd>
+            <ul
+              className="flex flex-col gap-1"
+              data-testid="invitation-grant-list"
+            >
+              {lifecycle.grants.map((grant, index) => (
+                <li
+                  key={`${grant.roleDisplayName}-${grant.scopeLabel}-${index}`}
+                  className="font-medium break-words text-foreground"
+                >
+                  {grant.roleDisplayName} · {grant.scopeLabel}
+                </li>
+              ))}
+            </ul>
           </dd>
         </div>
-      ) : null}
-      {lifecycle.scopeLabel ? (
-        <div>
-          <dt className="text-muted-foreground">Access scope</dt>
-          <dd className="font-medium text-foreground">
-            {lifecycle.scopeLabel}
-          </dd>
-        </div>
-      ) : null}
+      ) : (
+        <>
+          {lifecycle.roleDisplayName ? (
+            <div>
+              <dt className="text-muted-foreground">Application role</dt>
+              <dd className="font-medium text-foreground">
+                {lifecycle.roleDisplayName}
+              </dd>
+            </div>
+          ) : null}
+          {lifecycle.scopeLabel ? (
+            <div>
+              <dt className="text-muted-foreground">Access scope</dt>
+              <dd className="font-medium text-foreground">
+                {lifecycle.scopeLabel}
+              </dd>
+            </div>
+          ) : null}
+        </>
+      )}
       {lifecycle.intendedDisplayName &&
       lifecycle.sessionState !== "ready_to_accept" ? (
         <div>

@@ -8,16 +8,16 @@ import { assessCoachAiEligibility } from "@/modules/leanai-context/coach/eligibi
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
 import { AI_PERMISSIONS } from "@/modules/operational/permissions";
 import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
-import { loadPendingInvitationGrants } from "@/modules/organisation/pending-invitation-grants";
+import {
+  groupPendingInvitationAccess,
+  loadPendingInvitationGrants,
+} from "@/modules/organisation/pending-invitation-grants";
 import {
   loadAccessibleOrganisationUnits,
   loadActiveSiteContext,
 } from "@/modules/organisation/site-context-server";
 import { isSiteUnitType } from "@/modules/organisation/site-semantics";
-import {
-  buildOrganisationUnitTree,
-  formatUnitPath,
-} from "@/modules/organisation/unit-hierarchy";
+import { buildOrganisationUnitTree } from "@/modules/organisation/unit-hierarchy";
 import { formatLongDate } from "@/lib/dates/format-long-date";
 import {
   currentMemberCanDelegateRoles,
@@ -298,28 +298,16 @@ export async function loadStructureFirstSnapshot(
     }
   }
 
-  const grantsByInvitation = new Map<
-    string,
-    { roleName: string; scopeLabel: string }
-  >();
-  for (const grant of grantsResult.data ?? []) {
-    const scopeUnitId = grant.scope_unit_id ?? "";
-    grantsByInvitation.set(grant.invitation_id, {
-      roleName:
-        roleNameByVersionId.get(grant.role_version_id) ?? "Application access",
-      scopeLabel:
-        grant.scope_type === "organisation"
-          ? "Entire organisation"
-          : scopeUnitId
-            ? `Specific site: ${formatUnitPath(scopeUnitId, allUnits)}`
-            : "Specific site",
-    });
-  }
+  const grantsByInvitation = groupPendingInvitationAccess(
+    grantsResult.data ?? [],
+    roleNameByVersionId,
+    allUnits,
+  );
 
   const pendingInvitations: StructureFirstPendingInvitation[] = (
     pendingResult.data ?? []
   ).map((invitation) => {
-    const grant = grantsByInvitation.get(invitation.id);
+    const accessGrants = grantsByInvitation.get(invitation.id) ?? [];
     return {
       id: invitation.id,
       email: invitation.canonical_recipient,
@@ -327,8 +315,15 @@ export async function loadStructureFirstSnapshot(
         ? null
         : (nameByInvitation.get(invitation.id) ?? null),
       expiresAtLabel: formatLongDate(invitation.expires_at),
-      roleName: grant?.roleName ?? "Application access",
-      scopeLabel: grant?.scopeLabel ?? "Scoped access",
+      accessGrants:
+        accessGrants.length > 0
+          ? accessGrants
+          : [
+              {
+                roleName: "Application access",
+                scopeLabel: "Scoped access",
+              },
+            ],
     };
   });
 

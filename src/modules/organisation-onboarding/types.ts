@@ -94,8 +94,10 @@ export type StructureFirstPendingInvitation = {
   email: string;
   displayName?: string | null;
   expiresAtLabel: string;
-  roleName: string;
-  scopeLabel: string;
+  accessGrants: Array<{
+    roleName: string;
+    scopeLabel: string;
+  }>;
 };
 
 export type StructureFirstJobFunction = {

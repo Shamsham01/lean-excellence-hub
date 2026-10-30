@@ -43,6 +43,8 @@ const KNOWLEDGE: Partial<
       "Training and Skills use job functions to describe what people do.",
       "An organisation owner plus at least one active job function is the minimum people setup.",
       "Organisation-wide access is an explicit grant. Site-scoped access does not include sibling sites.",
+      "An invitation can include more than one role. Each role keeps its own scope, so editing at one site does not edit another site.",
+      "Suggestions Contributor submits suggestions. It does not review or manage the suggestions portfolio.",
       "Job titles and founder status do not grant organisation-wide authority by themselves.",
       "A personal profile name belongs to the account. Each organisation keeps its own membership name.",
       "An invited name can be confirmed while joining. A name already saved on the personal profile stays in place.",

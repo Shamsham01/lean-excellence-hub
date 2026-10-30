@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
 import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
-import { loadPendingInvitationGrants } from "@/modules/organisation/pending-invitation-grants";
+import {
+  groupPendingInvitationAccess,
+  loadPendingInvitationGrants,
+} from "@/modules/organisation/pending-invitation-grants";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import {
   loadAccessibleOrganisationUnits,
   loadActiveSiteContext,
 } from "@/modules/organisation/site-context-server";
-import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
 import { formatLongDate } from "@/lib/dates/format-long-date";
 import {
   currentMemberCanDelegateRoles,
@@ -162,23 +164,11 @@ export default async function PeopleSettingsPage() {
     }
   }
 
-  const grantsByInvitation = new Map<
-    string,
-    { roleName: string; scopeLabel: string }
-  >();
-  for (const grant of invitationGrants ?? []) {
-    const scopeUnitId = grant.scope_unit_id ?? "";
-    grantsByInvitation.set(grant.invitation_id, {
-      roleName:
-        roleNameByVersionId.get(grant.role_version_id) ?? "Application access",
-      scopeLabel:
-        grant.scope_type === "organisation"
-          ? "Entire organisation"
-          : scopeUnitId
-            ? `Specific site: ${formatUnitPath(scopeUnitId, allUnits)}`
-            : "Specific site",
-    });
-  }
+  const grantsByInvitation = groupPendingInvitationAccess(
+    invitationGrants ?? [],
+    roleNameByVersionId,
+    allUnits,
+  );
 
   return (
     <div className="flex flex-col gap-8" data-testid="people-settings-page">
@@ -237,8 +227,8 @@ export default async function PeopleSettingsPage() {
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
               Create a secure invitation link to copy and share. Email delivery
-              is not sent from this screen. Choose an application role and scope
-              you are authorised to delegate.
+              is not sent from this screen. Add each application role with its
+              own scope. A job function does not grant permissions.
               {context.mode === "site" && context.activeSiteId
                 ? " Scope options are filtered to your active site."
                 : null}
@@ -294,7 +284,8 @@ export default async function PeopleSettingsPage() {
               <PendingInvitationsList
                 namesUnavailable={Boolean(namesError)}
                 invitations={(pendingInvitations ?? []).map((invitation) => {
-                  const grant = grantsByInvitation.get(invitation.id);
+                  const accessGrants =
+                    grantsByInvitation.get(invitation.id) ?? [];
                   return {
                     id: invitation.id,
                     email: invitation.canonical_recipient,
@@ -302,8 +293,15 @@ export default async function PeopleSettingsPage() {
                       ? null
                       : (nameByInvitation.get(invitation.id) ?? null),
                     expiresAtLabel: formatLongDate(invitation.expires_at),
-                    roleName: grant?.roleName ?? "Application access",
-                    scopeLabel: grant?.scopeLabel ?? "Scoped access",
+                    accessGrants:
+                      accessGrants.length > 0
+                        ? accessGrants
+                        : [
+                            {
+                              roleName: "Application access",
+                              scopeLabel: "Scoped access",
+                            },
+                          ],
                   };
                 })}
                 onRevoke={revokeInvitation}

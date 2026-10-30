@@ -9,8 +9,10 @@ type PendingInvitation = {
   email: string;
   displayName?: string | null;
   expiresAtLabel: string;
-  roleName: string;
-  scopeLabel: string;
+  accessGrants: Array<{
+    roleName: string;
+    scopeLabel: string;
+  }>;
 };
 
 export function PendingInvitationsList({
@@ -107,9 +109,19 @@ export function PendingInvitationsList({
                   {invitation.displayName}
                 </p>
               ) : null}
-              <p className="text-muted-foreground">
-                {invitation.roleName} · {invitation.scopeLabel}
-              </p>
+              <ul
+                className="text-muted-foreground"
+                data-testid={`pending-invitation-grants-${invitation.id}`}
+              >
+                {invitation.accessGrants.map((grant, index) => (
+                  <li
+                    key={`${grant.roleName}-${grant.scopeLabel}-${index}`}
+                    className="break-words"
+                  >
+                    {grant.roleName} · {grant.scopeLabel}
+                  </li>
+                ))}
+              </ul>
               <p className="text-xs text-muted-foreground">
                 Expires {invitation.expiresAtLabel}
               </p>
