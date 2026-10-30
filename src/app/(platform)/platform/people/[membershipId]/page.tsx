@@ -26,7 +26,30 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
     { target_membership_id: membershipId },
   );
 
-  if (headerError?.code === "42501" || !profileHeader) notFound();
+  if (headerError && !isOwnProfile) notFound();
+  if (!headerError && !profileHeader) notFound();
+
+  if (headerError && isOwnProfile) {
+    return (
+      <div
+        className="flex flex-col gap-8"
+        data-testid="capability-profile-page"
+      >
+        <PageHeader
+          title="Your capability profile"
+          description="Your profile could not be loaded."
+        />
+        <p
+          className="text-sm text-destructive"
+          role="alert"
+          data-testid="capability-profile-load-error"
+        >
+          Your capability profile could not be authorised or loaded. This is not
+          the same as having no training or skills recorded.
+        </p>
+      </div>
+    );
+  }
 
   const header = profileHeader as {
     display_name?: string | null;
@@ -40,14 +63,14 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
     { target_membership_id: membershipId },
   );
 
-  if (trainingError?.code === "42501") notFound();
+  if (trainingError?.code === "42501" && !isOwnProfile) notFound();
 
   const { data: skillsProfile, error: skillsError } = await supabase.rpc(
     "get_membership_skills_profile",
     { target_membership_id: membershipId },
   );
 
-  if (skillsError?.code === "42501") notFound();
+  if (skillsError?.code === "42501" && !isOwnProfile) notFound();
 
   const { data: scaleVersions } = await supabase
     .from("skill_proficiency_scale_versions")
@@ -105,6 +128,9 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
         canValidateSkills={canValidateSkills}
         canSelfAssess={canSelfAssess}
         canCreateActions={canCreateActions}
+        isSelf={isOwnProfile}
+        trainingUnavailable={Boolean(trainingError)}
+        skillsUnavailable={Boolean(skillsError)}
       />
     </div>
   );

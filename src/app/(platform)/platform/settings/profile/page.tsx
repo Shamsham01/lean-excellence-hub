@@ -1,4 +1,4 @@
-import { ProfileAccessGrants } from "@/components/profile/profile-access-grants";
+import { ProfileOrganisationMembership } from "@/components/profile/profile-organisation-membership";
 import type { ProfileAccessGrant } from "@/components/profile/profile-access-grants";
 import { ProfileDisplayNameForm } from "@/components/profile/profile-display-name-form";
 import { PageHeader } from "@/components/platform/page-header";
@@ -6,9 +6,16 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import { updateProfileDisplayName } from "./actions";
+
+type OwnMembershipProfile = {
+  job_function?: { name?: string | null } | null;
+  primary_organisational_unit?: { name?: string | null } | null;
+  access_grants?: ProfileAccessGrant[];
+};
 
 export default async function ProfileSettingsPage() {
   const supabase = await createServerSupabaseClient();
@@ -19,31 +26,35 @@ export default async function ProfileSettingsPage() {
     (o) => o.selected,
   )?.membership_id;
 
-  const [{ data: profile }, { data: adminProfile }] = await Promise.all([
-    userId
-      ? supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("user_id", userId)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    currentMembershipId
-      ? supabase.rpc("get_membership_administration_profile", {
-          target_membership_id: currentMembershipId,
-        })
-      : Promise.resolve({ data: null }),
-  ]);
+  const [{ data: profile }, ownProfileResult, canManageJobFunctions] =
+    await Promise.all([
+      userId
+        ? supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("user_id", userId)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      currentMembershipId
+        ? supabase.rpc("get_own_membership_profile")
+        : Promise.resolve({ data: null, error: null }),
+      currentMemberHasPermission("job_functions.manage"),
+    ]);
 
-  const membership = adminProfile as {
-    job_function?: { name: string } | null;
-    primary_organisational_unit?: { name: string } | null;
-    access_grants?: ProfileAccessGrant[];
-    permissions?: { can_manage_job_functions?: boolean };
-  } | null;
-
-  const activeGrants = membership?.access_grants ?? [];
-  const canManageOwnAssignment =
-    membership?.permissions?.can_manage_job_functions;
+  const membership = ownProfileResult.data as OwnMembershipProfile | null;
+  const membershipView = !currentMembershipId
+    ? ({ status: "unavailable" } as const)
+    : ownProfileResult.error || !membership
+      ? ({ status: "error" } as const)
+      : ({
+          status: "ready" as const,
+          jobFunctionName: membership.job_function?.name ?? null,
+          primaryWorkAreaName:
+            membership.primary_organisational_unit?.name ?? null,
+          grants: membership.access_grants ?? [],
+          canManageOwnAssignment: canManageJobFunctions,
+          administrationHref: `/platform/people/${currentMembershipId}/admin`,
+        } as const);
 
   return (
     <div className="flex flex-col gap-8" data-testid="profile-settings-page">
@@ -78,42 +89,8 @@ export default async function ProfileSettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">Organisation membership</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm">
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <dt className="text-muted-foreground">Job function</dt>
-              <dd data-testid="profile-job-function">
-                {membership?.job_function?.name ?? "Not assigned"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Primary work area</dt>
-              <dd data-testid="profile-primary-work-area">
-                {membership?.primary_organisational_unit?.name ??
-                  "Not assigned"}
-              </dd>
-            </div>
-            <ProfileAccessGrants grants={activeGrants} />
-          </dl>
-          <p className="text-muted-foreground">
-            Job function, work area, and application access are managed by your
-            organisation administrator.
-            {canManageOwnAssignment && currentMembershipId ? (
-              <>
-                {" "}
-                As an administrator, you can update your own organisation
-                assignment from{" "}
-                <AppLink
-                  href={`/platform/people/${currentMembershipId}/admin`}
-                  className="underline"
-                  data-testid="profile-admin-link"
-                >
-                  your administration profile
-                </AppLink>
-                .
-              </>
-            ) : null}
-          </p>
+        <CardContent>
+          <ProfileOrganisationMembership view={membershipView} />
         </CardContent>
       </Card>
     </div>

@@ -33,6 +33,7 @@ export default async function PeopleDirectoryPage() {
 
   const people = directoryObj?.people ?? [];
   const directoryDenied = error?.code === "42501";
+  const directoryFailed = Boolean(error) && !directoryDenied;
 
   return (
     <div className="flex flex-col gap-8" data-testid="people-directory-page">
@@ -59,7 +60,22 @@ export default async function PeopleDirectoryPage() {
         </Card>
       ) : null}
 
-      {!directoryDenied ? (
+      {directoryFailed ? (
+        <Card>
+          <CardContent className="p-6">
+            <p
+              className="text-sm text-destructive"
+              role="alert"
+              data-testid="people-directory-load-error"
+            >
+              The people directory could not be loaded. This is not the same as
+              an empty directory.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {!directoryDenied && !directoryFailed ? (
         <Card>
           <CardContent className="divide-y divide-border p-0">
             {people.length === 0 ? (

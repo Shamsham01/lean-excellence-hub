@@ -39,13 +39,35 @@ export async function loadPlatformShellMember(
             .eq("user_id", userId)
             .maybeSingle()
         : Promise.resolve({ data: null as { display_name?: string } | null }),
-      supabase.rpc("get_membership_administration_profile", {
-        target_membership_id: membershipId,
-      }),
+      supabase.rpc("get_own_membership_profile"),
     ]);
 
-    const grants =
-      (adminResult.data as MembershipProfile | null)?.access_grants ?? [];
+    if (adminResult.error) {
+      logPlatformBoundaryError({
+        category: "identity",
+        operation: "loadPlatformShellMember",
+        reference: createPlatformBoundaryReference(),
+        route: await readRequestPathname(),
+        supabaseMessage: adminResult.error.message,
+      });
+      const displayName = profileResult.data?.display_name?.trim();
+      return {
+        displayName:
+          displayName && displayName.length > 0 ? displayName : "Member",
+        roleLabel: null,
+      };
+    }
+
+    const ownProfile = adminResult.data as
+      (MembershipProfile & { membership_id?: string }) | null;
+    if (
+      ownProfile?.membership_id &&
+      ownProfile.membership_id !== membershipId
+    ) {
+      return FALLBACK_MEMBER;
+    }
+
+    const grants = ownProfile?.access_grants ?? [];
     const roleLabel = resolveRoleLabel(grants);
 
     const displayName = profileResult.data?.display_name?.trim();

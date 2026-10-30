@@ -13711,6 +13711,7 @@ export type Database = {
       }
       get_organisation_ownership: { Args: never; Returns: Json }
       get_organisation_setup_readiness: { Args: never; Returns: Json }
+      get_own_membership_profile: { Args: never; Returns: Json }
       get_people_directory: {
         Args: {
           target_include_inactive?: boolean
