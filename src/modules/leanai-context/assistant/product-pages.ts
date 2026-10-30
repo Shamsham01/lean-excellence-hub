@@ -3,7 +3,6 @@ import { knowledgeCoverageStatement } from "@/modules/leanai-context/product-kno
 import {
   skillsKnowledgeForPath,
   skillsRuntimeGuidance,
-  type SkillsRuntimeField,
 } from "@/modules/leanai-context/product-knowledge/skills";
 
 import {

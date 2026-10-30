@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  buildModuleSetupBuilderContext,
+  contextMarkers,
+  wrapModuleSetupBuilderContext,
+} from "@/modules/module-setup/ai-builder/context";
+import { SKILLS_BUILDER_CONTEXT_CONTRACT } from "@/modules/skills/ai-builder/types";
+import { fakeModuleSetupBuilderResponse } from "@/platform/ai/providers/fake-module-setup-builder";
+import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
+
 import { coachPageContextFromView } from "@/modules/leanai-context/assistant/page-context";
 import { assistantPageDefinitionFor } from "@/modules/leanai-context/assistant/product-pages";
 import { parseAssistantRoute } from "@/modules/leanai-context/assistant/route-map";
@@ -591,5 +600,52 @@ describe("Skills runtime assistant context", () => {
       skillsRuntimeGuidance("/platform/skills/catalog", "Skill code").fields[0]
         ?.name,
     ).toBe("Skill code");
+  });
+});
+
+describe("deterministic Skills setup provider", () => {
+  function skillsPrompt(retry: boolean) {
+    const markers = contextMarkers(SKILLS_BUILDER_CONTEXT_CONTRACT);
+    const context = buildModuleSetupBuilderContext({
+      contract: SKILLS_BUILDER_CONTEXT_CONTRACT,
+      facts: {
+        organisationName: "Bodmin Bakery",
+        activeSiteName: null,
+        unitNames: [],
+        existingConfigurationNames: [],
+        configurationCount: 0,
+        jobFunctionNames: ["Production Operator"],
+      },
+      understanding: null,
+      currentProposal: null,
+      intent: "propose",
+      focusLabel: null,
+      retry,
+      limits: {},
+    });
+    return `${wrapModuleSetupBuilderContext(markers.start, markers.end, context)}\n\nUser request:\nSKILLS_ERROR_TEST`;
+  }
+
+  it("returns an unusable proposal, then a valid one on retry", () => {
+    const broken = fakeModuleSetupBuilderResponse(
+      SKILLS_SETUP_BUILDER_FORMAT_NAME,
+      skillsPrompt(false),
+    );
+    const brokenProposal = (
+      broken?.parsedJson as {
+        proposal?: { title?: string; scale?: { levels?: unknown[] } };
+      }
+    )?.proposal;
+    expect(brokenProposal?.title).toBe("Broken bakery setup");
+    expect(brokenProposal?.scale?.levels).toEqual([]);
+
+    const recovered = fakeModuleSetupBuilderResponse(
+      SKILLS_SETUP_BUILDER_FORMAT_NAME,
+      skillsPrompt(true),
+    );
+    expect(
+      (recovered?.parsedJson as { proposal?: { title?: string } })?.proposal
+        ?.title,
+    ).toBe("Bakery oven capability");
   });
 });

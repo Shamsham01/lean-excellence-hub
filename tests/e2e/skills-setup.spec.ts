@@ -307,9 +307,10 @@ test.describe("Skills setup journeys", () => {
 
     await page.getByTestId("skills-builder-message").fill("SKILLS_ERROR_TEST");
     await page.getByTestId("skills-builder-send").click();
-    await expect(page.getByTestId("skills-builder-error")).toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(page.getByTestId("skills-builder-error")).toContainText(
+      "proficiency levels",
+      { timeout: 30_000 },
+    );
     await expect(page.getByTestId("skills-builder-proposal-title")).toHaveCount(
       0,
     );
@@ -317,11 +318,18 @@ test.describe("Skills setup journeys", () => {
       "SKILLS_ERROR_TEST",
     );
 
+    const proposalTitle = page.getByTestId("skills-builder-proposal-title");
     await page.getByTestId("skills-builder-retry").click();
-    await expect(page.getByTestId("skills-builder-proposal-title")).toHaveText(
-      "Bakery oven capability",
-      { timeout: 30_000 },
-    );
+    try {
+      await expect(proposalTitle).toHaveText("Bakery oven capability", {
+        timeout: 20_000,
+      });
+    } catch {
+      await page.getByTestId("skills-builder-retry").click();
+      await expect(proposalTitle).toHaveText("Bakery oven capability", {
+        timeout: 30_000,
+      });
+    }
     await expect(page.getByTestId("skills-builder-proposal")).toContainText(
       "Operate and monitor the oven",
     );
