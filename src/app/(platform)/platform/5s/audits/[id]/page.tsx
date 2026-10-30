@@ -8,6 +8,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -18,6 +19,15 @@ export default async function FiveSAuditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    recordId: id,
+    title: "5S audit",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canEdit = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.auditPerform,

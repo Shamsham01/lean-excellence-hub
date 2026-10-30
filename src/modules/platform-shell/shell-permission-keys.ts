@@ -11,6 +11,10 @@ export function collectPlatformShellPermissionKeys(): string[] {
   return Array.from(
     new Set([
       ...platformNavigation.map((item) => item.permission),
+      ...platformNavigation.flatMap((item) =>
+        item.viewPermission ? [item.viewPermission] : [],
+      ),
+      ...platformNavigation.flatMap((item) => item.alternatePermissions ?? []),
       ...setupNavigationPermissions,
       ...platformHomeFallbackPermissions,
     ]),

@@ -399,7 +399,7 @@ test.describe("Organisation Structure V2", () => {
       await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
 
       const scopeSelect = page.locator("#invite-scope");
-      await page.locator("#invite-role").selectOption({ index: 0 });
+      await page.locator("#invite-role").selectOption({ index: 1 });
       const scopeLabels = await scopeSelect
         .locator("option")
         .evaluateAll((options) =>

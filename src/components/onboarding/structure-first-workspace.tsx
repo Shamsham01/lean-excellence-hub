@@ -99,6 +99,9 @@ export function StructureFirstWorkspace({
               owners={snapshot.owners}
               members={snapshot.members}
               pendingInvitations={snapshot.pendingInvitations}
+              pendingInvitationNamesUnavailable={
+                snapshot.pendingInvitationNamesUnavailable ?? false
+              }
               offers={snapshot.offers as DelegatableAccessOffer[]}
               units={snapshot.units
                 .filter((unit) => unit.status !== "retired")

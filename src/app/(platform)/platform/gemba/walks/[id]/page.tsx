@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaWalkPage({
@@ -19,6 +20,15 @@ export default async function GembaWalkPage({
   searchParams: Promise<{ prompt?: string }>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    recordId: id,
+    title: "Gemba walk",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const { prompt } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const canEdit = await currentMemberHasPermission(

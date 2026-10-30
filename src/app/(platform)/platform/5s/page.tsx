@@ -1,15 +1,25 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Sparkles } from "lucide-react";
 
 export default async function FiveSOverviewPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    title: "5S",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
@@ -152,6 +162,7 @@ export default async function FiveSOverviewPage() {
           </Button>
         </CardContent>
       </Card>
+      <WorkplaceSharedRecords module="five_s" title="5S" />
     </div>
   );
 }

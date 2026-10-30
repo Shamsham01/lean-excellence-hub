@@ -485,7 +485,7 @@ test.describe("Invitation lifecycle", () => {
     const targetEmail = `invitation-revoked-${Date.now()}@example.test`;
     await page.goto("/platform/settings/people");
     await page.getByLabel("Colleague email").fill(targetEmail);
-    await page.locator("#invite-role").selectOption({ index: 1 });
+    await page.locator("#invite-role").selectOption({ index: 2 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Create invitation" }).click();
     await expect(page.getByTestId("copy-invitation-link-button")).toBeVisible();
@@ -518,7 +518,7 @@ test.describe("Invitation lifecycle", () => {
     const targetEmail = `invitation-reissue-${Date.now()}@example.test`;
     await page.goto("/platform/settings/people");
     await page.getByLabel("Colleague email").fill(targetEmail);
-    await page.locator("#invite-role").selectOption({ index: 1 });
+    await page.locator("#invite-role").selectOption({ index: 2 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Create invitation" }).click();
     const oldInvitationUrl = await page

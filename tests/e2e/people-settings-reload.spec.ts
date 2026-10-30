@@ -117,7 +117,7 @@ test.describe("People settings delegation gate stability", () => {
     });
 
     const scopeSelect = page.locator("#invite-scope");
-    await page.locator("#invite-role").selectOption({ index: 0 });
+    await page.locator("#invite-role").selectOption({ index: 1 });
     const scopeLabels = await scopeSelect
       .locator("option")
       .evaluateAll((options) =>

@@ -16,6 +16,7 @@ export type PlatformShellMember = {
 
 type MembershipProfile = {
   access_grants?: Array<{ role_display_name: string }>;
+  organisation_display_name?: string | null;
 };
 
 const FALLBACK_MEMBER: PlatformShellMember = {
@@ -39,19 +40,40 @@ export async function loadPlatformShellMember(
             .eq("user_id", userId)
             .maybeSingle()
         : Promise.resolve({ data: null as { display_name?: string } | null }),
-      supabase.rpc("get_membership_administration_profile", {
-        target_membership_id: membershipId,
-      }),
+      supabase.rpc("get_own_membership_profile"),
     ]);
 
-    const grants =
-      (adminResult.data as MembershipProfile | null)?.access_grants ?? [];
+    if (adminResult.error) {
+      logPlatformBoundaryError({
+        category: "identity",
+        operation: "loadPlatformShellMember",
+        reference: createPlatformBoundaryReference(),
+        route: await readRequestPathname(),
+        supabaseMessage: adminResult.error.message,
+      });
+      return {
+        displayName: resolveDisplayName(profileResult.data?.display_name, null),
+        roleLabel: null,
+      };
+    }
+
+    const ownProfile = adminResult.data as
+      (MembershipProfile & { membership_id?: string }) | null;
+    if (
+      ownProfile?.membership_id &&
+      ownProfile.membership_id !== membershipId
+    ) {
+      return FALLBACK_MEMBER;
+    }
+
+    const grants = ownProfile?.access_grants ?? [];
     const roleLabel = resolveRoleLabel(grants);
 
-    const displayName = profileResult.data?.display_name?.trim();
     return {
-      displayName:
-        displayName && displayName.length > 0 ? displayName : "Member",
+      displayName: resolveDisplayName(
+        profileResult.data?.display_name,
+        ownProfile?.organisation_display_name,
+      ),
       roleLabel,
     };
   } catch (error) {
@@ -65,6 +87,23 @@ export async function loadPlatformShellMember(
     });
     return FALLBACK_MEMBER;
   }
+}
+
+function resolveDisplayName(
+  personalName: string | null | undefined,
+  organisationName: string | null | undefined,
+) {
+  const personal = personalName?.trim();
+  if (personal) {
+    return personal;
+  }
+
+  const organisation = organisationName?.trim();
+  if (organisation) {
+    return organisation;
+  }
+
+  return "Member";
 }
 
 function resolveRoleLabel(

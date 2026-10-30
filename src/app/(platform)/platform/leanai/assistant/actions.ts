@@ -303,7 +303,7 @@ export async function sendLeanAiAssistantMessageAction(input: {
           : "application_unavailable",
         message:
           view.conversationUnavailableReason ??
-          "LeanAI conversation is unavailable.",
+          "LeanAI conversation is not enabled.",
       };
     }
 

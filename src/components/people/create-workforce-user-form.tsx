@@ -255,7 +255,7 @@ export function CreateWorkforceUserForm({
         <Label htmlFor="roleVersionId">Application role</Label>
         <select
           id="roleVersionId"
-          className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
           value={roleVersionId}
           onChange={(event) => {
             setRoleVersionId(event.target.value);
@@ -274,7 +274,7 @@ export function CreateWorkforceUserForm({
         <Label htmlFor="scopeKey">Access scope</Label>
         <select
           id="scopeKey"
-          className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
           value={scopeKey}
           onChange={(event) => setScopeKey(event.target.value)}
           required
@@ -295,7 +295,7 @@ export function CreateWorkforceUserForm({
           <Label htmlFor="jobFunctionId">Job function (optional)</Label>
           <select
             id="jobFunctionId"
-            className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
             value={jobFunctionId}
             onChange={(event) => setJobFunctionId(event.target.value)}
           >
@@ -315,7 +315,7 @@ export function CreateWorkforceUserForm({
           </Label>
           <select
             id="organisationalUnitId"
-            className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
             value={organisationalUnitId}
             onChange={(event) => setOrganisationalUnitId(event.target.value)}
             disabled={!jobFunctionId}

@@ -7,17 +7,22 @@ import { Button } from "@/components/ui/button";
 type PendingInvitation = {
   id: string;
   email: string;
+  displayName?: string | null;
   expiresAtLabel: string;
-  roleName: string;
-  scopeLabel: string;
+  accessGrants: Array<{
+    roleName: string;
+    scopeLabel: string;
+  }>;
 };
 
 export function PendingInvitationsList({
   invitations,
+  namesUnavailable = false,
   onRevoke,
   onReissue,
 }: {
   invitations: PendingInvitation[];
+  namesUnavailable?: boolean;
   onRevoke: (invitationId: string) => Promise<{ error?: string; ok?: true }>;
   onReissue: (
     invitationId: string,
@@ -77,17 +82,46 @@ export function PendingInvitationsList({
 
   return (
     <div className="flex flex-col gap-3" data-testid="pending-invitations-list">
+      {namesUnavailable ? (
+        <p
+          className="text-sm text-destructive"
+          role="alert"
+          data-testid="pending-invitation-names-error"
+        >
+          Invited names could not be loaded.
+        </p>
+      ) : null}
       <ul className="flex flex-col gap-2">
         {invitations.map((invitation) => (
           <li
             key={invitation.id}
             className="flex flex-col gap-3 rounded-md border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <p className="font-medium text-foreground">{invitation.email}</p>
-              <p className="text-muted-foreground">
-                {invitation.roleName} · {invitation.scopeLabel}
+            <div className="min-w-0">
+              <p className="font-medium break-words text-foreground">
+                {invitation.email}
               </p>
+              {invitation.displayName ? (
+                <p
+                  className="break-words text-foreground"
+                  data-testid={`pending-invitation-name-${invitation.id}`}
+                >
+                  {invitation.displayName}
+                </p>
+              ) : null}
+              <ul
+                className="text-muted-foreground"
+                data-testid={`pending-invitation-grants-${invitation.id}`}
+              >
+                {invitation.accessGrants.map((grant, index) => (
+                  <li
+                    key={`${grant.roleName}-${grant.scopeLabel}-${index}`}
+                    className="break-words"
+                  >
+                    {grant.roleName} · {grant.scopeLabel}
+                  </li>
+                ))}
+              </ul>
               <p className="text-xs text-muted-foreground">
                 Expires {invitation.expiresAtLabel}
               </p>

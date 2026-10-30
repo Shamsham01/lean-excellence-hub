@@ -46,6 +46,20 @@ export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerSupabaseClient(request, response);
 
   try {
+    const displayName = formData.get("displayName");
+    if (typeof displayName === "string" && displayName.trim()) {
+      const { error: nameError } = await supabase.rpc(
+        "confirm_invitation_binding_display_name",
+        {
+          target_binding_id: bindingId,
+          target_display_name: displayName.trim(),
+        },
+      );
+      if (nameError) {
+        throw nameError;
+      }
+    }
+
     await acceptInvitationSignupBinding(bindingId, supabase);
     redirectPath = await resolvePostAuthenticationRedirectPath(supabase);
   } catch {

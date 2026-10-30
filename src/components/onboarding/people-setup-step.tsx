@@ -27,6 +27,7 @@ export function PeopleSetupStep({
   owners,
   members,
   pendingInvitations,
+  pendingInvitationNamesUnavailable = false,
   offers,
   units,
   jobFunctions,
@@ -36,6 +37,7 @@ export function PeopleSetupStep({
   owners: StructureFirstOwner[];
   members: StructureFirstMember[];
   pendingInvitations: StructureFirstPendingInvitation[];
+  pendingInvitationNamesUnavailable?: boolean;
   offers: DelegatableAccessOffer[];
   units: Array<{
     id: string;
@@ -140,6 +142,7 @@ export function PeopleSetupStep({
         </h3>
         <PendingInvitationsList
           invitations={pendingInvitations}
+          namesUnavailable={pendingInvitationNamesUnavailable}
           onRevoke={revokeInvitation}
           onReissue={reissueInvitation}
         />

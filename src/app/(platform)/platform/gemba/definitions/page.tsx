@@ -11,12 +11,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
+import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const APPLICABILITY_DESCRIPTION =
   "Choose the exact organisational units where this Gemba definition can be executed or scheduled. Applicability does not grant permission.";
 
 export default async function GembaDefinitionsPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    title: "Gemba",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: definitions } = await supabase
     .from("gemba_definitions")

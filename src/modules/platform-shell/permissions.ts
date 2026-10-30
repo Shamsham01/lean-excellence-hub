@@ -241,6 +241,41 @@ export const currentMemberHasPermission = cache(
   },
 );
 
+export const currentMemberHasGrantPermission = cache(
+  async (permissionKey: string) => {
+    try {
+      const supabase = await createServerSupabaseClient();
+      const result = await supabase.rpc("member_has_grant_permission", {
+        target_permission_key: permissionKey,
+      });
+      const classified = classifyPermissionProbeResult(result);
+      if (!classified.ok) {
+        if (
+          classified.outcome === "denied" ||
+          classified.outcome === "not_found"
+        ) {
+          return false;
+        }
+
+        return throwClassifiedProbeFailure(
+          classified,
+          "member_has_grant_permission",
+          permissionKey,
+        );
+      }
+
+      return classified.data === true;
+    } catch (error) {
+      rethrowProbeControlErrors(error);
+      return throwPermissionProbeFailure(
+        "member_has_grant_permission",
+        permissionKey,
+        error,
+      );
+    }
+  },
+);
+
 export const currentMemberHasScopedPermission = cache(
   async (
     permissionKey: string,

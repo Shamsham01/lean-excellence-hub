@@ -92,9 +92,12 @@ export type StructureFirstMember = {
 export type StructureFirstPendingInvitation = {
   id: string;
   email: string;
+  displayName?: string | null;
   expiresAtLabel: string;
-  roleName: string;
-  scopeLabel: string;
+  accessGrants: Array<{
+    roleName: string;
+    scopeLabel: string;
+  }>;
 };
 
 export type StructureFirstJobFunction = {
@@ -142,6 +145,7 @@ export type StructureFirstSnapshotView = {
   members: StructureFirstMember[];
   owners: StructureFirstOwner[];
   pendingInvitations: StructureFirstPendingInvitation[];
+  pendingInvitationNamesUnavailable?: boolean;
   permissions: StructureFirstPermissions;
   guidance: StructureGuidance[];
   offers: unknown[];

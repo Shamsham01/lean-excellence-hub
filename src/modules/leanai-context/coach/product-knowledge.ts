@@ -1,6 +1,6 @@
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
 
-export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v4";
+export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v5";
 
 export type CoachProductKnowledge = {
   version: string;
@@ -43,7 +43,14 @@ const KNOWLEDGE: Partial<
       "Training and Skills use job functions to describe what people do.",
       "An organisation owner plus at least one active job function is the minimum people setup.",
       "Organisation-wide access is an explicit grant. Site-scoped access does not include sibling sites.",
+      "An invitation can include more than one role. Each role keeps its own scope, so editing at one site does not edit another site.",
+      "Suggestions Contributor submits suggestions. It does not review or manage the suggestions portfolio.",
       "Job titles and founder status do not grant organisation-wide authority by themselves.",
+      "Workplace Viewer is a separate role for published and shared records at a site or the organisation. It is not Team Member and it does not include every read permission.",
+      "Operator access is an invitation preset of Workplace Viewer and Suggestions Contributor at one site. An administrator can change either role before sending the invitation.",
+      "Your access on the personal profile lists each active role and its scope. A job function is not one of those grants.",
+      "A personal profile name belongs to the account. Each organisation keeps its own membership name.",
+      "An invited name can be confirmed while joining. A name already saved on the personal profile stays in place.",
       "Transferring organisation ownership does not assign site administration. Assign remaining access through People.",
     ],
     recommendedPath: "/platform/settings/job-functions",

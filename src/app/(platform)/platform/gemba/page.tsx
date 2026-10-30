@@ -2,6 +2,7 @@ import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,10 +12,19 @@ import {
 } from "@/modules/operational/gemba-active-walks";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Footprints } from "lucide-react";
 
 export default async function GembaOverviewPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    title: "Gemba",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
@@ -141,6 +151,7 @@ export default async function GembaOverviewPage() {
           </Button>
         </CardContent>
       </Card>
+      <WorkplaceSharedRecords module="gemba" title="Gemba" />
     </div>
   );
 }

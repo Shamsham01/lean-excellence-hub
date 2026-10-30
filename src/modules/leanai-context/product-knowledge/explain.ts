@@ -67,6 +67,21 @@ export function explainSkillsQuestion(input: {
   }
 
   const normalised = question.toLowerCase();
+  if (
+    /workplace viewer|operator access|your access|invitation|display name|personal profile/.test(
+      normalised,
+    )
+  ) {
+    return {
+      answer:
+        "Your access lists each active application role and the scope of that role. A job function does not grant those permissions. Workplace Viewer can see published and shared records in its site or organisation scope. It cannot edit them, open financial amounts, or read another person's assessment. Operator access invites Workplace Viewer and Suggestions Contributor together at one site, and an administrator can change either role. A personal profile name belongs to the account. Each organisation keeps its own membership name, and an invited name can be confirmed while joining. LeanAI conversation is separate from viewing access. When conversation is not enabled, the page says so and does not pretend a chat is available.",
+      sources: ["skills.overview"],
+      knowledgeVersion: LEH_PRODUCT_KNOWLEDGE_VERSION,
+      distinguishes: "product",
+      acknowledgedGap: false,
+    };
+  }
+
   if (/line operator|job function|is .+ a skill/.test(normalised)) {
     return {
       answer: `${article("skills.overview").facts[0]} ${article("skills.overview").facts[1]} Put Line Operator on the job function, and put an ability such as Operate and monitor the oven on the skill.${live}`,

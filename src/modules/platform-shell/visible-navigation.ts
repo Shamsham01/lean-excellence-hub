@@ -30,9 +30,18 @@ export async function buildVisibleNavigation() {
 
   const access = await Promise.all(
     platformNavigation.map(async (item) => {
+      const alternateAccess = await Promise.all(
+        (item.alternatePermissions ?? []).map((permission) =>
+          currentMemberHasPermission(permission),
+        ),
+      );
       const canAccess = item.organisationScopeOnly
         ? await currentMemberHasScopedPermission(item.permission)
-        : await currentMemberHasPermission(item.permission);
+        : (await currentMemberHasPermission(item.permission)) ||
+          (item.viewPermission
+            ? await currentMemberHasPermission(item.viewPermission)
+            : false) ||
+          alternateAccess.some(Boolean);
       return { item, canAccess };
     }),
   );

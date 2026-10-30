@@ -31,6 +31,11 @@ export type InvitationSessionState =
   | "redirect_binding"
   | "binding_expired";
 
+export type InvitationGrantPreview = {
+  roleDisplayName: string;
+  scopeLabel: string;
+};
+
 export type InvitationLifecycleView = {
   state: InvitationPreviewState;
   sessionState?: InvitationSessionState | undefined;
@@ -39,10 +44,42 @@ export type InvitationLifecycleView = {
   recipientEmailMasked?: string | undefined;
   roleDisplayName?: string | undefined;
   scopeLabel?: string | undefined;
+  grants?: InvitationGrantPreview[] | undefined;
+  intendedDisplayName?: string | undefined;
+  confirmedDisplayName?: string | undefined;
   expiresAt?: string | undefined;
   organisationId?: string | undefined;
   continuationBindingId?: string | undefined;
 };
+
+function mapInvitationGrants(
+  value: unknown,
+): InvitationGrantPreview[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const grants = value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") {
+      return [];
+    }
+    const record = entry as Record<string, unknown>;
+    if (typeof record.role_display_name !== "string") {
+      return [];
+    }
+    return [
+      {
+        roleDisplayName: record.role_display_name,
+        scopeLabel:
+          typeof record.scope_label === "string"
+            ? record.scope_label
+            : "Scoped access",
+      },
+    ];
+  });
+
+  return grants.length > 0 ? grants : undefined;
+}
 
 function hashRateLimitKey(dimension: string, value: string) {
   const pepper = getServerEnvironment().AUTH_RATE_LIMIT_PEPPER;
@@ -221,6 +258,15 @@ function mapPreviewPayload(
         : undefined,
     scopeLabel:
       typeof payload.scope_label === "string" ? payload.scope_label : undefined,
+    grants: mapInvitationGrants(payload.grants),
+    intendedDisplayName:
+      typeof payload.intended_display_name === "string"
+        ? payload.intended_display_name
+        : undefined,
+    confirmedDisplayName:
+      typeof payload.confirmed_display_name === "string"
+        ? payload.confirmed_display_name
+        : undefined,
     expiresAt:
       typeof payload.expires_at === "string" ? payload.expires_at : undefined,
     organisationId:

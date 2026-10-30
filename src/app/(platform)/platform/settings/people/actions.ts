@@ -16,12 +16,19 @@ import {
 } from "@/platform/application-origin";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export async function inviteColleague(input: {
-  email: string;
-  displayName?: string;
+export type InvitationGrantRequest = {
   roleVersionId: string;
   scopeType: string;
   scopeUnitId: string | null;
+};
+
+export async function inviteColleague(input: {
+  email: string;
+  displayName?: string;
+  grants?: InvitationGrantRequest[];
+  roleVersionId?: string;
+  scopeType?: string;
+  scopeUnitId?: string | null;
   jobFunctionId?: string;
   organisationalUnitId?: string;
 }) {
@@ -43,18 +50,19 @@ export async function inviteColleague(input: {
     return { error: "Unable to send the invitation. Try again later." };
   }
 
+  const grants = resolveInvitationGrants(input);
+  if (grants.length === 0) {
+    return { error: "Select at least one application role and scope." };
+  }
+
   const { data: invitationId, error } = await supabase.rpc(
-    "issue_organisation_member_invitation",
+    "issue_organisation_member_invitation_grants",
     {
       invitation_recipient_type: "email",
       invitation_canonical_recipient: input.email,
       invitation_token_digest: invitationTokenDigest(token),
       invitation_expires_at: invitationExpiresAt(),
-      offered_role_version_id: input.roleVersionId,
-      offered_scope_type: input.scopeType,
-      ...(input.scopeUnitId
-        ? { offered_scope_unit_id: input.scopeUnitId }
-        : {}),
+      offered_grants: grants,
       ...(input.displayName
         ? { intended_display_name: input.displayName }
         : {}),
@@ -182,4 +190,30 @@ export async function revokeInvitation(invitationId: string) {
   revalidatePath("/platform/settings/people");
   revalidatePath("/onboarding/setup");
   return { ok: true as const };
+}
+
+function resolveInvitationGrants(input: {
+  grants?: InvitationGrantRequest[];
+  roleVersionId?: string;
+  scopeType?: string;
+  scopeUnitId?: string | null;
+}) {
+  const requested =
+    input.grants && input.grants.length > 0
+      ? input.grants
+      : input.roleVersionId && input.scopeType
+        ? [
+            {
+              roleVersionId: input.roleVersionId,
+              scopeType: input.scopeType,
+              scopeUnitId: input.scopeUnitId ?? null,
+            },
+          ]
+        : [];
+
+  return requested.map((grant) => ({
+    role_version_id: grant.roleVersionId,
+    scope_type: grant.scopeType,
+    scope_unit_id: grant.scopeUnitId,
+  }));
 }

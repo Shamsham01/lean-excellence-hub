@@ -9,6 +9,7 @@ import { MaturityQuickStartCard } from "@/components/maturity/maturity-quick-sta
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { loadMaturityBuilderPageData } from "@/modules/maturity/ai-builder/load";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import {
   scopeTypeLabel,
   type MaturityAssessmentScopeType,
@@ -17,6 +18,14 @@ import { listMaturityFrameworkTemplates } from "@/modules/maturity/templates";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function MaturityModelsPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    title: "Maturity",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const canManage = await currentMemberHasPermission(
     MATURITY_PERMISSIONS.modelsManage,
   );

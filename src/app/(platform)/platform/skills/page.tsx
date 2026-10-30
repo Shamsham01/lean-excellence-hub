@@ -1,10 +1,12 @@
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import type { SkillsSetupSnapshot } from "@/modules/skills/setup-path";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -24,6 +26,14 @@ function latestDraftParentId(
 }
 
 export default async function SkillsOverviewPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: SKILLS_PERMISSIONS.read,
+    module: "skills",
+    title: "Skills",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const [canManageCatalog, canManageRequirements, dashboardResult] =
     await Promise.all([
@@ -155,6 +165,7 @@ export default async function SkillsOverviewPage() {
         canManageCatalog={canManageCatalog}
         canManageRequirements={canManageRequirements}
       />
+      <WorkplaceSharedRecords module="skills" title="Skills" />
     </div>
   );
 }

@@ -6346,6 +6346,7 @@ export type Database = {
           intended_job_function_id: string | null
           intended_organisational_unit_id: string | null
           invitation_id: string
+          invitee_confirmed_display_name: string | null
           organisation_id: string
         }
         Insert: {
@@ -6354,6 +6355,7 @@ export type Database = {
           intended_job_function_id?: string | null
           intended_organisational_unit_id?: string | null
           invitation_id: string
+          invitee_confirmed_display_name?: string | null
           organisation_id: string
         }
         Update: {
@@ -6362,6 +6364,7 @@ export type Database = {
           intended_job_function_id?: string | null
           intended_organisational_unit_id?: string | null
           invitation_id?: string
+          invitee_confirmed_display_name?: string | null
           organisation_id?: string
         }
         Relationships: [
@@ -6399,6 +6402,7 @@ export type Database = {
         Row: {
           auth_user_id: string | null
           canonical_recipient: string
+          confirmed_display_name: string | null
           consumed_at: string | null
           created_at: string
           expires_at: string
@@ -6410,6 +6414,7 @@ export type Database = {
         Insert: {
           auth_user_id?: string | null
           canonical_recipient: string
+          confirmed_display_name?: string | null
           consumed_at?: string | null
           created_at?: string
           expires_at: string
@@ -6421,6 +6426,7 @@ export type Database = {
         Update: {
           auth_user_id?: string | null
           canonical_recipient?: string
+          confirmed_display_name?: string | null
           consumed_at?: string | null
           created_at?: string
           expires_at?: string
@@ -12621,6 +12627,14 @@ export type Database = {
         Args: { target_attachment_id: string }
         Returns: boolean
       }
+      confirm_invitation_binding_display_name: {
+        Args: { target_binding_id: string; target_display_name: string }
+        Returns: undefined
+      }
+      confirm_invited_display_name: {
+        Args: { invitation_token_digest: string; target_display_name: string }
+        Returns: undefined
+      }
       consume_authentication_rate_limit: {
         Args: {
           block_seconds: number
@@ -13711,6 +13725,7 @@ export type Database = {
       }
       get_organisation_ownership: { Args: never; Returns: Json }
       get_organisation_setup_readiness: { Args: never; Returns: Json }
+      get_own_membership_profile: { Args: never; Returns: Json }
       get_people_directory: {
         Args: {
           target_include_inactive?: boolean
@@ -13871,6 +13886,14 @@ export type Database = {
           target_membership_id: string
         }[]
       }
+      get_workplace_feed: {
+        Args: { target_module: string; target_page?: number }
+        Returns: Json
+      }
+      get_workplace_record: {
+        Args: { target_module: string; target_record_id: string }
+        Returns: Json
+      }
       grant_role_version: {
         Args: {
           target_grantee_membership_id: string
@@ -13935,6 +13958,19 @@ export type Database = {
           offered_role_version_id: string
           offered_scope_type: string
           offered_scope_unit_id?: string
+        }
+        Returns: string
+      }
+      issue_organisation_member_invitation_grants: {
+        Args: {
+          intended_display_name?: string
+          intended_job_function_id?: string
+          intended_organisational_unit_id?: string
+          invitation_canonical_recipient: string
+          invitation_expires_at: string
+          invitation_recipient_type: string
+          invitation_token_digest: string
+          offered_grants: Json
         }
         Returns: string
       }
@@ -14076,6 +14112,10 @@ export type Database = {
       }
       mark_workforce_provision_needs_remediation: {
         Args: { target_failure_reason: string; target_intent_id: string }
+        Returns: boolean
+      }
+      member_has_grant_permission: {
+        Args: { target_permission_key: string }
         Returns: boolean
       }
       member_has_permission: {
@@ -14307,6 +14347,10 @@ export type Database = {
           target_verification_rationale?: string
         }
         Returns: boolean
+      }
+      record_invitation_signup_display_name: {
+        Args: { target_binding_id: string; target_display_name: string }
+        Returns: undefined
       }
       record_leanai_semantic_event: {
         Args: {

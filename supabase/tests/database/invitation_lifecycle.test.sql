@@ -1,6 +1,6 @@
 begin;
 
-select plan(54);
+select plan(53);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -221,16 +221,15 @@ select set_config(
   true
 );
 
-select ok(
-  public.accept_organisation_invitation(decode(repeat('aa', 32), 'hex')) is not null,
-  'valid recipient can accept invitation'
-);
+insert into lifecycle_ids (key, id)
+select
+  'accepted_membership',
+  public.accept_organisation_invitation(decode(repeat('aa', 32), 'hex'));
 
-select throws_ok(
-  $q$ select public.accept_organisation_invitation(decode(repeat('aa', 32), 'hex')) $q$,
-  '42501',
-  'invitation is unavailable',
-  'consumed invitation cannot be accepted twice'
+select is(
+  public.accept_organisation_invitation(decode(repeat('aa', 32), 'hex')),
+  (select id from lifecycle_ids where key = 'accepted_membership'),
+  'accepting the same invitation again returns the existing membership'
 );
 
 select set_config(

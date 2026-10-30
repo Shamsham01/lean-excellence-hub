@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { invitationContinuePath } from "@/modules/identity/invitation-constants";
 import type { InvitationLifecycleView } from "@/modules/identity/invitation-lifecycle";
 
@@ -48,19 +50,51 @@ function InvitationDetails({
           </dd>
         </div>
       ) : null}
-      {lifecycle.roleDisplayName ? (
+      {lifecycle.grants && lifecycle.grants.length > 0 ? (
         <div>
-          <dt className="text-muted-foreground">Application role</dt>
-          <dd className="font-medium text-foreground">
-            {lifecycle.roleDisplayName}
+          <dt className="text-muted-foreground">Application access</dt>
+          <dd>
+            <ul
+              className="flex flex-col gap-1"
+              data-testid="invitation-grant-list"
+            >
+              {lifecycle.grants.map((grant, index) => (
+                <li
+                  key={`${grant.roleDisplayName}-${grant.scopeLabel}-${index}`}
+                  className="font-medium break-words text-foreground"
+                >
+                  {grant.roleDisplayName} · {grant.scopeLabel}
+                </li>
+              ))}
+            </ul>
           </dd>
         </div>
-      ) : null}
-      {lifecycle.scopeLabel ? (
+      ) : (
+        <>
+          {lifecycle.roleDisplayName ? (
+            <div>
+              <dt className="text-muted-foreground">Application role</dt>
+              <dd className="font-medium text-foreground">
+                {lifecycle.roleDisplayName}
+              </dd>
+            </div>
+          ) : null}
+          {lifecycle.scopeLabel ? (
+            <div>
+              <dt className="text-muted-foreground">Access scope</dt>
+              <dd className="font-medium text-foreground">
+                {lifecycle.scopeLabel}
+              </dd>
+            </div>
+          ) : null}
+        </>
+      )}
+      {lifecycle.intendedDisplayName &&
+      lifecycle.sessionState !== "ready_to_accept" ? (
         <div>
-          <dt className="text-muted-foreground">Access scope</dt>
-          <dd className="font-medium text-foreground">
-            {lifecycle.scopeLabel}
+          <dt className="text-muted-foreground">Invited name</dt>
+          <dd className="font-medium break-words text-foreground">
+            {lifecycle.intendedDisplayName}
           </dd>
         </div>
       ) : null}
@@ -240,6 +274,11 @@ export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
   }
 
   if (lifecycle.sessionState === "ready_to_accept") {
+    const suggestedName =
+      lifecycle.confirmedDisplayName?.trim() ||
+      lifecycle.intendedDisplayName?.trim() ||
+      "";
+
     return (
       <AuthCard
         title="Accept invitation"
@@ -261,6 +300,24 @@ export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
           ) : (
             <input type="hidden" name="token" value={props.token} />
           )}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="invitation-display-name">
+              Your name in this organisation
+            </Label>
+            <Input
+              id="invitation-display-name"
+              name="displayName"
+              autoComplete="name"
+              maxLength={120}
+              defaultValue={suggestedName}
+              data-testid="invitation-display-name"
+            />
+            <p className="text-xs text-muted-foreground">
+              People in this organisation see this name. A personal profile name
+              you have already saved stays as your personal name. If your
+              personal profile has no name yet, this name is saved there too.
+            </p>
+          </div>
           <Button type="submit" className="w-full">
             Accept invitation
           </Button>

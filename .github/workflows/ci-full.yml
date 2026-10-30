@@ -251,6 +251,7 @@ jobs:
               tests/e2e/training-course-authoring.spec.ts
               tests/e2e/training-curriculum-authoring.spec.ts
               tests/e2e/people-mobile-organisation-assignment.spec.ts
+              tests/e2e/people-access.spec.ts
           - label: improvement
             specs: >-
               tests/e2e/milestone8-closure.spec.ts
