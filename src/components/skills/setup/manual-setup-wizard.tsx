@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { useSerializedSetupSave } from "@/components/skills/setup/serialized-save";
+
 import {
   createManualSkillsSetupDraft,
   saveSkillsSetupPreparation,
@@ -19,6 +21,11 @@ import {
 import { describeRequirementApplicability } from "@/modules/skills/setup/definition";
 import { manualPreparationToDefinition } from "@/modules/skills/setup/preparation";
 import type { ManualSkillsPreparation } from "@/modules/skills/setup/preparation";
+import {
+  skillsSetupSelectClass,
+  skillsSetupWrappingTextClass,
+  type SkillsSetupUnitOption,
+} from "@/modules/skills/setup/unit-options";
 
 import { SkillsTerminologyNote } from "./skills-terminology";
 
@@ -34,13 +41,14 @@ export function ManualSkillsSetupWizard({
 }: {
   initial: ManualSkillsPreparation;
   jobFunctions: Named[];
-  units: Named[];
+  units: SkillsSetupUnitOption[];
   existingSkillNames: string[];
 }) {
   const [state, setState] = useState(initial);
   const [bulk, setBulk] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const enqueue = useSerializedSetupSave();
   const stepIndex = Math.max(0, STEPS.indexOf(state.step));
 
   const warnings = useMemo(
@@ -71,13 +79,15 @@ export function ManualSkillsSetupWizard({
     setState(next);
     setError(null);
     startTransition(async () => {
-      const result = await saveSkillsSetupPreparation({
-        source: "manual",
-        state: next,
+      await enqueue(async () => {
+        const result = await saveSkillsSetupPreparation({
+          source: "manual",
+          state: next,
+        });
+        if ("error" in result && result.error) {
+          setError(result.error);
+        }
       });
-      if ("error" in result && result.error) {
-        setError(result.error);
-      }
     });
   }
 
@@ -111,7 +121,7 @@ export function ManualSkillsSetupWizard({
 
   return (
     <form
-      className="flex min-w-0 flex-col gap-8"
+      className="flex w-full max-w-full min-w-0 flex-col gap-8"
       data-testid="skills-manual-setup"
       onSubmit={(event) => {
         event.preventDefault();
@@ -127,18 +137,20 @@ export function ManualSkillsSetupWizard({
           data.set("publish", "1");
         }
         startTransition(async () => {
-          const saved = await saveSkillsSetupPreparation({
-            source: "manual",
-            state,
+          await enqueue(async () => {
+            const saved = await saveSkillsSetupPreparation({
+              source: "manual",
+              state,
+            });
+            if ("error" in saved && saved.error) {
+              setError(saved.error);
+              return;
+            }
+            const result = await createManualSkillsSetupDraft(data);
+            if (result && "error" in result) {
+              setError(result.error ?? "The draft could not be created.");
+            }
           });
-          if ("error" in saved && saved.error) {
-            setError(saved.error);
-            return;
-          }
-          const result = await createManualSkillsSetupDraft(data);
-          if (result && "error" in result) {
-            setError(result.error ?? "The draft could not be created.");
-          }
         });
       }}
     >
@@ -246,7 +258,7 @@ export function ManualSkillsSetupWizard({
             <Button
               type="button"
               variant="outline"
-              className="w-full sm:w-auto"
+              className="w-full max-w-full whitespace-normal sm:w-auto"
               onClick={() =>
                 setState({
                   ...state,
@@ -288,7 +300,7 @@ export function ManualSkillsSetupWizard({
           <Button
             type="button"
             variant="outline"
-            className="w-full sm:w-auto"
+            className="w-full max-w-full whitespace-normal sm:w-auto"
             onClick={addBulk}
           >
             Add skills from the list
@@ -384,11 +396,18 @@ export function ManualSkillsSetupWizard({
             Apply only to selected units
           </label>
           {state.applicability === "units" ? (
-            <div className="flex flex-col gap-2">
+            <div
+              className="flex w-full max-w-full min-w-0 flex-col gap-2"
+              data-testid="skills-unit-list"
+            >
               {units.map((unit) => (
-                <label key={unit.id} className="flex items-start gap-2 text-sm">
+                <label
+                  key={unit.id}
+                  className="flex min-h-11 w-full max-w-full min-w-0 items-start gap-2 py-2 text-sm"
+                >
                   <input
                     type="checkbox"
+                    className="mt-1 size-4 shrink-0"
                     checked={state.unitIds.includes(unit.id)}
                     onChange={(event) => {
                       const unitIds = event.target.checked
@@ -397,7 +416,9 @@ export function ManualSkillsSetupWizard({
                       persist({ ...state, unitIds });
                     }}
                   />
-                  {unit.name}
+                  <span className={skillsSetupWrappingTextClass}>
+                    {unit.path}
+                  </span>
                 </label>
               ))}
             </div>
@@ -413,15 +434,17 @@ export function ManualSkillsSetupWizard({
               return (
                 <div
                   key={skill.name}
-                  className="grid min-w-0 gap-2 border-t border-border pt-3 sm:grid-cols-2"
+                  className="grid w-full max-w-full min-w-0 gap-2 border-t border-border pt-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
                 >
-                  <p className="text-sm font-medium sm:col-span-2">
+                  <p
+                    className={`text-sm font-medium sm:col-span-2 ${skillsSetupWrappingTextClass}`}
+                  >
                     {skill.name}
                   </p>
-                  <label className="flex flex-col gap-2 text-sm">
+                  <label className="flex w-full max-w-full min-w-0 flex-col gap-2 text-sm">
                     Job function
                     <select
-                      className="border-input h-10 min-w-0 rounded-md border bg-background px-3"
+                      className={skillsSetupSelectClass}
                       data-testid="skills-requirement-job-function"
                       value={requirement?.jobFunctionId ?? ""}
                       onChange={(event) => {
@@ -461,11 +484,24 @@ export function ManualSkillsSetupWizard({
                         </option>
                       ))}
                     </select>
+                    {requirement?.jobFunctionId ? (
+                      <span
+                        className={skillsSetupWrappingTextClass}
+                        data-testid="skills-selected-job-function"
+                      >
+                        {
+                          jobFunctions.find(
+                            (jobFunction) =>
+                              jobFunction.id === requirement.jobFunctionId,
+                          )?.name
+                        }
+                      </span>
+                    ) : null}
                   </label>
-                  <label className="flex flex-col gap-2 text-sm">
+                  <label className="flex w-full max-w-full min-w-0 flex-col gap-2 text-sm">
                     Target proficiency
                     <select
-                      className="border-input h-10 min-w-0 rounded-md border bg-background px-3"
+                      className={skillsSetupSelectClass}
                       data-testid="skills-requirement-level"
                       value={requirement?.levelLabel ?? ""}
                       onChange={(event) => {
@@ -524,7 +560,7 @@ export function ManualSkillsSetupWizard({
                 return (
                   <li
                     key={`${requirement.skill_code}-${requirement.job_function_id}-${requirement.organisational_unit_id ?? "organisation"}`}
-                    className="text-sm"
+                    className={`text-sm ${skillsSetupWrappingTextClass}`}
                     data-testid="skills-preview-requirement"
                   >
                     {describeRequirementApplicability({
@@ -532,7 +568,7 @@ export function ManualSkillsSetupWizard({
                         jobFunction?.name ?? "The selected job function",
                       skillName: skill?.name ?? requirement.skill_code,
                       levelLabel: requirement.level_label,
-                      unitName: unit?.name ?? null,
+                      unitName: unit?.path ?? null,
                     })}
                   </li>
                 );
@@ -563,7 +599,7 @@ export function ManualSkillsSetupWizard({
           <Button
             type="button"
             variant="outline"
-            className="w-full sm:w-auto"
+            className="w-full max-w-full whitespace-normal sm:w-auto"
             disabled={pending}
             onClick={() =>
               persist({ ...state, step: STEPS[stepIndex - 1] ?? "scale" })
@@ -575,7 +611,7 @@ export function ManualSkillsSetupWizard({
         <Button
           type="button"
           variant="outline"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-save"
           disabled={pending}
           onClick={() => persist(state)}
@@ -585,22 +621,24 @@ export function ManualSkillsSetupWizard({
         <Button
           type="button"
           variant="outline"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-start-new-setup"
           disabled={pending}
           onClick={() => {
             startTransition(async () => {
-              const result = await startNewSkillsSetup({
-                source: "manual",
-                state,
+              await enqueue(async () => {
+                const result = await startNewSkillsSetup({
+                  source: "manual",
+                  state,
+                });
+                if ("error" in result && result.error) {
+                  setError(result.error);
+                  return;
+                }
+                if ("preparation" in result) {
+                  setState(result.preparation);
+                }
               });
-              if ("error" in result && result.error) {
-                setError(result.error);
-                return;
-              }
-              if ("preparation" in result) {
-                setState(result.preparation);
-              }
             });
           }}
         >
@@ -609,7 +647,7 @@ export function ManualSkillsSetupWizard({
         {state.step !== "preview" ? (
           <Button
             type="button"
-            className="w-full sm:w-auto"
+            className="w-full max-w-full whitespace-normal sm:w-auto"
             data-testid="skills-next"
             disabled={pending}
             onClick={() =>
@@ -623,7 +661,7 @@ export function ManualSkillsSetupWizard({
             <Button
               type="submit"
               variant="outline"
-              className="w-full sm:w-auto"
+              className="w-full max-w-full whitespace-normal sm:w-auto"
               data-testid="skills-create-draft"
               disabled={pending}
               value="draft"
@@ -632,7 +670,7 @@ export function ManualSkillsSetupWizard({
             </Button>
             <Button
               type="submit"
-              className="w-full sm:w-auto"
+              className="w-full max-w-full whitespace-normal sm:w-auto"
               data-testid="skills-publish-setup"
               disabled={pending}
               value="publish"
@@ -641,10 +679,18 @@ export function ManualSkillsSetupWizard({
             </Button>
           </>
         )}
-        <Button variant="outline" className="w-full sm:w-auto" asChild>
+        <Button
+          variant="outline"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
+          asChild
+        >
           <AppLink href="/platform/skills/matrix">Open skills matrix</AppLink>
         </Button>
-        <Button variant="outline" className="w-full sm:w-auto" asChild>
+        <Button
+          variant="outline"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
+          asChild
+        >
           <AppLink href="/platform/skills/scales/new">
             Use the detailed editors
           </AppLink>

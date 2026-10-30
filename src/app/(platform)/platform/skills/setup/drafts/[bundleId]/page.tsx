@@ -5,6 +5,7 @@ import { PublishSetupDraft } from "@/components/skills/setup/publish-setup-draft
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { describeRequirementApplicability } from "@/modules/skills/setup/definition";
+import { skillsSetupUnitOptions } from "@/modules/skills/setup/unit-options";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function SkillsSetupDraftPage({
@@ -54,13 +55,6 @@ export default async function SkillsSetupDraftPage({
         .filter((id): id is string => Boolean(id)),
     ),
   ];
-  const unitIds = [
-    ...new Set(
-      (requirements ?? [])
-        .map((row) => row.organisational_unit_id)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
   const [{ data: skills }, { data: jobs }, { data: units }] = await Promise.all(
     [
       skillIds.length
@@ -69,17 +63,17 @@ export default async function SkillsSetupDraftPage({
       jobIds.length
         ? supabase.from("job_functions").select("id, name").in("id", jobIds)
         : Promise.resolve({ data: [] }),
-      unitIds.length
-        ? supabase
-            .from("organisation_units")
-            .select("id, name")
-            .in("id", unitIds)
-        : Promise.resolve({ data: [] }),
+      supabase
+        .from("organisation_units")
+        .select("id, name, parent_unit_id")
+        .eq("status", "active"),
     ],
   );
   const skillName = new Map((skills ?? []).map((row) => [row.id, row.name]));
   const jobName = new Map((jobs ?? []).map((row) => [row.id, row.name]));
-  const unitName = new Map((units ?? []).map((row) => [row.id, row.name]));
+  const unitName = new Map(
+    skillsSetupUnitOptions(units ?? []).map((row) => [row.id, row.path]),
+  );
   const levelName = new Map((levels ?? []).map((row) => [row.id, row.label]));
   const impact = (preview.data ?? { removed: [], retained: [] }) as {
     removed?: Array<{ kind: string; label: string }>;
@@ -97,7 +91,7 @@ export default async function SkillsSetupDraftPage({
           {bundle.source}
           {bundle.sample ? " · Sample" : ""}
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight [overflow-wrap:anywhere]">
           {bundle.title}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -110,7 +104,7 @@ export default async function SkillsSetupDraftPage({
         {(requirements ?? []).map((requirement) => (
           <li
             key={requirement.id}
-            className="text-sm"
+            className="text-sm [overflow-wrap:anywhere]"
             data-testid="skills-draft-requirement"
           >
             {describeRequirementApplicability({
@@ -138,11 +132,14 @@ export default async function SkillsSetupDraftPage({
         Not assessed means there is no validated assessment. It is not a low
         score. Publishing does not mark anyone competent.
       </p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="flex w-full max-w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
         {bundle.status === "draft" ? (
           <PublishSetupDraft bundleId={bundle.id} />
         ) : (
-          <Button className="w-full sm:w-auto" asChild>
+          <Button
+            className="w-full max-w-full whitespace-normal sm:w-auto"
+            asChild
+          >
             <AppLink href="/platform/skills/matrix">Open skills matrix</AppLink>
           </Button>
         )}
@@ -155,7 +152,11 @@ export default async function SkillsSetupDraftPage({
             }}
           />
         ) : null}
-        <Button variant="outline" className="w-full sm:w-auto" asChild>
+        <Button
+          variant="outline"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
+          asChild
+        >
           <AppLink href="/platform/skills">Back to Skills</AppLink>
         </Button>
       </div>

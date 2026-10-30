@@ -12,6 +12,7 @@ import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { resumeSkillsPreparation } from "@/modules/skills/setup/resume-preparation";
 import { leanAiPreparationSchema } from "@/modules/skills/setup/preparation";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
+import { skillsSetupUnitOptions } from "@/modules/skills/setup/unit-options";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function freshPreparation(): QuickStartPreparation {
@@ -43,7 +44,7 @@ export default async function SkillsLeanAiSetupPage() {
         .order("name"),
       supabase
         .from("organisation_units")
-        .select("id, name")
+        .select("id, name, parent_unit_id")
         .eq("status", "active")
         .order("name"),
       supabase
@@ -103,7 +104,7 @@ export default async function SkillsLeanAiSetupPage() {
           conversation?.currentProposal?.messageId ?? null
         }
         jobFunctions={jobFunctions ?? []}
-        units={units ?? []}
+        units={skillsSetupUnitOptions(units ?? [])}
         unavailableMessage={
           access.available
             ? null

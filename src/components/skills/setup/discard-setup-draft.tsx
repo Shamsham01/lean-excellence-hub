@@ -12,9 +12,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+type ImpactItem = {
+  id?: string;
+  kind: string;
+  label: string;
+  reason?: string;
+};
+
 type Impact = {
-  removed: Array<{ kind: string; label: string }>;
-  retained: Array<{ kind: string; label: string; reason: string }>;
+  removed: ImpactItem[];
+  retained: ImpactItem[];
 };
 
 export function DiscardSetupDraft({
@@ -33,7 +40,7 @@ export function DiscardSetupDraft({
       <Button
         type="button"
         variant="outline"
-        className="w-full sm:w-auto"
+        className="w-full max-w-full whitespace-normal sm:w-auto"
         data-testid="skills-discard-open"
         onClick={() => setOpen(true)}
       >
@@ -50,7 +57,7 @@ export function DiscardSetupDraft({
             </DialogDescription>
           </DialogHeader>
           <div
-            className="flex flex-col gap-3 text-sm"
+            className="flex min-w-0 flex-col gap-3 text-sm [overflow-wrap:anywhere]"
             data-testid="skills-discard-preview"
           >
             <div>
@@ -59,8 +66,8 @@ export function DiscardSetupDraft({
                 {impact.removed.length === 0 ? (
                   <li>Nothing can be removed.</li>
                 ) : (
-                  impact.removed.map((item) => (
-                    <li key={`${item.kind}-${item.label}`}>
+                  impact.removed.map((item, index) => (
+                    <li key={item.id ?? `${item.kind}-${item.label}-${index}`}>
                       {item.label} ({item.kind})
                     </li>
                   ))
@@ -73,8 +80,8 @@ export function DiscardSetupDraft({
                 {impact.retained.length === 0 ? (
                   <li>No shared records.</li>
                 ) : (
-                  impact.retained.map((item) => (
-                    <li key={`${item.kind}-${item.label}`}>
+                  impact.retained.map((item, index) => (
+                    <li key={item.id ?? `${item.kind}-${item.label}-${index}`}>
                       {item.label}: {item.reason}
                     </li>
                   ))
@@ -105,7 +112,7 @@ export function DiscardSetupDraft({
           >
             <Button
               type="submit"
-              className="w-full sm:w-auto"
+              className="w-full max-w-full whitespace-normal sm:w-auto"
               data-testid="skills-discard-confirm"
               disabled={pending}
             >

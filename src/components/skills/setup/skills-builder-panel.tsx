@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { useSerializedSetupSave } from "@/components/skills/setup/serialized-save";
+
 import {
   createSkillsDraftFromProposal,
   saveSkillsSetupPreparation,
@@ -13,6 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { SkillsBuilderProposal } from "@/modules/skills/ai-builder/types";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
+import {
+  skillsSetupSelectClass,
+  skillsSetupWrappingTextClass,
+  type SkillsSetupUnitOption,
+} from "@/modules/skills/setup/unit-options";
 
 type Named = { id: string; name: string };
 
@@ -28,7 +35,7 @@ export function SkillsBuilderPanel({
   initialProposal?: SkillsBuilderProposal | null;
   initialProposalMessageId?: string | null;
   jobFunctions: Named[];
-  units: Named[];
+  units: SkillsSetupUnitOption[];
   unavailableMessage: string | null;
 }) {
   const [state, setState] = useState(initial);
@@ -42,6 +49,7 @@ export function SkillsBuilderPanel({
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const enqueue = useSerializedSetupSave();
 
   if (unavailableMessage) {
     return (
@@ -54,12 +62,19 @@ export function SkillsBuilderPanel({
           Manual setup and LEH Quick Start remain available.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button className="w-full sm:w-auto" asChild>
+          <Button
+            className="w-full max-w-full whitespace-normal sm:w-auto"
+            asChild
+          >
             <AppLink href="/platform/skills/setup/manual">
               Continue manually
             </AppLink>
           </Button>
-          <Button variant="outline" className="w-full sm:w-auto" asChild>
+          <Button
+            variant="outline"
+            className="w-full max-w-full whitespace-normal sm:w-auto"
+            asChild
+          >
             <AppLink href="/platform/skills/setup/quick-start">
               Use Quick Start
             </AppLink>
@@ -102,19 +117,24 @@ export function SkillsBuilderPanel({
   function persist(next: QuickStartPreparation) {
     setState(next);
     startTransition(async () => {
-      const result = await saveSkillsSetupPreparation({
-        source: "leanai",
-        templateKey: "leanai-skills-builder",
-        state: next,
+      await enqueue(async () => {
+        const result = await saveSkillsSetupPreparation({
+          source: "leanai",
+          templateKey: "leanai-skills-builder",
+          state: next,
+        });
+        if ("error" in result && result.error) {
+          setError(result.error);
+        }
       });
-      if ("error" in result && result.error) {
-        setError(result.error);
-      }
     });
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6" data-testid="skills-builder">
+    <div
+      className="flex w-full max-w-full min-w-0 flex-col gap-6"
+      data-testid="skills-builder"
+    >
       <p className="max-w-3xl text-sm text-muted-foreground">
         Describe the operation and the abilities people must demonstrate. LeanAI
         will ask only what changes the setup. It will not publish, assess
@@ -128,7 +148,7 @@ export function SkillsBuilderPanel({
         >
           <h2 className="text-lg font-medium">Proposed setup — not applied</h2>
           <p
-            className="text-sm font-medium"
+            className={`text-sm font-medium ${skillsSetupWrappingTextClass}`}
             data-testid="skills-builder-proposal-title"
           >
             {proposal.title}
@@ -149,44 +169,61 @@ export function SkillsBuilderPanel({
             <legend className="text-sm font-medium">
               Confirm job functions
             </legend>
-            {roles.map((role) => (
-              <label key={role} className="grid gap-2 text-sm sm:grid-cols-2">
-                {role}
-                <select
-                  className="border-input h-10 min-w-0 rounded-md border bg-background px-3"
-                  data-testid={`skills-builder-map-${role}`}
-                  value={
-                    state.roleMappings.find(
-                      (mapping) => mapping.suggestedRole === role,
-                    )?.jobFunctionId ?? ""
-                  }
-                  onChange={(event) => {
-                    const jobFunctionId = event.target.value || null;
-                    const existing = state.roleMappings.some(
-                      (mapping) => mapping.suggestedRole === role,
-                    );
-                    const roleMappings = existing
-                      ? state.roleMappings.map((mapping) =>
-                          mapping.suggestedRole === role
-                            ? { ...mapping, jobFunctionId }
-                            : mapping,
-                        )
-                      : [
-                          ...state.roleMappings,
-                          { suggestedRole: role, jobFunctionId },
-                        ];
-                    persist({ ...state, roleMappings });
-                  }}
+            {roles.map((role) => {
+              const selectedId =
+                state.roleMappings.find(
+                  (mapping) => mapping.suggestedRole === role,
+                )?.jobFunctionId ?? "";
+              return (
+                <label
+                  key={role}
+                  className="grid w-full max-w-full min-w-0 gap-2 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
                 >
-                  <option value="">Leave unresolved</option>
-                  {jobFunctions.map((jobFunction) => (
-                    <option key={jobFunction.id} value={jobFunction.id}>
-                      {jobFunction.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
+                  <span className={skillsSetupWrappingTextClass}>{role}</span>
+                  <select
+                    className={skillsSetupSelectClass}
+                    data-testid={`skills-builder-map-${role}`}
+                    value={selectedId}
+                    onChange={(event) => {
+                      const jobFunctionId = event.target.value || null;
+                      const existing = state.roleMappings.some(
+                        (mapping) => mapping.suggestedRole === role,
+                      );
+                      const roleMappings = existing
+                        ? state.roleMappings.map((mapping) =>
+                            mapping.suggestedRole === role
+                              ? { ...mapping, jobFunctionId }
+                              : mapping,
+                          )
+                        : [
+                            ...state.roleMappings,
+                            { suggestedRole: role, jobFunctionId },
+                          ];
+                      persist({ ...state, roleMappings });
+                    }}
+                  >
+                    <option value="">Leave unresolved</option>
+                    {jobFunctions.map((jobFunction) => (
+                      <option key={jobFunction.id} value={jobFunction.id}>
+                        {jobFunction.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedId ? (
+                    <span
+                      className={`sm:col-start-2 ${skillsSetupWrappingTextClass}`}
+                      data-testid={`skills-selected-${role}`}
+                    >
+                      {
+                        jobFunctions.find(
+                          (jobFunction) => jobFunction.id === selectedId,
+                        )?.name
+                      }
+                    </span>
+                  ) : null}
+                </label>
+              );
+            })}
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="radio"
@@ -204,19 +241,25 @@ export function SkillsBuilderPanel({
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="radio"
+                data-testid="skills-builder-units"
                 checked={state.applicability === "units"}
                 onChange={() => persist({ ...state, applicability: "units" })}
               />
               Only selected units
             </label>
-            {state.applicability === "units"
-              ? units.map((unit) => (
+            {state.applicability === "units" ? (
+              <div
+                className="flex w-full max-w-full min-w-0 flex-col gap-2"
+                data-testid="skills-unit-list"
+              >
+                {units.map((unit) => (
                   <label
                     key={unit.id}
-                    className="flex items-start gap-2 pl-6 text-sm"
+                    className="flex min-h-11 w-full max-w-full min-w-0 items-start gap-2 py-2 pl-6 text-sm"
                   >
                     <input
                       type="checkbox"
+                      className="mt-1 size-4 shrink-0"
                       checked={state.unitIds.includes(unit.id)}
                       onChange={(event) => {
                         const unitIds = event.target.checked
@@ -225,14 +268,17 @@ export function SkillsBuilderPanel({
                         persist({ ...state, unitIds });
                       }}
                     />
-                    {unit.name}
+                    <span className={skillsSetupWrappingTextClass}>
+                      {unit.path}
+                    </span>
                   </label>
-                ))
-              : null}
+                ))}
+              </div>
+            ) : null}
           </fieldset>
           <Button
             type="button"
-            className="w-full sm:w-auto"
+            className="w-full max-w-full whitespace-normal sm:w-auto"
             data-testid="skills-builder-create"
             disabled={pending || !proposalMessageId}
             onClick={() => {
@@ -242,19 +288,21 @@ export function SkillsBuilderPanel({
               const data = new FormData();
               data.set("proposalMessageId", proposalMessageId);
               startTransition(async () => {
-                const saved = await saveSkillsSetupPreparation({
-                  source: "leanai",
-                  templateKey: "leanai-skills-builder",
-                  state,
+                await enqueue(async () => {
+                  const saved = await saveSkillsSetupPreparation({
+                    source: "leanai",
+                    templateKey: "leanai-skills-builder",
+                    state,
+                  });
+                  if ("error" in saved && saved.error) {
+                    setError(saved.error);
+                    return;
+                  }
+                  const result = await createSkillsDraftFromProposal(data);
+                  if (result && "error" in result && result.error) {
+                    setError(result.error);
+                  }
                 });
-                if ("error" in saved && saved.error) {
-                  setError(saved.error);
-                  return;
-                }
-                const result = await createSkillsDraftFromProposal(data);
-                if (result && "error" in result && result.error) {
-                  setError(result.error);
-                }
               });
             }}
           >
@@ -269,6 +317,7 @@ export function SkillsBuilderPanel({
         Describe the operation
         <Textarea
           id="skills-builder-message"
+          className="w-full max-w-full min-w-0"
           data-testid="skills-builder-message"
           value={message}
           onChange={(event) => setMessage(event.target.value)}
@@ -282,7 +331,7 @@ export function SkillsBuilderPanel({
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Button
           type="button"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-builder-send"
           disabled={pending || message.trim().length === 0}
           onClick={() => {
@@ -290,13 +339,15 @@ export function SkillsBuilderPanel({
               return;
             }
             startTransition(async () => {
-              applyTurn(
-                await sendSkillsSetupBuilderMessage({
-                  message,
-                  intent: "propose",
-                  idempotencyKey: crypto.randomUUID(),
-                }),
-              );
+              await enqueue(async () => {
+                applyTurn(
+                  await sendSkillsSetupBuilderMessage({
+                    message,
+                    intent: "propose",
+                    idempotencyKey: crypto.randomUUID(),
+                  }),
+                );
+              });
             });
           }}
         >
@@ -305,7 +356,7 @@ export function SkillsBuilderPanel({
         <Button
           type="button"
           variant="outline"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-builder-retry"
           disabled={pending || message.trim().length === 0}
           onClick={() => {
@@ -313,13 +364,15 @@ export function SkillsBuilderPanel({
               return;
             }
             startTransition(async () => {
-              applyTurn(
-                await sendSkillsSetupBuilderMessage({
-                  message,
-                  intent: "retry",
-                  idempotencyKey: crypto.randomUUID(),
-                }),
-              );
+              await enqueue(async () => {
+                applyTurn(
+                  await sendSkillsSetupBuilderMessage({
+                    message,
+                    intent: "retry",
+                    idempotencyKey: crypto.randomUUID(),
+                  }),
+                );
+              });
             });
           }}
         >
@@ -328,23 +381,25 @@ export function SkillsBuilderPanel({
         <Button
           type="button"
           variant="outline"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-start-new-setup"
           disabled={pending}
           onClick={() => {
             startTransition(async () => {
-              const result = await startNewSkillsSetup({
-                source: "leanai",
-                templateKey: "leanai-skills-builder",
-                state,
+              await enqueue(async () => {
+                const result = await startNewSkillsSetup({
+                  source: "leanai",
+                  templateKey: "leanai-skills-builder",
+                  state,
+                });
+                if ("error" in result && result.error) {
+                  setError(result.error);
+                  return;
+                }
+                if ("preparation" in result) {
+                  setState(result.preparation);
+                }
               });
-              if ("error" in result && result.error) {
-                setError(result.error);
-                return;
-              }
-              if ("preparation" in result) {
-                setState(result.preparation);
-              }
             });
           }}
         >

@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { useSerializedSetupSave } from "@/components/skills/setup/serialized-save";
+
 import {
   createQuickStartSkillsDraft,
   saveSkillsSetupPreparation,
@@ -11,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import { buildStarterPackDefinition } from "@/modules/skills/setup/definition";
 import { describeRequirementApplicability } from "@/modules/skills/setup/definition";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
+import {
+  skillsSetupSelectClass,
+  skillsSetupWrappingTextClass,
+  type SkillsSetupUnitOption,
+} from "@/modules/skills/setup/unit-options";
 import type { SkillsStarterPack } from "@/modules/skills/templates/types";
 
 type Named = { id: string; name: string };
@@ -24,11 +31,12 @@ export function SkillsQuickStartForm({
   pack: SkillsStarterPack;
   initial: QuickStartPreparation;
   jobFunctions: Named[];
-  units: Named[];
+  units: SkillsSetupUnitOption[];
 }) {
   const [state, setState] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const enqueue = useSerializedSetupSave();
   const preview = useMemo(() => {
     return buildStarterPackDefinition({
       pack,
@@ -43,20 +51,22 @@ export function SkillsQuickStartForm({
     setState(next);
     setError(null);
     startTransition(async () => {
-      const result = await saveSkillsSetupPreparation({
-        source: "quick_start",
-        templateKey: pack.key,
-        state: next,
+      await enqueue(async () => {
+        const result = await saveSkillsSetupPreparation({
+          source: "quick_start",
+          templateKey: pack.key,
+          state: next,
+        });
+        if ("error" in result && result.error) {
+          setError(result.error);
+        }
       });
-      if ("error" in result && result.error) {
-        setError(result.error);
-      }
     });
   }
 
   return (
     <form
-      className="flex min-w-0 flex-col gap-6"
+      className="flex w-full max-w-full min-w-0 flex-col gap-6"
       data-testid="skills-quick-start-form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -66,19 +76,21 @@ export function SkillsQuickStartForm({
         const data = new FormData();
         data.set("templateKey", pack.key);
         startTransition(async () => {
-          const saved = await saveSkillsSetupPreparation({
-            source: "quick_start",
-            templateKey: pack.key,
-            state,
+          await enqueue(async () => {
+            const saved = await saveSkillsSetupPreparation({
+              source: "quick_start",
+              templateKey: pack.key,
+              state,
+            });
+            if ("error" in saved && saved.error) {
+              setError(saved.error);
+              return;
+            }
+            const result = await createQuickStartSkillsDraft(data);
+            if (result && "error" in result && result.error) {
+              setError(result.error);
+            }
           });
-          if ("error" in saved && saved.error) {
-            setError(saved.error);
-            return;
-          }
-          const result = await createQuickStartSkillsDraft(data);
-          if (result && "error" in result && result.error) {
-            setError(result.error);
-          }
         });
       }}
     >
@@ -124,14 +136,19 @@ export function SkillsQuickStartForm({
           />
           Only the units I select
         </label>
-        {state.applicability === "units"
-          ? units.map((unit) => (
+        {state.applicability === "units" ? (
+          <div
+            className="flex w-full max-w-full min-w-0 flex-col gap-2"
+            data-testid="skills-unit-list"
+          >
+            {units.map((unit) => (
               <label
                 key={unit.id}
-                className="flex items-start gap-2 pl-6 text-sm"
+                className="flex min-h-11 w-full max-w-full min-w-0 items-start gap-2 py-2 pl-6 text-sm"
               >
                 <input
                   type="checkbox"
+                  className="mt-1 size-4 shrink-0"
                   checked={state.unitIds.includes(unit.id)}
                   onChange={(event) => {
                     const unitIds = event.target.checked
@@ -140,10 +157,13 @@ export function SkillsQuickStartForm({
                     persist({ ...state, unitIds });
                   }}
                 />
-                {unit.name}
+                <span className={skillsSetupWrappingTextClass}>
+                  {unit.path}
+                </span>
               </label>
-            ))
-          : null}
+            ))}
+          </div>
+        ) : null}
       </fieldset>
 
       <fieldset
@@ -164,16 +184,16 @@ export function SkillsQuickStartForm({
           return (
             <label
               key={role.title}
-              className="grid min-w-0 gap-2 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
+              className="grid w-full max-w-full min-w-0 gap-2 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
             >
-              <span>
+              <span className={skillsSetupWrappingTextClass}>
                 <span className="font-medium">{role.title}</span>
                 <span className="mt-1 block text-muted-foreground">
                   {role.summary}
                 </span>
               </span>
               <select
-                className="border-input h-10 min-w-0 rounded-md border bg-background px-3"
+                className={skillsSetupSelectClass}
                 data-testid={`skills-map-${role.title}`}
                 value={current?.jobFunctionId ?? ""}
                 onChange={(event) => {
@@ -193,6 +213,18 @@ export function SkillsQuickStartForm({
                   </option>
                 ))}
               </select>
+              {current?.jobFunctionId ? (
+                <span
+                  className={`sm:col-start-2 ${skillsSetupWrappingTextClass}`}
+                  data-testid={`skills-selected-${role.title}`}
+                >
+                  {
+                    jobFunctions.find(
+                      (jobFunction) => jobFunction.id === current.jobFunctionId,
+                    )?.name
+                  }
+                </span>
+              ) : null}
             </label>
           );
         })}
@@ -227,13 +259,14 @@ export function SkillsQuickStartForm({
                 return (
                   <li
                     key={`${requirement.skill_code}-${requirement.job_function_id}-${requirement.organisational_unit_id}`}
+                    className={skillsSetupWrappingTextClass}
                   >
                     {describeRequirementApplicability({
                       jobFunctionName:
                         jobFunction?.name ?? "Mapped job function",
                       skillName: skill?.name ?? requirement.skill_code,
                       levelLabel: requirement.level_label,
-                      unitName: unit?.name ?? null,
+                      unitName: unit?.path ?? null,
                     })}
                   </li>
                 );
@@ -253,14 +286,18 @@ export function SkillsQuickStartForm({
       </section>
 
       {error ? (
-        <p className="text-sm" role="alert">
+        <p
+          className={`text-sm ${skillsSetupWrappingTextClass}`}
+          role="alert"
+          data-testid="skills-setup-error"
+        >
           {error}
         </p>
       ) : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Button
           type="submit"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-create-setup-draft"
           disabled={pending || !preview.ok}
         >
@@ -269,23 +306,25 @@ export function SkillsQuickStartForm({
         <Button
           type="button"
           variant="outline"
-          className="w-full sm:w-auto"
+          className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-start-new-setup"
           disabled={pending}
           onClick={() => {
             startTransition(async () => {
-              const result = await startNewSkillsSetup({
-                source: "quick_start",
-                templateKey: pack.key,
-                state,
+              await enqueue(async () => {
+                const result = await startNewSkillsSetup({
+                  source: "quick_start",
+                  templateKey: pack.key,
+                  state,
+                });
+                if ("error" in result && result.error) {
+                  setError(result.error);
+                  return;
+                }
+                if ("preparation" in result) {
+                  setState(result.preparation);
+                }
               });
-              if ("error" in result && result.error) {
-                setError(result.error);
-                return;
-              }
-              if ("preparation" in result) {
-                setState(result.preparation);
-              }
             });
           }}
         >

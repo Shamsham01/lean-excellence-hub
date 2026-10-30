@@ -6,6 +6,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { resumeSkillsPreparation } from "@/modules/skills/setup/resume-preparation";
 import { quickStartPreparationSchema } from "@/modules/skills/setup/preparation";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
+import { skillsSetupUnitOptions } from "@/modules/skills/setup/unit-options";
 import {
   isSkillsStarterPackKey,
   listSkillsStarterPacks,
@@ -47,7 +48,7 @@ export default async function SkillsQuickStartPage({
         .order("name"),
       supabase
         .from("organisation_units")
-        .select("id, name")
+        .select("id, name, parent_unit_id")
         .eq("status", "active")
         .order("name"),
       selected
@@ -102,7 +103,7 @@ export default async function SkillsQuickStartPage({
             fresh: () => freshPreparation(selected),
           })}
           jobFunctions={jobFunctions ?? []}
-          units={units ?? []}
+          units={skillsSetupUnitOptions(units ?? [])}
         />
       ) : (
         <p className="text-sm text-muted-foreground">

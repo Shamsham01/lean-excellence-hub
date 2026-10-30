@@ -28,7 +28,7 @@ export function PublishSetupDraft({ bundleId }: { bundleId: string }) {
     >
       <Button
         type="submit"
-        className="w-full sm:w-auto"
+        className="w-full max-w-full whitespace-normal sm:w-auto"
         data-testid="skills-publish"
         disabled={pending}
       >

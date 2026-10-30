@@ -4,6 +4,7 @@ import { ManualSkillsSetupWizard } from "@/components/skills/setup/manual-setup-
 import { resumeSkillsPreparation } from "@/modules/skills/setup/resume-preparation";
 import { manualSkillsPreparationSchema } from "@/modules/skills/setup/preparation";
 import type { ManualSkillsPreparation } from "@/modules/skills/setup/preparation";
+import { skillsSetupUnitOptions } from "@/modules/skills/setup/unit-options";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function freshPreparation(): ManualSkillsPreparation {
@@ -61,7 +62,7 @@ export default async function ManualSkillsSetupPage() {
       .order("name"),
     supabase
       .from("organisation_units")
-      .select("id, name")
+      .select("id, name, parent_unit_id")
       .eq("status", "active")
       .order("name"),
     supabase
@@ -90,7 +91,7 @@ export default async function ManualSkillsSetupPage() {
         key={initial.idempotencyKey}
         initial={initial}
         jobFunctions={jobFunctions ?? []}
-        units={units ?? []}
+        units={skillsSetupUnitOptions(units ?? [])}
         existingSkillNames={(skills ?? []).map((skill) => skill.name)}
       />
     </div>
