@@ -34,7 +34,9 @@ function readRecord(value: unknown): WorkplaceFeedRecord | null {
   };
 }
 
-export async function loadWorkplaceFeed(module: WorkplaceModuleKey): Promise<
+export async function loadWorkplaceFeed(
+  module: WorkplaceModuleKey,
+): Promise<
   | { status: "ready"; records: WorkplaceFeedRecord[] }
   | { status: "error"; message: string }
 > {

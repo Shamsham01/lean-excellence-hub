@@ -75,7 +75,12 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
       await page.getByTestId("apply-operator-access").click();
       await expect(page.locator("#invite-role")).not.toHaveValue("");
       await expect(page.locator("#invite-role-1")).not.toHaveValue("");
-      await expect(page.getByText("Viewing:")).toBeVisible();
+      await expect(
+        page.getByText("Viewing: Published and shared workplace records"),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Viewing: Their own suggestions"),
+      ).toBeVisible();
       await fitsViewport(page, "invite-colleague-form", 390);
     }
 

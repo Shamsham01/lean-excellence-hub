@@ -21,9 +21,8 @@ export default async function SuggestionDetailPage({
   const { suggestionId } = await params;
 
   const supabase = await createServerSupabaseClient();
-  const canReadSuggestions = await currentMemberHasPermission(
-    "suggestions.read",
-  );
+  const canReadSuggestions =
+    await currentMemberHasPermission("suggestions.read");
 
   const { data: detail, error } = await supabase.rpc("get_suggestion_detail", {
     target_suggestion_id: suggestionId,

@@ -13,17 +13,27 @@ export async function WorkplaceReadOnlyModule({
   const feed = await loadWorkplaceFeed(module);
 
   return (
-    <div className="flex flex-col gap-6" data-testid="workplace-read-only-module">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="workplace-read-only-module"
+    >
       <PageHeader
         title={title}
         description="Viewing access shows shared records in your scope. Creating, editing, and administration need a separate role."
       />
       {feed.status === "error" ? (
-        <p className="text-sm text-destructive" role="alert" data-testid="workplace-feed-error">
+        <p
+          className="text-sm text-destructive"
+          role="alert"
+          data-testid="workplace-feed-error"
+        >
           {feed.message}
         </p>
       ) : feed.records.length === 0 ? (
-        <p className="text-sm text-muted-foreground" data-testid="workplace-feed-empty">
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="workplace-feed-empty"
+        >
           No shared records are in your scope yet.
         </p>
       ) : (

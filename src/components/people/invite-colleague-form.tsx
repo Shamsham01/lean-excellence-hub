@@ -374,8 +374,8 @@ export function InviteColleagueForm({
           </h3>
           <p className="text-xs text-muted-foreground">
             Adds Workplace Viewer and Suggestions Contributor at one site. You
-            can change or remove either role before creating the invitation.
-            Job function does not grant these permissions.
+            can change or remove either role before creating the invitation. Job
+            function does not grant these permissions.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
