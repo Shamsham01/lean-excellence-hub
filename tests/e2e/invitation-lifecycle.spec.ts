@@ -18,6 +18,7 @@ import {
   issueInvitationForEmail,
   attemptDirectSignupForEmail,
   fetchInvitationSignupBindingForEmail,
+  findAuthUserByEmail,
   listActiveMembershipGrantCounts,
   readMembershipProvisioning,
   readSuggestionsInvitationFixture,
@@ -90,8 +91,7 @@ async function prefetchConfirmationWithoutCookies(confirmationUrl: string) {
 
 async function syntheticUser(email: string) {
   const { admin } = getInvitationLifecycleClients();
-  const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  return listed.data.users.find((user) => user.email === email) ?? null;
+  return findAuthUserByEmail(admin, email);
 }
 
 async function signUpForInvitation(
@@ -902,104 +902,120 @@ test.describe("Invitation lifecycle", () => {
     if (createdUnit.error || !createdUnit.data) {
       throw createdUnit.error ?? new Error("Unable to create the other site.");
     }
-    const jobFunction = await owner.rpc("create_job_function", {
-      target_name: "Suggestions Operator",
-      target_code: `sugg-${Date.now().toString().slice(-6)}`,
-    });
-    if (jobFunction.error || !jobFunction.data) {
-      throw (
-        jobFunction.error ?? new Error("Unable to create the job function.")
-      );
-    }
+    const otherSiteId = createdUnit.data;
+    let browserContext: import("@playwright/test").BrowserContext | undefined;
+    try {
+      const jobFunction = await owner.rpc("create_job_function", {
+        target_name: "Suggestions Operator",
+        target_code: `sugg-${Date.now().toString().slice(-6)}`,
+      });
+      if (jobFunction.error || !jobFunction.data) {
+        throw (
+          jobFunction.error ?? new Error("Unable to create the job function.")
+        );
+      }
 
-    const email = `invitation-suggestions-${Date.now()}@example.test`;
-    const password = "InvitationSuggestions123!";
-    const displayName = "Suggestions Operator";
-    const issued = await issueInvitationForEmail(owner, {
-      email,
-      tokenSeed: `suggestions-${Date.now()}`,
-      displayName,
-      jobFunctionId: jobFunction.data,
-      organisationalUnitId: invitedUnitId,
-      roleVersionId,
-      scopeType: "unit_subtree",
-      scopeUnitId: invitedUnitId,
-    });
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(toE2eOriginUrl(issued.invitationPath));
-    await page.getByRole("link", { name: "Create my account" }).click();
-    await page.locator("#password").fill(password);
-    await page.locator("#confirm-password").fill(password);
-    await page
-      .getByRole("button", { name: "Create account and continue" })
-      .click();
-    await expect(
-      page.getByRole("heading", { name: "Confirm your email" }),
-    ).toBeVisible();
-    await confirmEmailFromLink(
-      page,
-      toE2eOriginUrl(await fetchLatestConfirmationPath(email)),
-    );
-    await page.getByRole("button", { name: "Accept invitation" }).click();
-    await expect(page).toHaveURL(/\/platform/);
-
-    const user = await syntheticUser(email);
-    if (!user?.id) {
-      throw new Error("Synthetic invitee was not created.");
-    }
-    expect(
-      readMembershipProvisioning({
-        userId: user.id,
-        organisationId,
+      const email = `invitation-suggestions-${Date.now()}@example.test`;
+      const password = "InvitationSuggestions123!";
+      const displayName = "Suggestions Operator";
+      const issued = await issueInvitationForEmail(owner, {
+        email,
+        tokenSeed: `suggestions-${Date.now()}`,
+        displayName,
         jobFunctionId: jobFunction.data,
-        unitId: invitedUnitId,
-      }),
-    ).toEqual({
-      displayName,
-      assignmentCount: 1,
-    });
+        organisationalUnitId: invitedUnitId,
+        roleVersionId,
+        scopeType: "unit_subtree",
+        scopeUnitId: invitedUnitId,
+      });
 
-    const invitee = await createAuthenticatedClient(url, publishableKey, {
-      email,
-      password,
-    });
-    await invitee.rpc("switch_organisation", {
-      target_organisation_id: organisationId,
-    });
-    const allowed = [
-      "suggestions.read",
-      "suggestions.manage",
-      "suggestions.review",
-    ];
-    for (const permission of allowed) {
-      const result = await invitee.rpc("has_scoped_permission", {
+      browserContext = await browser.newContext();
+      const page = await browserContext.newPage();
+      await page.goto(toE2eOriginUrl(issued.invitationPath));
+      await page.getByRole("link", { name: "Create my account" }).click();
+      await page.locator("#password").fill(password);
+      await page.locator("#confirm-password").fill(password);
+      await page
+        .getByRole("button", { name: "Create account and continue" })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Confirm your email" }),
+      ).toBeVisible();
+      await confirmEmailFromLink(
+        page,
+        toE2eOriginUrl(await fetchLatestConfirmationPath(email)),
+      );
+      await page.getByRole("button", { name: "Accept invitation" }).click();
+      await expect(page).toHaveURL(/\/platform/);
+
+      const user = await syntheticUser(email);
+      if (!user?.id) {
+        throw new Error("Synthetic invitee was not created.");
+      }
+      expect(
+        readMembershipProvisioning({
+          userId: user.id,
+          organisationId,
+          jobFunctionId: jobFunction.data,
+          unitId: invitedUnitId,
+        }),
+      ).toEqual({
+        displayName,
+        assignmentCount: 1,
+      });
+
+      const invitee = await createAuthenticatedClient(url, publishableKey, {
+        email,
+        password,
+      });
+      await invitee.rpc("switch_organisation", {
         target_organisation_id: organisationId,
-        target_permission_key: permission,
+      });
+      const allowed = [
+        "suggestions.read",
+        "suggestions.manage",
+        "suggestions.review",
+      ];
+      for (const permission of allowed) {
+        const result = await invitee.rpc("has_scoped_permission", {
+          target_organisation_id: organisationId,
+          target_permission_key: permission,
+          target_unit_id: invitedUnitId,
+        });
+        expect(result.data, permission).toBe(true);
+        const otherUnit = await invitee.rpc("has_scoped_permission", {
+          target_organisation_id: organisationId,
+          target_permission_key: permission,
+          target_unit_id: otherSiteId,
+        });
+        expect(otherUnit.data, `${permission} other site`).toBe(false);
+      }
+      const unrelated = await invitee.rpc("has_scoped_permission", {
+        target_organisation_id: organisationId,
+        target_permission_key: "projects.manage",
         target_unit_id: invitedUnitId,
       });
-      expect(result.data, permission).toBe(true);
-      const otherUnit = await invitee.rpc("has_scoped_permission", {
-        target_organisation_id: organisationId,
-        target_permission_key: permission,
-        target_unit_id: createdUnit.data,
+      expect(unrelated.data).toBe(false);
+      const otherOrganisation = await invitee.rpc("has_scoped_permission", {
+        target_organisation_id: "00000000-0000-4000-8000-000000000088",
+        target_permission_key: "suggestions.read",
+        target_unit_id: invitedUnitId,
       });
-      expect(otherUnit.data, `${permission} other site`).toBe(false);
+      expect(otherOrganisation.data).toBe(false);
+    } finally {
+      await browserContext?.close();
+      const retired = await owner.rpc("set_organisation_unit_status", {
+        target_organisation_id: organisationId,
+        target_unit_id: otherSiteId,
+        target_status: "retired",
+        change_reason: "Remove the synthetic suggestions comparison site",
+      });
+      if (retired.error || retired.data !== true) {
+        throw (
+          retired.error ?? new Error("Unable to retire the comparison site.")
+        );
+      }
     }
-    const unrelated = await invitee.rpc("has_scoped_permission", {
-      target_organisation_id: organisationId,
-      target_permission_key: "projects.manage",
-      target_unit_id: invitedUnitId,
-    });
-    expect(unrelated.data).toBe(false);
-    const otherOrganisation = await invitee.rpc("has_scoped_permission", {
-      target_organisation_id: "00000000-0000-4000-8000-000000000088",
-      target_permission_key: "suggestions.read",
-      target_unit_id: invitedUnitId,
-    });
-    expect(otherOrganisation.data).toBe(false);
-    await context.close();
   });
 
   test("scenario 15: founding signup confirmation survives prefetch", async ({

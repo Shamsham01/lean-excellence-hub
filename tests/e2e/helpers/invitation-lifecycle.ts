@@ -80,12 +80,29 @@ export function getInvitationLifecycleClients() {
   };
 }
 
+export async function findAuthUserByEmail(
+  admin: SupabaseClient,
+  email: string,
+) {
+  const perPage = 200;
+  for (let page = 1; page <= 20; page += 1) {
+    const listed = await admin.auth.admin.listUsers({ page, perPage });
+    if (listed.error) {
+      throw listed.error;
+    }
+    const found = listed.data.users.find((entry) => entry.email === email);
+    if (found || listed.data.users.length < perPage) {
+      return found ?? null;
+    }
+  }
+  return null;
+}
+
 export async function ensureInvitationLifecycleUser(
   admin: SupabaseClient,
   user: { email: string; password: string },
 ) {
-  const existing = await admin.auth.admin.listUsers();
-  const found = existing.data.users.find((entry) => entry.email === user.email);
+  const found = await findAuthUserByEmail(admin, user.email);
 
   if (!found) {
     const created = await admin.auth.admin.createUser({
@@ -462,8 +479,7 @@ export function readMembershipProvisioning(input: {
 
 export async function fetchInvitationSignupBindingForEmail(email: string) {
   const { admin } = getInvitationLifecycleClients();
-  const users = await admin.auth.admin.listUsers();
-  const user = users.data.users.find((entry) => entry.email === email);
+  const user = await findAuthUserByEmail(admin, email);
   const bindingId = user?.user_metadata?.invitation_signup_binding;
   if (typeof bindingId !== "string") {
     throw new Error(`No invitation signup binding found for ${email}`);
