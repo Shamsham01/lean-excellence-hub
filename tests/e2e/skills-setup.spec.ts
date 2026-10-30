@@ -318,18 +318,11 @@ test.describe("Skills setup journeys", () => {
       "SKILLS_ERROR_TEST",
     );
 
-    const proposalTitle = page.getByTestId("skills-builder-proposal-title");
     await page.getByTestId("skills-builder-retry").click();
-    try {
-      await expect(proposalTitle).toHaveText("Bakery oven capability", {
-        timeout: 20_000,
-      });
-    } catch {
-      await page.getByTestId("skills-builder-retry").click();
-      await expect(proposalTitle).toHaveText("Bakery oven capability", {
-        timeout: 30_000,
-      });
-    }
+    await expect(page.getByTestId("skills-builder-proposal-title")).toHaveText(
+      "Bakery oven capability",
+      { timeout: 30_000 },
+    );
     await expect(page.getByTestId("skills-builder-proposal")).toContainText(
       "Operate and monitor the oven",
     );

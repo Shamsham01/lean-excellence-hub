@@ -35,6 +35,7 @@ import {
 import { LEH_PRODUCT_KNOWLEDGE_VERSION } from "@/modules/leanai-context/product-knowledge/version";
 import {
   parseSkillsBuilderEnvelope,
+  revalidateStoredSkillsProposal,
   skillsProposalToDefinition,
   validateSkillsBuilderProposal,
 } from "@/modules/skills/ai-builder/proposal";
@@ -643,9 +644,14 @@ describe("deterministic Skills setup provider", () => {
       SKILLS_SETUP_BUILDER_FORMAT_NAME,
       skillsPrompt(true),
     );
-    expect(
-      (recovered?.parsedJson as { proposal?: { title?: string } })?.proposal
-        ?.title,
-    ).toBe("Bakery oven capability");
+    const parsed = parseSkillsBuilderEnvelope(recovered?.parsedJson);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.envelope.proposal?.title).toBe("Bakery oven capability");
+      expect(parsed.envelope.proposalStatus).toBe("valid");
+      expect(
+        revalidateStoredSkillsProposal(parsed.envelope.proposal)?.title,
+      ).toBe("Bakery oven capability");
+    }
   });
 });

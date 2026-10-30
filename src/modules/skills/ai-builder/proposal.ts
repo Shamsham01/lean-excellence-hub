@@ -310,14 +310,76 @@ export function parseSkillsBuilderEnvelope(value: unknown):
   };
 }
 
+const storedSkillsBuilderProposalSchema = z
+  .object({
+    title: z.string(),
+    scale: z
+      .object({
+        name: z.string(),
+        description: z.string().nullable(),
+        levels: z.array(rawLevelSchema),
+      })
+      .strict(),
+    skills: z.array(
+      z
+        .object({
+          name: z.string(),
+          category: z.string().nullable(),
+          description: z.string().nullable(),
+          evidenceExpectations: z.string().nullable(),
+        })
+        .strict(),
+    ),
+    requirements: z.array(
+      z
+        .object({
+          skillName: z.string(),
+          suggestedJobFunction: z.string(),
+          levelLabel: z.string(),
+          evidenceRequirement: z.string().nullable(),
+        })
+        .strict(),
+    ),
+    notes: z.array(z.string()),
+  })
+  .strict();
+
+function storedProposalToRaw(
+  proposal: z.infer<typeof storedSkillsBuilderProposalSchema>,
+): z.infer<typeof rawSkillsBuilderProposalSchema> {
+  return {
+    title: proposal.title,
+    scale: proposal.scale,
+    skills: proposal.skills.map((skill) => ({
+      name: skill.name,
+      category: skill.category,
+      description: skill.description,
+      evidence_expectations: skill.evidenceExpectations,
+    })),
+    requirements: proposal.requirements.map((requirement) => ({
+      skill_name: requirement.skillName,
+      suggested_job_function: requirement.suggestedJobFunction,
+      level_label: requirement.levelLabel,
+      evidence_requirement: requirement.evidenceRequirement,
+    })),
+    notes: proposal.notes,
+  };
+}
+
 export function revalidateStoredSkillsProposal(
   value: unknown,
 ): SkillsBuilderProposal | null {
-  const parsed = rawSkillsBuilderProposalSchema.safeParse(value);
-  if (!parsed.success) {
+  const raw = rawSkillsBuilderProposalSchema.safeParse(value);
+  const stored = raw.success
+    ? raw.data
+    : (() => {
+        const parsed = storedSkillsBuilderProposalSchema.safeParse(value);
+        return parsed.success ? storedProposalToRaw(parsed.data) : null;
+      })();
+  if (!stored) {
     return null;
   }
-  const validated = validateSkillsBuilderProposal(parsed.data);
+  const validated = validateSkillsBuilderProposal(stored);
   return validated.ok ? validated.proposal : null;
 }
 
