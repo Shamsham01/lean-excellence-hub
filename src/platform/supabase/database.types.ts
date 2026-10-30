@@ -14502,10 +14502,15 @@ export type Database = {
         Args: { target_forecast_version_id: string; target_periods: Json }
         Returns: boolean
       }
+      replace_expired_invitation_signup_binding: {
+        Args: { target_binding_id: string }
+        Returns: string
+      }
       resolve_benefit_submit_validators: {
         Args: { target_benefit_id: string }
         Returns: Json
       }
+      resolve_my_invitation_continuation: { Args: never; Returns: Json }
       resolve_organisation_invitation_session: {
         Args: { invitation_token_digest: string }
         Returns: Json

@@ -1,5 +1,5 @@
+import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { execSync } from "node:child_process";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -80,12 +80,29 @@ export function getInvitationLifecycleClients() {
   };
 }
 
+export async function findAuthUserByEmail(
+  admin: SupabaseClient,
+  email: string,
+) {
+  const perPage = 200;
+  for (let page = 1; page <= 20; page += 1) {
+    const listed = await admin.auth.admin.listUsers({ page, perPage });
+    if (listed.error) {
+      throw listed.error;
+    }
+    const found = listed.data.users.find((entry) => entry.email === email);
+    if (found || listed.data.users.length < perPage) {
+      return found ?? null;
+    }
+  }
+  return null;
+}
+
 export async function ensureInvitationLifecycleUser(
   admin: SupabaseClient,
   user: { email: string; password: string },
 ) {
-  const existing = await admin.auth.admin.listUsers();
-  const found = existing.data.users.find((entry) => entry.email === user.email);
+  const found = await findAuthUserByEmail(admin, user.email);
 
   if (!found) {
     const created = await admin.auth.admin.createUser({
@@ -123,6 +140,11 @@ export async function issueInvitationForEmail(
     tokenSeed: string;
     expiresAt?: string;
     displayName?: string;
+    jobFunctionId?: string;
+    organisationalUnitId?: string;
+    roleVersionId?: string;
+    scopeType?: string;
+    scopeUnitId?: string;
   },
 ) {
   const token = createHash("sha256")
@@ -158,13 +180,20 @@ export async function issueInvitationForEmail(
       invitation_canonical_recipient: input.email,
       invitation_token_digest: invitationTokenDigest(token),
       invitation_expires_at: input.expiresAt ?? invitationExpiresAt(),
-      offered_role_version_id: offer.role_version_id,
-      offered_scope_type: scope?.scope_type ?? "organisation",
-      ...(scope?.scope_unit_id
-        ? { offered_scope_unit_id: scope.scope_unit_id }
+      offered_role_version_id: input.roleVersionId ?? offer.role_version_id,
+      offered_scope_type:
+        input.scopeType ?? scope?.scope_type ?? "organisation",
+      ...((input.scopeUnitId ?? scope?.scope_unit_id)
+        ? { offered_scope_unit_id: input.scopeUnitId ?? scope?.scope_unit_id }
         : {}),
       ...(input.displayName
         ? { intended_display_name: input.displayName }
+        : {}),
+      ...(input.jobFunctionId
+        ? { intended_job_function_id: input.jobFunctionId }
+        : {}),
+      ...(input.organisationalUnitId
+        ? { intended_organisational_unit_id: input.organisationalUnitId }
         : {}),
     },
   );
@@ -258,10 +287,199 @@ export async function attemptDirectSignupForEmail(input: {
   });
 }
 
+function localDatabaseContainerName() {
+  const names = execSync("docker ps --format '{{.Names}}'", {
+    encoding: "utf8",
+  })
+    .split("\n")
+    .map((name) => name.trim())
+    .filter((name) => name.startsWith("supabase_db_"));
+
+  if (names.length !== 1 || !names[0]) {
+    throw new Error("Local Supabase database container was not found.");
+  }
+
+  return names[0];
+}
+
+function assertUuid(value: string) {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  ) {
+    throw new Error("Refusing to run a local fixture update for this value.");
+  }
+}
+
+function runPsql(
+  sql: string,
+  variables: Record<string, string>,
+  query: boolean,
+) {
+  for (const value of Object.values(variables)) {
+    assertUuid(value);
+  }
+
+  return execFileSync(
+    "docker",
+    [
+      "exec",
+      "-i",
+      localDatabaseContainerName(),
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-v",
+      "ON_ERROR_STOP=1",
+      ...(query ? ["-t", "-A"] : []),
+      ...Object.entries(variables).flatMap(([key, value]) => [
+        "-v",
+        `${key}=${value}`,
+      ]),
+    ],
+    {
+      encoding: "utf8",
+      input: sql,
+      stdio: ["pipe", "pipe", "pipe"],
+    },
+  );
+}
+
+function runLocalSql(sql: string, variables: Record<string, string>) {
+  runPsql(sql, variables, false);
+}
+
+function queryLocalSql(sql: string, variables: Record<string, string>) {
+  return runPsql(sql, variables, true)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+export function expireInvitationSignupBinding(bindingId: string) {
+  runLocalSql(
+    `update public.organisation_invitation_signup_bindings
+       set created_at = statement_timestamp() - interval '3 hours',
+           expires_at = statement_timestamp() - interval '1 minute'
+     where id = (:'binding_id')::uuid;`,
+    { binding_id: bindingId },
+  );
+}
+
+export function clearSyntheticEmailConfirmation(userId: string) {
+  runLocalSql(
+    `update auth.users
+       set email_confirmed_at = null
+     where id = (:'user_id')::uuid;`,
+    { user_id: userId },
+  );
+}
+
+export function expireOrganisationInvitationForBinding(bindingId: string) {
+  runLocalSql(
+    `update public.organisation_invitations invitation
+       set status = 'expired',
+           expired_at = statement_timestamp()
+     where invitation.id = (
+       select binding.invitation_id
+       from public.organisation_invitation_signup_bindings binding
+       where binding.id = (:'binding_id')::uuid
+     )
+       and invitation.status = 'pending';`,
+    { binding_id: bindingId },
+  );
+}
+
+export function listActiveMembershipGrantCounts(userId: string) {
+  return queryLocalSql(
+    `select membership.id::text || '|' || count(grant_row.id)::text
+     from public.organisation_memberships membership
+     left join public.access_grants grant_row
+       on grant_row.grantee_membership_id = membership.id
+     where membership.user_id = (:'user_id')::uuid
+       and membership.status = 'active'
+     group by membership.id;`,
+    { user_id: userId },
+  ).map((line) => {
+    const [membershipId, grantCount] = line.split("|");
+    return {
+      membershipId: membershipId ?? "",
+      grantCount: Number(grantCount),
+    };
+  });
+}
+
+export function readSuggestionsInvitationFixture(organisationId: string) {
+  const roleVersionId = queryLocalSql(
+    `select role_version.id::text
+     from public.roles role_row
+     join public.role_versions role_version
+       on role_version.organisation_id = role_row.organisation_id
+      and role_version.role_id = role_row.id
+     where role_row.organisation_id = (:'organisation_id')::uuid
+       and role_row.canonical_name = 'responsibility-suggestions'
+       and role_row.status = 'active'
+       and role_version.status = 'published'
+     limit 1;`,
+    { organisation_id: organisationId },
+  )[0];
+  const invitedUnitId = queryLocalSql(
+    `select unit.id::text
+     from public.organisation_units unit
+     where unit.organisation_id = (:'organisation_id')::uuid
+       and unit.code = 'e2e-root'
+       and unit.status = 'active'
+     limit 1;`,
+    { organisation_id: organisationId },
+  )[0];
+
+  if (!roleVersionId || !invitedUnitId) {
+    throw new Error("Suggestions invitation fixture was not available.");
+  }
+
+  return { roleVersionId, invitedUnitId };
+}
+
+export function readMembershipProvisioning(input: {
+  userId: string;
+  organisationId: string;
+  jobFunctionId: string;
+  unitId: string;
+}) {
+  const row = queryLocalSql(
+    `select membership.display_name || '|' || count(assignment.id)::text
+     from public.organisation_memberships membership
+     left join public.membership_job_function_assignments assignment
+       on assignment.membership_id = membership.id
+      and assignment.job_function_id = (:'job_function_id')::uuid
+      and assignment.organisational_unit_id = (:'unit_id')::uuid
+     where membership.user_id = (:'user_id')::uuid
+       and membership.organisation_id = (:'organisation_id')::uuid
+       and membership.status = 'active'
+     group by membership.display_name;`,
+    {
+      user_id: input.userId,
+      organisation_id: input.organisationId,
+      job_function_id: input.jobFunctionId,
+      unit_id: input.unitId,
+    },
+  )[0];
+  if (!row) {
+    return null;
+  }
+  const separator = row.lastIndexOf("|");
+  return {
+    displayName: row.slice(0, separator),
+    assignmentCount: Number(row.slice(separator + 1)),
+  };
+}
+
 export async function fetchInvitationSignupBindingForEmail(email: string) {
   const { admin } = getInvitationLifecycleClients();
-  const users = await admin.auth.admin.listUsers();
-  const user = users.data.users.find((entry) => entry.email === email);
+  const user = await findAuthUserByEmail(admin, email);
   const bindingId = user?.user_metadata?.invitation_signup_binding;
   if (typeof bindingId !== "string") {
     throw new Error(`No invitation signup binding found for ${email}`);

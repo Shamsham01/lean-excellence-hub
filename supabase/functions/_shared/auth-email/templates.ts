@@ -83,12 +83,13 @@ export function renderSignupConfirmationEmail(
       ctaLabel: "Confirm account",
       confirmUrl,
       footer:
-        "If you're joining through an organisation invitation, you'll return to your invitation after confirmation. If you did not request this, you can ignore this email.",
+        "Open the link and confirm on the next page. Confirmation does not join an organisation by itself. If you're joining through an organisation invitation, you'll return to your invitation after confirmation. If you did not request this, you can ignore this email.",
     }),
     text:
       "Confirm your Lean Excellence Hub account\n\n" +
       "You've created an account for Lean Excellence Hub.\n\n" +
       `Confirm your account: ${confirmUrl}\n\n` +
+      "Open the link and confirm on the next page. Confirmation does not join an organisation by itself.\n\n" +
       "If you're joining through an organisation invitation, you'll return to your invitation after confirmation.\n\n" +
       "If you did not request this, you can ignore this email.",
   };
