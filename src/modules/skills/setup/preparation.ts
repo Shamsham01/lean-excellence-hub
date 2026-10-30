@@ -64,19 +64,12 @@ export type QuickStartPreparation = z.infer<typeof quickStartPreparationSchema>;
 export const leanAiPreparationSchema = quickStartPreparationSchema;
 
 export type SkillsCreationKeyState =
-  | "absent"
-  | "draft"
-  | "published"
-  | "discarded";
+  "absent" | "draft" | "published" | "discarded";
 
 export function skillsCreationKeyState(
   status: string | null | undefined,
 ): SkillsCreationKeyState {
-  if (
-    status === "draft" ||
-    status === "published" ||
-    status === "discarded"
-  ) {
+  if (status === "draft" || status === "published" || status === "discarded") {
     return status;
   }
   return "absent";
@@ -105,9 +98,10 @@ export function resolveSkillsPreparationVisit<
   };
 }
 
-export function renewSkillsPreparationKey<
-  T extends { idempotencyKey: string },
->(preparation: T, replacementKey: string): T {
+export function renewSkillsPreparationKey<T extends { idempotencyKey: string }>(
+  preparation: T,
+  replacementKey: string,
+): T {
   return { ...preparation, idempotencyKey: replacementKey };
 }
 
@@ -179,10 +173,7 @@ export function manualPreparationToDefinition(
         message: "Choose a job function from this organisation.",
       };
     }
-    if (
-      requirement.unitId &&
-      !allowedUnitIds.has(requirement.unitId)
-    ) {
+    if (requirement.unitId && !allowedUnitIds.has(requirement.unitId)) {
       return { ok: false, message: "Choose a unit from this organisation." };
     }
     const skillCode = codeByName.get(requirement.skillName.toLowerCase());
@@ -253,9 +244,7 @@ function confirmedRequirementUnits(
   applicability: "organisation" | "units",
   unitIds: readonly string[],
   allowedUnitIds: ReadonlySet<string>,
-):
-  | { ok: true; units: Array<string | null> }
-  | { ok: false; message: string } {
+): { ok: true; units: Array<string | null> } | { ok: false; message: string } {
   if (applicability === "organisation") {
     return { ok: true, units: [null] };
   }

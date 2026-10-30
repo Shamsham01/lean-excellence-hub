@@ -148,7 +148,9 @@ export function toSkillsAuthoringError(error: unknown, fallback: string) {
     return "Choose an organisational unit from this organisation. Nothing was saved.";
   }
 
-  if (normalised.includes("unit applicability requires an organisational unit")) {
+  if (
+    normalised.includes("unit applicability requires an organisational unit")
+  ) {
     return "Choose at least one unit for these requirements, or apply them wherever the job function is used. Nothing was saved.";
   }
 
