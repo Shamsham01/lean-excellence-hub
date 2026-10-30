@@ -1,6 +1,6 @@
 begin;
 
-select plan(34);
+select plan(54);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -626,6 +626,450 @@ select is(
   public.preview_organisation_invitation(decode(repeat('ef', 32), 'hex')) ->> 'state',
   'valid',
   'unauthenticated preview reveals permitted metadata'
+);
+
+reset role;
+set local role postgres;
+
+insert into auth.users (
+  id, email, email_confirmed_at, created_at, updated_at,
+  raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous
+)
+values
+  (
+    '95000000-0000-0000-0000-000000000010',
+    'continuation-invitee@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    '95000000-0000-0000-0000-000000000011',
+    'continuation-other@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    '95000000-0000-0000-0000-000000000012',
+    'continuation-unconfirmed@example.test',
+    null, statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    '95000000-0000-0000-0000-000000000013',
+    'continuation-revoked@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  );
+
+insert into auth.sessions (id, user_id, created_at, updated_at)
+values
+  (
+    '96000000-0000-0000-0000-000000000010',
+    '95000000-0000-0000-0000-000000000010',
+    statement_timestamp(), statement_timestamp()
+  ),
+  (
+    '96000000-0000-0000-0000-000000000011',
+    '95000000-0000-0000-0000-000000000011',
+    statement_timestamp(), statement_timestamp()
+  ),
+  (
+    '96000000-0000-0000-0000-000000000012',
+    '95000000-0000-0000-0000-000000000012',
+    statement_timestamp(), statement_timestamp()
+  ),
+  (
+    '96000000-0000-0000-0000-000000000013',
+    '95000000-0000-0000-0000-000000000013',
+    statement_timestamp(), statement_timestamp()
+  );
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id in (
+  '95000000-0000-0000-0000-000000000010',
+  '95000000-0000-0000-0000-000000000011',
+  '95000000-0000-0000-0000-000000000012',
+  '95000000-0000-0000-0000-000000000013'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000001","email":"lifecycle-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select public.switch_organisation((select id from lifecycle_ids where key = 'organisation_a'));
+
+insert into lifecycle_ids (key, id)
+select
+  'continuation_invitation',
+  public.issue_organisation_member_invitation(
+    'email',
+    'continuation-invitee@example.test',
+    decode(repeat('44', 32), 'hex'),
+    statement_timestamp() + private.invitation_default_ttl(),
+    (select id from lifecycle_ids where key = 'member_role_version'),
+    'organisation',
+    null
+  );
+
+insert into lifecycle_ids (key, id)
+select
+  'continuation_binding',
+  public.prepare_organisation_invitation_signup_binding(
+    decode(repeat('44', 32), 'hex')
+  );
+
+insert into lifecycle_ids (key, id)
+select
+  'revoked_continuation_invitation',
+  public.issue_organisation_member_invitation(
+    'email',
+    'continuation-revoked@example.test',
+    decode(repeat('55', 32), 'hex'),
+    statement_timestamp() + private.invitation_default_ttl(),
+    (select id from lifecycle_ids where key = 'member_role_version'),
+    'organisation',
+    null
+  );
+
+insert into lifecycle_ids (key, id)
+select
+  'revoked_continuation_binding',
+  public.prepare_organisation_invitation_signup_binding(
+    decode(repeat('55', 32), 'hex')
+  );
+
+select ok(
+  public.revoke_organisation_invitation(
+    (select id from lifecycle_ids where key = 'organisation_a'),
+    (select id from lifecycle_ids where key = 'revoked_continuation_invitation'),
+    'Continuation test revocation'
+  ),
+  'revoked continuation invitation is withdrawn by the owner'
+);
+
+insert into lifecycle_ids (key, id)
+select
+  'unconfirmed_continuation_invitation',
+  public.issue_organisation_member_invitation(
+    'email',
+    'continuation-unconfirmed@example.test',
+    decode(repeat('66', 32), 'hex'),
+    statement_timestamp() + private.invitation_default_ttl(),
+    (select id from lifecycle_ids where key = 'member_role_version'),
+    'organisation',
+    null
+  );
+
+insert into lifecycle_ids (key, id)
+select
+  'unconfirmed_continuation_binding',
+  public.prepare_organisation_invitation_signup_binding(
+    decode(repeat('66', 32), 'hex')
+  );
+
+reset role;
+set local role postgres;
+
+update auth.users
+set raw_user_meta_data = jsonb_build_object(
+  'invitation_signup_binding',
+  (select id::text from lifecycle_ids where key = 'continuation_binding')
+)
+where id = '95000000-0000-0000-0000-000000000010';
+
+update auth.users
+set raw_user_meta_data = jsonb_build_object(
+  'invitation_signup_binding',
+  (select id::text from lifecycle_ids where key = 'continuation_binding')
+)
+where id = '95000000-0000-0000-0000-000000000011';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000010","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000010","email":"continuation-invitee@example.test"}',
+  true
+);
+
+select is(
+  public.resolve_my_invitation_continuation() ->> 'outcome',
+  'continue',
+  'confirmed invitee continues the authoritative pending invitation'
+);
+
+select is(
+  public.resolve_organisation_invitation_signup_binding(
+    '00000000-0000-4000-8000-000000000099'
+  ) ->> 'state',
+  'invalid',
+  'tampered signup binding stays invalid'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000011","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000011","email":"continuation-other@example.test"}',
+  true
+);
+
+select is(
+  public.resolve_my_invitation_continuation() ->> 'outcome',
+  'none',
+  'metadata pointing at another recipient does not grant continuation'
+);
+
+select is(
+  public.resolve_organisation_invitation_signup_binding(
+    (select id from lifecycle_ids where key = 'continuation_binding')
+  ) ->> 'state',
+  'invalid',
+  'wrong account cannot resolve another recipient binding'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000010","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000010","email":"continuation-invitee@example.test"}',
+  true
+);
+
+reset role;
+set local role postgres;
+
+update public.organisation_invitation_signup_bindings
+set created_at = statement_timestamp() - interval '3 hours',
+    expires_at = statement_timestamp() - interval '1 minute'
+where id = (select id from lifecycle_ids where key = 'continuation_binding');
+
+create temporary table continuation_snapshot (
+  key text primary key,
+  binding_id uuid,
+  expires_at timestamptz,
+  membership_id uuid,
+  grant_count bigint
+) on commit drop;
+
+grant select, insert, update on continuation_snapshot to authenticated, anon;
+
+insert into continuation_snapshot (key, binding_id, expires_at)
+select 'expired', id, expires_at
+from public.organisation_invitation_signup_bindings
+where id = (select id from lifecycle_ids where key = 'continuation_binding');
+
+set local role authenticated;
+
+select is(
+  public.resolve_organisation_invitation_signup_binding(
+    (select id from lifecycle_ids where key = 'continuation_binding')
+  ) ->> 'state',
+  'binding_expired',
+  'expired signup binding stays distinct from a valid invitation'
+);
+
+select is(
+  public.resolve_my_invitation_continuation() ->> 'outcome',
+  'rebind',
+  'expired signup binding asks for an authorised rebind'
+);
+
+insert into lifecycle_ids (key, id)
+select
+  'replacement_binding',
+  public.replace_expired_invitation_signup_binding(
+    (select id from lifecycle_ids where key = 'continuation_binding')
+  );
+
+reset role;
+set local role postgres;
+
+select ok(
+  (select id from lifecycle_ids where key = 'replacement_binding')
+    is distinct from (select id from lifecycle_ids where key = 'continuation_binding'),
+  'rebind creates a new signup binding'
+);
+
+select ok(
+  (
+    select expires_at
+    from public.organisation_invitation_signup_bindings
+    where id = (select id from lifecycle_ids where key = 'continuation_binding')
+  ) = (
+    select expires_at from continuation_snapshot where key = 'expired'
+  ),
+  'rebind does not extend the expired signup binding'
+);
+
+select ok(
+  (
+    select invalidated_at is not null
+      and invalidation_reason = 'Signup binding expired'
+    from public.organisation_invitation_signup_bindings
+    where id = (select id from lifecycle_ids where key = 'continuation_binding')
+  ),
+  'expired signup binding is invalidated instead of reused'
+);
+
+select ok(
+  (
+    select expires_at > statement_timestamp()
+    from public.organisation_invitation_signup_bindings
+    where id = (select id from lifecycle_ids where key = 'replacement_binding')
+  ),
+  'replacement signup binding is active'
+);
+
+set local role authenticated;
+
+select is(
+  public.replace_expired_invitation_signup_binding(
+    (select id from lifecycle_ids where key = 'continuation_binding')
+  ),
+  (select id from lifecycle_ids where key = 'replacement_binding'),
+  'repeating rebind returns the active binding'
+);
+
+select throws_ok(
+  $q$
+    select public.replace_expired_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'replacement_binding')
+    )
+  $q$,
+  '42501',
+  'signup binding is still active',
+  'an active signup binding is not replaced'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000011","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000011","email":"continuation-other@example.test"}',
+  true
+);
+
+select throws_ok(
+  $q$
+    select public.replace_expired_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'continuation_binding')
+    )
+  $q$,
+  '42501',
+  'invitation signup binding is unavailable',
+  'wrong account cannot rebind another recipient'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000012","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000012","email":"continuation-unconfirmed@example.test"}',
+  true
+);
+
+select throws_ok(
+  $q$
+    select public.replace_expired_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'unconfirmed_continuation_binding')
+    )
+  $q$,
+  '42501',
+  'invitation signup binding is unavailable',
+  'unconfirmed account cannot rebind a signup binding'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000013","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000013","email":"continuation-revoked@example.test"}',
+  true
+);
+
+select throws_ok(
+  $q$
+    select public.replace_expired_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'revoked_continuation_binding')
+    )
+  $q$,
+  '42501',
+  'invitation signup binding is unavailable',
+  'revoked invitation cannot be rebound'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"95000000-0000-0000-0000-000000000010","role":"authenticated","session_id":"96000000-0000-0000-0000-000000000010","email":"continuation-invitee@example.test"}',
+  true
+);
+
+insert into continuation_snapshot (key, membership_id)
+select
+  'accepted',
+  public.accept_organisation_invitation_signup_binding(
+    (select id from lifecycle_ids where key = 'replacement_binding')
+  );
+
+reset role;
+set local role postgres;
+
+insert into continuation_snapshot (key, grant_count)
+select
+  'grants',
+  count(*)
+from public.access_grants grant_row
+where grant_row.grantee_membership_id = (
+  select membership_id from continuation_snapshot where key = 'accepted'
+);
+
+set local role authenticated;
+
+select is(
+  public.accept_organisation_invitation_signup_binding(
+    (select id from lifecycle_ids where key = 'replacement_binding')
+  ),
+  (select membership_id from continuation_snapshot where key = 'accepted'),
+  'repeated acceptance returns the existing membership'
+);
+
+reset role;
+set local role postgres;
+
+select ok(
+  (
+    select count(*)
+    from public.access_grants grant_row
+    where grant_row.grantee_membership_id = (
+      select membership_id from continuation_snapshot where key = 'accepted'
+    )
+  ) = (
+    select grant_count from continuation_snapshot where key = 'grants'
+  ),
+  'repeated acceptance does not add access grants'
+);
+
+select is(
+  (
+    select count(*)
+    from public.organisation_memberships membership
+    where membership.user_id = '95000000-0000-0000-0000-000000000010'
+      and membership.organisation_id = (
+        select id from lifecycle_ids where key = 'organisation_a'
+      )
+  ),
+  1::bigint,
+  'acceptance creates one membership'
+);
+
+reset role;
+set local role anon;
+
+select throws_ok(
+  $q$
+    select public.replace_expired_invitation_signup_binding(
+      (select id from lifecycle_ids where key = 'continuation_binding')
+    )
+  $q$,
+  '42501',
+  null,
+  'anonymous clients cannot rebind a signup binding'
 );
 
 select * from finish();

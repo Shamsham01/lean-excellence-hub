@@ -102,6 +102,14 @@ Signup and invitations remain on `/auth/confirm`:
 {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite
 ```
 
+The GET request stages the one-time token in a short-lived HttpOnly cookie and
+redirects to `/confirm?continue=true`. It does not verify the OTP, confirm the
+account, or accept an organisation invitation. The person confirms with
+**Confirm email and continue**. Existing `/auth/confirm` links stay valid, so
+this security fix does not require a Send Email Hook redeploy. Redeploy the
+hook only when you want the updated wording, and only after this application
+revision is live.
+
 ## Release sequence
 
 1. Merge and deploy the application route first.

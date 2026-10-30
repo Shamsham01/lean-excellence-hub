@@ -85,6 +85,68 @@ describe("email login auth route redirects", () => {
     );
   });
 
+  it("keeps a valid invitation continuation when sign-in fails", async () => {
+    signInWithPassword.mockResolvedValue({
+      error: { message: "Invalid login credentials" },
+    });
+    const continuation =
+      "/invitations/continue/11111111-1111-4111-8111-111111111111";
+
+    const response = await POST(
+      new NextRequest(
+        "https://deploy-id--lean-excellence-hub.netlify.app/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+          },
+          body: new URLSearchParams({
+            email: "manager@example.test",
+            password: "DemoPassword123!",
+            next: continuation,
+          }),
+        },
+      ),
+    );
+
+    expect(response.headers.get("Location")).toBe(
+      `https://leanexcellencehub.com/login?error=invalid&next=${encodeURIComponent(continuation)}`,
+    );
+  });
+
+  it("drops an unrelated next path when sign-in fails", async () => {
+    signInWithPassword.mockResolvedValue({
+      error: { message: "Invalid login credentials" },
+    });
+
+    const response = await POST(
+      new NextRequest(
+        "https://deploy-id--lean-excellence-hub.netlify.app/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            origin: "null",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+          },
+          body: new URLSearchParams({
+            email: "manager@example.test",
+            password: "DemoPassword123!",
+            next: "https://evil.example/phish",
+          }),
+        },
+      ),
+    );
+
+    expect(response.headers.get("Location")).toBe(
+      "https://leanexcellencehub.com/login?error=invalid",
+    );
+  });
+
   it("redirects invalid credentials to the canonical APP_ORIGIN", async () => {
     signInWithPassword.mockResolvedValue({
       error: { message: "Invalid login credentials" },

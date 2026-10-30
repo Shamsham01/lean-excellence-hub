@@ -141,6 +141,32 @@ export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
     );
   }
 
+  if (lifecycle.state === "binding_expired" && props.bindingId !== undefined) {
+    return (
+      <AuthCard
+        title="Confirmation window ended"
+        description="The confirmation link for this invitation has expired. The invitation itself can still be continued."
+      >
+        <InvitationDetails lifecycle={lifecycle} />
+        <p className="text-sm text-muted-foreground">
+          Continuing issues a fresh confirmation window. It does not extend the
+          expired link and it does not accept the invitation.
+        </p>
+        <form
+          action="/api/auth/invitations/replace-expired-binding"
+          method="post"
+          className="flex flex-col gap-4"
+          data-testid="invitation-binding-expired"
+        >
+          <input type="hidden" name="bindingId" value={props.bindingId} />
+          <Button type="submit" className="w-full">
+            Continue with this invitation
+          </Button>
+        </form>
+      </AuthCard>
+    );
+  }
+
   if (lifecycle.state === "accepted") {
     return (
       <AuthCard
@@ -244,14 +270,34 @@ export function InvitationAcceptanceCard(props: InvitationAcceptanceCardProps) {
   }
 
   if (props.bindingId !== undefined) {
+    const signInPath = `/login?next=${encodeURIComponent(
+      invitationContinuePath(props.bindingId),
+    )}`;
+    const unauthenticated = lifecycle.sessionState === "unauthenticated";
+
     return (
       <AuthCard
-        title="Invitation unavailable"
-        description="Sign in with the invited account to continue."
+        title={
+          unauthenticated ? "Sign in to continue" : "Invitation unavailable"
+        }
+        description={
+          unauthenticated
+            ? "Sign in with the invited account to continue this invitation."
+            : "Sign in with the invited account to continue."
+        }
       >
-        <InvitationDetails lifecycle={lifecycle} />
+        {unauthenticated ? (
+          <p className="text-sm text-muted-foreground">
+            This invitation is still available. Sign in to review it, then
+            accept it when you are ready.
+          </p>
+        ) : (
+          <InvitationDetails lifecycle={lifecycle} />
+        )}
         <Button asChild className="w-full">
-          <Link href="/login">Sign in</Link>
+          <Link href={signInPath} data-testid="invitation-sign-in">
+            Sign in
+          </Link>
         </Button>
       </AuthCard>
     );

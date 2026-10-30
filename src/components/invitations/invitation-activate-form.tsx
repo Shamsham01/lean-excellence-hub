@@ -54,8 +54,9 @@ export function InvitationActivateForm({
         description="We sent a confirmation email to finish creating your account."
       >
         <p className="text-sm text-muted-foreground">
-          Open the confirmation link, then you will return to this invitation to
-          accept it.
+          Open the confirmation link and confirm on the next page. You will then
+          return to this invitation to accept it. Opening the email does not
+          join the organisation.
         </p>
         <Button variant="outline" asChild className="w-full">
           <Link href={`/invitations/${token}`}>Back to invitation</Link>

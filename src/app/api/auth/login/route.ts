@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { emailPasswordSchema } from "@/modules/identity/auth-input";
 import { resolveEmailPasswordLoginRedirectPath } from "@/modules/identity/email-login";
+import { loginFailureRedirectPath } from "@/modules/identity/login-redirect";
 import {
   buildCanonicalRedirectUrl,
   requestHasTrustedOrigin,
@@ -20,12 +21,14 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
+  const nextValue = formData.get("next");
+  const next = typeof nextValue === "string" ? nextValue : null;
   const parsed = emailPasswordSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
   });
 
-  let redirectPath = "/login?error=invalid";
+  let redirectPath = loginFailureRedirectPath(next);
   const response = NextResponse.redirect(
     buildCanonicalRedirectUrl(redirectPath, environment),
     { status: 303 },
@@ -55,8 +58,6 @@ export async function POST(request: NextRequest) {
     "succeeded",
   );
 
-  const nextValue = formData.get("next");
-  const next = typeof nextValue === "string" ? nextValue : null;
   redirectPath = await resolveEmailPasswordLoginRedirectPath(supabase, next);
 
   response.headers.set(

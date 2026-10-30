@@ -20,14 +20,16 @@ import {
 import { invitationTokenDigest } from "./invitations";
 
 export type InvitationPreviewState =
-  "invalid" | "valid" | "expired" | "revoked" | "accepted";
+  "invalid" | "valid" | "expired" | "revoked" | "accepted" | "binding_expired";
 
 export type InvitationSessionState =
   | "unauthenticated"
   | "wrong_account"
   | "email_unconfirmed"
   | "already_member"
-  | "ready_to_accept";
+  | "ready_to_accept"
+  | "redirect_binding"
+  | "binding_expired";
 
 export type InvitationLifecycleView = {
   state: InvitationPreviewState;
@@ -39,6 +41,7 @@ export type InvitationLifecycleView = {
   scopeLabel?: string | undefined;
   expiresAt?: string | undefined;
   organisationId?: string | undefined;
+  continuationBindingId?: string | undefined;
 };
 
 function hashRateLimitKey(dimension: string, value: string) {
@@ -224,6 +227,8 @@ function mapPreviewPayload(
       typeof payload.organisation_id === "string"
         ? payload.organisation_id
         : undefined,
+    continuationBindingId:
+      typeof payload.binding_id === "string" ? payload.binding_id : undefined,
   };
 }
 
@@ -261,6 +266,11 @@ export async function loadInvitationSignupBinding(
   bindingId: string,
 ): Promise<InvitationLifecycleView> {
   const supabase = await createServerSupabaseClient();
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return { state: "valid", sessionState: "unauthenticated" };
+  }
+
   const { data, error } = await supabase.rpc(
     "resolve_organisation_invitation_signup_binding",
     {

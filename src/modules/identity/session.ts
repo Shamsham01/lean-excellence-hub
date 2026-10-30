@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { redirect, unstable_rethrow } from "next/navigation";
 
+import { resolveAuthenticatedInvitationContinuation } from "@/modules/identity/invitation-continuation";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import {
@@ -91,6 +92,12 @@ export async function resolvePostAuthenticationRedirectPath(
 
   const organisations = await listEligibleOrganisations();
   if (organisations.length === 0) {
+    const continuation =
+      await resolveAuthenticatedInvitationContinuation(supabase);
+    if (continuation.kind === "redirect") {
+      return continuation.path;
+    }
+
     const founding = await supabase.rpc("current_can_found_organisation");
     if (founding.data === true) {
       return "/create-organisation";
