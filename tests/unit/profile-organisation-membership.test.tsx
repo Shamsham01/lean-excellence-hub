@@ -28,6 +28,7 @@ describe("ProfileOrganisationMembership", () => {
       <ProfileOrganisationMembership
         view={{
           status: "ready",
+          organisationDisplayName: "Production Operator",
           jobFunctionName: "Production Operator",
           primaryWorkAreaName: "Line 3",
           grants: [
@@ -43,6 +44,9 @@ describe("ProfileOrganisationMembership", () => {
       />,
     );
 
+    expect(
+      screen.getByTestId("profile-organisation-display-name"),
+    ).toHaveTextContent("Production Operator");
     expect(screen.getByTestId("profile-job-function")).toHaveTextContent(
       "Production Operator",
     );
@@ -62,6 +66,7 @@ describe("ProfileOrganisationMembership", () => {
       <ProfileOrganisationMembership
         view={{
           status: "ready",
+          organisationDisplayName: null,
           jobFunctionName: null,
           primaryWorkAreaName: null,
           grants: [],
@@ -72,6 +77,9 @@ describe("ProfileOrganisationMembership", () => {
     );
 
     expect(screen.getAllByText("Not assigned")).toHaveLength(2);
+    expect(
+      screen.getByTestId("profile-organisation-display-name"),
+    ).toHaveTextContent("No organisation name is recorded yet.");
     expect(
       screen.getByTestId("profile-application-access-empty"),
     ).toHaveTextContent("No active access grants");

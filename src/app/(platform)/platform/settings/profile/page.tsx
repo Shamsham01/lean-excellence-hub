@@ -12,6 +12,7 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { updateProfileDisplayName } from "./actions";
 
 type OwnMembershipProfile = {
+  organisation_display_name?: string | null;
   job_function?: { name?: string | null } | null;
   primary_organisational_unit?: { name?: string | null } | null;
   access_grants?: ProfileAccessGrant[];
@@ -42,12 +43,16 @@ export default async function ProfileSettingsPage() {
     ]);
 
   const membership = ownProfileResult.data as OwnMembershipProfile | null;
+  const organisationDisplayName =
+    membership?.organisation_display_name?.trim() || null;
+  const personalDisplayName = profile?.display_name?.trim() ?? "";
   const membershipView = !currentMembershipId
     ? ({ status: "unavailable" } as const)
     : ownProfileResult.error || !membership
       ? ({ status: "error" } as const)
       : ({
           status: "ready" as const,
+          organisationDisplayName,
           jobFunctionName: membership.job_function?.name ?? null,
           primaryWorkAreaName:
             membership.primary_organisational_unit?.name ?? null,
@@ -76,10 +81,13 @@ export default async function ProfileSettingsPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            You can update how your name appears across Lean Excellence Hub.
+            Your personal name is saved on your account. The name shown inside
+            an organisation comes from your membership there.
           </p>
           <ProfileDisplayNameForm
-            initialDisplayName={profile?.display_name ?? ""}
+            initialDisplayName={
+              personalDisplayName || organisationDisplayName || ""
+            }
             onSave={updateProfileDisplayName}
           />
         </CardContent>

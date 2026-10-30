@@ -44,6 +44,8 @@ const KNOWLEDGE: Partial<
       "An organisation owner plus at least one active job function is the minimum people setup.",
       "Organisation-wide access is an explicit grant. Site-scoped access does not include sibling sites.",
       "Job titles and founder status do not grant organisation-wide authority by themselves.",
+      "A personal profile name belongs to the account. Each organisation keeps its own membership name.",
+      "An invited name can be confirmed while joining. A name already saved on the personal profile stays in place.",
       "Transferring organisation ownership does not assign site administration. Assign remaining access through People.",
     ],
     recommendedPath: "/platform/settings/job-functions",

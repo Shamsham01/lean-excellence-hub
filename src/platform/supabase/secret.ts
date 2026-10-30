@@ -172,6 +172,16 @@ export async function recordAuthenticationSecurityEvent(
   });
 }
 
+export async function recordInvitationSignupDisplayName(
+  bindingId: string,
+  displayName: string,
+) {
+  return createSecretClient().rpc("record_invitation_signup_display_name", {
+    target_binding_id: bindingId,
+    target_display_name: displayName,
+  });
+}
+
 export async function restoreOrganisation(
   organisationId: string,
   changeReason: string,

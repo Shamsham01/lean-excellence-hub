@@ -20,6 +20,9 @@ export function InvitationActivateForm({
   lifecycle: InvitationLifecycleView;
   loginPath: string;
 }) {
+  const [displayName, setDisplayName] = useState(
+    lifecycle.intendedDisplayName ?? "",
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +36,7 @@ export function InvitationActivateForm({
 
     const formData = new FormData();
     formData.set("token", token);
+    formData.set("displayName", displayName);
     formData.set("password", password);
     formData.set("confirmPassword", confirmPassword);
 
@@ -98,6 +102,23 @@ export function InvitationActivateForm({
       ) : null}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="display-name">Your name</Label>
+          <Input
+            id="display-name"
+            name="displayName"
+            autoComplete="name"
+            maxLength={120}
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            data-testid="invitation-activate-display-name"
+          />
+          <p className="text-xs text-muted-foreground">
+            Confirm the name this organisation will use. If your personal
+            profile has no name yet, this name is saved there as well. You can
+            correct it before creating your account.
+          </p>
+        </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
           <Input

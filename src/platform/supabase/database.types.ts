@@ -6346,6 +6346,7 @@ export type Database = {
           intended_job_function_id: string | null
           intended_organisational_unit_id: string | null
           invitation_id: string
+          invitee_confirmed_display_name: string | null
           organisation_id: string
         }
         Insert: {
@@ -6354,6 +6355,7 @@ export type Database = {
           intended_job_function_id?: string | null
           intended_organisational_unit_id?: string | null
           invitation_id: string
+          invitee_confirmed_display_name?: string | null
           organisation_id: string
         }
         Update: {
@@ -6362,6 +6364,7 @@ export type Database = {
           intended_job_function_id?: string | null
           intended_organisational_unit_id?: string | null
           invitation_id?: string
+          invitee_confirmed_display_name?: string | null
           organisation_id?: string
         }
         Relationships: [
@@ -6399,6 +6402,7 @@ export type Database = {
         Row: {
           auth_user_id: string | null
           canonical_recipient: string
+          confirmed_display_name: string | null
           consumed_at: string | null
           created_at: string
           expires_at: string
@@ -6410,6 +6414,7 @@ export type Database = {
         Insert: {
           auth_user_id?: string | null
           canonical_recipient: string
+          confirmed_display_name?: string | null
           consumed_at?: string | null
           created_at?: string
           expires_at: string
@@ -6421,6 +6426,7 @@ export type Database = {
         Update: {
           auth_user_id?: string | null
           canonical_recipient?: string
+          confirmed_display_name?: string | null
           consumed_at?: string | null
           created_at?: string
           expires_at?: string
@@ -12621,6 +12627,14 @@ export type Database = {
         Args: { target_attachment_id: string }
         Returns: boolean
       }
+      confirm_invitation_binding_display_name: {
+        Args: { target_binding_id: string; target_display_name: string }
+        Returns: undefined
+      }
+      confirm_invited_display_name: {
+        Args: { invitation_token_digest: string; target_display_name: string }
+        Returns: undefined
+      }
       consume_authentication_rate_limit: {
         Args: {
           block_seconds: number
@@ -14308,6 +14322,10 @@ export type Database = {
           target_verification_rationale?: string
         }
         Returns: boolean
+      }
+      record_invitation_signup_display_name: {
+        Args: { target_binding_id: string; target_display_name: string }
+        Returns: undefined
       }
       record_leanai_semantic_event: {
         Args: {

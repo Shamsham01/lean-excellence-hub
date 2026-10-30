@@ -16,6 +16,7 @@ export type PlatformShellMember = {
 
 type MembershipProfile = {
   access_grants?: Array<{ role_display_name: string }>;
+  organisation_display_name?: string | null;
 };
 
 const FALLBACK_MEMBER: PlatformShellMember = {
@@ -50,10 +51,8 @@ export async function loadPlatformShellMember(
         route: await readRequestPathname(),
         supabaseMessage: adminResult.error.message,
       });
-      const displayName = profileResult.data?.display_name?.trim();
       return {
-        displayName:
-          displayName && displayName.length > 0 ? displayName : "Member",
+        displayName: resolveDisplayName(profileResult.data?.display_name, null),
         roleLabel: null,
       };
     }
@@ -70,10 +69,11 @@ export async function loadPlatformShellMember(
     const grants = ownProfile?.access_grants ?? [];
     const roleLabel = resolveRoleLabel(grants);
 
-    const displayName = profileResult.data?.display_name?.trim();
     return {
-      displayName:
-        displayName && displayName.length > 0 ? displayName : "Member",
+      displayName: resolveDisplayName(
+        profileResult.data?.display_name,
+        ownProfile?.organisation_display_name,
+      ),
       roleLabel,
     };
   } catch (error) {
@@ -87,6 +87,23 @@ export async function loadPlatformShellMember(
     });
     return FALLBACK_MEMBER;
   }
+}
+
+function resolveDisplayName(
+  personalName: string | null | undefined,
+  organisationName: string | null | undefined,
+) {
+  const personal = personalName?.trim();
+  if (personal) {
+    return personal;
+  }
+
+  const organisation = organisationName?.trim();
+  if (organisation) {
+    return organisation;
+  }
+
+  return "Member";
 }
 
 function resolveRoleLabel(

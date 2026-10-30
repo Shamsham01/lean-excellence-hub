@@ -5,6 +5,7 @@ import { AppLink } from "@/components/ui/app-link";
 export type ProfileOrganisationMembershipView =
   | {
       status: "ready";
+      organisationDisplayName: string | null;
       jobFunctionName: string | null;
       primaryWorkAreaName: string | null;
       grants: ProfileAccessGrant[];
@@ -43,6 +44,16 @@ export function ProfileOrganisationMembership({
   return (
     <div className="flex flex-col gap-3 text-sm">
       <dl className="grid gap-3 sm:grid-cols-2">
+        <div className="min-w-0 sm:col-span-2">
+          <dt className="text-muted-foreground">Name in this organisation</dt>
+          <dd
+            className="break-words"
+            data-testid="profile-organisation-display-name"
+          >
+            {view.organisationDisplayName ??
+              "No organisation name is recorded yet."}
+          </dd>
+        </div>
         <div className="min-w-0">
           <dt className="text-muted-foreground">Job function</dt>
           <dd className="break-words" data-testid="profile-job-function">

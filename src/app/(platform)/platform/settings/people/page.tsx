@@ -89,11 +89,20 @@ export default async function PeopleSettingsPage() {
                 .in("invitation_id", [...invitationIds]),
             pendingInvitationIds,
           );
+          const namesResult =
+            pendingInvitationIds.length > 0
+              ? await supabase
+                  .from("organisation_invitation_provisioning")
+                  .select("invitation_id, intended_display_name")
+                  .in("invitation_id", pendingInvitationIds)
+              : { data: [], error: null };
           return {
             pendingInvitations: pendingResult.data,
             invitationsError: pendingResult.error,
             invitationGrants: grantsResult.data,
             grantsError: grantsResult.error,
+            invitationNames: namesResult.data,
+            namesError: namesResult.error,
           };
         })()
       : Promise.resolve({
@@ -101,6 +110,8 @@ export default async function PeopleSettingsPage() {
           invitationsError: null,
           invitationGrants: [],
           grantsError: null,
+          invitationNames: [],
+          namesError: null,
         }),
     Promise.resolve({ data: visibleUnits }),
     canManageInvitations
@@ -125,6 +136,14 @@ export default async function PeopleSettingsPage() {
   const invitationsError = invitationBundle.invitationsError;
   const invitationGrants = invitationBundle.invitationGrants;
   const grantsError = invitationBundle.grantsError;
+  const invitationNames = invitationBundle.invitationNames;
+  const namesError = invitationBundle.namesError;
+  const nameByInvitation = new Map(
+    (invitationNames ?? []).map((row) => [
+      row.invitation_id,
+      row.intended_display_name,
+    ]),
+  );
 
   const offers = filterDelegatableOffersForActiveSite(
     (offersData?.offers ?? []) as DelegatableAccessOffer[],
@@ -273,11 +292,15 @@ export default async function PeopleSettingsPage() {
               </p>
             ) : (
               <PendingInvitationsList
+                namesUnavailable={Boolean(namesError)}
                 invitations={(pendingInvitations ?? []).map((invitation) => {
                   const grant = grantsByInvitation.get(invitation.id);
                   return {
                     id: invitation.id,
                     email: invitation.canonical_recipient,
+                    displayName: namesError
+                      ? null
+                      : (nameByInvitation.get(invitation.id) ?? null),
                     expiresAtLabel: formatLongDate(invitation.expires_at),
                     roleName: grant?.roleName ?? "Application access",
                     scopeLabel: grant?.scopeLabel ?? "Scoped access",

@@ -39,6 +39,8 @@ export type InvitationLifecycleView = {
   recipientEmailMasked?: string | undefined;
   roleDisplayName?: string | undefined;
   scopeLabel?: string | undefined;
+  intendedDisplayName?: string | undefined;
+  confirmedDisplayName?: string | undefined;
   expiresAt?: string | undefined;
   organisationId?: string | undefined;
   continuationBindingId?: string | undefined;
@@ -221,6 +223,14 @@ function mapPreviewPayload(
         : undefined,
     scopeLabel:
       typeof payload.scope_label === "string" ? payload.scope_label : undefined,
+    intendedDisplayName:
+      typeof payload.intended_display_name === "string"
+        ? payload.intended_display_name
+        : undefined,
+    confirmedDisplayName:
+      typeof payload.confirmed_display_name === "string"
+        ? payload.confirmed_display_name
+        : undefined,
     expiresAt:
       typeof payload.expires_at === "string" ? payload.expires_at : undefined,
     organisationId:

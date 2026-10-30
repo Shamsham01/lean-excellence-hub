@@ -168,13 +168,20 @@ export function InviteColleagueForm({
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="invite-display-name">Display name (optional)</Label>
+          <Label htmlFor="invite-display-name">Name</Label>
           <Input
             id="invite-display-name"
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             placeholder="Sarah Jones"
+            maxLength={120}
+            autoComplete="name"
           />
+          <p className="text-xs text-muted-foreground">
+            This is the name used in this organisation. The person can confirm
+            or correct it when they join. A name they already use on their
+            personal profile stays on their account.
+          </p>
         </div>
       </div>
 

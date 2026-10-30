@@ -214,6 +214,19 @@ export async function loadStructureFirstSnapshot(
         .in("invitation_id", [...invitationIds]),
     pendingInvitationIds,
   );
+  const namesResult =
+    pendingInvitationIds.length > 0
+      ? await supabase
+          .from("organisation_invitation_provisioning")
+          .select("invitation_id, intended_display_name")
+          .in("invitation_id", pendingInvitationIds)
+      : { data: [], error: null };
+  const nameByInvitation = new Map(
+    (namesResult.data ?? []).map((row) => [
+      row.invitation_id,
+      row.intended_display_name,
+    ]),
+  );
 
   const activeUnits = allUnits.filter((unit) => unit.status === "active");
   const firstSite =
@@ -310,6 +323,9 @@ export async function loadStructureFirstSnapshot(
     return {
       id: invitation.id,
       email: invitation.canonical_recipient,
+      displayName: namesResult.error
+        ? null
+        : (nameByInvitation.get(invitation.id) ?? null),
       expiresAtLabel: formatLongDate(invitation.expires_at),
       roleName: grant?.roleName ?? "Application access",
       scopeLabel: grant?.scopeLabel ?? "Scoped access",
@@ -382,6 +398,7 @@ export async function loadStructureFirstSnapshot(
     members,
     owners,
     pendingInvitations,
+    pendingInvitationNamesUnavailable: Boolean(namesResult.error),
     permissions,
     guidance: buildStructureFirstGuidance({
       unitNames: activeUnits.map((unit) => unit.name),
