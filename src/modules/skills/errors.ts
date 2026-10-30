@@ -132,6 +132,56 @@ export function toSkillsAuthoringError(error: unknown, fallback: string) {
     return "Enter a level label between 1 and 120 characters.";
   }
 
+  if (normalised.includes("existing proficiency scale differs")) {
+    return "A proficiency scale with this name already exists and its levels differ. Nothing was changed. Choose to keep the existing scale or create a separate draft.";
+  }
+
+  if (normalised.includes("compatible proficiency scale was not found")) {
+    return "No published scale matches this name and these levels. Nothing was changed.";
+  }
+
+  if (normalised.includes("job function is not in this organisation")) {
+    return "Choose a job function from this organisation. Nothing was saved.";
+  }
+
+  if (normalised.includes("organisational unit is not in this organisation")) {
+    return "Choose an organisational unit from this organisation. Nothing was saved.";
+  }
+
+  if (
+    normalised.includes("unit applicability requires an organisational unit")
+  ) {
+    return "Choose at least one unit for these requirements, or apply them wherever the job function is used. Nothing was saved.";
+  }
+
+  if (normalised.includes("creation key does not match this content")) {
+    return "This setup was already created from different choices. Start a new setup to keep these changes. The earlier draft was not replaced.";
+  }
+
+  if (normalised.includes("creation key is already finished")) {
+    return "That setup was already published or discarded. Start a new setup. Nothing was replaced.";
+  }
+
+  if (normalised.includes("published setup bundles are kept")) {
+    return "This setup is already published. Use versioning to change it. History was not deleted.";
+  }
+
+  if (normalised.includes("discarded setup bundles cannot be published")) {
+    return "This draft was discarded. Start a new setup.";
+  }
+
+  if (normalised.includes("draft skills cannot be assessed")) {
+    return "Publish the setup before assessing this skill. Completing training does not make someone competent.";
+  }
+
+  if (normalised.includes("module setup definition")) {
+    return "Check the setup and try again. Nothing was saved or published.";
+  }
+
+  if (normalised.includes("skill setup bundle was not found")) {
+    return "That setup draft could not be found.";
+  }
+
   if (classified === "infrastructure") {
     return fallback;
   }

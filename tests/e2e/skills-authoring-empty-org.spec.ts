@@ -55,7 +55,7 @@ async function runEmptyOrganisationJourney(
   await expectNoDocumentOverflow(page);
   await capture(page, `skills-empty-${viewport.label}`);
 
-  await page.getByTestId("skills-setup-primary").click();
+  await page.getByTestId("skills-advanced-scale").click();
   await expect(page).toHaveURL(/\/platform\/skills\/scales\/new/);
   await expect(page.getByTestId("scale-create-form")).toBeVisible();
 

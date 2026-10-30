@@ -18,6 +18,12 @@ export function SkillsFrameworkPath({
 }) {
   const unconfigured = skillsFrameworkIsUnconfigured(snapshot);
   const nextHref = nextSkillsSetupHref(snapshot);
+  const primaryHref = unconfigured ? "/platform/skills/setup" : nextHref;
+  const primaryLabel = unconfigured
+    ? "Set up skills"
+    : nextHref.includes("/matrix")
+      ? "Open skills matrix"
+      : "Continue setup";
   const nextNeeds = skillsSetupStepNeeds(nextHref);
   const canTakeNext =
     nextNeeds === "read" ||
@@ -99,16 +105,29 @@ export function SkillsFrameworkPath({
             measured, and which job functions require each capability.
           </p>
           {canTakeNext || canManageCatalog ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               {canTakeNext ? (
-                <Button asChild>
-                  <AppLink href={nextHref} data-testid="skills-setup-primary">
-                    Set up skills
+                <Button className="w-full sm:w-auto" asChild>
+                  <AppLink
+                    href={primaryHref}
+                    data-testid="skills-setup-primary"
+                  >
+                    {primaryLabel}
                   </AppLink>
                 </Button>
               ) : null}
               {canManageCatalog ? (
-                <Button variant="outline" asChild>
+                <Button variant="outline" className="w-full sm:w-auto" asChild>
+                  <AppLink
+                    href="/platform/skills/scales/new"
+                    data-testid="skills-advanced-scale"
+                  >
+                    Detailed scale editor
+                  </AppLink>
+                </Button>
+              ) : null}
+              {canManageCatalog ? (
+                <Button variant="outline" className="w-full sm:w-auto" asChild>
                   <AppLink
                     href="/platform/skills/catalog?new=1"
                     data-testid="skills-setup-create-skill"
@@ -126,13 +145,14 @@ export function SkillsFrameworkPath({
           )}
         </section>
       ) : canTakeNext ? (
-        <div>
-          <Button asChild>
-            <AppLink href={nextHref} data-testid="skills-setup-primary">
-              {nextHref.includes("/matrix")
-                ? "Open skills matrix"
-                : "Continue setup"}
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button className="w-full sm:w-auto" asChild>
+            <AppLink href={primaryHref} data-testid="skills-setup-primary">
+              {primaryLabel}
             </AppLink>
+          </Button>
+          <Button variant="outline" className="w-full sm:w-auto" asChild>
+            <AppLink href="/platform/skills/setup">Simple setup</AppLink>
           </Button>
         </div>
       ) : null}

@@ -5,8 +5,10 @@ import {
 } from "@/modules/module-setup/ai-builder/context";
 import { FIVE_S_BUILDER_CONTEXT_CONTRACT } from "@/modules/5s/ai-builder/types";
 import { GEMBA_BUILDER_CONTEXT_CONTRACT } from "@/modules/gemba/ai-builder/types";
+import { SKILLS_BUILDER_CONTEXT_CONTRACT } from "@/modules/skills/ai-builder/types";
 import { FIVE_S_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/five-s-setup-builder";
 import { GEMBA_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/gemba-setup-builder";
+import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
 import type { CreateResponseResult } from "@/platform/ai/types";
 
 const USAGE = {
@@ -22,7 +24,8 @@ export function fakeModuleSetupBuilderResponse(
 ): CreateResponseResult | null {
   if (
     formatName !== FIVE_S_SETUP_BUILDER_FORMAT_NAME &&
-    formatName !== GEMBA_SETUP_BUILDER_FORMAT_NAME
+    formatName !== GEMBA_SETUP_BUILDER_FORMAT_NAME &&
+    formatName !== SKILLS_SETUP_BUILDER_FORMAT_NAME
   ) {
     return null;
   }
@@ -30,7 +33,9 @@ export function fakeModuleSetupBuilderResponse(
   const contract =
     formatName === FIVE_S_SETUP_BUILDER_FORMAT_NAME
       ? FIVE_S_BUILDER_CONTEXT_CONTRACT
-      : GEMBA_BUILDER_CONTEXT_CONTRACT;
+      : formatName === GEMBA_SETUP_BUILDER_FORMAT_NAME
+        ? GEMBA_BUILDER_CONTEXT_CONTRACT
+        : SKILLS_BUILDER_CONTEXT_CONTRACT;
   const markers = contextMarkers(contract);
   const context = extractModuleSetupBuilderContext(
     lastUser,
@@ -61,7 +66,9 @@ export function fakeModuleSetupBuilderResponse(
   const envelope =
     formatName === FIVE_S_SETUP_BUILDER_FORMAT_NAME
       ? fiveSEnvelope(context, request)
-      : gembaEnvelope(context, request);
+      : formatName === GEMBA_SETUP_BUILDER_FORMAT_NAME
+        ? gembaEnvelope(context, request)
+        : skillsEnvelope(context, request);
 
   return {
     outputText: envelope.message,
@@ -75,6 +82,85 @@ function extractRequest(lastUser: string): string {
   const marker = "User request:\n";
   const index = lastUser.lastIndexOf(marker);
   return (index >= 0 ? lastUser.slice(index + marker.length) : lastUser).trim();
+}
+
+function emptySkillsUnderstanding() {
+  return {
+    operation: null,
+    scale: null,
+    roles: null,
+    evidence: null,
+    applicability: null,
+  };
+}
+
+function skillsEnvelope(
+  context: ModuleSetupBuilderContext | null,
+  request: string,
+) {
+  if (
+    request.includes("SKILLS_ERROR_TEST") &&
+    context?.request.retry !== true
+  ) {
+    return {
+      message: "This proposal cannot be used yet.",
+      phase: "proposal",
+      understanding: emptySkillsUnderstanding(),
+      questions: [],
+      change_summary: [],
+      proposal: {
+        title: "Broken bakery setup",
+        scale: { name: "Broken", description: null, levels: [] },
+        skills: [],
+        requirements: [],
+        notes: [],
+      },
+    };
+  }
+
+  return {
+    message:
+      "Here is a draft Skills setup. It is not published, and nobody is assessed.",
+    phase: "proposal",
+    understanding: {
+      operation: "Bakery oven",
+      scale: "Aware and Competent",
+      roles: "Oven Operator",
+      evidence: "Observed start-up",
+      applicability: "The person confirms where it applies.",
+    },
+    questions: [],
+    change_summary: ["Proposed an oven skill and a two-level scale."],
+    proposal: {
+      title: "Bakery oven capability",
+      scale: {
+        name: "Bakery proficiency",
+        description: "Demonstrated ability.",
+        levels: [
+          { order: 0, label: "Aware", guidance: "Can describe the risk." },
+          { order: 1, label: "Competent", guidance: "Can perform the task." },
+        ],
+      },
+      skills: [
+        {
+          name: "Operate and monitor the oven",
+          category: "Process",
+          description: "Run the oven to the standard.",
+          evidence_expectations:
+            "Observed start-up. Training attendance is not enough.",
+        },
+      ],
+      requirements: [
+        {
+          skill_name: "Operate and monitor the oven",
+          suggested_job_function: "Oven Operator",
+          level_label: "Competent",
+          evidence_requirement: "Observed start-up.",
+        },
+      ],
+      notes: ["Sample proposal. Not published."],
+    },
+  };
 }
 
 function emptyFiveSUnderstanding() {

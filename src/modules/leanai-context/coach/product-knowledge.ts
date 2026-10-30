@@ -99,11 +99,16 @@ const KNOWLEDGE: Partial<
   },
   skills: {
     summary:
-      "Skills is ready only with a published scale, an active skill, and a published capability requirement.",
+      "A job function is the role someone performs. A skill is an observable ability. A requirement says which job function must demonstrate which skill, at what level, and where. Training completion is not competence.",
     facts: [
-      "Partial catalogues stay incomplete so people are not assessed against unfinished definitions.",
+      "Set up Skills from /platform/skills/setup with guided setup, LEH Quick Start, or LeanAI. Each path creates a draft until a person publishes it.",
+      "Line Operator, Area Leader, and Department Manager are job functions, not skills.",
+      "The catalogue and scale belong to the organisation. A selected site does not limit them.",
+      "Not assessed is not a low score. A starter pack does not mark anyone competent.",
+      "Quick Start stays available when LeanAI is off or unavailable.",
+      "Detailed field knowledge in this release covers Skills. Do not treat that as coverage of every module.",
     ],
-    recommendedPath: "/platform/skills",
+    recommendedPath: "/platform/skills/setup",
   },
   recognition: {
     summary:

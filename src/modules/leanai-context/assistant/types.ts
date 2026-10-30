@@ -1,3 +1,4 @@
+import type { SkillsRuntimeField } from "@/modules/leanai-context/product-knowledge/skills";
 import type { LeanAiCoachSurface } from "@/modules/leanai-context/interventions/types";
 import type { LeanAiInterventionCandidate } from "@/modules/leanai-context/interventions/types";
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
@@ -29,6 +30,15 @@ export const ASSISTANT_WORKFLOWS = [
   "gemba_builder",
   "training",
   "skills",
+  "skills_setup",
+  "skills_manual",
+  "skills_quick_start",
+  "skills_builder",
+  "skills_draft",
+  "skills_scale",
+  "skills_catalogue",
+  "skills_requirements",
+  "skills_matrix",
   "recognition",
   "lean_ai_settings",
   "generic_platform",
@@ -61,6 +71,7 @@ export type AssistantPageDefinition = {
   terminology: readonly AssistantTerminologyEntry[];
   starterPrompts: readonly string[];
   facts: readonly string[];
+  fieldGuidance?: readonly SkillsRuntimeField[];
 };
 
 export type AssistantRelevantState = Record<
@@ -105,6 +116,8 @@ export type LeanAiAssistantView = {
   }>;
   relevantState: AssistantRelevantState;
   allowedActions: string[];
+  fieldGuidance: SkillsRuntimeField[];
+  guidanceFacts: string[];
   recommendation: LeanAiInterventionCandidate | null;
 };
 

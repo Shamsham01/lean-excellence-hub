@@ -39,11 +39,18 @@ export type ModuleSetupBuilderAccess =
 
 export async function loadModuleSetupBuilderAccess(input: {
   managePermission: string;
+  requiredPermissions?: readonly string[];
   moduleLabel: string;
 }): Promise<ModuleSetupBuilderAccess> {
-  const canManage = await currentMemberHasOrganisationScopedPermission(
-    input.managePermission,
+  const permissions = input.requiredPermissions?.length
+    ? input.requiredPermissions
+    : [input.managePermission];
+  const granted = await Promise.all(
+    permissions.map((permission) =>
+      currentMemberHasOrganisationScopedPermission(permission),
+    ),
   );
+  const canManage = granted.every(Boolean);
   if (!canManage) {
     return {
       canManage: false,

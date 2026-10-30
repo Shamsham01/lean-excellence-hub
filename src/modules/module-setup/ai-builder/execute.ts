@@ -69,18 +69,19 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type ModuleSetupBuilderModule<TProposal> = {
-  moduleKey: "five_s" | "gemba";
+  moduleKey: "five_s" | "gemba" | "skills";
   interventionKey: "setup_builder";
   sessionTitle: string;
   contextContract: string;
   cookiePath: string;
   managePermission: string;
+  requiredPermissions?: readonly string[];
   moduleLabel: string;
   route: string;
   overviewPath: string;
   payloadKind: string;
   declaredKey: string;
-  namesTable: "five_s_standards" | "gemba_definitions";
+  namesTable?: "five_s_standards" | "gemba_definitions";
   adapter: ModuleSetupBuilderAdapter;
   limits: Record<string, unknown>;
   revalidateProposal: (value: unknown) => TProposal | null;
@@ -93,7 +94,13 @@ export type ModuleSetupBuilderModule<TProposal> = {
   ) => { definition: Json } | { error: string };
   rpc:
     | "create_five_s_standard_draft_from_definition"
-    | "create_gemba_definition_draft_from_definition";
+    | "create_gemba_definition_draft_from_definition"
+    | "create_skill_setup_draft";
+  loadConfigurationNames?: (supabase: ServerSupabase) => Promise<{
+    names: string[];
+    count: number;
+    jobFunctionNames?: string[];
+  }>;
   draftPath: (id: string) => string;
 };
 
@@ -154,22 +161,33 @@ async function loadFacts<TProposal>(
   module: ModuleSetupBuilderModule<TProposal>,
   organisationName: string,
 ): Promise<ModuleSetupOrganisationFacts> {
-  const [{ data: rows }, counted, site] = await Promise.all([
-    supabase
-      .from(module.namesTable)
-      .select("display_name")
-      .order("display_name")
-      .limit(20),
-    supabase
-      .from(module.namesTable)
-      .select("id", { count: "exact", head: true }),
-    loadActiveSiteContext(),
-  ]);
-  const names = (rows ?? [])
-    .map((row) => row.display_name)
-    .filter(
-      (name): name is string => typeof name === "string" && name.length > 0,
-    );
+  const site = await loadActiveSiteContext();
+  let names: string[] = [];
+  let count = 0;
+  let jobFunctionNames: string[] = [];
+  if (module.loadConfigurationNames) {
+    const loaded = await module.loadConfigurationNames(supabase);
+    names = loaded.names;
+    count = loaded.count;
+    jobFunctionNames = loaded.jobFunctionNames ?? [];
+  } else if (module.namesTable) {
+    const [{ data: rows }, counted] = await Promise.all([
+      supabase
+        .from(module.namesTable)
+        .select("display_name")
+        .order("display_name")
+        .limit(20),
+      supabase
+        .from(module.namesTable)
+        .select("id", { count: "exact", head: true }),
+    ]);
+    names = (rows ?? [])
+      .map((row) => row.display_name)
+      .filter(
+        (name): name is string => typeof name === "string" && name.length > 0,
+      );
+    count = counted.count ?? names.length;
+  }
   return {
     organisationName,
     activeSiteName:
@@ -180,7 +198,8 @@ async function loadFacts<TProposal>(
         : null,
     unitNames: site.units.map((unit) => unit.name).slice(0, 24),
     existingConfigurationNames: names,
-    configurationCount: counted.count ?? names.length,
+    configurationCount: count,
+    jobFunctionNames,
   };
 }
 
@@ -225,6 +244,9 @@ export async function sendModuleSetupBuilderMessage<TProposal>(
       loadModuleSetupBuilderAccess({
         managePermission: module.managePermission,
         moduleLabel: module.moduleLabel,
+        ...(module.requiredPermissions
+          ? { requiredPermissions: module.requiredPermissions }
+          : {}),
       }),
     ]);
     if (!identity) {
@@ -503,6 +525,9 @@ export async function createModuleSetupDraftFromProposal<TProposal>(
     loadModuleSetupBuilderAccess({
       managePermission: module.managePermission,
       moduleLabel: module.moduleLabel,
+      ...(module.requiredPermissions
+        ? { requiredPermissions: module.requiredPermissions }
+        : {}),
     }),
   ]);
   if (!identity) {
@@ -564,6 +589,14 @@ export async function createModuleSetupDraftFromProposal<TProposal>(
     };
   }
 
+  if (module.rpc === "create_skill_setup_draft") {
+    return {
+      ok: false,
+      reason: "invalid_request",
+      message:
+        "Confirm job functions and applicability, then create the Skills draft from the stored proposal.",
+    };
+  }
   const { data, error } = await supabase.rpc(module.rpc, {
     target_declared_template_key: module.declaredKey,
     target_definition: defined.definition,
@@ -602,6 +635,9 @@ export async function discardModuleSetupBuilderConversation<TProposal>(
     loadModuleSetupBuilderAccess({
       managePermission: module.managePermission,
       moduleLabel: module.moduleLabel,
+      ...(module.requiredPermissions
+        ? { requiredPermissions: module.requiredPermissions }
+        : {}),
     }),
   ]);
   if (!identity || !access.canManage) {

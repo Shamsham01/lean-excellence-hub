@@ -38,6 +38,8 @@ const view: LeanAiAssistantView = {
   remainingSetup: [],
   relevantState: {},
   allowedActions: [],
+  fieldGuidance: [],
+  guidanceFacts: [],
   recommendation: null,
 };
 

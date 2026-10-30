@@ -9913,6 +9913,210 @@ export type Database = {
           },
         ]
       }
+      skill_setup_bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          organisation_id?: string
+          ownership?: string
+          record_id?: string
+          record_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_setup_bundle_items_bundle_fkey"
+            columns: ["organisation_id", "bundle_id"]
+            isOneToOne: false
+            referencedRelation: "skill_setup_bundles"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_setup_bundles: {
+        Row: {
+          applicability: string
+          capability_set_id: string | null
+          capability_set_version_id: string | null
+          created_at: string
+          created_by_membership_id: string
+          discarded_at: string | null
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          published_at: string | null
+          request_definition: Json
+          sample: boolean
+          scale_id: string | null
+          scale_version_id: string | null
+          source: string
+          status: string
+          template_key: string | null
+          template_version: string | null
+          title: string
+          unresolved: Json
+          updated_at: string
+        }
+        Insert: {
+          applicability?: string
+          capability_set_id?: string | null
+          capability_set_version_id?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          discarded_at?: string | null
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          published_at?: string | null
+          request_definition: Json
+          sample?: boolean
+          scale_id?: string | null
+          scale_version_id?: string | null
+          source: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Update: {
+          applicability?: string
+          capability_set_id?: string | null
+          capability_set_version_id?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          discarded_at?: string | null
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          published_at?: string | null
+          request_definition?: Json
+          sample?: boolean
+          scale_id?: string | null
+          scale_version_id?: string | null
+          source?: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title?: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_setup_bundles_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_scale_fkey"
+            columns: ["organisation_id", "scale_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scales"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_scale_version_fkey"
+            columns: ["organisation_id", "scale_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scale_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_set_fkey"
+            columns: ["organisation_id", "capability_set_id"]
+            isOneToOne: false
+            referencedRelation: "skill_capability_sets"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_set_version_fkey"
+            columns: ["organisation_id", "capability_set_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_capability_set_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_setup_preparations: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          source?: string
+          state?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_setup_preparations_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_preparations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
         Row: {
           category: string | null
@@ -12969,6 +13173,10 @@ export type Database = {
         Args: { target_description?: string; target_name: string }
         Returns: string
       }
+      create_skill_setup_draft: {
+        Args: { target_definition: Json; target_idempotency_key: string }
+        Returns: string
+      }
       create_suggestion_action: {
         Args: {
           target_description?: string
@@ -13181,6 +13389,10 @@ export type Database = {
       disable_workforce_identity: {
         Args: { change_reason: string; target_user_id: string }
         Returns: number
+      }
+      discard_skill_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: Json
       }
       edit_comment: {
         Args: { target_body: string; target_comment_id: string }
@@ -13944,6 +14156,10 @@ export type Database = {
         Args: { invitation_token_digest: string }
         Returns: Json
       }
+      preview_skill_setup_bundle_discard: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
       provision_organisation: {
         Args: {
           organisation_code: string
@@ -14004,6 +14220,10 @@ export type Database = {
       }
       publish_skill_proficiency_scale_version: {
         Args: { target_scale_version_id: string }
+        Returns: boolean
+      }
+      publish_skill_setup_bundle: {
+        Args: { target_bundle_id: string }
         Returns: boolean
       }
       publish_suggestion_programme_version: {
@@ -14353,6 +14573,14 @@ export type Database = {
       revoke_training_completion: {
         Args: { target_completion_id: string; target_notes?: string }
         Returns: boolean
+      }
+      save_skill_setup_preparation: {
+        Args: {
+          target_source: string
+          target_state: Json
+          target_template_key: string
+        }
+        Returns: string
       }
       search_similar_problem_solving_cases: {
         Args: { target_case_id: string; target_limit?: number }
