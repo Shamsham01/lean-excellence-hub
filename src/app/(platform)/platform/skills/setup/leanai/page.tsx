@@ -5,7 +5,11 @@ import { SkillsTerminologyNote } from "@/components/skills/setup/skills-terminol
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { loadModuleSetupBuilderAccess } from "@/modules/module-setup/ai-builder/access";
+import { loadModuleSetupBuilderConversation } from "@/modules/module-setup/ai-builder/execute";
+import { skillsSetupBuilderModule } from "@/modules/skills/ai-builder/module";
+import { loadCurrentOrganisationIdentity } from "@/modules/organisations/context";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
+import { resumeSkillsPreparation } from "@/modules/skills/setup/resume-preparation";
 import { leanAiPreparationSchema } from "@/modules/skills/setup/preparation";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -49,7 +53,23 @@ export default async function SkillsLeanAiSetupPage() {
         .eq("template_key", "leanai-skills-builder")
         .maybeSingle(),
     ]);
-  const parsed = leanAiPreparationSchema.safeParse(preparation?.state);
+  const organisation = await loadCurrentOrganisationIdentity();
+  const conversation = organisation
+    ? await loadModuleSetupBuilderConversation(
+        skillsSetupBuilderModule,
+        organisation.organisationId,
+      )
+    : null;
+  const initial = await resumeSkillsPreparation({
+    source: "leanai",
+    templateKey: "leanai-skills-builder",
+    saved: preparation?.state,
+    parse: (value) => {
+      const parsed = leanAiPreparationSchema.safeParse(value);
+      return parsed.success ? parsed.data : null;
+    },
+    fresh: freshPreparation,
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -77,7 +97,11 @@ export default async function SkillsLeanAiSetupPage() {
       </div>
       <SkillsTerminologyNote />
       <SkillsBuilderPanel
-        initial={parsed.success ? parsed.data : freshPreparation()}
+        initial={initial}
+        initialProposal={conversation?.currentProposal?.proposal ?? null}
+        initialProposalMessageId={
+          conversation?.currentProposal?.messageId ?? null
+        }
         jobFunctions={jobFunctions ?? []}
         units={units ?? []}
         unavailableMessage={

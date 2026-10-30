@@ -1,3 +1,4 @@
+import type { SkillsRuntimeField } from "@/modules/leanai-context/product-knowledge/skills";
 import type { LeanAiCoachSurface } from "@/modules/leanai-context/interventions/types";
 import type { LeanAiInterventionCandidate } from "@/modules/leanai-context/interventions/types";
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
@@ -70,6 +71,7 @@ export type AssistantPageDefinition = {
   terminology: readonly AssistantTerminologyEntry[];
   starterPrompts: readonly string[];
   facts: readonly string[];
+  fieldGuidance?: readonly SkillsRuntimeField[];
 };
 
 export type AssistantRelevantState = Record<
@@ -114,6 +116,8 @@ export type LeanAiAssistantView = {
   }>;
   relevantState: AssistantRelevantState;
   allowedActions: string[];
+  fieldGuidance: SkillsRuntimeField[];
+  guidanceFacts: string[];
   recommendation: LeanAiInterventionCandidate | null;
 };
 

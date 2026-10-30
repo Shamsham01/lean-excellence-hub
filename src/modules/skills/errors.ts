@@ -148,6 +148,18 @@ export function toSkillsAuthoringError(error: unknown, fallback: string) {
     return "Choose an organisational unit from this organisation. Nothing was saved.";
   }
 
+  if (normalised.includes("unit applicability requires an organisational unit")) {
+    return "Choose at least one unit for these requirements, or apply them wherever the job function is used. Nothing was saved.";
+  }
+
+  if (normalised.includes("creation key does not match this content")) {
+    return "This setup was already created from different choices. Start a new setup to keep these changes. The earlier draft was not replaced.";
+  }
+
+  if (normalised.includes("creation key is already finished")) {
+    return "That setup was already published or discarded. Start a new setup. Nothing was replaced.";
+  }
+
   if (normalised.includes("published setup bundles are kept")) {
     return "This setup is already published. Use versioning to change it. History was not deleted.";
   }

@@ -63,6 +63,72 @@ export type QuickStartPreparation = z.infer<typeof quickStartPreparationSchema>;
 
 export const leanAiPreparationSchema = quickStartPreparationSchema;
 
+export type SkillsCreationKeyState =
+  | "absent"
+  | "draft"
+  | "published"
+  | "discarded";
+
+export function skillsCreationKeyState(
+  status: string | null | undefined,
+): SkillsCreationKeyState {
+  if (
+    status === "draft" ||
+    status === "published" ||
+    status === "discarded"
+  ) {
+    return status;
+  }
+  return "absent";
+}
+
+export function resolveSkillsPreparationVisit<
+  T extends { idempotencyKey: string },
+>(input: {
+  saved: T | null;
+  creationKeyState: SkillsCreationKeyState;
+  fresh: () => T;
+  replacementKey: string;
+}): { preparation: T; mode: "fresh" | "resume" | "new_setup" } {
+  if (!input.saved) {
+    return { preparation: input.fresh(), mode: "fresh" };
+  }
+  if (
+    input.creationKeyState === "absent" ||
+    input.creationKeyState === "draft"
+  ) {
+    return { preparation: input.saved, mode: "resume" };
+  }
+  return {
+    preparation: { ...input.saved, idempotencyKey: input.replacementKey },
+    mode: "new_setup",
+  };
+}
+
+export function renewSkillsPreparationKey<
+  T extends { idempotencyKey: string },
+>(preparation: T, replacementKey: string): T {
+  return { ...preparation, idempotencyKey: replacementKey };
+}
+
+export function assertConfirmedSetupUnits(input: {
+  applicability: "organisation" | "units";
+  unitIds: readonly string[];
+  allowedUnitIds: ReadonlySet<string>;
+}): string | null {
+  if (input.applicability !== "units") {
+    return null;
+  }
+  const confirmed = [...new Set(input.unitIds)];
+  if (confirmed.length === 0) {
+    return "Choose at least one organisational unit, or apply the requirements across the organisation.";
+  }
+  if (confirmed.some((unitId) => !input.allowedUnitIds.has(unitId))) {
+    return "Choose a unit from this organisation.";
+  }
+  return null;
+}
+
 export function manualPreparationToDefinition(
   state: ManualSkillsPreparation,
   allowedJobFunctionIds: ReadonlySet<string>,
@@ -70,12 +136,13 @@ export function manualPreparationToDefinition(
 ):
   | { ok: true; definition: SkillsSetupDefinition }
   | { ok: false; message: string } {
-  if (state.applicability === "units" && state.unitIds.length === 0) {
-    return {
-      ok: false,
-      message:
-        "Choose at least one unit, or apply requirements wherever the job function is used.",
-    };
+  const confirmedUnits = confirmedRequirementUnits(
+    state.applicability,
+    state.unitIds,
+    allowedUnitIds,
+  );
+  if (!confirmedUnits.ok) {
+    return confirmedUnits;
   }
   const readyLevels = state.levels.filter((level) => level.label.trim());
   const readySkills = state.skills.filter((skill) => skill.name.trim());
@@ -112,7 +179,10 @@ export function manualPreparationToDefinition(
         message: "Choose a job function from this organisation.",
       };
     }
-    if (requirement.unitId && !allowedUnitIds.has(requirement.unitId)) {
+    if (
+      requirement.unitId &&
+      !allowedUnitIds.has(requirement.unitId)
+    ) {
       return { ok: false, message: "Choose a unit from this organisation." };
     }
     const skillCode = codeByName.get(requirement.skillName.toLowerCase());
@@ -122,17 +192,17 @@ export function manualPreparationToDefinition(
         message: "Each requirement must use a skill from this setup.",
       };
     }
-    const unitId =
-      state.applicability === "organisation" ? null : requirement.unitId;
-    requirements.push({
-      skill_code: skillCode,
-      job_function_id: requirement.jobFunctionId,
-      level_label: requirement.levelLabel,
-      organisational_unit_id: unitId,
-      mandatory: true,
-      evidence_requirement: requirement.evidence || null,
-      notes: null,
-    });
+    for (const unitId of confirmedUnits.units) {
+      requirements.push({
+        skill_code: skillCode,
+        job_function_id: requirement.jobFunctionId,
+        level_label: requirement.levelLabel,
+        organisational_unit_id: unitId,
+        mandatory: true,
+        evidence_requirement: requirement.evidence || null,
+        notes: null,
+      });
+    }
   }
 
   const parsed = skillsSetupDefinitionSchema.safeParse({
@@ -177,4 +247,30 @@ export function manualPreparationToDefinition(
     };
   }
   return { ok: true, definition: parsed.data };
+}
+
+function confirmedRequirementUnits(
+  applicability: "organisation" | "units",
+  unitIds: readonly string[],
+  allowedUnitIds: ReadonlySet<string>,
+):
+  | { ok: true; units: Array<string | null> }
+  | { ok: false; message: string } {
+  if (applicability === "organisation") {
+    return { ok: true, units: [null] };
+  }
+  const confirmed = [...new Set(unitIds)];
+  if (confirmed.length === 0) {
+    return {
+      ok: false,
+      message:
+        "Choose at least one unit, or apply requirements wherever the job function is used.",
+    };
+  }
+  for (const unitId of confirmed) {
+    if (!allowedUnitIds.has(unitId)) {
+      return { ok: false, message: "Choose a unit from this organisation." };
+    }
+  }
+  return { ok: true, units: confirmed };
 }

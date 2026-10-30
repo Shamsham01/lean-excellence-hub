@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { SkillsQuickStartForm } from "@/components/skills/setup/quick-start-form";
 import { SkillsTerminologyNote } from "@/components/skills/setup/skills-terminology";
 import { AppLink } from "@/components/ui/app-link";
+import { resumeSkillsPreparation } from "@/modules/skills/setup/resume-preparation";
 import { quickStartPreparationSchema } from "@/modules/skills/setup/preparation";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
 import {
@@ -90,11 +91,16 @@ export default async function SkillsQuickStartPage({
       {selected ? (
         <SkillsQuickStartForm
           pack={requireSkillsStarterPack(selected)}
-          initial={
-            quickStartPreparationSchema.safeParse(preparation?.state).success
-              ? quickStartPreparationSchema.parse(preparation?.state)
-              : freshPreparation(selected)
-          }
+          initial={await resumeSkillsPreparation({
+            source: "quick_start",
+            templateKey: selected,
+            saved: preparation?.state,
+            parse: (value) => {
+              const parsed = quickStartPreparationSchema.safeParse(value);
+              return parsed.success ? parsed.data : null;
+            },
+            fresh: () => freshPreparation(selected),
+          })}
           jobFunctions={jobFunctions ?? []}
           units={units ?? []}
         />

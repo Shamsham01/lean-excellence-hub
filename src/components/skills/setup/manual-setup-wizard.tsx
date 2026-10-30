@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import {
   createManualSkillsSetupDraft,
   saveSkillsSetupPreparation,
+  startNewSkillsSetup,
 } from "@/app/(platform)/platform/skills/setup/actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,9 @@ import {
   duplicateSkillNames,
   skillNameWarning,
 } from "@/modules/skills/setup/name-warning";
-import type { ManualSkillsPreparation } from "@/modules/skills/setup/preparation";
 import { describeRequirementApplicability } from "@/modules/skills/setup/definition";
+import { manualPreparationToDefinition } from "@/modules/skills/setup/preparation";
+import type { ManualSkillsPreparation } from "@/modules/skills/setup/preparation";
 
 import { SkillsTerminologyNote } from "./skills-terminology";
 
@@ -54,6 +56,15 @@ export function ManualSkillsSetupWizard({
   const duplicates = duplicateSkillNames(
     state.skills.map((skill) => skill.name),
     existingSkillNames,
+  );
+  const previewDefinition = useMemo(
+    () =>
+      manualPreparationToDefinition(
+        state,
+        new Set(jobFunctions.map((jobFunction) => jobFunction.id)),
+        new Set(units.map((unit) => unit.id)),
+      ),
+    [jobFunctions, state, units],
   );
 
   function persist(next: ManualSkillsPreparation) {
@@ -496,31 +507,42 @@ export function ManualSkillsSetupWizard({
             Creating the draft does not publish it and does not assess anyone.
             Publishing is a separate action on the draft.
           </p>
-          <ul className="flex flex-col gap-3">
-            {state.requirements.map((requirement) => {
-              const jobFunction = jobFunctions.find(
-                (item) => item.id === requirement.jobFunctionId,
-              );
-              const unit =
-                state.applicability === "units"
-                  ? units.find((item) => state.unitIds.includes(item.id))
+          {previewDefinition.ok ? (
+            <ul className="flex flex-col gap-3">
+              {previewDefinition.definition.requirements.map((requirement) => {
+                const skill = previewDefinition.definition.skills.find(
+                  (item) => item.code === requirement.skill_code,
+                );
+                const jobFunction = jobFunctions.find(
+                  (item) => item.id === requirement.job_function_id,
+                );
+                const unit = requirement.organisational_unit_id
+                  ? units.find(
+                      (item) => item.id === requirement.organisational_unit_id,
+                    )
                   : null;
-              return (
-                <li
-                  key={`${requirement.skillName}-${requirement.jobFunctionId}`}
-                  className="text-sm"
-                >
-                  {describeRequirementApplicability({
-                    jobFunctionName:
-                      jobFunction?.name ?? "The selected job function",
-                    skillName: requirement.skillName,
-                    levelLabel: requirement.levelLabel,
-                    unitName: unit?.name ?? null,
-                  })}
-                </li>
-              );
-            })}
-          </ul>
+                return (
+                  <li
+                    key={`${requirement.skill_code}-${requirement.job_function_id}-${requirement.organisational_unit_id ?? "organisation"}`}
+                    className="text-sm"
+                    data-testid="skills-preview-requirement"
+                  >
+                    {describeRequirementApplicability({
+                      jobFunctionName:
+                        jobFunction?.name ?? "The selected job function",
+                      skillName: skill?.name ?? requirement.skill_code,
+                      levelLabel: requirement.level_label,
+                      unitName: unit?.name ?? null,
+                    })}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm" role="alert">
+              {previewDefinition.message}
+            </p>
+          )}
           {state.requirements.length === 0 ? (
             <p className="text-sm">
               No role requirements yet. You can still create the scale and
@@ -559,6 +581,30 @@ export function ManualSkillsSetupWizard({
           onClick={() => persist(state)}
         >
           Save and resume later
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          data-testid="skills-start-new-setup"
+          disabled={pending}
+          onClick={() => {
+            startTransition(async () => {
+              const result = await startNewSkillsSetup({
+                source: "manual",
+                state,
+              });
+              if ("error" in result && result.error) {
+                setError(result.error);
+                return;
+              }
+              if ("preparation" in result) {
+                setState(result.preparation);
+              }
+            });
+          }}
+        >
+          Start a new setup
         </Button>
         {state.step !== "preview" ? (
           <Button

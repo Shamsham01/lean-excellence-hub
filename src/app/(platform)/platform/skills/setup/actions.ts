@@ -1,5 +1,7 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,10 +15,16 @@ import type { SkillsBuilderProposal } from "@/modules/skills/ai-builder/types";
 import { toSkillsAuthoringError } from "@/modules/skills/errors";
 import { buildStarterPackDefinition } from "@/modules/skills/setup/definition";
 import {
+  assertConfirmedSetupUnits,
   leanAiPreparationSchema,
   manualPreparationToDefinition,
   manualSkillsPreparationSchema,
   quickStartPreparationSchema,
+  renewSkillsPreparationKey,
+} from "@/modules/skills/setup/preparation";
+import type {
+  ManualSkillsPreparation,
+  QuickStartPreparation,
 } from "@/modules/skills/setup/preparation";
 import { requireSkillsStarterPack } from "@/modules/skills/templates/catalogue";
 import type { Json } from "@/platform/supabase/database.types";
@@ -80,6 +88,49 @@ export async function saveSkillsSetupPreparation(input: {
     };
   }
   return { ok: true as const };
+}
+
+export async function startNewSkillsSetup(input: {
+  source: "manual";
+  templateKey?: string;
+  state: unknown;
+}): Promise<{ preparation: ManualSkillsPreparation } | { error: string }>;
+export async function startNewSkillsSetup(input: {
+  source: "quick_start" | "leanai";
+  templateKey?: string;
+  state: unknown;
+}): Promise<{ preparation: QuickStartPreparation } | { error: string }>;
+export async function startNewSkillsSetup(input: {
+  source: "manual" | "quick_start" | "leanai";
+  templateKey?: string;
+  state: unknown;
+}): Promise<
+  | { preparation: ManualSkillsPreparation | QuickStartPreparation }
+  | { error: string }
+> {
+  const templateKey = input.templateKey ?? "";
+  const parsed =
+    input.source === "manual"
+      ? manualSkillsPreparationSchema.safeParse(input.state)
+      : input.source === "quick_start"
+        ? quickStartPreparationSchema.safeParse(input.state)
+        : leanAiPreparationSchema.safeParse(input.state);
+  if (!parsed.success) {
+    return {
+      error:
+        "Those setup choices could not be saved. Check the fields and try again.",
+    };
+  }
+  const preparation = renewSkillsPreparationKey(parsed.data, randomUUID());
+  const saved = await saveSkillsSetupPreparation({
+    source: input.source,
+    templateKey,
+    state: preparation,
+  });
+  if ("error" in saved && saved.error) {
+    return { error: saved.error };
+  }
+  return { preparation };
 }
 
 async function readPreparation(
@@ -171,10 +222,18 @@ export async function createQuickStartSkillsDraft(formData: FormData) {
       return { error: "Choose a job function from this organisation." };
     }
   }
+  const unitError = assertConfirmedSetupUnits({
+    applicability: parsed.data.applicability,
+    unitIds: parsed.data.unitIds,
+    allowedUnitIds: lists.unitIds,
+  });
+  if (unitError) {
+    return { error: unitError };
+  }
   const defined = buildStarterPackDefinition({
     pack,
     applicability: parsed.data.applicability,
-    unitIds: parsed.data.unitIds.filter((id) => lists.unitIds.has(id)),
+    unitIds: parsed.data.unitIds,
     roleMappings: parsed.data.roleMappings.map((mapping) => ({
       suggestedRole: mapping.suggestedRole,
       jobFunctionId: mapping.jobFunctionId,
@@ -312,10 +371,18 @@ export async function createSkillsDraftFromProposal(formData: FormData) {
     };
   }
   const lists = await organisationAllowLists();
+  const unitError = assertConfirmedSetupUnits({
+    applicability: parsed.data.applicability,
+    unitIds: parsed.data.unitIds,
+    allowedUnitIds: lists.unitIds,
+  });
+  if (unitError) {
+    return { error: unitError };
+  }
   const defined = skillsProposalToDefinition({
     proposal: current.proposal,
     applicability: parsed.data.applicability,
-    unitIds: parsed.data.unitIds.filter((id) => lists.unitIds.has(id)),
+    unitIds: parsed.data.unitIds,
     roleMappings: parsed.data.roleMappings,
     allowedJobFunctionIds: lists.jobFunctionIds,
     allowedUnitIds: lists.unitIds,

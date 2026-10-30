@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import {
   createQuickStartSkillsDraft,
   saveSkillsSetupPreparation,
+  startNewSkillsSetup,
 } from "@/app/(platform)/platform/skills/setup/actions";
 import { Button } from "@/components/ui/button";
 import { buildStarterPackDefinition } from "@/modules/skills/setup/definition";
@@ -256,14 +257,41 @@ export function SkillsQuickStartForm({
           {error}
         </p>
       ) : null}
-      <Button
-        type="submit"
-        className="w-full sm:w-auto"
-        data-testid="skills-create-setup-draft"
-        disabled={pending || !preview.ok}
-      >
-        Create setup draft
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          data-testid="skills-create-setup-draft"
+          disabled={pending || !preview.ok}
+        >
+          Create setup draft
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          data-testid="skills-start-new-setup"
+          disabled={pending}
+          onClick={() => {
+            startTransition(async () => {
+              const result = await startNewSkillsSetup({
+                source: "quick_start",
+                templateKey: pack.key,
+                state,
+              });
+              if ("error" in result && result.error) {
+                setError(result.error);
+                return;
+              }
+              if ("preparation" in result) {
+                setState(result.preparation);
+              }
+            });
+          }}
+        >
+          Start a new setup
+        </Button>
+      </div>
     </form>
   );
 }

@@ -6,6 +6,7 @@ import {
   createSkillsDraftFromProposal,
   saveSkillsSetupPreparation,
   sendSkillsSetupBuilderMessage,
+  startNewSkillsSetup,
 } from "@/app/(platform)/platform/skills/setup/actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,15 @@ type Named = { id: string; name: string };
 
 export function SkillsBuilderPanel({
   initial,
+  initialProposal = null,
+  initialProposalMessageId = null,
   jobFunctions,
   units,
   unavailableMessage,
 }: {
   initial: QuickStartPreparation;
+  initialProposal?: SkillsBuilderProposal | null;
+  initialProposalMessageId?: string | null;
   jobFunctions: Named[];
   units: Named[];
   unavailableMessage: string | null;
@@ -29,9 +34,11 @@ export function SkillsBuilderPanel({
   const [state, setState] = useState(initial);
   const [message, setMessage] = useState("");
   const [reply, setReply] = useState<string | null>(null);
-  const [proposal, setProposal] = useState<SkillsBuilderProposal | null>(null);
+  const [proposal, setProposal] = useState<SkillsBuilderProposal | null>(
+    initialProposal,
+  );
   const [proposalMessageId, setProposalMessageId] = useState<string | null>(
-    null,
+    initialProposalMessageId,
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -68,6 +75,30 @@ export function SkillsBuilderPanel({
     ),
   ];
 
+  function applyTurn(
+    result: Awaited<ReturnType<typeof sendSkillsSetupBuilderMessage>>,
+  ) {
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+    setReply(result.message);
+    if (result.proposal) {
+      setProposal(result.proposal);
+      setProposalMessageId(result.proposalMessageId);
+      setMessage("");
+      setError(result.issues.length > 0 ? result.issues.join(" ") : null);
+      return;
+    }
+    setProposal(null);
+    setProposalMessageId(null);
+    setError(
+      result.issues.length > 0
+        ? result.issues.join(" ")
+        : "LeanAI did not return a proposal. Retry, or describe the operation again.",
+    );
+  }
+
   function persist(next: QuickStartPreparation) {
     setState(next);
     startTransition(async () => {
@@ -96,6 +127,12 @@ export function SkillsBuilderPanel({
           data-testid="skills-builder-proposal"
         >
           <h2 className="text-lg font-medium">Proposed setup — not applied</h2>
+          <p
+            className="text-sm font-medium"
+            data-testid="skills-builder-proposal-title"
+          >
+            {proposal.title}
+          </p>
           <p className="text-sm">
             {proposal.scale.name}:{" "}
             {proposal.scale.levels.map((level) => level.label).join(", ")}
@@ -117,6 +154,7 @@ export function SkillsBuilderPanel({
                 {role}
                 <select
                   className="border-input h-10 min-w-0 rounded-md border bg-background px-3"
+                  data-testid={`skills-builder-map-${role}`}
                   value={
                     state.roleMappings.find(
                       (mapping) => mapping.suggestedRole === role,
@@ -237,41 +275,82 @@ export function SkillsBuilderPanel({
         />
       </label>
       {error ? (
-        <p className="text-sm" role="alert">
+        <p className="text-sm" role="alert" data-testid="skills-builder-error">
           {error}
         </p>
       ) : null}
-      <Button
-        type="button"
-        className="w-full sm:w-auto"
-        data-testid="skills-builder-send"
-        disabled={pending || message.trim().length === 0}
-        onClick={() => {
-          if (pending) {
-            return;
-          }
-          startTransition(async () => {
-            const result = await sendSkillsSetupBuilderMessage({
-              message,
-              intent: "propose",
-              idempotencyKey: crypto.randomUUID(),
-            });
-            if (!result.ok) {
-              setError(result.message);
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button
+          type="button"
+          className="w-full sm:w-auto"
+          data-testid="skills-builder-send"
+          disabled={pending || message.trim().length === 0}
+          onClick={() => {
+            if (pending) {
               return;
             }
-            setReply(result.message);
-            setProposal(result.proposal);
-            setProposalMessageId(result.proposalMessageId);
-            setMessage("");
-            if (result.issues.length > 0) {
-              setError(result.issues.join(" "));
+            startTransition(async () => {
+              applyTurn(
+                await sendSkillsSetupBuilderMessage({
+                  message,
+                  intent: "propose",
+                  idempotencyKey: crypto.randomUUID(),
+                }),
+              );
+            });
+          }}
+        >
+          {proposal ? "Refine proposal" : "Ask LeanAI for a proposal"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          data-testid="skills-builder-retry"
+          disabled={pending || message.trim().length === 0}
+          onClick={() => {
+            if (pending) {
+              return;
             }
-          });
-        }}
-      >
-        {proposal ? "Refine proposal" : "Ask LeanAI for a proposal"}
-      </Button>
+            startTransition(async () => {
+              applyTurn(
+                await sendSkillsSetupBuilderMessage({
+                  message,
+                  intent: "retry",
+                  idempotencyKey: crypto.randomUUID(),
+                }),
+              );
+            });
+          }}
+        >
+          Retry
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          data-testid="skills-start-new-setup"
+          disabled={pending}
+          onClick={() => {
+            startTransition(async () => {
+              const result = await startNewSkillsSetup({
+                source: "leanai",
+                templateKey: "leanai-skills-builder",
+                state,
+              });
+              if ("error" in result && result.error) {
+                setError(result.error);
+                return;
+              }
+              if ("preparation" in result) {
+                setState(result.preparation);
+              }
+            });
+          }}
+        >
+          Start a new setup
+        </Button>
+      </div>
     </div>
   );
 }

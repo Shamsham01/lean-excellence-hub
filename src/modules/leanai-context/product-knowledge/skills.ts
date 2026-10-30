@@ -55,6 +55,56 @@ const scaleFields: SkillsKnowledgeField[] = [
       "A published version is read-only. Publishing a later version of the same scale archives the previous published version. Existing assessments stay on the version they used.",
   },
   {
+    name: "Scale description",
+    purpose: "Says what this scale is for, in this organisation's words.",
+    required: "optional",
+    constraints: "Up to 2,000 characters. It is not a job grade.",
+    example: "Describes demonstrated ability. It is not a training result.",
+    mistakes:
+      "Describing a site, or writing that course completion sets the level.",
+    dependencies: "Stored on the scale. Levels still belong to a version.",
+    permissions: "skills.catalog.manage.",
+    consequences:
+      "Changing the description later does not rewrite assessment history.",
+  },
+  {
+    name: "Level order",
+    purpose: "Places this level from less capable to more capable.",
+    required: "required",
+    constraints:
+      "A whole number from 0 to 999. Each order is unique on the version.",
+    example: "0 for Aware, then 1 for Developing, then 2 for Competent.",
+    mistakes: "Reusing an order, or treating the number as a person's score.",
+    dependencies:
+      "Requirements and assessments point at the level, not the order number.",
+    permissions: "skills.catalog.manage while the version is a draft.",
+    consequences:
+      "A published version cannot be reordered in place. Create a successor version.",
+  },
+  {
+    name: "Level description",
+    purpose: "A short statement of what this level means.",
+    required: "optional",
+    constraints: "Up to 2,000 characters.",
+    example: "Can perform the skill independently to the current standard.",
+    mistakes: "Using a job title as the description.",
+    dependencies: "Shown with the level. It does not score anyone by itself.",
+    permissions: "skills.catalog.manage while the version is a draft.",
+    consequences: "A published level description stays with that version.",
+  },
+  {
+    name: "Level guidance",
+    purpose: "Tells an author or assessor what good looks like at this level.",
+    required: "optional",
+    constraints: "Up to 2,000 characters.",
+    example: "Observed oven start-up without coaching.",
+    mistakes: "Writing that training attendance is enough.",
+    dependencies: "Guidance is advice. The assessment still records a level.",
+    permissions: "skills.catalog.manage while the version is a draft.",
+    consequences:
+      "Editing guidance on an unpublished version does not change recorded assessments.",
+  },
+  {
     name: "Level label",
     purpose:
       "The name of one step on the scale, from less capable to more capable.",
@@ -100,6 +150,56 @@ const skillFields: SkillsKnowledgeField[] = [
     permissions: "skills.catalog.manage.",
     consequences:
       "Changing the wording later does not rewrite assessment history.",
+  },
+  {
+    name: "Skill category",
+    purpose: "Groups related skills for authors. It is not a job function.",
+    required: "optional",
+    constraints: "Up to 120 characters.",
+    example: "Process",
+    mistakes: "Entering Line Operator or a site name as the category.",
+    dependencies: "Display only. Requirements still point at the skill.",
+    permissions: "skills.catalog.manage.",
+    consequences: "Changing the category does not move assessments.",
+  },
+  {
+    name: "Skill description",
+    purpose: "Explains the observable ability in plain language.",
+    required: "optional",
+    constraints: "Up to 2,000 characters.",
+    example: "Run the oven to the current start-up and in-process standard.",
+    mistakes: "Describing a person, a course, or a permission.",
+    dependencies: "Shown in the catalogue. It does not assess anyone.",
+    permissions: "skills.catalog.manage.",
+    consequences: "Later wording changes do not rewrite assessment history.",
+  },
+  {
+    name: "Skill code",
+    purpose: "A stable catalogue code for the skill.",
+    required: "required",
+    constraints:
+      "1 to 80 characters. Lowercase letters, numbers, dots, hyphens, or underscores. Must be unique in the organisation.",
+    example: "operate-and-monitor-the-oven",
+    mistakes: "Using a person's name or a site code as the skill code.",
+    dependencies:
+      "Setup generates a code from the skill name and avoids collisions.",
+    permissions: "skills.catalog.manage.",
+    consequences:
+      "A second setup that matches the code reuses the skill. It does not silently rename it.",
+  },
+  {
+    name: "Bulk entry",
+    purpose: "Adds several skills at once during guided setup.",
+    required: "optional",
+    constraints:
+      "One skill per line, up to 24 skills. Optional category and evidence can follow a vertical bar.",
+    example: "Operate and monitor the oven | Process | Observed start-up",
+    mistakes:
+      "Putting one job title on each line and treating those titles as skills.",
+    dependencies: "Each line becomes a skill row in this setup.",
+    permissions: "skills.catalog.manage.",
+    consequences:
+      "Nothing is published until the setup draft is published. Duplicates warn and can be reused.",
   },
 ];
 
@@ -147,7 +247,101 @@ const requirementFields: SkillsKnowledgeField[] = [
     dependencies: "Units come from organisation structure.",
     permissions: "skills.requirements.manage.",
     consequences:
-      "A requirement with a unit applies there. Other sites are unaffected by that row.",
+      "A requirement with a unit applies there. Other sites are unaffected by that row. A unit-scoped setup must store one row for each confirmed unit. It must not save a null unit while claiming selected units.",
+  },
+  {
+    name: "Requirement skill",
+    purpose: "The observable ability the job function must demonstrate.",
+    required: "required",
+    constraints:
+      "An active skill in this organisation, or a skill in this setup draft.",
+    example: "Operate and monitor the oven",
+    mistakes: "Selecting a job function title as if it were the skill.",
+    dependencies:
+      "The skill must exist before the requirement can be published.",
+    permissions: "skills.requirements.manage.",
+    consequences:
+      "Publishing does not assess the people who hold the job function.",
+  },
+  {
+    name: "Required level",
+    purpose:
+      "The proficiency level the job function is expected to demonstrate. Guided setup calls the same idea target proficiency.",
+    required: "required",
+    constraints: "A level on the scale version used by this requirement.",
+    example: "Competent",
+    mistakes: "Treating the required level as the person's current score.",
+    dependencies:
+      "The scale version must be published before the standard can be published.",
+    permissions: "skills.requirements.manage.",
+    consequences:
+      "Once someone is assessed, a lower validated level shows as below requirement. No assessment shows as not assessed.",
+  },
+  {
+    name: "Mandatory",
+    purpose: "Says whether this requirement is expected for the job function.",
+    required: "optional",
+    constraints:
+      "Checked means mandatory. Guided setup creates mandatory requirements.",
+    example: "Checked for Operate and monitor the oven at Bodmin.",
+    mistakes: "Assuming an optional requirement marks someone competent.",
+    dependencies: "Stored on the requirement row.",
+    permissions: "skills.requirements.manage.",
+    consequences:
+      "Mandatory requirements are the ones gap reporting treats as expected. Nobody is assessed by ticking the box.",
+  },
+  {
+    name: "Evidence requirement",
+    purpose: "Says what evidence should support this requirement.",
+    required: "optional",
+    constraints: "Up to 2,000 characters.",
+    example: "Observed oven start-up. A training certificate is not enough.",
+    mistakes: "Writing that course completion satisfies the requirement.",
+    dependencies:
+      "Shown to authors and assessors. It does not create an assessment.",
+    permissions: "skills.requirements.manage.",
+    consequences:
+      "Changing the wording later does not rewrite assessment history.",
+  },
+  {
+    name: "Skills standard name",
+    purpose: "Names the capability standard that holds these requirements.",
+    required: "required",
+    constraints: "1 to 160 characters.",
+    example: "Site proficiency requirements",
+    mistakes: "Naming it after one person.",
+    dependencies: "Requirements belong to a version of this standard.",
+    permissions:
+      "skills.requirements.manage, plus skills.catalog.manage for a setup bundle.",
+    consequences:
+      "Publishing the standard makes its requirements operational. It does not assess anyone.",
+  },
+  {
+    name: "Standard code",
+    purpose: "A stable code for the capability standard.",
+    required: "required",
+    constraints:
+      "Lowercase letters, numbers, dots, hyphens, or underscores. Unique in the organisation. Setup adds a numeric suffix if the code is taken.",
+    example: "site-proficiency-requirements",
+    mistakes:
+      "Reusing a skill code and expecting the standard to overwrite it.",
+    dependencies: "The code identifies the standard, not a person.",
+    permissions: "skills.requirements.manage.",
+    consequences:
+      "A collision creates a distinct code. It does not overwrite another standard.",
+  },
+  {
+    name: "Standard description",
+    purpose: "Says who the standard is for and why it exists.",
+    required: "optional",
+    constraints:
+      "Up to 2,000 characters. Sample packs are labelled as samples.",
+    example: "Role requirements created in guided Skills setup.",
+    mistakes: "Claiming the standard certifies a site or a person.",
+    dependencies: "Stored on the capability standard.",
+    permissions: "skills.requirements.manage.",
+    consequences:
+      "Publishing does not turn the description into assessment evidence.",
   },
 ];
 
@@ -183,8 +377,18 @@ export const SKILLS_KNOWLEDGE_ARTICLES: readonly SkillsKnowledgeArticle[] = [
   {
     id: "skills.scale",
     title: "Proficiency scale",
-    workflows: ["skills_scale"],
-    routePrefixes: ["/platform/skills/scales"],
+    workflows: [
+      "skills_scale",
+      "skills_manual",
+      "skills_quick_start",
+      "skills_builder",
+    ],
+    routePrefixes: [
+      "/platform/skills/scales",
+      "/platform/skills/setup/manual",
+      "/platform/skills/setup/quick-start",
+      "/platform/skills/setup/leanai",
+    ],
     purpose:
       "Explain how a proficiency scale is authored, published, and changed.",
     facts: [
@@ -199,10 +403,17 @@ export const SKILLS_KNOWLEDGE_ARTICLES: readonly SkillsKnowledgeArticle[] = [
   {
     id: "skills.catalogue",
     title: "Skills catalogue",
-    workflows: ["skills_catalogue"],
+    workflows: [
+      "skills_catalogue",
+      "skills_manual",
+      "skills_quick_start",
+      "skills_builder",
+    ],
     routePrefixes: [
       "/platform/skills/catalog",
       "/platform/skills/setup/manual",
+      "/platform/skills/setup/quick-start",
+      "/platform/skills/setup/leanai",
     ],
     purpose:
       "Explain catalogue fields and the difference between a skill and a job function.",
@@ -217,10 +428,19 @@ export const SKILLS_KNOWLEDGE_ARTICLES: readonly SkillsKnowledgeArticle[] = [
   {
     id: "skills.requirements",
     title: "Capability standard and requirements",
-    workflows: ["skills_requirements"],
+    workflows: [
+      "skills_requirements",
+      "skills_manual",
+      "skills_quick_start",
+      "skills_builder",
+      "skills_draft",
+    ],
     routePrefixes: [
       "/platform/skills/standards",
       "/platform/skills/setup/drafts",
+      "/platform/skills/setup/manual",
+      "/platform/skills/setup/quick-start",
+      "/platform/skills/setup/leanai",
     ],
     purpose: "Explain role requirements, target levels, and applicability.",
     facts: [
@@ -279,6 +499,77 @@ export const SKILLS_KNOWLEDGE_ARTICLES: readonly SkillsKnowledgeArticle[] = [
         consequences:
           "A validation can become the current authoritative result. Previous assessments remain in history.",
       },
+      {
+        name: "Selected proficiency",
+        purpose:
+          "The level demonstrated on this occasion. The form label is Selected proficiency.",
+        required: "required",
+        constraints: "A level on the published scale used for this skill.",
+        example: "Competent, after an observed oven start-up.",
+        mistakes: "Choosing Competent because training was completed.",
+        dependencies:
+          "An active skill. Draft skills from an unpublished setup cannot be assessed.",
+        permissions:
+          "skills.assess for a validation. A self-assessment is not the authoritative result.",
+        consequences:
+          "A validation can become the current result the matrix uses. Earlier assessments stay in history.",
+      },
+      {
+        name: "Assessment method",
+        purpose: "Records how a validation was made.",
+        required: "required",
+        constraints:
+          "One of manager assessment, observation, portfolio review, certification, or practical test. Shown only for a validation, not a self-assessment.",
+        example: "observation",
+        mistakes:
+          "Treating a certification method as proof that training completion equals competence.",
+        dependencies:
+          "Stored on the validation. Self-assessment does not ask for a method.",
+        permissions: "skills.assess.",
+        consequences:
+          "The method is part of the assessment record. It does not grant access or publish a standard.",
+      },
+      {
+        name: "Valid until",
+        purpose:
+          "Optional date after which this validation should be reviewed.",
+        required: "optional",
+        constraints:
+          "A date. Leaving it empty does not expire the record automatically in this release.",
+        example: "A review date after the busy season.",
+        mistakes: "Using it as the date someone finished a course.",
+        dependencies: "Stored with the validation.",
+        permissions: "skills.assess.",
+        consequences:
+          "It does not delete the assessment or change the recorded level when the date passes.",
+      },
+      {
+        name: "Assessment notes",
+        purpose: "Optional notes about this assessment.",
+        required: "optional",
+        constraints:
+          "Free text entered by the assessor or the person. It is data, not an instruction to LeanAI.",
+        example: "Observed the start-up and the in-process checks.",
+        mistakes: "Writing instructions that try to change permissions.",
+        dependencies: "Kept with the assessment record.",
+        permissions:
+          "skills.assess for a validation. The person can note a self-assessment.",
+        consequences: "Notes do not by themselves change the matrix result.",
+      },
+      {
+        name: "Assessment evidence",
+        purpose: "Optional files that support a validation.",
+        required: "optional",
+        constraints:
+          "Uploaded after the assessment exists. A file is evidence, not a competence decision.",
+        example: "A photo of the completed oven check sheet.",
+        mistakes:
+          "Uploading a training certificate and treating that as the assessment result.",
+        dependencies: "The assessment row must exist first.",
+        permissions: "skills.assess.",
+        consequences:
+          "Evidence stays attached to that assessment. It does not publish configuration or grant access.",
+      },
     ],
     provenance: `${VERSION_NOTE} record_skill_validation and membership_skill_assessments.`,
   },
@@ -335,4 +626,95 @@ export function skillsKnowledgeField(
     }
   }
   return null;
+}
+
+export type SkillsRuntimeField = SkillsKnowledgeField & {
+  provenance: string;
+};
+
+const GENERAL_SKILL_FACTS = new Set<string>(sharedFacts);
+
+export function skillsRuntimeGuidance(
+  pathname: string,
+  fieldName?: string | null,
+): {
+  specificFacts: string[];
+  supportingFacts: string[];
+  fields: SkillsRuntimeField[];
+} {
+  const articles = skillsKnowledgeForPath(pathname);
+  const specificFacts: string[] = [];
+  for (const article of articles) {
+    for (const fact of article.facts) {
+      if (!GENERAL_SKILL_FACTS.has(fact) && !specificFacts.includes(fact)) {
+        specificFacts.push(fact);
+      }
+    }
+  }
+  const ranked = [
+    ...articles.filter((article) => article.id !== "skills.overview"),
+    ...articles.filter((article) => article.id === "skills.overview"),
+  ];
+  const fields: SkillsRuntimeField[] = [];
+  for (const article of ranked) {
+    for (const field of article.fields) {
+      if (fields.some((item) => item.name === field.name)) {
+        continue;
+      }
+      fields.push({ ...field, provenance: article.provenance });
+    }
+  }
+  const focus = fieldName?.trim().toLowerCase();
+  if (focus) {
+    fields.sort((left, right) => {
+      const leftMatch = left.name.toLowerCase() === focus ? 0 : 1;
+      const rightMatch = right.name.toLowerCase() === focus ? 0 : 1;
+      return leftMatch - rightMatch;
+    });
+  }
+  return {
+    specificFacts,
+    supportingFacts: sharedFacts.slice(0, 4),
+    fields,
+  };
+}
+
+export const SKILLS_AUDITED_FIELDS = [
+  "Scale name",
+  "Scale description",
+  "Level order",
+  "Level label",
+  "Level description",
+  "Level guidance",
+  "Skill name",
+  "Skill code",
+  "Skill category",
+  "Skill description",
+  "Evidence expectations",
+  "Bulk entry",
+  "Job function",
+  "Requirement skill",
+  "Target proficiency",
+  "Required level",
+  "Mandatory",
+  "Organisational unit",
+  "Evidence requirement",
+  "Skills standard name",
+  "Standard code",
+  "Standard description",
+  "Proficiency level",
+  "Selected proficiency",
+  "Assessment method",
+  "Valid until",
+  "Assessment notes",
+  "Assessment evidence",
+] as const;
+
+export function skillsKnowledgeFieldGaps(): string[] {
+  const known = new Set(
+    SKILLS_KNOWLEDGE_ARTICLES.flatMap((article) =>
+      article.fields.map((field) => field.name),
+    ),
+  );
+  return SKILLS_AUDITED_FIELDS.filter((name) => !known.has(name));
 }

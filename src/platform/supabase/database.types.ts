@@ -9966,6 +9966,7 @@ export type Database = {
           idempotency_key: string
           organisation_id: string
           published_at: string | null
+          request_definition: Json
           sample: boolean
           scale_id: string | null
           scale_version_id: string | null
@@ -9988,6 +9989,7 @@ export type Database = {
           idempotency_key: string
           organisation_id: string
           published_at?: string | null
+          request_definition: Json
           sample?: boolean
           scale_id?: string | null
           scale_version_id?: string | null
@@ -10010,6 +10012,7 @@ export type Database = {
           idempotency_key?: string
           organisation_id?: string
           published_at?: string | null
+          request_definition?: Json
           sample?: boolean
           scale_id?: string | null
           scale_version_id?: string | null

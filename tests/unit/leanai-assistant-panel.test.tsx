@@ -45,6 +45,8 @@ const view: LeanAiAssistantView = {
   ],
   relevantState: { programmeCount: 0 },
   allowedActions: ["Create or edit programmes"],
+  fieldGuidance: [],
+  guidanceFacts: [],
   recommendation: {
     key: "suggestions_programme_setup",
     moduleKey: "suggestions",

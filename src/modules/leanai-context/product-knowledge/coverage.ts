@@ -1,17 +1,23 @@
+import { skillsKnowledgeFieldGaps } from "./skills";
+
 export type PlatformKnowledgeCoverage = {
   module: string;
   status: "complete" | "partial" | "not_started";
   followUp: string;
 };
 
+const skillsFieldGaps = skillsKnowledgeFieldGaps();
+
 /** Skills is the only module with field-level product knowledge in this release. */
 export const PLATFORM_KNOWLEDGE_COVERAGE: readonly PlatformKnowledgeCoverage[] =
   [
     {
       module: "skills",
-      status: "complete",
+      status: skillsFieldGaps.length === 0 ? "complete" : "partial",
       followUp:
-        "Keep the bundle, route map, and eval cases updated when fields or publish rules change.",
+        skillsFieldGaps.length === 0
+          ? "Audited Skills authoring and assessment fields are in this bundle. Guided setup labels What the scale means, What this level means, and Target proficiency map to Scale description, Level guidance, and Required level. Matrix states are facts, not data-entry fields. Other modules are not covered by this bundle."
+          : `These audited Skills fields are not in the bundle yet: ${skillsFieldGaps.join(", ")}.`,
     },
     {
       module: "maturity",

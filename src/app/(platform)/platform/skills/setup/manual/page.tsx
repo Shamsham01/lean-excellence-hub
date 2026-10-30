@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { ManualSkillsSetupWizard } from "@/components/skills/setup/manual-setup-wizard";
+import { resumeSkillsPreparation } from "@/modules/skills/setup/resume-preparation";
 import { manualSkillsPreparationSchema } from "@/modules/skills/setup/preparation";
 import type { ManualSkillsPreparation } from "@/modules/skills/setup/preparation";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -70,14 +71,24 @@ export default async function ManualSkillsSetupPage() {
       .order("name")
       .limit(100),
   ]);
-  const parsed = manualSkillsPreparationSchema.safeParse(preparation?.state);
+  const initial = await resumeSkillsPreparation({
+    source: "manual",
+    templateKey: "",
+    saved: preparation?.state,
+    parse: (value) => {
+      const parsed = manualSkillsPreparationSchema.safeParse(value);
+      return parsed.success ? parsed.data : null;
+    },
+    fresh: freshPreparation,
+  });
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <h1 className="text-3xl font-semibold tracking-tight">
         Guided Skills setup
       </h1>
       <ManualSkillsSetupWizard
-        initial={parsed.success ? parsed.data : freshPreparation()}
+        key={initial.idempotencyKey}
+        initial={initial}
         jobFunctions={jobFunctions ?? []}
         units={units ?? []}
         existingSkillNames={(skills ?? []).map((skill) => skill.name)}

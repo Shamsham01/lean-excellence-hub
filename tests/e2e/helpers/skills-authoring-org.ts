@@ -11,9 +11,13 @@ const skillsAuthoringUser = {
 export type SkillsAuthoringOrganisation = {
   email: string;
   password: string;
+  organisationId: string;
   organisationName: string;
   jobFunctionName: string;
   displayName: string;
+  bodminPackingName: string;
+  bodminOvenName: string;
+  exeterOvenName: string;
 };
 
 function resolveSupabaseEnv() {
@@ -153,6 +157,55 @@ export async function ensureSkillsAuthoringOrganisation(): Promise<SkillsAuthori
     throw unitError ?? new Error("Site was not created");
   }
 
+  const bodminPackingName = "Bodmin Packing";
+  const bodminOvenName = "Bodmin Oven";
+  const exeterOvenName = "Exeter Oven";
+  const childUnits = [
+    {
+      parentId: unitId as string,
+      code: "bodmin-packing",
+      name: bodminPackingName,
+    },
+    {
+      parentId: unitId as string,
+      code: "bodmin-oven",
+      name: bodminOvenName,
+    },
+  ];
+  for (const unit of childUnits) {
+    const created = await owner.rpc("create_organisation_unit", {
+      target_organisation_id: organisationId,
+      target_parent_unit_id: unit.parentId,
+      unit_code: unit.code,
+      unit_name: unit.name,
+      unit_type: "department",
+    });
+    if (created.error) {
+      throw created.error;
+    }
+  }
+
+  const exeterSite = await owner.rpc("create_organisation_unit", {
+    target_organisation_id: organisationId,
+    target_parent_unit_id: null,
+    unit_code: "exeter-bakery",
+    unit_name: "Exeter Bakery",
+    unit_type: "site",
+  });
+  if (exeterSite.error || !exeterSite.data) {
+    throw exeterSite.error ?? new Error("Exeter site was not created");
+  }
+  const exeterOven = await owner.rpc("create_organisation_unit", {
+    target_organisation_id: organisationId,
+    target_parent_unit_id: exeterSite.data,
+    unit_code: "exeter-oven",
+    unit_name: exeterOvenName,
+    unit_type: "department",
+  });
+  if (exeterOven.error) {
+    throw exeterOven.error;
+  }
+
   const { data: jobFunctionId, error: jobFunctionError } = await owner.rpc(
     "create_job_function",
     {
@@ -193,8 +246,42 @@ export async function ensureSkillsAuthoringOrganisation(): Promise<SkillsAuthori
   return {
     email: skillsAuthoringUser.email,
     password: skillsAuthoringUser.password,
+    organisationId: organisationId as string,
     organisationName,
     jobFunctionName,
     displayName: resolvedName || "Person",
+    bodminPackingName,
+    bodminOvenName,
+    exeterOvenName,
   };
+}
+
+export async function enableSkillsAuthoringAi(organisationId: string) {
+  const { url, publishableKey } = resolveSupabaseEnv();
+  if (!url || !publishableKey) {
+    throw new Error("Supabase URL and publishable key are required");
+  }
+  const owner = createClient(url, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: signInError } = await owner.auth.signInWithPassword({
+    email: skillsAuthoringUser.email,
+    password: skillsAuthoringUser.password,
+  });
+  if (signInError) {
+    throw signInError;
+  }
+  const { error: switchError } = await owner.rpc("switch_organisation", {
+    target_organisation_id: organisationId,
+  });
+  if (switchError) {
+    throw switchError;
+  }
+  const updated = await owner.rpc("update_organisation_ai_settings", {
+    target_ai_enabled: true,
+    target_monthly_token_ceiling: 200000,
+  });
+  if (updated.error) {
+    throw updated.error;
+  }
 }

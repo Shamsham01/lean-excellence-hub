@@ -411,6 +411,8 @@ describe("Coach history display", () => {
       remainingSetup: [],
       relevantState: {},
       allowedActions: [],
+      fieldGuidance: [],
+      guidanceFacts: [],
       recommendation: null,
     };
     const page = coachPageContextFromView(view);

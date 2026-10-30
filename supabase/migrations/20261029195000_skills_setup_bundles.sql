@@ -33,6 +33,7 @@ create table public.skill_setup_bundles (
   applicability text not null default 'organisation',
   sample boolean not null default false,
   unresolved jsonb not null default '[]'::jsonb,
+  request_definition jsonb not null,
   scale_id uuid,
   scale_version_id uuid,
   capability_set_id uuid,
@@ -367,6 +368,8 @@ declare
   seen_labels text[] := '{}';
   seen_orders integer[] := '{}';
   existing_bundle_id uuid;
+  existing_bundle_status text;
+  existing_request_definition jsonb;
   existing_scale_id uuid;
   existing_version_id uuid;
   incompatible_scale boolean := false;
@@ -427,14 +430,23 @@ begin
     hashtextextended(org_id::text || ':skill-setup:' || target_idempotency_key, 0)
   );
 
-  select bundle_row.id
-  into existing_bundle_id
+  select bundle_row.id, bundle_row.status, bundle_row.request_definition
+  into existing_bundle_id, existing_bundle_status, existing_request_definition
   from public.skill_setup_bundles bundle_row
   where bundle_row.organisation_id = org_id
     and bundle_row.idempotency_key = target_idempotency_key;
 
   if existing_bundle_id is not null then
-    return existing_bundle_id;
+    if existing_bundle_status = 'draft'
+      and existing_request_definition = target_definition then
+      return existing_bundle_id;
+    end if;
+    if existing_bundle_status = 'draft' then
+      raise exception 'skill setup creation key does not match this content'
+        using errcode = '22023';
+    end if;
+    raise exception 'skill setup creation key is already finished'
+      using errcode = '22023';
   end if;
 
   definition := private.module_setup_require_object(target_definition, 'definition');
@@ -797,6 +809,9 @@ begin
     );
     if applicability_text = 'organisation' then
       requirement_unit_id := null;
+    elsif requirement_unit_id is null then
+      raise exception 'unit applicability requires an organisational unit'
+        using errcode = '22023';
     end if;
     if requirement_unit_id is not null and not exists (
       select 1
@@ -876,6 +891,7 @@ begin
     applicability,
     sample,
     unresolved,
+    request_definition,
     scale_id,
     scale_version_id,
     capability_set_id,
@@ -893,6 +909,7 @@ begin
     applicability_text,
     sample_flag,
     unresolved_json,
+    target_definition,
     scale_id,
     scale_version_id,
     set_id,
@@ -990,7 +1007,6 @@ begin
       where item_row.organisation_id = org_id
         and item_row.bundle_id = bundle_row.id
         and item_row.record_kind = 'skill'
-        and item_row.ownership = 'created'
     );
 
   select version_row.status
@@ -1079,9 +1095,7 @@ begin
     order by item.record_kind, item.label
   loop
     reason := null;
-    if item_row.ownership = 'reused' then
-      reason := 'reused record';
-    elsif item_row.record_kind = 'skill' then
+    if item_row.record_kind = 'skill' then
       select skill_row.status
       into skill_status
       from public.skills skill_row

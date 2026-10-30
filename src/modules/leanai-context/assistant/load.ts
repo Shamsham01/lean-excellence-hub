@@ -5,7 +5,10 @@ import { cache } from "react";
 import { assessCoachAiEligibility } from "@/modules/leanai-context/coach/eligibility";
 import { loadLeanAiInterventionPermissions } from "@/modules/leanai-context/interventions/load";
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
-import { AI_PERMISSIONS } from "@/modules/operational/permissions";
+import {
+  AI_PERMISSIONS,
+  SKILLS_PERMISSIONS,
+} from "@/modules/operational/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
   getMaturityFrameworkTemplate,
@@ -25,6 +28,7 @@ import { buildMaturityAssessmentAssistantState } from "./maturity-assessment-sta
 import { assistantPageDefinitionFor } from "./product-pages";
 import { parseAssistantRoute } from "./route-map";
 import { selectAssistantIntervention } from "./select-recommendation";
+import { buildSkillsLiveAssistantState } from "./skills-state";
 import { buildStructureAssistantState } from "./structure-state";
 import {
   buildSuggestionsSetupState,
@@ -69,6 +73,7 @@ export async function resolveLeanAiAssistantView(
   await prefetchMemberPermissions([
     AI_PERMISSIONS.use,
     MATURITY_PERMISSIONS.modelsManage,
+    SKILLS_PERMISSIONS.read,
     "suggestions.programmes.manage",
   ]);
 
@@ -357,6 +362,44 @@ export async function resolveLeanAiAssistantView(
     }
   }
 
+  if (identity.module === "skills") {
+    const canReadSkills = await currentMemberHasPermission(
+      SKILLS_PERMISSIONS.read,
+    );
+    if (!canReadSkills) {
+      Object.assign(
+        relevantState,
+        buildSkillsLiveAssistantState({ canReadSkills: false }),
+      );
+    } else {
+      const [activeSkills, draftSkills, publishedStandards] = await Promise.all(
+        [
+          supabase
+            .from("skills")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "active"),
+          supabase
+            .from("skills")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "draft"),
+          supabase
+            .from("skill_capability_set_versions")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "published"),
+        ],
+      );
+      Object.assign(
+        relevantState,
+        buildSkillsLiveAssistantState({
+          canReadSkills: true,
+          activeSkillCount: activeSkills.count ?? 0,
+          draftSkillCount: draftSkills.count ?? 0,
+          publishedStandardCount: publishedStandards.count ?? 0,
+        }),
+      );
+    }
+  }
+
   const remainingSetup = flattenRemaining(snapshot.readiness.items);
   for (const reason of extraRemaining) {
     if (
@@ -415,6 +458,8 @@ export async function resolveLeanAiAssistantView(
     relevantState,
     allowedActions:
       allowedActions.length > 0 ? allowedActions : grantedActions.slice(0, 6),
+    fieldGuidance: [...(definition.fieldGuidance ?? [])],
+    guidanceFacts: [...definition.facts],
     recommendation,
   };
 }
