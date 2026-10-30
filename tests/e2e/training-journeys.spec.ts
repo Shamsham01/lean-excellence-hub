@@ -25,7 +25,11 @@ test.describe("Milestone 7 training journeys", () => {
 
     await expect(page.getByRole("heading", { name: "Training" })).toBeVisible();
     await expect(page.getByText("Training compliance")).toBeVisible();
-    await expect(page.getByText(DEMO_TRAINING_COURSES[0].name)).toBeVisible();
+    await expect(
+      page
+        .getByTestId(/^training-hub-course-link-/)
+        .filter({ hasText: DEMO_TRAINING_COURSES[0].name }),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Training matrix" }).click();
     await expect(page).toHaveURL(/\/platform\/training\/matrix/);
