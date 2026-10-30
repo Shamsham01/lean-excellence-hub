@@ -25,6 +25,7 @@ export type PlatformNavItem = {
   label: string;
   permission: string;
   viewPermission?: string;
+  alternatePermissions?: readonly string[];
   icon: PlatformNavIcon;
   organisationScopeOnly?: boolean;
   universalAccess?: boolean;
@@ -119,6 +120,7 @@ export const platformNavigation: PlatformNavItem[] = [
     label: "Suggestions",
     permission: "suggestions.read",
     viewPermission: "workplace.view",
+    alternatePermissions: ["suggestions.submit"],
     icon: "suggestions",
     section: "improvement",
   },
@@ -229,6 +231,19 @@ export function groupPlatformNavigation(items: PlatformNavItem[]) {
     .filter((group) => group.items.length > 0);
 }
 
+export function platformNavItemIsGranted(
+  item: PlatformNavItem,
+  hasPermission: (permissionKey: string) => boolean,
+) {
+  return (
+    hasPermission(item.permission) ||
+    (item.viewPermission ? hasPermission(item.viewPermission) : false) ||
+    (item.alternatePermissions ?? []).some((permissionKey) =>
+      hasPermission(permissionKey),
+    )
+  );
+}
+
 export function filterPlatformNavigation(
   grantedPermissions:
     ReadonlySet<string> | ((permissionKey: string) => boolean),
@@ -238,9 +253,7 @@ export function filterPlatformNavigation(
       ? grantedPermissions
       : (permissionKey: string) => grantedPermissions.has(permissionKey);
 
-  return platformNavigation.filter(
-    (item) =>
-      hasPermission(item.permission) ||
-      (item.viewPermission ? hasPermission(item.viewPermission) : false),
+  return platformNavigation.filter((item) =>
+    platformNavItemIsGranted(item, hasPermission),
   );
 }

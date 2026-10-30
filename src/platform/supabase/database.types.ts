@@ -13886,7 +13886,10 @@ export type Database = {
           target_membership_id: string
         }[]
       }
-      get_workplace_feed: { Args: { target_module: string }; Returns: Json }
+      get_workplace_feed: {
+        Args: { target_module: string; target_page?: number }
+        Returns: Json
+      }
       get_workplace_record: {
         Args: { target_module: string; target_record_id: string }
         Returns: Json
@@ -14109,6 +14112,10 @@ export type Database = {
       }
       mark_workforce_provision_needs_remediation: {
         Args: { target_failure_reason: string; target_intent_id: string }
+        Returns: boolean
+      }
+      member_has_grant_permission: {
+        Args: { target_permission_key: string }
         Returns: boolean
       }
       member_has_permission: {

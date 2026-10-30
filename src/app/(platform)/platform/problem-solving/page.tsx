@@ -1,4 +1,5 @@
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,10 @@ export default async function ProblemSolvingPortfolioPage({
         searchFilter={params.search ?? null}
         severityFilter={params.severity ?? null}
         canCreate={canCreate}
+      />
+      <WorkplaceSharedRecords
+        module="problem_solving"
+        title="Problem solving"
       />
     </div>
   );

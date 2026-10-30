@@ -1,6 +1,7 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,6 +162,7 @@ export default async function FiveSOverviewPage() {
           </Button>
         </CardContent>
       </Card>
+      <WorkplaceSharedRecords module="five_s" title="5S" />
     </div>
   );
 }

@@ -57,9 +57,7 @@ export function visibleHomeSections(access: HomeAccess): HomeVisibility {
     maturityCard: maturityOpen,
     peopleCard: access.canReadPeople,
     recentAssessments: access.canReadMaturity,
-    workplaceActivity:
-      access.canViewWorkplace &&
-      (!access.canReadActions || !access.canReadFiveS || !access.canReadGemba),
+    workplaceActivity: access.canViewWorkplace,
     yourProfile: true,
     submitSuggestion: access.canSubmitSuggestions,
     fiveSViewingCopy: access.canViewWorkplace && !access.canReadFiveS,

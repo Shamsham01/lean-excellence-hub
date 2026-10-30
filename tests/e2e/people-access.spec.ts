@@ -21,6 +21,22 @@ async function fitsViewport(page: Page, testId: string, width: number) {
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.width).toBeLessThanOrEqual(width);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
+}
+
+async function controlFits(page: Page, selector: string, width: number) {
+  const box = await page.locator(selector).boundingBox();
+  expect(box, selector).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(-1);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
+}
+
+async function pageDoesNotScrollHorizontally(page: Page) {
+  const widths = await page.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth,
+  }));
+  expect(widths.scroll).toBeLessThanOrEqual(widths.client + 1);
 }
 
 test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
@@ -56,10 +72,29 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
     await page.getByTestId("add-invitation-grant").click();
     await expect(page.locator("#invite-role-1")).toBeVisible();
 
+    await page.locator("#invite-primary-unit").evaluate((select) => {
+      const option = document.createElement("option");
+      option.value = "long-hierarchy-path";
+      option.textContent =
+        "North Region / Manufacturing Campus / Final Assembly Site / Body Shop / Line 4 / Station With An Extremely Long Hierarchy Path";
+      select.append(option);
+      (select as HTMLSelectElement).value = option.value;
+    });
+
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       await expect(form).toBeVisible();
       await fitsViewport(page, "invite-colleague-form", viewport.width);
+      await controlFits(page, "#invite-job-function", viewport.width);
+      await controlFits(page, "#invite-primary-unit", viewport.width);
+      await controlFits(page, "#invite-role", viewport.width);
+      await controlFits(page, "#invite-scope", viewport.width);
+      await controlFits(
+        page,
+        "[data-testid='invitation-access-preview']",
+        viewport.width,
+      );
+      await pageDoesNotScrollHorizontally(page);
     }
 
     const operatorPreset = page.getByTestId("operator-access-preset");
@@ -82,6 +117,9 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
         page.getByText("Viewing: Their own suggestions"),
       ).toBeVisible();
       await fitsViewport(page, "invite-colleague-form", 390);
+      await controlFits(page, "#operator-access-site", 390);
+      await controlFits(page, "#invite-role-1", 390);
+      await pageDoesNotScrollHorizontally(page);
     }
 
     await signInAsDemoUser(page, "operator");
@@ -90,6 +128,12 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
       await page.setViewportSize(viewport);
       await expect(page.getByTestId("your-access-summary")).toBeVisible();
       await fitsViewport(page, "profile-settings-page", viewport.width);
+      await controlFits(
+        page,
+        "[data-testid='your-access-summary']",
+        viewport.width,
+      );
+      await pageDoesNotScrollHorizontally(page);
     }
   });
 });

@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/platform/page-header";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { RecognitionHistory } from "@/components/recognition/recognition-history";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,7 @@ export default async function RecognitionPage() {
       </div>
 
       <RecognitionHistory awards={history} canManage={canManage} />
+      <WorkplaceSharedRecords module="recognition" title="Recognition" />
     </div>
   );
 }

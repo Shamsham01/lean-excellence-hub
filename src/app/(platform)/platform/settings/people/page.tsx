@@ -171,7 +171,10 @@ export default async function PeopleSettingsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-8" data-testid="people-settings-page">
+    <div
+      className="flex w-full max-w-full min-w-0 flex-col gap-8"
+      data-testid="people-settings-page"
+    >
       <PageHeader
         title="People and invitations"
         description="Bring colleagues into your organisation with the right access and work assignments."

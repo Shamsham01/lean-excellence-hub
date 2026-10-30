@@ -1,4 +1,5 @@
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -164,6 +165,7 @@ export default async function SkillsOverviewPage() {
         canManageCatalog={canManageCatalog}
         canManageRequirements={canManageRequirements}
       />
+      <WorkplaceSharedRecords module="skills" title="Skills" />
     </div>
   );
 }

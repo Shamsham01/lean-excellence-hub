@@ -3,6 +3,9 @@ import "server-only";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import type { WorkplaceModuleKey } from "./access";
+import { readWorkplacePage } from "./page-query";
+
+export const WORKPLACE_FEED_PAGE_SIZE = 25;
 
 export type WorkplaceFeedRecord = {
   id: string;
@@ -15,7 +18,20 @@ export type WorkplaceFeedRecord = {
 
 type FeedPayload = {
   records?: unknown;
+  page?: unknown;
+  page_size?: unknown;
+  has_more?: unknown;
 };
+
+export type WorkplaceFeedResult =
+  | {
+      status: "ready";
+      records: WorkplaceFeedRecord[];
+      page: number;
+      pageSize: number;
+      hasMore: boolean;
+    }
+  | { status: "error"; message: string };
 
 function readRecord(value: unknown): WorkplaceFeedRecord | null {
   if (!value || typeof value !== "object") return null;
@@ -36,13 +52,12 @@ function readRecord(value: unknown): WorkplaceFeedRecord | null {
 
 export async function loadWorkplaceFeed(
   module: WorkplaceModuleKey,
-): Promise<
-  | { status: "ready"; records: WorkplaceFeedRecord[] }
-  | { status: "error"; message: string }
-> {
+  page = 1,
+): Promise<WorkplaceFeedResult> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("get_workplace_feed", {
     target_module: module,
+    target_page: page,
   });
 
   if (error) {
@@ -52,13 +67,27 @@ export async function loadWorkplaceFeed(
     };
   }
 
-  const records = Array.isArray((data as FeedPayload | null)?.records)
-    ? ((data as FeedPayload).records as unknown[])
+  const payload = data as FeedPayload | null;
+  const records = Array.isArray(payload?.records)
+    ? payload.records
         .map(readRecord)
         .filter((record): record is WorkplaceFeedRecord => record !== null)
     : [];
 
-  return { status: "ready", records };
+  return {
+    status: "ready",
+    records,
+    page: typeof payload?.page === "number" ? payload.page : page,
+    pageSize:
+      typeof payload?.page_size === "number"
+        ? payload.page_size
+        : WORKPLACE_FEED_PAGE_SIZE,
+    hasMore: payload?.has_more === true,
+  };
+}
+
+export async function loadWorkplaceFeedPage(module: WorkplaceModuleKey) {
+  return loadWorkplaceFeed(module, await readWorkplacePage());
 }
 
 export async function loadWorkplaceRecord(

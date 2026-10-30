@@ -196,7 +196,7 @@ export function MemberAccessManagement({
               Add a module responsibility with an independent scope.
               Organisation placement is managed separately above.
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid w-full max-w-full min-w-0 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="grant-role">
                   <ContextualHelpLabel topic="application-role">
@@ -205,7 +205,7 @@ export function MemberAccessManagement({
                 </Label>
                 <select
                   id="grant-role"
-                  className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                  className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                   value={roleVersionId}
                   onChange={(event) => {
                     setRoleVersionId(event.target.value);
@@ -234,7 +234,7 @@ export function MemberAccessManagement({
                 </p>
                 <select
                   id="grant-scope"
-                  className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                  className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                   value={scopeKey}
                   onChange={(event) => setScopeKey(event.target.value)}
                 >

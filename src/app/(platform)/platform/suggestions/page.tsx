@@ -1,6 +1,10 @@
+import { notFound } from "next/navigation";
+
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,16 +13,18 @@ import {
   loadSuggestionPortfolioFilterOptions,
 } from "@/lib/suggestions/fetch-suggestion-portfolio";
 import { parseSuggestionPortfolioSearchParams } from "@/lib/suggestions/suggestion-portfolio-query";
+import { suggestionAccessMode } from "@/lib/suggestions/suggestion-access-mode";
 import { suggestionsOverviewPermissionKeys } from "@/lib/suggestions/suggestion-page-permission-keys";
 import {
   pipelineStatuses,
   suggestionStatusLabel,
 } from "@/lib/suggestions/status";
 import {
+  currentMemberHasGrantPermission,
   currentMemberHasPermission,
   prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
-import { loadWorkplaceModuleView } from "@/modules/workplace/access";
+import { WORKPLACE_VIEW_PERMISSION } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -27,18 +33,33 @@ export default async function SuggestionsOverviewPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await prefetchMemberPermissions([...suggestionsOverviewPermissionKeys]);
-  const workplaceView = await loadWorkplaceModuleView({
-    readPermission: "suggestions.read",
-    module: "suggestions",
-    title: "Suggestions",
+  await prefetchMemberPermissions([
+    ...suggestionsOverviewPermissionKeys,
+    WORKPLACE_VIEW_PERMISSION,
+  ]);
+  const [canReadPortfolio, canSubmit, canViewWorkplace] = await Promise.all([
+    currentMemberHasGrantPermission("suggestions.read"),
+    currentMemberHasPermission("suggestions.submit"),
+    currentMemberHasPermission(WORKPLACE_VIEW_PERMISSION),
+  ]);
+  const accessMode = suggestionAccessMode({
+    canReadPortfolio,
+    canSubmit,
+    canViewWorkplace,
   });
-  if (workplaceView) return workplaceView;
+  if (accessMode === "denied") notFound();
+  if (accessMode === "contributor") {
+    return (
+      <SuggestionContributorAccess
+        canSubmit={canSubmit}
+        canViewWorkplace={canViewWorkplace}
+      />
+    );
+  }
 
   const params = await searchParams;
   const filters = parseSuggestionPortfolioSearchParams(params);
   const supabase = await createServerSupabaseClient();
-  const canSubmit = await currentMemberHasPermission("suggestions.submit");
   const canReview = await currentMemberHasPermission("suggestions.review");
   const canManageProgrammes = await currentMemberHasPermission(
     "suggestions.programmes.manage",
@@ -145,6 +166,9 @@ export default async function SuggestionsOverviewPage({
         filterOptions={filterOptions}
         showReviewerWorkflow={canReview || canManageReview}
       />
+      {canViewWorkplace ? (
+        <WorkplaceSharedRecords module="suggestions" title="Suggestions" />
+      ) : null}
     </div>
   );
 }

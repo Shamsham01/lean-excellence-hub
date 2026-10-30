@@ -1,4 +1,5 @@
 import { ProjectPortfolio } from "@/components/projects/project-portfolio";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -181,6 +182,7 @@ export default async function ProjectsPortfolioPage({
         searchFilter={params.search ?? null}
         canManage={canManage}
       />
+      <WorkplaceSharedRecords module="projects" title="Projects" />
     </div>
   );
 }

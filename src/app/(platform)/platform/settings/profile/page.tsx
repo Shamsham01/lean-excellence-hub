@@ -62,7 +62,10 @@ export default async function ProfileSettingsPage() {
         } as const);
 
   return (
-    <div className="flex flex-col gap-8" data-testid="profile-settings-page">
+    <div
+      className="flex w-full max-w-full min-w-0 flex-col gap-8"
+      data-testid="profile-settings-page"
+    >
       <PageHeader
         title="Your profile"
         description="Manage personal details you control yourself. Organisation-managed assignments are shown for reference."

@@ -3,6 +3,7 @@ import { Layers, Plus } from "lucide-react";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {
   MaturityRadarChart,
   PillarScoreList,
@@ -212,6 +213,7 @@ export default async function MaturityOverviewPage() {
           </CardContent>
         </Card>
       </div>
+      <WorkplaceSharedRecords module="maturity" title="Maturity" />
     </div>
   );
 }

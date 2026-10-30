@@ -37,7 +37,9 @@ Creating, reissuing, and accepting an invitation checks every role and scope tog
 
 A job function describes the person's work. It does not grant application permissions. Permissions come only from the roles and scopes on the invitation or from a later access grant.
 
-Suggestions Contributor is a separate role from Suggestions. It allows a person to submit suggestions in the granted scope. It does not include review, programme administration, or the suggestions portfolio. The existing Suggestions role is unchanged and does not gain submission rights through this role.
+Suggestions Contributor is a separate role from Suggestions. It allows a person to submit suggestions in the granted scope and to open the suggestions they created, including drafts. It does not include the review portfolio, reviewer notes, programme administration, or `suggestions.read`. The existing Suggestions role is unchanged and does not gain submission rights through this role.
+
+Suggestions navigation is available with `suggestions.read`, Workplace Viewer, or `suggestions.submit`. A member whose grants do not include `suggestions.read` sees the submission and own-suggestion view. Shared suggestions appear there only when they also hold Workplace Viewer. The portfolio, review queue, and programme tools stay on the `suggestions.read` path. Creating a suggestion still checks submission scope and the member's primary work area. A member without `suggestions.submit` does not see New suggestion.
 
 An existing invitation that contains one role continues to be issued, reissued, and accepted.
 
@@ -45,7 +47,7 @@ An existing invitation that contains one role continues to be issued, reissued, 
 
 Settings → Profile shows Your access after the membership profile loads. Each active role is listed with its scope. Expired and revoked grants are left out. A failure to load the profile is an error. It is not shown as “No active access grants” or “Not assigned”.
 
-Home shows the workplace activity a member is allowed to see, plus their own profile. A metric that needs a module read permission stays hidden when that permission is absent, so a zero is not used to mean that the permission is missing.
+Home shows the workplace activity a member is allowed to see, plus their own profile. A metric that needs a module read permission stays hidden when that permission is absent, so a zero is not used to mean that the permission is missing. When a member also holds Workplace Viewer, Home keeps that shared activity beside the module metrics their other grants allow.
 
 LeanAI setup tasks that need administration stay hidden without that permission. When LeanAI conversation is not enabled for the member, the assistant says so and does not present the conversation as available.
 
@@ -72,6 +74,10 @@ A site grant covers that site and its units. It does not cover a sibling site. A
 
 Published framework names, 5S standards, and Gemba definitions appear when any workplace view is held, because those catalogues are organisation records. Completed audits, walks, actions, and the other operational rows stay inside the granted site. A person’s own completed training is included. Other employees’ completions are not.
 
-Lists, detail, home, search, export, attachments, and LeanAI use this same boundary. A viewer feed is a projection. Existing read functions that return restricted columns stay unchanged, so holding Workplace Viewer does not open those columns. Attachments and exports follow the parent record: a completed audit summary can be seen, and files or columns that belong only to a draft, a financial record, or another person’s assessment cannot. LeanAI may explain a module the person can view. It does not retrieve records outside the table above, and it does not describe conversation as available unless that separate capability is turned on.
+The shared list is paged in the database, 25 records at a time, in a stable order. Next and previous links load the following page. Opening a record uses its id and the same scope, status, and publication filters. That lookup does not depend on which page of the list is currently shown.
+
+A member who can use a module at one site and view another site keeps the normal module page for the first site. Shared workplace records for the viewing grant appear in a separate section on that page and on Home. The section links to the workplace summary. It does not merge those rows into the module’s read or write API, and it does not add create, edit, approval, or administration at the viewed site. A sibling site stays out of both experiences unless a grant covers it. An organisation grant covers every site.
+
+Workplace Viewer does not add attachment download, module export, or workplace search. Those routes keep their existing authorization. There is no workplace search index. LeanAI may explain a module the person can view. It does not retrieve records outside the table above, and it does not describe conversation as available unless that separate capability is turned on. Existing read functions that return restricted columns stay unchanged, so holding Workplace Viewer does not open financial amounts, draft detail, or another person’s assessment.
 
 Operator access is an invitation preset. It adds Workplace Viewer and Suggestions Contributor at the chosen site. An administrator can remove or change either row before creating the invitation. Assigning Workplace Viewer to someone who is already a member uses the existing access grant, which records the grantor, role, and scope. Publishing the role does not grant it to existing members, and it does not change Team Member or Suggestions.

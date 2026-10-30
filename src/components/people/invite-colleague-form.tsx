@@ -280,11 +280,11 @@ export function InviteColleagueForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex w-full max-w-full min-w-0 flex-col gap-4"
       onSubmit={handleSubmit}
       data-testid="invite-colleague-form"
     >
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid w-full max-w-full min-w-0 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="invite-email">Colleague email</Label>
           <Input
@@ -314,7 +314,7 @@ export function InviteColleagueForm({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid w-full max-w-full min-w-0 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="invite-job-function">
             <ContextualHelpLabel topic="job-function">
@@ -323,7 +323,7 @@ export function InviteColleagueForm({
           </Label>
           <select
             id="invite-job-function"
-            className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+            className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
             value={jobFunctionId}
             onChange={(event) => setJobFunctionId(event.target.value)}
           >
@@ -346,7 +346,7 @@ export function InviteColleagueForm({
           </Label>
           <select
             id="invite-primary-unit"
-            className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+            className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
             value={organisationalUnitId}
             onChange={(event) => setOrganisationalUnitId(event.target.value)}
           >
@@ -382,7 +382,7 @@ export function InviteColleagueForm({
               <Label htmlFor="operator-access-site">Operator site</Label>
               <select
                 id="operator-access-site"
-                className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                 value={operatorSiteKey}
                 onChange={(event) => setOperatorSiteKey(event.target.value)}
               >
@@ -426,7 +426,7 @@ export function InviteColleagueForm({
           return (
             <div
               key={entry.grant.key}
-              className="grid gap-4 border-t border-border pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+              className="grid w-full max-w-full min-w-0 gap-4 border-t border-border pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
               data-testid={`invite-grant-row-${index}`}
             >
               <div className="flex flex-col gap-2">
@@ -441,7 +441,7 @@ export function InviteColleagueForm({
                 </Label>
                 <select
                   id={roleId}
-                  className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                  className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                   value={entry.grant.roleVersionId}
                   onChange={(event) =>
                     updateGrant(entry.grant.key, {
@@ -474,7 +474,7 @@ export function InviteColleagueForm({
                 </Label>
                 <select
                   id={scopeId}
-                  className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                  className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                   value={entry.grant.scopeKey}
                   onChange={(event) =>
                     updateGrant(entry.grant.key, {
@@ -545,18 +545,20 @@ export function InviteColleagueForm({
                 ? customerAccessScopeLabel(entry.scopeOption)
                 : "Choose a scope for this role.";
               return (
-                <li key={entry.grant.key}>
-                  <p className="font-medium text-foreground">
+                <li key={entry.grant.key} className="min-w-0">
+                  <p className="font-medium break-words text-foreground">
                     {entry.offer.role_display_name}
                   </p>
-                  <p className="text-muted-foreground">Scope: {scopeLabel}</p>
-                  <p className="text-muted-foreground">
+                  <p className="break-words text-muted-foreground">
+                    Scope: {scopeLabel}
+                  </p>
+                  <p className="break-words text-muted-foreground">
                     Viewing: {preview.viewing}
                   </p>
-                  <p className="text-muted-foreground">
+                  <p className="break-words text-muted-foreground">
                     Contribution: {preview.contribution}
                   </p>
-                  <p className="text-muted-foreground">
+                  <p className="break-words text-muted-foreground">
                     Management: {preview.management}
                   </p>
                 </li>

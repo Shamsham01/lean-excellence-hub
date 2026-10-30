@@ -1,5 +1,6 @@
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
 import { PageHeader } from "@/components/platform/page-header";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
@@ -102,6 +103,7 @@ export default async function BenefitsPortfolioPage({
         benefitClassFilter={params.benefit_class ?? null}
         canCreate={canCreate}
       />
+      <WorkplaceSharedRecords module="benefits" title="Benefits" />
     </div>
   );
 }

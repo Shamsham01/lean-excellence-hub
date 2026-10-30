@@ -14,6 +14,7 @@ export function collectPlatformShellPermissionKeys(): string[] {
       ...platformNavigation.flatMap((item) =>
         item.viewPermission ? [item.viewPermission] : [],
       ),
+      ...platformNavigation.flatMap((item) => item.alternatePermissions ?? []),
       ...setupNavigationPermissions,
       ...platformHomeFallbackPermissions,
     ]),

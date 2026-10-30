@@ -1,4 +1,5 @@
 import { ActionCreateForm } from "@/components/actions/action-create-form";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionList } from "@/components/actions/action-list";
 import { PageHeader } from "@/components/platform/page-header";
@@ -129,6 +130,7 @@ export default async function ActionsPage({
       {canCreate ? <ActionCreateForm /> : null}
 
       <ActionList actions={actions} />
+      <WorkplaceSharedRecords module="actions" title="Actions" />
     </div>
   );
 }

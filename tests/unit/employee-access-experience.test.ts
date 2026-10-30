@@ -64,7 +64,7 @@ describe("employee access experience", () => {
     });
     expect(home.actionsMetric).toBe(true);
     expect(home.benefits).toBe(true);
-    expect(home.workplaceActivity).toBe(false);
+    expect(home.workplaceActivity).toBe(true);
     expect(home.maturityViewingCopy).toBe(false);
   });
 
