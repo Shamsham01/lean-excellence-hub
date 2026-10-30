@@ -25,6 +25,10 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { isAssistantUuid } from "./constants";
 import { buildMaturityAuthoringState } from "./maturity-state";
 import { buildMaturityAssessmentAssistantState } from "./maturity-assessment-state";
+import {
+  conversationUnavailableCopy,
+  starterPromptsForAccess,
+} from "./guidance-for-access";
 import { assistantPageDefinitionFor } from "./product-pages";
 import { parseAssistantRoute } from "./route-map";
 import { selectAssistantIntervention } from "./select-recommendation";
@@ -108,24 +112,14 @@ export async function resolveLeanAiAssistantView(
     canUseAi &&
     leanAiItem?.supportingMetrics.current_user_can_use !== false;
 
-  let conversationUnavailableReason: string | null = null;
-  if (!conversationAvailable) {
-    if (!eligibility.ok) {
-      conversationUnavailableReason = eligibility.message;
-    } else if (!snapshot.applicationAiAvailable) {
-      conversationUnavailableReason =
-        "LeanAI conversation is turned off in this environment. Setup guidance below still works.";
-    } else if (!organisationAiEnabled) {
-      conversationUnavailableReason =
-        "LeanAI is turned off for this organisation. Deterministic setup guidance still works.";
-    } else if (!canUseAi) {
-      conversationUnavailableReason =
-        "You do not have permission to use LeanAI conversation. Setup guidance below still works.";
-    } else {
-      conversationUnavailableReason =
-        "LeanAI conversation is unavailable. Setup guidance below still works.";
-    }
-  }
+  const conversationUnavailableReason = conversationUnavailableCopy({
+    eligible: eligibility.ok,
+    eligibilityMessage: eligibility.ok ? null : eligibility.message,
+    applicationAvailable: snapshot.applicationAiAvailable,
+    organisationEnabled: organisationAiEnabled,
+    canUseConversation:
+      canUseAi && leanAiItem?.supportingMetrics.current_user_can_use !== false,
+  });
 
   const recommendation = selectAssistantIntervention({
     snapshot,
@@ -400,17 +394,26 @@ export async function resolveLeanAiAssistantView(
     }
   }
 
-  const remainingSetup = flattenRemaining(snapshot.readiness.items);
-  for (const reason of extraRemaining) {
-    if (
-      !remainingSetup.some((item) => item.reason === reason) &&
-      remainingSetup.length < 8
-    ) {
-      remainingSetup.push({
-        key: identity.module,
-        status: "incomplete",
-        reason,
-      });
+  const canAdministerPage =
+    canManageMaturity ||
+    canManageProgrammes ||
+    permissions["billing.manage"] === true ||
+    permissions["hierarchy.manage"] === true;
+  const remainingSetup = canAdministerPage
+    ? flattenRemaining(snapshot.readiness.items)
+    : [];
+  if (canAdministerPage) {
+    for (const reason of extraRemaining) {
+      if (
+        !remainingSetup.some((item) => item.reason === reason) &&
+        remainingSetup.length < 8
+      ) {
+        remainingSetup.push({
+          key: identity.module,
+          status: "incomplete",
+          reason,
+        });
+      }
     }
   }
 
@@ -452,7 +455,10 @@ export async function resolveLeanAiAssistantView(
       activeSiteName: activeSite,
     },
     terminology: [...definition.terminology],
-    starterPrompts: [...definition.starterPrompts],
+    starterPrompts: starterPromptsForAccess({
+      prompts: definition.starterPrompts,
+      canAdministerPage,
+    }),
     summary,
     remainingSetup,
     relevantState,

@@ -35,7 +35,9 @@ export function ProfileAccessGrants({
   if (view.mode === "none") {
     return (
       <div className="sm:col-span-2">
-        <dt className="text-muted-foreground">Application access</dt>
+        <dt className="text-muted-foreground" data-testid="your-access-summary">
+          Your access
+        </dt>
         <dd data-testid="profile-application-access-empty">
           No active access grants
         </dd>
@@ -47,7 +49,12 @@ export function ProfileAccessGrants({
     return (
       <>
         <div>
-          <dt className="text-muted-foreground">Application role</dt>
+          <dt
+            className="text-muted-foreground"
+            data-testid="your-access-summary"
+          >
+            Your access
+          </dt>
           <dd data-testid="profile-application-role">
             {view.grant.role_display_name}
           </dd>
@@ -64,7 +71,9 @@ export function ProfileAccessGrants({
 
   return (
     <div className="sm:col-span-2">
-      <dt className="text-muted-foreground">Application access</dt>
+      <dt className="text-muted-foreground" data-testid="your-access-summary">
+        Your access
+      </dt>
       <dd>
         <ul
           className="mt-1 flex flex-col gap-3"

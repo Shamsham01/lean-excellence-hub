@@ -406,8 +406,11 @@ export function buildOrganisationSetupSnapshot(
   };
 }
 
+export type MaturityQuickAction = "start" | "open" | "view" | "hidden";
+
 export function buildQuickActions(
   permissions: SetupPermissionSnapshot,
+  maturity: MaturityQuickAction = "hidden",
 ): import("./types").QuickAction[] {
   const actions: import("./types").QuickAction[] = [];
 
@@ -432,11 +435,25 @@ export function buildQuickActions(
       description: "Define a job function",
     });
   }
-  actions.push({
-    label: "Start Lean maturity",
-    href: "/platform/maturity",
-    description: "Open maturity programme",
-  });
+  if (maturity === "start") {
+    actions.push({
+      label: "Start Lean maturity",
+      href: "/platform/maturity",
+      description: "Open maturity programme",
+    });
+  } else if (maturity === "open") {
+    actions.push({
+      label: "Open maturity",
+      href: "/platform/maturity",
+      description: "Open maturity records you can use",
+    });
+  } else if (maturity === "view") {
+    actions.push({
+      label: "View maturity results",
+      href: "/platform/maturity",
+      description: "Published results in your viewing scope",
+    });
+  }
   if (permissions.canManageProjects) {
     actions.push({
       label: "Create CI project",

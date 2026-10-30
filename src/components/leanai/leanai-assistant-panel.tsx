@@ -269,7 +269,7 @@ export function LeanAiAssistantPanel({
             data-testid="leanai-assistant-ai-unavailable"
           >
             {view?.conversationUnavailableReason ??
-              "AI conversation is unavailable. Deterministic setup guidance above still works."}
+              "AI conversation is not enabled. Guidance on this page describes only the access you have."}
           </p>
         ) : null}
         <label className="sr-only" htmlFor={inputId}>

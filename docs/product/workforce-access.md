@@ -41,6 +41,14 @@ Suggestions Contributor is a separate role from Suggestions. It allows a person 
 
 An existing invitation that contains one role continues to be issued, reissued, and accepted.
 
+## Your access
+
+Settings → Profile shows Your access after the membership profile loads. Each active role is listed with its scope. Expired and revoked grants are left out. A failure to load the profile is an error. It is not shown as “No active access grants” or “Not assigned”.
+
+Home shows the workplace activity a member is allowed to see, plus their own profile. A metric that needs a module read permission stays hidden when that permission is absent, so a zero is not used to mean that the permission is missing.
+
+LeanAI setup tasks that need administration stay hidden without that permission. When LeanAI conversation is not enabled for the member, the assistant says so and does not present the conversation as available.
+
 ## Workplace viewing matrix
 
 Workplace Viewer is a separate role. It is not Team Member, and it does not receive every permission whose name ends in “read”. The only permission on the role is `workplace.view`, granted at either organisation scope or one site subtree. Job function still does not grant these permissions.
