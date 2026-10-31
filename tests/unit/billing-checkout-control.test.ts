@@ -18,7 +18,9 @@ describe("self-service checkout release gate", () => {
 
   it("keeps existing local development and CI checkout fixtures available", () => {
     expect(isSelfServiceCheckoutEnabled({ NODE_ENV: "test" })).toBe(true);
-    expect(isSelfServiceCheckoutEnabled({ NODE_ENV: "development" })).toBe(true);
+    expect(isSelfServiceCheckoutEnabled({ NODE_ENV: "development" })).toBe(
+      true,
+    );
   });
 
   it("can also be explicitly disabled outside production", () => {
