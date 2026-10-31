@@ -12,7 +12,10 @@ import type { ProjectDetail } from "@/lib/projects/types";
 import { resolvePersonDisplayName } from "@/modules/organisation/site-context";
 import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
-import { loadWorkplaceRecordView } from "@/modules/workplace/access";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProjectDetailPage({
@@ -27,6 +30,7 @@ export default async function ProjectDetailPage({
     recordId: projectId,
     title: "Project",
     denyWithoutAccess: false,
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 
@@ -38,7 +42,15 @@ export default async function ProjectDetailPage({
     { target_project_id: projectId },
   );
 
-  if (error || !detail) notFound();
+  if (error || !detail) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "projects",
+      recordId: projectId,
+      title: "Project",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const canManage = await currentMemberHasPermission("projects.manage");
   const canCreateBenefit = await currentMemberHasPermission("benefits.create");

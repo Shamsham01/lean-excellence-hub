@@ -4,6 +4,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = {
@@ -11,6 +12,14 @@ type PageProps = {
 };
 
 export default async function SkillsCatalogPage({ searchParams }: PageProps) {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: SKILLS_PERMISSIONS.read,
+    module: "skills",
+    title: "Skills",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
   const supabase = await createServerSupabaseClient();

@@ -8,7 +8,10 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
-import { loadWorkplaceRecordView } from "@/modules/workplace/access";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -41,7 +44,15 @@ export default async function FiveSAuditPage({
     .eq("id", id)
     .maybeSingle();
 
-  if (!audit) notFound();
+  if (!audit) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "five_s",
+      recordId: id,
+      title: "5S audit",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: version } = await supabase
     .from("five_s_standard_versions")

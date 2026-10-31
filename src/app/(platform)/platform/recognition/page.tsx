@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { RecognitionHistory } from "@/components/recognition/recognition-history";
 import { AppLink } from "@/components/ui/app-link";
@@ -21,13 +22,24 @@ export default async function RecognitionPage() {
   const canAward = await currentMemberHasPermission("recognition.award");
   const canManage = await currentMemberHasPermission("recognition.manage");
 
-  const { data: awards } = await supabase
+  const { data: awards, error: awardsError } = await supabase
     .from("recognition_awards")
     .select(
       "id, title, message, recognition_type_name_snapshot, awarded_at, status",
     )
     .order("awarded_at", { ascending: false })
     .limit(50);
+
+  if (awardsError) {
+    return (
+      <ModuleReadError
+        title="Recognition"
+        description="Meaningful contribution, recognised by people — not points."
+        message="Recognition could not be loaded. Refresh the page and try again."
+        module="recognition"
+      />
+    );
+  }
 
   const history =
     awards?.map((award) => ({
@@ -75,8 +87,8 @@ export default async function RecognitionPage() {
       <div className="grid gap-3">
         {feedItems.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-            No recognition awards yet. Meaningful contributions will appear here
-            when awarded.
+            No recognition awards are available with your access. Awards shared
+            with your site or organisation will appear here.
           </div>
         ) : (
           feedItems.map((item) => (

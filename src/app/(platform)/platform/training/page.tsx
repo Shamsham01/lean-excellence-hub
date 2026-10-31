@@ -130,11 +130,15 @@ export default async function TrainingOverviewPage() {
               >
                 <GraduationCap className="size-5 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">No courses yet</p>
+                  <p className="text-sm font-medium">
+                    {canManageCatalog
+                      ? "No courses yet"
+                      : "No courses are available with your access"}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {canManageCatalog
                       ? "Create the first course in the organisation catalogue."
-                      : "No courses are available in the organisation catalogue yet."}
+                      : "No courses are available with your access."}
                   </p>
                 </div>
                 {canManageCatalog ? (

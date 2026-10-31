@@ -9,6 +9,7 @@ import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { WorkplaceReadOnlyRecord } from "@/components/workplace/workplace-read-only-record";
 import { WORKPLACE_VIEW_PERMISSION } from "@/modules/workplace/access";
+import { classifySupabaseError } from "@/platform/supabase/error-classification";
 import { suggestionStatusAllowsAuthorEvidenceUpload } from "@/lib/suggestions/status";
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -21,16 +22,17 @@ export default async function SuggestionDetailPage({
   const { suggestionId } = await params;
 
   const supabase = await createServerSupabaseClient();
-  const canReadSuggestions =
-    await currentMemberHasPermission("suggestions.read");
 
   const { data: detail, error } = await supabase.rpc("get_suggestion_detail", {
     target_suggestion_id: suggestionId,
   });
 
   if (error || !detail) {
+    const failure = error ? classifySupabaseError(error) : "not_found";
+    const accessMiss =
+      !error || failure === "authorization_denial" || failure === "not_found";
     if (
-      !canReadSuggestions &&
+      accessMiss &&
       (await currentMemberHasPermission(WORKPLACE_VIEW_PERMISSION))
     ) {
       return (
@@ -39,6 +41,17 @@ export default async function SuggestionDetailPage({
           recordId={suggestionId}
           title="Suggestion"
         />
+      );
+    }
+    if (error && !accessMiss) {
+      return (
+        <p
+          className="text-sm text-destructive"
+          role="alert"
+          data-testid="suggestion-detail-error"
+        >
+          This suggestion could not be loaded. Refresh the page and try again.
+        </p>
       );
     }
     notFound();

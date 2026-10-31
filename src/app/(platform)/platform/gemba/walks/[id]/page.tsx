@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
-import { loadWorkplaceRecordView } from "@/modules/workplace/access";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaWalkPage({
@@ -42,7 +45,15 @@ export default async function GembaWalkPage({
     )
     .eq("id", id)
     .maybeSingle();
-  if (!walk) notFound();
+  if (!walk) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "gemba",
+      recordId: id,
+      title: "Gemba walk",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: version } = await supabase
     .from("gemba_definition_versions")

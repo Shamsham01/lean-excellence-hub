@@ -22,7 +22,10 @@ import {
 } from "@/modules/organisation-setup/queries";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { visibleHomeSections } from "@/modules/platform-shell/home-sections";
-import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  currentMemberHasGrantPermission,
+  currentMemberHasPermission,
+} from "@/modules/platform-shell/permissions";
 
 export default async function PlatformHomePage() {
   const supabase = await createServerSupabaseClient();
@@ -32,19 +35,19 @@ export default async function PlatformHomePage() {
     loadOrganisationSetupSnapshot(),
     loadSetupPermissions(),
     Promise.all([
-      currentMemberHasPermission("maturity.read"),
+      currentMemberHasGrantPermission("maturity.read"),
       currentMemberHasPermission(MATURITY_PERMISSIONS.modelsManage),
-      currentMemberHasPermission("actions.read"),
-      currentMemberHasPermission("five_s.read"),
-      currentMemberHasPermission("gemba.read"),
-      currentMemberHasPermission("templates.read"),
-      currentMemberHasPermission("people.capability.read"),
+      currentMemberHasGrantPermission("actions.read"),
+      currentMemberHasGrantPermission("five_s.read"),
+      currentMemberHasGrantPermission("gemba.read"),
+      currentMemberHasGrantPermission("templates.read"),
+      currentMemberHasGrantPermission("people.capability.read"),
       currentMemberHasPermission("memberships.read"),
-      currentMemberHasPermission("skills.read"),
-      currentMemberHasPermission("training.read"),
-      currentMemberHasPermission("suggestions.read"),
+      currentMemberHasGrantPermission("skills.read"),
+      currentMemberHasGrantPermission("training.read"),
+      currentMemberHasGrantPermission("suggestions.read"),
       currentMemberHasPermission("suggestions.submit"),
-      currentMemberHasPermission("benefits.read"),
+      currentMemberHasGrantPermission("benefits.read"),
       currentMemberHasPermission("workplace.view"),
     ]),
   ]);

@@ -102,14 +102,16 @@ export default async function SkillsOverviewPage() {
         description="Set up how capability is measured, which skills the organisation needs, and what each job function requires."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" asChild>
-              <AppLink
-                href="/platform/skills/setup"
-                data-testid="skills-setup-link"
-              >
-                Set up skills
-              </AppLink>
-            </Button>
+            {canManageCatalog ? (
+              <Button size="sm" asChild>
+                <AppLink
+                  href="/platform/skills/setup"
+                  data-testid="skills-setup-link"
+                >
+                  Set up skills
+                </AppLink>
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink
                 href="/platform/skills/catalog"

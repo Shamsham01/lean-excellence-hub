@@ -46,6 +46,10 @@ import {
 } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { parseFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -64,6 +68,15 @@ export default async function FiveSStandardDetailPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    recordId: id,
+    title: "5S standard",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const savedKey = parseAuthoringSavedKey(
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
@@ -83,7 +96,15 @@ export default async function FiveSStandardDetailPage({
     .maybeSingle();
 
   requireQuerySuccess(standardError, standard, "Failed to load 5S standard");
-  if (!standard) notFound();
+  if (!standard) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "five_s",
+      recordId: id,
+      title: "5S standard",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: versions, error: versionsError } = await supabase
     .from("five_s_standard_versions")

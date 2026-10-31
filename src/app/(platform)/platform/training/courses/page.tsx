@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import {
   deriveTrainingCourseCatalogueStatus,
   trainingCourseCatalogueStatusLabel,
@@ -20,6 +21,14 @@ type PageProps = {
 };
 
 export default async function TrainingCoursesPage({ searchParams }: PageProps) {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: TRAINING_PERMISSIONS.read,
+    module: "training",
+    title: "Training",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
   const supabase = await createServerSupabaseClient();

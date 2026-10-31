@@ -7,7 +7,10 @@ import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
-import { loadWorkplaceRecordView } from "@/modules/workplace/access";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type DirectoryPayload = {
@@ -29,6 +32,7 @@ export default async function ActionDetailPage({
     recordId: actionId,
     title: "Action",
     denyWithoutAccess: false,
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 
@@ -40,7 +44,15 @@ export default async function ActionDetailPage({
     { target_action_id: actionId },
   );
 
-  if (error || !detail) notFound();
+  if (error || !detail) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "actions",
+      recordId: actionId,
+      title: "Action",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const action = detail;
   const canUploadEvidence =

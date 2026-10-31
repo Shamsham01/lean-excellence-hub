@@ -30,6 +30,7 @@ export default async function ProjectsPortfolioPage({
     module: "projects",
     title: "Projects",
     denyWithoutAccess: false,
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 
