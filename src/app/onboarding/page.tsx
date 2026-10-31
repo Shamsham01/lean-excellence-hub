@@ -84,7 +84,10 @@ export default async function OnboardingPage({
             title="Confirming subscription"
             description={`${current.organisation_name} is being provisioned. Access opens after Stripe confirms the subscription. Checkout return is not treated as success.`}
           >
-            {fakeProvider && canManageBilling && snapshot?.has_open_checkout ? (
+            {isSelfServiceCheckoutEnabled() &&
+            fakeProvider &&
+            canManageBilling &&
+            snapshot?.has_open_checkout ? (
               <form
                 action={completeFakeCheckout}
                 className="flex flex-col gap-3"
