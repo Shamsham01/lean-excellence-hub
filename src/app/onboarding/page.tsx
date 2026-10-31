@@ -112,7 +112,10 @@ export default async function OnboardingPage({
 
   if (!isSelfServiceCheckoutEnabled()) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4 py-10" data-testid="checkout-unavailable">
+      <div
+        className="flex min-h-dvh items-center justify-center px-4 py-10"
+        data-testid="checkout-unavailable"
+      >
         <div className="w-full max-w-md">
           <AuthCard
             title="New subscriptions are temporarily unavailable"
@@ -122,7 +125,9 @@ export default async function OnboardingPage({
               Contact the Lean Excellence Hub team to discuss early access.
             </p>
             <form action="/auth/signout" method="post">
-              <Button type="submit" variant="outline" className="w-full">Sign out</Button>
+              <Button type="submit" variant="outline" className="w-full">
+                Sign out
+              </Button>
             </form>
           </AuthCard>
         </div>
