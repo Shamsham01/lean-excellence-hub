@@ -9,6 +9,7 @@ import {
 } from "@/modules/billing/catalogue";
 import { loadCurrentOrganisationBilling } from "@/modules/billing/current-billing";
 import { isFakeBillingEnabled } from "@/modules/billing/env";
+import { isSelfServiceCheckoutEnabled } from "@/modules/billing/checkout-control";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import {
@@ -102,6 +103,26 @@ export default async function OnboardingPage({
               <Button type="submit" variant="outline" className="w-full">
                 Sign out
               </Button>
+            </form>
+          </AuthCard>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSelfServiceCheckoutEnabled()) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-4 py-10" data-testid="checkout-unavailable">
+        <div className="w-full max-w-md">
+          <AuthCard
+            title="New subscriptions are temporarily unavailable"
+            description="Lean Excellence Hub is preparing its customer launch. Checkout is currently disabled and no payment will be taken."
+          >
+            <p className="text-sm text-muted-foreground">
+              Contact the Lean Excellence Hub team to discuss early access.
+            </p>
+            <form action="/auth/signout" method="post">
+              <Button type="submit" variant="outline" className="w-full">Sign out</Button>
             </form>
           </AuthCard>
         </div>
