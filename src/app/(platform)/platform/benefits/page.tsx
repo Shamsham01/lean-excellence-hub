@@ -28,6 +28,7 @@ export default async function BenefitsPortfolioPage({
     module: "benefits",
     title: "Benefits",
     denyWithoutAccess: false,
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 

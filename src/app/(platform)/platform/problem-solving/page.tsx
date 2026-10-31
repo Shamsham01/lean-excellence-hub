@@ -26,6 +26,7 @@ export default async function ProblemSolvingPortfolioPage({
     readPermission: "problem_solving.view",
     module: "problem_solving",
     title: "Problem solving",
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 

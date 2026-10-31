@@ -1,6 +1,6 @@
 begin;
 
-select plan(40);
+select plan(45);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -258,6 +258,43 @@ begin
   end loop;
 end;
 $$;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000002","email":"workplace-viewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from workplace_ids where key = 'organisation')),
+  'enrolled member selects organisation before a workplace grant'
+);
+
+select ok(
+  public.member_has_permission('five_s.read'),
+  'enrolled baseline includes five_s.read without a module role'
+);
+
+select ok(
+  not public.member_has_grant_permission('five_s.read'),
+  'baseline five_s.read is not an explicit module grant'
+);
+
+select ok(
+  not public.member_has_grant_permission('workplace.view'),
+  'an enrolled member does not hold workplace view before the grant'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2000000-0000-0000-0000-000000000001","email":"workplace-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from workplace_ids where key = 'organisation')),
+  'owner returns to grant workplace view'
+);
 
 insert into workplace_ids (key, id)
 select 'viewer_grant', public.grant_role_version(

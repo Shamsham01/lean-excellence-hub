@@ -1,12 +1,14 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { presentCatalogRead } from "@/modules/workplace/access-decision";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Sparkles } from "lucide-react";
@@ -25,9 +27,24 @@ export default async function FiveSOverviewPage() {
     FIVE_S_PERMISSIONS.standardsManage,
   );
 
-  const { count: standardCount } = await supabase
+  const { count: standardCount, error: standardCountError } = await supabase
     .from("five_s_standards")
     .select("id", { count: "exact", head: true });
+  const catalog = presentCatalogRead({
+    failed: Boolean(standardCountError),
+    visibleCount: standardCount ?? 0,
+  });
+  if (catalog === "failed") {
+    return (
+      <ModuleReadError
+        title="5S Audits"
+        description="Digital 5S auditing with scoring, evidence, and accountability."
+        message="5S standards could not be loaded. Refresh the page and try again."
+        module="five_s"
+      />
+    );
+  }
+
   const { data: standards } = await supabase
     .from("five_s_standards")
     .select("id, display_name")
@@ -51,7 +68,7 @@ export default async function FiveSOverviewPage() {
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
 
-  if (!standardCount) {
+  if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader
@@ -59,8 +76,16 @@ export default async function FiveSOverviewPage() {
           description="Digital 5S auditing with scoring, evidence, and accountability."
         />
         <EmptyState
-          title="No 5S standards yet"
-          description="Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
+          title={
+            canManage
+              ? "No 5S standards yet"
+              : "No 5S standards are available with your access"
+          }
+          description={
+            canManage
+              ? "Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
+              : "Standards you are allowed to open will appear here. Creating a standard needs a separate role."
+          }
           icon={<Sparkles className="size-5" />}
           {...(canManage
             ? {
@@ -69,6 +94,7 @@ export default async function FiveSOverviewPage() {
               }
             : {})}
         />
+        <WorkplaceSharedRecords module="five_s" title="5S" />
       </div>
     );
   }

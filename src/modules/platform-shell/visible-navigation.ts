@@ -5,6 +5,7 @@ import {
   type PlatformNavItem,
 } from "@/modules/platform-shell/navigation";
 import {
+  currentMemberHasGrantPermission,
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
   prefetchMemberPermissions,
@@ -35,13 +36,15 @@ export async function buildVisibleNavigation() {
           currentMemberHasPermission(permission),
         ),
       );
-      const canAccess = item.organisationScopeOnly
+      const explicitModuleAccess = item.organisationScopeOnly
         ? await currentMemberHasScopedPermission(item.permission)
-        : (await currentMemberHasPermission(item.permission)) ||
-          (item.viewPermission
-            ? await currentMemberHasPermission(item.viewPermission)
-            : false) ||
-          alternateAccess.some(Boolean);
+        : await currentMemberHasGrantPermission(item.permission);
+      const canAccess =
+        explicitModuleAccess ||
+        (item.viewPermission
+          ? await currentMemberHasPermission(item.viewPermission)
+          : false) ||
+        alternateAccess.some(Boolean);
       return { item, canAccess };
     }),
   );

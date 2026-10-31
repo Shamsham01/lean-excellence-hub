@@ -2,6 +2,7 @@ import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
 } from "@/modules/operational/gemba-active-walks";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { presentCatalogRead } from "@/modules/workplace/access-decision";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Footprints } from "lucide-react";
@@ -29,9 +31,23 @@ export default async function GembaOverviewPage() {
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
   );
-  const { count: definitionCount } = await supabase
+  const { count: definitionCount, error: definitionCountError } = await supabase
     .from("gemba_definitions")
     .select("id", { count: "exact", head: true });
+  const catalog = presentCatalogRead({
+    failed: Boolean(definitionCountError),
+    visibleCount: definitionCount ?? 0,
+  });
+  if (catalog === "failed") {
+    return (
+      <ModuleReadError
+        title="Gemba walks"
+        description="Structured walks with observations and follow-up."
+        message="Gemba definitions could not be loaded. Refresh the page and try again."
+        module="gemba"
+      />
+    );
+  }
   const { data: definitions } = await supabase
     .from("gemba_definitions")
     .select("id, display_name")
@@ -56,7 +72,7 @@ export default async function GembaOverviewPage() {
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
 
-  if (!definitionCount) {
+  if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader
@@ -64,8 +80,16 @@ export default async function GembaOverviewPage() {
           description="Structured walks with observations and follow-up."
         />
         <EmptyState
-          title="No Gemba definitions yet"
-          description="Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
+          title={
+            canManage
+              ? "No Gemba definitions yet"
+              : "No Gemba definitions are available with your access"
+          }
+          description={
+            canManage
+              ? "Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
+              : "Definitions you are allowed to open will appear here. Creating a definition needs a separate role."
+          }
           icon={<Footprints className="size-5" />}
           {...(canManage
             ? {
@@ -74,6 +98,7 @@ export default async function GembaOverviewPage() {
               }
             : {})}
         />
+        <WorkplaceSharedRecords module="gemba" title="Gemba" />
       </div>
     );
   }

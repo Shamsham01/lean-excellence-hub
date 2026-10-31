@@ -22,6 +22,7 @@ export default async function ProblemSolvingCaseDetailPage({
     module: "problem_solving",
     recordId: caseId,
     title: "Problem solving",
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 

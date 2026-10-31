@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createFiveSStandard } from "@/app/(platform)/platform/5s/actions";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-field
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -26,10 +28,24 @@ export default async function FiveSStandardsPage() {
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const { data: standards } = await supabase
+  const canManage = await currentMemberHasPermission(
+    FIVE_S_PERMISSIONS.standardsManage,
+  );
+  const { data: standards, error: standardsError } = await supabase
     .from("five_s_standards")
     .select("id, display_name, description, created_at")
     .order("created_at", { ascending: false });
+
+  if (standardsError) {
+    return (
+      <ModuleReadError
+        title="5S standards"
+        description="Configurable audit templates per area."
+        message="5S standards could not be loaded. Refresh the page and try again."
+        module="five_s"
+      />
+    );
+  }
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,
@@ -52,67 +68,91 @@ export default async function FiveSStandardsPage() {
         title="5S standards"
         description="Configurable audit templates per area. Setup mode → Draft → Review → Publish."
         actions={
-          <Button variant="outline" asChild>
-            <AppLink
-              href="/platform/5s/setup"
-              data-testid="five-s-choose-setup"
-            >
-              Choose how to start
-            </AppLink>
-          </Button>
+          canManage ? (
+            <Button variant="outline" asChild>
+              <AppLink
+                href="/platform/5s/setup"
+                data-testid="five-s-choose-setup"
+              >
+                Choose how to start
+              </AppLink>
+            </Button>
+          ) : null
         }
       />
 
-      <Card id="create-standard">
-        <CardHeader>
-          <CardTitle>Create standard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createAction} className="flex max-w-lg flex-col gap-4">
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" required className="mt-2 min-h-11" />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" className="mt-2" />
-            </div>
-            <div>
-              <Label htmlFor="threshold">Pass threshold (%)</Label>
-              <Input
-                id="threshold"
-                name="threshold"
-                type="number"
-                min={0}
-                max={100}
-                defaultValue={90}
-                className="mt-2"
-              />
-              <p className="mt-2 text-sm text-muted-foreground">
-                The pass mark for the audit result. It is not the scoring range.
-              </p>
-            </div>
-            <FiveSScoringScaleFields idPrefix="create-scoring-scale" saved />
-            <ApplicableUnitsField
-              options={creationUnits.units}
-              requiresSiteSelection={creationUnits.requiresSiteSelection}
-            />
-            <Button
-              type="submit"
-              className="min-h-11"
-              disabled={creationUnits.units.length === 0}
+      {canManage ? (
+        <Card id="create-standard">
+          <CardHeader>
+            <CardTitle>Create standard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              action={createAction}
+              className="flex max-w-lg flex-col gap-4"
             >
-              Create draft standard
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  className="mt-2 min-h-11"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="threshold">Pass threshold (%)</Label>
+                <Input
+                  id="threshold"
+                  name="threshold"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={90}
+                  className="mt-2"
+                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  The pass mark for the audit result. It is not the scoring
+                  range.
+                </p>
+              </div>
+              <FiveSScoringScaleFields idPrefix="create-scoring-scale" saved />
+              <ApplicableUnitsField
+                options={creationUnits.units}
+                requiresSiteSelection={creationUnits.requiresSiteSelection}
+              />
+              <Button
+                type="submit"
+                className="min-h-11"
+                disabled={creationUnits.units.length === 0}
+              >
+                Create draft standard
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
           <CardTitle>Standards</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
+          {(standards ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {canManage
+                ? "No 5S standards yet. Create a draft and publish it before audits begin."
+                : "No 5S standards are available with your access."}
+            </p>
+          ) : null}
           {standards?.map((s) => (
             <AppLink
               key={s.id}

@@ -44,6 +44,10 @@ import {
 } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const APPLICABILITY_DESCRIPTION =
@@ -57,6 +61,15 @@ export default async function GembaDefinitionPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    recordId: id,
+    title: "Gemba definition",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const savedKey = parseAuthoringSavedKey(
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
@@ -80,7 +93,15 @@ export default async function GembaDefinitionPage({
     definition,
     "Failed to load Gemba definition",
   );
-  if (!definition) notFound();
+  if (!definition) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "gemba",
+      recordId: id,
+      title: "Gemba definition",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: versions, error: versionsError } = await supabase
     .from("gemba_definition_versions")

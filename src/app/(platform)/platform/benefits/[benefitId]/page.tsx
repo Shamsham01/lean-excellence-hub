@@ -11,7 +11,10 @@ import type {
 } from "@/lib/benefits/types";
 import { BENEFITS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
-import { loadWorkplaceRecordView } from "@/modules/workplace/access";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitDetailPage({
@@ -26,6 +29,7 @@ export default async function BenefitDetailPage({
     recordId: benefitId,
     title: "Benefit",
     denyWithoutAccess: false,
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 
@@ -37,7 +41,15 @@ export default async function BenefitDetailPage({
     { target_benefit_id: benefitId },
   );
 
-  if (error || !detail) notFound();
+  if (error || !detail) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "benefits",
+      recordId: benefitId,
+      title: "Benefit",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const canManage = await currentMemberHasPermission("benefits.manage");
   const canValidateCi = await currentMemberHasPermission(

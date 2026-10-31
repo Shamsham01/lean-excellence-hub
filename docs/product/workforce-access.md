@@ -74,6 +74,8 @@ A site grant covers that site and its units. It does not cover a sibling site. A
 
 Published framework names, 5S standards, and Gemba definitions appear when any workplace view is held, because those catalogues are organisation records. Completed audits, walks, actions, and the other operational rows stay inside the granted site. A person’s own completed training is included. Other employees’ completions are not.
 
+Baseline participation, such as `five_s.read` or `gemba.read` for an enrolled member, is not an explicit module grant and is not Workplace Viewer. Navigation and module pages use the explicit grant for the module workspace. A Workplace Viewer grant without that explicit grant opens the shared read-only projection. Holding both keeps the module workspace and still lists shared records for the viewing scope. A baseline permission on its own does not report that the organisation has no records.
+
 The shared list is paged in the database, 25 records at a time, in a stable order. Next and previous links load the following page. Opening a record uses its id and the same scope, status, and publication filters. That lookup does not depend on which page of the list is currently shown.
 
 A member who can use a module at one site and view another site keeps the normal module page for the first site. Shared workplace records for the viewing grant appear in a separate section on that page and on Home. The section links to the workplace summary. It does not merge those rows into the module’s read or write API, and it does not add create, edit, approval, or administration at the viewed site. A sibling site stays out of both experiences unless a grant covers it. An organisation grant covers every site.

@@ -3,6 +3,7 @@ import { Layers, Plus } from "lucide-react";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {
   MaturityRadarChart,
@@ -12,6 +13,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { presentCatalogRead } from "@/modules/workplace/access-decision";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
@@ -34,10 +36,24 @@ export default async function MaturityOverviewPage() {
     MATURITY_PERMISSIONS.modelsManage,
   );
 
-  const { data: models } = await supabase
+  const { data: models, error: modelsError } = await supabase
     .from("maturity_models")
     .select("id, display_name")
     .limit(1);
+  const catalog = presentCatalogRead({
+    failed: Boolean(modelsError),
+    visibleCount: models?.length ?? 0,
+  });
+  if (catalog === "failed") {
+    return (
+      <ModuleReadError
+        title="Lean maturity"
+        description="Measure and improve operational excellence across your organisation."
+        message="Maturity frameworks could not be loaded. Refresh the page and try again."
+        module="maturity"
+      />
+    );
+  }
 
   const { data: latestResult } = await supabase
     .from("maturity_official_results")
@@ -68,7 +84,7 @@ export default async function MaturityOverviewPage() {
     .order("updated_at", { ascending: false })
     .limit(5);
 
-  if (!models?.length) {
+  if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
         <PageHeader
@@ -76,8 +92,16 @@ export default async function MaturityOverviewPage() {
           description="Measure and improve operational excellence across your organisation."
         />
         <EmptyState
-          title="No Lean maturity framework yet"
-          description="Start with an LEH Quick Start template or create a framework to begin measuring maturity across sites and teams."
+          title={
+            canManage
+              ? "No Lean maturity framework yet"
+              : "No maturity frameworks are available with your access"
+          }
+          description={
+            canManage
+              ? "Start with an LEH Quick Start template or create a framework to begin measuring maturity across sites and teams."
+              : "Published frameworks you are allowed to open will appear here. Creating a framework needs a separate role."
+          }
           {...(canManage
             ? {
                 actionLabel: "Create framework",
@@ -86,6 +110,7 @@ export default async function MaturityOverviewPage() {
             : {})}
           icon={<Layers className="size-5" />}
         />
+        <WorkplaceSharedRecords module="maturity" title="Maturity" />
       </div>
     );
   }

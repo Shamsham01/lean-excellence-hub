@@ -20,6 +20,7 @@ export default async function ActionsPage({
     readPermission: ACTIONS_PERMISSIONS.read,
     module: "actions",
     title: "Actions",
+    baselineOpensModule: true,
   });
   if (workplaceView) return workplaceView;
 
