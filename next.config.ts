@@ -16,6 +16,27 @@ const nextConfig: NextConfig = {
         source: "/invitations/:path*",
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
+      {
+        source: "/org_admin",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      {
+        source: "/org_admin/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      {
+        source: "/api/org-admin/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
     ];
   },
   reactStrictMode: true,

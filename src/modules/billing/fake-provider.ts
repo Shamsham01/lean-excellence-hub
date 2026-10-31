@@ -434,6 +434,7 @@ export function createFakeBillingProvider(
         customerId,
         subscriptionId,
         snapshot,
+        stripeLivemode: null,
       };
     },
     hydrateCheckoutSession(input) {
@@ -531,6 +532,7 @@ export function createFakeBillingProvider(
         customerId: checkout.customerId,
         subscriptionId,
         snapshot: snapshotFromSubscription(subscription, createdAt),
+        stripeLivemode: null,
       };
     },
     simulateSubscriptionEvent(subscriptionId, eventType, createdAt) {
@@ -554,6 +556,7 @@ export function createFakeBillingProvider(
         customerId: subscription.customerId,
         subscriptionId,
         snapshot: snapshotFromSubscription(subscription, eventAt),
+        stripeLivemode: null,
       };
     },
     simulateInvoiceEvent(subscriptionId, eventType, createdAt) {
@@ -577,6 +580,7 @@ export function createFakeBillingProvider(
         organisationId: subscription.organisationId,
         customerId: subscription.customerId,
         subscriptionId,
+        stripeLivemode: null,
         snapshot: snapshotFromSubscription(subscription, eventAt, {
           billingState:
             eventType === "invoice.payment_failed"

@@ -12527,6 +12527,19 @@ export type Database = {
           source_domain_event_id: string
         }[]
       }
+      claim_platform_notifications_for_worker: {
+        Args: { batch_size?: number; lease_seconds?: number }
+        Returns: {
+          attempt_count: number
+          event_id: string
+          event_kind: string
+          idempotency_key: string
+          lease_token: string
+          organisation_id: string
+          payload: Json
+          recipient_email: string
+        }[]
+      }
       claim_site_quantity_increase: {
         Args: { target_desired_site_quantity: number }
         Returns: Json
@@ -12592,6 +12605,14 @@ export type Database = {
         Returns: boolean
       }
       complete_organisation_onboarding: { Args: never; Returns: boolean }
+      complete_platform_notification_for_worker: {
+        Args: {
+          expected_lease_token: string
+          target_event_id: string
+          target_provider_message_id: string
+        }
+        Returns: boolean
+      }
       complete_problem_solving_session: {
         Args: { target_session_id: string; target_summary?: string }
         Returns: boolean
@@ -12641,6 +12662,15 @@ export type Database = {
           limiter_dimension: string
           limiter_key_hash: string
           limiter_purpose: string
+          maximum_attempts: number
+          window_seconds: number
+        }
+        Returns: boolean
+      }
+      consume_platform_admin_rate_limit: {
+        Args: {
+          block_seconds: number
+          limiter_key: string
           maximum_attempts: number
           window_seconds: number
         }
@@ -13492,6 +13522,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      fail_platform_notification_retryable_for_worker: {
+        Args: {
+          error_code: string
+          expected_lease_token: string
+          target_event_id: string
+        }
+        Returns: boolean
+      }
+      fail_platform_notification_terminal_for_worker: {
+        Args: {
+          error_code: string
+          expected_lease_token: string
+          target_event_id: string
+        }
+        Returns: boolean
+      }
       fail_workforce_provision: {
         Args: { target_failure_reason: string; target_intent_id: string }
         Returns: boolean
@@ -14164,6 +14210,49 @@ export type Database = {
         }
         Returns: string
       }
+      platform_admin_identity_active: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
+      platform_admin_notification_history: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          result_limit: number
+          result_offset: number
+        }
+        Returns: Json
+      }
+      platform_admin_organisation_detail: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          target_organisation_id: string
+        }
+        Returns: Json
+      }
+      platform_admin_organisation_directory: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          result_limit: number
+          result_offset: number
+          search: string
+          status_filter: string
+        }
+        Returns: Json
+      }
+      platform_admin_overview: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+        }
+        Returns: Json
+      }
       preauthorize_workforce_credential_reset: {
         Args: { target_membership_id: string }
         Returns: string
@@ -14372,6 +14461,25 @@ export type Database = {
           target_note?: string
         }
         Returns: string
+      }
+      record_platform_admin_access: {
+        Args: {
+          actor_user_id: string
+          event_action: string
+          event_detail: Json
+          event_outcome: string
+          request_path: string
+          resource_id: string
+        }
+        Returns: undefined
+      }
+      record_platform_stripe_mode: {
+        Args: {
+          livemode: boolean
+          provider_event_id: string
+          target_organisation_id: string
+        }
+        Returns: undefined
       }
       record_skill_self_assessment: {
         Args: {
