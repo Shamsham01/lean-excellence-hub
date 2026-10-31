@@ -62,5 +62,22 @@ export async function refreshSupabaseSession(request: NextRequest) {
   );
 
   await supabase.auth.getClaims();
+  applyPlatformOwnerConsoleHeaders(response, request.nextUrl.pathname);
   return response;
+}
+
+function applyPlatformOwnerConsoleHeaders(
+  response: NextResponse,
+  pathname: string,
+) {
+  if (
+    pathname === "/org_admin" ||
+    pathname.startsWith("/org_admin/") ||
+    pathname === "/api/org-admin" ||
+    pathname.startsWith("/api/org-admin/")
+  ) {
+    response.headers.set("Cache-Control", "private, no-store");
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    response.headers.set("Referrer-Policy", "no-referrer");
+  }
 }

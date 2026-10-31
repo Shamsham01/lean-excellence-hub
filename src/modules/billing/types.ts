@@ -120,4 +120,10 @@ export type VerifiedWebhookEvent = {
   customerId: string | null;
   subscriptionId: string | null;
   snapshot: SubscriptionSnapshot | null;
+  /**
+   * Stripe `livemode` from a signature-verified event.
+   * Null for the fake provider and for events that do not carry a mode.
+   * Checkout browser redirects must not set this.
+   */
+  stripeLivemode: boolean | null;
 };

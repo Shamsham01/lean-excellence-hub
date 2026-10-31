@@ -77,6 +77,14 @@ See [ADR-0006](../adr/ADR-0006-session-bound-organisation-context.md),
 [ADR-0008](../adr/ADR-0008-version-bound-rbac-and-delegation.md), and
 [ADR-0009](../adr/ADR-0009-tenant-lifecycle-and-hierarchy-mutation.md).
 
+Platform-owner administration is a separate allowlist. An organisation-owner
+grant, an email address, and knowledge of `/org_admin` do not authorise it.
+The allowlist is `private.platform_admins`, keyed by the Auth user id, and
+every cross-tenant read also requires authenticator assurance level `aal2`.
+There is no public route or RPC that inserts that allowlist. Bootstrap and
+revocation are manual SQL, described in
+[platform owner console operations](../operations/platform-owner-console.md).
+
 ## Data protection
 
 - Financial Benefit separation, exports, Storage buckets, object paths, upload

@@ -496,6 +496,7 @@ async function mapStripeEvent(
     customerId,
     subscriptionId,
     snapshot,
+    stripeLivemode: event.livemode,
   };
 }
 
