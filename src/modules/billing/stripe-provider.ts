@@ -10,6 +10,7 @@ import {
   unixSecondsToIso,
 } from "./billing-state";
 import { MIN_SITE_QUANTITY } from "./catalogue";
+import { isSelfServiceCheckoutEnabled } from "./checkout-control";
 import { getBillingEnvironment, requireStripePriceId } from "./env";
 import { BillingProviderError, type BillingProvider } from "./provider";
 import {
@@ -209,6 +210,12 @@ export function createStripeBillingProvider(
       return { customerId: customer.id };
     },
     async createCheckoutSession(input) {
+      if (!isSelfServiceCheckoutEnabled()) {
+        throw new BillingProviderError(
+          "New subscriptions are temporarily unavailable.",
+          "unsupported",
+        );
+      }
       if (input.existingCheckoutSessionId) {
         try {
           const existing = await stripe.checkout.sessions.retrieve(
