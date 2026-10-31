@@ -9,6 +9,7 @@ import {
 } from "@/modules/billing/catalogue";
 import { loadCurrentOrganisationBilling } from "@/modules/billing/current-billing";
 import { isFakeBillingEnabled } from "@/modules/billing/env";
+import { isSelfServiceCheckoutEnabled } from "@/modules/billing/checkout-control";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import {
@@ -83,7 +84,10 @@ export default async function OnboardingPage({
             title="Confirming subscription"
             description={`${current.organisation_name} is being provisioned. Access opens after Stripe confirms the subscription. Checkout return is not treated as success.`}
           >
-            {fakeProvider && canManageBilling && snapshot?.has_open_checkout ? (
+            {isSelfServiceCheckoutEnabled() &&
+            fakeProvider &&
+            canManageBilling &&
+            snapshot?.has_open_checkout ? (
               <form
                 action={completeFakeCheckout}
                 className="flex flex-col gap-3"
@@ -98,6 +102,31 @@ export default async function OnboardingPage({
                 <a href="/select-organisation">Switch organisation</a>
               </Button>
             ) : null}
+            <form action="/auth/signout" method="post">
+              <Button type="submit" variant="outline" className="w-full">
+                Sign out
+              </Button>
+            </form>
+          </AuthCard>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSelfServiceCheckoutEnabled()) {
+    return (
+      <div
+        className="flex min-h-dvh items-center justify-center px-4 py-10"
+        data-testid="checkout-unavailable"
+      >
+        <div className="w-full max-w-md">
+          <AuthCard
+            title="New subscriptions are temporarily unavailable"
+            description="Lean Excellence Hub is preparing its customer launch. Checkout is currently disabled and no payment will be taken."
+          >
+            <p className="text-sm text-muted-foreground">
+              Contact the Lean Excellence Hub team to discuss early access.
+            </p>
             <form action="/auth/signout" method="post">
               <Button type="submit" variant="outline" className="w-full">
                 Sign out
