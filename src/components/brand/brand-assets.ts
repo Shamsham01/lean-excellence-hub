@@ -1,21 +1,51 @@
 export const LEH_BRAND = {
   name: "Lean Excellence Hub",
   strapline: "Continuous Improvement OS",
-  horizontal: {
-    src: "/brand/leh-horizontal.png",
+  /**
+   * Both horizontal masters are 2172×724 with the same transparent margin.
+   * The union of their ink bounds keeps either file from being clipped.
+   */
+  horizontalFrame: {
+    width: 2172,
+    height: 724,
+  },
+  horizontalCrop: {
+    x: 199,
+    y: 187,
+    width: 1779,
+    height: 355,
+  },
+  /**
+   * Layout slot of the previous lockup. Keeping this box holds the landing
+   * header at 88px on desktop while the transparent margin stays outside it.
+   */
+  horizontalLayout: {
     width: 1500,
     height: 337,
   },
-  iconBlue: {
-    src: "/brand/leh-icon-blue.png",
-    width: 512,
-    height: 512,
+  horizontalLight: {
+    src: "/brand/leh-horizontal-light.png",
+    width: 2172,
+    height: 724,
   },
-  iconMinimal: {
-    src: "/brand/leh-icon-minimal.png",
-    width: 512,
-    height: 512,
+  horizontalDark: {
+    src: "/brand/leh-horizontal-dark.png",
+    width: 2172,
+    height: 724,
+  },
+  iconLight: {
+    src: "/brand/leh-icon-light.png",
+    width: 2000,
+    height: 2000,
+  },
+  iconDark: {
+    src: "/brand/leh-icon-dark.png",
+    width: 2000,
+    height: 2000,
   },
 } as const;
 
 export const LEH_BRAND_HOME_LABEL = "Lean Excellence Hub home";
+
+/** Words drawn inside the horizontal lockup. */
+export const LEH_BRAND_LOCKUP_LABEL = `${LEH_BRAND.name}, ${LEH_BRAND.strapline}`;

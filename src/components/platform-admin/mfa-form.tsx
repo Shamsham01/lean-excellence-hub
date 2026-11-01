@@ -80,7 +80,7 @@ export function PlatformMfaForm({
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
       <div className="flex flex-col gap-4">
-        <LehBrand variant="compact" />
+        <LehBrand className="max-w-full" variant="full" />
         <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
           Platform owner
         </p>
