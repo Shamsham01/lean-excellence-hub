@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 
+import { LEH_BRAND } from "@/components/brand/brand-assets";
+import { LehBrand } from "@/components/brand/leh-brand";
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -74,6 +77,13 @@ export function MobilePlatformNavigation({
           />
         </SheetContent>
       </Sheet>
+      <AppLink
+        href="/platform"
+        aria-label={LEH_BRAND.name}
+        className="leh-brand-link shrink-0 [--leh-brand-mark:1.75rem]"
+      >
+        <LehBrand decorative variant="icon" />
+      </AppLink>
       <span
         className="min-w-0 flex-1 truncate text-sm font-semibold"
         data-testid="platform-mobile-org-name"

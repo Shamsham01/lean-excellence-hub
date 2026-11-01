@@ -1,3 +1,5 @@
+import { LEH_BRAND } from "@/components/brand/brand-assets";
+import { LehBrand } from "@/components/brand/leh-brand";
 import { AppLink } from "@/components/ui/app-link";
 
 import { SiteContextSwitcher } from "@/components/platform/site-context-switcher";
@@ -25,7 +27,13 @@ export function PlatformSidebarHeader({
         closeGutter && "pr-12",
       )}
     >
-      <p className="typography-product-identity">Lean Excellence Hub</p>
+      <AppLink
+        href="/platform"
+        aria-label={LEH_BRAND.name}
+        className="leh-brand-link w-fit max-w-full"
+      >
+        <LehBrand decorative variant="compact" />
+      </AppLink>
       <div className="min-w-0">
         <p
           className="truncate text-sm font-semibold text-sidebar-foreground"

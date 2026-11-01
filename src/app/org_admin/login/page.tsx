@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,11 +28,9 @@ export default async function PlatformLoginPage({
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
-      <div>
-        <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-          Lean Excellence Hub
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">Sign in</h1>
+      <div className="flex flex-col gap-4">
+        <LehBrand variant="full" />
+        <h1 className="text-2xl font-semibold">Sign in</h1>
       </div>
       {message ? (
         <p className="text-sm text-destructive" role="alert">

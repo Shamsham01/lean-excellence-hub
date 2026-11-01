@@ -10,17 +10,17 @@ This pack contains assets ONLY: the TSX/CSS branding integrations and metadata c
 
 ## Asset map
 
-| Asset | Usage |
-|---|---|
-| `public/brand/leh-horizontal.png` | Official horizontal logo (best on white/light surfaces with sufficient width) |
-| `public/brand/leh-icon-blue.png` | Blue square LEH mark, transparent exterior — header, sidebar, admin, loading, compact views |
-| `public/brand/leh-icon-minimal.png` | Alternative light icon |
-| `public/brand/leh-icon-blue-192.png` | Web manifest smaller icon |
-| `src/app/favicon.ico` | Classic multi-resolution browser tab icon |
-| `src/app/icon.png` | Next.js app icon (browser and metadata) |
-| `src/app/apple-icon.png` | Apple touch icon |
-| `public/site.webmanifest` | PWA/browser-install identity |
-| `public/brand/originals/*.png` | Unmodified source artwork for future use |
+| Asset                                | Usage                                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `public/brand/leh-horizontal.png`    | Official horizontal logo (best on white/light surfaces with sufficient width)               |
+| `public/brand/leh-icon-blue.png`     | Blue square LEH mark, transparent exterior — header, sidebar, admin, loading, compact views |
+| `public/brand/leh-icon-minimal.png`  | Alternative light icon                                                                      |
+| `public/brand/leh-icon-blue-192.png` | Web manifest smaller icon                                                                   |
+| `src/app/favicon.ico`                | Classic multi-resolution browser tab icon                                                   |
+| `src/app/icon.png`                   | Next.js app icon (browser and metadata)                                                     |
+| `src/app/apple-icon.png`             | Apple touch icon                                                                            |
+| `public/site.webmanifest`            | PWA/browser-install identity                                                                |
+| `public/brand/originals/*.png`       | Unmodified source artwork for future use                                                    |
 
 ## QA
 

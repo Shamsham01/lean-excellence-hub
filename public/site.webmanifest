@@ -8,7 +8,17 @@
   "theme_color": "#075aff",
   "background_color": "#ffffff",
   "icons": [
-    { "src": "/brand/leh-icon-blue-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/brand/leh-icon-blue.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/brand/leh-icon-blue-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/leh-icon-blue.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
