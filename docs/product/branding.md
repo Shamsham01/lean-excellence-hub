@@ -12,7 +12,7 @@ Use `LehBrand` from `src/components/brand/leh-brand.tsx`.
 | `compact` | Minimal line icon plus the name | Blue icon plus the name | Sidebar, mobile drawer, platform-owner console, organisation setup |
 | `icon` | Minimal line icon | Blue icon | Mobile platform bar, simulated product chrome, empty and error states |
 
-`responsive` on a full mark collapses it to the compact treatment below 40rem so the name stays readable beside header controls. The horizontal file has a white matte, so it is hidden in `.dark` and on that narrow collapse. Proportions stay on `aspect-ratio: 1500 / 337` for the lockup and a square box for the icons.
+`responsive` on a full mark collapses it to the compact treatment below 40rem so the name stays readable beside header controls. The horizontal file has a white matte, so it is hidden in `.dark` and on that narrow collapse. Above that breakpoint the hidden lockup stays in the layout, so the full mark’s box does not change height when the theme changes. Proportions stay on `aspect-ratio: 1500 / 337` for the lockup and a square box for the icons.
 
 Organisation names stay separate from the product mark. The sidebar and mobile bar still show the organisation beside or under the brand.
 

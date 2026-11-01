@@ -48,21 +48,31 @@ export function LehBrand({
         ? { role: "img" as const, "aria-label": LEH_BRAND.name }
         : {})}
     >
-      <Image
-        alt=""
-        className="leh-brand-mark leh-brand-mark-blue"
-        height={LEH_BRAND.iconBlue.height}
-        priority={priority && variant !== "full"}
-        src={LEH_BRAND.iconBlue.src}
-        width={LEH_BRAND.iconBlue.width}
-      />
-      <Image
-        alt=""
-        className="leh-brand-mark leh-brand-mark-minimal"
-        height={LEH_BRAND.iconMinimal.height}
-        src={LEH_BRAND.iconMinimal.src}
-        width={LEH_BRAND.iconMinimal.width}
-      />
+      <span className="leh-brand-fallback">
+        <Image
+          alt=""
+          className="leh-brand-mark leh-brand-mark-blue"
+          height={LEH_BRAND.iconBlue.height}
+          priority={priority && variant !== "full"}
+          src={LEH_BRAND.iconBlue.src}
+          width={LEH_BRAND.iconBlue.width}
+        />
+        <Image
+          alt=""
+          className="leh-brand-mark leh-brand-mark-minimal"
+          height={LEH_BRAND.iconMinimal.height}
+          src={LEH_BRAND.iconMinimal.src}
+          width={LEH_BRAND.iconMinimal.width}
+        />
+        {showCopy ? (
+          <span className="leh-brand-copy">
+            <span className="leh-brand-name">{LEH_BRAND.name}</span>
+            {strapline ? (
+              <span className="leh-brand-strapline">{LEH_BRAND.strapline}</span>
+            ) : null}
+          </span>
+        ) : null}
+      </span>
       {variant === "full" ? (
         <Image
           alt={lockupAlt}
@@ -73,14 +83,6 @@ export function LehBrand({
           src={LEH_BRAND.horizontal.src}
           width={LEH_BRAND.horizontal.width}
         />
-      ) : null}
-      {showCopy ? (
-        <span className="leh-brand-copy">
-          <span className="leh-brand-name">{LEH_BRAND.name}</span>
-          {strapline ? (
-            <span className="leh-brand-strapline">{LEH_BRAND.strapline}</span>
-          ) : null}
-        </span>
       ) : null}
     </span>
   );

@@ -146,6 +146,7 @@ describe("site identity metadata", () => {
     expect(css).toContain(
       '.dark .leh-brand[data-variant="full"] .leh-brand-lockup',
     );
+    expect(css).toContain("visibility: hidden");
     expect(css).toContain("aspect-ratio: 1500 / 337");
   });
 });
