@@ -1,5 +1,7 @@
 # Cursor task — BRAND-001
 
+BRAND-002 replaced the white-matte guidance below. Current placement is `docs/product/branding.md`. The horizontal UI files are `leh-horizontal-light.png` and `leh-horizontal-dark.png`. The icon UI files are `leh-icon-light.png` and `leh-icon-dark.png`.
+
 Repository: Shamsham01/lean-excellence-hub
 Issue: https://github.com/Shamsham01/lean-excellence-hub/issues/305
 

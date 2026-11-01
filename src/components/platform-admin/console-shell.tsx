@@ -22,7 +22,7 @@ export function PlatformConsoleShell({
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-5 md:px-6">
         <header className="flex flex-col gap-4 border-b border-border pb-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
-            <LehBrand variant="compact" />
+            <LehBrand className="max-w-full" variant="full" />
             <h1 className="mt-3 text-2xl font-semibold tracking-tight">
               Platform owner
             </h1>

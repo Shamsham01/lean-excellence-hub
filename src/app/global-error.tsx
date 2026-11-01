@@ -29,9 +29,14 @@ export default function GlobalError({
             gap: 16,
           }}
         >
-          {/* Root error replaces the document shell, so the static icon is used directly. */}
+          {/* Root error replaces the document shell, so the dark icon is a static file. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="" height={32} src="/brand/leh-icon-blue.png" width={32} />
+          <img
+            alt=""
+            height={32}
+            src="/brand/leh-icon-dark-128.png"
+            width={32}
+          />
           <h1 style={{ fontSize: 28, margin: 0 }}>
             This workspace couldn’t load
           </h1>
