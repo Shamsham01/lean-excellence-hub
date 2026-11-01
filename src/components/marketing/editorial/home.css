@@ -126,6 +126,17 @@
   padding: 0.55rem 0.8rem;
 }
 
+.editorial-window-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.editorial-window-title .leh-brand {
+  --leh-brand-mark: 1.125rem;
+}
+
 .editorial-window-bar p {
   margin: 0;
   min-width: 0;

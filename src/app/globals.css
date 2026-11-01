@@ -646,12 +646,6 @@ html:has(> body > .marketing) {
   box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
 }
 
-.marketing-mark {
-  width: 1.35rem;
-  height: 1.35rem;
-  flex-shrink: 0;
-}
-
 .marketing {
   overflow-anchor: none;
   overflow-x: clip;
@@ -1017,10 +1011,6 @@ html:has(> body > .marketing) {
   font-size: 0.875rem;
   line-height: 1.6;
   color: var(--muted-foreground);
-}
-
-.marketing-fragments-caption .marketing-mark {
-  margin-top: 0.1rem;
 }
 
 @media (min-width: 1024px) {

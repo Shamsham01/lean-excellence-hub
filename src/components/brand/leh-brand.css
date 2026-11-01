@@ -1,0 +1,183 @@
+.leh-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--foreground);
+  line-height: 1.05;
+  vertical-align: top;
+  --leh-brand-mark: 1.75rem;
+  --leh-brand-lockup: 17.5rem;
+}
+
+.leh-brand-link {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  max-width: 100%;
+}
+
+/* Compact and icon marks flatten this wrapper. The full mark stacks it
+   with the lockup so both themes share one box. */
+.leh-brand-fallback {
+  display: contents;
+}
+
+.leh-brand-link:focus-visible {
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.25rem;
+}
+
+.leh-brand-mark,
+.leh-brand-lockup {
+  display: block;
+  flex-shrink: 0;
+}
+
+.leh-brand-mark {
+  width: var(--leh-brand-mark);
+  height: var(--leh-brand-mark);
+}
+
+.leh-brand-lockup {
+  width: var(--leh-brand-lockup);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1500 / 337;
+}
+
+.leh-brand[data-variant="full"] {
+  display: inline-grid;
+  align-items: center;
+  justify-items: start;
+}
+
+.leh-brand[data-variant="full"] > .leh-brand-fallback,
+.leh-brand[data-variant="full"] > .leh-brand-lockup {
+  grid-area: 1 / 1;
+}
+
+.leh-brand[data-variant="full"] > .leh-brand-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  max-width: 100%;
+}
+
+.leh-brand-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.leh-brand-name {
+  overflow-wrap: break-word;
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+}
+
+.leh-brand-strapline {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.leh-brand[data-variant="compact"] {
+  --leh-brand-mark: 1.625rem;
+}
+
+.leh-brand[data-variant="compact"] .leh-brand-name {
+  font-size: 0.8125rem;
+}
+
+.leh-brand[data-variant="compact"] .leh-brand-strapline {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+}
+
+/* Light surfaces use the line icon. The blue tile is the dark-surface mark. */
+.leh-brand-mark-blue {
+  display: none;
+}
+
+.leh-brand-lockup {
+  display: none;
+}
+
+.leh-brand[data-variant="icon"] .leh-brand-copy,
+.leh-brand[data-variant="compact"] .leh-brand-lockup {
+  display: none;
+}
+
+/* Official horizontal lockup only on light, and only for the full variant. */
+:root:not(.dark) .leh-brand[data-variant="full"] .leh-brand-lockup {
+  display: block;
+}
+
+:root:not(.dark) .leh-brand[data-variant="full"] > .leh-brand-fallback {
+  display: none;
+}
+
+.dark .leh-brand-mark-minimal {
+  display: none;
+}
+
+.dark .leh-brand-mark-blue {
+  display: block;
+}
+
+/* Keep the white lockup in the grid so a theme change cannot resize
+   sticky chrome. Visibility removes it from the accessibility tree. */
+.dark .leh-brand[data-variant="full"] .leh-brand-lockup {
+  display: block;
+  visibility: hidden;
+}
+
+.dark .leh-brand[data-variant="full"] .leh-brand-copy {
+  display: flex;
+}
+
+@media (max-width: 40rem) {
+  :root:not(.dark)
+    .leh-brand[data-responsive="true"][data-variant="full"]
+    .leh-brand-lockup,
+  .dark
+    .leh-brand[data-responsive="true"][data-variant="full"]
+    .leh-brand-lockup {
+    display: none;
+  }
+
+  :root:not(.dark)
+    .leh-brand[data-responsive="true"][data-variant="full"]
+    > .leh-brand-fallback {
+    display: inline-flex;
+  }
+
+  :root:not(.dark)
+    .leh-brand[data-responsive="true"][data-variant="full"]
+    .leh-brand-copy {
+    display: flex;
+  }
+
+  :root:not(.dark)
+    .leh-brand[data-responsive="true"][data-variant="full"]
+    .leh-brand-mark-minimal {
+    display: block;
+  }
+
+  :root:not(.dark)
+    .leh-brand[data-responsive="true"][data-variant="full"]
+    .leh-brand-mark-blue {
+    display: none;
+  }
+
+  .leh-brand[data-responsive="true"] .leh-brand-strapline {
+    display: none;
+  }
+}

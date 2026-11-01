@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { rootMetadata } from "@/components/brand/site-metadata";
+
 import "./globals.css";
 import { ThemeProvider } from "./theme-provider";
 
@@ -15,10 +17,7 @@ const mono = Geist_Mono({
   variable: "--font-mono",
 });
 
-export const metadata: Metadata = {
-  description: "A foundation for organisation-wide Lean management.",
-  title: "Lean Excellence Hub",
-};
+export const metadata: Metadata = rootMetadata;
 
 export const viewport: Viewport = {
   colorScheme: "light dark",

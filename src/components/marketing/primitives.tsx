@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { HTMLAttributes, ReactNode } from "react";
 
+import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
 import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import { cn } from "@/lib/utils";
@@ -59,75 +60,23 @@ export function MarketingSurface({
   );
 }
 
-export function MarketingMark({ className }: { className?: string }) {
+export function MarketingWordmark({
+  compact = false,
+  decorative = false,
+  priority = false,
+}: {
+  compact?: boolean;
+  decorative?: boolean;
+  priority?: boolean;
+}) {
   return (
-    <svg
-      aria-hidden="true"
-      className={cn("marketing-mark", className)}
-      fill="none"
-      viewBox="0 0 32 32"
-    >
-      <rect
-        x="3.25"
-        y="3.25"
-        width="10.5"
-        height="10.5"
-        rx="2.2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <rect
-        x="18.25"
-        y="3.25"
-        width="10.5"
-        height="10.5"
-        rx="2.2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <rect
-        x="3.25"
-        y="18.25"
-        width="10.5"
-        height="10.5"
-        rx="2.2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <rect
-        x="18.25"
-        y="18.25"
-        width="10.5"
-        height="10.5"
-        rx="2.2"
-        fill="var(--primary)"
-        stroke="var(--primary)"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M13.8 8.5h4.4M8.5 13.8v4.4M23.5 13.8v4.4M13.8 23.5h4.4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-    </svg>
-  );
-}
-
-export function MarketingWordmark({ compact = false }: { compact?: boolean }) {
-  return (
-    <span className="marketing-wordmark flex items-center gap-2.5 text-foreground">
-      <MarketingMark />
-      <span className="flex flex-col leading-none">
-        <span className="text-[0.92rem] font-semibold tracking-tight">
-          Lean Excellence Hub
-        </span>
-        {compact ? null : (
-          <span className="mt-1 hidden text-[0.65rem] tracking-[0.12em] text-muted-foreground uppercase lg:block">
-            Continuous Improvement OS
-          </span>
-        )}
-      </span>
-    </span>
+    <LehBrand
+      decorative={decorative}
+      priority={priority}
+      responsive={!compact}
+      strapline={!compact}
+      variant={compact ? "compact" : "full"}
+    />
   );
 }
 

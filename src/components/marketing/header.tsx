@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { MarketingAppearanceMenu } from "./appearance-menu";
+import { LEH_BRAND_HOME_LABEL } from "@/components/brand/brand-assets";
+
 import {
   MarketingContainer,
   MarketingWordmark,
@@ -45,10 +47,10 @@ export function MarketingHeader() {
         <MarketingContainer className="flex items-center gap-3 py-3 sm:gap-4">
           <Link
             href="/"
-            className="rounded-md"
-            aria-label="Lean Excellence Hub home"
+            className="leh-brand-link min-w-0"
+            aria-label={LEH_BRAND_HOME_LABEL}
           >
-            <MarketingWordmark />
+            <MarketingWordmark decorative priority />
           </Link>
 
           <nav

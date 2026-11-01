@@ -1,5 +1,6 @@
 "use client";
 
+import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
 
 export function WorkspaceLoadError({
@@ -18,6 +19,7 @@ export function WorkspaceLoadError({
       className="mx-auto flex max-w-lg flex-col gap-4 px-6 py-16"
       data-testid="workspace-load-error"
     >
+      <LehBrand variant="icon" />
       <h1 className="text-2xl font-semibold">{title}</h1>
       <p className="text-sm text-muted-foreground">{description}</p>
       {digest ? (

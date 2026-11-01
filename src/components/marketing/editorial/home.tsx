@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
+import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
 import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import {
@@ -252,7 +253,10 @@ function HeroWorkspace() {
             <i />
             <i />
           </span>
-          <p>Lean Excellence Hub</p>
+          <div className="editorial-window-title">
+            <LehBrand decorative variant="icon" />
+            <p>Lean Excellence Hub</p>
+          </div>
           <StatusChip>Example</StatusChip>
         </div>
         <div className="editorial-window-body">
