@@ -6,7 +6,7 @@ These assets are derived exclusively from the three supplied LEH logos. No artwo
 
 Extract this ZIP at the **root of** `lean-excellence-hub` so the enclosed `src/app/` and `public/brand/` directories merge into the existing folders. **Commit the asset files to a feature branch** and make them available to Cursor Online by pushing the branch, or use Cursor Local on that branch.
 
-This pack contains assets ONLY: the TSX/CSS branding integrations and metadata changes must be implemented by Cursor using the accompanying `CURSOR_TASK.md`.
+This pack contains assets ONLY: the TSX/CSS branding integrations and metadata changes must be implemented by Cursor using the `docs/brand/CURSOR_TASK.md`.
 
 ## Asset map
 
