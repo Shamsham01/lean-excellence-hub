@@ -98,7 +98,10 @@ function skillsEnvelope(
   context: ModuleSetupBuilderContext | null,
   request: string,
 ) {
-  if (request.includes("SKILLS_DISCOVERY_TEST")) {
+  if (
+    request.includes("SKILLS_DISCOVERY_TEST") &&
+    context?.request.intent !== "propose"
+  ) {
     return {
       message:
         "I need a little more detail before drafting skills and requirements.",

@@ -312,9 +312,12 @@ export async function sendSkillsSetupBuilderMessage(input: {
     input,
   );
   if (!result.ok) {
+    const retryable =
+      result.reason === "provider_error" || result.reason === "timeout";
     return {
       ok: false as const,
       message: result.message,
+      retryable,
       proposal: null as SkillsBuilderProposal | null,
       proposalMessageId: null as string | null,
     };

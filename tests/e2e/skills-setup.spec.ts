@@ -311,6 +311,16 @@ test.describe("Skills setup journeys", () => {
     await expect(page.getByTestId("skills-builder-discovery")).toBeVisible();
     await expect(page.getByTestId("skills-builder-question")).toHaveCount(3);
 
+    await page
+      .getByTestId("skills-builder-suggested-answer")
+      .filter({ hasText: "Deck oven line" })
+      .click();
+    await expect(
+      page
+        .getByTestId("skills-builder-suggested-answer")
+        .filter({ hasText: "Deck oven line" }),
+    ).toHaveAttribute("data-selected", "true");
+
     await page.getByTestId("skills-builder-generate-draft").click();
     await expect(page.getByTestId("skills-builder-proposal-title")).toHaveText(
       "Bakery oven capability",

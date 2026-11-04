@@ -7,6 +7,14 @@ import {
 } from "@/modules/module-setup/ai-builder/discovery-questions";
 import { revalidateStoredSkillsProposal } from "@/modules/skills/ai-builder/proposal";
 import { parseSkillsBuilderEnvelope } from "@/modules/skills/ai-builder/proposal";
+import { fakeModuleSetupBuilderResponse } from "@/platform/ai/providers/fake-module-setup-builder";
+import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
+import {
+  buildModuleSetupBuilderContext,
+  contextMarkers,
+  wrapModuleSetupBuilderContext,
+} from "@/modules/module-setup/ai-builder/context";
+import { SKILLS_BUILDER_CONTEXT_CONTRACT } from "@/modules/skills/ai-builder/types";
 
 describe("module setup discovery questions", () => {
   it("normalises provider output to three questions at most", () => {
@@ -81,6 +89,39 @@ describe("module setup discovery questions", () => {
     expect(state?.pendingQuestions).toHaveLength(3);
     expect(state?.turns).toHaveLength(1);
     expect(state?.turns[0]?.role).toBe("assistant");
+  });
+
+  it("includes guided selections when generating a draft after discovery", () => {
+    const markers = contextMarkers(SKILLS_BUILDER_CONTEXT_CONTRACT);
+    const context = buildModuleSetupBuilderContext({
+      contract: SKILLS_BUILDER_CONTEXT_CONTRACT,
+      facts: {
+        organisationName: "Bodmin Bakery",
+        activeSiteName: null,
+        unitNames: [],
+        existingConfigurationNames: [],
+        configurationCount: 0,
+        jobFunctionNames: ["Production Operator"],
+      },
+      understanding: { operation: "Bakery production" },
+      currentProposal: null,
+      intent: "propose",
+      focusLabel: null,
+      retry: false,
+      limits: {},
+    });
+    const prompt = `${wrapModuleSetupBuilderContext(markers.start, markers.end, context)}\n\nUser request:\nQuestion: Which operation should this setup focus on?\nAnswer: Deck oven line\n\nGenerate a draft proposal from what you know so far. SKILLS_DISCOVERY_TEST`;
+    const response = fakeModuleSetupBuilderResponse(
+      SKILLS_SETUP_BUILDER_FORMAT_NAME,
+      prompt,
+    );
+    const parsed = parseSkillsBuilderEnvelope(response?.parsedJson);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.envelope.phase).toBe("proposal");
+      expect(parsed.envelope.proposalStatus).toBe("valid");
+      expect(parsed.envelope.proposal?.title).toBe("Bakery oven capability");
+    }
   });
 
   it("parses Skills envelopes with more than three discovery questions", () => {

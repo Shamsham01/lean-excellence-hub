@@ -113,6 +113,7 @@ export function SkillsBuilderPanel({
   ) {
     if (!result.ok) {
       setError(result.message);
+      setLastTurnInvalid(Boolean(result.retryable));
       return;
     }
     setReply(result.message);
@@ -211,7 +212,7 @@ export function SkillsBuilderPanel({
             LeanAI needs a little more context before it can draft skills and
             requirements. Pick a suggested answer or add your own notes below.
           </p>
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-4" role="list">
             {questions.map((question) => (
               <li key={question.question} className="flex flex-col gap-2">
                 <p
@@ -220,23 +221,36 @@ export function SkillsBuilderPanel({
                 >
                   {question.question}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {question.suggestedAnswers.map((answer) => (
-                    <button
-                      key={answer}
-                      type="button"
-                      className="min-h-11 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                      data-testid="skills-builder-suggested-answer"
-                      onClick={() =>
-                        setSelections((current) => ({
-                          ...current,
-                          [question.question]: answer,
-                        }))
-                      }
-                    >
-                      {answer}
-                    </button>
-                  ))}
+                <div
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                  aria-label={question.question}
+                >
+                  {question.suggestedAnswers.map((answer) => {
+                    const selected = selections[question.question] === answer;
+                    return (
+                      <button
+                        key={answer}
+                        type="button"
+                        aria-pressed={selected}
+                        className={
+                          selected
+                            ? "min-h-11 rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                            : "min-h-11 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                        }
+                        data-testid="skills-builder-suggested-answer"
+                        data-selected={selected ? "true" : "false"}
+                        onClick={() =>
+                          setSelections((current) => ({
+                            ...current,
+                            [question.question]: answer,
+                          }))
+                        }
+                      >
+                        {answer}
+                      </button>
+                    );
+                  })}
                 </div>
               </li>
             ))}
@@ -480,10 +494,11 @@ export function SkillsBuilderPanel({
               }
               startTransition(async () => {
                 await enqueue(async () => {
+                  const guided = outboundMessage();
                   applyTurn(
                     await sendSkillsSetupBuilderMessage({
                       message:
-                        message.trim() ||
+                        guided.trim() ||
                         "Generate a draft proposal from what you know so far, noting any assumptions.",
                       intent: "propose",
                       idempotencyKey: crypto.randomUUID(),
