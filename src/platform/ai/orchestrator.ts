@@ -60,6 +60,27 @@ export type RunAiTurnResult = {
   envelope: FacilitatorEnvelope;
 };
 
+async function problemSolvingSessionCaseId(
+  supabase: SupabaseClient,
+  sessionId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("ai_sessions")
+    .select("problem_solving_case_id, context_type")
+    .eq("id", sessionId)
+    .maybeSingle();
+  const caseId = data?.problem_solving_case_id;
+  if (
+    error ||
+    data?.context_type !== "problem_solving" ||
+    typeof caseId !== "string" ||
+    caseId.length === 0
+  ) {
+    throw new Error("Lean AI session is not authorised for this case.");
+  }
+  return caseId;
+}
+
 function isProblemSolvingTool(name: string): name is ProblemSolvingToolName {
   return (PROBLEM_SOLVING_READ_TOOLS as readonly string[]).includes(name);
 }
@@ -90,6 +111,13 @@ export async function runAiTurn(
 
   const systemPrompt = buildSystemPrompt(input.mode, input.stageKey);
   const promptHash = hashPrompt(systemPrompt);
+  const sessionCaseId = await problemSolvingSessionCaseId(
+    input.supabase,
+    input.sessionId,
+  );
+  if (sessionCaseId !== input.caseId) {
+    throw new Error("Lean AI session is not authorised for this case.");
+  }
 
   const { data: runId, error: startError } = await input.supabase.rpc(
     "start_ai_run",

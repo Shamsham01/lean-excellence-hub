@@ -1,5 +1,5 @@
 /** Shipped with the application release. Not loaded from GitHub at runtime. */
-export const LEH_PRODUCT_KNOWLEDGE_VERSION = "2026-10-30";
+export const LEH_PRODUCT_KNOWLEDGE_VERSION = "2026-11-04";
 
 export const LEH_PRODUCT_KNOWLEDGE_SCOPE =
-  "Skills is fully covered. Workforce access, roles, scopes, and personal profiles have coach and product-help summaries." as const;
+  "Skills and Problem Solving have audited field-level knowledge. Other modules stay partial or not started." as const;

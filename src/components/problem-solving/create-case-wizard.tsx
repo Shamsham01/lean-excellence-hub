@@ -7,6 +7,7 @@ import {
   createProblemSolvingCaseDraft,
   updateProblemSolvingCaseDraft,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { RelatedWorkPanel } from "@/components/problem-solving/related-work-panel";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
@@ -253,6 +254,10 @@ export function CreateCaseWizard({
                   onChange={(e) => setBackground(e.target.value)}
                 />
               </label>
+              <RelatedWorkPanel
+                mode="draft"
+                queryText={`${title} ${problemStatement}`.trim()}
+              />
               <label className="flex flex-col gap-1 text-sm">
                 <span>Business impact</span>
                 <Textarea

@@ -1,6 +1,6 @@
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
 
-export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v5";
+export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v6";
 
 export type CoachProductKnowledge = {
   version: string;
@@ -113,9 +113,21 @@ const KNOWLEDGE: Partial<
       "The catalogue and scale belong to the organisation. A selected site does not limit them.",
       "Not assessed is not a low score. A starter pack does not mark anyone competent.",
       "Quick Start stays available when LeanAI is off or unavailable.",
-      "Detailed field knowledge in this release covers Skills. Do not treat that as coverage of every module.",
+      "Detailed field knowledge in this release covers Skills and Problem Solving. Do not treat that as coverage of every module.",
     ],
     recommendedPath: "/platform/skills/setup",
+  },
+  problem_solving: {
+    summary:
+      "Problem Solving keeps a measurable gap, the evidence, and a human decision to close on one case.",
+    facts: [
+      "Create a draft at /platform/problem-solving/new with a title, unit, and owner. Choose a published method when you activate it.",
+      "Seeded methods are A3 / 8-step, Rapid root cause analysis, and 5 Why. DMAIC and 8D are not methods in this release.",
+      "Containment is not a countermeasure. A similar closed case is not proof of this cause.",
+      "LeanAI cannot verify a cause, close a case, record an effectiveness pass, or grant access.",
+      "Manual case entry and historical search stay available when the model is off. Search uses only closed cases you can read.",
+    ],
+    recommendedPath: "/platform/problem-solving/new",
   },
   recognition: {
     summary:

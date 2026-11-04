@@ -1,3 +1,4 @@
+import { problemSolvingKnowledgeFieldGaps } from "./problem-solving";
 import { skillsKnowledgeFieldGaps } from "./skills";
 
 export type PlatformKnowledgeCoverage = {
@@ -7,8 +8,9 @@ export type PlatformKnowledgeCoverage = {
 };
 
 const skillsFieldGaps = skillsKnowledgeFieldGaps();
+const problemSolvingFieldGaps = problemSolvingKnowledgeFieldGaps();
 
-/** Skills is the only module with field-level product knowledge in this release. */
+/** Skills and Problem Solving are the audited field-level bundles in this release. */
 export const PLATFORM_KNOWLEDGE_COVERAGE: readonly PlatformKnowledgeCoverage[] =
   [
     {
@@ -63,9 +65,11 @@ export const PLATFORM_KNOWLEDGE_COVERAGE: readonly PlatformKnowledgeCoverage[] =
     },
     {
       module: "problem_solving",
-      status: "partial",
+      status: problemSolvingFieldGaps.length === 0 ? "complete" : "partial",
       followUp:
-        "Case facilitation has its own prompts and evals. It is not part of this product-knowledge bundle.",
+        problemSolvingFieldGaps.length === 0
+          ? "Audited case fields, seeded methods, permissions, and closure outcomes are in this bundle. DMAIC, 8D, and vector search are not product capabilities in this release. Other modules are not covered by this bundle."
+          : `These audited Problem Solving fields are not in the bundle yet: ${problemSolvingFieldGaps.join(", ")}.`,
     },
     {
       module: "projects_and_benefits",
@@ -82,5 +86,5 @@ export const PLATFORM_KNOWLEDGE_COVERAGE: readonly PlatformKnowledgeCoverage[] =
   ];
 
 export function knowledgeCoverageStatement(): string {
-  return "LeanAI has complete field-level product knowledge for Skills only. Other modules are partial or not started, so answer those from the shorter coach facts or say the detailed guide is not available yet.";
+  return "LeanAI has complete field-level product knowledge for Skills and Problem Solving. Other modules are partial or not started, so answer those from the shorter coach facts or say the detailed guide is not available yet.";
 }

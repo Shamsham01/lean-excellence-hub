@@ -385,7 +385,9 @@ test.describe("Milestone 11 closure", () => {
 
     await page.getByTestId("tab-cause-analysis").click();
     await expect(
-      page.getByText("Verified cause", { exact: true }),
+      page
+        .getByTestId("problem-solving-cause-analysis-panel")
+        .getByText("Verified cause", { exact: true }),
     ).toBeVisible();
     await page.getByTestId("tab-countermeasures").click();
     await expect(
@@ -423,7 +425,9 @@ test.describe("Milestone 11 closure", () => {
       ),
     ).toBeVisible();
     await expect(
-      page.getByText("Verified cause", { exact: true }),
+      page
+        .getByTestId("problem-solving-cause-analysis-panel")
+        .getByText("Verified cause", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(

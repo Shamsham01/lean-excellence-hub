@@ -40,6 +40,9 @@ export const ASSISTANT_WORKFLOWS = [
   "skills_requirements",
   "skills_matrix",
   "recognition",
+  "problem_solving_portfolio",
+  "problem_solving_create",
+  "problem_solving_case",
   "lean_ai_settings",
   "generic_platform",
 ] as const;

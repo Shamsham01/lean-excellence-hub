@@ -12,6 +12,7 @@ import { OverviewPanel } from "@/components/problem-solving/overview-panel";
 import { SessionsPanel } from "@/components/problem-solving/sessions-panel";
 import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
 import { AiFacilitatorPanel } from "@/components/problem-solving/ai/ai-facilitator-panel";
+import { RelatedWorkPanel } from "@/components/problem-solving/related-work-panel";
 import { VerificationPanel } from "@/components/problem-solving/verification-panel";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import {
@@ -220,12 +221,19 @@ export function CaseWorkspace({
         </TabsContent>
 
         <TabsContent value="lean-ai">
-          <AiFacilitatorPanel
-            caseId={detail.id}
-            stageKey={detail.current_stage?.semantic_stage_key ?? null}
-            canUseAi={canUseAi}
-            providerAvailable={providerAvailable}
-          />
+          <div className="flex flex-col gap-6">
+            <RelatedWorkPanel
+              mode="case"
+              caseId={detail.id}
+              queryText={`${detail.title} ${detail.problem_statement ?? ""}`.trim()}
+            />
+            <AiFacilitatorPanel
+              caseId={detail.id}
+              stageKey={detail.current_stage?.semantic_stage_key ?? null}
+              canUseAi={canUseAi}
+              providerAvailable={providerAvailable}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="history">
