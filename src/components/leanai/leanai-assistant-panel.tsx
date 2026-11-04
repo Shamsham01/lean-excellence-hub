@@ -1,12 +1,13 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { LeanAiCoachCard } from "@/components/leanai/leanai-coach-card";
+import { LeanAiComposer } from "@/components/leanai/leanai-composer";
+import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
 import { useLeanAiAssistant } from "@/components/leanai/leanai-assistant-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { hardNavigate } from "@/lib/navigation/navigate";
 import { cn } from "@/lib/utils";
 import { hostLabelFromUrl } from "@/modules/leanai-context/assistant/external-sources";
@@ -28,7 +29,6 @@ export function LeanAiAssistantPanel({
     sendMessage,
     clearConversation,
   } = useLeanAiAssistant();
-  const inputId = useId();
   const feedRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
 
@@ -182,7 +182,13 @@ export function LeanAiAssistantPanel({
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               {message.role === "user" ? "You" : "LeanAI"}
             </p>
-            <p className="mt-1">{message.content}</p>
+            {message.role === "user" ? (
+              <p className="mt-1 break-words whitespace-pre-wrap">
+                {message.content}
+              </p>
+            ) : (
+              <LeanAiMarkdown className="mt-1" text={message.content} />
+            )}
             {message.role === "assistant" &&
             message.externalSources &&
             message.externalSources.length > 0 ? (
@@ -247,17 +253,7 @@ export function LeanAiAssistantPanel({
         ) : null}
       </div>
 
-      <form
-        className="shrink-0 border-t border-border px-3 py-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!draft.trim() || sending || !conversationAvailable) {
-            return;
-          }
-          sendMessage(draft);
-          setDraft("");
-        }}
-      >
+      <div className="shrink-0 border-t border-border px-3 py-3">
         {chatError ? (
           <p className="mb-2 text-sm text-destructive" role="alert">
             {chatError}
@@ -272,34 +268,17 @@ export function LeanAiAssistantPanel({
               "AI conversation is not enabled. Guidance on this page describes only the access you have."}
           </p>
         ) : null}
-        <label className="sr-only" htmlFor={inputId}>
-          Ask LeanAI
-        </label>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <Input
-            id={inputId}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={
-              conversationAvailable
-                ? "Ask LeanAI about this page"
-                : "AI conversation unavailable"
-            }
-            maxLength={2000}
-            disabled={!conversationAvailable || sending}
-            data-testid="leanai-assistant-input"
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={
-              !conversationAvailable || sending || draft.trim().length === 0
-            }
-            data-testid="leanai-assistant-send"
-          >
-            Send
-          </Button>
-        </div>
+        <LeanAiComposer
+          value={draft}
+          disabled={!conversationAvailable}
+          sending={sending}
+          onChange={setDraft}
+          onSubmit={() => {
+            if (!draft.trim() || sending || !conversationAvailable) return;
+            sendMessage(draft);
+            setDraft("");
+          }}
+        />
         {messages.at(-1)?.role === "assistant" && view?.recommendation ? (
           <Button
             type="button"
@@ -311,7 +290,7 @@ export function LeanAiAssistantPanel({
             Open recommended setup
           </Button>
         ) : null}
-      </form>
+      </div>
     </section>
   );
 }

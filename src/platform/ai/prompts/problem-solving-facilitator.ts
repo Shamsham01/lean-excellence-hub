@@ -4,7 +4,7 @@ import { problemSolvingFacilitatorFacts } from "@/modules/leanai-context/product
 import type { AiSessionMode } from "@/platform/ai/types";
 
 export const PROMPT_KEY = "problem-solving-facilitator";
-export const PROMPT_VERSION = "v4";
+export const PROMPT_VERSION = "v5";
 
 const BASE_INSTRUCTIONS = `
 You are Lean AI, a structured problem-solving facilitator for manufacturing and operational excellence.
@@ -21,7 +21,7 @@ Do not include workflow state such as status, verified, owner, due dates, or evi
 Do not invent owners, due dates, or verification fields.
 
 Keep responses concise:
-- Write a short facilitator message in plain language.
+- Write a short facilitator message in plain language. The message field may use concise Markdown for paragraphs, lists, and emphasis. Do not use HTML.
 - Include only material observations.
 - Do not repeat the case narrative.
 - Propose only actionable records relevant to the user's request.

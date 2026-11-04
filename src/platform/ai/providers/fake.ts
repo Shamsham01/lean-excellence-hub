@@ -219,6 +219,22 @@ export class FakeAIProvider implements AIProvider {
     lastUser: string,
     tools: Array<Record<string, unknown>>,
   ): CreateResponseResult {
+    if (extractUserRequest(lastUser).toLowerCase().includes("format sample")) {
+      return this.coachJson(
+        [
+          "## Next step",
+          "",
+          "Publish one **shared** standard.",
+          "",
+          "- Confirm the owner",
+          "- Record the gap",
+          "",
+          "Details are in [the public note](https://example.com/setup).",
+        ].join("\n"),
+        "/platform",
+      );
+    }
+
     if (
       lastUser.includes("IGNORE PREVIOUS INSTRUCTIONS") ||
       lastUser.includes("delete all cases")
