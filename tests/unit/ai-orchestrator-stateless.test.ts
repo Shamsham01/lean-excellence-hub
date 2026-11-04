@@ -10,7 +10,7 @@ import type {
 vi.mock("server-only", () => ({}));
 
 const { getAiEnvironment } = vi.hoisted(() => ({
-  getAiEnvironment: vi.fn(() => ({
+  getAiEnvironment: vi.fn((): Record<string, unknown> => ({
     AI_MODEL_DEFAULT: "gpt-test",
     AI_MODEL_REASONING: "low" as const,
   })),
@@ -88,12 +88,17 @@ vi.mock("@/platform/ai/registry", () => ({
   resolveAIProvider: () => new TrackingOpenAiProvider(),
 }));
 
+vi.mock("@/platform/ai/stale-ai-run-recovery", () => ({
+  recoverStaleAiRunsForSession: vi.fn().mockResolvedValue(0),
+}));
+
 vi.mock("@/platform/ai/config", () => ({
   AI_DEFAULTS: {
     model: "gpt-test",
     maxOutputTokens: 6000,
     maxToolCalls: 8,
     runTimeoutMs: 45_000,
+    turnWallClockMs: 50_000,
   },
   getAiEnvironment: () => getAiEnvironment(),
   isApplicationAiProviderAvailable: () => true,
@@ -163,6 +168,7 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(createResponseCalls).toHaveLength(2);
     expect(createResponseCalls[0]?.model).toBe("gpt-test");
     expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
+    expect(createResponseCalls[0]?.timeoutMs).toBeLessThanOrEqual(45_000);
     expect(createResponseCalls[1]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]).not.toHaveProperty("previousResponseId");
     expect(createResponseCalls[1]).not.toHaveProperty("previousResponseId");
@@ -233,6 +239,46 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(
       finishPayloads[0]?.target_manifest_json.reasoning_effort_source,
     ).toBe("task_default");
+  });
+
+  it("fails the run when the wall-clock budget is exhausted before a provider call", async () => {
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: "low",
+      AI_TURN_WALL_CLOCK_MS: 3_000,
+      AI_RUN_TIMEOUT_MS: 45_000,
+    });
+    const failCalls: unknown[] = [];
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "run-timeout", error: null });
+        }
+        if (name === "fail_ai_run") {
+          failCalls.push(args);
+          return Promise.resolve({ data: null, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    vi.useFakeTimers();
+    const turn = runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-timeout",
+      caseId: "case-1",
+      mode: "review",
+      userMessage: "Help me build a 5 Whys chain for the seal defect.",
+      idempotencyKey: "idem-timeout",
+      conversationHistory: [],
+    });
+    vi.advanceTimersByTime(3_500);
+    await expect(turn).rejects.toThrow(/took too long/i);
+    vi.useRealTimers();
+
+    expect(failCalls).toHaveLength(1);
+    expect(createResponseCalls).toHaveLength(0);
   });
 
   it("refuses a turn when the session is bound to a different case", async () => {

@@ -81,7 +81,7 @@ export function AiFacilitatorPanel({
       const activeSessionId = await ensureSession();
       const userMessage = draft.trim();
       setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-      setDraft("");
+      const idempotencyKey = `${activeSessionId}-${crypto.randomUUID()}`;
 
       const result = await sendProblemSolvingAiMessage({
         caseId,
@@ -89,7 +89,7 @@ export function AiFacilitatorPanel({
         mode,
         stageKey: stageKey ?? null,
         message: userMessage,
-        idempotencyKey: `${activeSessionId}-${Date.now()}`,
+        idempotencyKey,
         conversationHistory: messages.map((message) => ({
           role: message.role,
           content: message.content,
@@ -97,9 +97,12 @@ export function AiFacilitatorPanel({
       });
 
       if (result.error || !result.data) {
+        setMessages((prev) => prev.slice(0, -1));
+        setDraft(userMessage);
         throw new Error(result.error ?? "Lean AI failed");
       }
 
+      setDraft("");
       const data = result.data;
       setMessages((prev) => [
         ...prev,

@@ -7,6 +7,8 @@ import {
   isValidMonthlyTokenCeiling,
 } from "@/lib/ai/organisation-ai-settings";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
+import { AI_TURN_WALL_CLOCK_USER_MESSAGE } from "@/platform/ai/run-deadline";
+import { AiProviderError } from "@/platform/ai/providers/errors";
 import { runAiTurn } from "@/platform/ai/orchestrator";
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
 import { formatProposalAcceptanceError } from "@/platform/ai/proposals/contracts";
@@ -108,6 +110,15 @@ export async function sendProblemSolvingAiMessage(input: {
       },
     };
   } catch (error) {
+    if (error instanceof AiProviderError) {
+      return { error: error.message };
+    }
+    if (
+      error instanceof Error &&
+      /timeout|timed out|wall.?clock/i.test(error.message)
+    ) {
+      return { error: AI_TURN_WALL_CLOCK_USER_MESSAGE };
+    }
     return {
       error:
         error instanceof Error

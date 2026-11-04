@@ -24,6 +24,11 @@ import {
   buildSystemPrompt,
   hashPrompt,
 } from "@/platform/ai/prompts/problem-solving-facilitator";
+import {
+  createAiRunDeadline,
+  resolveAiTurnWallClockMs,
+} from "@/platform/ai/run-deadline";
+import { recoverStaleAiRunsForSession } from "@/platform/ai/stale-ai-run-recovery";
 import { resolveAIProvider } from "@/platform/ai/registry";
 import {
   createSourceAllowlist,
@@ -106,7 +111,12 @@ export async function runAiTurn(
     environment: env,
   });
   const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
-  const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const configuredPerCallTimeoutMs =
+    env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const wallClockMs = resolveAiTurnWallClockMs(
+    env.AI_TURN_WALL_CLOCK_MS ?? AI_DEFAULTS.turnWallClockMs,
+  );
+  const deadline = createAiRunDeadline(wallClockMs);
   const expectsStructuredOutput = provider.name === "openai";
 
   const systemPrompt = buildSystemPrompt(input.mode, input.stageKey);
@@ -118,6 +128,12 @@ export async function runAiTurn(
   if (sessionCaseId !== input.caseId) {
     throw new Error("Lean AI session is not authorised for this case.");
   }
+
+  await recoverStaleAiRunsForSession(
+    input.supabase,
+    input.sessionId,
+    wallClockMs + 30_000,
+  );
 
   const { data: runId, error: startError } = await input.supabase.rpc(
     "start_ai_run",
@@ -160,13 +176,19 @@ export async function runAiTurn(
 
   try {
     for (let iteration = 0; iteration <= maxToolCalls; iteration += 1) {
+      deadline.assertWithinBudget(provider.name, model);
+      const perCallTimeoutMs = deadline.providerTimeoutMs(
+        configuredPerCallTimeoutMs,
+        provider.name,
+        model,
+      );
       const response = await provider.createResponse({
         model,
         systemPrompt,
         messages,
         tools: buildOpenAiTools(),
         maxOutputTokens: prepared.maxOutputTokens,
-        timeoutMs,
+        timeoutMs: perCallTimeoutMs,
         reasoningEffort: prepared.reasoningEffort,
         ...(expectsStructuredOutput ? { expectsStructuredOutput: true } : {}),
       });
@@ -209,6 +231,7 @@ export async function runAiTurn(
           continue;
         }
 
+        deadline.assertWithinBudget(provider.name, model);
         const started = Date.now();
         const result = await executeProblemSolvingTool(
           {
@@ -279,11 +302,16 @@ export async function runAiTurn(
       display_permission_key: displayPermissionFor(proposal.proposal_type),
     }));
 
+    deadline.assertWithinBudget(provider.name, model);
+
     const manifest = {
       case_id: input.caseId,
       mode: input.mode,
       stage_key: input.stageKey ?? null,
       allowlist_size: allowlist.size,
+      wall_clock_ms: wallClockMs,
+      elapsed_ms: Date.now() - startedAt,
+      tool_iterations: toolCallRecords.length,
       ...reasoningManifestFields(prepared),
     };
 
@@ -317,6 +345,19 @@ export async function runAiTurn(
       envelope,
     };
   } catch (error) {
+    console.warn(
+      "[lean-ai:problem-solving-turn]",
+      JSON.stringify({
+        ai_run_id: runId,
+        ai_session_id: input.sessionId,
+        mode: input.mode,
+        prompt_version: PROMPT_VERSION,
+        model,
+        elapsed_ms: Date.now() - startedAt,
+        tool_calls: totalToolCalls,
+        error_category: aiRunFailureCategory(error),
+      }),
+    );
     await input.supabase.rpc("fail_ai_run", {
       target_ai_run_id: runId,
       target_error_category: aiRunFailureCategory(error),
