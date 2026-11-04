@@ -627,6 +627,7 @@ export type Database = {
           cached_input_token_count: number
           completed_at: string | null
           error_category: string | null
+          execution_claimed_at: string | null
           final_output: string | null
           id: string
           idempotency_key: string | null
@@ -650,6 +651,7 @@ export type Database = {
           cached_input_token_count?: number
           completed_at?: string | null
           error_category?: string | null
+          execution_claimed_at?: string | null
           final_output?: string | null
           id?: string
           idempotency_key?: string | null
@@ -673,6 +675,7 @@ export type Database = {
           cached_input_token_count?: number
           completed_at?: string | null
           error_category?: string | null
+          execution_claimed_at?: string | null
           final_output?: string | null
           id?: string
           idempotency_key?: string | null
