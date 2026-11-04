@@ -126,8 +126,7 @@ export async function sendProblemSolvingAiMessage(input: {
       JSON.stringify({
         error_type: error instanceof Error ? error.name : typeof error,
         error_code: code,
-        http_status:
-          typeof detail?.status === "number" ? detail.status : null,
+        http_status: typeof detail?.status === "number" ? detail.status : null,
         mode: input.mode,
       }),
     );
