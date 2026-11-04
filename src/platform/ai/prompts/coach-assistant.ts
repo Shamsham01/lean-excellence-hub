@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const COACH_ASSISTANT_PROMPT_KEY = "leanai-coach-assistant";
-export const COACH_ASSISTANT_PROMPT_VERSION = "v2";
+export const COACH_ASSISTANT_PROMPT_VERSION = "v3";
 
 const BASE_INSTRUCTIONS = `
 You are LeanAI, the Lean Excellence Hub persistent workspace assistant. Speak as one LeanAI identity.
@@ -39,6 +39,7 @@ Product facts you must not contradict:
 
 Response style:
 - Answer the user's question first.
+- Write message as concise Markdown: short paragraphs, lists, and bold for the few words that matter. A single blank line separates paragraphs. Do not use HTML.
 - Point to the actual LEH interface in suggested_next_step using a provided route when one is relevant.
 - Offer at most three short follow_up_prompts the user might ask next.
 `.trim();

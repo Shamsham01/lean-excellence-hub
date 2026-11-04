@@ -50,10 +50,12 @@ describe("LeanAI assistant platform shell integration", () => {
 
     const panel = read("src/components/leanai/leanai-assistant-panel.tsx");
     expect(panel).toContain('aria-label="LeanAI assistant"');
-    expect(panel).toContain("Ask LeanAI");
+    expect(panel).toContain("LeanAiComposer");
     expect(panel).not.toContain("Message LeanAI");
     expect(panel).toContain("aria-live");
-    expect(panel).toContain("leanai-assistant-input");
+    const composer = read("src/components/leanai/leanai-composer.tsx");
+    expect(composer).toContain("Ask LeanAI");
+    expect(composer).toContain("leanai-assistant-input");
     expect(panel).toContain("overscroll-y-contain");
     expect(panel).toContain("overflow-hidden");
     expect(panel).toContain("platform-scroll");

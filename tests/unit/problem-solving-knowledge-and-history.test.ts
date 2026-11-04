@@ -278,7 +278,7 @@ describe("authorised problem solving consultation", () => {
   });
 
   it("tells the facilitator to test a cause instead of assuming it", () => {
-    expect(PROMPT_VERSION).toBe("v4");
+    expect(PROMPT_VERSION).toBe("v5");
     const prompt = buildSystemPrompt("challenge", "ROOT_CAUSE_ANALYSIS");
     expect(prompt).toMatch(/operator error/);
     expect(prompt).toMatch(/could disprove/);

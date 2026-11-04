@@ -165,6 +165,8 @@ export function MaturityBuilderComposer({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    // Maturity builder keeps Ctrl/Cmd+Enter to send. The persistent LeanAI
+    // chat uses the opposite contract and must not be copied here.
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       if (disabled || tooLong || outgoing.length === 0) {

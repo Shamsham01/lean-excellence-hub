@@ -465,4 +465,78 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
     await screenshotIfPossible(page, "leanai-assistant-web-sources.png");
   });
+
+  test("multiline composer sends and renders a formatted answer", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const client = await asOrganisationClient(user, user.organisationAName);
+    const enabled = await client.rpc("update_organisation_ai_settings", {
+      target_ai_enabled: true,
+      target_monthly_token_ceiling: 100000,
+      target_web_search_enabled: false,
+    });
+    if (enabled.error) {
+      throw enabled.error;
+    }
+
+    await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await waitForAssistantContext(page);
+    const input = page.getByLabel("Ask LeanAI");
+    await expect(input).toBeEnabled();
+    await expect(page.getByTestId("leanai-assistant-send")).toBeVisible();
+    await input.fill("First line");
+    await input.press("Control+Enter");
+    await expect(input).toHaveValue("First line\n");
+    await input.press("Shift+Enter");
+    await expect(input).toHaveValue("First line\n\n");
+    await input.press("Meta+Enter");
+    await expect(input).toHaveValue("First line\n\n\n");
+    await input.fill("First line\nSecond line\nformat sample");
+    await input.press("Enter");
+
+    const userMessage = page.getByTestId("leanai-assistant-user-message");
+    await expect(userMessage).toContainText("First line");
+    await expect(userMessage).toContainText("Second line");
+    await expect(userMessage).toContainText("format sample");
+    await expect(userMessage.locator("strong")).toHaveCount(0);
+
+    const answer = page.getByTestId("leanai-assistant-assistant-message");
+    await expect(
+      answer.getByRole("heading", { name: "Next step" }),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(answer.locator("strong")).toHaveText("shared");
+    await expect(answer.getByRole("listitem").first()).toContainText(
+      "Confirm the owner",
+    );
+    const note = answer.getByRole("link", { name: "the public note" });
+    await expect(note).toHaveAttribute("href", "https://example.com/setup");
+    await expect(note).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(answer.locator("script")).toHaveCount(0);
+    const overflow = await page
+      .getByTestId("leanai-assistant-pane")
+      .evaluate((element) => element.scrollWidth - element.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await screenshotIfPossible(page, "leanai-assistant-markdown-desktop.png");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+    await page.getByTestId("leanai-assistant-open").click();
+    await expect(page.getByTestId("leanai-assistant-pane")).toBeVisible();
+    await expect(page.getByLabel("Ask LeanAI")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-send")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Next step" })).toBeVisible({
+      timeout: 15_000,
+    });
+    const mobileOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(mobileOverflow).toBeLessThanOrEqual(1);
+    await screenshotIfPossible(page, "leanai-assistant-markdown-mobile.png");
+  });
 });

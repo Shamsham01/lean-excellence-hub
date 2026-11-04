@@ -9,6 +9,7 @@ import {
   rejectProblemSolvingAiProposal,
   sendProblemSolvingAiMessage,
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
+import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -192,7 +193,13 @@ export function AiFacilitatorPanel({
           {messages.map((message, index) => (
             <div key={`${message.role}-${index}`} className="text-sm">
               <p className="font-medium capitalize">{message.role}</p>
-              <p>{message.content}</p>
+              {message.role === "user" ? (
+                <p className="break-words whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              ) : (
+                <LeanAiMarkdown text={message.content} />
+              )}
             </div>
           ))}
         </div>
