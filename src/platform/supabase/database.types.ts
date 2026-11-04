@@ -14739,6 +14739,10 @@ export type Database = {
         }
         Returns: string
       }
+      search_authorised_problem_solving_history: {
+        Args: { target_limit?: number; target_query: string }
+        Returns: Json
+      }
       search_similar_problem_solving_cases: {
         Args: { target_case_id: string; target_limit?: number }
         Returns: Json

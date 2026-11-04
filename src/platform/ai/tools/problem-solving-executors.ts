@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { parseAuthorisedProblemSolvingHistory } from "@/modules/problem-solving/authorised-history";
 import { addToAllowlist } from "@/platform/ai/source-allowlist";
 import type { ProblemSolvingToolName } from "@/platform/ai/tools/problem-solving-schemas";
 import { parseToolArgs } from "@/platform/ai/tools/problem-solving-schemas";
@@ -236,14 +237,18 @@ export async function executeProblemSolvingTool(
             target_limit: limit,
           },
         );
-        if (error) throw error;
-        const cases = Array.isArray(data) ? data : [];
+        if (error) {
+          return {
+            status: "failed",
+            resultMetadata: { error: "problem_solving_history_unavailable" },
+            sourceRefsAdded: [],
+          };
+        }
+        const cases = parseAuthorisedProblemSolvingHistory(data);
         for (const item of cases) {
-          if (item.case_id) {
-            const ref = { problem_solving_case_id: String(item.case_id) };
-            addToAllowlist(ctx.allowlist, ref);
-            sourceRefsAdded.push(ref);
-          }
+          const ref = { problem_solving_case_id: item.caseId };
+          addToAllowlist(ctx.allowlist, ref);
+          sourceRefsAdded.push(ref);
         }
         return {
           status: "succeeded",

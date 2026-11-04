@@ -264,19 +264,19 @@ describe("Skills product knowledge", () => {
   });
 
   it("does not claim the rest of the platform is covered", () => {
-    expect(knowledgeCoverageStatement()).toMatch(/Skills only/);
+    expect(knowledgeCoverageStatement()).toMatch(/Skills and Problem Solving/);
     expect(
       PLATFORM_KNOWLEDGE_COVERAGE.find((item) => item.module === "skills")
         ?.status,
     ).toBe("complete");
     expect(
       PLATFORM_KNOWLEDGE_COVERAGE.filter((item) => item.status === "complete"),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
     const setup = assistantPageDefinitionFor(
       parseAssistantRoute("/platform/skills/setup/quick-start"),
     );
     expect(setup.workflow).toBe("skills_quick_start");
-    expect(setup.facts.join(" ")).toMatch(/Skills only/);
+    expect(setup.facts.join(" ")).toMatch(/Other modules/);
     expect(setup.starterPrompts).toContain(
       "Is Line Operator a skill or a job function?",
     );

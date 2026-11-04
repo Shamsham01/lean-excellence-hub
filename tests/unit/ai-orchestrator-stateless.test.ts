@@ -109,6 +109,22 @@ vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
 
 import { runAiTurn } from "@/platform/ai/orchestrator";
 
+function sessionLookup(caseId: string) {
+  return vi.fn(() => ({
+    select: () => ({
+      eq: () => ({
+        maybeSingle: async () => ({
+          data: {
+            problem_solving_case_id: caseId,
+            context_type: "problem_solving",
+          },
+          error: null,
+        }),
+      }),
+    }),
+  }));
+}
+
 describe("runAiTurn stateless tool continuation", () => {
   beforeEach(() => {
     createResponseCalls.length = 0;
@@ -120,6 +136,7 @@ describe("runAiTurn stateless tool continuation", () => {
 
   it("replays authorised tool results without previous_response_id chaining", async () => {
     const supabase = {
+      from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string) => {
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-1", error: null });
@@ -177,6 +194,7 @@ describe("runAiTurn stateless tool continuation", () => {
       target_manifest_json: Record<string, unknown>;
     }> = [];
     const supabase = {
+      from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-challenge", error: null });
@@ -215,5 +233,27 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(
       finishPayloads[0]?.target_manifest_json.reasoning_effort_source,
     ).toBe("task_default");
+  });
+
+  it("refuses a turn when the session is bound to a different case", async () => {
+    const rpc = vi.fn();
+    const supabase = {
+      from: sessionLookup("case-authorised"),
+      rpc,
+    };
+
+    await expect(
+      runAiTurn({
+        supabase: supabase as never,
+        sessionId: "session-1",
+        caseId: "case-other",
+        mode: "facilitate",
+        userMessage: "Read the other case.",
+        idempotencyKey: "idem-mismatch",
+        conversationHistory: [],
+      }),
+    ).rejects.toThrow(/not authorised for this case/);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(createResponseCalls).toHaveLength(0);
   });
 });

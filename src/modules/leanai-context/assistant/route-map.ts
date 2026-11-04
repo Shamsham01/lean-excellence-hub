@@ -370,6 +370,31 @@ function matchPlatformRoute(pathname: string): RouteMatch {
       surface: "workspace",
     };
   }
+  if (pathname === "/platform/problem-solving/new") {
+    return {
+      module: "problem_solving",
+      workflow: "problem_solving_create",
+      pageTitle: "New problem-solving case",
+      surface: "workspace",
+    };
+  }
+  if (pathname === "/platform/problem-solving") {
+    return {
+      module: "problem_solving",
+      workflow: "problem_solving_portfolio",
+      pageTitle: "Problem Solving",
+      surface: "workspace",
+    };
+  }
+  if (pathname.startsWith("/platform/problem-solving/")) {
+    return {
+      module: "problem_solving",
+      workflow: "problem_solving_case",
+      pageTitle: "Problem-solving case",
+      surface: "workspace",
+      entityId: pathname.split("/")[3] ?? null,
+    };
+  }
   if (
     pathname === "/platform/recognition" ||
     pathname.startsWith("/platform/recognition/")
