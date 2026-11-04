@@ -103,9 +103,11 @@ flowchart TD
 Rules:
 
 - The browser cannot supply an organisation id, role, or permission flag.
-- The helper uses `plainto_tsquery`. The query is not SQL.
+- The helper turns the text into English lexemes. The query is not SQL.
+- A query of three or fewer content words must match all of them. A longer query matches a closed case when at least three of those content words appear in its title or problem statement. One or two shared words do not match. A relevant case that shares fewer than three words, or describes the same event in different words, can still be missed. The result is empty. It is not a hint that hidden cases exist.
 - Only `closed` cases are candidates. Draft, active, and cancelled cases are omitted.
-- Each candidate passes `private.can_read_problem_solving_case` before it is returned.
+- Each candidate passes `private.can_read_problem_solving_case` before its title, excerpt, or verified snippets are returned. The functions are `SECURITY DEFINER` and stay owned by the migration role, which bypasses `FORCE RLS`. They are not reassigned to `lean_hub_private_owner`. The function body is the authorisation boundary.
+- Verified snippets are hypotheses with `status = verified` on that same readable case. That is the same case predicate as `problem_solving_hypotheses_select`. Proposed, testing, supported, rejected, and superseded statements are not returned.
 - Verified snippets are limited to three statements of 240 characters.
 - The payload has no numeric rank and no hidden-match count.
 - A verified cause is labelled `historical_verified_outcome`. It is evidence about that case, not proof for the new problem.

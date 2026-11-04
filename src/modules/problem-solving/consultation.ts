@@ -84,7 +84,7 @@ export function buildProblemSolvingConsultation(input: {
 
   if (matches.length === 0) {
     points.push({
-      text: "No matching accessible closed case was found. That does not say whether other records exist outside your access.",
+      text: "No matching accessible closed case was found. A longer description matches a closed case you can open when they share at least three content words. Different wording can be missed. You can continue with a new record.",
       sourceClass: "current_authorised_site_fact",
     });
   }

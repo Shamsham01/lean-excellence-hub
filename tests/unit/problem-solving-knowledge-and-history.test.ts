@@ -247,11 +247,34 @@ describe("authorised problem solving consultation", () => {
     });
     expect(consultation.summary).toMatch(/No accessible closed case/);
     expect(consultation.points.map((point) => point.text).join(" ")).toMatch(
-      /does not say whether other records exist/i,
+      /at least three content words/i,
+    );
+    expect(
+      consultation.points.map((point) => point.text).join(" "),
+    ).not.toMatch(
+      /outside your access|confidential records exist|hidden cases exist/i,
     );
     expect(consultation.points.map((point) => point.text).join(" ")).toMatch(
       /not an instruction/i,
     );
+  });
+
+  it("keeps a three-word overlap floor inside the existing read predicate", () => {
+    const sql = readFileSync(
+      path.join(
+        root,
+        "supabase/migrations/20261104001725_authorised_problem_solving_history.sql",
+      ),
+      "utf8",
+    );
+    expect(sql).toContain(
+      "when query_lexeme_count <= 3 then query_lexeme_count",
+    );
+    expect(sql).toContain("else 3");
+    expect(sql).toContain("private.can_read_problem_solving_case");
+    expect(sql).toContain("hypothesis_row.status = 'verified'");
+    expect(sql).toContain("Do not ALTER OWNER to lean_hub_private_owner");
+    expect(sql).not.toMatch(/^alter function\b/im);
   });
 
   it("tells the facilitator to test a cause instead of assuming it", () => {

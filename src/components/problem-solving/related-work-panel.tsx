@@ -86,8 +86,10 @@ export function RelatedWorkPanel({
         <fieldset className="flex flex-col gap-3 border-0 p-0">
           <legend className="text-sm font-medium">Related closed cases</legend>
           <p className="text-sm text-muted-foreground" id="related-work-help">
-            Search uses closed cases you can already open. It does not call a
-            model, and a match does not stop you creating or continuing a case.
+            Search compares your words with closed cases you can already open. A
+            longer description matches when at least three content words are
+            shared. It does not call a model, and a match does not stop you
+            creating or continuing a case.
           </p>
           <Button
             type="submit"

@@ -10,6 +10,10 @@ Forward only. It replaces `public.search_similar_problem_solving_cases` and adds
 
 Apply it on the target database before deploying an application build that calls the new function. An older application keeps working against this database: the similar-case function still accepts `(uuid, integer)` and returns JSON. New keys are additive. The numeric `rank` field is no longer returned.
 
+Search recall is lexical. Three or fewer content words must all appear in the closed case. Longer text matches when at least three content words overlap. A shorter historical case can therefore be found from a longer description. A case that shares only one or two words, or none of the same words, is still omitted. Do not lower that floor to improve recall: a single common word would surface unrelated readable cases. This does not change `can_read_problem_solving_case`.
+
+The search functions are `SECURITY DEFINER` and must remain owned by the migration role. That role bypasses `FORCE RLS`, so the body filters with `can_read` before returning titles or verified-cause snippets. Do not change the owner to `lean_hub_private_owner`.
+
 Do not apply this file to hosted Supabase unless the owner has approved that migration. Local Supabase is the intended test target.
 
 There is no data backfill and no customer reset.
