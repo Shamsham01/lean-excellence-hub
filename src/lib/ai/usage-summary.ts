@@ -136,6 +136,20 @@ export function totalAiUsageTokens(summary: AiUsageSummary): number {
   return summary.input_tokens + summary.output_tokens;
 }
 
+/**
+ * Matches private.organisation_ai_monthly_token_usage. Cached input is already
+ * part of input, and reasoning is already part of output, so this sum is higher
+ * than totalAiUsageTokens. Slice 1 does not change that SQL comparison.
+ */
+export function pauseMeterTokens(summary: AiUsageSummary): number {
+  return (
+    summary.input_tokens +
+    summary.cached_input_tokens +
+    summary.output_tokens +
+    summary.reasoning_tokens
+  );
+}
+
 export function isEmptyAiUsageSummary(summary: AiUsageSummary): boolean {
   return (
     summary.runs_this_month === 0 &&

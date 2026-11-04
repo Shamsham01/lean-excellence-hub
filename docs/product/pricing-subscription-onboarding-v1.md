@@ -42,7 +42,7 @@ Includes:
 - Recognition
 - basic Benefits / Savings tracking
 - standard dashboards and exports
-- standard Lean AI allowance
+- LeanAI included at no extra charge, subject to reasonable fair use
 - standard support
 - unlimited/generous users
 
@@ -59,7 +59,7 @@ Everything in Essentials, plus:
 - advanced analytics
 - API and webhooks
 - standard business integrations such as Microsoft 365 / Power Automate / Make.com where available
-- enhanced Lean AI allowance
+- LeanAI included at no extra charge, subject to reasonable fair use
 - richer administration and reporting
 - priority support
 
@@ -77,7 +77,7 @@ Everything in Professional, plus enterprise capabilities as they become availabl
 - advanced / custom integrations
 - enterprise audit and data-governance controls
 - custom retention requirements
-- larger/custom Lean AI allowance
+- LeanAI included at no extra charge, subject to reasonable fair use, with no separate published token quota
 - organisation-wide AI knowledge and pattern detection
 - SLA / named support / onboarding programme
 
@@ -96,7 +96,7 @@ Suggested baseline:
 - direct founder/product support
 - expectation of structured feedback and, where mutually agreed, reference/case-study participation
 
-This plan does not need to appear on the public pricing page.
+This plan does not need to appear on the public pricing page. LeanAI follows the same included fair-use terms as the other paid plans. Founder Pilot does not add a separate token quota or an overage invoice.
 
 ---
 
@@ -150,7 +150,7 @@ Suggested entitlement categories:
 - advanced analytics
 - API access
 - integration access
-- Lean AI tier / allowance
+- LeanAI inclusion, subject to reasonable fair use
 - enterprise SSO
 - enterprise governance
 - cross-site benchmarking
@@ -161,9 +161,15 @@ Only enforce entitlements for features that actually exist. Future Enterprise fl
 
 ### Lean AI
 
-Do not build metered AI overage billing in v1.
+LeanAI is included in a paid LEH subscription. There is no token overage invoice. Do not advertise unconditional unlimited use. The customer statement is: “Included at no extra charge, subject to reasonable fair use.”
 
-Start with configurable plan allowances and record actual consumption through the existing `ai_usage_events` infrastructure. Use the first customer data to set sensible commercial quotas later.
+The organisation is the shared usage and governance boundary. Site quantity scales the subscription. It does not create a per-person price or a hard quota for each site.
+
+Catalogue fields such as `leanAiMonthlyTokenAllowance` are historical metadata. They are not customer hard quotas, and `start_ai_run` does not read them. Do not activate 500,000 or 2,000,000 token figures as limits without an explicit approved product policy. A null Enterprise value is not a promise of unlimited use.
+
+Record consumption through `ai_usage_events`. An optional monthly token ceiling exists only as organisation governance. It is unset by default. When an authorised administrator sets one, reaching it pauses new LeanAI interactions and leaves other LEH workflows running. Customers do not see provider prices, margins, or internal profitability.
+
+Internal cost monitoring is a later slice, described in [leanai-internal-cost-governance.md](../architecture/leanai-internal-cost-governance.md).
 
 ---
 

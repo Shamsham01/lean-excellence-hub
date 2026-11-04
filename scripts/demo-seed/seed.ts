@@ -1301,8 +1301,19 @@ async function ensureM11Demo(
   const organisationId = (await resolveOrganisationId(adminClient)) as string;
   await switchOrganisation(adminClient, organisationId);
 
+  const { data: existingAiSettings, error: existingAiSettingsError } =
+    await adminClient
+      .from("organisation_ai_settings")
+      .select("monthly_token_ceiling")
+      .maybeSingle();
+  if (existingAiSettingsError) {
+    throw existingAiSettingsError;
+  }
+
   await expectRpc(adminClient, "update_organisation_ai_settings", {
     target_ai_enabled: true,
+    target_monthly_token_ceiling:
+      existingAiSettings?.monthly_token_ceiling ?? null,
   });
 
   const managerClient = await signInUser(apiUrl, publishableKey, "manager");

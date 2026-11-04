@@ -4,7 +4,7 @@ import { updateOrganisationAiSettings } from "@/app/(platform)/platform/problem-
 import { PageHeader } from "@/components/platform/page-header";
 import { AiSettingsForm } from "@/components/settings/ai-settings-form";
 import { formatAiUsageLoadError } from "@/lib/ai/usage-summary";
-import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
+import { describeLeanAiCustomerInclusion } from "@/modules/billing/leanai-inclusion";
 import { currentMemberHasScopedPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -26,17 +26,37 @@ export default async function AiSettingsPage() {
     ? formatAiUsageLoadError(usageSummaryError)
     : null;
 
+  const { data: billingRows, error: billingError } = await supabase.rpc(
+    "get_current_organisation_billing",
+  );
+  const billing = billingError ? null : (billingRows?.[0] ?? null);
+  const inclusion = describeLeanAiCustomerInclusion(
+    billingError
+      ? {
+          planCode: null,
+          billingState: null,
+          organisationStatus: null,
+          billingUnavailable: true,
+        }
+      : {
+          planCode: billing?.plan_code ?? null,
+          billingState: billing?.billing_state ?? null,
+          organisationStatus: billing?.organisation_status ?? null,
+        },
+  );
+
   return (
     <div className="flex flex-col gap-6" data-testid="ai-settings-page">
       <PageHeader
-        title="Lean AI settings"
-        description="Enable Lean AI for your organisation and review month-to-date usage."
+        title="LeanAI"
+        description="Included access, month-to-date use, and optional governance for this organisation."
       />
       <AiSettingsForm
+        inclusion={inclusion}
+        siteQuantity={billing?.site_quantity ?? null}
         initialEnabled={settings?.ai_enabled ?? false}
         initialMonthlyTokenCeiling={settings?.monthly_token_ceiling ?? null}
         initialWebSearchEnabled={settings?.web_search_enabled ?? false}
-        providerAvailable={isApplicationAiProviderAvailable()}
         usageSummary={(usageSummary as Record<string, unknown> | null) ?? null}
         usageLoadError={usageLoadError}
         onSave={updateOrganisationAiSettings}

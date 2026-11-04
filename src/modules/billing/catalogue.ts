@@ -12,6 +12,10 @@ export const ANNUAL_DISCOUNT_PERCENT = 10;
 export const MIN_SITE_QUANTITY = 1;
 export const MAX_SITE_QUANTITY = 500;
 
+// leanAiMonthlyTokenAllowance is historical catalogue metadata for later
+// monitoring. It is not a customer hard quota and start_ai_run does not read
+// it. A null Enterprise value is not an unlimited promise. Customer copy is
+// describeLeanAiCustomerInclusion.
 const PROFESSIONAL_ENTITLEMENTS: OrganisationEntitlements = {
   coreModules: true,
   advancedBenefitsGovernance: true,

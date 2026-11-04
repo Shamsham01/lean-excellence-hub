@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
+import {
+  formatAiSettingsSaveError,
+  isValidMonthlyTokenCeiling,
+} from "@/lib/ai/organisation-ai-settings";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { runAiTurn } from "@/platform/ai/orchestrator";
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
@@ -158,27 +162,41 @@ export async function rejectProblemSolvingAiProposal(input: {
 
 export async function updateOrganisationAiSettings(input: {
   aiEnabled: boolean;
-  monthlyTokenCeiling?: number | null;
-  webSearchEnabled?: boolean;
+  monthlyTokenCeiling: number | null;
+  webSearchEnabled: boolean;
 }): Promise<ActionResult> {
+  if (
+    input.monthlyTokenCeiling !== null &&
+    !isValidMonthlyTokenCeiling(input.monthlyTokenCeiling)
+  ) {
+    return {
+      error: "Enter a whole number greater than zero, or turn the pause off.",
+    };
+  }
+
   try {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.rpc("update_organisation_ai_settings", {
       target_ai_enabled: input.aiEnabled,
-      ...(typeof input.monthlyTokenCeiling === "number"
-        ? { target_monthly_token_ceiling: input.monthlyTokenCeiling }
-        : {}),
-      target_web_search_enabled: input.webSearchEnabled === true,
+      // Generated types omit null. Explicit null clears the ceiling; omitting
+      // the argument also clears it because the SQL default is null.
+      target_monthly_token_ceiling: input.monthlyTokenCeiling as number,
+      target_web_search_enabled: input.webSearchEnabled,
     });
     if (error) throw error;
     revalidatePath("/platform/settings/ai");
     return { ok: true };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Could not update AI settings.",
-    };
+    const details: { code?: string; message?: string } = {};
+    if (error && typeof error === "object") {
+      if ("code" in error && typeof error.code === "string") {
+        details.code = error.code;
+      }
+      if ("message" in error && typeof error.message === "string") {
+        details.message = error.message;
+      }
+    }
+    console.warn("[lean-ai:settings]", JSON.stringify(details));
+    return { error: formatAiSettingsSaveError(details) };
   }
 }
