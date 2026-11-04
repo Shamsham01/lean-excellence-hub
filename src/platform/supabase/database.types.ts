@@ -12488,6 +12488,10 @@ export type Database = {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
       }
+      claim_ai_run_execution: {
+        Args: { target_ai_run_id: string }
+        Returns: string
+      }
       claim_billing_webhook_event: {
         Args: {
           target_diagnostic?: Json
@@ -13476,10 +13480,6 @@ export type Database = {
           expired_invitations: number
         }[]
       }
-      claim_ai_run_execution: {
-        Args: { target_ai_run_id: string }
-        Returns: string
-      },
       fail_ai_run: {
         Args: {
           target_ai_run_id: string
