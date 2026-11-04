@@ -18,8 +18,6 @@ export type ExistingAiRunSnapshot = {
   ageMs: number;
 };
 
-const ACTIVE_RUN_GRACE_MS = 4_000;
-
 export async function readExistingAiRun(
   supabase: SupabaseClient,
   runId: string,
@@ -45,10 +43,6 @@ export async function readExistingAiRun(
     return { status, ageMs };
   }
   return { status: "unknown", ageMs };
-}
-
-export function isFreshActiveRun(snapshot: ExistingAiRunSnapshot): boolean {
-  return snapshot.status === "running" && snapshot.ageMs <= ACTIVE_RUN_GRACE_MS;
 }
 
 export async function reconcileCompletedAiRunTurn(

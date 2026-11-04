@@ -135,6 +135,11 @@ export function AiFacilitatorPanel({
       setError(
         sendError instanceof Error ? sendError.message : "Lean AI failed",
       );
+      const message =
+        sendError instanceof Error ? sendError.message : "Lean AI failed";
+      if (!/still finishing|did not confirm/i.test(message)) {
+        pendingTurnRef.current = null;
+      }
     } finally {
       setLoading(false);
     }

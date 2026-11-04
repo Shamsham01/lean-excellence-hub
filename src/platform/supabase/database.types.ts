@@ -13476,6 +13476,10 @@ export type Database = {
           expired_invitations: number
         }[]
       }
+      claim_ai_run_execution: {
+        Args: { target_ai_run_id: string }
+        Returns: string
+      },
       fail_ai_run: {
         Args: {
           target_ai_run_id: string

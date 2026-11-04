@@ -17,6 +17,7 @@ const { getAiEnvironment } = vi.hoisted(() => ({
 }));
 
 const createResponseCalls: CreateResponseInput[] = [];
+let providerShouldTimeout = false;
 
 class TrackingOpenAiProvider implements AIProvider {
   readonly name = "openai";
@@ -29,6 +30,11 @@ class TrackingOpenAiProvider implements AIProvider {
     input: CreateResponseInput,
   ): Promise<CreateResponseResult> {
     createResponseCalls.push(structuredClone(input));
+    if (providerShouldTimeout) {
+      throw new Error(
+        "Lean AI took too long to finish this turn. Nothing was saved to your case.",
+      );
+    }
 
     if (createResponseCalls.length === 1) {
       return {
@@ -94,8 +100,9 @@ vi.mock("@/platform/ai/stale-ai-run-recovery", () => ({
 
 vi.mock("@/platform/ai/ai-run-reconciliation", () => ({
   reconcileCompletedAiRunTurn: vi.fn().mockResolvedValue(null),
-  readExistingAiRun: vi.fn().mockResolvedValue({ status: "running", ageMs: 0 }),
-  isFreshActiveRun: vi.fn(() => true),
+  readExistingAiRun: vi
+    .fn()
+    .mockResolvedValue({ status: "timed_out", ageMs: 1_000 }),
 }));
 
 const { failAiRunBestEffortMock } = vi.hoisted(() => ({
@@ -112,7 +119,7 @@ vi.mock("@/platform/ai/config", () => ({
     maxOutputTokens: 6000,
     maxToolCalls: 8,
     runTimeoutMs: 45_000,
-    turnWallClockMs: 50_000,
+    turnWallClockMs: 45_000,
   },
   getAiEnvironment: () => getAiEnvironment(),
   isApplicationAiProviderAvailable: () => true,
@@ -130,6 +137,7 @@ vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
   executeProblemSolvingTool: executeProblemSolvingToolMock,
 }));
 
+import { reconcileCompletedAiRunTurn } from "@/platform/ai/ai-run-reconciliation";
 import { runAiTurn } from "@/platform/ai/orchestrator";
 
 function sessionLookup(caseId: string) {
@@ -151,6 +159,7 @@ function sessionLookup(caseId: string) {
 describe("runAiTurn stateless tool continuation", () => {
   beforeEach(() => {
     createResponseCalls.length = 0;
+    providerShouldTimeout = false;
     executeProblemSolvingToolMock.mockReset();
     failAiRunBestEffortMock.mockClear();
     executeProblemSolvingToolMock.mockResolvedValue({
@@ -168,6 +177,9 @@ describe("runAiTurn stateless tool continuation", () => {
     const supabase = {
       from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-1", error: null });
         }
@@ -227,6 +239,9 @@ describe("runAiTurn stateless tool continuation", () => {
     const supabase = {
       from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-challenge", error: null });
         }
@@ -290,6 +305,9 @@ describe("runAiTurn stateless tool continuation", () => {
     const supabase = {
       from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-slow-tool", error: null });
         }
@@ -323,6 +341,9 @@ describe("runAiTurn stateless tool continuation", () => {
     const supabase = {
       from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-timeout", error: null });
         }
@@ -346,6 +367,95 @@ describe("runAiTurn stateless tool continuation", () => {
 
     expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
     expect(createResponseCalls).toHaveLength(0);
+  });
+
+  it("does not start a second provider call when the run is already claimed", async () => {
+    let claimed = false;
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-shared", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          if (claimed) {
+            return { data: "in_progress", error: null };
+          }
+          claimed = true;
+          return { data: "claimed", error: null };
+        }
+        if (name === "finish_ai_run") {
+          return { data: "assistant-shared", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+    const input = {
+      supabase: supabase as never,
+      sessionId: "session-1",
+      caseId: "case-1",
+      mode: "facilitate" as const,
+      userMessage: "Help me with a 5 Whys analysis for the seal defect.",
+      idempotencyKey: "idem-shared",
+      conversationHistory: [],
+    };
+    const [first, second] = await Promise.allSettled([
+      runAiTurn(input),
+      runAiTurn({ ...input, mode: "review" }),
+    ]);
+    expect(createResponseCalls.length).toBeGreaterThan(0);
+    expect(createResponseCalls.length).toBeLessThanOrEqual(2);
+    const rejected = [first, second].filter(
+      (result) => result.status === "rejected",
+    );
+    expect(rejected).toHaveLength(1);
+    expect(
+      rejected[0]?.status === "rejected" ? rejected[0].reason : null,
+    ).toBeInstanceOf(Error);
+  });
+
+  it("returns a completed turn when finalisation lands after the client timeout", async () => {
+    providerShouldTimeout = true;
+    vi.mocked(reconcileCompletedAiRunTurn)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        runId: "run-late",
+        assistantMessageId: "assistant-late",
+        envelope: {
+          message: "5 Whys draft recovered after finalisation.",
+          observations: [],
+          questions: [],
+          warnings: [],
+          source_refs: [],
+          proposals: [],
+        },
+      });
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-late", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          return { data: "claimed", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    const result = await runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-late",
+      caseId: "case-1",
+      mode: "review",
+      userMessage: "Continue the 5 Whys review.",
+      idempotencyKey: "idem-late",
+      conversationHistory: [],
+    });
+
+    expect(result.envelope.message).toMatch(/recovered after finalisation/);
+    expect(failAiRunBestEffortMock).toHaveBeenCalled();
+    expect(createResponseCalls).toHaveLength(1);
   });
 
   it("refuses a turn when the session is bound to a different case", async () => {

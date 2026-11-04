@@ -26,12 +26,13 @@ import {
   hashPrompt,
 } from "@/platform/ai/prompts/problem-solving-facilitator";
 import {
-  isFreshActiveRun,
   reconcileCompletedAiRunTurn,
   readExistingAiRun,
 } from "@/platform/ai/ai-run-reconciliation";
 import { failAiRunBestEffort } from "@/platform/ai/fail-ai-run-best-effort";
 import {
+  AI_TURN_IN_PROGRESS_MESSAGE,
+  AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
   runWithinAiTurnBudget,
@@ -161,31 +162,38 @@ export async function runAiTurn(
     throw startError ?? new Error("Failed to start AI run");
   }
 
-  const reconciled = await reconcileCompletedAiRunTurn(input.supabase, runId);
-  if (reconciled) {
+  const { data: claim, error: claimError } = await input.supabase.rpc(
+    "claim_ai_run_execution",
+    { target_ai_run_id: runId },
+  );
+  if (claimError) {
+    throw claimError;
+  }
+  if (claim === "completed") {
+    const reconciled = await reconcileCompletedAiRunTurn(input.supabase, runId);
+    if (!reconciled) {
+      throw new Error(
+        "Lean AI finished this request, but the reply could not be reloaded. Send the same message again.",
+      );
+    }
     return reconciled;
   }
-
-  const existingRun = await readExistingAiRun(input.supabase, runId);
-  if (existingRun && !isFreshActiveRun(existingRun)) {
-    if (existingRun.status === "running") {
-      throw new AiProviderError(
-        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
-        "Lean AI is still finishing a previous attempt for this message. Wait a moment, then send again with the same text to pick up the result without starting a new run.",
-        { provider: provider.name, model },
-      );
-    }
-    if (
-      existingRun.status === "failed" ||
-      existingRun.status === "timed_out" ||
-      existingRun.status === "denied"
-    ) {
-      throw new AiProviderError(
-        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
-        "That Lean AI attempt did not finish successfully. Change your message slightly or wait a moment, then send again.",
-        { provider: provider.name, model },
-      );
-    }
+  if (claim === "in_progress") {
+    throw new AiProviderError(
+      AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+      AI_TURN_IN_PROGRESS_MESSAGE,
+      { provider: provider.name, model },
+    );
+  }
+  if (claim === "failed" || claim === "timed_out" || claim === "denied") {
+    throw new AiProviderError(
+      AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+      "That Lean AI attempt did not finish. Your message is still here. Send it again to start a fresh request.",
+      { provider: provider.name, model },
+    );
+  }
+  if (claim !== "claimed") {
+    throw new Error("Lean AI could not start this request.");
   }
 
   const allowlist = createSourceAllowlist();
@@ -407,7 +415,30 @@ export async function runAiTurn(
         error_category: aiRunFailureCategory(error),
       }),
     );
+    const completed = await reconcileCompletedAiRunTurn(input.supabase, runId);
+    if (completed) {
+      return completed;
+    }
     await failAiRunBestEffort(input.supabase, runId, error);
+    const completedAfterCleanup = await reconcileCompletedAiRunTurn(
+      input.supabase,
+      runId,
+    );
+    if (completedAfterCleanup) {
+      return completedAfterCleanup;
+    }
+    const snapshot = await readExistingAiRun(input.supabase, runId);
+    if (
+      !snapshot ||
+      snapshot.status === "running" ||
+      snapshot.status === "unknown"
+    ) {
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT,
+        AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+        { provider: provider.name, model },
+      );
+    }
     throw error;
   }
 }

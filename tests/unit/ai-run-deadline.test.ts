@@ -40,7 +40,7 @@ describe("ai run wall-clock deadline", () => {
   });
 
   it("uses a production-safe default wall clock", () => {
-    expect(resolveAiTurnWallClockMs(undefined)).toBe(50_000);
+    expect(resolveAiTurnWallClockMs(undefined)).toBe(45_000);
     expect(resolveAiTurnWallClockMs(55_000)).toBe(55_000);
   });
 

@@ -11,10 +11,16 @@ export const AI_TURN_FINALIZE_BUFFER_MS = 2_500;
 /** Minimum timeout passed to a single provider call. */
 export const AI_TURN_MIN_PROVIDER_TIMEOUT_MS = 1_000;
 
-export const AI_TURN_WALL_CLOCK_DEFAULT_MS = 50_000;
+export const AI_TURN_WALL_CLOCK_DEFAULT_MS = 45_000;
 
 export const AI_TURN_WALL_CLOCK_USER_MESSAGE =
   "Lean AI took too long to finish this turn. Nothing was saved to your case. Your message is still here — try a shorter question or retry in a moment.";
+
+export const AI_TURN_UNCERTAIN_COMPLETION_MESSAGE =
+  "Lean AI did not confirm whether this turn finished. Wait a moment, then send the same message again to collect the result. Do not assume nothing was saved.";
+
+export const AI_TURN_IN_PROGRESS_MESSAGE =
+  "Lean AI is still finishing this request. Wait a moment, then send the same message again to collect the result.";
 
 export type AiRunDeadline = {
   readonly wallClockMs: number;
@@ -102,8 +108,11 @@ export async function runWithinAiTurnBudget<T>(
     );
   });
 
+  const workPromise = work();
+  void workPromise.catch(() => undefined);
+
   try {
-    return await Promise.race([work(), timeout]);
+    return await Promise.race([workPromise, timeout]);
   } finally {
     if (timer) {
       clearTimeout(timer);

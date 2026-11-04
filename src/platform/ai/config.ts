@@ -55,7 +55,7 @@ export const AI_DEFAULTS = {
   maxOutputTokens: 6000,
   maxToolCalls: 8,
   runTimeoutMs: 45_000,
-  turnWallClockMs: 50_000,
+  turnWallClockMs: 45_000,
 } as const;
 
 export function isApplicationAiProviderAvailable(): boolean {

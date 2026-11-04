@@ -3,16 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
-  isFreshActiveRun,
   reconcileCompletedAiRunTurn,
 } from "@/platform/ai/ai-run-reconciliation";
 
 describe("ai run reconciliation", () => {
-  it("treats young running rows as the active turn", () => {
-    expect(isFreshActiveRun({ status: "running", ageMs: 500 })).toBe(true);
-    expect(isFreshActiveRun({ status: "running", ageMs: 8_000 })).toBe(false);
-  });
-
   it("returns a completed turn without calling the provider again", async () => {
     const envelope = {
       message: "Recovered assistant reply",
