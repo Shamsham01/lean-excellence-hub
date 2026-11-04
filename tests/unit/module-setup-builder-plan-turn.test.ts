@@ -3,8 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { planModuleSetupBuilderTurn } from "@/modules/module-setup/ai-builder/execute";
-import type { ModuleSetupBuilderConversationState } from "@/modules/module-setup/ai-builder/types";
+import type {
+  ModuleSetupBuilderConversationState,
+  ModuleSetupBuilderModule,
+} from "@/modules/module-setup/ai-builder/types";
 import { skillsSetupBuilderModule } from "@/modules/skills/ai-builder/module";
+
+const skillsModule =
+  skillsSetupBuilderModule as ModuleSetupBuilderModule<unknown>;
 
 const baseConversation = (
   turns: ModuleSetupBuilderConversationState<unknown>["turns"],
@@ -50,7 +56,7 @@ describe("planModuleSetupBuilderTurn retry semantics", () => {
       "SKILLS_ERROR_TEST",
       null,
       conversation,
-      skillsSetupBuilderModule,
+      skillsModule,
     );
     expect(planned).toMatchObject({
       intent: "propose",
@@ -89,7 +95,7 @@ describe("planModuleSetupBuilderTurn retry semantics", () => {
       "We run a deck oven and packing hall.",
       null,
       conversation,
-      skillsSetupBuilderModule,
+      skillsModule,
     );
     expect(planned).toMatchObject({
       intent: "answer",
@@ -128,7 +134,7 @@ describe("planModuleSetupBuilderTurn retry semantics", () => {
       "",
       null,
       conversation,
-      skillsSetupBuilderModule,
+      skillsModule,
     );
     expect(planned).toEqual({
       error:
