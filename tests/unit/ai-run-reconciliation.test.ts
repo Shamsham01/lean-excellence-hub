@@ -2,9 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import {
-  reconcileCompletedAiRunTurn,
-} from "@/platform/ai/ai-run-reconciliation";
+import { reconcileCompletedAiRunTurn } from "@/platform/ai/ai-run-reconciliation";
 
 describe("ai run reconciliation", () => {
   it("returns a completed turn without calling the provider again", async () => {
