@@ -57,10 +57,16 @@ Problem Solving uses `AI_MODEL_DEFAULT` (`gpt-6.1-sol` when unset). The
 operator procedure, reasoning precedence, and illustrative costs are in
 [LEANAI-MODEL-MIGRATION](../operations/LEANAI-MODEL-MIGRATION.md).
 
-Public web research is an additional provider cost. Organisation admins opt in through
-`organisation_ai_settings.web_search_enabled` (default false). Workspace assistant runs record
-whether web search was used, invocation count, and displayed source count. Full web page contents
-are not logged. Monthly token ceilings still apply.
+Public web research is optional and off by default. Organisation admins opt in through
+`organisation_ai_settings.web_search_enabled`. It looks up public pages for current or external
+questions. Those pages are untrusted and are not customer instructions. Web research does not add
+a customer subscription charge. Any provider cost is internal and is not shown in Settings.
+Workspace assistant runs record whether web search was used, invocation count, and displayed
+source count. Full web page contents are not logged. An optional `monthly_token_ceiling`, unset
+by default, pauses new LeanAI interactions when reached. It is organisation governance, not a
+plan quota, and it does not stop other LEH workflows. The customer statement and the internal
+cost follow-up are in
+[leanai-internal-cost-governance.md](./leanai-internal-cost-governance.md).
 
 ### Security controls (authoritative)
 

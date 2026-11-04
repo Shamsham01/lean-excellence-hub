@@ -56,6 +56,30 @@ test.describe("Milestone 12 closure", () => {
     await expect(page.getByTestId("ai-settings-page")).toHaveCount(0);
   });
 
+  test("administrator reviews LeanAI settings on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/settings/ai");
+    const settings = page.getByTestId("ai-settings-page");
+    await expect(settings).toBeVisible();
+    await expect(settings).toContainText(
+      "Included at no extra charge, subject to reasonable fair use.",
+    );
+    await expect(settings).not.toContainText("500,000");
+    await expect(settings).not.toContainText("2,000,000");
+    await expect(settings).not.toContainText(/unlimited/i);
+    await expect(page.getByTestId("ai-settings-web-search")).toBeVisible();
+    const governance = page.getByTestId("ai-settings-governance");
+    if (!(await governance.isVisible())) {
+      await page.getByTestId("ai-settings-advanced-toggle").click();
+    }
+    await expect(governance).toContainText("pauses new LeanAI interactions");
+    const overflow = await settings.evaluate(
+      (element) => element.scrollWidth - element.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
   async function openLeanAiPanel(page: Page) {
     await page.goto("/platform/problem-solving");
     await page
