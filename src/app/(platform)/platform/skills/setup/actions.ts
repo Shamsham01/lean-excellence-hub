@@ -322,14 +322,20 @@ export async function sendSkillsSetupBuilderMessage(input: {
   const assistantTurn = [...result.conversation.turns]
     .reverse()
     .find((turn) => turn.role === "assistant");
+  const pendingQuestions = result.conversation.pendingQuestions;
   return {
     ok: true as const,
     outcome: result.outcome,
     message: assistantTurn?.message ?? "",
-    questions: result.conversation.pendingQuestions,
+    questions: pendingQuestions,
+    needsClarification:
+      result.outcome === "ok" &&
+      pendingQuestions.length > 0 &&
+      !result.conversation.currentProposal,
     proposal: result.conversation.currentProposal?.proposal ?? null,
     proposalMessageId: result.conversation.currentProposal?.messageId ?? null,
     issues: assistantTurn?.proposalIssues ?? [],
+    lastTurnInvalid: result.conversation.lastTurnInvalid,
   };
 }
 

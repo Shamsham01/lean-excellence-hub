@@ -5,6 +5,7 @@ import {
   visibleCoachUserMessage,
 } from "@/modules/leanai-context/coach/session-validation";
 
+import { normalizeModuleSetupDiscoveryQuestions } from "./discovery-questions";
 import type {
   ModuleSetupBuilderAssistantTurn,
   ModuleSetupBuilderConversationState,
@@ -29,10 +30,11 @@ const storedPayloadSchema = z.object({
     .array(
       z.object({
         question: z.string(),
-        suggestedAnswers: z.array(z.string()),
+        suggestedAnswers: z.array(z.string()).optional(),
+        suggested_answers: z.array(z.string()).optional(),
       }),
     )
-    .max(3),
+    .transform((items) => normalizeModuleSetupDiscoveryQuestions(items)),
   change_summary: z.array(z.string()).max(6),
   proposal_status: z.enum(["none", "valid", "invalid"]),
   proposal: z.unknown(),
@@ -328,7 +330,7 @@ export function buildModuleSetupStoredPayload(input: {
     intent: input.intent,
     focus: input.focus,
     understanding: input.understanding,
-    questions: input.questions,
+    questions: normalizeModuleSetupDiscoveryQuestions(input.questions),
     change_summary: input.changeSummary,
     proposal_status: input.proposalStatus,
     proposal: input.proposalStatus === "valid" ? input.proposal : null,

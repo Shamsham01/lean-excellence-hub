@@ -36,6 +36,7 @@ export const SKILLS_SETUP_BUILDER_JSON_SCHEMA = {
     },
     questions: {
       type: "array",
+      maxItems: 3,
       items: {
         type: "object",
         additionalProperties: false,

@@ -304,7 +304,7 @@ export async function sendModuleSetupBuilderMessage<TProposal>(
       };
     }
 
-    const planned = planTurn(
+    const planned = planModuleSetupBuilderTurn(
       input.intent,
       message,
       input.focus,
@@ -403,7 +403,7 @@ export async function sendModuleSetupBuilderMessage<TProposal>(
   }
 }
 
-function planTurn<TProposal>(
+export function planModuleSetupBuilderTurn<TProposal>(
   requested: ModuleSetupBuilderRequestIntent,
   message: string,
   focusInput: unknown,
@@ -434,8 +434,53 @@ function planTurn<TProposal>(
         (turn): turn is ModuleSetupBuilderAssistantTurn =>
           turn.role === "assistant",
       );
+
+    if (message.trim()) {
+      if (message.trim() === lastUser.text.trim()) {
+        const replayIntent =
+          previous?.responseStatus === "invalid_response"
+            ? (previous.intent ?? "answer")
+            : (previous?.intent ?? "answer");
+        return {
+          intent: replayIntent,
+          focus: previous?.focus ?? null,
+          focusLabel:
+            previous?.focus?.kind === "section"
+              ? `section ${previous.focus.sectionIndex + 1}`
+              : null,
+          userRequest: lastUser.text,
+          retry: true,
+        };
+      }
+      return {
+        intent: "answer",
+        focus: null,
+        focusLabel: null,
+        userRequest: message.trim(),
+        retry: false,
+      };
+    }
+
+    if (
+      previous &&
+      previous.responseStatus === "ok" &&
+      previous.phase === "discovery" &&
+      previous.proposalStatus === "none" &&
+      previous.questions.length > 0
+    ) {
+      return {
+        error:
+          "LeanAI is waiting for your answers. Reply below or choose Generate draft proposal.",
+      };
+    }
+
+    const replayIntent =
+      previous?.responseStatus === "invalid_response"
+        ? (previous.intent ?? "answer")
+        : (previous?.intent ?? "answer");
+
     return {
-      intent: previous?.intent ?? "answer",
+      intent: replayIntent,
       focus: previous?.focus ?? null,
       focusLabel:
         previous?.focus?.kind === "section"

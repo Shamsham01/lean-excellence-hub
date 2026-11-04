@@ -98,6 +98,41 @@ function skillsEnvelope(
   context: ModuleSetupBuilderContext | null,
   request: string,
 ) {
+  if (request.includes("SKILLS_DISCOVERY_TEST")) {
+    return {
+      message:
+        "I need a little more detail before drafting skills and requirements.",
+      phase: "discovery",
+      understanding: {
+        operation: "Bakery production",
+        scale: null,
+        roles: null,
+        evidence: null,
+        applicability: null,
+      },
+      questions: [
+        {
+          question: "Which operation should this setup focus on?",
+          suggested_answers: ["Deck oven line", "Packaging hall"],
+        },
+        {
+          question: "How many proficiency levels do you want?",
+          suggested_answers: ["Two levels", "Three levels"],
+        },
+        {
+          question: "Which roles must demonstrate the skills?",
+          suggested_answers: ["Oven Operator", "Team Leader"],
+        },
+        {
+          question: "Extra question that must be trimmed for storage",
+          suggested_answers: ["Should not appear after reload"],
+        },
+      ],
+      change_summary: [],
+      proposal: null,
+    };
+  }
+
   if (
     request.includes("SKILLS_ERROR_TEST") &&
     context?.request.retry !== true
