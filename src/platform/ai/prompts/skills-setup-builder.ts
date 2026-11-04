@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { skillsKnowledgePromptBlock } from "@/modules/leanai-context/product-knowledge/explain";
 
 export const SKILLS_SETUP_BUILDER_PROMPT_KEY = "leanai-skills-setup-builder";
-export const SKILLS_SETUP_BUILDER_PROMPT_VERSION = "v1";
+export const SKILLS_SETUP_BUILDER_PROMPT_VERSION = "v2";
 export const SKILLS_SETUP_BUILDER_FORMAT_NAME = "skills_setup_builder_envelope";
 
 const nullableString = { type: ["string", "null"] } as const;

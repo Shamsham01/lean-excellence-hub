@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import {
   composeGuidedAnswerMessage,
@@ -19,6 +19,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ModuleSetupDiscoveryQuestion } from "@/modules/module-setup/ai-builder/types";
+import { buildSkillsGenerateDraftRequest } from "@/modules/skills/ai-builder/generate-draft-instruction";
 import type { SkillsBuilderProposal } from "@/modules/skills/ai-builder/types";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
 import {
@@ -36,6 +37,7 @@ export function SkillsBuilderPanel({
   initialReply = null,
   initialQuestions = [],
   initialLastTurnInvalid = false,
+  initialOperationDescription = "",
   jobFunctions,
   units,
   unavailableMessage,
@@ -46,6 +48,7 @@ export function SkillsBuilderPanel({
   initialReply?: string | null;
   initialQuestions?: ModuleSetupDiscoveryQuestion[];
   initialLastTurnInvalid?: boolean;
+  initialOperationDescription?: string;
   jobFunctions: Named[];
   units: SkillsSetupUnitOption[];
   unavailableMessage: string | null;
@@ -68,6 +71,7 @@ export function SkillsBuilderPanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const enqueue = useSerializedSetupSave();
+  const originalDescriptionRef = useRef(initialOperationDescription);
 
   if (unavailableMessage) {
     return (
@@ -462,6 +466,9 @@ export function SkillsBuilderPanel({
               return;
             }
             const payload = outboundMessage();
+            if (!awaitingAnswers && message.trim()) {
+              originalDescriptionRef.current = message.trim();
+            }
             startTransition(async () => {
               await enqueue(async () => {
                 applyTurn(
@@ -494,12 +501,12 @@ export function SkillsBuilderPanel({
               }
               startTransition(async () => {
                 await enqueue(async () => {
-                  const guided = outboundMessage();
                   applyTurn(
                     await sendSkillsSetupBuilderMessage({
-                      message:
-                        guided.trim() ||
-                        "Generate a draft proposal from what you know so far, noting any assumptions.",
+                      message: buildSkillsGenerateDraftRequest({
+                        originalDescription: originalDescriptionRef.current,
+                        guidedAnswers: outboundMessage(),
+                      }),
                       intent: "propose",
                       idempotencyKey: crypto.randomUUID(),
                     }),

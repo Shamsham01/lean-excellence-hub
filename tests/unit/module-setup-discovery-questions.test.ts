@@ -6,6 +6,7 @@ import {
   normalizeModuleSetupDiscoveryQuestions,
 } from "@/modules/module-setup/ai-builder/discovery-questions";
 import { revalidateStoredSkillsProposal } from "@/modules/skills/ai-builder/proposal";
+import { SKILLS_GENERATE_DRAFT_INSTRUCTION } from "@/modules/skills/ai-builder/generate-draft-instruction";
 import { parseSkillsBuilderEnvelope } from "@/modules/skills/ai-builder/proposal";
 import { fakeModuleSetupBuilderResponse } from "@/platform/ai/providers/fake-module-setup-builder";
 import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
@@ -91,6 +92,39 @@ describe("module setup discovery questions", () => {
     expect(state?.turns[0]?.role).toBe("assistant");
   });
 
+  it("returns discovery on the first propose request for SKILLS_DISCOVERY_TEST", () => {
+    const markers = contextMarkers(SKILLS_BUILDER_CONTEXT_CONTRACT);
+    const context = buildModuleSetupBuilderContext({
+      contract: SKILLS_BUILDER_CONTEXT_CONTRACT,
+      facts: {
+        organisationName: "Bodmin Bakery",
+        activeSiteName: null,
+        unitNames: [],
+        existingConfigurationNames: [],
+        configurationCount: 0,
+        jobFunctionNames: ["Production Operator"],
+      },
+      understanding: null,
+      currentProposal: null,
+      intent: "propose",
+      focusLabel: null,
+      retry: false,
+      limits: {},
+    });
+    const prompt = `${wrapModuleSetupBuilderContext(markers.start, markers.end, context)}\n\nUser request:\nSKILLS_DISCOVERY_TEST`;
+    const response = fakeModuleSetupBuilderResponse(
+      SKILLS_SETUP_BUILDER_FORMAT_NAME,
+      prompt,
+    );
+    const parsed = parseSkillsBuilderEnvelope(response?.parsedJson);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.envelope.phase).toBe("discovery");
+      expect(parsed.envelope.questions).toHaveLength(3);
+      expect(parsed.envelope.proposal).toBeNull();
+    }
+  });
+
   it("includes guided selections when generating a draft after discovery", () => {
     const markers = contextMarkers(SKILLS_BUILDER_CONTEXT_CONTRACT);
     const context = buildModuleSetupBuilderContext({
@@ -110,7 +144,7 @@ describe("module setup discovery questions", () => {
       retry: false,
       limits: {},
     });
-    const prompt = `${wrapModuleSetupBuilderContext(markers.start, markers.end, context)}\n\nUser request:\nQuestion: Which operation should this setup focus on?\nAnswer: Deck oven line\n\nGenerate a draft proposal from what you know so far. SKILLS_DISCOVERY_TEST`;
+    const prompt = `${wrapModuleSetupBuilderContext(markers.start, markers.end, context)}\n\nUser request:\n${SKILLS_GENERATE_DRAFT_INSTRUCTION}\n\nOriginal description:\nSKILLS_DISCOVERY_TEST\n\nQuestion: Which operation should this setup focus on?\nAnswer: Deck oven line`;
     const response = fakeModuleSetupBuilderResponse(
       SKILLS_SETUP_BUILDER_FORMAT_NAME,
       prompt,
@@ -121,6 +155,9 @@ describe("module setup discovery questions", () => {
       expect(parsed.envelope.phase).toBe("proposal");
       expect(parsed.envelope.proposalStatus).toBe("valid");
       expect(parsed.envelope.proposal?.title).toBe("Bakery oven capability");
+      expect(parsed.envelope.proposal?.notes.join(" ")).not.toMatch(
+        /competent employee/i,
+      );
     }
   });
 

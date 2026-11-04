@@ -111,6 +111,9 @@ export default async function SkillsLeanAiSetupPage() {
         }
         initialQuestions={conversation?.pendingQuestions ?? []}
         initialLastTurnInvalid={conversation?.lastTurnInvalid ?? false}
+        initialOperationDescription={
+          conversation?.turns.find((turn) => turn.role === "user")?.text ?? ""
+        }
         jobFunctions={jobFunctions ?? []}
         units={skillsSetupUnitOptions(units ?? [])}
         unavailableMessage={

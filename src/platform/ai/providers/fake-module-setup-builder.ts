@@ -8,6 +8,7 @@ import { GEMBA_BUILDER_CONTEXT_CONTRACT } from "@/modules/gemba/ai-builder/types
 import { SKILLS_BUILDER_CONTEXT_CONTRACT } from "@/modules/skills/ai-builder/types";
 import { FIVE_S_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/five-s-setup-builder";
 import { GEMBA_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/gemba-setup-builder";
+import { SKILLS_GENERATE_DRAFT_INSTRUCTION } from "@/modules/skills/ai-builder/generate-draft-instruction";
 import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
 import type { CreateResponseResult } from "@/platform/ai/types";
 
@@ -98,10 +99,8 @@ function skillsEnvelope(
   context: ModuleSetupBuilderContext | null,
   request: string,
 ) {
-  if (
-    request.includes("SKILLS_DISCOVERY_TEST") &&
-    context?.request.intent !== "propose"
-  ) {
+  const explicitDraft = request.includes(SKILLS_GENERATE_DRAFT_INSTRUCTION);
+  if (request.includes("SKILLS_DISCOVERY_TEST") && !explicitDraft) {
     return {
       message:
         "I need a little more detail before drafting skills and requirements.",
