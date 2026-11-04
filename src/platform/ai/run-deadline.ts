@@ -80,3 +80,33 @@ export function turnWallClockExceededError(
     { provider, model },
   );
 }
+
+/** Race work against remaining turn budget (tools, RPC finalisation). */
+export async function runWithinAiTurnBudget<T>(
+  deadline: AiRunDeadline,
+  provider: string,
+  model: string,
+  work: () => Promise<T>,
+): Promise<T> {
+  deadline.assertWithinBudget(provider, model);
+  const remainingMs = deadline.remainingMs() - AI_TURN_FINALIZE_BUFFER_MS;
+  if (remainingMs <= 0) {
+    throw turnWallClockExceededError(provider, model);
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(turnWallClockExceededError(provider, model)),
+      remainingMs,
+    );
+  });
+
+  try {
+    return await Promise.race([work(), timeout]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}

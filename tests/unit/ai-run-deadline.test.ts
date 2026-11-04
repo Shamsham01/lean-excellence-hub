@@ -6,6 +6,7 @@ import {
   AI_TURN_WALL_CLOCK_USER_MESSAGE,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
+  runWithinAiTurnBudget,
   turnWallClockExceededError,
 } from "@/platform/ai/run-deadline";
 import { AI_PROVIDER_ERROR_CODES } from "@/platform/ai/providers/errors";
@@ -41,6 +42,26 @@ describe("ai run wall-clock deadline", () => {
   it("uses a production-safe default wall clock", () => {
     expect(resolveAiTurnWallClockMs(undefined)).toBe(50_000);
     expect(resolveAiTurnWallClockMs(55_000)).toBe(55_000);
+  });
+
+  it("aborts slow work that exceeds the remaining budget", async () => {
+    vi.useFakeTimers();
+    const deadline = createAiRunDeadline(2_000);
+    const work = runWithinAiTurnBudget(
+      deadline,
+      "openai",
+      "gpt-test",
+      () =>
+        new Promise<string>((resolve) => {
+          setTimeout(() => resolve("late"), 3_000);
+        }),
+    );
+    const expectation = expect(work).rejects.toThrow(
+      AI_TURN_WALL_CLOCK_USER_MESSAGE,
+    );
+    await vi.advanceTimersByTimeAsync(3_000);
+    await expectation;
+    vi.useRealTimers();
   });
 
   it("maps wall-clock exhaustion to provider timeout category", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -56,6 +56,10 @@ export function AiFacilitatorPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const pendingTurnRef = useRef<{
+    message: string;
+    idempotencyKey: string;
+  } | null>(null);
 
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
@@ -80,8 +84,18 @@ export function AiFacilitatorPanel({
     try {
       const activeSessionId = await ensureSession();
       const userMessage = draft.trim();
+      if (
+        !pendingTurnRef.current ||
+        pendingTurnRef.current.message !== userMessage
+      ) {
+        pendingTurnRef.current = {
+          message: userMessage,
+          idempotencyKey: `${activeSessionId}-${crypto.randomUUID()}`,
+        };
+      }
+      const idempotencyKey = pendingTurnRef.current.idempotencyKey;
+
       setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-      const idempotencyKey = `${activeSessionId}-${crypto.randomUUID()}`;
 
       const result = await sendProblemSolvingAiMessage({
         caseId,
@@ -103,6 +117,7 @@ export function AiFacilitatorPanel({
       }
 
       setDraft("");
+      pendingTurnRef.current = null;
       const data = result.data;
       setMessages((prev) => [
         ...prev,

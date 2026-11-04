@@ -92,6 +92,20 @@ vi.mock("@/platform/ai/stale-ai-run-recovery", () => ({
   recoverStaleAiRunsForSession: vi.fn().mockResolvedValue(0),
 }));
 
+vi.mock("@/platform/ai/ai-run-reconciliation", () => ({
+  reconcileCompletedAiRunTurn: vi.fn().mockResolvedValue(null),
+  readExistingAiRun: vi.fn().mockResolvedValue({ status: "running", ageMs: 0 }),
+  isFreshActiveRun: vi.fn(() => true),
+}));
+
+const { failAiRunBestEffortMock } = vi.hoisted(() => ({
+  failAiRunBestEffortMock: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/platform/ai/fail-ai-run-best-effort", () => ({
+  failAiRunBestEffort: failAiRunBestEffortMock,
+}));
+
 vi.mock("@/platform/ai/config", () => ({
   AI_DEFAULTS: {
     model: "gpt-test",
@@ -104,12 +118,16 @@ vi.mock("@/platform/ai/config", () => ({
   isApplicationAiProviderAvailable: () => true,
 }));
 
-vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
-  executeProblemSolvingTool: vi.fn().mockResolvedValue({
+const { executeProblemSolvingToolMock } = vi.hoisted(() => ({
+  executeProblemSolvingToolMock: vi.fn().mockResolvedValue({
     status: "succeeded",
     resultMetadata: { case_title: "Hot-running seal defects" },
     sourceRefsAdded: [],
   }),
+}));
+
+vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
+  executeProblemSolvingTool: executeProblemSolvingToolMock,
 }));
 
 import { runAiTurn } from "@/platform/ai/orchestrator";
@@ -133,6 +151,13 @@ function sessionLookup(caseId: string) {
 describe("runAiTurn stateless tool continuation", () => {
   beforeEach(() => {
     createResponseCalls.length = 0;
+    executeProblemSolvingToolMock.mockReset();
+    failAiRunBestEffortMock.mockClear();
+    executeProblemSolvingToolMock.mockResolvedValue({
+      status: "succeeded",
+      resultMetadata: { case_title: "Hot-running seal defects" },
+      sourceRefsAdded: [],
+    });
     getAiEnvironment.mockReturnValue({
       AI_MODEL_DEFAULT: "gpt-test",
       AI_MODEL_REASONING: "low",
@@ -241,6 +266,53 @@ describe("runAiTurn stateless tool continuation", () => {
     ).toBe("task_default");
   });
 
+  it("fails when an authorised tool exceeds the remaining wall-clock budget", async () => {
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: "low",
+      AI_TURN_WALL_CLOCK_MS: 4_000,
+      AI_RUN_TIMEOUT_MS: 45_000,
+    });
+    executeProblemSolvingToolMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(
+            () =>
+              resolve({
+                status: "succeeded",
+                resultMetadata: {},
+                sourceRefsAdded: [],
+              }),
+            5_000,
+          );
+        }),
+    );
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "run-slow-tool", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    await expect(
+      runAiTurn({
+        supabase: supabase as never,
+        sessionId: "session-slow-tool",
+        caseId: "case-1",
+        mode: "facilitate",
+        userMessage: "Help with 5 Whys for the seal defect.",
+        idempotencyKey: "idem-slow-tool",
+        conversationHistory: [],
+      }),
+    ).rejects.toThrow(/took too long/i);
+
+    expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
+    expect(createResponseCalls).toHaveLength(1);
+  });
+
   it("fails the run when the wall-clock budget is exhausted before a provider call", async () => {
     getAiEnvironment.mockReturnValue({
       AI_MODEL_DEFAULT: "gpt-test",
@@ -248,16 +320,11 @@ describe("runAiTurn stateless tool continuation", () => {
       AI_TURN_WALL_CLOCK_MS: 3_000,
       AI_RUN_TIMEOUT_MS: 45_000,
     });
-    const failCalls: unknown[] = [];
     const supabase = {
       from: sessionLookup("case-1"),
-      rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+      rpc: vi.fn().mockImplementation((name: string) => {
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-timeout", error: null });
-        }
-        if (name === "fail_ai_run") {
-          failCalls.push(args);
-          return Promise.resolve({ data: null, error: null });
         }
         return Promise.resolve({ data: null, error: null });
       }),
@@ -277,7 +344,7 @@ describe("runAiTurn stateless tool continuation", () => {
     await expect(turn).rejects.toThrow(/took too long/i);
     vi.useRealTimers();
 
-    expect(failCalls).toHaveLength(1);
+    expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
     expect(createResponseCalls).toHaveLength(0);
   });
 
