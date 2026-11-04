@@ -110,6 +110,27 @@ export async function sendProblemSolvingAiMessage(input: {
       },
     };
   } catch (error) {
+    // Supabase PostgrestError values may be plain objects instead of Error.
+    // Emit only non-sensitive diagnostic codes, never user prompts or case data.
+    const detail =
+      error !== null && typeof error === "object"
+        ? (error as { code?: unknown; status?: unknown })
+        : null;
+    const code =
+      typeof detail?.code === "string" &&
+      /^[a-zA-Z0-9_]{2,20}$/.test(detail.code)
+        ? detail.code
+        : null;
+    console.warn(
+      "[lean-ai:problem-solving-action]",
+      JSON.stringify({
+        error_type: error instanceof Error ? error.name : typeof error,
+        error_code: code,
+        http_status:
+          typeof detail?.status === "number" ? detail.status : null,
+        mode: input.mode,
+      }),
+    );
     if (error instanceof AiProviderError) {
       return { error: error.message };
     }
