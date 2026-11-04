@@ -627,6 +627,7 @@ export type Database = {
           cached_input_token_count: number
           completed_at: string | null
           error_category: string | null
+          execution_claimed_at: string | null
           final_output: string | null
           id: string
           idempotency_key: string | null
@@ -650,6 +651,7 @@ export type Database = {
           cached_input_token_count?: number
           completed_at?: string | null
           error_category?: string | null
+          execution_claimed_at?: string | null
           final_output?: string | null
           id?: string
           idempotency_key?: string | null
@@ -673,6 +675,7 @@ export type Database = {
           cached_input_token_count?: number
           completed_at?: string | null
           error_category?: string | null
+          execution_claimed_at?: string | null
           final_output?: string | null
           id?: string
           idempotency_key?: string | null
@@ -12487,6 +12490,10 @@ export type Database = {
       cancel_project: {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
+      }
+      claim_ai_run_execution: {
+        Args: { target_ai_run_id: string }
+        Returns: string
       }
       claim_billing_webhook_event: {
         Args: {

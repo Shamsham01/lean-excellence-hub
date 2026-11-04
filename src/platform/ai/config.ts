@@ -21,6 +21,7 @@ const aiEnvironmentSchema = z.object({
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().optional(),
   AI_MAX_TOOL_CALLS: z.coerce.number().int().positive().optional(),
   AI_RUN_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+  AI_TURN_WALL_CLOCK_MS: z.coerce.number().int().positive().optional(),
 });
 
 export type AiEnvironment = z.infer<typeof aiEnvironmentSchema>;
@@ -45,6 +46,7 @@ export function getAiEnvironment(): AiEnvironment {
     AI_MAX_OUTPUT_TOKENS: process.env.AI_MAX_OUTPUT_TOKENS,
     AI_MAX_TOOL_CALLS: process.env.AI_MAX_TOOL_CALLS,
     AI_RUN_TIMEOUT_MS: process.env.AI_RUN_TIMEOUT_MS,
+    AI_TURN_WALL_CLOCK_MS: process.env.AI_TURN_WALL_CLOCK_MS,
   });
 }
 
@@ -53,6 +55,7 @@ export const AI_DEFAULTS = {
   maxOutputTokens: 6000,
   maxToolCalls: 8,
   runTimeoutMs: 45_000,
+  turnWallClockMs: 45_000,
 } as const;
 
 export function isApplicationAiProviderAvailable(): boolean {

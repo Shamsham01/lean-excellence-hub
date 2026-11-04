@@ -10,13 +10,14 @@ import type {
 vi.mock("server-only", () => ({}));
 
 const { getAiEnvironment } = vi.hoisted(() => ({
-  getAiEnvironment: vi.fn(() => ({
+  getAiEnvironment: vi.fn((): Record<string, unknown> => ({
     AI_MODEL_DEFAULT: "gpt-test",
     AI_MODEL_REASONING: "low" as const,
   })),
 }));
 
 const createResponseCalls: CreateResponseInput[] = [];
+let providerShouldTimeout = false;
 
 class TrackingOpenAiProvider implements AIProvider {
   readonly name = "openai";
@@ -29,6 +30,11 @@ class TrackingOpenAiProvider implements AIProvider {
     input: CreateResponseInput,
   ): Promise<CreateResponseResult> {
     createResponseCalls.push(structuredClone(input));
+    if (providerShouldTimeout) {
+      throw new Error(
+        "Lean AI took too long to finish this turn. Nothing was saved to your case.",
+      );
+    }
 
     if (createResponseCalls.length === 1) {
       return {
@@ -88,25 +94,50 @@ vi.mock("@/platform/ai/registry", () => ({
   resolveAIProvider: () => new TrackingOpenAiProvider(),
 }));
 
+vi.mock("@/platform/ai/stale-ai-run-recovery", () => ({
+  recoverStaleAiRunsForSession: vi.fn().mockResolvedValue(0),
+}));
+
+vi.mock("@/platform/ai/ai-run-reconciliation", () => ({
+  reconcileCompletedAiRunTurn: vi.fn().mockResolvedValue(null),
+  readExistingAiRun: vi
+    .fn()
+    .mockResolvedValue({ status: "timed_out", ageMs: 1_000 }),
+}));
+
+const { failAiRunBestEffortMock } = vi.hoisted(() => ({
+  failAiRunBestEffortMock: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/platform/ai/fail-ai-run-best-effort", () => ({
+  failAiRunBestEffort: failAiRunBestEffortMock,
+}));
+
 vi.mock("@/platform/ai/config", () => ({
   AI_DEFAULTS: {
     model: "gpt-test",
     maxOutputTokens: 6000,
     maxToolCalls: 8,
     runTimeoutMs: 45_000,
+    turnWallClockMs: 45_000,
   },
   getAiEnvironment: () => getAiEnvironment(),
   isApplicationAiProviderAvailable: () => true,
 }));
 
-vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
-  executeProblemSolvingTool: vi.fn().mockResolvedValue({
+const { executeProblemSolvingToolMock } = vi.hoisted(() => ({
+  executeProblemSolvingToolMock: vi.fn().mockResolvedValue({
     status: "succeeded",
     resultMetadata: { case_title: "Hot-running seal defects" },
     sourceRefsAdded: [],
   }),
 }));
 
+vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
+  executeProblemSolvingTool: executeProblemSolvingToolMock,
+}));
+
+import { reconcileCompletedAiRunTurn } from "@/platform/ai/ai-run-reconciliation";
 import { runAiTurn } from "@/platform/ai/orchestrator";
 
 function sessionLookup(caseId: string) {
@@ -128,6 +159,14 @@ function sessionLookup(caseId: string) {
 describe("runAiTurn stateless tool continuation", () => {
   beforeEach(() => {
     createResponseCalls.length = 0;
+    providerShouldTimeout = false;
+    executeProblemSolvingToolMock.mockReset();
+    failAiRunBestEffortMock.mockClear();
+    executeProblemSolvingToolMock.mockResolvedValue({
+      status: "succeeded",
+      resultMetadata: { case_title: "Hot-running seal defects" },
+      sourceRefsAdded: [],
+    });
     getAiEnvironment.mockReturnValue({
       AI_MODEL_DEFAULT: "gpt-test",
       AI_MODEL_REASONING: "low",
@@ -138,6 +177,9 @@ describe("runAiTurn stateless tool continuation", () => {
     const supabase = {
       from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-1", error: null });
         }
@@ -163,6 +205,7 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(createResponseCalls).toHaveLength(2);
     expect(createResponseCalls[0]?.model).toBe("gpt-test");
     expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
+    expect(createResponseCalls[0]?.timeoutMs).toBeLessThanOrEqual(45_000);
     expect(createResponseCalls[1]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]).not.toHaveProperty("previousResponseId");
     expect(createResponseCalls[1]).not.toHaveProperty("previousResponseId");
@@ -196,6 +239,9 @@ describe("runAiTurn stateless tool continuation", () => {
     const supabase = {
       from: sessionLookup("case-1"),
       rpc: vi.fn().mockImplementation((name: string, args: unknown) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
         if (name === "start_ai_run") {
           return Promise.resolve({ data: "run-challenge", error: null });
         }
@@ -233,6 +279,183 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(
       finishPayloads[0]?.target_manifest_json.reasoning_effort_source,
     ).toBe("task_default");
+  });
+
+  it("fails when an authorised tool exceeds the remaining wall-clock budget", async () => {
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: "low",
+      AI_TURN_WALL_CLOCK_MS: 4_000,
+      AI_RUN_TIMEOUT_MS: 45_000,
+    });
+    executeProblemSolvingToolMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(
+            () =>
+              resolve({
+                status: "succeeded",
+                resultMetadata: {},
+                sourceRefsAdded: [],
+              }),
+            5_000,
+          );
+        }),
+    );
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "run-slow-tool", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    await expect(
+      runAiTurn({
+        supabase: supabase as never,
+        sessionId: "session-slow-tool",
+        caseId: "case-1",
+        mode: "facilitate",
+        userMessage: "Help with 5 Whys for the seal defect.",
+        idempotencyKey: "idem-slow-tool",
+        conversationHistory: [],
+      }),
+    ).rejects.toThrow(/took too long/i);
+
+    expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
+    expect(createResponseCalls).toHaveLength(1);
+  });
+
+  it("fails the run when the wall-clock budget is exhausted before a provider call", async () => {
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: "low",
+      AI_TURN_WALL_CLOCK_MS: 3_000,
+      AI_RUN_TIMEOUT_MS: 45_000,
+    });
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn().mockImplementation((name: string) => {
+        if (name === "claim_ai_run_execution") {
+          return Promise.resolve({ data: "claimed", error: null });
+        }
+        if (name === "start_ai_run") {
+          return Promise.resolve({ data: "run-timeout", error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    vi.useFakeTimers();
+    const turn = runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-timeout",
+      caseId: "case-1",
+      mode: "review",
+      userMessage: "Help me build a 5 Whys chain for the seal defect.",
+      idempotencyKey: "idem-timeout",
+      conversationHistory: [],
+    });
+    vi.advanceTimersByTime(3_500);
+    await expect(turn).rejects.toThrow(/took too long/i);
+    vi.useRealTimers();
+
+    expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
+    expect(createResponseCalls).toHaveLength(0);
+  });
+
+  it("does not start a second provider call when the run is already claimed", async () => {
+    let claimed = false;
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-shared", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          if (claimed) {
+            return { data: "in_progress", error: null };
+          }
+          claimed = true;
+          return { data: "claimed", error: null };
+        }
+        if (name === "finish_ai_run") {
+          return { data: "assistant-shared", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+    const input = {
+      supabase: supabase as never,
+      sessionId: "session-1",
+      caseId: "case-1",
+      mode: "facilitate" as const,
+      userMessage: "Help me with a 5 Whys analysis for the seal defect.",
+      idempotencyKey: "idem-shared",
+      conversationHistory: [],
+    };
+    const [first, second] = await Promise.allSettled([
+      runAiTurn(input),
+      runAiTurn({ ...input, mode: "review" }),
+    ]);
+    expect(createResponseCalls.length).toBeGreaterThan(0);
+    expect(createResponseCalls.length).toBeLessThanOrEqual(2);
+    const rejected = [first, second].filter(
+      (result) => result.status === "rejected",
+    );
+    expect(rejected).toHaveLength(1);
+    expect(
+      rejected[0]?.status === "rejected" ? rejected[0].reason : null,
+    ).toBeInstanceOf(Error);
+  });
+
+  it("returns a completed turn when finalisation lands after the client timeout", async () => {
+    providerShouldTimeout = true;
+    vi.mocked(reconcileCompletedAiRunTurn)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        runId: "run-late",
+        assistantMessageId: "assistant-late",
+        envelope: {
+          message: "5 Whys draft recovered after finalisation.",
+          observations: [],
+          questions: [],
+          warnings: [],
+          source_refs: [],
+          proposals: [],
+        },
+      });
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-late", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          return { data: "claimed", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    const result = await runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-late",
+      caseId: "case-1",
+      mode: "review",
+      userMessage: "Continue the 5 Whys review.",
+      idempotencyKey: "idem-late",
+      conversationHistory: [],
+    });
+
+    expect(result.envelope.message).toMatch(/recovered after finalisation/);
+    expect(failAiRunBestEffortMock).toHaveBeenCalled();
+    expect(createResponseCalls).toHaveLength(1);
   });
 
   it("refuses a turn when the session is bound to a different case", async () => {
