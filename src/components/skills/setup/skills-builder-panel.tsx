@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
+import {
+  composeGuidedAnswerMessage,
+  orderedGuidedSelections,
+  pruneGuidedSelections,
+} from "@/components/maturity/ai-builder/compose-guided-answers";
 import { useSerializedSetupSave } from "@/components/skills/setup/serialized-save";
 
 import {
@@ -13,6 +18,8 @@ import {
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import type { ModuleSetupDiscoveryQuestion } from "@/modules/module-setup/ai-builder/types";
+import { buildSkillsGenerateDraftRequest } from "@/modules/skills/ai-builder/generate-draft-instruction";
 import type { SkillsBuilderProposal } from "@/modules/skills/ai-builder/types";
 import type { QuickStartPreparation } from "@/modules/skills/setup/preparation";
 import {
@@ -27,6 +34,10 @@ export function SkillsBuilderPanel({
   initial,
   initialProposal = null,
   initialProposalMessageId = null,
+  initialReply = null,
+  initialQuestions = [],
+  initialLastTurnInvalid = false,
+  initialOperationDescription = "",
   jobFunctions,
   units,
   unavailableMessage,
@@ -34,13 +45,23 @@ export function SkillsBuilderPanel({
   initial: QuickStartPreparation;
   initialProposal?: SkillsBuilderProposal | null;
   initialProposalMessageId?: string | null;
+  initialReply?: string | null;
+  initialQuestions?: ModuleSetupDiscoveryQuestion[];
+  initialLastTurnInvalid?: boolean;
+  initialOperationDescription?: string;
   jobFunctions: Named[];
   units: SkillsSetupUnitOption[];
   unavailableMessage: string | null;
 }) {
   const [state, setState] = useState(initial);
   const [message, setMessage] = useState("");
-  const [reply, setReply] = useState<string | null>(null);
+  const [reply, setReply] = useState<string | null>(initialReply);
+  const [questions, setQuestions] =
+    useState<ModuleSetupDiscoveryQuestion[]>(initialQuestions);
+  const [selections, setSelections] = useState<Record<string, string>>({});
+  const [lastTurnInvalid, setLastTurnInvalid] = useState(
+    initialLastTurnInvalid,
+  );
   const [proposal, setProposal] = useState<SkillsBuilderProposal | null>(
     initialProposal,
   );
@@ -50,6 +71,7 @@ export function SkillsBuilderPanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const enqueue = useSerializedSetupSave();
+  const originalDescriptionRef = useRef(initialOperationDescription);
 
   if (unavailableMessage) {
     return (
@@ -95,9 +117,16 @@ export function SkillsBuilderPanel({
   ) {
     if (!result.ok) {
       setError(result.message);
+      setLastTurnInvalid(Boolean(result.retryable));
       return;
     }
     setReply(result.message);
+    setQuestions(result.questions ?? []);
+    setSelections((current) =>
+      pruneGuidedSelections(result.questions ?? [], current),
+    );
+    setLastTurnInvalid(Boolean(result.lastTurnInvalid));
+
     if (result.proposal) {
       setProposal(result.proposal);
       setProposalMessageId(result.proposalMessageId);
@@ -105,14 +134,46 @@ export function SkillsBuilderPanel({
       setError(result.issues.length > 0 ? result.issues.join(" ") : null);
       return;
     }
-    setProposal(null);
-    setProposalMessageId(null);
+
+    if (result.needsClarification) {
+      setError(null);
+      return;
+    }
+
+    if (result.outcome === "invalid_proposal") {
+      setError(
+        result.issues.length > 0
+          ? result.issues.join(" ")
+          : "LeanAI returned a proposal that could not be used. Adjust your description or retry.",
+      );
+      return;
+    }
+
+    if (result.outcome === "invalid_response") {
+      setError(
+        "LeanAI's reply could not be read. Try again or rephrase your request.",
+      );
+      return;
+    }
+
     setError(
       result.issues.length > 0
         ? result.issues.join(" ")
-        : "LeanAI did not return a proposal. Retry, or describe the operation again.",
+        : "LeanAI could not continue. Add detail or choose Generate draft proposal.",
     );
   }
+
+  function outboundMessage(): string {
+    if (questions.length === 0) {
+      return message.trim();
+    }
+    return composeGuidedAnswerMessage({
+      selections: orderedGuidedSelections(questions, selections),
+      notes: message,
+    });
+  }
+
+  const awaitingAnswers = questions.length > 0 && !proposal;
 
   function persist(next: QuickStartPreparation) {
     setState(next);
@@ -140,7 +201,66 @@ export function SkillsBuilderPanel({
         will ask only what changes the setup. It will not publish, assess
         anyone, or choose where a requirement applies.
       </p>
-      {reply ? <p className="max-w-3xl text-sm">{reply}</p> : null}
+      {reply ? (
+        <p className="max-w-3xl text-sm" data-testid="skills-builder-reply">
+          {reply}
+        </p>
+      ) : null}
+      {awaitingAnswers ? (
+        <section
+          className="flex max-w-3xl flex-col gap-4 rounded-lg border border-border bg-surface p-4"
+          data-testid="skills-builder-discovery"
+        >
+          <h2 className="text-sm font-semibold">A few quick questions</h2>
+          <p className="text-sm text-muted-foreground">
+            LeanAI needs a little more context before it can draft skills and
+            requirements. Pick a suggested answer or add your own notes below.
+          </p>
+          <ul className="flex flex-col gap-4" role="list">
+            {questions.map((question) => (
+              <li key={question.question} className="flex flex-col gap-2">
+                <p
+                  className="text-sm font-medium"
+                  data-testid="skills-builder-question"
+                >
+                  {question.question}
+                </p>
+                <div
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                  aria-label={question.question}
+                >
+                  {question.suggestedAnswers.map((answer) => {
+                    const selected = selections[question.question] === answer;
+                    return (
+                      <button
+                        key={answer}
+                        type="button"
+                        aria-pressed={selected}
+                        className={
+                          selected
+                            ? "min-h-11 rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                            : "min-h-11 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                        }
+                        data-testid="skills-builder-suggested-answer"
+                        data-selected={selected ? "true" : "false"}
+                        onClick={() =>
+                          setSelections((current) => ({
+                            ...current,
+                            [question.question]: answer,
+                          }))
+                        }
+                      >
+                        {answer}
+                      </button>
+                    );
+                  })}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {proposal ? (
         <section
           className="flex flex-col gap-3"
@@ -314,7 +434,9 @@ export function SkillsBuilderPanel({
         className="flex flex-col gap-2 text-sm"
         htmlFor="skills-builder-message"
       >
-        Describe the operation
+        {awaitingAnswers
+          ? "Your answers or extra detail"
+          : "Describe the operation"}
         <Textarea
           id="skills-builder-message"
           className="w-full max-w-full min-w-0"
@@ -333,17 +455,26 @@ export function SkillsBuilderPanel({
           type="button"
           className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-builder-send"
-          disabled={pending || message.trim().length === 0}
+          disabled={
+            pending ||
+            (awaitingAnswers
+              ? outboundMessage().trim().length === 0
+              : message.trim().length === 0)
+          }
           onClick={() => {
             if (pending) {
               return;
+            }
+            const payload = outboundMessage();
+            if (!awaitingAnswers && message.trim()) {
+              originalDescriptionRef.current = message.trim();
             }
             startTransition(async () => {
               await enqueue(async () => {
                 applyTurn(
                   await sendSkillsSetupBuilderMessage({
-                    message,
-                    intent: "propose",
+                    message: payload,
+                    intent: awaitingAnswers ? "answer" : "propose",
                     idempotencyKey: crypto.randomUUID(),
                   }),
                 );
@@ -351,14 +482,48 @@ export function SkillsBuilderPanel({
             });
           }}
         >
-          {proposal ? "Refine proposal" : "Ask LeanAI for a proposal"}
+          {awaitingAnswers
+            ? "Send answers"
+            : proposal
+              ? "Refine proposal"
+              : "Ask LeanAI for a proposal"}
         </Button>
+        {awaitingAnswers ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full max-w-full whitespace-normal sm:w-auto"
+            data-testid="skills-builder-generate-draft"
+            disabled={pending}
+            onClick={() => {
+              if (pending) {
+                return;
+              }
+              startTransition(async () => {
+                await enqueue(async () => {
+                  applyTurn(
+                    await sendSkillsSetupBuilderMessage({
+                      message: buildSkillsGenerateDraftRequest({
+                        originalDescription: originalDescriptionRef.current,
+                        guidedAnswers: outboundMessage(),
+                      }),
+                      intent: "propose",
+                      idempotencyKey: crypto.randomUUID(),
+                    }),
+                  );
+                });
+              });
+            }}
+          >
+            Generate draft proposal
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"
           className="w-full max-w-full whitespace-normal sm:w-auto"
           data-testid="skills-builder-retry"
-          disabled={pending || message.trim().length === 0}
+          disabled={pending || !lastTurnInvalid}
           onClick={() => {
             if (pending) {
               return;
@@ -376,7 +541,7 @@ export function SkillsBuilderPanel({
             });
           }}
         >
-          Retry
+          Retry last request
         </Button>
         <Button
           type="button"

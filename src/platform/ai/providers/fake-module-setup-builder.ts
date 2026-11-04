@@ -8,6 +8,7 @@ import { GEMBA_BUILDER_CONTEXT_CONTRACT } from "@/modules/gemba/ai-builder/types
 import { SKILLS_BUILDER_CONTEXT_CONTRACT } from "@/modules/skills/ai-builder/types";
 import { FIVE_S_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/five-s-setup-builder";
 import { GEMBA_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/gemba-setup-builder";
+import { SKILLS_GENERATE_DRAFT_INSTRUCTION } from "@/modules/skills/ai-builder/generate-draft-instruction";
 import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
 import type { CreateResponseResult } from "@/platform/ai/types";
 
@@ -98,6 +99,42 @@ function skillsEnvelope(
   context: ModuleSetupBuilderContext | null,
   request: string,
 ) {
+  const explicitDraft = request.includes(SKILLS_GENERATE_DRAFT_INSTRUCTION);
+  if (request.includes("SKILLS_DISCOVERY_TEST") && !explicitDraft) {
+    return {
+      message:
+        "I need a little more detail before drafting skills and requirements.",
+      phase: "discovery",
+      understanding: {
+        operation: "Bakery production",
+        scale: null,
+        roles: null,
+        evidence: null,
+        applicability: null,
+      },
+      questions: [
+        {
+          question: "Which operation should this setup focus on?",
+          suggested_answers: ["Deck oven line", "Packaging hall"],
+        },
+        {
+          question: "How many proficiency levels do you want?",
+          suggested_answers: ["Two levels", "Three levels"],
+        },
+        {
+          question: "Which roles must demonstrate the skills?",
+          suggested_answers: ["Oven Operator", "Team Leader"],
+        },
+        {
+          question: "Extra question that must be trimmed for storage",
+          suggested_answers: ["Should not appear after reload"],
+        },
+      ],
+      change_summary: [],
+      proposal: null,
+    };
+  }
+
   if (
     request.includes("SKILLS_ERROR_TEST") &&
     context?.request.retry !== true

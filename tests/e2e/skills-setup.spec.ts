@@ -285,6 +285,49 @@ test.describe("Skills setup journeys", () => {
     }
   });
 
+  test("LeanAI discovery questions reload and can proceed to draft", async ({
+    page,
+  }) => {
+    const organisation = await ensureSkillsAuthoringOrganisation();
+    await enableSkillsAuthoringAi(organisation.organisationId);
+    await loginAsOnboardingUser(
+      page,
+      { email: organisation.email, password: organisation.password },
+      { organisationName: organisation.organisationName },
+    );
+
+    await page.goto("/platform/skills/setup/leanai");
+    await page
+      .getByTestId("skills-builder-message")
+      .fill("SKILLS_DISCOVERY_TEST");
+    await page.getByTestId("skills-builder-send").click();
+    await expect(page.getByTestId("skills-builder-discovery")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId("skills-builder-question")).toHaveCount(3);
+    await expect(page.getByTestId("skills-builder-error")).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId("skills-builder-discovery")).toBeVisible();
+    await expect(page.getByTestId("skills-builder-question")).toHaveCount(3);
+
+    await page
+      .getByTestId("skills-builder-suggested-answer")
+      .filter({ hasText: "Deck oven line" })
+      .click();
+    await expect(
+      page
+        .getByTestId("skills-builder-suggested-answer")
+        .filter({ hasText: "Deck oven line" }),
+    ).toHaveAttribute("data-selected", "true");
+
+    await page.getByTestId("skills-builder-generate-draft").click();
+    await expect(page.getByTestId("skills-builder-proposal-title")).toHaveText(
+      "Bakery oven capability",
+      { timeout: 30_000 },
+    );
+  });
+
   test("LeanAI proposal can fail, retry, reload, and create a draft", async ({
     page,
   }) => {

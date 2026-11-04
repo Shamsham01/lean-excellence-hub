@@ -8,6 +8,7 @@ import {
   type SkillsSetupDefinition,
 } from "@/modules/skills/setup/definition";
 
+import { normalizeModuleSetupDiscoveryQuestions } from "@/modules/module-setup/ai-builder/discovery-questions";
 import {
   SKILLS_BUILDER_DECLARED_KEY,
   SKILLS_BUILDER_LIMITS as LIMITS,
@@ -292,16 +293,20 @@ export function parseSkillsBuilderEnvelope(value: unknown):
       proposalIssues = validated.issues;
     }
   }
+  const questions = normalizeModuleSetupDiscoveryQuestions(
+    parsed.data.questions.map((question) => ({
+      question: question.question,
+      suggested_answers: question.suggested_answers,
+    })),
+  );
+
   return {
     ok: true,
     envelope: {
       message,
       phase: parsed.data.phase,
       understanding: parsed.data.understanding,
-      questions: parsed.data.questions.map((question) => ({
-        question: question.question,
-        suggestedAnswers: question.suggested_answers,
-      })),
+      questions,
       changeSummary: parsed.data.change_summary,
       proposal,
       proposalStatus,

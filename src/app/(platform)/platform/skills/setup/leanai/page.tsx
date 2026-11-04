@@ -103,6 +103,17 @@ export default async function SkillsLeanAiSetupPage() {
         initialProposalMessageId={
           conversation?.currentProposal?.messageId ?? null
         }
+        initialReply={
+          conversation?.turns
+            .slice()
+            .reverse()
+            .find((turn) => turn.role === "assistant")?.message ?? null
+        }
+        initialQuestions={conversation?.pendingQuestions ?? []}
+        initialLastTurnInvalid={conversation?.lastTurnInvalid ?? false}
+        initialOperationDescription={
+          conversation?.turns.find((turn) => turn.role === "user")?.text ?? ""
+        }
         jobFunctions={jobFunctions ?? []}
         units={skillsSetupUnitOptions(units ?? [])}
         unavailableMessage={
