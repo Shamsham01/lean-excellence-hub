@@ -43,8 +43,12 @@ Do not claim "nothing is retained by OpenAI" merely because `store: false` is se
 
 ### Runtime (Netlify)
 
-Foreground execution with conservative `AI_RUN_TIMEOUT_MS` default **45_000** ms (below hosted
-synchronous limits). Bounded tool iterations, context size, and response size. Timeout fails safely;
+Foreground execution with `AI_RUN_TIMEOUT_MS` default **45_000** ms. Netlify synchronous
+functions stop at **60 seconds** and that limit is not configurable. Problem Solving disables
+provider retries (`maxRetries: 0`) and races the provider call against the turn budget so a
+timeout can still call `fail_ai_run` before the host kills the process. The OpenAI SDK otherwise
+retries a connection timeout, and that second attempt is what leaves `ai_runs.status = running`
+with no usage row. Bounded tool iterations, context size, and response size. Timeout fails safely;
 core domains continue without AI.
 
 ### Usage ledger
