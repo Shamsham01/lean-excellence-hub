@@ -5,6 +5,10 @@ import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  clickFiveSCompleteAudit,
+  expectNoFiveSCompleteAudit,
+} from "./helpers/responsive-complete-control";
+import {
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
@@ -120,13 +124,13 @@ test.describe("Milestone 6 5S journeys", () => {
     await page.getByRole("button", { name: "Yes" }).click();
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
 
-    await page.getByTestId("five-s-complete-audit").click();
+    await clickFiveSCompleteAudit(page);
     await expect(page.getByTestId("five-s-audit-result-page")).toBeVisible();
     await expect(page.getByTestId("five-s-audit-result")).toBeVisible();
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
-    await expect(page.getByTestId("five-s-complete-audit")).toHaveCount(0);
+    await expectNoFiveSCompleteAudit(page);
 
     await page.reload();
     await expect(page.getByTestId("five-s-audit-result")).toBeVisible();

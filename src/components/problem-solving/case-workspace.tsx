@@ -27,6 +27,7 @@ import {
   guidedStageConfig,
   resolveViewStage,
 } from "@/lib/problem-solving/guided-flow";
+import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
 import {
   sortMethodStages,
   type MethodStage,
@@ -51,6 +52,7 @@ type CaseWorkspaceProps = {
   hypothesisTests: ProblemSolvingHypothesisTest[];
   methodStages: MethodStage[];
   methods: ProblemSolvingMethod[];
+  pinnedMethodVersion: PinnedMethodVersionContext | null;
   comments: CommentRow[];
   evidence: EvidenceItem[];
   membershipNameById: Record<string, string>;
@@ -75,6 +77,7 @@ export function CaseWorkspace({
   hypothesisTests,
   methodStages,
   methods,
+  pinnedMethodVersion,
   comments,
   evidence,
   membershipNameById,
@@ -213,10 +216,8 @@ export function CaseWorkspace({
         canManage={canManage}
         canFacilitate={canFacilitate}
         canClose={canClose}
-        methods={methods.map((method) => ({
-          id: method.id,
-          name: method.name,
-        }))}
+        methods={methods}
+        pinnedMethodVersion={pinnedMethodVersion}
         message={message}
         onMessage={setMessage}
       />

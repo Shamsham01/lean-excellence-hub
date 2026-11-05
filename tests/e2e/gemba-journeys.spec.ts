@@ -7,6 +7,10 @@ import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  clickGembaCompleteWalk,
+  expectNoGembaCompleteWalk,
+} from "./helpers/responsive-complete-control";
+import {
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
@@ -149,7 +153,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.goto(walkUrl);
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-required-unanswered"),
     ).toHaveText("Required prompts unanswered: 1");
@@ -163,7 +167,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-required-unanswered"),
     ).toHaveText("Required prompts unanswered: 0");
@@ -258,7 +262,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     );
     await expect(page.getByText("Improvement opportunity")).toBeVisible();
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-observation-count"),
     ).toContainText("Observations: 1");
@@ -369,7 +373,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
       .fill("Second prompt notes after observation cleanup.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-observation-count"),
     ).toContainText("Observations: 1");
@@ -466,7 +470,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
       observationText,
     );
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-required-unanswered"),
     ).toHaveText("Required prompts unanswered: 0");
@@ -488,7 +492,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByText("sample.webp")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
-    await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
+    await expectNoGembaCompleteWalk(page);
     await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
 
     await page.reload();
@@ -497,7 +501,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-walk-status")).toHaveText("Completed");
     await expect(page.getByText("sample.webp")).toBeVisible();
     await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
-    await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
+    await expectNoGembaCompleteWalk(page);
     expect(new URL(page.url()).searchParams.has("prompt")).toBe(false);
   });
 });
