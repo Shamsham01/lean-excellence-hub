@@ -293,6 +293,12 @@ body {
   background: transparent;
 }
 
+@media (min-width: 1024px) {
+  .platform-scroll:has(.pps-flagship-workspace) {
+    overflow: hidden;
+  }
+}
+
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
 
 /* LEH marketing palette: industrial cobalt anchor, restrained teal for connected /

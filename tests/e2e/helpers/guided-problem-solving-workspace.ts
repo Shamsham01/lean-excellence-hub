@@ -77,12 +77,3 @@ export async function activateA3StructuredMethod(page: Page) {
     .selectOption({ label: A3_STRUCTURED_METHOD_LABEL });
   await page.getByTestId("problem-solving-activate-button").click();
 }
-
-export async function openWorkshopMode(page: Page) {
-  const toggle = page.getByTestId("pps-workshop-toggle");
-  await toggle.scrollIntoViewIfNeeded();
-  await toggle.click();
-  await expect(page.getByTestId("pps-workshop-mode")).toBeVisible({
-    timeout: 15_000,
-  });
-}

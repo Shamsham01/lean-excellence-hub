@@ -19,6 +19,7 @@ export const PROBLEM_SOLVING_PERMISSIONS = [
 export const PROBLEM_SOLVING_SEEDED_METHOD_CODES = [
   "a3_structured",
   "rapid_rca",
+  "rapid_improvement",
   "five_why",
 ] as const;
 
@@ -278,7 +279,7 @@ const caseFields: ProblemSolvingKnowledgeField[] = [
     purpose: "Chooses the published problem-solving stages for this case.",
     required: "required",
     constraints:
-      "Chosen when the case is activated. This release seeds A3 / 8-step (a3_structured), Rapid root cause analysis (rapid_rca), and 5 Why (five_why). There is no screen to author a new method.",
+      "Chosen when the case is activated. This release seeds A3 / 8-step (a3_structured), Rapid root cause analysis (rapid_rca), Rapid Improvement (rapid_improvement), and 5 Why (five_why). There is no screen to author a new method.",
     example: "Rapid root cause analysis",
     mistakes:
       "Expecting DMAIC or 8D to appear as a method. They are not seeded problem-solving methods.",

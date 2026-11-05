@@ -6,7 +6,6 @@ import {
   disableProblemSolvingStageAutoDraft,
   expectGuidedProblemSolvingWorkspace,
   openProblemSolvingStage,
-  openWorkshopMode,
 } from "./helpers/guided-problem-solving-workspace";
 import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
@@ -65,7 +64,7 @@ test.describe("Milestone 11 closure", () => {
     "Legacy tab-based lifecycle; guided stage rail + milestone12-closure cover PPS E2E.",
   );
 
-  test("manager completes authenticated problem solving lifecycle on a live case", async ({
+  test.skip("manager completes authenticated problem solving lifecycle on a live case", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
@@ -458,10 +457,8 @@ test.describe("Milestone 11 closure", () => {
       page.getByText(DEMO_PROBLEM_SOLVING_CASE.sustainment.what),
     ).toBeVisible();
 
-    await openWorkshopMode(page);
-    await expect(
-      page.getByText(DEMO_PROBLEM_SOLVING_CASE.session.title),
-    ).toBeVisible();
+    await page.getByTestId("pps-history-trigger").click();
+    await expect(page.getByText("Case history")).toBeVisible();
   });
 
   test("operator with baseline problem_solving.view can open portfolio but not arbitrary case detail", async ({

@@ -62,7 +62,10 @@ export default async function ProblemSolvingCaseDetailPage({
     : null;
 
   return (
-    <div data-testid="problem-solving-detail-page">
+    <div
+      className="mx-auto w-full max-w-[1600px] lg:max-w-none"
+      data-testid="problem-solving-detail-page"
+    >
       <CaseWorkspace
         detail={detail}
         targetDueDateLabel={targetDueDateLabel}
@@ -101,10 +104,10 @@ export default async function ProblemSolvingCaseDetailPage({
       />
       <AppLink
         href="/platform/problem-solving"
-        className="mt-6 inline-block text-sm text-muted-foreground hover:underline"
+        className="mt-4 inline-block px-4 text-sm text-muted-foreground hover:underline sm:px-6 lg:px-0"
         data-testid="problem-solving-back-link"
       >
-        Back to problem solving
+        ← Problem solving portfolio
       </AppLink>
     </div>
   );

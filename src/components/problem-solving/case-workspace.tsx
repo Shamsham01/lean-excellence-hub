@@ -1,31 +1,36 @@
 "use client";
 
+import { MessageSquare } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  acceptProblemSolvingAiProposal,
+  rejectProblemSolvingAiProposal,
+} from "@/app/(platform)/platform/problem-solving/ai/actions";
 import { moveProblemSolvingStage } from "@/app/(platform)/platform/problem-solving/actions";
+import {
+  AiFacilitatorPanel,
+  type PendingProposal,
+} from "@/components/problem-solving/ai/ai-facilitator-panel";
+import { CaseActivitySheet } from "@/components/problem-solving/case-activity-sheet";
 import { CaseHeader } from "@/components/problem-solving/case-header";
-import { EphemeralToast } from "@/components/ui/ephemeral-toast";
+import { CaseHistorySheet } from "@/components/problem-solving/case-history-sheet";
 import { ContainmentPanel } from "@/components/problem-solving/containment-panel";
 import { CountermeasuresPanel } from "@/components/problem-solving/countermeasures-panel";
 import { CurrentConditionPanel } from "@/components/problem-solving/current-condition-panel";
-import { HistoryPanel } from "@/components/problem-solving/history-panel";
-import { OverviewPanel } from "@/components/problem-solving/overview-panel";
-import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
-import { AiFacilitatorPanel } from "@/components/problem-solving/ai/ai-facilitator-panel";
-import { RelatedWorkPanel } from "@/components/problem-solving/related-work-panel";
-import { VerificationPanel } from "@/components/problem-solving/verification-panel";
 import { StageAutoDraftTrigger } from "@/components/problem-solving/guided/stage-auto-draft-trigger";
 import { StageProgressRail } from "@/components/problem-solving/guided/stage-progress-rail";
 import { UnifiedCauseAnalysis } from "@/components/problem-solving/guided/unified-cause-analysis";
-import { WorkshopModePanel } from "@/components/problem-solving/guided/workshop-mode-panel";
+import { InlineAiProposals } from "@/components/problem-solving/inline-ai-proposals";
+import { OverviewPanel } from "@/components/problem-solving/overview-panel";
+import { StageCanvasHeader } from "@/components/problem-solving/stage-canvas-header";
+import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
+import { VerificationPanel } from "@/components/problem-solving/verification-panel";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import {
-  ResourceComments,
-  type CommentRow,
-} from "@/components/comments/resource-comments";
+import type { CommentRow } from "@/components/comments/resource-comments";
+import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   guidedStageConfig,
   resolveViewStage,
@@ -70,42 +75,50 @@ type CaseWorkspaceProps = {
   providerAvailable: boolean;
 };
 
-export function CaseWorkspace({
-  detail,
-  targetDueDateLabel,
-  currentConditionItems,
-  containments,
-  analyses,
-  analysisNodes,
-  hypothesisTests,
-  methodStages,
-  methods,
-  pinnedMethodVersion,
-  comments,
-  evidence,
-  membershipNameById,
-  ownerName,
-  facilitatorName,
-  canManage,
-  canContribute,
-  canFacilitate,
-  canClose,
-  canUseAi,
-  providerAvailable,
-}: CaseWorkspaceProps) {
+export function CaseWorkspace(props: CaseWorkspaceProps) {
+  const {
+    detail,
+    targetDueDateLabel,
+    currentConditionItems,
+    containments,
+    analyses,
+    analysisNodes,
+    hypothesisTests,
+    methodStages,
+    methods,
+    pinnedMethodVersion,
+    comments,
+    evidence,
+    membershipNameById,
+    ownerName,
+    facilitatorName,
+    canManage,
+    canContribute,
+    canFacilitate,
+    canClose,
+    canUseAi,
+    providerAvailable,
+  } = props;
+
   const router = useRouter();
   const [toast, setToast] = useState<{
     message: string;
     tone: "default" | "error";
   } | null>(null);
   const [movingStage, setMovingStage] = useState(false);
+  const [copilotCollapsed, setCopilotCollapsed] = useState(false);
+  const [mobileCopilotOpen, setMobileCopilotOpen] = useState(false);
+  const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
+    [],
+  );
+  const [proposalBusy, setProposalBusy] = useState(false);
+  const [editDraft, setEditDraft] = useState<string | undefined>();
+
   const sortedStages = useMemo(
     () => sortMethodStages(methodStages),
     [methodStages],
   );
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
-  const [workshopOpen, setWorkshopOpen] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const viewStageId = selectedStageId ?? detail.current_method_stage_id;
 
@@ -133,6 +146,10 @@ export function CaseWorkspace({
     detail.status === "active" &&
     sortedStages.length > 0;
 
+  const isViewingCurrentStage =
+    viewStageId === detail.current_method_stage_id ||
+    (viewStageId == null && detail.current_method_stage_id == null);
+
   const notify = useCallback(
     (message: string, tone: "success" | "error" = "success") => {
       setToast({
@@ -150,6 +167,49 @@ export function CaseWorkspace({
     notify(result.error ?? "Stage updated", result.error ? "error" : "success");
     setSelectedStageId(null);
     setMovingStage(false);
+    router.refresh();
+  }
+
+  const railProps = {
+    stages: sortedStages,
+    currentStageId: detail.current_method_stage_id,
+    viewStageId,
+    onViewStage: setSelectedStageId,
+    canMoveStage,
+    onMoveStage: handleMoveStage,
+    movingStage,
+  };
+
+  async function handleAcceptProposal(proposal: PendingProposal) {
+    setProposalBusy(true);
+    const result = await acceptProblemSolvingAiProposal({
+      caseId: detail.id,
+      proposalId: proposal.id,
+      payload: proposal.payload_json,
+    });
+    setProposalBusy(false);
+    if (result.error) {
+      notify(result.error, "error");
+      return;
+    }
+    setPendingProposals((prev) => prev.filter((p) => p.id !== proposal.id));
+    notify("Proposal accepted");
+    router.push(`/platform/problem-solving/${detail.id}`);
+  }
+
+  async function handleRejectProposal(proposalId: string) {
+    setProposalBusy(true);
+    const result = await rejectProblemSolvingAiProposal({
+      caseId: detail.id,
+      proposalId,
+    });
+    setProposalBusy(false);
+    if (result.error) {
+      notify(result.error, "error");
+      return;
+    }
+    setPendingProposals((prev) => prev.filter((p) => p.id !== proposalId));
+    notify("Proposal rejected");
     router.refresh();
   }
 
@@ -231,121 +291,145 @@ export function CaseWorkspace({
     );
   }
 
+  const copilot = (
+    <AiFacilitatorPanel
+      caseId={detail.id}
+      caseTitle={detail.title}
+      stageKey={stageKey}
+      stageTitle={viewStage?.title ?? detail.current_stage?.title ?? null}
+      caseStatus={detail.status}
+      canUseAi={canUseAi}
+      providerAvailable={providerAvailable}
+      layout="dock"
+      collapsed={copilotCollapsed}
+      onCollapsedChange={setCopilotCollapsed}
+      pendingProposals={pendingProposals}
+      onPendingProposalsChange={setPendingProposals}
+      {...(editDraft !== undefined ? { draftOverride: editDraft } : {})}
+      onDraftOverrideConsumed={() => setEditDraft(undefined)}
+    />
+  );
+
   return (
     <div
-      className="flex flex-col gap-6"
+      className="pps-flagship-workspace -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col sm:-mx-6 lg:mx-0 lg:max-h-[calc(100dvh-3rem)] lg:min-h-0"
       data-testid="problem-solving-workspace"
     >
-      <CaseHeader
-        detail={detail}
-        ownerName={ownerName ?? null}
-        facilitatorName={facilitatorName ?? null}
-        targetDueDateLabel={targetDueDateLabel ?? null}
-        canManage={canManage}
-        canClose={canClose}
-        methods={methods}
-        pinnedMethodVersion={pinnedMethodVersion}
-        onMessage={notify}
-      />
+      <div className="sticky top-0 z-10 shrink-0 border-b border-border bg-background/95 px-4 backdrop-blur-sm sm:px-6 lg:px-0">
+        <CaseHeader
+          detail={detail}
+          ownerName={ownerName ?? null}
+          facilitatorName={facilitatorName ?? null}
+          targetDueDateLabel={targetDueDateLabel ?? null}
+          canManage={canManage}
+          canClose={canClose}
+          methods={methods}
+          pinnedMethodVersion={pinnedMethodVersion}
+          onMessage={notify}
+          historySlot={
+            <CaseHistorySheet
+              detail={detail}
+              membershipNameById={membershipNameById}
+              pinnedMethodVersion={pinnedMethodVersion}
+            />
+          }
+          activitySlot={
+            <CaseActivitySheet caseId={detail.id} comments={comments} />
+          }
+        />
+      </div>
 
       {sortedStages.length > 0 ? (
-        <StageProgressRail
-          stages={sortedStages}
-          currentStageId={detail.current_method_stage_id}
-          viewStageId={viewStageId}
-          onViewStage={setSelectedStageId}
-          canMoveStage={canMoveStage}
-          onMoveStage={handleMoveStage}
-          movingStage={movingStage}
-        />
+        <div className="shrink-0 border-b border-border bg-muted/20 px-4 pt-2 sm:px-6 lg:hidden">
+          <StageProgressRail {...railProps} variant="mobile" />
+        </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_min(22rem,100%)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card data-testid="pps-stage-guidance">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{stageConfig.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-sm">
-              <p className="text-muted-foreground">{stageConfig.purpose}</p>
-              <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-                {stageConfig.actions.map((action) => (
-                  <li key={action}>{action}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {sortedStages.length > 0 ? (
+          <StageProgressRail {...railProps} variant="desktop" />
+        ) : null}
 
-          {renderStageBody()}
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              data-testid="pps-workshop-toggle"
-              onClick={() => setWorkshopOpen((open) => !open)}
-            >
-              {workshopOpen ? "Hide workshop mode" : "Workshop mode"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAdvanced((open) => !open)}
-            >
-              {showAdvanced ? "Hide history & comments" : "History & comments"}
-            </Button>
-          </div>
-
-          {workshopOpen ? (
-            <WorkshopModePanel
-              caseId={detail.id}
-              detail={detail}
-              canFacilitate={canFacilitate || canManage}
-              membershipNameById={membershipNameById}
+        <section
+          className="flex min-h-0 min-w-0 flex-1 flex-col bg-card lg:border-r lg:border-border"
+          data-testid="pps-stage-canvas"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+            <StageCanvasHeader
+              config={stageConfig}
+              isViewingCurrentStage={isViewingCurrentStage}
+              canMoveStage={canMoveStage}
+              advancing={movingStage}
+              {...(viewStageId && canMoveStage && !isViewingCurrentStage
+                ? {
+                    onAdvanceToViewedStage: () =>
+                      void handleMoveStage(viewStageId),
+                  }
+                : {})}
             />
-          ) : null}
 
-          {showAdvanced ? (
-            <>
-              <HistoryPanel
-                detail={detail}
-                membershipNameById={membershipNameById}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <StageAutoDraftTrigger
+                caseId={detail.id}
+                stageKey={stageKey ?? "DEFINE"}
+                autoDraftPrompt={stageConfig.autoDraftPrompt}
+                canUseAi={canUseAi}
+                providerAvailable={providerAvailable}
+                hasProblemData={hasProblemData}
               />
-              <Card>
-                <CardContent className="pt-6">
-                  <ResourceComments
-                    resourceId={detail.id}
-                    comments={comments}
-                  />
-                </CardContent>
-              </Card>
-            </>
-          ) : null}
-        </div>
+            </div>
 
-        <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
-          <StageAutoDraftTrigger
-            caseId={detail.id}
-            stageKey={stageKey ?? "DEFINE"}
-            autoDraftPrompt={stageConfig.autoDraftPrompt}
-            canUseAi={canUseAi}
-            providerAvailable={providerAvailable}
-            hasProblemData={hasProblemData}
-          />
-          <RelatedWorkPanel
-            mode="case"
-            caseId={detail.id}
-            queryText={`${detail.title} ${detail.problem_statement ?? ""}`.trim()}
-          />
-          <AiFacilitatorPanel
-            caseId={detail.id}
-            stageKey={stageKey}
-            canUseAi={canUseAi}
-            providerAvailable={providerAvailable}
-          />
-        </aside>
+            <div className="mt-6 flex flex-col gap-6">
+              <InlineAiProposals
+                proposals={pendingProposals}
+                busy={proposalBusy}
+                onAccept={handleAcceptProposal}
+                onReject={handleRejectProposal}
+                onEdit={(proposal) =>
+                  setEditDraft(
+                    `Adjust this proposal: ${proposal.human_explanation}`,
+                  )
+                }
+              />
+              {renderStageBody()}
+            </div>
+          </div>
+        </section>
+
+        <div
+          className={
+            mobileCopilotOpen
+              ? "fixed inset-x-0 bottom-0 z-30 flex max-h-[85dvh] min-h-0 flex-col shadow-2xl lg:static lg:max-h-none lg:shadow-none"
+              : "hidden min-h-0 lg:flex"
+          }
+        >
+          {copilot}
+        </div>
+      </div>
+
+      <div className="fixed right-4 bottom-4 z-20 flex gap-2 lg:hidden">
+        {mobileCopilotOpen ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            className="rounded-full bg-card shadow-lg"
+            onClick={() => setMobileCopilotOpen(false)}
+          >
+            Close
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="default"
+            className="gap-2 rounded-full shadow-lg"
+            data-testid="pps-mobile-copilot-trigger"
+            onClick={() => setMobileCopilotOpen(true)}
+          >
+            <MessageSquare className="size-4" aria-hidden />
+            Lean AI
+          </Button>
+        )}
       </div>
 
       <EphemeralToast

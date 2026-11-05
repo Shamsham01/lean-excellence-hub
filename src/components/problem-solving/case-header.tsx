@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -38,6 +38,8 @@ type CaseHeaderProps = {
   methods: ProblemSolvingMethod[];
   pinnedMethodVersion: PinnedMethodVersionContext | null;
   onMessage?: (message: string, tone?: "success" | "error") => void;
+  historySlot?: ReactNode;
+  activitySlot?: ReactNode;
 };
 
 export function CaseHeader({
@@ -50,6 +52,8 @@ export function CaseHeader({
   methods,
   pinnedMethodVersion,
   onMessage,
+  historySlot,
+  activitySlot,
 }: CaseHeaderProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -132,42 +136,17 @@ export function CaseHeader({
 
   return (
     <div
-      className="flex flex-col gap-4 border-b border-border pb-6"
+      className="flex flex-col gap-3 py-3"
       data-testid="problem-solving-header"
     >
-      {detail.status === "draft" ? (
-        <div
-          className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm"
-          data-testid="problem-solving-draft-guidance"
-        >
-          <p className="font-medium text-foreground">
-            Draft case — not in workshop yet
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            Confirm the problem statement on Overview, pick a solving method,
-            then activate the case. Activation unlocks staged work, facilitator
-            sessions, and Lean AI on this record.
-          </p>
-        </div>
-      ) : null}
-      {detail.status === "active" ? (
-        <div
-          className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
-          data-testid="problem-solving-active-guidance"
-        >
-          <p className="font-medium text-foreground">Active case</p>
-          <p className="mt-1 text-muted-foreground">
-            Use the Sessions tab to run workshops, capture notes and decisions,
-            then advance stages as the team agrees.
-          </p>
-        </div>
-      ) : null}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {detail.case_number ?? "Draft case"}
           </p>
-          <h1 className="typography-page-title">{detail.title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {detail.title}
+          </h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant={problemSolvingStatusBadgeVariant(detail.status)}>
               {problemSolvingStatusLabel(detail.status)}
@@ -180,7 +159,7 @@ export function CaseHeader({
               </Badge>
             ) : null}
           </div>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-2 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4 lg:text-sm">
             {detail.unit_name ? (
               <div>
                 <dt className="text-muted-foreground">Unit</dt>
@@ -223,7 +202,9 @@ export function CaseHeader({
             ) : null}
           </dl>
         </div>
-        <div className="flex w-full shrink-0 flex-col gap-2 lg:w-auto">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:flex-col lg:items-stretch">
+          {historySlot}
+          {activitySlot}
           {showActivate ? (
             <>
               {pinnedMethodView ? (
