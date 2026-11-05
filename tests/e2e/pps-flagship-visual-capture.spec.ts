@@ -112,7 +112,9 @@ test.describe("PPS flagship visual capture", () => {
       timeout: 30_000,
     });
     const rapidMethodSelect = page.getByTestId("activate-method-select");
-    const rapidLabels = await rapidMethodSelect.locator("option").allTextContents();
+    const rapidLabels = await rapidMethodSelect
+      .locator("option")
+      .allTextContents();
     const rapidLabel =
       rapidLabels.find((label) => /rapid improvement/i.test(label)) ??
       rapidLabels.find((label) => /rapid/i.test(label));
