@@ -29,7 +29,7 @@ describe("platform sidebar layout", () => {
     expect(footer).toContain("shrink-0");
     expect(sidebar).toContain("h-dvh");
     expect(sidebar).toContain("min-h-0");
-    expect(sidebar).toContain("w-56");
+    expect(sidebar).toContain("w-[290px]");
   });
 
   it("constrains the mobile drawer to the dynamic viewport with a scrollable nav region", () => {
