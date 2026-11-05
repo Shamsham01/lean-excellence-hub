@@ -9,6 +9,7 @@ import {
   reconcileProblemSolvingAiTurn,
   sendProblemSolvingAiMessage,
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
+import { invokeProblemSolvingTurnAction } from "@/lib/problem-solving/problem-solving-ai-turn-client";
 import type { InlineAiProposal } from "@/components/problem-solving/inline-ai-proposals";
 import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +122,7 @@ export function AiFacilitatorPanel({
     setHasPendingTurn(false);
     setDraft("");
     setError(null);
-    router.push(`/platform/problem-solving/${caseId}`);
+    router.refresh();
   }
 
   async function attemptReconcileTurn(userMessage: string): Promise<boolean> {
@@ -198,29 +199,54 @@ export function AiFacilitatorPanel({
 
       setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
 
-      const result = await sendProblemSolvingAiMessage({
-        caseId,
-        sessionId: activeSessionId,
-        mode,
-        stageKey: stageKey ?? null,
-        message: userMessage,
-        idempotencyKey,
-        conversationHistory: messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+      const result = await invokeProblemSolvingTurnAction({
+        invoke: () =>
+          sendProblemSolvingAiMessage({
+            caseId,
+            sessionId: activeSessionId,
+            mode,
+            stageKey: stageKey ?? null,
+            message: userMessage,
+            idempotencyKey,
+            conversationHistory: messages.map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
+          }),
+        reconcile: () =>
+          reconcileProblemSolvingAiTurn({
+            caseId,
+            sessionId: activeSessionId,
+            idempotencyKey,
+          }),
       });
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? "Lean AI failed");
       }
 
-      await applyCompletedTurn({
-        envelope: result.data.envelope,
-        ...(result.data.pendingProposals
-          ? { pendingProposals: result.data.pendingProposals }
-          : {}),
-      });
+      const payload = result.data;
+      if ("envelope" in payload && payload.envelope) {
+        await applyCompletedTurn({
+          envelope: payload.envelope,
+          ...("pendingProposals" in payload && payload.pendingProposals
+            ? { pendingProposals: payload.pendingProposals }
+            : {}),
+        });
+        return;
+      }
+
+      if ("state" in payload) {
+        if (payload.state === "completed" && payload.envelope) {
+          await applyCompletedTurn({ envelope: payload.envelope });
+          return;
+        }
+        if (payload.state === "failed") {
+          throw new Error(payload.message ?? "Lean AI failed");
+        }
+      }
+
+      throw new Error("Lean AI did not return a completed turn.");
     } catch (sendError) {
       const message =
         sendError instanceof Error ? sendError.message : "Lean AI failed";

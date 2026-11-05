@@ -6,6 +6,7 @@ import {
   AI_TURN_FAILED_RETRY_MESSAGE,
   AI_TURN_IN_PROGRESS_MESSAGE,
 } from "@/platform/ai/ai-turn-messages";
+import { reconcileFailureMessage } from "@/platform/ai/reconcile-failure-message";
 import { reconcileCompletedAiRunTurn } from "@/platform/ai/ai-run-reconciliation";
 import {
   AI_STALE_RUN_AFTER_MS,
@@ -61,7 +62,7 @@ export async function reconcileProblemSolvingAiTurnByIdempotencyKey(
 
   const { data: runRow, error } = await supabase
     .from("ai_runs")
-    .select("id, status, ai_session_id")
+    .select("id, status, ai_session_id, error_category, final_output")
     .eq("idempotency_key", input.idempotencyKey.trim())
     .maybeSingle();
 
@@ -105,7 +106,11 @@ export async function reconcileProblemSolvingAiTurnByIdempotencyKey(
 
   return {
     state: "failed",
-    message: AI_TURN_FAILED_RETRY_MESSAGE,
+    message: reconcileFailureMessage({
+      status,
+      error_category: runRow.error_category ?? null,
+      final_output: runRow.final_output ?? null,
+    }),
     runId,
   };
 }

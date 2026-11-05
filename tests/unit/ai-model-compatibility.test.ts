@@ -22,8 +22,19 @@ describe("workflow reasoning", () => {
       framework_builder: "medium",
       complex_reasoning: "medium",
       problem_solving: "medium",
+      problem_solving_facilitate: "low",
       problem_solving_challenge: "high",
     });
+  });
+
+  it("uses a tighter output budget for facilitate turns", () => {
+    const prepared = prepareWorkflowModelCall({
+      workflow: "problem_solving_facilitate",
+      model: "gpt-6.1-sol",
+      environment: {},
+    });
+    expect(prepared.reasoningEffort).toBe("low");
+    expect(prepared.maxOutputTokens).toBeLessThan(8_000);
   });
 
   it("lets AI_MODEL_REASONING replace the task default without changing the model", () => {

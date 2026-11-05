@@ -94,7 +94,7 @@ export function StageAutoDraftTrigger({
           fromAuto
             ? "Draft ready — review proposals below."
             : result.data.pendingProposalCount > 0
-              ? `${result.data.pendingProposalCount} proposal(s) to review.`
+              ? `${result.data.pendingProposalCount} proposal(s) in Pending Lean AI proposals below.`
               : "Draft finished.",
         );
         onDraftComplete?.();

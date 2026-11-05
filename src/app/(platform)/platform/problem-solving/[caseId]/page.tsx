@@ -3,6 +3,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { formatLongDate } from "@/lib/dates/format-long-date";
 import { membershipDisplayLabel } from "@/lib/identity/membership-display-label";
 import { resolveProblemSolvingDetailAccess } from "@/lib/problem-solving/detail-access";
+import { loadCasePendingAiProposals } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace-data";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
@@ -56,6 +57,13 @@ export default async function ProblemSolvingCaseDetailPage({
     await recoverProblemSolvingAiRunsForCase(supabase, caseId);
   }
   const workspaceData = await loadCaseWorkspaceData(supabase, caseId, detail);
+  const pendingAiProposals =
+    canUseAi && isApplicationAiProviderAvailable()
+      ? await loadCasePendingAiProposals(supabase, caseId, {
+          canManage,
+          canContribute,
+        })
+      : [];
   const providerAvailable = isApplicationAiProviderAvailable();
   const targetDueDateLabel = detail.target_due_at
     ? formatLongDate(detail.target_due_at)
@@ -101,6 +109,7 @@ export default async function ProblemSolvingCaseDetailPage({
         canClose={canClose}
         canUseAi={canUseAi}
         providerAvailable={providerAvailable}
+        pendingAiProposals={pendingAiProposals}
       />
       <AppLink
         href="/platform/problem-solving"

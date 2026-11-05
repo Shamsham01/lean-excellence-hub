@@ -19,6 +19,7 @@ import { CaseHistorySheet } from "@/components/problem-solving/case-history-shee
 import { ContainmentPanel } from "@/components/problem-solving/containment-panel";
 import { CountermeasuresPanel } from "@/components/problem-solving/countermeasures-panel";
 import { CurrentConditionPanel } from "@/components/problem-solving/current-condition-panel";
+import { PendingAiProposalsList } from "@/components/problem-solving/ai/pending-ai-proposals-list";
 import { StageAutoDraftTrigger } from "@/components/problem-solving/guided/stage-auto-draft-trigger";
 import { StageProgressRail } from "@/components/problem-solving/guided/stage-progress-rail";
 import { UnifiedCauseAnalysis } from "@/components/problem-solving/guided/unified-cause-analysis";
@@ -35,6 +36,7 @@ import {
   guidedStageConfig,
   resolveViewStage,
 } from "@/lib/problem-solving/guided-flow";
+import type { CasePendingAiProposal } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
 import {
   sortMethodStages,
@@ -73,6 +75,7 @@ type CaseWorkspaceProps = {
   canClose: boolean;
   canUseAi: boolean;
   providerAvailable: boolean;
+  pendingAiProposals?: CasePendingAiProposal[];
 };
 
 export function CaseWorkspace(props: CaseWorkspaceProps) {
@@ -98,8 +101,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     canClose,
     canUseAi,
     providerAvailable,
+    pendingAiProposals = [],
   } = props;
-
   const router = useRouter();
   const [toast, setToast] = useState<{
     message: string;
@@ -381,6 +384,17 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             </div>
 
             <div className="mt-4 flex flex-col gap-4">
+              {canUseAi && providerAvailable ? (
+                <PendingAiProposalsList
+                  key={
+                    pendingAiProposals
+                      .map((proposal) => proposal.id)
+                      .join("-") || "none"
+                  }
+                  caseId={detail.id}
+                  initialProposals={pendingAiProposals}
+                />
+              ) : null}
               <InlineAiProposals
                 proposals={pendingProposals}
                 busy={proposalBusy}
