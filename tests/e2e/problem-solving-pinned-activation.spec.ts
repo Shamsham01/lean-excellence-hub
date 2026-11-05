@@ -81,6 +81,6 @@ test.describe("Problem solving pinned draft activation", () => {
     await expect(page.getByTestId("problem-solving-header")).toBeVisible();
     await expect(page.getByTestId("pps-mobile-copilot-trigger")).toBeVisible();
     await page.getByTestId("pps-mobile-copilot-trigger").click();
-    await expect(page.getByTestId("pps-lean-ai-copilot")).toBeVisible();
+    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
   });
 });

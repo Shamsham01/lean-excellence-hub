@@ -90,7 +90,7 @@ test.describe("PPS flagship visual capture", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await setTheme(page, "light");
     await page.getByTestId("pps-mobile-copilot-trigger").click();
-    await expect(page.getByTestId("pps-lean-ai-copilot")).toBeVisible();
+    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
     await page.screenshot({
       path: join(outDir, "app-pps-mobile-light.png"),
       fullPage: false,

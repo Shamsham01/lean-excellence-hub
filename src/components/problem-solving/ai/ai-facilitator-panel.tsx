@@ -265,7 +265,7 @@ export function AiFacilitatorPanel({
     return (
       <aside
         className={shellClass}
-        data-testid="pps-lean-ai-copilot"
+        data-testid="lean-ai-panel"
         aria-label="Lean AI copilot"
       >
         <Button
@@ -285,13 +285,10 @@ export function AiFacilitatorPanel({
   return (
     <aside
       className={shellClass}
-      data-testid="pps-lean-ai-copilot"
+      data-testid="lean-ai-panel"
       aria-label="Lean AI copilot"
     >
-      <div
-        className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3"
-        data-testid="lean-ai-panel"
-      >
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           {layout === "card" ? (
             <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
