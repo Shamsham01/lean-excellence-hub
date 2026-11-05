@@ -6,6 +6,7 @@ import {
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  disableProblemSolvingStageAutoDraft,
   expectGuidedProblemSolvingWorkspace,
   openProblemSolvingStage,
 } from "./helpers/guided-problem-solving-workspace";
@@ -47,6 +48,10 @@ test.describe("Problem solving case detail reload reliability", () => {
     !hasSupabaseE2e,
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
+
+  test.beforeEach(async ({ page }) => {
+    await disableProblemSolvingStageAutoDraft(page);
+  });
 
   test("seeded case opens from portfolio and survives direct URL, hard reload, and repeated reloads", async ({
     page,

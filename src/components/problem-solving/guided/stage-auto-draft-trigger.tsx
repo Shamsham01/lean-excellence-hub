@@ -39,6 +39,11 @@ export function StageAutoDraftTrigger({
       return;
     }
     if (typeof window === "undefined") return;
+    if (
+      window.sessionStorage.getItem("pps-disable-stage-auto-draft") === "1"
+    ) {
+      return;
+    }
     if (window.sessionStorage.getItem(storageKey(caseId, stageKey))) {
       return;
     }
