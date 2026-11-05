@@ -12498,17 +12498,6 @@ export type Database = {
         Args: { target_ai_run_id: string }
         Returns: string
       }
-      record_ai_run_provider_dispatch: {
-        Args: { target_ai_run_id: string }
-        Returns: undefined
-      }
-      recover_stale_ai_runs_for_problem_solving_case: {
-        Args: {
-          target_problem_solving_case_id: string
-          target_stale_after_seconds?: number
-        }
-        Returns: number
-      }
       claim_billing_webhook_event: {
         Args: {
           target_diagnostic?: Json
@@ -14421,6 +14410,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_ai_run_provider_dispatch: {
+        Args: { target_ai_run_id: string }
+        Returns: undefined
+      }
       record_authentication_rate_limit_failure: {
         Args: {
           block_seconds: number
@@ -14579,6 +14572,13 @@ export type Database = {
       record_workforce_import_row_success: {
         Args: { target_import_row_id: string; target_membership_id: string }
         Returns: undefined
+      }
+      recover_stale_ai_runs_for_problem_solving_case: {
+        Args: {
+          target_problem_solving_case_id: string
+          target_stale_after_seconds?: number
+        }
+        Returns: number
       }
       reissue_organisation_member_invitation: {
         Args: {
