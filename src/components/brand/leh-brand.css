@@ -28,10 +28,20 @@
 
 .leh-brand-mark,
 .leh-brand-lockup,
-.leh-brand-lockup picture,
-.leh-brand-lockup-light,
-.leh-brand-lockup-dark,
-.leh-brand-fallback picture {
+.leh-brand-fallback {
+  flex-shrink: 0;
+  background: transparent;
+}
+
+/* Theme wrappers must beat generic picture { display: block } for show/hide. */
+.leh-brand-lockup picture.leh-brand-lockup-light,
+.leh-brand-lockup picture.leh-brand-lockup-dark,
+.leh-brand-lockup span.leh-brand-lockup-light,
+.leh-brand-lockup span.leh-brand-lockup-dark,
+.leh-brand-fallback picture.leh-brand-mark-light,
+.leh-brand-fallback picture.leh-brand-mark-dark,
+.leh-brand-fallback span.leh-brand-mark-light,
+.leh-brand-fallback span.leh-brand-mark-dark {
   display: block;
   flex-shrink: 0;
   background: transparent;
@@ -156,18 +166,24 @@
 
 /* Class theme, matching next-themes. prefers-color-scheme would disagree
    with a stored Light or Dark choice and flash the wrong file. */
-.leh-brand-lockup-dark,
-.leh-brand-mark-dark {
+.leh-brand-lockup picture.leh-brand-lockup-dark,
+.leh-brand-lockup span.leh-brand-lockup-dark,
+.leh-brand-fallback picture.leh-brand-mark-dark,
+.leh-brand-fallback span.leh-brand-mark-dark {
   display: none;
 }
 
-.dark .leh-brand-lockup-light,
-.dark .leh-brand-mark-light {
+.dark .leh-brand-lockup picture.leh-brand-lockup-light,
+.dark .leh-brand-lockup span.leh-brand-lockup-light,
+.dark .leh-brand-fallback picture.leh-brand-mark-light,
+.dark .leh-brand-fallback span.leh-brand-mark-light {
   display: none;
 }
 
-.dark .leh-brand-lockup-dark,
-.dark .leh-brand-mark-dark {
+.dark .leh-brand-lockup picture.leh-brand-lockup-dark,
+.dark .leh-brand-lockup span.leh-brand-lockup-dark,
+.dark .leh-brand-fallback picture.leh-brand-mark-dark,
+.dark .leh-brand-fallback span.leh-brand-mark-dark {
   display: block;
 }
 

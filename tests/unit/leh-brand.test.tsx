@@ -2,7 +2,7 @@ import { inflateSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 import type { ReactNode } from "react";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({
@@ -136,7 +136,23 @@ function cornerAlpha(file: Buffer) {
 }
 
 describe("LehBrand", () => {
+  let brandStyles: HTMLStyleElement;
+
+  beforeAll(() => {
+    brandStyles = document.createElement("style");
+    brandStyles.textContent = readFileSync(
+      "src/components/brand/leh-brand.css",
+      "utf8",
+    );
+    document.head.appendChild(brandStyles);
+  });
+
+  afterAll(() => {
+    brandStyles?.remove();
+  });
+
   afterEach(() => {
+    document.documentElement.classList.remove("dark");
     cleanup();
   });
 
@@ -145,10 +161,10 @@ describe("LehBrand", () => {
 
     const brand = screen.getByTestId("leh-brand");
     expect(brand).toHaveAttribute("data-variant", "full");
-    const lockups = within(brand).getAllByRole("img", {
-      name: LEH_BRAND_LOCKUP_LABEL,
-    });
-    expect(lockups).toHaveLength(2);
+    const lockupImgs = brand.querySelectorAll(".leh-brand-lockup img");
+    expect(lockupImgs).toHaveLength(2);
+    expect(brand.querySelector(".leh-brand-lockup-light")).toBeVisible();
+    expect(brand.querySelector(".leh-brand-lockup-dark")).not.toBeVisible();
     const { svgSources, rasterSources } = brandMediaSources(brand);
     expect(
       svgSources.some((src) => src?.includes("leh-horizontal-light.svg")),
@@ -199,6 +215,43 @@ describe("LehBrand", () => {
     expect(within(brand).getByText(LEH_BRAND.strapline)).toBeVisible();
   });
 
+  it("shows only the light icon mark in light theme", () => {
+    document.documentElement.classList.remove("dark");
+    render(<LehBrand variant="icon" />);
+
+    const brand = screen.getByRole("img", { name: LEH_BRAND.name });
+    const lightWrap = brand.querySelector(".leh-brand-mark-light");
+    const darkWrap = brand.querySelector(".leh-brand-mark-dark");
+    expect(lightWrap).toBeTruthy();
+    expect(darkWrap).toBeTruthy();
+    expect(lightWrap).toBeVisible();
+    expect(darkWrap).not.toBeVisible();
+    expect(
+      lightWrap?.querySelector("img")?.getAttribute("src"),
+    ).toContain("leh-icon-light.png");
+    expect(
+      darkWrap?.querySelector("img")?.getAttribute("src"),
+    ).toContain("leh-icon-dark.png");
+    expect(
+      darkWrap?.querySelector("img")?.getAttribute("src"),
+    ).not.toContain("leh-icon-blue");
+  });
+
+  it("shows only the dark icon mark when html has class dark", () => {
+    document.documentElement.classList.add("dark");
+    render(<LehBrand variant="icon" />);
+
+    const brand = screen.getByRole("img", { name: LEH_BRAND.name });
+    const lightWrap = brand.querySelector(".leh-brand-mark-light");
+    const darkWrap = brand.querySelector(".leh-brand-mark-dark");
+    expect(lightWrap).not.toBeVisible();
+    expect(darkWrap).toBeVisible();
+    expect(
+      darkWrap?.querySelector("img")?.getAttribute("src"),
+    ).toContain("leh-icon-dark.png");
+    document.documentElement.classList.remove("dark");
+  });
+
   it("names an icon-only mark without repeating the wordmark", () => {
     render(<LehBrand variant="icon" />);
 
@@ -238,9 +291,9 @@ describe("LehBrand", () => {
     expect(
       rasterSources.filter((src) => src?.includes("leh-icon-light.png")),
     ).toHaveLength(1);
-    expect(
-      within(brand).getAllByRole("img", { name: LEH_BRAND_LOCKUP_LABEL }),
-    ).toHaveLength(2);
+    expect(brand.querySelectorAll(".leh-brand-lockup img")).toHaveLength(2);
+    expect(brand.querySelector(".leh-brand-lockup-light")).toBeVisible();
+    expect(brand.querySelector(".leh-brand-lockup-dark")).not.toBeVisible();
   });
 
   it("hides a decorative mark from the accessibility tree", () => {
@@ -398,8 +451,9 @@ describe("site identity metadata", () => {
   it("switches lockup and icon files from the theme class without resizing the slot", () => {
     const css = readFileSync("src/components/brand/leh-brand.css", "utf8");
     expect(css).toContain(".leh-brand-lockup-light");
-    expect(css).toContain(".dark .leh-brand-lockup-dark");
-    expect(css).toContain(".dark .leh-brand-mark-dark");
+    expect(css).toContain(".leh-brand-fallback picture.leh-brand-mark-dark");
+    expect(css).toContain(".dark .leh-brand-lockup picture.leh-brand-lockup-dark");
+    expect(css).toContain(".dark .leh-brand-fallback picture.leh-brand-mark-dark");
     expect(css).toContain("object-fit: contain");
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");
