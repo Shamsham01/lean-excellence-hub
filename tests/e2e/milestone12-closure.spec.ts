@@ -127,7 +127,9 @@ test.describe("Milestone 12 closure", () => {
     await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("activate-method-select").selectOption({ index: 0 });
+    await page
+      .getByTestId("activate-method-select")
+      .selectOption({ label: /A3 \/ 8-Step Structured Problem Solving/i });
     await page.getByTestId("problem-solving-activate-button").click();
     await expect(
       page.getByTestId("problem-solving-header").getByText("Active", {
