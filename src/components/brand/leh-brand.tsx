@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +5,7 @@ import {
   LEH_BRAND,
   LEH_BRAND_HOME_LABEL,
   LEH_BRAND_LOCKUP_LABEL,
+  type LehBrandMediaAsset,
 } from "./brand-assets";
 import "./leh-brand.css";
 
@@ -27,6 +27,39 @@ type LehBrandProps = {
   responsive?: boolean;
   strapline?: boolean;
 };
+
+type LehBrandPictureProps = {
+  asset: LehBrandMediaAsset;
+  alt: string;
+  imgClassName: string;
+  themeClassName: string;
+  priority?: boolean;
+};
+
+/** SVG-first brand media; PNG masters stay as the `<img>` fallback. */
+function LehBrandPicture({
+  asset,
+  alt,
+  imgClassName,
+  themeClassName,
+  priority = false,
+}: LehBrandPictureProps) {
+  return (
+    <picture className={themeClassName}>
+      <source srcSet={asset.src} type="image/svg+xml" />
+      <img
+        alt={alt}
+        className={imgClassName}
+        decoding="async"
+        height={asset.height}
+        loading={priority ? "eager" : "lazy"}
+        src={asset.rasterFallbackSrc}
+        width={asset.width}
+        {...(priority ? { fetchPriority: "high" as const } : {})}
+      />
+    </picture>
+  );
+}
 
 export function LehBrand({
   variant = "full",
@@ -55,45 +88,35 @@ export function LehBrand({
     >
       {showLockup ? (
         <span className="leh-brand-lockup">
-          <Image
+          <LehBrandPicture
             alt={lockupAlt}
-            className="leh-brand-lockup-img leh-brand-lockup-light"
-            height={LEH_BRAND.horizontalLight.height}
+            asset={LEH_BRAND.horizontalLight}
+            imgClassName="leh-brand-lockup-img"
+            themeClassName="leh-brand-lockup-light"
             priority={priority}
-            sizes="22rem"
-            src={LEH_BRAND.horizontalLight.src}
-            width={LEH_BRAND.horizontalLight.width}
           />
-          <Image
+          <LehBrandPicture
             alt={lockupAlt}
-            className="leh-brand-lockup-img leh-brand-lockup-dark"
-            fetchPriority={priority ? "low" : undefined}
-            height={LEH_BRAND.horizontalDark.height}
-            loading={priority ? "eager" : undefined}
-            sizes="22rem"
-            src={LEH_BRAND.horizontalDark.src}
-            width={LEH_BRAND.horizontalDark.width}
+            asset={LEH_BRAND.horizontalDark}
+            imgClassName="leh-brand-lockup-img"
+            themeClassName="leh-brand-lockup-dark"
           />
         </span>
       ) : null}
       {showMark ? (
         <span className="leh-brand-fallback">
-          <Image
+          <LehBrandPicture
             alt=""
-            className="leh-brand-mark leh-brand-mark-light"
-            height={LEH_BRAND.iconLight.height}
+            asset={LEH_BRAND.iconLight}
+            imgClassName="leh-brand-mark"
+            themeClassName="leh-brand-mark-light"
             priority={priority && variant !== "full"}
-            sizes="2rem"
-            src={LEH_BRAND.iconLight.src}
-            width={LEH_BRAND.iconLight.width}
           />
-          <Image
+          <LehBrandPicture
             alt=""
-            className="leh-brand-mark leh-brand-mark-dark"
-            height={LEH_BRAND.iconDark.height}
-            sizes="2rem"
-            src={LEH_BRAND.iconDark.src}
-            width={LEH_BRAND.iconDark.width}
+            asset={LEH_BRAND.iconDark}
+            imgClassName="leh-brand-mark"
+            themeClassName="leh-brand-mark-dark"
           />
           {showCopy ? (
             <span className="leh-brand-copy">

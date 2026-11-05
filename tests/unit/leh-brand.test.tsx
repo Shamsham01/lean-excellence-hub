@@ -41,6 +41,23 @@ function pngHeader(path: string) {
   };
 }
 
+function svgRoot(path: string) {
+  const file = readFileSync(path, "utf8");
+  expect(file.trimStart().startsWith("<svg")).toBe(true);
+  expect(file).toContain('xmlns="http://www.w3.org/2000/svg"');
+  return file;
+}
+
+function brandMediaSources(container: ParentNode) {
+  const svgSources = [...container.querySelectorAll("picture source")].map(
+    (node) => node.getAttribute("srcSet"),
+  );
+  const rasterSources = [...container.querySelectorAll("picture img")].map(
+    (node) => node.getAttribute("src"),
+  );
+  return { svgSources, rasterSources };
+}
+
 function cornerAlpha(file: Buffer) {
   let offset = 8;
   const idats: Buffer[] = [];
@@ -131,16 +148,23 @@ describe("LehBrand", () => {
     const lockups = within(brand).getAllByRole("img", {
       name: LEH_BRAND_LOCKUP_LABEL,
     });
-    const sources = lockups.map((image) => image.getAttribute("src"));
+    expect(lockups).toHaveLength(2);
+    const { svgSources, rasterSources } = brandMediaSources(brand);
     expect(
-      sources.some((src) => src?.includes("leh-horizontal-light.png")),
+      svgSources.some((src) => src?.includes("leh-horizontal-light.svg")),
     ).toBe(true);
     expect(
-      sources.some((src) => src?.includes("leh-horizontal-dark.png")),
+      svgSources.some((src) => src?.includes("leh-horizontal-dark.svg")),
     ).toBe(true);
-    expect(sources.some((src) => src?.includes("leh-horizontal.png"))).toBe(
-      false,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal.png")),
+    ).toBe(false);
     expect(within(brand).queryByText(LEH_BRAND.name)).not.toBeInTheDocument();
     expect(brand.querySelector(".leh-brand-lockup")).toBeTruthy();
   });
@@ -149,19 +173,23 @@ describe("LehBrand", () => {
     render(<LehBrand variant="compact" />);
 
     const brand = screen.getByTestId("leh-brand");
-    const sources = [...brand.querySelectorAll("img")].map((image) =>
-      image.getAttribute("src"),
-    );
-    expect(sources.some((src) => src?.includes("leh-icon-light.png"))).toBe(
+    const { svgSources, rasterSources } = brandMediaSources(brand);
+    expect(svgSources.some((src) => src?.includes("leh-icon-light.svg"))).toBe(
       true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
+    expect(svgSources.some((src) => src?.includes("leh-icon-dark.svg"))).toBe(
       true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-minimal.png"))).toBe(
-      false,
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-light.png")),
+    ).toBe(true);
+    expect(rasterSources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
+      true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-blue.png"))).toBe(
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-minimal.png")),
+    ).toBe(false);
+    expect(rasterSources.some((src) => src?.includes("leh-icon-blue.png"))).toBe(
       false,
     );
     expect(
@@ -177,13 +205,17 @@ describe("LehBrand", () => {
     const brand = screen.getByRole("img", { name: LEH_BRAND.name });
     expect(brand).toHaveAttribute("data-variant", "icon");
     expect(within(brand).queryByText(LEH_BRAND.name)).not.toBeInTheDocument();
-    const sources = [...brand.querySelectorAll("img")].map((image) =>
-      image.getAttribute("src"),
-    );
-    expect(sources.some((src) => src?.includes("leh-icon-light.png"))).toBe(
+    const { svgSources, rasterSources } = brandMediaSources(brand);
+    expect(svgSources.some((src) => src?.includes("leh-icon-light.svg"))).toBe(
       true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
+    expect(svgSources.some((src) => src?.includes("leh-icon-dark.svg"))).toBe(
+      true,
+    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-light.png")),
+    ).toBe(true);
+    expect(rasterSources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
       true,
     );
   });
@@ -193,14 +225,18 @@ describe("LehBrand", () => {
 
     const brand = screen.getByTestId("leh-brand");
     expect(brand).toHaveAttribute("data-responsive", "true");
-    const sources = [...brand.querySelectorAll("img")].map((image) =>
-      image.getAttribute("src"),
-    );
+    const { svgSources, rasterSources } = brandMediaSources(brand);
     expect(
-      sources.filter((src) => src?.includes("leh-horizontal-light.png")),
+      svgSources.filter((src) => src?.includes("leh-horizontal-light.svg")),
     ).toHaveLength(1);
     expect(
-      sources.filter((src) => src?.includes("leh-icon-light.png")),
+      svgSources.filter((src) => src?.includes("leh-icon-light.svg")),
+    ).toHaveLength(1);
+    expect(
+      rasterSources.filter((src) => src?.includes("leh-horizontal-light.png")),
+    ).toHaveLength(1);
+    expect(
+      rasterSources.filter((src) => src?.includes("leh-icon-light.png")),
     ).toHaveLength(1);
     expect(
       within(brand).getAllByRole("img", { name: LEH_BRAND_LOCKUP_LABEL }),
@@ -252,6 +288,26 @@ describe("site identity metadata", () => {
     expect(rootMetadata.manifest).toBe("/site.webmanifest");
     expect(rootMetadata.applicationName).toBe(LEH_BRAND.name);
     expect(rootMetadata).not.toHaveProperty("icons");
+  });
+
+  it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {
+    expect(LEH_BRAND.horizontalLight.src).toBe("/brand/leh-horizontal-light.svg");
+    expect(LEH_BRAND.horizontalLight.rasterFallbackSrc).toBe(
+      "/brand/leh-horizontal-light.png",
+    );
+    expect(LEH_BRAND.iconDark.src).toBe("/brand/leh-icon-dark.svg");
+    expect(LEH_BRAND.iconDark.rasterFallbackSrc).toBe(
+      "/brand/leh-icon-dark.png",
+    );
+
+    for (const path of [
+      "public/brand/leh-horizontal-light.svg",
+      "public/brand/leh-horizontal-dark.svg",
+      "public/brand/leh-icon-light.svg",
+      "public/brand/leh-icon-dark.svg",
+    ]) {
+      svgRoot(path);
+    }
   });
 
   it("ships a sharp blue favicon and transparent theme masters", () => {

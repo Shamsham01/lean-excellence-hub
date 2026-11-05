@@ -27,7 +27,9 @@
 }
 
 .leh-brand-mark,
-.leh-brand-lockup {
+.leh-brand-lockup,
+.leh-brand-lockup picture,
+.leh-brand-fallback picture {
   display: block;
   flex-shrink: 0;
   background: transparent;
