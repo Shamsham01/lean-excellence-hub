@@ -36,7 +36,11 @@ export async function openProblemSolvingStage(
   page: Page,
   semanticStageKey: string,
 ) {
+  await expect(page.getByTestId("pps-stage-rail")).toBeVisible({
+    timeout: 15_000,
+  });
   const stage = page.getByTestId(`pps-stage-${semanticStageKey}`);
-  await expect(stage).toBeVisible();
+  await expect(stage).toBeVisible({ timeout: 15_000 });
+  await stage.scrollIntoViewIfNeeded();
   await stage.click();
 }

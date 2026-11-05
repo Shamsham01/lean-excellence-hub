@@ -209,6 +209,9 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
+    const caseUrl = page.url();
+    await page.goto(caseUrl);
+    await expectGuidedProblemSolvingWorkspace(page);
     await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const currentConditionPanel = page.getByTestId(
       "problem-solving-current-condition-panel",
