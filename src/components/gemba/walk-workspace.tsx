@@ -409,7 +409,7 @@ export function GembaWalkWorkspace({
         {canComplete ? (
           <Button
             type="button"
-            className="min-h-11 sm:ml-auto"
+            className="hidden min-h-11 sm:ml-auto sm:inline-flex"
             disabled={completing}
             onClick={openCompletePanel}
             data-testid="gemba-complete-walk"
@@ -490,28 +490,41 @@ export function GembaWalkWorkspace({
         />
       </div>
 
-      <div className="sticky bottom-0 flex gap-3 border-t border-border bg-background py-4">
-        <Button
-          type="button"
-          variant="outline"
-          size="default"
-          className="min-h-11 flex-1"
-          disabled={safeIndex === 0 || questionBusy}
-          onClick={() => moveTo(Math.max(0, safeIndex - 1))}
-        >
-          Previous
-        </Button>
-        <Button
-          type="button"
-          size="default"
-          className="min-h-11 flex-1"
-          disabled={safeIndex >= flatQuestions.length - 1 || questionBusy}
-          onClick={() =>
-            moveTo(Math.min(flatQuestions.length - 1, safeIndex + 1))
-          }
-        >
-          Next
-        </Button>
+      <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border bg-background pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {canComplete ? (
+          <Button
+            type="button"
+            className="min-h-11 w-full sm:hidden"
+            disabled={completing}
+            onClick={openCompletePanel}
+            data-testid="gemba-complete-walk-mobile"
+          >
+            Complete walk
+          </Button>
+        ) : null}
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            className="min-h-11 flex-1"
+            disabled={safeIndex === 0 || questionBusy}
+            onClick={() => moveTo(Math.max(0, safeIndex - 1))}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            size="default"
+            className="min-h-11 flex-1"
+            disabled={safeIndex >= flatQuestions.length - 1 || questionBusy}
+            onClick={() =>
+              moveTo(Math.min(flatQuestions.length - 1, safeIndex + 1))
+            }
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>

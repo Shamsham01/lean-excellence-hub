@@ -36,6 +36,8 @@
     "db:lint": "supabase db lint --local --level warning --fail-on error",
     "db:types": "supabase gen types typescript --local --schema public > src/platform/supabase/database.types.ts",
     "db:seed-demo": "node --import tsx scripts/demo-seed/seed.ts",
+    "demo:harbourfield:top-up": "node --import tsx scripts/harbourfield-demo/seed-cli.ts --apply",
+    "demo:harbourfield:top-up:dry-run": "node --import tsx scripts/harbourfield-demo/seed-cli.ts",
     "qa:cookie:seed": "node --import tsx scripts/qa-tenant/seed.ts",
     "qa:cookie:reset": "node --import tsx scripts/qa-tenant/reset.ts",
     "qa:site-boundary:reset": "node --import tsx scripts/qa-tenant/site-boundary-seed.ts",

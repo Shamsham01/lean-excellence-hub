@@ -21,6 +21,7 @@ import {
 } from "@/components/comments/resource-comments";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
 import type { MethodStage } from "@/lib/problem-solving/stages";
 import type {
   ProblemSolvingAnalysis,
@@ -42,6 +43,7 @@ type CaseWorkspaceProps = {
   hypothesisTests: ProblemSolvingHypothesisTest[];
   methodStages: MethodStage[];
   methods: ProblemSolvingMethod[];
+  pinnedMethodVersion: PinnedMethodVersionContext | null;
   comments: CommentRow[];
   evidence: EvidenceItem[];
   membershipNameById: Record<string, string>;
@@ -66,6 +68,7 @@ export function CaseWorkspace({
   hypothesisTests,
   methodStages,
   methods,
+  pinnedMethodVersion,
   comments,
   evidence,
   membershipNameById,
@@ -80,6 +83,11 @@ export function CaseWorkspace({
   providerAvailable,
 }: CaseWorkspaceProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const facilitatorReady =
+    (canFacilitate || canManage) &&
+    detail.status === "active" &&
+    detail.sessions.length === 0;
+  const defaultTab = facilitatorReady ? "sessions" : "overview";
 
   return (
     <div
@@ -95,15 +103,13 @@ export function CaseWorkspace({
         canManage={canManage}
         canFacilitate={canFacilitate}
         canClose={canClose}
-        methods={methods.map((method) => ({
-          id: method.id,
-          name: method.name,
-        }))}
+        methods={methods}
+        pinnedMethodVersion={pinnedMethodVersion}
         message={message}
         onMessage={setMessage}
       />
 
-      <Tabs defaultValue="overview" className="min-w-0">
+      <Tabs defaultValue={defaultTab} className="min-w-0">
         <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
@@ -134,6 +140,9 @@ export function CaseWorkspace({
           </TabsTrigger>
           <TabsTrigger value="sessions" data-testid="tab-sessions">
             Sessions
+            {facilitatorReady ? (
+              <span className="ml-1 text-xs text-primary">Start</span>
+            ) : null}
           </TabsTrigger>
           <TabsTrigger value="lean-ai" data-testid="tab-lean-ai">
             Lean AI
