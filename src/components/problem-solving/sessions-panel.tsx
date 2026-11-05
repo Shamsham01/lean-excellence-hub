@@ -37,19 +37,27 @@ export function SessionsPanel({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const isDraft = detail.status === "draft";
+  const canStartSession = canFacilitate && !isDraft;
+
   function entriesFor(sessionId: string) {
     return entryBodies[sessionId] ?? { note: "", decision: "" };
   }
 
   async function handleStart(event: React.FormEvent) {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !canStartSession) return;
     setLoading(true);
     const result = await startProblemSolvingSession({
       caseId,
       title: title.trim(),
     });
-    setMessage(result.error ?? "Session started");
+    if (result.error) {
+      setMessage(result.error);
+      setLoading(false);
+      return;
+    }
+    setMessage("Session started");
     setTitle("");
     setLoading(false);
     router.refresh();
@@ -73,7 +81,9 @@ export function SessionsPanel({
     });
     setMessage(result.error ?? `${entryType} added`);
     setLoading(false);
-    router.refresh();
+    if (!result.error) {
+      router.refresh();
+    }
   }
 
   async function handleComplete(sessionId: string) {
@@ -85,7 +95,9 @@ export function SessionsPanel({
     );
     setMessage(result.error ?? "Session completed");
     setLoading(false);
-    router.refresh();
+    if (!result.error) {
+      router.refresh();
+    }
   }
 
   return (
@@ -93,28 +105,50 @@ export function SessionsPanel({
       className="flex flex-col gap-4"
       data-testid="problem-solving-sessions-panel"
     >
+      <p className="text-sm text-muted-foreground">
+        Sessions are facilitated workshops or meetings on this case: capture who
+        attended, evidence discussed, notes, decisions, and follow-up actions
+        without replacing the formal investigation record.
+      </p>
+
       {canFacilitate ? (
         <Card>
           <CardHeader>
             <CardTitle>Start session</CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              onSubmit={handleStart}
-              className="flex flex-col gap-3 sm:flex-row sm:items-end"
-            >
-              <label className="flex flex-1 flex-col gap-1 text-sm">
-                <span>Session title</span>
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  data-testid="session-title"
-                />
-              </label>
-              <Button type="submit" size="sm" disabled={loading}>
-                Start session
-              </Button>
-            </form>
+            {isDraft ? (
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="sessions-draft-guidance"
+              >
+                Activate the case first. Problem solving sessions run on active
+                investigations so stage, method, and audit history stay
+                consistent.
+              </p>
+            ) : (
+              <form
+                onSubmit={handleStart}
+                className="flex flex-col gap-3 sm:flex-row sm:items-end"
+              >
+                <label className="flex flex-1 flex-col gap-1 text-sm">
+                  <span>Session title</span>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    data-testid="session-title"
+                  />
+                </label>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={loading || !title.trim()}
+                  data-testid="start-session-button"
+                >
+                  Start session
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       ) : null}
@@ -230,7 +264,12 @@ export function SessionsPanel({
       </Card>
 
       {message ? (
-        <p className="text-sm text-muted-foreground">{message}</p>
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="sessions-panel-message"
+        >
+          {message}
+        </p>
       ) : null}
     </div>
   );

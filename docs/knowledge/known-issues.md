@@ -6,7 +6,6 @@ Concise pointers for agents. **No customer identifiers.**
 
 | ID | Title | Owner agent | Workstream |
 | --- | --- | --- | --- |
-| [#324](https://github.com/Shamsham01/lean-excellence-hub/issues/324) | Draft case with pinned method cannot activate; sessions dead end | SENTINEL + KAIZEN + PIXEL | Separate Cursor implementation PR (migration/RPC + UX) |
 | [#325](https://github.com/Shamsham01/lean-excellence-hub/issues/325) | Skills LeanAI response → `invalid_response` | NEXUS + TALENT | Separate PR; trace schema/Zod/storage |
 | [#326](https://github.com/Shamsham01/lean-excellence-hub/issues/326) | Three facilitator runs stuck `running` | PULSE + NEXUS | Diagnostics + reconciliation policy; related fix PR #327 |
 
