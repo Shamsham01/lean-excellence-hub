@@ -61,6 +61,7 @@ export function AiFacilitatorPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const draftInputRef = useRef<HTMLTextAreaElement>(null);
   const pendingTurnRef = useRef<{
     message: string;
     idempotencyKey: string;
@@ -144,13 +145,12 @@ export function AiFacilitatorPanel({
   }
 
   async function handleSend() {
-    if (!draft.trim() || disabledReason) return;
+    const userMessage = (draftInputRef.current?.value ?? draft).trim();
+    if (!userMessage || disabledReason) return;
     setLoading(true);
     setError(null);
-    let userMessage = "";
     try {
       const activeSessionId = await ensureSession();
-      userMessage = draft.trim();
       if (
         !pendingTurnRef.current ||
         pendingTurnRef.current.message !== userMessage
@@ -301,6 +301,7 @@ export function AiFacilitatorPanel({
           ))}
         </div>
         <Textarea
+          ref={draftInputRef}
           data-testid="lean-ai-input"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -311,9 +312,7 @@ export function AiFacilitatorPanel({
           <Button
             data-testid="lean-ai-send"
             onClick={() => handleSend()}
-            disabled={
-              Boolean(disabledReason) || loading || reconciling || !draft.trim()
-            }
+            disabled={Boolean(disabledReason) || loading || reconciling}
           >
             {loading ? "Thinking..." : "Send"}
           </Button>
