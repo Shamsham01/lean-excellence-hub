@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  expectGuidedProblemSolvingWorkspace,
+  openProblemSolvingStage,
+} from "./helpers/guided-problem-solving-workspace";
 import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -27,8 +31,7 @@ test.describe("Milestone 12 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
   });
 
   test("challenge mode distinguishes assumptions using fake provider", async ({
@@ -39,7 +42,7 @@ test.describe("Milestone 12 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
+    await expectGuidedProblemSolvingWorkspace(page);
     await page.getByTestId("lean-ai-mode").selectOption("challenge");
     await page
       .getByTestId("lean-ai-input")
@@ -85,8 +88,7 @@ test.describe("Milestone 12 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
   }
 
   async function createActiveCaseAndOpenLeanAi(page: Page) {
@@ -124,8 +126,7 @@ test.describe("Milestone 12 closure", () => {
         exact: true,
       }),
     ).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("tab-lean-ai").click();
-    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
   }
 
   test("accepts a valid hypothesis proposal from fake provider", async ({
@@ -145,10 +146,8 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
-    await page.getByTestId("tab-cause-analysis").click();
-    const causeAnalysisPanel = page.getByTestId(
-      "problem-solving-cause-analysis-panel",
-    );
+    await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
+    const causeAnalysisPanel = page.getByTestId("pps-unified-cause-analysis");
     await expect(causeAnalysisPanel).toBeVisible();
     await expect(
       causeAnalysisPanel.getByText(HYPOTHESIS_STATEMENT).first(),
@@ -172,7 +171,7 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
-    await page.getByTestId("tab-containment").click();
+    await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const containmentPanel = page.getByTestId(
       "problem-solving-containment-panel",
     );
@@ -199,7 +198,7 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
-    await page.getByTestId("tab-current-condition").click();
+    await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const currentConditionPanel = page.getByTestId(
       "problem-solving-current-condition-panel",
     );

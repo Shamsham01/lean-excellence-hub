@@ -138,11 +138,18 @@ export function CaseWorkspace({
     }
     if (key === "CURRENT_CONDITION") {
       return (
-        <CurrentConditionPanel
-          caseId={detail.id}
-          items={currentConditionItems}
-          canContribute={canContribute || canManage}
-        />
+        <>
+          <CurrentConditionPanel
+            caseId={detail.id}
+            items={currentConditionItems}
+            canContribute={canContribute || canManage}
+          />
+          <ContainmentPanel
+            caseId={detail.id}
+            containments={containments}
+            canContribute={canContribute || canManage}
+          />
+        </>
       );
     }
     if (key === "CONTAIN") {
@@ -310,13 +317,6 @@ export function CaseWorkspace({
             providerAvailable={providerAvailable}
           />
         </aside>
-      </div>
-
-      {/* Legacy tab test ids for e2e that open Lean AI */}
-      <div className="sr-only" aria-hidden>
-        <button type="button" data-testid="tab-lean-ai" />
-        <button type="button" data-testid="tab-cause-analysis" />
-        <button type="button" data-testid="tab-overview" />
       </div>
     </div>
   );
