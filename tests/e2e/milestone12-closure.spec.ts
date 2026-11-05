@@ -51,7 +51,9 @@ test.describe("Milestone 12 closure", () => {
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
     await expectGuidedProblemSolvingWorkspace(page);
-    await leanAiPanel(page).getByTestId("lean-ai-mode").selectOption("challenge");
+    await leanAiPanel(page)
+      .getByTestId("lean-ai-mode")
+      .selectOption("challenge");
     await fillLeanAiPrompt(page, "Please review assumptions in this case.");
     await sendLeanAiPrompt(page);
     await expect(page.getByText("assumption", { exact: false })).toBeVisible({

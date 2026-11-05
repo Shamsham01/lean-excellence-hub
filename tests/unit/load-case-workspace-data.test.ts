@@ -132,23 +132,27 @@ describe("resolveMethodStagesForCase", () => {
         display_order: 1,
       },
     ];
-    const resolved = resolveMethodStagesForCase(versionId, [], [
-      {
-        id: "method-1",
-        name: "A3",
-        code: "a3",
-        description: null,
-        is_builtin: true,
-        status: "active",
-        created_at: "2026-01-01T00:00:00.000Z",
-        current_version: {
-          id: versionId,
-          version_number: 1,
-          status: "published",
-          stages,
+    const resolved = resolveMethodStagesForCase(
+      versionId,
+      [],
+      [
+        {
+          id: "method-1",
+          name: "A3",
+          code: "a3",
+          description: null,
+          is_builtin: true,
+          status: "active",
+          created_at: "2026-01-01T00:00:00.000Z",
+          current_version: {
+            id: versionId,
+            version_number: 1,
+            status: "published",
+            stages,
+          },
         },
-      },
-    ]);
+      ],
+    );
     expect(resolved).toEqual(stages);
   });
 });
