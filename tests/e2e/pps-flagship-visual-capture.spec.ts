@@ -111,9 +111,14 @@ test.describe("PPS flagship visual capture", () => {
     await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible({
       timeout: 30_000,
     });
-    await page
-      .getByTestId("activate-method-select")
-      .selectOption({ label: /rapid/i });
+    const rapidMethodSelect = page.getByTestId("activate-method-select");
+    const rapidLabels = await rapidMethodSelect.locator("option").allTextContents();
+    const rapidLabel =
+      rapidLabels.find((label) => /rapid improvement/i.test(label)) ??
+      rapidLabels.find((label) => /rapid/i.test(label));
+    if (rapidLabel) {
+      await rapidMethodSelect.selectOption({ label: rapidLabel.trim() });
+    }
     await page.getByTestId("problem-solving-activate-button").click();
     await expect(
       page.getByTestId("problem-solving-header").getByText("Active", {
