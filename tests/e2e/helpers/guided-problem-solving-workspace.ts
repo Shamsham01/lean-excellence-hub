@@ -32,15 +32,38 @@ export async function expectGuidedProblemSolvingWorkspace(page: Page) {
   await expect(leanAiPanel(page)).toBeVisible();
 }
 
+const STAGE_BUTTON_LABEL: Record<string, RegExp> = {
+  CURRENT_CONDITION: /current condition|gather facts/i,
+  ROOT_CAUSE_ANALYSIS: /root cause|cause analysis|analyse/i,
+  TARGET_CONDITION: /target condition/i,
+  COUNTERMEASURES: /countermeasure/i,
+  IMPLEMENTATION: /implementation/i,
+  EFFECTIVENESS_CHECK: /effectiveness check/i,
+  SUSTAINMENT: /sustainment|standards/i,
+  DEFINE: /define/i,
+};
+
 export async function openProblemSolvingStage(
   page: Page,
   semanticStageKey: string,
 ) {
-  await expect(page.getByTestId("pps-stage-rail")).toBeVisible({
+  const rail = page.getByTestId("pps-stage-rail");
+  await expect(rail).toBeVisible({
     timeout: 15_000,
   });
   const stage = page.getByTestId(`pps-stage-${semanticStageKey}`);
-  await expect(stage).toBeVisible({ timeout: 15_000 });
-  await stage.scrollIntoViewIfNeeded();
-  await stage.click();
+  if ((await stage.count()) > 0) {
+    await expect(stage).toBeVisible({ timeout: 15_000 });
+    await stage.scrollIntoViewIfNeeded();
+    await stage.click();
+    return;
+  }
+  const label = STAGE_BUTTON_LABEL[semanticStageKey];
+  if (!label) {
+    throw new Error(`Unknown problem-solving stage key: ${semanticStageKey}`);
+  }
+  const byLabel = rail.getByRole("button", { name: label });
+  await expect(byLabel).toBeVisible({ timeout: 15_000 });
+  await byLabel.scrollIntoViewIfNeeded();
+  await byLabel.click();
 }
