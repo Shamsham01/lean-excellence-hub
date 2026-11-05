@@ -83,6 +83,11 @@ export function CaseWorkspace({
   providerAvailable,
 }: CaseWorkspaceProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const facilitatorReady =
+    (canFacilitate || canManage) &&
+    detail.status === "active" &&
+    detail.sessions.length === 0;
+  const defaultTab = facilitatorReady ? "sessions" : "overview";
 
   return (
     <div
@@ -104,7 +109,7 @@ export function CaseWorkspace({
         onMessage={setMessage}
       />
 
-      <Tabs defaultValue="overview" className="min-w-0">
+      <Tabs defaultValue={defaultTab} className="min-w-0">
         <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
@@ -135,6 +140,9 @@ export function CaseWorkspace({
           </TabsTrigger>
           <TabsTrigger value="sessions" data-testid="tab-sessions">
             Sessions
+            {facilitatorReady ? (
+              <span className="ml-1 text-xs text-primary">Start</span>
+            ) : null}
           </TabsTrigger>
           <TabsTrigger value="lean-ai" data-testid="tab-lean-ai">
             Lean AI

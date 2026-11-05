@@ -158,7 +158,7 @@ describe("SessionsPanel draft guidance", () => {
       />,
     );
 
-    expect(screen.getByTestId("sessions-draft-guidance")).toBeVisible();
+    expect(screen.getByTestId("sessions-draft-blocked")).toBeVisible();
     expect(screen.queryByTestId("start-session-button")).toBeNull();
 
     const activeDetail = { ...baseDetail, status: "active" };

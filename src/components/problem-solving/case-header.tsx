@@ -156,6 +156,33 @@ export function CaseHeader({
       className="flex flex-col gap-4 border-b border-border pb-6"
       data-testid="problem-solving-header"
     >
+      {detail.status === "draft" ? (
+        <div
+          className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm"
+          data-testid="problem-solving-draft-guidance"
+        >
+          <p className="font-medium text-foreground">
+            Draft case — not in workshop yet
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            Confirm the problem statement on Overview, pick a solving method,
+            then activate the case. Activation unlocks staged work, facilitator
+            sessions, and Lean AI on this record.
+          </p>
+        </div>
+      ) : null}
+      {detail.status === "active" ? (
+        <div
+          className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
+          data-testid="problem-solving-active-guidance"
+        >
+          <p className="font-medium text-foreground">Active case</p>
+          <p className="mt-1 text-muted-foreground">
+            Use the Sessions tab to run workshops, capture notes and decisions,
+            then advance stages as the team agrees.
+          </p>
+        </div>
+      ) : null}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">
@@ -217,7 +244,7 @@ export function CaseHeader({
             ) : null}
           </dl>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 lg:max-w-sm">
+        <div className="flex w-full shrink-0 flex-col gap-2 lg:w-auto">
           {showActivate ? (
             <>
               {pinnedMethodView ? (
@@ -241,7 +268,7 @@ export function CaseHeader({
                   <label className="flex flex-col gap-1 text-sm">
                     <span>Method</span>
                     <select
-                      className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                      className="border-input min-h-11 w-full rounded-md border bg-background px-3 py-2"
                       value={selectedMethodId}
                       onChange={(e) => setSelectedMethodId(e.target.value)}
                       data-testid="activate-method-select"
@@ -260,7 +287,7 @@ export function CaseHeader({
                 </>
               )}
               <Button
-                size="sm"
+                className="min-h-11 w-full lg:w-auto"
                 onClick={handleActivate}
                 disabled={loading}
                 data-testid="problem-solving-activate-button"
@@ -282,6 +309,16 @@ export function CaseHeader({
                 </p>
               ) : null}
             </>
+          ) : null}
+          {canManage && detail.status === "draft" && methods.length === 0 ? (
+            <p
+              className="text-sm text-destructive"
+              role="alert"
+              data-testid="problem-solving-no-methods"
+            >
+              No problem-solving methods are available for this organisation.
+              Ask an administrator to configure a method before activating.
+            </p>
           ) : null}
           {showClose ? (
             <Button
