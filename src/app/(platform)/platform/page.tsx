@@ -1,5 +1,6 @@
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { QuickActions } from "@/components/onboarding/quick-actions";
+import { HomeAttentionStrip } from "@/components/platform/home-attention-strip";
 import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
@@ -21,6 +22,7 @@ import {
   loadSetupPermissions,
 } from "@/modules/organisation-setup/queries";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import { buildHomeAttentionItems } from "@/modules/platform-shell/home-attention";
 import { visibleHomeSections } from "@/modules/platform-shell/home-sections";
 import {
   currentMemberHasGrantPermission,
@@ -177,6 +179,19 @@ export default async function PlatformHomePage() {
     ) ?? 0;
   const benefitsRealising = benefitsOverview?.status_pipeline?.realising ?? 0;
 
+  const homeAttention = buildHomeAttentionItems({
+    canReadActions: Boolean(home.actionsMetric),
+    canReadSuggestions,
+    canReadBenefits,
+    overdueActions: home.actionsMetric ? (overdueActions ?? 0) : null,
+    ideasAwaitingReview: canReadSuggestions
+      ? ((suggestionsOverview?.awaiting_review as number) ?? 0)
+      : null,
+    benefitsAwaitingValidation: canReadBenefits
+      ? benefitsAwaitingValidation
+      : null,
+  });
+
   return (
     <div className="flex flex-col gap-8" data-testid="platform-home-page">
       <PageHeader
@@ -195,6 +210,8 @@ export default async function PlatformHomePage() {
       />
 
       <QuickActions actions={quickActions} />
+
+      <HomeAttentionStrip items={homeAttention} />
 
       <div>
         <h2 className="mb-4 text-base font-semibold text-foreground">
@@ -484,9 +501,12 @@ export default async function PlatformHomePage() {
                   </AppLink>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No assessments yet.
-                </p>
+                <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+                  <p>No assessments yet. Start from a published framework.</p>
+                  <Button variant="outline" size="sm" className="min-h-11 w-fit" asChild>
+                    <AppLink href="/platform/maturity">Open maturity</AppLink>
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

@@ -88,30 +88,54 @@ export function SessionsPanel({
     router.refresh();
   }
 
+  const caseIsDraft = detail.status === "draft";
+  const caseIsActive = detail.status === "active";
+  const canStartSessions = canFacilitate && caseIsActive;
+
   return (
     <div
       className="flex flex-col gap-4"
       data-testid="problem-solving-sessions-panel"
     >
-      {canFacilitate ? (
+      {caseIsDraft ? (
+        <Card className="border-dashed bg-surface" data-testid="sessions-draft-blocked">
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            Facilitator sessions are recorded on active cases. Activate this
+            case from the header (after choosing a solving method) to start a
+            workshop session here.
+          </CardContent>
+        </Card>
+      ) : null}
+      {canStartSessions ? (
         <Card>
           <CardHeader>
             <CardTitle>Start session</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Name the workshop or meeting, then capture notes and decisions as
+              you facilitate.
+            </p>
           </CardHeader>
           <CardContent>
             <form
               onSubmit={handleStart}
               className="flex flex-col gap-3 sm:flex-row sm:items-end"
             >
-              <label className="flex flex-1 flex-col gap-1 text-sm">
+              <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
                 <span>Session title</span>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  className="min-h-11"
+                  placeholder="e.g. Root cause workshop — shift A"
                   data-testid="session-title"
                 />
               </label>
-              <Button type="submit" size="sm" disabled={loading}>
+              <Button
+                type="submit"
+                className="min-h-11 w-full sm:w-auto"
+                disabled={loading || !title.trim()}
+                data-testid="start-session-button"
+              >
                 Start session
               </Button>
             </form>
@@ -125,7 +149,11 @@ export function SessionsPanel({
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           {detail.sessions.length === 0 ? (
-            <p className="text-muted-foreground">No sessions yet.</p>
+            <p className="text-muted-foreground" data-testid="sessions-empty">
+              {caseIsActive && canFacilitate
+                ? "No sessions yet. Start a workshop session above to capture notes and decisions."
+                : "No sessions yet."}
+            </p>
           ) : (
             detail.sessions.map((session) => (
               <div
@@ -186,7 +214,7 @@ export function SessionsPanel({
                         data-testid={`session-note-${session.id}`}
                       />
                       <Button
-                        size="sm"
+                        className="min-h-11"
                         variant="outline"
                         disabled={loading}
                         onClick={() => handleAddEntry(session.id, "note")}
@@ -212,7 +240,7 @@ export function SessionsPanel({
                         data-testid={`session-decision-${session.id}`}
                       />
                       <Button
-                        size="sm"
+                        className="min-h-11"
                         variant="outline"
                         disabled={loading}
                         onClick={() => handleAddEntry(session.id, "decision")}
@@ -230,7 +258,13 @@ export function SessionsPanel({
       </Card>
 
       {message ? (
-        <p className="text-sm text-muted-foreground">{message}</p>
+        <p
+          className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+          role="status"
+          data-testid="sessions-panel-message"
+        >
+          {message}
+        </p>
       ) : null}
     </div>
   );
