@@ -191,7 +191,8 @@ export class FakeAIProvider implements AIProvider {
                 statement:
                   "Film wander on Packing Line 1 after splice events causes misaligned packs.",
               },
-              explanation: "DEFINE-stage problem statement draft for acceptance.",
+              explanation:
+                "DEFINE-stage problem statement draft for acceptance.",
             },
             {
               proposal_type: "current_condition_item",
@@ -200,7 +201,8 @@ export class FakeAIProvider implements AIProvider {
                 statement:
                   "Misalignment is reported after splice events on Line 1.",
               },
-              explanation: "Current-condition observation draft for acceptance.",
+              explanation:
+                "Current-condition observation draft for acceptance.",
             },
           ],
         },
