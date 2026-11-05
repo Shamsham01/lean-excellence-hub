@@ -15,7 +15,9 @@ const FORBIDDEN_ORGANISATION_CODES = new Set([
 ]);
 
 export function resolveExpectedOrganisationCode() {
-  return process.env.LEANHUB_HARBOURFIELD_ORG_CODE ?? HARBOURFIELD_ORGANISATION_CODE;
+  return (
+    process.env.LEANHUB_HARBOURFIELD_ORG_CODE ?? HARBOURFIELD_ORGANISATION_CODE
+  );
 }
 
 type EligibleOrganisation = {
@@ -98,7 +100,10 @@ export async function resolveHarbourfieldOrganisation(
   }
 
   const organisation = matches[0]!;
-  assertHarbourfieldOrganisationAllowed(organisation.organisation_code, expectedCode);
+  assertHarbourfieldOrganisationAllowed(
+    organisation.organisation_code,
+    expectedCode,
+  );
 
   return {
     id: organisation.organisation_id,

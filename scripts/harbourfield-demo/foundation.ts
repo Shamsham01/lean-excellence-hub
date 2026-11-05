@@ -7,12 +7,18 @@ import {
   HARBOURFIELD_USERS,
   type HarbourfieldUserKey,
 } from "./constants";
-import { invitationTokenDigest, invitationTokenFromSeed } from "../demo-seed/crypto";
+import {
+  invitationTokenDigest,
+  invitationTokenFromSeed,
+} from "../demo-seed/crypto";
 import { expectRpc } from "./rpc";
 
 export type UnitMap = Record<string, string>;
 
-async function ensureAuthUser(admin: SupabaseClient, userKey: HarbourfieldUserKey) {
+async function ensureAuthUser(
+  admin: SupabaseClient,
+  userKey: HarbourfieldUserKey,
+) {
   const user = HARBOURFIELD_USERS[userKey];
   const existing = await admin.auth.admin.getUserById(user.id);
 
@@ -41,9 +47,12 @@ async function ensureAuthUser(admin: SupabaseClient, userKey: HarbourfieldUserKe
     }
   }
 
-  const { error: enrolmentError } = await admin.rpc("finalise_identity_enrolment", {
-    target_user_id: user.id,
-  });
+  const { error: enrolmentError } = await admin.rpc(
+    "finalise_identity_enrolment",
+    {
+      target_user_id: user.id,
+    },
+  );
 
   if (enrolmentError) {
     throw enrolmentError;
@@ -101,7 +110,9 @@ async function resolveOrganisationId(client: SupabaseClient) {
   );
 
   if (!organisation) {
-    throw new Error("Harbourfield organisation was not found after provisioning.");
+    throw new Error(
+      "Harbourfield organisation was not found after provisioning.",
+    );
   }
 
   return organisation.organisation_id;
@@ -328,7 +339,9 @@ export async function ensureLocalHarbourfieldFoundation(options: {
   apiUrl: string;
   publishableKey: string;
 }) {
-  for (const userKey of Object.keys(HARBOURFIELD_USERS) as HarbourfieldUserKey[]) {
+  for (const userKey of Object.keys(
+    HARBOURFIELD_USERS,
+  ) as HarbourfieldUserKey[]) {
     await ensureAuthUser(options.admin, userKey);
   }
 

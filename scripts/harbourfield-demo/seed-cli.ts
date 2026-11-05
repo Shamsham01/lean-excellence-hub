@@ -29,7 +29,10 @@ async function signInWithEmail(
   });
 
   if (error || !data.session) {
-    throw error ?? new Error(`Unable to sign in ${email} for Harbourfield demo top-up.`);
+    throw (
+      error ??
+      new Error(`Unable to sign in ${email} for Harbourfield demo top-up.`)
+    );
   }
 
   return client;

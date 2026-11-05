@@ -66,10 +66,15 @@ describe.skipIf(!hasLocalSupabase)(
       expect(eligibleError).toBeNull();
 
       const organisation = (
-        eligible as Array<{ organisation_id: string; organisation_code: string }>
+        eligible as Array<{
+          organisation_id: string;
+          organisation_code: string;
+        }>
       ).find((row) => row.organisation_code === HARBOURFIELD_ORGANISATION.code);
 
-      expect(organisation?.organisation_code).toBe(HARBOURFIELD_ORGANISATION.code);
+      expect(organisation?.organisation_code).toBe(
+        HARBOURFIELD_ORGANISATION.code,
+      );
 
       await manager.rpc("switch_organisation", {
         target_organisation_id: organisation!.organisation_id,

@@ -30,7 +30,10 @@ describe("planHarbourfieldTopUp", () => {
   it("returns no planned changes when inventory is complete", () => {
     expect(planHarbourfieldTopUp(completeInventory)).toEqual([]);
     expect(
-      formatHarbourfieldPlan([], "Harbourfield Foods Group (harbourfield-foods-group)"),
+      formatHarbourfieldPlan(
+        [],
+        "Harbourfield Foods Group (harbourfield-foods-group)",
+      ),
     ).toContain("No changes required");
   });
 

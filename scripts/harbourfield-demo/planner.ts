@@ -12,8 +12,14 @@ export function planHarbourfieldTopUp(
   const planned: HarbourfieldPlannedChange[] = [];
 
   const want: Array<[keyof HarbourfieldDemoInventory, string]> = [
-    ["suggestionProgrammePublished", "Publish suggestion programme Everyday Improvements"],
-    ["maturityModelPublished", "Publish maturity model Harbourfield Operating Standard"],
+    [
+      "suggestionProgrammePublished",
+      "Publish suggestion programme Everyday Improvements",
+    ],
+    [
+      "maturityModelPublished",
+      "Publish maturity model Harbourfield Operating Standard",
+    ],
     [
       "publishedOfficialMaturityResult",
       "Publish Bodmin Bakery formal maturity result (history)",
@@ -25,7 +31,10 @@ export function planHarbourfieldTopUp(
     ["fiveSStandardPublished", "Publish Bodmin Bakery Packing 5S standard"],
     ["completedFiveSAudit", "Complete a 5S audit on Packing Line 1"],
     ["inProgressFiveSAudit", "Start in-progress 5S audit on Packing Line 1"],
-    ["gembaDefinitionPublished", "Publish Bodmin Bakery Morning Gemba definition"],
+    [
+      "gembaDefinitionPublished",
+      "Publish Bodmin Bakery Morning Gemba definition",
+    ],
     [
       "completedGembaWalk",
       "Complete Gemba walk with film misalignment observation",
@@ -88,7 +97,9 @@ export function formatHarbourfieldPlan(
     planned.length === 0
       ? "No changes required — storyline inventory is complete."
       : `${planned.length} change(s) planned:`,
-    ...planned.map((item, index) => `${index + 1}. [${item.action}] ${item.summary}`),
+    ...planned.map(
+      (item, index) => `${index + 1}. [${item.action}] ${item.summary}`,
+    ),
   ];
 
   return lines.join("\n");

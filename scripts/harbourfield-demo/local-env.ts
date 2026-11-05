@@ -1,6 +1,9 @@
 import { execSync } from "node:child_process";
 
-import { assertHarbourfieldLocalCommandAllowed, isLocalSupabaseUrl } from "./guards";
+import {
+  assertHarbourfieldLocalCommandAllowed,
+  isLocalSupabaseUrl,
+} from "./guards";
 
 export type HarbourfieldLocalEnv = {
   apiUrl: string;
@@ -22,7 +25,8 @@ function parseSupabaseStatusEnv(output: string) {
 }
 
 export function loadLocalSupabaseEnv(
-  lifecycleEvent: "demo:harbourfield:top-up" | "demo:harbourfield:top-up:dry-run",
+  lifecycleEvent:
+    "demo:harbourfield:top-up" | "demo:harbourfield:top-up:dry-run",
 ): HarbourfieldLocalEnv {
   let output = "";
 

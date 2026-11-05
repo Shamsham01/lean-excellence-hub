@@ -34,7 +34,8 @@ export function parseHarbourfieldDemoArgs(argv: string[]) {
 
 export function assertHarbourfieldLocalCommandAllowed(
   apiUrl: string,
-  lifecycleEvent: "demo:harbourfield:top-up" | "demo:harbourfield:top-up:dry-run",
+  lifecycleEvent:
+    "demo:harbourfield:top-up" | "demo:harbourfield:top-up:dry-run",
 ) {
   const invokedViaNpmScript =
     process.env.npm_lifecycle_event === lifecycleEvent ||
@@ -83,8 +84,7 @@ export function assertHarbourfieldLocalCommandAllowed(
 export function resolveHarbourfieldHostedCredentials() {
   const apiUrl = process.env.LEANHUB_HARBOURFIELD_DEMO_SUPABASE_URL;
   const serviceRoleKey = process.env.LEANHUB_HARBOURFIELD_DEMO_SERVICE_ROLE_KEY;
-  const expectedProjectRef =
-    process.env.LEANHUB_HARBOURFIELD_DEMO_PROJECT_REF;
+  const expectedProjectRef = process.env.LEANHUB_HARBOURFIELD_DEMO_PROJECT_REF;
   const publishableKey = process.env.LEANHUB_HARBOURFIELD_DEMO_PUBLISHABLE_KEY;
   const organisationCode =
     process.env.LEANHUB_HARBOURFIELD_ORG_CODE ?? HARBOURFIELD_ORGANISATION_CODE;
@@ -177,7 +177,11 @@ export function assertHarbourfieldHostedTopUpAllowed(options: {
     "lean-excellence-demo",
   ] as const;
 
-  if (forbiddenOrganisationCodes.includes(options.organisationCode as (typeof forbiddenOrganisationCodes)[number])) {
+  if (
+    forbiddenOrganisationCodes.includes(
+      options.organisationCode as (typeof forbiddenOrganisationCodes)[number],
+    )
+  ) {
     throw new Error(
       `Hosted Harbourfield demo top-up refused: organisation code ${options.organisationCode} is not the Harbourfield demo tenant.`,
     );

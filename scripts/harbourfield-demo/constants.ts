@@ -145,7 +145,8 @@ export const HARBOURFIELD_STORYLINE = {
     "Morning Gemba — packaging film misalignment observed on Line 1.",
   gembaObservationText:
     "Packaging film misaligned on Packing Line 1 — leading edge drifting after splice.",
-  correctiveActionTitle: "Realign the film guide and confirm the first-off pack",
+  correctiveActionTitle:
+    "Realign the film guide and confirm the first-off pack",
   overdueActionTitle:
     "Harbourfield demo overdue: confirm film guide torque settings",
   problemSolvingCaseTitle: "Recurring film wander on Packing Line 1",
@@ -153,8 +154,10 @@ export const HARBOURFIELD_STORYLINE = {
   projectTitle: "Packing Line 1 film-path countermeasures",
   benefitTitle: "Packing line film-path stability improvement",
   suggestionTitle: "Improve film splice checklist at Packing Line 1",
-  inProgressGembaWalkNote: "In-progress Gemba — Packing Line 1 film path check.",
-  inProgressFiveSAuditNote: "In-progress 5S — Packing Line 1 sustainment audit.",
+  inProgressGembaWalkNote:
+    "In-progress Gemba — Packing Line 1 film path check.",
+  inProgressFiveSAuditNote:
+    "In-progress 5S — Packing Line 1 sustainment audit.",
 } as const;
 
 export const HARBOURFIELD_FIXTURE_TAGS = {

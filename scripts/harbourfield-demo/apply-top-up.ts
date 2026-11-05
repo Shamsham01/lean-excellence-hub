@@ -1,17 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  HARBOURFIELD_STORYLINE,
-  HARBOURFIELD_USERS,
-} from "./constants";
+import { HARBOURFIELD_STORYLINE, HARBOURFIELD_USERS } from "./constants";
 import {
   collectHarbourfieldDemoInventory,
   type HarbourfieldDemoInventory,
 } from "./inventory";
-import {
-  formatHarbourfieldPlan,
-  planHarbourfieldTopUp,
-} from "./planner";
+import { formatHarbourfieldPlan, planHarbourfieldTopUp } from "./planner";
 import { expectRpc } from "./rpc";
 import type { UnitMap } from "./foundation";
 import type { ResolvedHarbourfieldOrganisation } from "./resolve-org";
@@ -42,7 +36,10 @@ async function signInAs(
   });
 
   if (error || !data.session) {
-    throw error ?? new Error(`Unable to sign in ${user.email} for Harbourfield top-up.`);
+    throw (
+      error ??
+      new Error(`Unable to sign in ${user.email} for Harbourfield top-up.`)
+    );
   }
 
   return client;
@@ -57,7 +54,10 @@ async function switchOrganisation(
   });
 
   if (error || data !== true) {
-    throw error ?? new Error("Unable to switch organisation for Harbourfield top-up.");
+    throw (
+      error ??
+      new Error("Unable to switch organisation for Harbourfield top-up.")
+    );
   }
 }
 
@@ -76,8 +76,16 @@ export async function buildHarbourfieldClients(options: {
   let operatorClient: SupabaseClient;
 
   try {
-    managerClient = await signInAs(options.apiUrl, options.publishableKey, "manager");
-    operatorClient = await signInAs(options.apiUrl, options.publishableKey, "operator");
+    managerClient = await signInAs(
+      options.apiUrl,
+      options.publishableKey,
+      "manager",
+    );
+    operatorClient = await signInAs(
+      options.apiUrl,
+      options.publishableKey,
+      "operator",
+    );
   } catch {
     managerClient = adminClient;
     operatorClient = adminClient;
@@ -152,11 +160,16 @@ async function ensureSuggestionProgramme(manager: SupabaseClient) {
     return;
   }
 
-  const programmeId = (await expectRpc(manager, "create_suggestion_programme_draft", {
-    target_name: story.suggestionProgrammeName,
-    target_code: story.suggestionProgrammeCode,
-    target_description: "Frontline improvement ideas for Bodmin Bakery demos.",
-  })) as string;
+  const programmeId = (await expectRpc(
+    manager,
+    "create_suggestion_programme_draft",
+    {
+      target_name: story.suggestionProgrammeName,
+      target_code: story.suggestionProgrammeCode,
+      target_description:
+        "Frontline improvement ideas for Bodmin Bakery demos.",
+    },
+  )) as string;
 
   const { data: version } = await manager
     .from("suggestion_programme_versions")
@@ -285,12 +298,16 @@ async function ensureMaturityCatalog(
     .select("id", { count: "exact", head: true });
 
   if ((officialCount ?? 0) === 0) {
-    const assessmentId = (await expectRpc(manager, "start_maturity_assessment", {
-      target_model_version_id: modelVersionId,
-      target_unit_id: siteUnitId,
-      target_assessment_type: "formal",
-      target_assessment_scope_type: "site",
-    })) as string;
+    const assessmentId = (await expectRpc(
+      manager,
+      "start_maturity_assessment",
+      {
+        target_model_version_id: modelVersionId,
+        target_unit_id: siteUnitId,
+        target_assessment_type: "formal",
+        target_assessment_scope_type: "site",
+      },
+    )) as string;
 
     const { data: links } = await manager
       .from("maturity_criterion_questions")
@@ -454,10 +471,7 @@ async function ensureFiveSCatalog(
   }
 }
 
-async function ensureGembaCatalog(
-  manager: SupabaseClient,
-  lineUnitId: string,
-) {
+async function ensureGembaCatalog(manager: SupabaseClient, lineUnitId: string) {
   const story = HARBOURFIELD_STORYLINE;
 
   let definitionId: string | undefined;
@@ -575,7 +589,9 @@ async function ensureStoryActions(
   managerMembershipId: string,
 ) {
   const story = HARBOURFIELD_STORYLINE;
-  const overdueDue = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const overdueDue = new Date(
+    Date.now() - 7 * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   const { data: corrective } = await manager
     .from("actions")
@@ -590,7 +606,9 @@ async function ensureStoryActions(
         "Immediate containment from GEM-214 storyline — realign guide and verify first-off pack.",
       target_priority: "high",
       target_unit_id: lineUnitId,
-      target_due_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      target_due_at: new Date(
+        Date.now() + 3 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
     });
   }
 
@@ -614,10 +632,7 @@ async function ensureStoryActions(
       target_action_id: actionId,
       target_membership_id: managerMembershipId,
     });
-  } else if (
-    overdue.status === "open" ||
-    overdue.status === "in_progress"
-  ) {
+  } else if (overdue.status === "open" || overdue.status === "in_progress") {
     const due = overdue.due_at ? new Date(overdue.due_at) : new Date();
     if (due.getTime() >= Date.now()) {
       await expectRpc(manager, "update_action", {
@@ -640,7 +655,11 @@ async function ensureProblemSolvingStory(
 
   await expectRpc(admin, "ensure_problem_solving_methods_provisioned", {});
 
-  const catalog = (await expectRpc(manager, "get_problem_solving_methods", {})) as {
+  const catalog = (await expectRpc(
+    manager,
+    "get_problem_solving_methods",
+    {},
+  )) as {
     items?: Array<{ id: string; code: string }>;
   };
   const method = catalog.items?.find((row) => row.code === "a3-structured");
@@ -701,11 +720,15 @@ async function ensureProblemSolvingStory(
     .eq("status", "in_progress");
 
   if ((sessionCount ?? 0) === 0) {
-    const sessionId = (await expectRpc(manager, "start_problem_solving_session", {
-      target_case_id: caseId,
-      target_title: story.problemSolvingSessionTitle,
-      target_facilitator_membership_id: managerMembershipId,
-    })) as string;
+    const sessionId = (await expectRpc(
+      manager,
+      "start_problem_solving_session",
+      {
+        target_case_id: caseId,
+        target_title: story.problemSolvingSessionTitle,
+        target_facilitator_membership_id: managerMembershipId,
+      },
+    )) as string;
 
     await expectRpc(manager, "add_session_entry", {
       target_session_id: sessionId,
@@ -750,10 +773,7 @@ async function ensureProjectAndBenefit(
     .eq("title", story.benefitTitle)
     .maybeSingle();
 
-  if (
-    existingBenefit?.id &&
-    existingBenefit.status !== "draft"
-  ) {
+  if (existingBenefit?.id && existingBenefit.status !== "draft") {
     return;
   }
 
