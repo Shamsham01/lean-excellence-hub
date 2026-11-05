@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(17);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -137,6 +137,67 @@ select is(
   'idempotent dispatch keeps a single timestamp'
 );
 
+select is(
+  public.recover_stale_ai_runs_for_problem_solving_case(
+    (select id from ai_dispatch_ids where key = 'case')
+  ),
+  0,
+  'case recovery does not settle a run younger than the server minimum stale window'
+);
+
+select is(
+  (
+    select status
+    from public.ai_runs
+    where id = (select id from ai_dispatch_ids where key = 'ai_run')
+  ),
+  'running',
+  'fresh run stays running when recovery uses the enforced minimum threshold'
+);
+
+reset role;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"a1700000-0000-0000-0000-000000000001","role":"authenticated","session_id":"a1710000-0000-0000-0000-000000000001","email":"ai-dispatch-owner@example.test"}',
+  true
+);
+
+select is(
+  private.recover_stale_ai_runs_for_problem_solving_case(
+    (select id from ai_dispatch_ids where key = 'case'),
+    1
+  ),
+  0,
+  'a one-second threshold is clamped to 65 seconds and cannot settle a fresh run'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.recover_stale_ai_runs_for_problem_solving_case(uuid,integer)',
+    'EXECUTE'
+  ),
+  'authenticated role cannot execute private stale recovery directly'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.record_ai_run_provider_dispatch(uuid)',
+    'EXECUTE'
+  ),
+  'authenticated role cannot execute private provider dispatch directly'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.fail_ai_run(uuid,text,text)',
+    'EXECUTE'
+  ),
+  'authenticated role cannot execute private fail_ai_run directly'
+);
+set local role authenticated;
+select public.switch_organisation((select id from ai_dispatch_ids where key = 'organisation'));
+
 reset role;
 update public.ai_runs
 set started_at = statement_timestamp() - interval '2 minutes'
@@ -151,8 +212,7 @@ select public.switch_organisation((select id from ai_dispatch_ids where key = 'o
 
 select is(
   public.recover_stale_ai_runs_for_problem_solving_case(
-    (select id from ai_dispatch_ids where key = 'case'),
-    65
+    (select id from ai_dispatch_ids where key = 'case')
   ),
   1,
   'case recovery closes a stale running row for the owner'
@@ -204,8 +264,7 @@ select public.switch_organisation((select id from ai_dispatch_ids where key = 'o
 
 select is(
   public.recover_stale_ai_runs_for_problem_solving_case(
-    (select id from ai_dispatch_ids where key = 'case'),
-    65
+    (select id from ai_dispatch_ids where key = 'case')
   ),
   1,
   'case recovery also closes runs without dispatch evidence'
@@ -242,9 +301,8 @@ select throws_ok(
 
 select throws_ok(
   format(
-    'select public.recover_stale_ai_runs_for_problem_solving_case(%L::uuid, %s)',
-    (select id from ai_dispatch_ids where key = 'case'),
-    65
+    'select public.recover_stale_ai_runs_for_problem_solving_case(%L::uuid)',
+    (select id from ai_dispatch_ids where key = 'case')
   ),
   '42501',
   'problem solving case access required',

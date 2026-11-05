@@ -14574,10 +14574,7 @@ export type Database = {
         Returns: undefined
       }
       recover_stale_ai_runs_for_problem_solving_case: {
-        Args: {
-          target_problem_solving_case_id: string
-          target_stale_after_seconds?: number
-        }
+        Args: { target_problem_solving_case_id: string }
         Returns: number
       }
       reissue_organisation_member_invitation: {

@@ -65,15 +65,14 @@ export async function recoverStaleAiRunsForProblemSolvingCase(
     return 0;
   }
 
-  const staleAfterSeconds = Math.max(1, Math.ceil(staleAfterMs / 1000));
+  if (staleAfterMs < STALE_AFTER_SECONDS_DEFAULT * 1000) {
+    return 0;
+  }
+
   const { data, error } = await supabase.rpc(
     "recover_stale_ai_runs_for_problem_solving_case",
     {
       target_problem_solving_case_id: caseId,
-      target_stale_after_seconds: Math.min(
-        staleAfterSeconds,
-        STALE_AFTER_SECONDS_DEFAULT * 10,
-      ),
     },
   );
 
