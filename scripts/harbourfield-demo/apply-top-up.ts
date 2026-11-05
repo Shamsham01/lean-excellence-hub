@@ -9,6 +9,12 @@ import { formatHarbourfieldPlan, planHarbourfieldTopUp } from "./planner";
 import { expectRpc } from "./rpc";
 import type { UnitMap } from "./foundation";
 import type { ResolvedHarbourfieldOrganisation } from "./resolve-org";
+import {
+  hasHostedHarbourfieldAdminCredentials,
+  maturityFormalCompletionRpcs,
+  resolveHarbourfieldStorylineUnits,
+  shouldCreateSuggestionQualityCategory,
+} from "./top-up-idempotency";
 
 export type HarbourfieldClients = {
   admin: SupabaseClient;
@@ -20,28 +26,42 @@ export type HarbourfieldClients = {
   operatorMembershipId: string | null;
 };
 
+async function signInWithPassword(
+  apiUrl: string,
+  publishableKey: string,
+  email: string,
+  password: string,
+) {
+  const client = createClient(apiUrl, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data, error } = await client.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error || !data.session || !data.user) {
+    throw (
+      error ?? new Error(`Unable to sign in ${email} for Harbourfield top-up.`)
+    );
+  }
+
+  return { client, userId: data.user.id as string };
+}
+
 async function signInAs(
   apiUrl: string,
   publishableKey: string,
   userKey: keyof typeof HARBOURFIELD_USERS,
 ) {
   const user = HARBOURFIELD_USERS[userKey];
-  const client = createClient(apiUrl, publishableKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const { data, error } = await client.auth.signInWithPassword({
-    email: user.email,
-    password: user.password,
-  });
-
-  if (error || !data.session) {
-    throw (
-      error ??
-      new Error(`Unable to sign in ${user.email} for Harbourfield top-up.`)
-    );
-  }
-
+  const { client } = await signInWithPassword(
+    apiUrl,
+    publishableKey,
+    user.email,
+    user.password,
+  );
   return client;
 }
 
@@ -66,14 +86,40 @@ export async function buildHarbourfieldClients(options: {
   publishableKey: string;
   organisation: ResolvedHarbourfieldOrganisation;
 }): Promise<HarbourfieldClients> {
-  const adminClient = await signInAs(
-    options.apiUrl,
-    options.publishableKey,
-    "admin",
-  );
+  const hostedAdminEmail = process.env.LEANHUB_HARBOURFIELD_DEMO_ADMIN_EMAIL;
+  const hostedAdminPassword =
+    process.env.LEANHUB_HARBOURFIELD_DEMO_ADMIN_PASSWORD;
 
-  let managerClient: SupabaseClient;
-  let operatorClient: SupabaseClient;
+  let adminClient: SupabaseClient;
+  let adminUserId: string;
+
+  const hostedCredentials = {
+    email: hostedAdminEmail,
+    password: hostedAdminPassword,
+  };
+
+  if (hasHostedHarbourfieldAdminCredentials(hostedCredentials)) {
+    const signedIn = await signInWithPassword(
+      options.apiUrl,
+      options.publishableKey,
+      hostedCredentials.email,
+      hostedCredentials.password,
+    );
+    adminClient = signedIn.client;
+    adminUserId = signedIn.userId;
+  } else {
+    adminClient = await signInAs(
+      options.apiUrl,
+      options.publishableKey,
+      "admin",
+    );
+    adminUserId = HARBOURFIELD_USERS.admin.id;
+  }
+
+  let managerClient: SupabaseClient = adminClient;
+  let operatorClient: SupabaseClient = adminClient;
+  let managerUserId = adminUserId;
+  let operatorUserId: string | null = null;
 
   try {
     managerClient = await signInAs(
@@ -81,14 +127,18 @@ export async function buildHarbourfieldClients(options: {
       options.publishableKey,
       "manager",
     );
+    managerUserId = HARBOURFIELD_USERS.manager.id;
     operatorClient = await signInAs(
       options.apiUrl,
       options.publishableKey,
       "operator",
     );
+    operatorUserId = HARBOURFIELD_USERS.operator.id;
   } catch {
     managerClient = adminClient;
     operatorClient = adminClient;
+    managerUserId = adminUserId;
+    operatorUserId = null;
   }
 
   for (const client of [adminClient, managerClient, operatorClient]) {
@@ -98,7 +148,8 @@ export async function buildHarbourfieldClients(options: {
   const unitIds: UnitMap = {};
   const { data: units, error: unitsError } = await managerClient
     .from("organisation_units")
-    .select("id, code");
+    .select("id, code")
+    .eq("organisation_id", options.organisation.id);
 
   if (unitsError) {
     throw unitsError;
@@ -113,6 +164,7 @@ export async function buildHarbourfieldClients(options: {
       .from("organisation_memberships")
       .select("id")
       .eq("user_id", userId)
+      .eq("organisation_id", options.organisation.id)
       .eq("status", "active")
       .maybeSingle();
 
@@ -124,8 +176,8 @@ export async function buildHarbourfieldClients(options: {
   };
 
   const managerMembershipId =
-    (await resolveMembership(managerClient, HARBOURFIELD_USERS.manager.id)) ??
-    (await resolveMembership(managerClient, HARBOURFIELD_USERS.admin.id));
+    (await resolveMembership(managerClient, managerUserId)) ??
+    (await resolveMembership(managerClient, adminUserId));
 
   if (!managerMembershipId) {
     throw new Error(
@@ -133,10 +185,9 @@ export async function buildHarbourfieldClients(options: {
     );
   }
 
-  const operatorMembershipId = await resolveMembership(
-    operatorClient,
-    HARBOURFIELD_USERS.operator.id,
-  );
+  const operatorMembershipId = operatorUserId
+    ? await resolveMembership(operatorClient, operatorUserId)
+    : null;
 
   return {
     admin: adminClient,
@@ -191,10 +242,17 @@ async function ensureSuggestionProgramme(manager: SupabaseClient) {
     target_programme_version_id: version.id,
   });
 
-  await expectRpc(manager, "create_suggestion_category", {
-    target_name: "Quality",
-    target_code: "quality",
-  });
+  const { count: qualityCategoryCount } = await manager
+    .from("suggestion_categories")
+    .select("id", { count: "exact", head: true })
+    .eq("code", "quality");
+
+  if (shouldCreateSuggestionQualityCategory(qualityCategoryCount)) {
+    await expectRpc(manager, "create_suggestion_category", {
+      target_name: "Quality",
+      target_code: "quality",
+    });
+  }
 }
 
 async function ensureMaturityCatalog(
@@ -298,23 +356,50 @@ async function ensureMaturityCatalog(
     .select("id", { count: "exact", head: true });
 
   if ((officialCount ?? 0) === 0) {
-    const assessmentId = (await expectRpc(
-      manager,
-      "start_maturity_assessment",
-      {
+    const { data: existingFormal } = await manager
+      .from("maturity_assessments")
+      .select("id, status")
+      .eq("model_version_id", modelVersionId)
+      .eq("assessment_type", "formal")
+      .in("status", ["draft", "in_progress", "submitted", "in_review"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let assessmentId = existingFormal?.id as string | undefined;
+    if (!assessmentId) {
+      assessmentId = (await expectRpc(manager, "start_maturity_assessment", {
         target_model_version_id: modelVersionId,
         target_unit_id: siteUnitId,
         target_assessment_type: "formal",
         target_assessment_scope_type: "site",
-      },
-    )) as string;
+      })) as string;
+    }
 
-    const { data: links } = await manager
-      .from("maturity_criterion_questions")
-      .select("question_id")
-      .limit(1);
+    const { data: pillars } = await manager
+      .from("maturity_pillars")
+      .select("id")
+      .eq("model_version_id", modelVersionId);
 
-    const questionId = links?.[0]?.question_id;
+    const pillarIds = (pillars ?? []).map((row) => row.id);
+    let questionId: string | undefined;
+    if (pillarIds.length > 0) {
+      const { data: criteria } = await manager
+        .from("maturity_criteria")
+        .select("id")
+        .in("pillar_id", pillarIds)
+        .limit(1);
+      const criterionId = criteria?.[0]?.id;
+      if (criterionId) {
+        const { data: links } = await manager
+          .from("maturity_criterion_questions")
+          .select("question_id")
+          .eq("criterion_id", criterionId)
+          .limit(1);
+        questionId = links?.[0]?.question_id;
+      }
+    }
+
     if (questionId) {
       await expectRpc(manager, "upsert_maturity_assessment_answer", {
         target_assessment_id: assessmentId,
@@ -323,15 +408,15 @@ async function ensureMaturityCatalog(
       });
     }
 
-    await expectRpc(manager, "submit_maturity_assessment", {
-      target_assessment_id: assessmentId,
-    });
-    await expectRpc(manager, "begin_assessor_review", {
-      target_assessment_id: assessmentId,
-    });
-    await expectRpc(manager, "approve_maturity_assessment", {
-      target_assessment_id: assessmentId,
-    });
+    for (const rpcName of maturityFormalCompletionRpcs(
+      existingFormal?.status as
+        "draft" | "in_progress" | "submitted" | "in_review" | undefined,
+    )) {
+      await expectRpc(manager, rpcName, {
+        target_assessment_id: assessmentId,
+      });
+    }
+
     await expectRpc(manager, "publish_official_maturity_result", {
       target_assessment_id: assessmentId,
     });
@@ -966,15 +1051,34 @@ async function ensureOperatorPrimaryPlacement(
 }
 
 async function applyHarbourfieldStoryline(clients: HarbourfieldClients) {
-  const lineUnitId =
-    clients.unitIds["packing-line-1"] ?? clients.unitIds.packing;
-  const siteUnitId = clients.unitIds["bodmin-bakery"] ?? lineUnitId;
-
-  if (!lineUnitId || !siteUnitId) {
-    throw new Error(
-      "Harbourfield demo top-up requires bodmin-bakery and packing-line-1 units.",
-    );
+  if (!clients.unitIds["packing-line-1"] && clients.unitIds.packing) {
+    try {
+      const unitId = (await expectRpc(
+        clients.admin,
+        "create_organisation_unit",
+        {
+          target_organisation_id: clients.organisation.id,
+          target_parent_unit_id: clients.unitIds.packing,
+          unit_code: "packing-line-1",
+          unit_name: "Packing Line 1",
+          unit_type: "line",
+        },
+      )) as string;
+      clients.unitIds["packing-line-1"] = unitId;
+      console.log(
+        "Created Harbourfield demo unit Packing Line 1 under Packing (org-scoped).",
+      );
+    } catch (error) {
+      console.log(
+        "Packing Line 1 not created; attaching storyline to existing Packing area.",
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
+
+  const { lineUnitId, siteUnitId } = resolveHarbourfieldStorylineUnits(
+    clients.unitIds,
+  );
 
   await ensureOperatorPrimaryPlacement(
     clients.admin,
