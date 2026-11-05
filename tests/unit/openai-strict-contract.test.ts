@@ -112,10 +112,7 @@ describe("empty strict tool parameter schemas", () => {
   it("parses empty transport args for parameterless tools", () => {
     for (const tool of emptyTools) {
       expect(
-        parseToolArgs(
-          tool.name as (typeof PROBLEM_SOLVING_TOOLS)[number],
-          {},
-        ),
+        parseToolArgs(tool.name as (typeof PROBLEM_SOLVING_TOOLS)[number], {}),
       ).toEqual({});
     }
   });
