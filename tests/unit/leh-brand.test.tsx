@@ -275,7 +275,7 @@ describe("site identity metadata", () => {
       ["public/brand/leh-horizontal-light.png", 2172, 724],
       ["public/brand/leh-horizontal-dark.png", 2172, 724],
       ["public/brand/leh-icon-light.png", 2000, 2000],
-      ["public/brand/leh-icon-dark.png", 2000, 2000],
+      ["public/brand/leh-icon-dark.png", 1254, 1254],
       ["public/brand/leh-icon-dark-128.png", 128, 128],
     ] as const;
 

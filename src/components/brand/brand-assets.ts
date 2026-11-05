@@ -40,8 +40,8 @@ export const LEH_BRAND = {
   },
   iconDark: {
     src: "/brand/leh-icon-dark.png",
-    width: 2000,
-    height: 2000,
+    width: 1254,
+    height: 1254,
   },
 } as const;
 

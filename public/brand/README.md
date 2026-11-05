@@ -8,8 +8,8 @@ Theme-specific marks are the files screens render. Do not redraw them. Originals
 | --------------------------------------- | ------------------------------------------------------------------- |
 | `public/brand/leh-horizontal-light.png` | Horizontal lockup on light surfaces. 2172×724, transparent corners  |
 | `public/brand/leh-horizontal-dark.png`  | Horizontal lockup on dark surfaces. 2172×724, transparent corners   |
-| `public/brand/leh-icon-light.png`       | Blue square mark for light surfaces. 2000×2000, transparent corners |
-| `public/brand/leh-icon-dark.png`        | Light square mark for dark surfaces. 2000×2000, transparent corners |
+| `public/brand/leh-icon-light.png`       | App icon for light surfaces (white field, navy outlines). 2000×2000, transparent corners |
+| `public/brand/leh-icon-dark.png`        | App icon for dark surfaces (navy field, white outlines). 1254×1254, transparent corners |
 | `public/brand/leh-icon-dark-128.png`    | 128px derivative of the dark icon for the root error document       |
 | `public/brand/leh-icon-blue.png`        | Blue mark used for the browser icon and web manifest                |
 | `public/brand/leh-icon-blue-192.png`    | Web manifest smaller icon                                           |
