@@ -26,7 +26,7 @@ const HOST_OR_PROXY_RESET =
  */
 export function retainProblemSolvingTurnKey(message: string): boolean {
   return (
-    /still finishing|did not confirm|lost contact with the provider/i.test(
+    /still finishing|did not confirm|lost contact with the provider|did not return a completed turn|collect the result/i.test(
       message,
     ) ||
     UNEXPECTED_SERVER_RESPONSE.test(message) ||

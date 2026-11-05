@@ -91,11 +91,16 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
   },
 };
 
+const STAGE_CONFIG_ALIASES: Record<string, keyof typeof STAGE_CONFIG> = {
+  ANALYSE: "ROOT_CAUSE_ANALYSIS",
+};
+
 export function guidedStageConfig(
   semanticKey: string | null | undefined,
   methodStage?: MethodStage | null,
 ): GuidedStageConfig {
-  const key = semanticKey ?? "DEFINE";
+  const rawKey = semanticKey ?? "DEFINE";
+  const key = STAGE_CONFIG_ALIASES[rawKey] ?? rawKey;
   const base = STAGE_CONFIG[key] ?? {
     title: methodStage?.title ?? semanticStageLabel(key),
     purpose:

@@ -48,9 +48,10 @@ const STAGE_HINTS: Record<string, string> = {
     "Ask for an observable target. Do not treat it as achieved.",
   CONTAIN:
     "Distinguish containment from corrective action; highlight residual risk.",
-  ANALYSE: "Propose testable hypotheses; avoid premature root-cause selection.",
+  ANALYSE:
+    "Use propose_fishbone_cause for 6M fishbone causes (category man/machine/material/method/measurement/environment/other) and propose_five_why_chain / propose_hypothesis when appropriate. Avoid premature root-cause selection.",
   ROOT_CAUSE_ANALYSIS:
-    "Propose competing hypotheses and a test that could disprove the leading one.",
+    "Use propose_fishbone_cause for 6M fishbone causes (category man/machine/material/method/measurement/environment/other) and propose_five_why_chain / propose_hypothesis when appropriate. Propose competing hypotheses and tests; never verify root cause yourself.",
   VERIFY_CAUSE: "Review evidence; suggest tests; never verify causes yourself.",
   COUNTERMEASURE:
     "Tie countermeasures to tested causes; note unintended consequences and safety.",
@@ -70,17 +71,33 @@ const STAGE_HINTS: Record<string, string> = {
 export function buildSystemPrompt(
   mode: AiSessionMode,
   stageKey?: string | null,
+  context?: {
+    viewStageKey?: string | null;
+    currentStageKey?: string | null;
+  },
 ): string {
-  const stageHint = stageKey ? (STAGE_HINTS[stageKey] ?? "") : "";
-  const stageLine = stageKey
-    ? `Current stage: ${stageKey}. ${stageHint}`.trim()
+  const focusKey = stageKey ?? context?.viewStageKey ?? null;
+  const stageHint = focusKey ? (STAGE_HINTS[focusKey] ?? "") : "";
+  const stageLine = focusKey
+    ? `Facilitation focus stage: ${focusKey}. ${stageHint}`.trim()
     : "Stage unknown.";
+  const viewKey = context?.viewStageKey ?? focusKey;
+  const currentKey = context?.currentStageKey ?? null;
+  const viewLine =
+    viewKey && currentKey && viewKey !== currentKey
+      ? `The user is viewing the ${viewKey} workspace while the case official current stage is ${currentKey}. Prefer propose_* tools that match what the user asked for (usually the viewed stage).`
+      : viewKey
+        ? `The user is working in the ${viewKey} workspace.`
+        : "";
   return [
     BASE_INSTRUCTIONS,
     ...problemSolvingFacilitatorFacts(),
     MODE_INSTRUCTIONS[mode],
     stageLine,
-  ].join("\n");
+    viewLine,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function hashPrompt(systemPrompt: string): string {

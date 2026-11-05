@@ -16,6 +16,9 @@ import {
 type StageAutoDraftTriggerProps = {
   caseId: string;
   stageKey: string;
+  stageTitle?: string;
+  viewStageKey?: string;
+  currentStageKey?: string | null;
   autoDraftPrompt: string;
   canUseAi: boolean;
   providerAvailable: boolean;
@@ -30,6 +33,9 @@ function storageKey(caseId: string, stageKey: string) {
 export function StageAutoDraftTrigger({
   caseId,
   stageKey,
+  stageTitle,
+  viewStageKey,
+  currentStageKey,
   autoDraftPrompt,
   canUseAi,
   providerAvailable,
@@ -42,6 +48,8 @@ export function StageAutoDraftTrigger({
   const [isError, setIsError] = useState(false);
   const autoRan = useRef(false);
   const pendingTurnRef = useRef<{ idempotencyKey: string } | null>(null);
+
+  const stageLabel = stageTitle ?? stageKey;
 
   const runDraft = useCallback(
     async (fromAuto = false) => {
@@ -61,6 +69,8 @@ export function StageAutoDraftTrigger({
             draftProblemSolvingStage({
               caseId,
               stageKey,
+              viewStageKey: viewStageKey ?? stageKey,
+              currentStageKey: currentStageKey ?? null,
               message: autoDraftPrompt,
               idempotencyKey,
             }),
@@ -87,15 +97,28 @@ export function StageAutoDraftTrigger({
 
         pendingTurnRef.current = null;
 
+        const pendingProposalCount =
+          "pendingProposalCount" in result.data &&
+          typeof result.data.pendingProposalCount === "number"
+            ? result.data.pendingProposalCount
+            : 0;
+
+        if (pendingProposalCount <= 0) {
+          setIsError(true);
+          setMessage(
+            `Lean AI finished but did not create any proposals for ${stageLabel}. Try again or ask in the Lean AI panel.`,
+          );
+          router.refresh();
+          return;
+        }
+
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
         }
         setMessage(
           fromAuto
-            ? "Draft ready — review proposals below."
-            : result.data.pendingProposalCount > 0
-              ? `${result.data.pendingProposalCount} proposal(s) in Pending Lean AI proposals below.`
-              : "Draft finished.",
+            ? `${pendingProposalCount} proposal(s) ready for ${stageLabel} — review Pending Lean AI proposals below.`
+            : `${pendingProposalCount} proposal(s) for ${stageLabel} — see Pending Lean AI proposals below.`,
         );
         onDraftComplete?.();
         router.refresh();
@@ -107,10 +130,13 @@ export function StageAutoDraftTrigger({
       autoDraftPrompt,
       canUseAi,
       caseId,
+      currentStageKey,
       onDraftComplete,
       providerAvailable,
       router,
       stageKey,
+      stageLabel,
+      viewStageKey,
     ],
   );
 
@@ -141,7 +167,9 @@ export function StageAutoDraftTrigger({
       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border/70 bg-muted/15 px-3 py-2.5"
       data-testid="pps-stage-auto-draft"
     >
-      <p className="text-sm font-medium">Lean AI draft</p>
+      <p className="text-sm font-medium">
+        Lean AI draft · {stageLabel}
+      </p>
       <Button
         type="button"
         size="sm"

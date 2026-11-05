@@ -23,6 +23,16 @@ describe("proposal-display", () => {
     expect(text).not.toContain("{");
   });
 
+  it("formats fishbone cause labels", () => {
+    expect(
+      formatProposalPreview(
+        "fishbone_cause",
+        { label: "Operator not trained on splice recovery", category: "man" },
+        "",
+      ),
+    ).toBe("Operator not trained on splice recovery");
+  });
+
   it("prefers structured current condition statements", () => {
     expect(
       formatProposalPreview(

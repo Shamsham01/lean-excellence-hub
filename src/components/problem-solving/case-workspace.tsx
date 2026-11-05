@@ -299,6 +299,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       caseId={detail.id}
       caseTitle={detail.title}
       stageKey={stageKey}
+      viewStageKey={stageKey}
+      currentStageKey={detail.current_stage?.semantic_stage_key ?? null}
       stageTitle={viewStage?.title ?? detail.current_stage?.title ?? null}
       caseStatus={detail.status}
       canUseAi={canUseAi}
@@ -376,6 +378,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
               <StageAutoDraftTrigger
                 caseId={detail.id}
                 stageKey={stageKey ?? "DEFINE"}
+                stageTitle={stageConfig.title}
+                viewStageKey={stageKey ?? "DEFINE"}
+                currentStageKey={detail.current_stage?.semantic_stage_key ?? null}
                 autoDraftPrompt={stageConfig.autoDraftPrompt}
                 canUseAi={canUseAi}
                 providerAvailable={providerAvailable}

@@ -14,6 +14,7 @@ const PROPOSAL_TYPE_LABELS: Record<string, string> = {
   session_summary: "Session summary",
   lessons_learned: "Lessons learned",
   five_why_chain: "Five whys",
+  fishbone_cause: "Fishbone cause",
   close_case: "Close case",
   analysis_node: "Cause analysis",
 };
@@ -99,6 +100,8 @@ function formatStructuredProposal(
       return readString(data.body);
     case "lessons_learned":
       return readString(data.what_happened) ?? readString(data.what_learned);
+    case "fishbone_cause":
+      return readString(data.label);
     case "five_why_chain": {
       const steps = data.steps;
       if (Array.isArray(steps) && steps.length > 0) {
