@@ -26,9 +26,11 @@ describe("problem-solving-ai-turn-client", () => {
       ok: true as const,
       data: { sessionId: "s1", runId: "r1", pendingProposalCount: 2 },
     });
-    const invoke = vi.fn().mockRejectedValue(
-      new Error("An unexpected response was received from the server."),
-    );
+    const invoke = vi
+      .fn()
+      .mockRejectedValue(
+        new Error("An unexpected response was received from the server."),
+      );
 
     const result = await invokeProblemSolvingTurnAction({
       invoke,

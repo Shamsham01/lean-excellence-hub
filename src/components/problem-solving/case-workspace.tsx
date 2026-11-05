@@ -148,10 +148,7 @@ export function CaseWorkspace({
     if (!canMoveStage || stageId === detail.current_method_stage_id) return;
     setMovingStage(true);
     const result = await moveProblemSolvingStage(detail.id, stageId);
-    notify(
-      result.error ?? "Stage updated",
-      result.error ? "error" : "success",
-    );
+    notify(result.error ?? "Stage updated", result.error ? "error" : "success");
     setSelectedStageId(null);
     setMovingStage(false);
     router.refresh();

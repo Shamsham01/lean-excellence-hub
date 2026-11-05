@@ -206,9 +206,12 @@ export async function draftProblemSolvingStage(input: {
       turnProfile: "stage_draft",
     });
 
-    const { data: sessionDetail } = await supabase.rpc("get_ai_session_detail", {
-      target_ai_session_id: sessionId,
-    });
+    const { data: sessionDetail } = await supabase.rpc(
+      "get_ai_session_detail",
+      {
+        target_ai_session_id: sessionId,
+      },
+    );
     const proposalsRaw =
       (sessionDetail as { proposals?: PendingProposalRow[] } | null)
         ?.proposals ?? [];
@@ -322,8 +325,8 @@ export async function reconcileProblemSolvingStageDraft(input: {
       error:
         reconciled.state === "failed"
           ? reconciled.message
-          : reconciled.message ??
-            "Lean AI is still finishing this stage draft. Wait a moment, then retry.",
+          : (reconciled.message ??
+            "Lean AI is still finishing this stage draft. Wait a moment, then retry."),
     };
   } catch (error) {
     return {

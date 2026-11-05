@@ -63,7 +63,7 @@ export function StageProgressRail({
                   }
                 }}
                 className={cn(
-                  "flex h-full w-full min-h-11 flex-col rounded-lg border px-3 py-2 text-left text-xs transition-colors sm:text-sm",
+                  "flex h-full min-h-11 w-full flex-col rounded-lg border px-3 py-2 text-left text-xs transition-colors sm:text-sm",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                   isViewing
                     ? "border-primary bg-primary/5 text-foreground shadow-xs"

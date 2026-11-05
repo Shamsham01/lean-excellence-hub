@@ -29,7 +29,9 @@ export async function invokeProblemSolvingTurnAction<T>(input: {
     return result;
   } catch (error) {
     const raw =
-      error instanceof Error ? error.message : "Lean AI could not complete this turn.";
+      error instanceof Error
+        ? error.message
+        : "Lean AI could not complete this turn.";
     const display = normalizeProblemSolvingTurnFailure(raw);
     if (input.reconcile && shouldRetainProblemSolvingTurnKey(raw)) {
       try {
@@ -38,7 +40,9 @@ export async function invokeProblemSolvingTurnAction<T>(input: {
           return reconciled;
         }
         if (reconciled.error) {
-          return { error: normalizeProblemSolvingTurnFailure(reconciled.error) };
+          return {
+            error: normalizeProblemSolvingTurnFailure(reconciled.error),
+          };
         }
       } catch {
         // Fall through to the mapped transport error.

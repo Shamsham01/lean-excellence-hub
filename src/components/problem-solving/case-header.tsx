@@ -112,7 +112,10 @@ export function CaseHeader({
       closureOutcome,
       closureRationale.trim() || undefined,
     );
-    onMessage?.(result.error ?? "Case closed", result.error ? "error" : "success");
+    onMessage?.(
+      result.error ?? "Case closed",
+      result.error ? "error" : "success",
+    );
     setShowCloseDialog(false);
     setLoading(false);
     router.refresh();
@@ -375,7 +378,6 @@ export function CaseHeader({
           </div>
         </div>
       ) : null}
-
     </div>
   );
 }

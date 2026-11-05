@@ -43,74 +43,77 @@ export function StageAutoDraftTrigger({
   const autoRan = useRef(false);
   const pendingTurnRef = useRef<{ idempotencyKey: string } | null>(null);
 
-  const runDraft = useCallback(async (fromAuto = false) => {
-    if (!canUseAi || !providerAvailable) return;
-    setLoading(true);
-    setMessage(null);
-    setIsError(false);
+  const runDraft = useCallback(
+    async (fromAuto = false) => {
+      if (!canUseAi || !providerAvailable) return;
+      setLoading(true);
+      setMessage(null);
+      setIsError(false);
 
-    const idempotencyKey =
-      pendingTurnRef.current?.idempotencyKey ??
-      `stage-draft-${caseId}-${stageKey}-${crypto.randomUUID()}`;
-    pendingTurnRef.current = { idempotencyKey };
+      const idempotencyKey =
+        pendingTurnRef.current?.idempotencyKey ??
+        `stage-draft-${caseId}-${stageKey}-${crypto.randomUUID()}`;
+      pendingTurnRef.current = { idempotencyKey };
 
-    try {
-      const result = await invokeProblemSolvingTurnAction({
-        invoke: () =>
-          draftProblemSolvingStage({
-            caseId,
-            stageKey,
-            message: autoDraftPrompt,
-            idempotencyKey,
-          }),
-        reconcile: () =>
-          reconcileProblemSolvingStageDraft({
-            caseId,
-            idempotencyKey,
-          }),
-      });
+      try {
+        const result = await invokeProblemSolvingTurnAction({
+          invoke: () =>
+            draftProblemSolvingStage({
+              caseId,
+              stageKey,
+              message: autoDraftPrompt,
+              idempotencyKey,
+            }),
+          reconcile: () =>
+            reconcileProblemSolvingStageDraft({
+              caseId,
+              idempotencyKey,
+            }),
+        });
 
-      if (result.error || !result.data) {
-        setIsError(true);
-        setMessage(result.error ?? "Could not run stage draft.");
-        if (
-          result.error &&
-          shouldRetainProblemSolvingTurnKey(result.error) &&
-          pendingTurnRef.current
-        ) {
+        if (result.error || !result.data) {
+          setIsError(true);
+          setMessage(result.error ?? "Could not run stage draft.");
+          if (
+            result.error &&
+            shouldRetainProblemSolvingTurnKey(result.error) &&
+            pendingTurnRef.current
+          ) {
+            return;
+          }
+          pendingTurnRef.current = null;
           return;
         }
+
         pendingTurnRef.current = null;
-        return;
-      }
 
-      pendingTurnRef.current = null;
-
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
+        }
+        setMessage(
+          fromAuto
+            ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
+            : result.data.pendingProposalCount > 0
+              ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) to review below.`
+              : "Draft finished — check the facilitator panel for Lean AI output.",
+        );
+        onDraftComplete?.();
+        router.refresh();
+      } finally {
+        setLoading(false);
       }
-      setMessage(
-        fromAuto
-          ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
-          : result.data.pendingProposalCount > 0
-            ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) to review below.`
-            : "Draft finished — check the facilitator panel for Lean AI output.",
-      );
-      onDraftComplete?.();
-      router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    autoDraftPrompt,
-    canUseAi,
-    caseId,
-    hasProblemData,
-    onDraftComplete,
-    providerAvailable,
-    router,
-    stageKey,
-  ]);
+    },
+    [
+      autoDraftPrompt,
+      canUseAi,
+      caseId,
+      hasProblemData,
+      onDraftComplete,
+      providerAvailable,
+      router,
+      stageKey,
+    ],
+  );
 
   useEffect(() => {
     if (!canUseAi || !providerAvailable || !hasProblemData || autoRan.current) {
@@ -159,7 +162,9 @@ export function StageAutoDraftTrigger({
       {message ? (
         <p
           className={
-            isError ? "text-xs text-destructive" : "text-xs text-muted-foreground"
+            isError
+              ? "text-xs text-destructive"
+              : "text-xs text-muted-foreground"
           }
           role={isError ? "alert" : "status"}
         >
