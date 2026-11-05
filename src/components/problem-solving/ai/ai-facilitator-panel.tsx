@@ -88,7 +88,7 @@ export function AiFacilitatorPanel({
     setHasPendingTurn(false);
     setDraft("");
     setError(null);
-    router.refresh();
+    router.push(`/platform/problem-solving/${caseId}`);
   }
 
   async function attemptReconcileTurn(userMessage: string): Promise<boolean> {
@@ -234,7 +234,7 @@ export function AiFacilitatorPanel({
     setPendingProposals((prev) =>
       prev.filter((item) => item.id !== proposal.id),
     );
-    router.refresh();
+    router.push(`/platform/problem-solving/${caseId}`);
   }
 
   async function handleReject(proposalId: string) {
