@@ -8,6 +8,7 @@ import {
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { selectFirstExecutionUnit } from "./helpers/execution-unit-select";
+import { clickFiveSCompleteAudit } from "./helpers/responsive-complete-control";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -189,7 +190,7 @@ test.describe("5S scoring scale", () => {
     await auditButton(page, "Previous").click();
     await scoreGroup(page).getByText("3", { exact: true }).click();
     await expectSaved(page);
-    await page.getByTestId("five-s-complete-audit").click();
+    await clickFiveSCompleteAudit(page);
     await expect(page.getByTestId("five-s-audit-result-page")).toBeVisible();
     await expect(page.getByText("50%", { exact: true })).toBeVisible();
     await expect(page.getByText(scorePrompt)).toBeVisible();

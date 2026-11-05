@@ -3,9 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  clickGembaCompleteWalk,
+  expectNoGembaCompleteWalk,
+} from "./helpers/responsive-complete-control";
 import {
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
@@ -13,19 +17,6 @@ import {
 import { DEMO_GEMBA_DEFINITION } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
-async function clickGembaCompleteWalk(page: Page) {
-  const completeWalk = page
-    .getByTestId("gemba-complete-walk-mobile")
-    .or(page.getByTestId("gemba-complete-walk"));
-  await expect(completeWalk.first()).toBeVisible();
-  await completeWalk.first().click();
-}
-
-async function expectNoGembaCompleteWalk(page: Page) {
-  await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
-  await expect(page.getByTestId("gemba-complete-walk-mobile")).toHaveCount(0);
-}
 
 test.describe("Milestone 6 Gemba journeys", () => {
   test.describe.configure({ mode: "serial" });
