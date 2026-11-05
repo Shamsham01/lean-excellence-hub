@@ -34,6 +34,7 @@ import {
   AI_TURN_IN_PROGRESS_MESSAGE,
   AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
   AI_STALE_RUN_AFTER_MS,
+  AI_TURN_FINALIZE_BUFFER_MS,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
   runWithinAiTurnBudget,
@@ -52,11 +53,13 @@ import {
 } from "@/platform/ai/source-allowlist";
 import { sanitizeEnvelopeProposals } from "@/platform/ai/proposals/contracts";
 import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-executors";
+import { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import {
-  PROBLEM_SOLVING_READ_TOOLS,
+  PROBLEM_SOLVING_TOOLS,
   buildOpenAiTools,
   type ProblemSolvingToolName,
 } from "@/platform/ai/tools/problem-solving-schemas";
+import { reconcileProblemSolvingAiTurnByIdempotencyKey } from "@/platform/ai/problem-solving-turn-reconcile";
 import type {
   AiSessionMode,
   FacilitatorEnvelope,
@@ -102,7 +105,7 @@ async function problemSolvingSessionCaseId(
 }
 
 function isProblemSolvingTool(name: string): name is ProblemSolvingToolName {
-  return (PROBLEM_SOLVING_READ_TOOLS as readonly string[]).includes(name);
+  return (PROBLEM_SOLVING_TOOLS as readonly string[]).includes(name);
 }
 
 export async function runAiTurn(
@@ -224,6 +227,7 @@ export async function runAiTurn(
 
   const allowlist = createSourceAllowlist();
   addCaseToAllowlist(allowlist, input.caseId);
+  const proposalBuffer = new ProblemSolvingProposalBuffer();
 
   const messages = [
     ...input.conversationHistory,
@@ -310,6 +314,7 @@ export async function runAiTurn(
                 supabase: input.supabase,
                 caseId: input.caseId,
                 allowlist,
+                proposalBuffer,
               },
               toolName,
               toolCall.arguments,
@@ -363,7 +368,15 @@ export async function runAiTurn(
       envelope.source_refs,
     );
 
-    envelope.proposals = sanitizeEnvelopeProposals(envelope.proposals);
+    const toolProposals = proposalBuffer.drain().map((item) => ({
+      proposal_type: item.proposal_type,
+      payload: item.payload,
+      explanation: item.explanation,
+    }));
+    envelope.proposals = sanitizeEnvelopeProposals([
+      ...envelope.proposals,
+      ...toolProposals,
+    ]);
 
     const sourceRefsDb = envelope.source_refs.map((item) =>
       toDbSourceRef(item.ref),
@@ -450,6 +463,33 @@ export async function runAiTurn(
     if (completedAfterCleanup) {
       return completedAfterCleanup;
     }
+    await recoverStaleAiRunsForSession(
+      input.supabase,
+      input.sessionId,
+      wallClockMs + AI_TURN_FINALIZE_BUFFER_MS + 2_000,
+    );
+    const completedAfterStale = await reconcileCompletedAiRunTurn(
+      input.supabase,
+      runId,
+    );
+    if (completedAfterStale) {
+      return completedAfterStale;
+    }
+    const reconciledByKey = await reconcileProblemSolvingAiTurnByIdempotencyKey(
+      input.supabase,
+      {
+        caseId: input.caseId,
+        sessionId: input.sessionId,
+        idempotencyKey: input.idempotencyKey,
+      },
+    );
+    if (reconciledByKey.state === "completed") {
+      return {
+        runId: reconciledByKey.runId,
+        assistantMessageId: reconciledByKey.assistantMessageId,
+        envelope: reconciledByKey.envelope,
+      };
+    }
     const snapshot = await readExistingAiRun(input.supabase, runId);
     if (
       !snapshot ||
@@ -459,6 +499,21 @@ export async function runAiTurn(
       throw new AiProviderError(
         AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT,
         AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+        { provider: provider.name, model },
+      );
+    }
+    if (snapshot.status === "failed" || snapshot.status === "timed_out") {
+      if (
+        error instanceof AiProviderError &&
+        error.code === AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT
+      ) {
+        throw error;
+      }
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+        reconciledByKey.state === "failed"
+          ? reconciledByKey.message
+          : "That Lean AI attempt did not finish. Your message is still here. Send it again to start a fresh request.",
         { provider: provider.name, model },
       );
     }

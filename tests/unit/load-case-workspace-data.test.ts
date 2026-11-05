@@ -47,7 +47,10 @@ vi.mock("@/lib/problem-solving/supabase-untyped", () => ({
 }));
 
 import { UNAVAILABLE_MEMBER_LABEL } from "@/lib/identity/membership-display-label";
-import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace-data";
+import {
+  loadCaseWorkspaceData,
+  resolveMethodStagesForCase,
+} from "@/lib/problem-solving/load-case-workspace-data";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/platform/supabase/database.types";
@@ -116,6 +119,43 @@ function listQuery(result: { data: unknown[] | null; error: unknown }) {
     }),
   };
 }
+
+describe("resolveMethodStagesForCase", () => {
+  it("falls back to published method catalog stages when direct select is empty", () => {
+    const versionId = "55555555-5555-5555-5555-555555555555";
+    const stages = [
+      {
+        id: "66666666-6666-6666-6666-666666666666",
+        title: "Define",
+        semantic_stage_key: "DEFINE",
+        description: null,
+        display_order: 1,
+      },
+    ];
+    const resolved = resolveMethodStagesForCase(
+      versionId,
+      [],
+      [
+        {
+          id: "method-1",
+          name: "A3",
+          code: "a3",
+          description: null,
+          is_builtin: true,
+          status: "active",
+          created_at: "2026-01-01T00:00:00.000Z",
+          current_version: {
+            id: versionId,
+            version_number: 1,
+            status: "published",
+            stages,
+          },
+        },
+      ],
+    );
+    expect(resolved).toEqual(stages);
+  });
+});
 
 describe("loadCaseWorkspaceData", () => {
   beforeEach(() => {
