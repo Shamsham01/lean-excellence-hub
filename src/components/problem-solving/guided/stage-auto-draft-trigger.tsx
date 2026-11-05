@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { sendProblemSolvingAiMessage } from "@/app/(platform)/platform/problem-solving/ai/actions";
-import { createProblemSolvingAiSession } from "@/app/(platform)/platform/problem-solving/ai/actions";
+import {
+  draftProblemSolvingStage,
+  reconcileProblemSolvingStageDraft,
+} from "@/app/(platform)/platform/problem-solving/ai/actions";
 import { Button } from "@/components/ui/button";
-import type { AiSessionMode } from "@/platform/ai/types";
+import {
+  invokeProblemSolvingTurnAction,
+  shouldRetainProblemSolvingTurnKey,
+} from "@/lib/problem-solving/problem-solving-ai-turn-client";
 
 type StageAutoDraftTriggerProps = {
   caseId: string;
@@ -30,9 +36,81 @@ export function StageAutoDraftTrigger({
   hasProblemData,
   onDraftComplete,
 }: StageAutoDraftTriggerProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
   const autoRan = useRef(false);
+  const pendingTurnRef = useRef<{ idempotencyKey: string } | null>(null);
+
+  const runDraft = useCallback(async (fromAuto = false) => {
+    if (!canUseAi || !providerAvailable) return;
+    setLoading(true);
+    setMessage(null);
+    setIsError(false);
+
+    const idempotencyKey =
+      pendingTurnRef.current?.idempotencyKey ??
+      `stage-draft-${caseId}-${stageKey}-${crypto.randomUUID()}`;
+    pendingTurnRef.current = { idempotencyKey };
+
+    try {
+      const result = await invokeProblemSolvingTurnAction({
+        invoke: () =>
+          draftProblemSolvingStage({
+            caseId,
+            stageKey,
+            message: autoDraftPrompt,
+            idempotencyKey,
+          }),
+        reconcile: () =>
+          reconcileProblemSolvingStageDraft({
+            caseId,
+            idempotencyKey,
+          }),
+      });
+
+      if (result.error || !result.data) {
+        setIsError(true);
+        setMessage(result.error ?? "Could not run stage draft.");
+        if (
+          result.error &&
+          shouldRetainProblemSolvingTurnKey(result.error) &&
+          pendingTurnRef.current
+        ) {
+          return;
+        }
+        pendingTurnRef.current = null;
+        return;
+      }
+
+      pendingTurnRef.current = null;
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
+      }
+      setMessage(
+        fromAuto
+          ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
+          : result.data.pendingProposalCount > 0
+            ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) to review below.`
+            : "Draft finished — check the facilitator panel for Lean AI output.",
+      );
+      onDraftComplete?.();
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    autoDraftPrompt,
+    canUseAi,
+    caseId,
+    hasProblemData,
+    onDraftComplete,
+    providerAvailable,
+    router,
+    stageKey,
+  ]);
 
   useEffect(() => {
     if (!canUseAi || !providerAvailable || !hasProblemData || autoRan.current) {
@@ -47,51 +125,7 @@ export function StageAutoDraftTrigger({
     }
     autoRan.current = true;
     void runDraft(true);
-  }, [canUseAi, providerAvailable, hasProblemData, caseId, stageKey]);
-
-  async function runDraft(fromAuto = false) {
-    if (!canUseAi || !providerAvailable) return;
-    setLoading(true);
-    setMessage(null);
-    try {
-      const session = await createProblemSolvingAiSession({
-        caseId,
-        mode: "facilitate" satisfies AiSessionMode,
-      });
-      if (session.error || !session.data?.sessionId) {
-        throw new Error(session.error ?? "Could not start Lean AI session.");
-      }
-      const sessionId = session.data.sessionId;
-      const idempotencyKey = `${sessionId}-auto-${stageKey}-${crypto.randomUUID()}`;
-      const result = await sendProblemSolvingAiMessage({
-        caseId,
-        sessionId,
-        mode: "facilitate",
-        stageKey,
-        message: autoDraftPrompt,
-        idempotencyKey,
-        conversationHistory: [],
-      });
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
-      }
-      setMessage(
-        fromAuto
-          ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
-          : "Draft ready — review proposals below.",
-      );
-      onDraftComplete?.();
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Could not run stage draft.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [canUseAi, providerAvailable, hasProblemData, caseId, stageKey, runDraft]);
 
   if (!canUseAi || !providerAvailable) {
     return null;
@@ -99,7 +133,7 @@ export function StageAutoDraftTrigger({
 
   return (
     <div
-      className="flex flex-col gap-2 rounded-lg border border-dashed bg-muted/10 p-3"
+      className="flex flex-col gap-2 rounded-lg border border-dashed border-border bg-muted/20 p-3 shadow-xs"
       data-testid="pps-stage-auto-draft"
     >
       <p className="text-sm font-medium">Lean AI stage draft</p>
@@ -113,6 +147,7 @@ export function StageAutoDraftTrigger({
         variant="secondary"
         disabled={loading || !hasProblemData}
         onClick={() => runDraft(false)}
+        data-testid="pps-stage-auto-draft-button"
       >
         {loading ? "Drafting…" : "Draft this stage"}
       </Button>
@@ -122,7 +157,12 @@ export function StageAutoDraftTrigger({
         </p>
       ) : null}
       {message ? (
-        <p className="text-xs text-muted-foreground" role="status">
+        <p
+          className={
+            isError ? "text-xs text-destructive" : "text-xs text-muted-foreground"
+          }
+          role={isError ? "alert" : "status"}
+        >
           {message}
         </p>
       ) : null}

@@ -10,16 +10,20 @@ type StageProgressRailProps = {
   stages: MethodStage[];
   currentStageId: string | null;
   viewStageId: string | null;
-  onSelectStage: (stageId: string) => void;
-  canNavigate: boolean;
+  onViewStage: (stageId: string) => void;
+  canMoveStage: boolean;
+  onMoveStage?: (stageId: string) => void;
+  movingStage?: boolean;
 };
 
 export function StageProgressRail({
   stages,
   currentStageId,
   viewStageId,
-  onSelectStage,
-  canNavigate,
+  onViewStage,
+  canMoveStage,
+  onMoveStage,
+  movingStage,
 }: StageProgressRailProps) {
   const sorted = sortMethodStages(stages);
   const activeViewId = viewStageId ?? currentStageId ?? sorted[0]?.id ?? null;
@@ -28,32 +32,50 @@ export function StageProgressRail({
   return (
     <nav
       aria-label="Problem solving stages"
-      className="min-w-0 overflow-x-auto pb-1"
+      className="tabs-scroll min-w-0 overflow-x-auto pb-2 lg:overflow-visible"
       data-testid="pps-stage-rail"
     >
-      <ol className="flex min-w-max gap-1 sm:gap-2">
+      <ol className="flex min-w-max gap-2 lg:grid lg:min-w-0 lg:grid-cols-2 lg:gap-2 xl:grid-cols-4 2xl:grid-cols-8">
         {sorted.map((stage, index) => {
           const isViewing = stage.id === activeViewId;
           const isCurrent = stage.id === currentStageId;
           const isPast = currentIndex >= 0 && index < currentIndex;
+          const statusLabel = isCurrent
+            ? "Current"
+            : isPast
+              ? "Completed"
+              : "Upcoming";
+
           return (
-            <li key={stage.id}>
+            <li key={stage.id} className="min-w-[9.5rem] shrink-0 lg:min-w-0">
               <button
                 type="button"
                 data-testid={`pps-stage-${stage.semantic_stage_key}`}
-                disabled={!canNavigate && !isViewing}
-                onClick={() => onSelectStage(stage.id)}
+                disabled={movingStage}
+                onClick={() => {
+                  onViewStage(stage.id);
+                  if (
+                    canMoveStage &&
+                    onMoveStage &&
+                    stage.id !== currentStageId
+                  ) {
+                    onMoveStage(stage.id);
+                  }
+                }}
                 className={cn(
-                  "flex max-w-[11rem] flex-col rounded-lg border px-3 py-2 text-left text-xs transition-colors sm:max-w-none sm:text-sm",
+                  "flex h-full w-full min-h-11 flex-col rounded-lg border px-3 py-2 text-left text-xs transition-colors sm:text-sm",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                   isViewing
-                    ? "border-primary bg-primary/5 text-foreground"
-                    : "border-border bg-background text-muted-foreground hover:bg-muted/50",
-                  !canNavigate && !isViewing && "cursor-default opacity-70",
+                    ? "border-primary bg-primary/5 text-foreground shadow-xs"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted/40",
+                  movingStage && "opacity-70",
                 )}
               >
-                <span className="leading-tight font-medium">{stage.title}</span>
-                <span className="mt-0.5 text-[0.65rem] tracking-wide uppercase sm:text-[0.7rem]">
-                  {isCurrent ? "Current" : isPast ? "Completed" : "Upcoming"}
+                <span className="leading-snug font-medium whitespace-normal">
+                  {stage.title}
+                </span>
+                <span className="mt-1 text-[0.65rem] font-medium tracking-wide uppercase sm:text-[0.7rem]">
+                  {statusLabel}
                 </span>
               </button>
             </li>
