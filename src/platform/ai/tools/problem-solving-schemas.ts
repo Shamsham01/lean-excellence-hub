@@ -200,7 +200,10 @@ export function getOpenAiToolParametersSchema(
       return writeToolParameters(
         {
           statement: { type: "string" },
-          category: { type: ["string", "null"], enum: [...HYPOTHESIS_CATEGORIES, null] },
+          category: {
+            type: ["string", "null"],
+            enum: [...HYPOTHESIS_CATEGORIES, null],
+          },
           rationale: { type: ["string", "null"] },
           parent_hypothesis_id: { type: ["string", "null"] },
           explanation: { type: "string" },
@@ -234,13 +237,7 @@ export function getOpenAiToolParametersSchema(
           },
           explanation: { type: "string" },
         },
-        [
-          "title",
-          "description",
-          "rationale",
-          "hypothesis_ids",
-          "explanation",
-        ],
+        ["title", "description", "rationale", "hypothesis_ids", "explanation"],
       );
     case "propose_five_why_chain":
       return writeToolParameters(
@@ -355,15 +352,21 @@ export function parseToolArgs(
     case "search_related_problem_solving_cases":
       return searchRelatedCasesSchema.parse(args);
     case "propose_problem_statement":
-      return proposeProblemStatementSchema.parse(normalizeNullableWriteArgs(args));
+      return proposeProblemStatementSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     case "propose_current_condition_item":
-      return proposeCurrentConditionSchema.parse(normalizeNullableWriteArgs(args));
+      return proposeCurrentConditionSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     case "propose_hypothesis":
       return proposeHypothesisSchema.parse(normalizeNullableWriteArgs(args));
     case "propose_containment":
       return proposeContainmentSchema.parse(normalizeNullableWriteArgs(args));
     case "propose_countermeasure":
-      return proposeCountermeasureSchema.parse(normalizeNullableWriteArgs(args));
+      return proposeCountermeasureSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     case "propose_five_why_chain":
       return proposeFiveWhyChainSchema.parse(normalizeNullableWriteArgs(args));
     case "propose_fishbone_cause":
