@@ -73,6 +73,7 @@ export default async function ProblemSolvingCaseDetailPage({
         hypothesisTests={workspaceData.hypothesisTests}
         methodStages={workspaceData.methodStages}
         methods={workspaceData.methods}
+        pinnedMethodVersion={workspaceData.pinnedMethodVersion}
         comments={workspaceData.comments}
         evidence={workspaceData.evidence}
         membershipNameById={workspaceData.membershipNameById}

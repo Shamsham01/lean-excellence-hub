@@ -16,7 +16,7 @@
 ## Problem Solving RPCs (**Implemented**, bug #324)
 
 - Draft/create/activate/session start via `private.*` functions wrapped in public RPCs.
-- Known mismatch: pinned draft method vs activate validation — tracked #324.
+- Pinned draft activation: draft cases may store `method_version_id` before activation; `activate_problem_solving_case` must honour that exact version (see migration `20261105180000_problem_solving_activate_pinned_draft.sql`).
 
 ## Invitations (**Implemented**, intentional anon)
 

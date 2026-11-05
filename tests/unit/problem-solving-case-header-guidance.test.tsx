@@ -66,6 +66,17 @@ const baseDetail: ProblemSolvingCaseDetail = {
   source_links: [],
 };
 
+const sampleMethod = {
+  id: "method-1",
+  name: "A3",
+  code: "a3",
+  description: null,
+  is_builtin: true,
+  status: "active",
+  created_at: "2026-01-01T00:00:00.000Z",
+  current_version: null,
+};
+
 describe("CaseHeader guidance", () => {
   it("shows draft guidance and activate controls when methods exist", () => {
     render(
@@ -75,7 +86,8 @@ describe("CaseHeader guidance", () => {
         canManage
         canFacilitate={false}
         canClose={false}
-        methods={[{ id: "method-1", name: "A3" }]}
+        methods={[sampleMethod]}
+        pinnedMethodVersion={null}
       />,
     );
 
@@ -92,6 +104,7 @@ describe("CaseHeader guidance", () => {
         canFacilitate={false}
         canClose={false}
         methods={[]}
+        pinnedMethodVersion={null}
       />,
     );
 

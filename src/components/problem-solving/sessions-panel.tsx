@@ -37,19 +37,28 @@ export function SessionsPanel({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const caseIsDraft = detail.status === "draft";
+  const caseIsActive = detail.status === "active";
+  const canStartSessions = canFacilitate && caseIsActive;
+
   function entriesFor(sessionId: string) {
     return entryBodies[sessionId] ?? { note: "", decision: "" };
   }
 
   async function handleStart(event: React.FormEvent) {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !canStartSessions) return;
     setLoading(true);
     const result = await startProblemSolvingSession({
       caseId,
       title: title.trim(),
     });
-    setMessage(result.error ?? "Session started");
+    if (result.error) {
+      setMessage(result.error);
+      setLoading(false);
+      return;
+    }
+    setMessage("Session started");
     setTitle("");
     setLoading(false);
     router.refresh();
@@ -73,7 +82,9 @@ export function SessionsPanel({
     });
     setMessage(result.error ?? `${entryType} added`);
     setLoading(false);
-    router.refresh();
+    if (!result.error) {
+      router.refresh();
+    }
   }
 
   async function handleComplete(sessionId: string) {
@@ -85,20 +96,27 @@ export function SessionsPanel({
     );
     setMessage(result.error ?? "Session completed");
     setLoading(false);
-    router.refresh();
+    if (!result.error) {
+      router.refresh();
+    }
   }
-
-  const caseIsDraft = detail.status === "draft";
-  const caseIsActive = detail.status === "active";
-  const canStartSessions = canFacilitate && caseIsActive;
 
   return (
     <div
       className="flex flex-col gap-4"
       data-testid="problem-solving-sessions-panel"
     >
+      <p className="text-sm text-muted-foreground">
+        Sessions are facilitated workshops or meetings on this case: capture who
+        attended, evidence discussed, notes, decisions, and follow-up actions
+        without replacing the formal investigation record.
+      </p>
+
       {caseIsDraft ? (
-        <Card className="border-dashed bg-surface" data-testid="sessions-draft-blocked">
+        <Card
+          className="border-dashed bg-surface"
+          data-testid="sessions-draft-blocked"
+        >
           <CardContent className="pt-6 text-sm text-muted-foreground">
             Facilitator sessions are recorded on active cases. Activate this
             case from the header (after choosing a solving method) to start a
@@ -106,6 +124,7 @@ export function SessionsPanel({
           </CardContent>
         </Card>
       ) : null}
+
       {canStartSessions ? (
         <Card>
           <CardHeader>

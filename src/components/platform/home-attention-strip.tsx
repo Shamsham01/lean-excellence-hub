@@ -43,7 +43,7 @@ export function HomeAttentionStrip({ items }: { items: HomeAttentionItem[] }) {
               <span className="font-medium">{item.label}</span>
               <span
                 className={cn(
-                  "tabular-nums font-semibold",
+                  "font-semibold tabular-nums",
                   item.tone === "urgent"
                     ? "text-destructive"
                     : "text-foreground",
@@ -57,8 +57,15 @@ export function HomeAttentionStrip({ items }: { items: HomeAttentionItem[] }) {
       </ul>
       {items.length === 1 && items[0]?.tone === "urgent" ? (
         <div className="mt-3">
-          <Button variant="outline" size="sm" className="min-h-11 w-full sm:w-auto" asChild>
-            <AppLink href={items[0].href}>Review {items[0].label.toLowerCase()}</AppLink>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 w-full sm:w-auto"
+            asChild
+          >
+            <AppLink href={items[0].href}>
+              Review {items[0].label.toLowerCase()}
+            </AppLink>
           </Button>
         </div>
       ) : null}

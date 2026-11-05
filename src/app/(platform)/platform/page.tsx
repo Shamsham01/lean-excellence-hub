@@ -503,7 +503,12 @@ export default async function PlatformHomePage() {
               ) : (
                 <div className="flex flex-col gap-3 text-sm text-muted-foreground">
                   <p>No assessments yet. Start from a published framework.</p>
-                  <Button variant="outline" size="sm" className="min-h-11 w-fit" asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11 w-fit"
+                    asChild
+                  >
                     <AppLink href="/platform/maturity">Open maturity</AppLink>
                   </Button>
                 </div>

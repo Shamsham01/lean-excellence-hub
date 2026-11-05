@@ -82,7 +82,9 @@ describe("SessionsPanel", () => {
     );
 
     expect(screen.getByTestId("sessions-draft-blocked")).toBeVisible();
-    expect(screen.queryByTestId("start-session-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("start-session-button"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows start session affordance on active cases", () => {
