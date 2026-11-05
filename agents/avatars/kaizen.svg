@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="KAIZEN agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <circle cx="256" cy="256" r="168" fill="none" stroke="#16A34A" stroke-width="10"/>
+  <path d="M256 88 A168 168 0 1 1 180 360" fill="none" stroke="#84CC16" stroke-width="14" stroke-linecap="round"/>
+  <polygon points="256,140 296,220 376,220 312,272 336,352 256,304 176,352 200,272 136,220 216,220" fill="#16A34A" opacity="0.85"/>
+
+</svg>

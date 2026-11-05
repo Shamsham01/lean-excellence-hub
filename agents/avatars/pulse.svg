@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="PULSE agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <rect x="64" y="240" width="32" height="160" rx="8" fill="#F59E0B"/>
+  <rect x="112" y="200" width="32" height="200" rx="8" fill="#FBBF24"/>
+  <rect x="160" y="160" width="32" height="240" rx="8" fill="#F59E0B"/>
+  <rect x="208" y="120" width="32" height="280" rx="8" fill="#FDE68A"/>
+  <rect x="256" y="180" width="32" height="220" rx="8" fill="#F59E0B"/>
+  <rect x="304" y="140" width="32" height="260" rx="8" fill="#FBBF24"/>
+  <rect x="352" y="200" width="32" height="200" rx="8" fill="#F59E0B"/>
+  <rect x="400" y="220" width="32" height="180" rx="8" fill="#1C1917" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="64" y1="256" x2="448" y2="256" stroke="#1C1917" stroke-width="4"/>
+
+</svg>

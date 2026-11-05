@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="FORGE agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <polygon points="256,72 416,184 416,328 256,440 96,328 96,184" fill="#5C6778" stroke="#B87333" stroke-width="6"/>
+  <polygon points="256,120 368,200 368,312 256,392 144,312 144,200" fill="none" stroke="#B87333" stroke-width="3"/>
+  <line x1="256" y1="120" x2="256" y2="392" stroke="#B87333" stroke-width="2" opacity="0.6"/>
+  <line x1="144" y1="200" x2="368" y2="312" stroke="#B87333" stroke-width="2" opacity="0.4"/>
+  <line x1="368" y1="200" x2="144" y2="312" stroke="#B87333" stroke-width="2" opacity="0.4"/>
+
+</svg>
