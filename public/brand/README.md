@@ -15,13 +15,16 @@ Theme-specific marks are the files screens render. Do not redraw them. Originals
 | `public/brand/leh-icon-dark.svg`         | **UI (preferred)** App icon for dark surfaces (navy field, white outlines) |
 | `public/brand/leh-icon-dark.png`         | Raster fallback / master. 1254×1254, transparent corners            |
 | `public/brand/leh-icon-dark-128.png`     | 128px derivative of the dark icon for the root error document       |
-| `public/brand/leh-icon-blue.png`         | Blue mark used for the browser icon and web manifest                |
-| `public/brand/leh-icon-blue-192.png`     | Web manifest smaller icon                                           |
+| `public/brand/leh-icon-light-192.png`    | Web manifest icon (192px), derived from `leh-icon-light.png`        |
+| `public/brand/leh-icon-light-512.png`    | Web manifest icon (512px) and source for `src/app/icon.png`         |
+| `public/brand/leh-icon-blue.png`         | Legacy blue mark; no longer used for tab or manifest icons          |
+| `public/brand/leh-icon-blue-192.png`     | Legacy manifest size; retained for reference only                   |
 | `public/brand/leh-horizontal.png`        | Previous horizontal master. Opaque white field. Not used in the UI  |
 | `public/brand/leh-icon-minimal.png`      | Previous light icon. Opaque white field. Not used in the UI         |
-| `src/app/favicon.ico`                    | Multi-resolution browser tab icon (16, 32, 48, 64)                  |
-| `src/app/icon.png`                       | Next.js app icon                                                    |
-| `src/app/apple-icon.png`                 | Apple touch icon                                                    |
+| `src/app/favicon.ico`                    | Browser tab icon (16–64px), from `leh-icon-light.png`               |
+| `src/app/icon.png`                       | Next.js app icon (512px), from `leh-icon-light.png`                 |
+| `src/app/apple-icon.png`                 | Apple touch icon (180px), from `leh-icon-light.png`                 |
+| `public/brand/leh-icon-dark-128.png`     | Tab icon when `prefers-color-scheme: dark` (see root metadata)       |
 | `public/site.webmanifest`                | Installed-app name and icons                                        |
 | `public/brand/originals/*.png`           | Unmodified source artwork                                           |
 
