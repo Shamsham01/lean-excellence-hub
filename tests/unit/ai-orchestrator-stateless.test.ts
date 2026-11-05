@@ -18,6 +18,7 @@ const { getAiEnvironment } = vi.hoisted(() => ({
 
 const createResponseCalls: CreateResponseInput[] = [];
 let providerShouldTimeout = false;
+let providerShouldHang = false;
 
 class TrackingOpenAiProvider implements AIProvider {
   readonly name = "openai";
@@ -30,6 +31,9 @@ class TrackingOpenAiProvider implements AIProvider {
     input: CreateResponseInput,
   ): Promise<CreateResponseResult> {
     createResponseCalls.push(structuredClone(input));
+    if (providerShouldHang) {
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
+    }
     if (providerShouldTimeout) {
       throw new Error(
         "Lean AI took too long to finish this turn. Nothing was saved to your case.",
@@ -139,6 +143,8 @@ vi.mock("@/platform/ai/tools/problem-solving-executors", () => ({
 
 import { reconcileCompletedAiRunTurn } from "@/platform/ai/ai-run-reconciliation";
 import { runAiTurn } from "@/platform/ai/orchestrator";
+import { AI_STALE_RUN_AFTER_MS } from "@/platform/ai/run-deadline";
+import { recoverStaleAiRunsForSession } from "@/platform/ai/stale-ai-run-recovery";
 
 function sessionLookup(caseId: string) {
   return vi.fn(() => ({
@@ -160,6 +166,8 @@ describe("runAiTurn stateless tool continuation", () => {
   beforeEach(() => {
     createResponseCalls.length = 0;
     providerShouldTimeout = false;
+    providerShouldHang = false;
+    vi.mocked(recoverStaleAiRunsForSession).mockClear();
     executeProblemSolvingToolMock.mockReset();
     failAiRunBestEffortMock.mockClear();
     executeProblemSolvingToolMock.mockResolvedValue({
@@ -203,6 +211,13 @@ describe("runAiTurn stateless tool continuation", () => {
     });
 
     expect(createResponseCalls).toHaveLength(2);
+    expect(createResponseCalls[0]?.maxRetries).toBe(0);
+    expect(createResponseCalls[1]?.maxRetries).toBe(0);
+    expect(recoverStaleAiRunsForSession).toHaveBeenCalledWith(
+      expect.anything(),
+      "session-1",
+      AI_STALE_RUN_AFTER_MS,
+    );
     expect(createResponseCalls[0]?.model).toBe("gpt-test");
     expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]?.timeoutMs).toBeLessThanOrEqual(45_000);
@@ -478,5 +493,147 @@ describe("runAiTurn stateless tool continuation", () => {
     ).rejects.toThrow(/not authorised for this case/);
     expect(rpc).not.toHaveBeenCalled();
     expect(createResponseCalls).toHaveLength(0);
+  });
+
+  it("settles a provider call that outlives the turn budget without a second attempt", async () => {
+    providerShouldHang = true;
+    getAiEnvironment.mockReturnValue({
+      AI_MODEL_DEFAULT: "gpt-test",
+      AI_MODEL_REASONING: "low",
+      AI_TURN_WALL_CLOCK_MS: 4_000,
+      AI_RUN_TIMEOUT_MS: 45_000,
+    });
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-hang", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          return { data: "claimed", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    await expect(
+      runAiTurn({
+        supabase: supabase as never,
+        sessionId: "session-hang",
+        caseId: "case-1",
+        mode: "facilitate",
+        userMessage: "Facilitate a 5 Whys for the hot-running seal defect.",
+        idempotencyKey: "idem-hang",
+        conversationHistory: [],
+      }),
+    ).rejects.toThrow(/took too long/i);
+
+    expect(createResponseCalls).toHaveLength(1);
+    expect(createResponseCalls[0]?.maxRetries).toBe(0);
+    expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call the provider when the session already has a running turn", async () => {
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return {
+            data: null,
+            error: { code: "23505", message: "duplicate key" },
+          };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    await expect(
+      runAiTurn({
+        supabase: supabase as never,
+        sessionId: "session-busy",
+        caseId: "case-1",
+        mode: "facilitate",
+        userMessage: "Facilitate a 5 Whys for the seal defect.",
+        idempotencyKey: "idem-busy",
+        conversationHistory: [],
+      }),
+    ).rejects.toThrow(/still finishing/i);
+    expect(createResponseCalls).toHaveLength(0);
+    expect(recoverStaleAiRunsForSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("continues one claimed turn after a stale running row releases the session", async () => {
+    let starts = 0;
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          starts += 1;
+          if (starts === 1) {
+            return {
+              data: null,
+              error: { code: "23505", message: "duplicate key" },
+            };
+          }
+          return { data: "run-after-stale", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          return { data: "claimed", error: null };
+        }
+        if (name === "finish_ai_run") {
+          return { data: "assistant-after-stale", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    const result = await runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-after-stale",
+      caseId: "case-1",
+      mode: "facilitate",
+      userMessage: "Facilitate a 5 Whys for the seal defect.",
+      idempotencyKey: "idem-after-stale",
+      conversationHistory: [],
+    });
+
+    expect(result.runId).toBe("run-after-stale");
+    expect(createResponseCalls.length).toBeGreaterThan(0);
+    expect(createResponseCalls.every((call) => call.maxRetries === 0)).toBe(
+      true,
+    );
+  });
+
+  it("fails the run once when finalisation fails and does not start another provider call", async () => {
+    const finishError = { code: "P0001", message: "finish failed" };
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-finish-failed", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          return { data: "claimed", error: null };
+        }
+        if (name === "finish_ai_run") {
+          return { data: null, error: finishError };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    await expect(
+      runAiTurn({
+        supabase: supabase as never,
+        sessionId: "session-finish-failed",
+        caseId: "case-1",
+        mode: "review",
+        userMessage: "Review the 5 Whys chain.",
+        idempotencyKey: "idem-finish-failed",
+        conversationHistory: [],
+      }),
+    ).rejects.toEqual(finishError);
+    expect(createResponseCalls).toHaveLength(2);
+    expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,9 +1,16 @@
 import "server-only";
 
+import { AI_TURN_WALL_CLOCK_USER_MESSAGE } from "@/platform/ai/ai-turn-messages";
 import {
   AI_PROVIDER_ERROR_CODES,
   AiProviderError,
 } from "@/platform/ai/providers/errors";
+
+export {
+  AI_TURN_IN_PROGRESS_MESSAGE,
+  AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+  AI_TURN_WALL_CLOCK_USER_MESSAGE,
+} from "@/platform/ai/ai-turn-messages";
 
 /** Reserve time for Postgres finalisation after the last provider call. */
 export const AI_TURN_FINALIZE_BUFFER_MS = 2_500;
@@ -11,16 +18,25 @@ export const AI_TURN_FINALIZE_BUFFER_MS = 2_500;
 /** Minimum timeout passed to a single provider call. */
 export const AI_TURN_MIN_PROVIDER_TIMEOUT_MS = 1_000;
 
+/**
+ * One provider attempt plus finalisation must finish inside Netlify's
+ * synchronous function limit. That limit is 60 seconds and is not configurable.
+ * The OpenAI SDK retries connection timeouts by default, so a 45s timeout can
+ * start a second attempt and be killed at 60s before `fail_ai_run` runs.
+ */
 export const AI_TURN_WALL_CLOCK_DEFAULT_MS = 45_000;
 
-export const AI_TURN_WALL_CLOCK_USER_MESSAGE =
-  "Lean AI took too long to finish this turn. Nothing was saved to your case. Your message is still here — try a shorter question or retry in a moment.";
+/** Netlify synchronous execution limit. Not configurable. */
+export const AI_SYNC_HOST_LIMIT_MS = 60_000;
 
-export const AI_TURN_UNCERTAIN_COMPLETION_MESSAGE =
-  "Lean AI did not confirm whether this turn finished. Wait a moment, then send the same message again to collect the result. Do not assume nothing was saved.";
+/**
+ * Wait past the host limit before another request treats a `running` row as
+ * abandoned. A live turn is still inside the 60s limit until then.
+ */
+export const AI_STALE_RUN_GRACE_MS = 5_000;
 
-export const AI_TURN_IN_PROGRESS_MESSAGE =
-  "Lean AI is still finishing this request. Wait a moment, then send the same message again to collect the result.";
+export const AI_STALE_RUN_AFTER_MS =
+  AI_SYNC_HOST_LIMIT_MS + AI_STALE_RUN_GRACE_MS;
 
 export type AiRunDeadline = {
   readonly wallClockMs: number;
@@ -87,7 +103,7 @@ export function turnWallClockExceededError(
   );
 }
 
-/** Race work against remaining turn budget (tools, RPC finalisation). */
+/** Race work against remaining turn budget (provider, tools, finalisation). */
 export async function runWithinAiTurnBudget<T>(
   deadline: AiRunDeadline,
   provider: string,

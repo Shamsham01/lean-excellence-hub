@@ -33,6 +33,7 @@ import { failAiRunBestEffort } from "@/platform/ai/fail-ai-run-best-effort";
 import {
   AI_TURN_IN_PROGRESS_MESSAGE,
   AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+  AI_STALE_RUN_AFTER_MS,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
   runWithinAiTurnBudget,
@@ -141,22 +142,37 @@ export async function runAiTurn(
   await recoverStaleAiRunsForSession(
     input.supabase,
     input.sessionId,
-    wallClockMs + 30_000,
+    AI_STALE_RUN_AFTER_MS,
   );
 
-  const { data: runId, error: startError } = await input.supabase.rpc(
-    "start_ai_run",
-    {
-      target_ai_session_id: input.sessionId,
-      target_user_message: input.userMessage,
-      target_idempotency_key: input.idempotencyKey,
-      target_provider: provider.name,
-      target_model: model,
-      target_prompt_key: PROMPT_KEY,
-      target_prompt_version: PROMPT_VERSION,
-      target_prompt_hash: promptHash,
-    },
-  );
+  const started = await startProblemSolvingRun(input, {
+    provider: provider.name,
+    model,
+    promptHash,
+  });
+  let runId = started.runId;
+  let startError = started.error;
+  if (startError && isUniqueRunningRun(startError)) {
+    await recoverStaleAiRunsForSession(
+      input.supabase,
+      input.sessionId,
+      AI_STALE_RUN_AFTER_MS,
+    );
+    const retried = await startProblemSolvingRun(input, {
+      provider: provider.name,
+      model,
+      promptHash,
+    });
+    runId = retried.runId;
+    startError = retried.error;
+    if (startError && isUniqueRunningRun(startError)) {
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+        AI_TURN_IN_PROGRESS_MESSAGE,
+        { provider: provider.name, model },
+      );
+    }
+  }
 
   if (startError || !runId) {
     throw startError ?? new Error("Failed to start AI run");
@@ -225,16 +241,25 @@ export async function runAiTurn(
         provider.name,
         model,
       );
-      const response = await provider.createResponse({
+      const response = await runWithinAiTurnBudget(
+        deadline,
+        provider.name,
         model,
-        systemPrompt,
-        messages,
-        tools: buildOpenAiTools(),
-        maxOutputTokens: prepared.maxOutputTokens,
-        timeoutMs: perCallTimeoutMs,
-        reasoningEffort: prepared.reasoningEffort,
-        ...(expectsStructuredOutput ? { expectsStructuredOutput: true } : {}),
-      });
+        () =>
+          provider.createResponse({
+            model,
+            systemPrompt,
+            messages,
+            tools: buildOpenAiTools(),
+            maxOutputTokens: prepared.maxOutputTokens,
+            timeoutMs: perCallTimeoutMs,
+            maxRetries: 0,
+            reasoningEffort: prepared.reasoningEffort,
+            ...(expectsStructuredOutput
+              ? { expectsStructuredOutput: true }
+              : {}),
+          }),
+      );
 
       providerRequestId = response.responseId ?? providerRequestId;
       totalUsage.inputTokens += response.usage.inputTokens;
@@ -441,6 +466,32 @@ export async function runAiTurn(
     }
     throw error;
   }
+}
+
+function isUniqueRunningRun(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505"
+  );
+}
+
+async function startProblemSolvingRun(
+  input: RunAiTurnInput,
+  identity: { provider: string; model: string; promptHash: string },
+): Promise<{ runId: string | null; error: unknown }> {
+  const { data, error } = await input.supabase.rpc("start_ai_run", {
+    target_ai_session_id: input.sessionId,
+    target_user_message: input.userMessage,
+    target_idempotency_key: input.idempotencyKey,
+    target_provider: identity.provider,
+    target_model: identity.model,
+    target_prompt_key: PROMPT_KEY,
+    target_prompt_version: PROMPT_VERSION,
+    target_prompt_hash: identity.promptHash,
+  });
+  return { runId: typeof data === "string" ? data : null, error };
 }
 
 function fallbackEnvelope(message: string): FacilitatorEnvelope {
