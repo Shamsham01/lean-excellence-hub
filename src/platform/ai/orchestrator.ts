@@ -117,7 +117,10 @@ function isProblemSolvingWriteTool(name: string): boolean {
 
 function resolveProblemSolvingWorkflow(
   mode: AiSessionMode,
-): "problem_solving_challenge" | "problem_solving_facilitate" | "problem_solving" {
+):
+  | "problem_solving_challenge"
+  | "problem_solving_facilitate"
+  | "problem_solving" {
   if (mode === "challenge") {
     return "problem_solving_challenge";
   }

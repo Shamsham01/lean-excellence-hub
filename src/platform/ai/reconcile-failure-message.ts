@@ -12,9 +12,7 @@ export type AiRunFailureSnapshot = {
   final_output: string | null;
 };
 
-export function reconcileFailureMessage(
-  run: AiRunFailureSnapshot,
-): string {
+export function reconcileFailureMessage(run: AiRunFailureSnapshot): string {
   const category = run.error_category?.trim() ?? "";
   if (category === "interrupted_unknown_billing") {
     return AI_TURN_INTERRUPTED_BILLING_MESSAGE;
@@ -24,7 +22,9 @@ export function reconcileFailureMessage(
   }
   const finalOutput = run.final_output?.trim();
   if (finalOutput) {
-    return finalOutput.length > 500 ? `${finalOutput.slice(0, 497)}…` : finalOutput;
+    return finalOutput.length > 500
+      ? `${finalOutput.slice(0, 497)}…`
+      : finalOutput;
   }
   if (run.status === "denied") {
     return "Lean AI was denied permission to finish this turn. Check your role on this case and try again.";

@@ -340,7 +340,10 @@ export function CaseWorkspace({
           />
           {canUseAi && providerAvailable ? (
             <PendingAiProposalsList
-              key={pendingAiProposals.map((proposal) => proposal.id).join("-") || "none"}
+              key={
+                pendingAiProposals.map((proposal) => proposal.id).join("-") ||
+                "none"
+              }
               caseId={detail.id}
               initialProposals={pendingAiProposals}
             />
