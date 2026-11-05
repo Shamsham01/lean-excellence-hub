@@ -75,31 +75,108 @@ Owner marks R1 complete after smoke + product review backlog triage (`docs/PRODU
 
 ## R2 — LeanAI problem solving MVP
 
-**Goal:** Reliable facilitated problem solving as the flagship AI workflow.
+**Goal:** Practitioner-grade Problem Solving facilitation: honest capture, method fit on **seeded** methods, anti-pattern coaching, falsifiable verification, and a default **12-week sustainability** design for SLT-ready closure — without autonomous domain writes.
 
-**Owning agent:** NEXUS + KAIZEN
+**Owning agent:** KAIZEN (domain) + NEXUS (runtime) + VERIFY (acceptance)
 
-### Epics
+**Authoritative requirements (KAIZEN):** [R2 Problem Solving LeanAI Facilitator — Canvas](https://cursor.com/canvas/store-8ca2b392-604f-4ea5-a5c7-8b1614a999ad/8fbe9136-37f1-4d3a-b8c4-ffde7dfebdc0)
 
-| Epic | Milestones | Issues |
+**Grounding:** [`docs/architecture/leanai-superpowers.md`](../architecture/leanai-superpowers.md) (capability matrix, forbidden proposals, seeded methods, retrieval rules). Programme context: [#310](https://github.com/Shamsham01/lean-excellence-hub/issues/310) (superpowers platform). **Out of R2:** organisational learning graph / proactive OpEx advice in [#314](https://github.com/Shamsham01/lean-excellence-hub/issues/314) — after facilitation honesty and retrieval boundaries are proven.
+
+**Release hygiene (not a substitute for S0–S5):** R0 must close activation (#324), run settlement (#326, PR #327, ADR-0019), and Skills contract (#325) before R2 slices ship to production.
+
+### Build order (slices)
+
+Ship in order. **S0 gates every R2 change** (prompt, tool, UI, knowledge bundle).
+
+| Slice | Name | Intent | Smallest valuable outcome |
+| --- | --- | --- | --- |
+| **S0** | Guardrails | Human authority + honest labels + method-record truth | Every R2 PR passes S0 acceptance; no regression on forbidden writes |
+| **S1** | Intelligent capture | 5W1H, baseline, scope, target as **typed proposals** with **visible gaps** | One-sentence complaint → draft brief + gap list; accept/decline per field |
+| **S2** | Method-fit rules | Recommend onto `five_why`, `a3_structured`, `rapid_rca` only | Falsifiable rule table + fixtures; 8D/DMAIC = methodology rec only |
+| **S3** | Facilitation anti-patterns | Honest questioning and cause language | Detect leading/circular/reverse-engineered chains; observation ≠ hypothesis ≠ verified |
+| **S4** | Falsifiable verification | Test design before “supported” | **Supported ≠ verified**; verify only via human `verify_cause` |
+| **S5** | Sustainability + SLT pack | Default **12 weekly observations**; closure checklist | 12-week plan proposals; SLT draft with **forecast ≠ validation** |
+
+#### S0 — Guardrails (release gates on every R2 change)
+
+- LeanAI **never** verifies a cause, closes a case, records effectiveness pass, or approves a benefit — proposals only; person accepts via existing RPCs (aligned with superpowers forbidden types).
+- Every factual/causal claim carries a **source class**: verified LEH product fact · current authorised site fact · historical verified outcome · unverified user statement · Lean methodology recommendation · AI hypothesis.
+- Historical closed-case matches are **evidence about that case only**, never proof for the open problem (`historical_verified_outcome` framing).
+- **Seeded methods today:** `five_why`, `a3_structured`, `rapid_rca`. **8D / DMAIC** may be recommended for **methodology fit** but must **not** be presented as selectable method records until seeded.
+
+#### S1 — Intelligent capture (first feature slice)
+
+- Complete minimal problem brief: 5W1H, measurable baseline, in/out scope, target condition — **fewest turns** with **gaps explicit** (no invented numbers).
+- Prefer **structured proposals** (title, statement, baseline, scope, target) over chat essays; no silent overwrite of confirmed fields.
+- Long narrative: extract candidate facts; confirm ambiguities only.
+- Baseline and target share a metric family, or agree an **observation definition** instead of a fake KPI.
+- Related-work search after enough text: **non-blocking**, empty = no hidden-match language (superpowers retrieval rules).
+
+#### S2 — Method-fit rules
+
+- Explicit, falsifiable rules; default bias = **smallest method** matching risk and recurrence; user override recorded as **user choice**, not AI decision.
+- **five_why:** local, linear, containable, speed over documentation depth.
+- **rapid_rca:** urgent multi-factor disruption; containment before deep cause work.
+- **a3_structured:** cross-functional / recurring after simpler attempts; shared storyboard need.
+- **8D / DMAIC fit:** labelled **Lean methodology recommendation**; map to nearest seeded method + **product gap** note until native records exist.
+- Never recommend a method because the user **solution-shopped** first (countermeasure before problem definition).
+
+#### S3 — Facilitation anti-patterns
+
+- Modes: Facilitate · Challenge · Review · Ask (existing session modes).
+- One primary question per turn in Facilitate; Challenge stress-tests before accepting chains.
+- Detect and rewrite/refuse: **leading questions**, **circular 5 Whys**, **causes reverse-engineered from countermeasures**, solution-first language.
+- Strict language: **observation · hypothesis · verified**; operator/human error not accepted as verified root without system conditions.
+
+#### S4 — Falsifiable verification
+
+- Hypothesis → testing requires a **falsifiable test** (true/false predictions, where/when, observer, pass/fail).
+- **Supported is not verified**; verified only after human `verify_cause` with evidence recorded.
+- Prefer go-and-see / before-after / controlled compare over meeting consensus.
+- Review mode: discriminating tests when multiple hypotheses are open.
+
+#### S5 — Default 12-week sustainability + SLT pack
+
+- Default **12 weekly observations** of the improved standard (framework override allowed, labelled).
+- Weekly check = pass / finding / **missed** (no record = missed, not pass).
+- SLT closure pack: brief, method, verified or explicitly unresolved cause path, countermeasures with owners/dates, **benefit forecast vs validation separate**, 12-week result.
+- No invented financial savings; competence not inferred from training completion alone.
+
+### Parallel tracks (not slice replacements)
+
+| Track | Owner | Notes |
 | --- | --- | --- |
-| E2.1 Facilitator SLO | Turn latency/error UX; prompt versioning discipline | #326 closed, ADR-0019 live |
-| E2.2 Method fidelity | Activation/session semantics; method education copy | #324, KAIZEN reviews |
-| E2.3 Usage visibility | Customer-friendly usage surfaces | #316 |
-| E2.4 Module knowledge (product) | Release-matched internal knowledge | #311 |
+| Facilitator SLO / run lifecycle | NEXUS | #326 closed, ADR-0019 + PR #327 on deployed SHA |
+| Activation / session UX | PIXEL + SENTINEL | #324 — pinned draft method honesty |
+| Customer usage surfaces | LAUNCH / NEXUS | #316 |
+| Release-matched PS knowledge bundle | NEXUS | #311 extends superpowers first slice |
 
-### Acceptance criteria
+### Out of R2 MVP
 
-- Facilitator success rate &gt; agreed threshold on smoke suite (define in VERIFY runbook).
-- Prompt `PROMPT_VERSION` bump process documented when behaviour changes.
+- Seeding native **8D** and **DMAIC** problem-solving **method records** (product seeding work; facilitator recommends fit only until then).
+- [#314](https://github.com/Shamsham01/lean-excellence-hub/issues/314) **organisational learning graph** and proactive OpEx prompts.
+- Semantic / **pgvector** search; cross-customer benchmarks.
+- **Autonomous** verify, close, benefit validation, or RBAC changes.
+- Inferring competence from training completion alone.
 
-### Gates
+### Acceptance criteria (R2 exit)
 
-- No stuck `running` runs &gt; 5 minutes without automated or session recovery path.
+- Canvas requirements **S0-1 through S5-3** (P0 rows) satisfied with linked tests or scripted facilitator fixtures (VERIFY sign-off).
+- S0 checklist attached to every merged R2 PR.
+- S1 shipped and demo-able on fresh org: capture → typed proposals → human accept without invented metrics.
+- No facilitator turn completes forbidden proposal types; `PROMPT_VERSION` bumped when behaviour changes.
+- R0 reliability gates still met (no stuck `running` runs beyond session recovery window).
 
-### Human approval
+### Security / reliability gates
 
-Owner approves MVP label for sales demos (coordination with LAUNCH).
+- S0 forbidden-write regression tests green on every R2 PR.
+- Historical search and facilitator tools remain caller-scoped; no cross-org leakage (SENTINEL).
+- Full Regression when R2 PRs touch orchestrator, prompts, or RPCs.
+
+### Human approval gate
+
+KAIZEN + owner sign-off on facilitator behaviour against the Canvas P0 set; LAUNCH may label “demo-ready” only after S1 + S0 on published SHA.
 
 ---
 
@@ -115,7 +192,7 @@ Owner approves MVP label for sales demos (coordination with LAUNCH).
 | --- | --- | --- |
 | E3.1 Notifications reliability | Outbox/delivery worker hardening | ADR-0016 runbooks |
 | E3.2 Schedules & ICS | Lifecycle completeness | `docs/architecture/schedule-lifecycle.md` |
-| E3.3 Sustainment playbook | 12-week templates in product copy/training | KAIZEN **Proposed** content |
+| E3.3 Sustainment execution | Schedules/actions for 12-week checks in product (R2 S5 designs the plan) | KAIZEN + CONNECT |
 | E3.4 Similarity & suggestions | Permission-safe related items | #312 |
 
 ### Acceptance criteria
@@ -224,8 +301,9 @@ Founder commercial launch + live billing enablement.
 | #324, #325, #326 | R0 | Active implementation workstreams |
 | #327 | R0 | Merge/deploy decision by owner |
 | #318 | R1 / R5 | LeanAI UX |
-| #316 | R2 | Usage governance |
-| #311–#314, #310 | R2 / R4 | LeanAI knowledge & intelligence |
+| #316 | R2 | Usage governance (parallel track) |
+| #311, #310 | R2 / R4 | Knowledge bundle & superpowers programme |
+| #314 | R4 (not R2) | Learning graph — after R2 S0–S4 proven |
 | #267 | R1 | Module setup |
 | #292, #264 | R1 | Onboarding |
 | #170, #235, #283, #303 | R6 | Commercial |
