@@ -70,7 +70,8 @@ export function PendingAiProposalsList({
       <CardContent className="flex flex-col gap-3">
         {visible.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            {emptyHint ?? "No pending proposals. Use Lean AI chat or Draft this stage to create some."}
+            {emptyHint ??
+              "No pending proposals. Use Lean AI chat or Draft this stage to create some."}
           </p>
         ) : null}
         {actionMessage ? (
