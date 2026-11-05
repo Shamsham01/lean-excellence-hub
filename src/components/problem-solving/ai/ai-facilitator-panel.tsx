@@ -253,7 +253,7 @@ export function AiFacilitatorPanel({
   const shellClass =
     layout === "dock"
       ? cn(
-          "pps-lean-ai-copilot flex min-h-0 flex-1 flex-col bg-card lg:border-l lg:border-border",
+          "pps-lean-ai-copilot flex min-h-0 flex-1 flex-col bg-copilot-surface lg:border-l lg:border-primary/15",
           collapsed ? "lg:w-12 lg:flex-none" : "lg:w-[min(100%,22rem)] xl:w-96",
         )
       : "rounded-xl border border-border bg-card shadow-sm";

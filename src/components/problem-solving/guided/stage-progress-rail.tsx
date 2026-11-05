@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 import {
   sortMethodStages,
   type MethodStage,
@@ -14,7 +16,6 @@ type StageProgressRailProps = {
   canMoveStage: boolean;
   onMoveStage?: (stageId: string) => void;
   movingStage?: boolean;
-  /** When set, only render the matching rail (default: both). */
   variant?: "both" | "mobile" | "desktop";
 };
 
@@ -30,22 +31,86 @@ function stageVisualState(
   return "upcoming";
 }
 
-const stateStyles = {
-  complete: {
-    row: "bg-emerald-500/10 text-emerald-900 dark:text-emerald-100",
-    dot: "bg-emerald-500",
-  },
-  current: {
-    row: "border border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-50",
-    dot: "bg-amber-500",
-  },
-  upcoming: {
-    row: "text-muted-foreground hover:bg-muted/50",
-    dot: "bg-muted-foreground/35",
-  },
-} as const;
+function StageTimelineNode({
+  stage,
+  index,
+  currentIndex,
+  activeViewId,
+  isLast,
+  movingStage,
+  onViewStage,
+}: {
+  stage: MethodStage;
+  index: number;
+  currentIndex: number;
+  activeViewId: string | null;
+  isLast: boolean;
+  movingStage?: boolean;
+  onViewStage: (stageId: string) => void;
+}) {
+  const isViewing = stage.id === activeViewId;
+  const visual = stageVisualState(index, currentIndex, isViewing);
 
-function StageButton({
+  return (
+    <li className="relative flex gap-3 pb-1">
+      {!isLast ? (
+        <span
+          className={cn(
+            "absolute top-9 left-[15px] w-px",
+            visual === "complete" ? "bg-success" : "bg-border",
+            "h-[calc(100%-0.25rem)]",
+          )}
+          aria-hidden
+        />
+      ) : null}
+      <button
+        type="button"
+        data-testid={`pps-stage-${stage.semantic_stage_key}`}
+        disabled={movingStage}
+        onClick={() => onViewStage(stage.id)}
+        className={cn(
+          "group flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150",
+          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+          visual === "current" &&
+            "bg-primary/5 ring-2 ring-primary/50 shadow-[0_0_0_1px_rgb(70_95_255/0.35)]",
+          visual === "upcoming" && "hover:bg-accent/60",
+          movingStage && "opacity-70",
+        )}
+      >
+        <span
+          className={cn(
+            "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold",
+            visual === "complete" &&
+              "border-success bg-success text-success-foreground",
+            visual === "current" &&
+              "border-primary bg-card text-primary shadow-[0_0_12px_rgb(70_95_255/0.45)]",
+            visual === "upcoming" &&
+              "border-border bg-card text-muted-foreground",
+          )}
+          aria-hidden
+        >
+          {visual === "complete" ? (
+            <Check className="size-4" strokeWidth={2.5} />
+          ) : (
+            index + 1
+          )}
+        </span>
+        <span
+          className={cn(
+            "min-w-0 pt-1 leading-snug font-medium",
+            visual === "complete" && "text-foreground",
+            visual === "current" && "text-foreground",
+            visual === "upcoming" && "text-muted-foreground",
+          )}
+        >
+          {stage.title}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function StageButtonMobile({
   stage,
   index,
   currentIndex,
@@ -62,7 +127,6 @@ function StageButton({
 }) {
   const isViewing = stage.id === activeViewId;
   const visual = stageVisualState(index, currentIndex, isViewing);
-  const styles = stateStyles[visual];
 
   return (
     <button
@@ -71,18 +135,21 @@ function StageButton({
       disabled={movingStage}
       onClick={() => onViewStage(stage.id)}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
-        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-        styles.row,
-        isViewing && visual !== "current" && "ring-1 ring-ring/40",
+        "flex min-w-[8.5rem] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors duration-150",
+        visual === "complete" && "border-success/30 bg-success/10",
+        visual === "current" && "border-primary/50 bg-primary/5 shadow-sm",
+        visual === "upcoming" && "border-border/50 bg-card",
         movingStage && "opacity-70",
       )}
     >
-      <span
-        className={cn("size-2 shrink-0 rounded-full", styles.dot)}
-        aria-hidden
-      />
-      <span className="min-w-0 leading-snug font-medium">{stage.title}</span>
+      {visual === "complete" ? (
+        <Check className="size-4 text-success" aria-hidden />
+      ) : (
+        <span className="font-mono-data text-xs text-muted-foreground">
+          {index + 1}
+        </span>
+      )}
+      <span className="truncate font-medium">{stage.title}</span>
     </button>
   );
 }
@@ -112,8 +179,8 @@ export function StageProgressRail({
         >
           <ol className="flex min-w-max gap-2">
             {sorted.map((stage, index) => (
-              <li key={stage.id} className="min-w-[8.5rem] shrink-0">
-                <StageButton
+              <li key={stage.id}>
+                <StageButtonMobile
                   stage={stage}
                   index={index}
                   currentIndex={currentIndex}
@@ -129,21 +196,21 @@ export function StageProgressRail({
       {showDesktop ? (
         <nav
           aria-label="Problem solving stages"
-          className="hidden min-h-0 w-56 shrink-0 flex-col overflow-y-auto border-r border-border bg-muted/20 px-2 py-3 lg:flex"
+          className="hidden min-h-0 w-64 shrink-0 flex-col overflow-y-auto border-r border-border/60 bg-card/50 px-3 py-4 lg:flex"
           data-testid="pps-stage-rail"
         >
-          <ol className="flex flex-col gap-1">
+          <ol className="flex flex-col">
             {sorted.map((stage, index) => (
-              <li key={stage.id}>
-                <StageButton
-                  stage={stage}
-                  index={index}
-                  currentIndex={currentIndex}
-                  activeViewId={activeViewId}
-                  {...(movingStage ? { movingStage } : {})}
-                  onViewStage={onViewStage}
-                />
-              </li>
+              <StageTimelineNode
+                key={stage.id}
+                stage={stage}
+                index={index}
+                currentIndex={currentIndex}
+                activeViewId={activeViewId}
+                isLast={index === sorted.length - 1}
+                {...(movingStage ? { movingStage } : {})}
+                onViewStage={onViewStage}
+              />
             ))}
           </ol>
         </nav>

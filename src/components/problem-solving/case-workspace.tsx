@@ -351,7 +351,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         ) : null}
 
         <section
-          className="flex min-h-0 min-w-0 flex-1 flex-col bg-card lg:border-r lg:border-border"
+          className="flex min-h-0 min-w-0 flex-1 flex-col bg-card lg:border-r lg:border-border/60"
           data-testid="pps-stage-canvas"
         >
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">

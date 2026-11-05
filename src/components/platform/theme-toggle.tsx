@@ -26,3 +26,25 @@ export function ThemeToggle() {
     </Button>
   );
 }
+
+export function ThemeToggleIcon() {
+  const { resolvedTheme, setTheme } = useTheme();
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="size-9 min-h-9"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      aria-label="Toggle theme"
+      data-testid="platform-theme-toggle"
+    >
+      {resolvedTheme === "dark" ? (
+        <Sun className="size-4" aria-hidden />
+      ) : (
+        <Moon className="size-4" aria-hidden />
+      )}
+    </Button>
+  );
+}

@@ -27,6 +27,7 @@ describe("shared platform shell mobile layout", () => {
     expect(shell).toContain(
       "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
     );
+    expect(shell).toContain("PlatformTopbar");
   });
 
   it("allows page header actions to wrap on narrow viewports", () => {
