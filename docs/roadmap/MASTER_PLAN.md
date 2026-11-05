@@ -2,7 +2,66 @@
 
 Living roadmap aligned to **open GitHub issues** and `docs/knowledge/`. P0 reliability work (#324–#326, PR #327) is owned by **separate Cursor implementation workstreams** — this document coordinates, does not duplicate their PRs.
 
-**Legend:** **Gate** = must pass before phase exit. **Human approval** = platform owner explicit sign-off.
+**Legend:** **Gate** = must pass before phase exit. **Human approval** = platform owner explicit sign-off. **Pilot** = required for founder pilot cohort; **Post-pilot** = after first 1–3 month early-supporter tranche.
+
+---
+
+## Pilot programme (founder direction)
+
+**Horizon:** **1–3 months** to first pilot cohort on production (after Pilot Readiness cut line below).
+
+**Cohort shape (choose one per tranche):**
+
+| Option | Shape |
+| --- | --- |
+| **A** | **One organisation with 5+ sites**, plus **one additional organisation** (any site count) |
+| **B** | **~5 single-site organisations** |
+
+Early supporters receive commercial privileges via the [Early Supporter Programme](#e66-early-supporter-programme-post-pilot-enrolment-pilot-commitments) (R6 / LAUNCH).
+
+### Pilot win criteria
+
+Founder-visible outcomes for the cohort:
+
+1. **Fast full setup from templates** — new org/site teams reach usable module configuration quickly (Quick Start / template paths), gaining momentum without bespoke implementation.
+2. **AI Problem Solving → actions and results** — facilitated cases lead to **meaningful accepted actions** and measurable movement (countermeasures, owners, dates), not chat-only engagement.
+3. **Integrated Assessments, Audits, and Gemba Walks** — digital workflows **replace spreadsheet trackers** for the pilot scope: structured execution, **photos/evidence**, **notifications**, and **action management** (including auto-created actions where the product supports them today).
+4. **LeanAI action stewardship (human-in-the-loop)** — LeanAI **oversees** open actions: follow-ups, requests for data/evidence/clarification, **proposed** suggestions and next steps; **every record change** remains **human-approved** (no autonomous verify/close/benefit/RBAC writes; aligned with `docs/architecture/leanai-superpowers.md`).
+
+### Pilot Readiness cut line (R0–R3)
+
+Everything **not listed here** is **post-pilot** unless the founder explicitly pulls it forward. R4–R6 remain post-pilot except Early Supporter **commitments** captured under R6.
+
+| # | Phase | Milestone | Ship for pilot | Acceptance criteria (pilot) |
+| --- | --- | --- | --- | --- |
+| P1 | R0 | **E0.1** Problem Solving activation (#324) | **Yes** | Pinned/unpinned draft → Active on seeded method; sessions start on Active; smoke on published SHA |
+| P2 | R0 | **E0.2** Facilitator run settlement (#326, PR #327, ADR-0019) | **Yes** | Turns terminal within budget; no orphaned `running` rows under test; composer retains idempotency on uncertain completion |
+| P3 | R0 | **E0.3** Skills AI contract (#325) | **Yes** | Skills builder completes discovery/proposal without `invalid_response` on pilot smoke scenarios |
+| P4 | R0 | **E0.4** Deploy & migration truth | **Yes** | Runbook records Netlify SHA ↔ Supabase migration head before each pilot release |
+| P5 | R0 | **E0.5** Preview vs prod DB policy | **Yes** | Written policy: previews use non-prod Supabase **or** previews disabled; no unreviewed preview writes to production |
+| P6 | R0 | **E0.6** Human smoke | **Yes** | `docs/qa/QA-NEW-ORG-001-runbook.md` (or successor) passed on pilot release SHA |
+| P7 | R1 | **E1.1** Template / Quick Start setup (pilot modules) | **Yes** | Maturity, Gemba, 5S, Skills (and Problem Solving manual path) setup to **published** usable state in **≤1 working session** per module on a fresh org (founder timed smoke) |
+| P8 | R1 | **E1.2** Invitation / signup (#292) | **Yes** | Pilot invitees complete signup without dead-end confirmation |
+| P9 | R1 | **E1.3** Onboarding org hint (#264) | **Yes** | Safe hint behaviour; no tenant enumeration |
+| P10 | R1 | **E1.5** LeanAI composer UX (#318) | **Stretch** | Multiline + safe Markdown if ready; not a pilot blocker if S0–S1 facilitator usable |
+| P11 | R1 | **E1.4** CookieWorks register (#67) | **Post-pilot** | Internal QA only |
+| P12 | R2 | **S0** Guardrails | **Yes** | Forbidden proposals rejected; source labels on claims; 8D/DMAIC honesty |
+| P13 | R2 | **S1** Intelligent capture | **Yes** | Win criterion (2): brief + typed proposals + visible gaps → human accept |
+| P14 | R2 | **S2** Method-fit rules | **Yes** | Recommendations only onto `five_why`, `a3_structured`, `rapid_rca` |
+| P15 | R2 | **S3** Facilitation anti-patterns (core) | **Yes** | Leading/circular/reverse-engineered detection on pilot facilitator fixtures |
+| P16 | R2 | **S4** Falsifiable verification | **Post-pilot** | Supported/testing discipline continues; full S4 P0 canvas set not required for pilot entry |
+| P17 | R2 | **S5** 12-week sustainability + SLT pack | **Post-pilot** | Pilot may use manual sustainment; R2 S5 before SLT-grade closure reporting |
+| P18 | R2 | Parallel **#316** usage surfaces | **Post-pilot** | Internal cost governance can follow pilot |
+| P19 | R3 | **E3.1** Notifications reliability | **Yes** | Win criterion (3): assessment/audit/gemba events notify assignees; delivery ledger reconciles on test org |
+| P20 | R3 | **E3.P** Field execution: Assessments, Audits, Gemba | **Yes** | Win criterion (3): pilot sites run end-to-end walks/assessments/audits in LEH with **photos/evidence**, **actions** (create/assign/complete), replacing spreadsheet tracker for pilot scope |
+| P21 | R3 | **E3.P** LeanAI action stewardship | **Yes** | Win criterion (4): LeanAI proposes follow-ups, evidence requests, and next steps on **existing** actions; humans approve all writes; no autonomous action completion |
+| P22 | R3 | **E3.2** Schedules & ICS | **Post-pilot** | Unless pilot site requires ICS for gemba/audit cadence — pull forward only by founder exception |
+| P23 | R3 | **E3.3** Sustainment execution (12-week product loop) | **Post-pilot** | After R2 S5; pilot uses weekly checks manually if needed |
+| P24 | R3 | **E3.4** Similarity & suggestions (#312) | **Post-pilot** | Optional demo; not required for pilot win |
+
+**Pilot entry gate:** P1–P9, P12–P15, P19–P21 green on the **same published SHA**; P5 documented; founder signs cohort option A or B.
+
+**Explicitly post-pilot (non-exhaustive):** R2 S4–S5 full canvas P0, R4 cross-module intelligence (#314 learning graph, vector search), R5 premium UX programme, R6 production billing & public GTM (#170, #283 live booking), LEH Lite (#235), platform owner console (#303), native 8D/DMAIC method records.
 
 ---
 
@@ -22,6 +81,8 @@ Living roadmap aligned to **open GitHub issues** and `docs/knowledge/`. P0 relia
 | E0.4 Deploy & migration truth | Record Netlify SHA ↔ Supabase migration head on every release | VERIFY smoke | #326 notes, `docs/qa/PROJECT-CURRENT-STATE.md` |
 | E0.5 Preview vs prod DB | Document env strategy; separate preview Supabase or block writes | FORGE ADR supplement | **Open question** (knowledge index) |
 | E0.6 Human smoke | QA-NEW-ORG + facilitator + Skills paths on published SHA | LAUNCH later billing optional | `docs/qa/QA-NEW-ORG-001-runbook.md` |
+
+**Pilot:** E0.1–E0.6 required (see [Pilot Readiness](#pilot-readiness-cut-line-r0r3) P1–P6).
 
 ### Acceptance criteria (measurable)
 
@@ -58,6 +119,8 @@ Owner deploy to Netlify + optional hosted migration + smoke sign-off.
 | E1.4 CookieWorks register | Close or defer items in #67 | #67 |
 | E1.5 LeanAI chat UX baseline | Multiline composer, safe Markdown | #318 |
 
+**Pilot:** E1.1–E1.3 required; E1.5 stretch; E1.4 post-pilot (P7–P11).
+
 ### Acceptance criteria
 
 - QA-NEW-ORG runbook passes on published SHA without manual DB repair.
@@ -84,6 +147,8 @@ Owner marks R1 complete after smoke + product review backlog triage (`docs/PRODU
 **Grounding:** [`docs/architecture/leanai-superpowers.md`](../architecture/leanai-superpowers.md) (capability matrix, forbidden proposals, seeded methods, retrieval rules). Programme context: [#310](https://github.com/Shamsham01/lean-excellence-hub/issues/310) (superpowers platform). **Out of R2:** organisational learning graph / proactive OpEx advice in [#314](https://github.com/Shamsham01/lean-excellence-hub/issues/314) — after facilitation honesty and retrieval boundaries are proven.
 
 **Release hygiene (not a substitute for S0–S5):** R0 must close activation (#324), run settlement (#326, PR #327, ADR-0019), and Skills contract (#325) before R2 slices ship to production.
+
+**Pilot:** S0–S3 required; S4–S5 post-pilot (P12–P17).
 
 ### Build order (slices)
 
@@ -194,6 +259,10 @@ KAIZEN + owner sign-off on facilitator behaviour against the Canvas P0 set; LAUN
 | E3.2 Schedules & ICS | Lifecycle completeness | `docs/architecture/schedule-lifecycle.md` |
 | E3.3 Sustainment execution | Schedules/actions for 12-week checks in product (R2 S5 designs the plan) | KAIZEN + CONNECT |
 | E3.4 Similarity & suggestions | Permission-safe related items | #312 |
+| E3.P Field execution (Assessments, Audits, Gemba) | Photos, notifications, action lifecycle replacing spreadsheets for pilot scope | Maturity, 5S, Gemba modules + shared actions |
+| E3.P LeanAI action stewardship | Follow-ups, evidence/clarification requests, proposed suggestions — human approves all writes | LeanAI + actions/RPCs; superpowers guardrails |
+
+**Pilot:** E3.1 + E3.P required; E3.2–E3.4 post-pilot unless founder exception (P19–P24).
 
 ### Acceptance criteria
 
@@ -210,6 +279,8 @@ Owner approves sustainment content for customer-facing use.
 ---
 
 ## R4 — Cross-module intelligence
+
+**Post-pilot** (after pilot win criteria validated; #314 not in pilot scope).
 
 **Goal:** Secure retrieval and advisory LeanAI across LEH data.
 
@@ -240,6 +311,8 @@ Owner approves expanded AI data scopes per org.
 
 ## R5 — Premium UX
 
+**Post-pilot** (pilot uses current UX; targeted fixes only if P0/P1 blockers).
+
 **Goal:** LEH premium design system applied consistently; accessibility wins.
 
 **Owning agent:** PIXEL
@@ -264,6 +337,8 @@ Owner design sign-off on marketing + platform chrome.
 
 ## R6 — Commercial launch
 
+**Post-pilot** for full commercial launch; **Early Supporter Programme** commitments apply during pilot.
+
 **Goal:** SaaS onboarding, billing, demo funnel, legal readiness.
 
 **Owning agent:** LAUNCH
@@ -277,6 +352,26 @@ Owner design sign-off on marketing + platform chrome.
 | E6.3 Demo booking & privacy | Cal.com + notice | #283, `docs/sales/*` |
 | E6.4 Platform owner console | Cross-org ops dashboard | #303 |
 | E6.5 Provider & AI commercial | OpenAI policy review per ADR-0013 | LAUNCH checklist |
+| E6.6 Early Supporter Programme | Privileges for pilot cohort + future early adopters | Founder direction (this doc) |
+
+#### E6.6 Early Supporter Programme (post-pilot enrolment; pilot commitments)
+
+**Intent:** Reward organisations that join during the **1–3 month pilot tranche** (cohort shape A or B) with durable commercial privileges as LEH scales.
+
+**Placeholder entitlements** (exact SKUs / plan flags TBD in billing ADR-0017 follow-on):
+
+| Entitlement | Description |
+| --- | --- |
+| **Early access** | Preview features behind flags for Early Supporter orgs before general availability |
+| **Premium products** | Included or discounted access to designated premium modules or capacity tiers (**placeholder** — define with `#170` / plan entitlements) |
+| **Pilot voice** | Structured feedback channel into roadmap (no SLA on feature delivery) |
+
+**Pilot cohort:** Founder selects option A or B; LAUNCH records org ids and start date in internal roster (not customer-facing marketing until privacy/legal ready).
+
+**Acceptance (programme ops):**
+
+- Written entitlement list approved by founder before first pilot org invite.
+- No Stripe live charges until E6.1 complete; pilot may run on **manual / sandbox / unmetered** arrangement documented per org.
 
 ### Acceptance criteria
 
@@ -287,10 +382,11 @@ Owner design sign-off on marketing + platform chrome.
 
 - R0 complete; no open P0/P1 billing security issues.
 - Fail-closed deploy without Stripe secrets verified.
+- Pilot Readiness cut line (R0–R3) met before Early Supporter go-live.
 
 ### Human approval
 
-Founder commercial launch + live billing enablement.
+Founder commercial launch + live billing enablement; founder approves Early Supporter roster and entitlements placeholder before cohort invites.
 
 ---
 
