@@ -4,12 +4,11 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
-  acceptProblemSolvingAiProposal,
   createProblemSolvingAiSession,
   reconcileProblemSolvingAiTurn,
-  rejectProblemSolvingAiProposal,
   sendProblemSolvingAiMessage,
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
+import { invokeProblemSolvingTurnAction } from "@/lib/problem-solving/problem-solving-ai-turn-client";
 import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,14 +19,6 @@ import {
   retainProblemSolvingTurnKey,
 } from "@/platform/ai/ai-turn-messages";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
-
-type PendingProposal = {
-  id: string;
-  proposal_type: string;
-  payload_json: Record<string, unknown>;
-  human_explanation: string;
-  status: string;
-};
 
 type AiFacilitatorPanelProps = {
   caseId: string;
@@ -54,13 +45,9 @@ export function AiFacilitatorPanel({
       envelope?: FacilitatorEnvelope;
     }>
   >([]);
-  const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
-    [],
-  );
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const draftInputRef = useRef<HTMLTextAreaElement>(null);
   const pendingTurnRef = useRef<{
     message: string;
@@ -69,10 +56,7 @@ export function AiFacilitatorPanel({
   const [reconciling, setReconciling] = useState(false);
   const [hasPendingTurn, setHasPendingTurn] = useState(false);
 
-  async function applyCompletedTurn(data: {
-    envelope: FacilitatorEnvelope;
-    pendingProposals?: PendingProposal[];
-  }) {
+  async function applyCompletedTurn(data: { envelope: FacilitatorEnvelope }) {
     setMessages((prev) => [
       ...prev,
       {
@@ -81,14 +65,11 @@ export function AiFacilitatorPanel({
         envelope: data.envelope,
       },
     ]);
-    if (data.pendingProposals) {
-      setPendingProposals(data.pendingProposals);
-    }
     pendingTurnRef.current = null;
     setHasPendingTurn(false);
     setDraft("");
     setError(null);
-    router.push(`/platform/problem-solving/${caseId}`);
+    router.refresh();
   }
 
   async function attemptReconcileTurn(userMessage: string): Promise<boolean> {
@@ -108,12 +89,7 @@ export function AiFacilitatorPanel({
         return false;
       }
       if (result.data.state === "completed" && result.data.envelope) {
-        await applyCompletedTurn({
-          envelope: result.data.envelope,
-          ...(result.data.pendingProposals
-            ? { pendingProposals: result.data.pendingProposals }
-            : {}),
-        });
+        await applyCompletedTurn({ envelope: result.data.envelope });
         return true;
       }
       if (result.data.state === "failed" && result.data.message) {
@@ -165,30 +141,49 @@ export function AiFacilitatorPanel({
 
       setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
 
-      const result = await sendProblemSolvingAiMessage({
-        caseId,
-        sessionId: activeSessionId,
-        mode,
-        stageKey: stageKey ?? null,
-        message: userMessage,
-        idempotencyKey,
-        conversationHistory: messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+      const result = await invokeProblemSolvingTurnAction({
+        invoke: () =>
+          sendProblemSolvingAiMessage({
+            caseId,
+            sessionId: activeSessionId,
+            mode,
+            stageKey: stageKey ?? null,
+            message: userMessage,
+            idempotencyKey,
+            conversationHistory: messages.map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
+          }),
+        reconcile: () =>
+          reconcileProblemSolvingAiTurn({
+            caseId,
+            sessionId: activeSessionId,
+            idempotencyKey,
+          }),
       });
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? "Lean AI failed");
       }
 
-      const data = result.data;
-      await applyCompletedTurn({
-        envelope: data.envelope,
-        ...(data.pendingProposals
-          ? { pendingProposals: data.pendingProposals }
-          : {}),
-      });
+      const payload = result.data;
+      if ("envelope" in payload && payload.envelope) {
+        await applyCompletedTurn({ envelope: payload.envelope });
+        return;
+      }
+
+      if ("state" in payload) {
+        if (payload.state === "completed" && payload.envelope) {
+          await applyCompletedTurn({ envelope: payload.envelope });
+          return;
+        }
+        if (payload.state === "failed") {
+          throw new Error(payload.message ?? "Lean AI failed");
+        }
+      }
+
+      throw new Error("Lean AI did not return a completed turn.");
     } catch (sendError) {
       const message =
         sendError instanceof Error ? sendError.message : "Lean AI failed";
@@ -217,38 +212,6 @@ export function AiFacilitatorPanel({
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleAccept(proposal: PendingProposal) {
-    setActionMessage(null);
-    const result = await acceptProblemSolvingAiProposal({
-      caseId,
-      proposalId: proposal.id,
-      payload: proposal.payload_json,
-    });
-    if (result.error) {
-      setActionMessage(result.error);
-      return;
-    }
-    setActionMessage("Proposal accepted.");
-    setPendingProposals((prev) =>
-      prev.filter((item) => item.id !== proposal.id),
-    );
-    router.push(`/platform/problem-solving/${caseId}`);
-  }
-
-  async function handleReject(proposalId: string) {
-    setActionMessage(null);
-    const result = await rejectProblemSolvingAiProposal({ caseId, proposalId });
-    if (result.error) {
-      setActionMessage(result.error);
-      return;
-    }
-    setActionMessage("Proposal rejected.");
-    setPendingProposals((prev) =>
-      prev.filter((item) => item.id !== proposalId),
-    );
-    router.refresh();
   }
 
   return (
@@ -338,43 +301,6 @@ export function AiFacilitatorPanel({
           ) : null}
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        {actionMessage ? (
-          <p className="text-xs text-muted-foreground">{actionMessage}</p>
-        ) : null}
-        <div className="flex flex-col gap-3" data-testid="lean-ai-proposals">
-          {pendingProposals.map((proposal) => (
-            <Card key={proposal.id} data-testid="ai-proposal-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">
-                  {proposal.proposal_type}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2 text-sm">
-                <p>{proposal.human_explanation}</p>
-                <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
-                  {JSON.stringify(proposal.payload_json, null, 2)}
-                </pre>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    data-testid="ai-proposal-accept"
-                    onClick={() => handleAccept(proposal)}
-                  >
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    data-testid="ai-proposal-reject"
-                    onClick={() => handleReject(proposal.id)}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       </CardContent>
     </Card>
   );

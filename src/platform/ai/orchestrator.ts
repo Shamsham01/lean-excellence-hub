@@ -56,6 +56,7 @@ import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-e
 import { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import {
   PROBLEM_SOLVING_TOOLS,
+  PROBLEM_SOLVING_WRITE_TOOLS,
   buildOpenAiTools,
   type ProblemSolvingToolName,
 } from "@/platform/ai/tools/problem-solving-schemas";
@@ -110,6 +111,22 @@ function isProblemSolvingTool(name: string): name is ProblemSolvingToolName {
   return (PROBLEM_SOLVING_TOOLS as readonly string[]).includes(name);
 }
 
+function isProblemSolvingWriteTool(name: string): boolean {
+  return (PROBLEM_SOLVING_WRITE_TOOLS as readonly string[]).includes(name);
+}
+
+function resolveProblemSolvingWorkflow(
+  mode: AiSessionMode,
+): "problem_solving_challenge" | "problem_solving_facilitate" | "problem_solving" {
+  if (mode === "challenge") {
+    return "problem_solving_challenge";
+  }
+  if (mode === "facilitate" || mode === "ask" || mode === "review") {
+    return "problem_solving_facilitate";
+  }
+  return "problem_solving";
+}
+
 export async function runAiTurn(
   input: RunAiTurnInput,
 ): Promise<RunAiTurnResult> {
@@ -123,10 +140,7 @@ export async function runAiTurn(
   const provider = resolveAIProvider();
   const model = problemSolvingModelId(env);
   const prepared = prepareWorkflowModelCall({
-    workflow:
-      input.mode === "challenge"
-        ? "problem_solving_challenge"
-        : "problem_solving",
+    workflow: resolveProblemSolvingWorkflow(input.mode),
     model,
     environment: env,
   });
@@ -349,7 +363,9 @@ export async function runAiTurn(
             result: result.resultMetadata,
           }),
         );
-        totalToolCalls += 1;
+        if (isProblemSolvingWriteTool(toolName)) {
+          totalToolCalls += 1;
+        }
       }
 
       messages.push({

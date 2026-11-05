@@ -697,8 +697,9 @@ describe("runAiTurn stateless tool continuation", () => {
       turnProfile: "stage_draft",
     });
 
-    expect(executeProblemSolvingToolMock.mock.calls.length).toBeLessThanOrEqual(
-      4,
+    const writeToolCalls = executeProblemSolvingToolMock.mock.calls.filter(
+      ([, toolName]) => String(toolName).startsWith("propose_"),
     );
+    expect(writeToolCalls.length).toBeLessThanOrEqual(4);
   });
 });

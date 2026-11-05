@@ -225,6 +225,24 @@ test.describe("Milestone 12 closure", () => {
     ).toBeVisible();
   });
 
+  test("stage draft lists pending proposals on the case sidebar", async ({
+    page,
+  }) => {
+    await signInAsDemoUser(page, "manager");
+    await page.goto("/platform/problem-solving");
+    await page
+      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
+      .click();
+    await expectGuidedProblemSolvingWorkspace(page);
+    await page.getByTestId("pps-stage-auto-draft-button").click();
+    await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible({
+      timeout: 45_000,
+    });
+    await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+
   test("does not surface invalid current condition proposals for acceptance", async ({
     page,
   }) => {

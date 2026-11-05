@@ -39,6 +39,8 @@ export const AI_WORKFLOWS = [
   "setup_builder",
   "complex_reasoning",
   "problem_solving",
+  /** Facilitate / ask / review on Problem Solving — lower reasoning budget for Netlify sync limit. */
+  "problem_solving_facilitate",
   "problem_solving_challenge",
 ] as const;
 
@@ -55,6 +57,7 @@ export const WORKFLOW_REASONING_DEFAULTS: Record<
   framework_builder: "medium",
   complex_reasoning: "medium",
   problem_solving: "medium",
+  problem_solving_facilitate: "low",
   problem_solving_challenge: "high",
 };
 
@@ -70,6 +73,7 @@ export const WORKFLOW_VISIBLE_OUTPUT_TOKENS: Record<AiWorkflow, number> = {
   framework_builder: 6_000,
   complex_reasoning: 6_000,
   problem_solving: 6_000,
+  problem_solving_facilitate: 3_500,
   problem_solving_challenge: 6_000,
 };
 

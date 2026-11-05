@@ -17,10 +17,13 @@ export function shouldRetainProblemSolvingTurnKey(message: string): boolean {
  * Wrap a server-action call so Next.js / proxy transport failures surface as
  * user-facing Lean AI recovery copy instead of the generic RSC error string.
  */
-export async function invokeProblemSolvingTurnAction<T>(input: {
-  invoke: () => Promise<ActionResult<T>>;
-  reconcile?: () => Promise<ActionResult<T>>;
-}): Promise<ActionResult<T>> {
+export async function invokeProblemSolvingTurnAction<
+  TInvoke,
+  TReconcile = TInvoke,
+>(input: {
+  invoke: () => Promise<ActionResult<TInvoke>>;
+  reconcile?: () => Promise<ActionResult<TReconcile>>;
+}): Promise<ActionResult<TInvoke | TReconcile>> {
   try {
     const result = await input.invoke();
     if (result.error) {
