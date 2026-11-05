@@ -29,7 +29,9 @@ test.describe("Problem Solving LeanAI interrupted turn", () => {
     await expect(page.getByTestId("lean-ai-input")).toHaveValue(prompt, {
       timeout: 30_000,
     });
-    await expect(page.getByText(/took too long|lost contact with the provider/i))
+    await expect(
+      page.getByText(/took too long|lost contact with the provider/i),
+    )
       .toBeVisible({ timeout: 30_000 })
       .catch(async () => {
         await expect(

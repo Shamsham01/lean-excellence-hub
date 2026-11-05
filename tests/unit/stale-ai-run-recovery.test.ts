@@ -89,7 +89,9 @@ describe("recoverStaleAiRunsForSession", () => {
     expect(rpc).toHaveBeenCalledWith("fail_ai_run", {
       target_ai_run_id: "run-dispatched",
       target_error_category: "interrupted_unknown_billing",
-      target_final_output: expect.stringContaining("External usage may still apply"),
+      target_final_output: expect.stringContaining(
+        "External usage may still apply",
+      ),
     });
   });
 
