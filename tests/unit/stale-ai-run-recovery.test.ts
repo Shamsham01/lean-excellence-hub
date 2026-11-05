@@ -61,6 +61,38 @@ describe("recoverStaleAiRunsForSession", () => {
     });
   });
 
+  it("uses billing uncertainty when dispatch evidence exists without a response id", async () => {
+    const oldStarted = new Date(Date.now() - 120_000).toISOString();
+    const rpc = vi.fn(async () => ({ error: null }));
+    const supabase = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(async () => ({
+              data: [
+                {
+                  id: "run-dispatched",
+                  started_at: oldStarted,
+                  provider_dispatched_at: oldStarted,
+                  provider_request_id: null,
+                },
+              ],
+              error: null,
+            })),
+          })),
+        })),
+      })),
+      rpc,
+    };
+
+    await recoverStaleAiRunsForSession(supabase as never, "session-1", 60_000);
+    expect(rpc).toHaveBeenCalledWith("fail_ai_run", {
+      target_ai_run_id: "run-dispatched",
+      target_error_category: "interrupted_unknown_billing",
+      target_final_output: expect.stringContaining("External usage may still apply"),
+    });
+  });
+
   it("ignores fail_ai_run errors from other memberships without throwing", async () => {
     const oldStarted = new Date(Date.now() - 120_000).toISOString();
     const rpc = vi.fn(async () => ({

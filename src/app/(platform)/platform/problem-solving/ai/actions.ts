@@ -10,6 +10,7 @@ import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { AI_TURN_WALL_CLOCK_USER_MESSAGE } from "@/platform/ai/run-deadline";
 import { AiProviderError } from "@/platform/ai/providers/errors";
 import { runAiTurn } from "@/platform/ai/orchestrator";
+import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-problem-solving-ai-runs";
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
 import { formatProposalAcceptanceError } from "@/platform/ai/proposals/contracts";
 import type { AiSessionMode } from "@/platform/ai/types";
@@ -76,6 +77,7 @@ export async function sendProblemSolvingAiMessage(input: {
 
   try {
     const supabase = await createServerSupabaseClient();
+    await recoverProblemSolvingAiRunsForCase(supabase, input.caseId);
     const result = await runAiTurn({
       supabase,
       sessionId: input.sessionId,

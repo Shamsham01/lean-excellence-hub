@@ -639,6 +639,7 @@ export type Database = {
           prompt_key: string
           prompt_version: string
           provider: string
+          provider_dispatched_at: string | null
           provider_request_id: string | null
           reasoning_token_count: number
           requested_by_membership_id: string
@@ -663,6 +664,7 @@ export type Database = {
           prompt_key: string
           prompt_version: string
           provider: string
+          provider_dispatched_at?: string | null
           provider_request_id?: string | null
           reasoning_token_count?: number
           requested_by_membership_id: string
@@ -687,6 +689,7 @@ export type Database = {
           prompt_key?: string
           prompt_version?: string
           provider?: string
+          provider_dispatched_at?: string | null
           provider_request_id?: string | null
           reasoning_token_count?: number
           requested_by_membership_id?: string
@@ -12494,6 +12497,17 @@ export type Database = {
       claim_ai_run_execution: {
         Args: { target_ai_run_id: string }
         Returns: string
+      }
+      record_ai_run_provider_dispatch: {
+        Args: { target_ai_run_id: string }
+        Returns: undefined
+      }
+      recover_stale_ai_runs_for_problem_solving_case: {
+        Args: {
+          target_problem_solving_case_id: string
+          target_stale_after_seconds?: number
+        }
+        Returns: number
       }
       claim_billing_webhook_event: {
         Args: {

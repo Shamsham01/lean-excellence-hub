@@ -7,8 +7,14 @@ export const AI_TURN_UNCERTAIN_COMPLETION_MESSAGE =
 export const AI_TURN_IN_PROGRESS_MESSAGE =
   "Lean AI is still finishing this request. Wait a moment, then send the same message again to collect the result.";
 
+export const AI_TURN_INTERRUPTED_BILLING_MESSAGE =
+  "Lean AI lost contact with the provider before this turn finished. External usage may still apply. Nothing was applied to your case — retry when ready.";
+
 const UNEXPECTED_SERVER_RESPONSE =
   /unexpected response was received from the server/i;
+
+const HOST_OR_PROXY_RESET =
+  /upstream reset|bad gateway|failed to fetch|network error/i;
 
 /**
  * Next.js shows a generic message when the hosting platform kills the Server
@@ -17,13 +23,19 @@ const UNEXPECTED_SERVER_RESPONSE =
  */
 export function retainProblemSolvingTurnKey(message: string): boolean {
   return (
-    /still finishing|did not confirm/i.test(message) ||
-    UNEXPECTED_SERVER_RESPONSE.test(message)
+    /still finishing|did not confirm|lost contact with the provider/i.test(
+      message,
+    ) ||
+    UNEXPECTED_SERVER_RESPONSE.test(message) ||
+    HOST_OR_PROXY_RESET.test(message)
   );
 }
 
 export function problemSolvingClientTurnError(message: string): string {
-  if (UNEXPECTED_SERVER_RESPONSE.test(message)) {
+  if (
+    UNEXPECTED_SERVER_RESPONSE.test(message) ||
+    HOST_OR_PROXY_RESET.test(message)
+  ) {
     return AI_TURN_UNCERTAIN_COMPLETION_MESSAGE;
   }
   return message;

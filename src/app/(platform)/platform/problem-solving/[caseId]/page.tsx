@@ -9,6 +9,7 @@ import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
+import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-problem-solving-ai-runs";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProblemSolvingCaseDetailPage({
@@ -51,6 +52,9 @@ export default async function ProblemSolvingCaseDetailPage({
   ]);
 
   const detail = await resolveProblemSolvingDetailAccess(detailResult);
+  if (canUseAi) {
+    await recoverProblemSolvingAiRunsForCase(supabase, caseId);
+  }
   const workspaceData = await loadCaseWorkspaceData(supabase, caseId, detail);
   const providerAvailable = isApplicationAiProviderAvailable();
   const targetDueDateLabel = detail.target_due_at
