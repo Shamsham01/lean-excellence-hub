@@ -20,8 +20,6 @@ test.describe("Problem Solving LeanAI interrupted turn", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-
     const prompt = "leanai-e2e-interrupt-turn please review this case.";
     await page.getByTestId("lean-ai-input").fill(prompt);
     await page.getByTestId("lean-ai-send").click();
@@ -48,8 +46,6 @@ test.describe("Problem Solving LeanAI interrupted turn", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-
     await page.route("**/*", async (route) => {
       const request = route.request();
       const nextAction = request.headers()["next-action"];
