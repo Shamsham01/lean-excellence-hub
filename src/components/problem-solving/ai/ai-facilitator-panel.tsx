@@ -312,10 +312,7 @@ export function AiFacilitatorPanel({
             data-testid="lean-ai-send"
             onClick={() => handleSend()}
             disabled={
-              Boolean(disabledReason) ||
-              loading ||
-              reconciling ||
-              !draft.trim()
+              Boolean(disabledReason) || loading || reconciling || !draft.trim()
             }
           >
             {loading ? "Thinking..." : "Send"}

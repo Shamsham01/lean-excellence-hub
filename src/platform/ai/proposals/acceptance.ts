@@ -326,10 +326,16 @@ export async function acceptAiProposal(
         await recordAcceptance(supabase, proposal, {
           hypothesis_id: hypId as string,
         });
-        return { resultId: hypId as string, resultType: proposal.proposal_type };
+        return {
+          resultId: hypId as string,
+          resultType: proposal.proposal_type,
+        };
       }
       await recordAcceptance(supabase, proposal, {});
-      return { resultId: analysisId as string, resultType: proposal.proposal_type };
+      return {
+        resultId: analysisId as string,
+        resultType: proposal.proposal_type,
+      };
     }
 
     case "fishbone_cause": {
