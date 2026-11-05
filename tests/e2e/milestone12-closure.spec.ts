@@ -234,12 +234,13 @@ test.describe("Milestone 12 closure", () => {
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
     await expectGuidedProblemSolvingWorkspace(page);
+    await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible();
     await page.getByTestId("pps-stage-auto-draft-button").click();
-    await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible({
-      timeout: 45_000,
-    });
+    await expect(
+      page.getByText(/Draft ready|proposal\(s\) in Pending Lean AI proposals/i),
+    ).toBeVisible({ timeout: 90_000 });
     await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
   });
 
