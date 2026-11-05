@@ -639,6 +639,7 @@ export type Database = {
           prompt_key: string
           prompt_version: string
           provider: string
+          provider_dispatched_at: string | null
           provider_request_id: string | null
           reasoning_token_count: number
           requested_by_membership_id: string
@@ -663,6 +664,7 @@ export type Database = {
           prompt_key: string
           prompt_version: string
           provider: string
+          provider_dispatched_at?: string | null
           provider_request_id?: string | null
           reasoning_token_count?: number
           requested_by_membership_id: string
@@ -687,6 +689,7 @@ export type Database = {
           prompt_key?: string
           prompt_version?: string
           provider?: string
+          provider_dispatched_at?: string | null
           provider_request_id?: string | null
           reasoning_token_count?: number
           requested_by_membership_id?: string
@@ -14407,6 +14410,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_ai_run_provider_dispatch: {
+        Args: { target_ai_run_id: string }
+        Returns: undefined
+      }
       record_authentication_rate_limit_failure: {
         Args: {
           block_seconds: number
@@ -14565,6 +14572,10 @@ export type Database = {
       record_workforce_import_row_success: {
         Args: { target_import_row_id: string; target_membership_id: string }
         Returns: undefined
+      }
+      recover_stale_ai_runs_for_problem_solving_case: {
+        Args: { target_problem_solving_case_id: string }
+        Returns: number
       }
       reissue_organisation_member_invitation: {
         Args: {

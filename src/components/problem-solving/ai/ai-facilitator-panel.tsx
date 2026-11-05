@@ -14,6 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  problemSolvingClientTurnError,
+  retainProblemSolvingTurnKey,
+} from "@/platform/ai/ai-turn-messages";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
 
 type PendingProposal = {
@@ -81,9 +85,10 @@ export function AiFacilitatorPanel({
     if (!draft.trim() || disabledReason) return;
     setLoading(true);
     setError(null);
+    let userMessage = "";
     try {
       const activeSessionId = await ensureSession();
-      const userMessage = draft.trim();
+      userMessage = draft.trim();
       if (
         !pendingTurnRef.current ||
         pendingTurnRef.current.message !== userMessage
@@ -111,8 +116,6 @@ export function AiFacilitatorPanel({
       });
 
       if (result.error || !result.data) {
-        setMessages((prev) => prev.slice(0, -1));
-        setDraft(userMessage);
         throw new Error(result.error ?? "Lean AI failed");
       }
 
@@ -132,12 +135,20 @@ export function AiFacilitatorPanel({
       }
       router.refresh();
     } catch (sendError) {
-      setError(
-        sendError instanceof Error ? sendError.message : "Lean AI failed",
-      );
       const message =
         sendError instanceof Error ? sendError.message : "Lean AI failed";
-      if (!/still finishing|did not confirm/i.test(message)) {
+      setError(problemSolvingClientTurnError(message));
+      if (userMessage) {
+        setMessages((previous) => {
+          const last = previous.at(-1);
+          if (last?.role === "user" && last.content === userMessage) {
+            return previous.slice(0, -1);
+          }
+          return previous;
+        });
+        setDraft(userMessage);
+      }
+      if (!retainProblemSolvingTurnKey(message)) {
         pendingTurnRef.current = null;
       }
     } finally {

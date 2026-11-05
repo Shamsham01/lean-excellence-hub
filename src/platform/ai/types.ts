@@ -145,6 +145,11 @@ export type CreateResponseInput = {
   tools: Array<Record<string, unknown>>;
   maxOutputTokens: number;
   timeoutMs: number;
+  /**
+   * Overrides the SDK default of 2. Problem Solving passes 0 so a timed-out
+   * call fails inside the host limit instead of starting another billed attempt.
+   */
+  maxRetries?: number;
   reasoningEffort?: AiReasoningEffort;
   expectsStructuredOutput?: boolean;
   structuredOutputFormat?: StructuredOutputFormat;
