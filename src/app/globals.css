@@ -3,18 +3,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.22 0.015 255);
-  --surface: oklch(0.99 0.003 95);
+  /* Platform light theme: cool neutral greys (no warm paper cast). */
+  --background: oklch(0.99 0.002 260);
+  --foreground: oklch(0.22 0.014 260);
+  --surface: oklch(0.985 0.003 260);
   --elevated: oklch(1 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.015 255);
-  --muted: oklch(0.955 0.007 95);
-  --muted-foreground: oklch(0.46 0.02 255);
-  --border: oklch(0.88 0.012 95);
+  --card-foreground: oklch(0.22 0.014 260);
+  --muted: oklch(0.96 0.004 260);
+  --muted-foreground: oklch(0.46 0.018 260);
+  --border: oklch(0.89 0.006 260);
   --primary: oklch(0.42 0.09 250);
-  --primary-foreground: oklch(0.98 0.004 95);
-  --accent: oklch(0.94 0.02 250);
+  --primary-foreground: oklch(0.99 0.002 260);
+  --accent: oklch(0.945 0.012 250);
   --accent-foreground: oklch(0.28 0.06 250);
   --success: oklch(0.55 0.14 145);
   --success-foreground: oklch(0.98 0.01 145);
@@ -24,10 +25,10 @@
   --destructive-foreground: oklch(0.98 0.01 25);
   --information: oklch(0.55 0.12 240);
   --information-foreground: oklch(0.98 0.01 240);
-  --sidebar: oklch(0.97 0.006 95);
-  --sidebar-foreground: oklch(0.28 0.02 255);
-  --sidebar-border: oklch(0.9 0.01 95);
-  --sidebar-accent: oklch(0.93 0.015 250);
+  --sidebar: oklch(0.975 0.004 260);
+  --sidebar-foreground: oklch(0.28 0.018 260);
+  --sidebar-border: oklch(0.9 0.006 260);
+  --sidebar-accent: oklch(0.94 0.01 250);
   --chart-1: oklch(0.55 0.12 250);
   --chart-2: oklch(0.6 0.14 180);
   --chart-3: oklch(0.65 0.12 145);

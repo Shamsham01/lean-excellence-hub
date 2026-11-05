@@ -7,7 +7,6 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   disableProblemSolvingStageAutoDraft,
-  expectGuidedProblemSolvingWorkspace,
   openProblemSolvingStage,
 } from "./helpers/guided-problem-solving-workspace";
 

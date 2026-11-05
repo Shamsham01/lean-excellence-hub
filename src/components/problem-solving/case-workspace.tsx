@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
+import { moveProblemSolvingStage } from "@/app/(platform)/platform/problem-solving/actions";
 import { CaseHeader } from "@/components/problem-solving/case-header";
+import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { ContainmentPanel } from "@/components/problem-solving/containment-panel";
 import { CountermeasuresPanel } from "@/components/problem-solving/countermeasures-panel";
 import { CurrentConditionPanel } from "@/components/problem-solving/current-condition-panel";
@@ -86,12 +89,16 @@ export function CaseWorkspace({
   canManage,
   canContribute,
   canFacilitate,
-  canVerifyCause,
   canClose,
   canUseAi,
   providerAvailable,
 }: CaseWorkspaceProps) {
-  const [message, setMessage] = useState<string | null>(null);
+  const router = useRouter();
+  const [toast, setToast] = useState<{
+    message: string;
+    tone: "default" | "error";
+  } | null>(null);
+  const [movingStage, setMovingStage] = useState(false);
   const sortedStages = useMemo(
     () => sortMethodStages(methodStages),
     [methodStages],
@@ -121,8 +128,30 @@ export function CaseWorkspace({
     currentConditionItems.length > 0,
   );
 
-  const canNavigateStages =
-    (canManage || canFacilitate) && detail.status === "active";
+  const canMoveStage =
+    (canManage || canFacilitate) &&
+    detail.status === "active" &&
+    sortedStages.length > 0;
+
+  const notify = useCallback(
+    (message: string, tone: "success" | "error" = "success") => {
+      setToast({
+        message,
+        tone: tone === "error" ? "error" : "default",
+      });
+    },
+    [],
+  );
+
+  async function handleMoveStage(stageId: string) {
+    if (!canMoveStage || stageId === detail.current_method_stage_id) return;
+    setMovingStage(true);
+    const result = await moveProblemSolvingStage(detail.id, stageId);
+    notify(result.error ?? "Stage updated", result.error ? "error" : "success");
+    setSelectedStageId(null);
+    setMovingStage(false);
+    router.refresh();
+  }
 
   function renderStageBody() {
     const key = stageKey ?? "DEFINE";
@@ -209,17 +238,14 @@ export function CaseWorkspace({
     >
       <CaseHeader
         detail={detail}
-        methodStages={methodStages}
         ownerName={ownerName ?? null}
         facilitatorName={facilitatorName ?? null}
         targetDueDateLabel={targetDueDateLabel ?? null}
         canManage={canManage}
-        canFacilitate={canFacilitate}
         canClose={canClose}
         methods={methods}
         pinnedMethodVersion={pinnedMethodVersion}
-        message={message}
-        onMessage={setMessage}
+        onMessage={notify}
       />
 
       {sortedStages.length > 0 ? (
@@ -227,8 +253,10 @@ export function CaseWorkspace({
           stages={sortedStages}
           currentStageId={detail.current_method_stage_id}
           viewStageId={viewStageId}
-          onSelectStage={setSelectedStageId}
-          canNavigate={canNavigateStages || sortedStages.length > 0}
+          onViewStage={setSelectedStageId}
+          canMoveStage={canMoveStage}
+          onMoveStage={handleMoveStage}
+          movingStage={movingStage}
         />
       ) : null}
 
@@ -319,6 +347,12 @@ export function CaseWorkspace({
           />
         </aside>
       </div>
+
+      <EphemeralToast
+        message={toast?.message ?? null}
+        tone={toast?.tone ?? "default"}
+        onDismiss={() => setToast(null)}
+      />
     </div>
   );
 }

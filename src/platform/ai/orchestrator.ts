@@ -75,6 +75,8 @@ export type RunAiTurnInput = {
   userMessage: string;
   idempotencyKey: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  /** Tighter provider loop for bounded stage-draft actions. */
+  turnProfile?: "default" | "stage_draft";
 };
 
 export type RunAiTurnResult = {
@@ -128,7 +130,12 @@ export async function runAiTurn(
     model,
     environment: env,
   });
-  const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
+  const configuredMaxToolCalls =
+    env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
+  const maxToolCalls =
+    input.turnProfile === "stage_draft"
+      ? Math.min(AI_DEFAULTS.stageDraftMaxToolCalls, configuredMaxToolCalls)
+      : configuredMaxToolCalls;
   const configuredPerCallTimeoutMs =
     env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
   const wallClockMs = resolveAiTurnWallClockMs(

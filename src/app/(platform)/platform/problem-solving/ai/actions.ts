@@ -19,6 +19,11 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type ActionResult<T = undefined> = { error?: string; ok?: true; data?: T };
 
+/** Ensure server-action payloads are plain JSON (Next.js RSC serialization). */
+function toPlainJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 type PendingProposalRow = {
   id: string;
   proposal_type: string;
@@ -107,10 +112,10 @@ export async function sendProblemSolvingAiMessage(input: {
     revalidatePath(`/platform/problem-solving/${input.caseId}`);
     return {
       ok: true,
-      data: {
+      data: toPlainJson({
         ...result,
         pendingProposals,
-      },
+      }),
     };
   } catch (error) {
     // Supabase PostgrestError values may be plain objects instead of Error.
@@ -147,6 +152,188 @@ export async function sendProblemSolvingAiMessage(input: {
         error instanceof Error
           ? error.message
           : "Lean AI could not complete this turn.",
+    };
+  }
+}
+
+export async function draftProblemSolvingStage(input: {
+  caseId: string;
+  stageKey: string;
+  message: string;
+  idempotencyKey: string;
+}): Promise<
+  ActionResult<{
+    sessionId: string;
+    runId: string;
+    pendingProposalCount: number;
+  }>
+> {
+  if (!isApplicationAiProviderAvailable()) {
+    return {
+      error: "Lean AI is not available. Enable AI in organisation settings.",
+    };
+  }
+
+  const trimmedKey = input.idempotencyKey.trim();
+  if (!trimmedKey) {
+    return { error: "Lean AI could not start this stage draft." };
+  }
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    await recoverProblemSolvingAiRunsForCase(supabase, input.caseId);
+
+    const sessionResult = await createProblemSolvingAiSession({
+      caseId: input.caseId,
+      mode: "facilitate",
+    });
+    if (sessionResult.error || !sessionResult.data?.sessionId) {
+      return {
+        error: sessionResult.error ?? "Could not start Lean AI session.",
+      };
+    }
+    const sessionId = sessionResult.data.sessionId;
+
+    const result = await runAiTurn({
+      supabase,
+      sessionId,
+      caseId: input.caseId,
+      mode: "facilitate",
+      stageKey: input.stageKey,
+      userMessage: input.message,
+      idempotencyKey: trimmedKey,
+      conversationHistory: [],
+      turnProfile: "stage_draft",
+    });
+
+    const { data: sessionDetail } = await supabase.rpc(
+      "get_ai_session_detail",
+      {
+        target_ai_session_id: sessionId,
+      },
+    );
+    const proposalsRaw =
+      (sessionDetail as { proposals?: PendingProposalRow[] } | null)
+        ?.proposals ?? [];
+    const pendingProposalCount = proposalsRaw.filter(
+      (row) => row.status === "pending",
+    ).length;
+
+    revalidatePath(`/platform/problem-solving/${input.caseId}`);
+    return {
+      ok: true,
+      data: toPlainJson({
+        sessionId,
+        runId: result.runId,
+        pendingProposalCount,
+      }),
+    };
+  } catch (error) {
+    const detail =
+      error !== null && typeof error === "object"
+        ? (error as { code?: unknown; status?: unknown })
+        : null;
+    const code =
+      typeof detail?.code === "string" &&
+      /^[a-zA-Z0-9_]{2,20}$/.test(detail.code)
+        ? detail.code
+        : null;
+    console.warn(
+      "[lean-ai:problem-solving-stage-draft]",
+      JSON.stringify({
+        error_type: error instanceof Error ? error.name : typeof error,
+        error_code: code,
+        stage_key: input.stageKey,
+      }),
+    );
+    if (error instanceof AiProviderError) {
+      return { error: error.message };
+    }
+    if (
+      error instanceof Error &&
+      /timeout|timed out|wall.?clock/i.test(error.message)
+    ) {
+      return { error: AI_TURN_WALL_CLOCK_USER_MESSAGE };
+    }
+
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Lean AI could not draft this stage. Try again in a moment.",
+    };
+  }
+}
+
+export async function reconcileProblemSolvingStageDraft(input: {
+  caseId: string;
+  idempotencyKey: string;
+}): Promise<
+  ActionResult<{
+    sessionId: string;
+    runId: string;
+    pendingProposalCount: number;
+  }>
+> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const trimmedKey = input.idempotencyKey.trim();
+    const { data: runRow, error: runError } = await supabase
+      .from("ai_runs")
+      .select("id, ai_session_id")
+      .eq("idempotency_key", trimmedKey)
+      .maybeSingle();
+
+    if (runError || !runRow?.ai_session_id) {
+      return {
+        error:
+          "Lean AI did not find a stage draft to reconcile. Try Draft this stage again.",
+      };
+    }
+
+    const reconciled = await reconcileProblemSolvingAiTurnByIdempotencyKey(
+      supabase,
+      {
+        caseId: input.caseId,
+        sessionId: runRow.ai_session_id,
+        idempotencyKey: trimmedKey,
+      },
+    );
+
+    if (reconciled.state === "completed") {
+      const { data: sessionDetail } = await supabase.rpc(
+        "get_ai_session_detail",
+        { target_ai_session_id: runRow.ai_session_id },
+      );
+      const proposalsRaw =
+        (sessionDetail as { proposals?: PendingProposalRow[] } | null)
+          ?.proposals ?? [];
+      revalidatePath(`/platform/problem-solving/${input.caseId}`);
+      return {
+        ok: true,
+        data: toPlainJson({
+          sessionId: runRow.ai_session_id,
+          runId: reconciled.runId,
+          pendingProposalCount: proposalsRaw.filter(
+            (row) => row.status === "pending",
+          ).length,
+        }),
+      };
+    }
+
+    return {
+      error:
+        reconciled.state === "failed"
+          ? reconciled.message
+          : (reconciled.message ??
+            "Lean AI is still finishing this stage draft. Wait a moment, then retry."),
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not reconcile Lean AI stage draft.",
     };
   }
 }

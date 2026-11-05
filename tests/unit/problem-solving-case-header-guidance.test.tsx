@@ -82,9 +82,7 @@ describe("CaseHeader guidance", () => {
     render(
       <CaseHeader
         detail={baseDetail}
-        methodStages={[]}
         canManage
-        canFacilitate={false}
         canClose={false}
         methods={[sampleMethod]}
         pinnedMethodVersion={null}
@@ -99,9 +97,7 @@ describe("CaseHeader guidance", () => {
     render(
       <CaseHeader
         detail={baseDetail}
-        methodStages={[]}
         canManage
-        canFacilitate={false}
         canClose={false}
         methods={[]}
         pinnedMethodVersion={null}
