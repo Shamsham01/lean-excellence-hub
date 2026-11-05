@@ -175,6 +175,45 @@ export class FakeAIProvider implements AIProvider {
       );
     }
 
+    if (lastUser.toLowerCase().includes("draft proposals")) {
+      return {
+        outputText: "Stage draft proposals are ready for your review.",
+        structuredOutput: {
+          message: "Stage draft proposals are ready for your review.",
+          observations: [],
+          questions: [],
+          warnings: [],
+          source_refs: [],
+          proposals: [
+            {
+              proposal_type: "problem_statement",
+              payload: {
+                statement:
+                  "Film wander on Packing Line 1 after splice events causes misaligned packs.",
+              },
+              explanation: "DEFINE-stage problem statement draft for acceptance.",
+            },
+            {
+              proposal_type: "current_condition_item",
+              payload: {
+                category: "observation",
+                statement:
+                  "Misalignment is reported after splice events on Line 1.",
+              },
+              explanation: "Current-condition observation draft for acceptance.",
+            },
+          ],
+        },
+        toolCalls: [],
+        usage: {
+          inputTokens: 40,
+          outputTokens: 120,
+          cachedInputTokens: 0,
+          reasoningTokens: 0,
+        },
+      };
+    }
+
     if (lastUser.toLowerCase().includes("hypothesis test")) {
       return this.envelopeResponse(
         "Consider a controlled test under hot-running conditions.",
