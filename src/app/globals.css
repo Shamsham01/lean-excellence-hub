@@ -104,6 +104,27 @@
     0 8px 24px rgb(0 0 0 / 0.32);
 }
 
+/* TailAdmin-adapted shadows & menu utilities (MIT — see third-party/TAILADMIN-MIT.txt) */
+:root {
+  --shadow-theme-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-theme-sm:
+    0 1px 3px 0 rgb(16 24 40 / 0.1), 0 1px 2px 0 rgb(16 24 40 / 0.06);
+  --shadow-theme-md:
+    0 4px 8px -2px rgb(16 24 40 / 0.1), 0 2px 4px -2px rgb(16 24 40 / 0.06);
+}
+
+@utility leh-menu-item {
+  @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150;
+}
+
+@utility leh-menu-item-active {
+  @apply bg-primary/10 text-primary dark:bg-primary/12 dark:text-primary;
+}
+
+@utility leh-menu-item-inactive {
+  @apply text-muted-foreground hover:bg-accent hover:text-accent-foreground;
+}
+
 /* Dark mode is class-driven via next-themes (.dark). Avoid prefers-color-scheme on :root
    which causes SSR/client hydration mismatches when system theme differs from stored theme. */
 

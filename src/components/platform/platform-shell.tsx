@@ -50,10 +50,7 @@ export async function PlatformShell({
       />
       <LeanAiAssistantShell organisationId={organisationId}>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
-          <PlatformTopbar
-            member={member}
-            organisationName={organisationName}
-          />
+          <PlatformTopbar member={member} organisationName={organisationName} />
           <main
             data-testid="platform-main"
             className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"

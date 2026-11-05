@@ -21,7 +21,10 @@ export function TableHeader({
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead className={cn("[&_tr]:border-b border-border/50", className)} {...props} />
+    <thead
+      className={cn("border-border/50 [&_tr]:border-b", className)}
+      {...props}
+    />
   );
 }
 

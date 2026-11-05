@@ -57,7 +57,9 @@ export function PlatformCommandMenu({
         data-testid="platform-command-menu"
       >
         <DialogHeader className="border-b border-border px-4 py-3">
-          <DialogTitle className="text-sm font-medium">Command menu</DialogTitle>
+          <DialogTitle className="text-sm font-medium">
+            Command menu
+          </DialogTitle>
         </DialogHeader>
         <div className="px-4 pb-2">
           <div className="relative">
@@ -79,7 +81,7 @@ export function PlatformCommandMenu({
                 type="button"
                 className={cn(
                   "flex w-full rounded-lg px-3 py-2 text-left text-sm",
-                  "hover:bg-accent hover:text-accent-foreground transition-colors duration-150",
+                  "transition-colors duration-150 hover:bg-accent hover:text-accent-foreground",
                 )}
                 onClick={() => navigate(item.href)}
               >

@@ -72,7 +72,7 @@ function StageTimelineNode({
           "group flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
           visual === "current" &&
-            "bg-primary/5 ring-2 ring-primary/50 shadow-[0_0_0_1px_rgb(70_95_255/0.35)]",
+            "bg-primary/5 shadow-[0_0_0_1px_rgb(70_95_255/0.35)] ring-2 ring-primary/50",
           visual === "upcoming" && "hover:bg-accent/60",
           movingStage && "opacity-70",
         )}
