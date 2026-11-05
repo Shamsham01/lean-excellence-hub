@@ -100,6 +100,11 @@ vi.mock("@/platform/ai/registry", () => ({
 
 vi.mock("@/platform/ai/stale-ai-run-recovery", () => ({
   recoverStaleAiRunsForSession: vi.fn().mockResolvedValue(0),
+  recoverStaleAiRunsForProblemSolvingCase: vi.fn().mockResolvedValue(0),
+}));
+
+vi.mock("@/platform/ai/record-ai-run-provider-dispatch", () => ({
+  recordAiRunProviderDispatch: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/platform/ai/ai-run-reconciliation", () => ({

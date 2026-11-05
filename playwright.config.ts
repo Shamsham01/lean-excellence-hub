@@ -80,6 +80,12 @@ export default defineConfig({
           ? "fake"
           : (process.env.AI_PROVIDER ?? "openai"),
       AI_ALLOW_FAKE_PROVIDER: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
+      AI_E2E_INTERRUPT_HARNESS:
+        process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
+      AI_TURN_WALL_CLOCK_MS:
+        process.env.E2E_WITH_SUPABASE === "1"
+          ? "2000"
+          : (process.env.AI_TURN_WALL_CLOCK_MS ?? ""),
       BILLING_PROVIDER: process.env.BILLING_PROVIDER ?? "fake",
       // Lets /demo read x-leh-e2e-demo-booking-url. Never set this in production.
       DEMO_BOOKING_E2E: "1",

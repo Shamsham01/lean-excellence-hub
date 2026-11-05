@@ -15,6 +15,21 @@ describe("problem solving turn client recovery", () => {
     );
   });
 
+  it("maps proxy reset bodies to the uncertain completion message", () => {
+    expect(problemSolvingClientTurnError("upstream reset")).toBe(
+      AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+    );
+    expect(retainProblemSolvingTurnKey("upstream reset")).toBe(true);
+  });
+
+  it("keeps the key when billing uncertainty is reported", () => {
+    expect(
+      retainProblemSolvingTurnKey(
+        "Lean AI lost contact with the provider before this turn finished.",
+      ),
+    ).toBe(true);
+  });
+
   it("keeps the key while a turn is unfinished and clears it after a settled timeout", () => {
     expect(
       retainProblemSolvingTurnKey(

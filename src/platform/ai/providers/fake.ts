@@ -21,6 +21,13 @@ export class FakeAIProvider implements AIProvider {
     const lastUser =
       input.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
+    if (
+      process.env.AI_E2E_INTERRUPT_HARNESS === "1" &&
+      lastUser.includes("leanai-e2e-interrupt-turn")
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 5_000));
+    }
+
     if (input.structuredOutputFormat?.name === "coach_envelope") {
       return this.coachResponse(lastUser, input.tools);
     }

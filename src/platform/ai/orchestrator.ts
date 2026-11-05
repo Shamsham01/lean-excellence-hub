@@ -38,7 +38,12 @@ import {
   resolveAiTurnWallClockMs,
   runWithinAiTurnBudget,
 } from "@/platform/ai/run-deadline";
-import { recoverStaleAiRunsForSession } from "@/platform/ai/stale-ai-run-recovery";
+import { recordAiRunProviderDispatch } from "@/platform/ai/record-ai-run-provider-dispatch";
+import { shouldRetryProviderOnce } from "@/platform/ai/provider-turn-retry";
+import {
+  recoverStaleAiRunsForProblemSolvingCase,
+  recoverStaleAiRunsForSession,
+} from "@/platform/ai/stale-ai-run-recovery";
 import { resolveAIProvider } from "@/platform/ai/registry";
 import {
   createSourceAllowlist,
@@ -139,6 +144,11 @@ export async function runAiTurn(
     throw new Error("Lean AI session is not authorised for this case.");
   }
 
+  await recoverStaleAiRunsForProblemSolvingCase(
+    input.supabase,
+    input.caseId,
+    AI_STALE_RUN_AFTER_MS,
+  );
   await recoverStaleAiRunsForSession(
     input.supabase,
     input.sessionId,
@@ -236,30 +246,18 @@ export async function runAiTurn(
   try {
     for (let iteration = 0; iteration <= maxToolCalls; iteration += 1) {
       deadline.assertWithinBudget(provider.name, model);
-      const perCallTimeoutMs = deadline.providerTimeoutMs(
-        configuredPerCallTimeoutMs,
-        provider.name,
-        model,
-      );
-      const response = await runWithinAiTurnBudget(
+      const response = await invokeProblemSolvingProviderResponse({
+        supabase: input.supabase,
+        runId,
         deadline,
-        provider.name,
+        provider,
         model,
-        () =>
-          provider.createResponse({
-            model,
-            systemPrompt,
-            messages,
-            tools: buildOpenAiTools(),
-            maxOutputTokens: prepared.maxOutputTokens,
-            timeoutMs: perCallTimeoutMs,
-            maxRetries: 0,
-            reasoningEffort: prepared.reasoningEffort,
-            ...(expectsStructuredOutput
-              ? { expectsStructuredOutput: true }
-              : {}),
-          }),
-      );
+        configuredPerCallTimeoutMs,
+        prepared,
+        expectsStructuredOutput,
+        systemPrompt,
+        messages,
+      });
 
       providerRequestId = response.responseId ?? providerRequestId;
       totalUsage.inputTokens += response.usage.inputTokens;
@@ -465,6 +463,60 @@ export async function runAiTurn(
       );
     }
     throw error;
+  }
+}
+
+async function invokeProblemSolvingProviderResponse(input: {
+  supabase: RunAiTurnInput["supabase"];
+  runId: string;
+  deadline: ReturnType<typeof createAiRunDeadline>;
+  provider: ReturnType<typeof resolveAIProvider>;
+  model: string;
+  configuredPerCallTimeoutMs: number;
+  prepared: ReturnType<typeof prepareWorkflowModelCall>;
+  expectsStructuredOutput: boolean;
+  systemPrompt: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+}) {
+  const callProvider = () =>
+    input.provider.createResponse({
+      model: input.model,
+      systemPrompt: input.systemPrompt,
+      messages: input.messages,
+      tools: buildOpenAiTools(),
+      maxOutputTokens: input.prepared.maxOutputTokens,
+      timeoutMs: input.deadline.providerTimeoutMs(
+        input.configuredPerCallTimeoutMs,
+        input.provider.name,
+        input.model,
+      ),
+      maxRetries: 0,
+      reasoningEffort: input.prepared.reasoningEffort,
+      ...(input.expectsStructuredOutput
+        ? { expectsStructuredOutput: true }
+        : {}),
+    });
+
+  await recordAiRunProviderDispatch(input.supabase, input.runId);
+
+  try {
+    return await runWithinAiTurnBudget(
+      input.deadline,
+      input.provider.name,
+      input.model,
+      callProvider,
+    );
+  } catch (error) {
+    if (!shouldRetryProviderOnce(error, input.deadline)) {
+      throw error;
+    }
+    input.deadline.assertWithinBudget(input.provider.name, input.model);
+    return runWithinAiTurnBudget(
+      input.deadline,
+      input.provider.name,
+      input.model,
+      callProvider,
+    );
   }
 }
 
