@@ -62,7 +62,7 @@ export function PendingAiProposalsList({
     router.refresh();
   }
 
-  if (visible.length === 0 && !emptyHint) {
+  if (visible.length === 0 && !emptyHint && !actionMessage) {
     return null;
   }
 
