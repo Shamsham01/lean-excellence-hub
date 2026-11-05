@@ -266,6 +266,100 @@ export async function acceptAiProposal(
       return { resultId: llId as string, resultType: proposal.proposal_type };
     }
 
+    case "problem_statement": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const ps = proposalPayloadSchemas.problem_statement.parse(editedPayload);
+      const { error: psError } = await supabase.rpc(
+        "update_problem_solving_problem_statement",
+        {
+          target_case_id: caseId,
+          target_problem_statement: ps.statement,
+        },
+      );
+      if (psError) throw psError;
+      await recordAcceptance(supabase, proposal, {});
+      return { resultId: caseId, resultType: proposal.proposal_type };
+    }
+
+    case "five_why_chain": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const chain = proposalPayloadSchemas.five_why_chain.parse(editedPayload);
+      const title = chain.title ?? "5 Why analysis";
+      const { data: analysisId, error: analysisError } = await supabase.rpc(
+        "create_analysis",
+        {
+          target_problem_solving_case_id: caseId,
+          target_analysis_type: "five_whys",
+          target_title: title,
+        },
+      );
+      if (analysisError) throw analysisError;
+      let parentNodeId: string | null = null;
+      for (const [index, step] of chain.steps.entries()) {
+        const metadata =
+          step.evidence && step.evidence.length > 0
+            ? { evidence: step.evidence }
+            : {};
+        const { data: nodeId, error: nodeError } = await supabase.rpc(
+          "add_analysis_node",
+          {
+            target_analysis_id: analysisId,
+            target_label: step.label,
+            target_parent_node_id: parentNodeId,
+            target_sort_order: index,
+            target_display_metadata: metadata,
+          },
+        );
+        if (nodeError) throw nodeError;
+        parentNodeId = nodeId as string;
+      }
+      if (chain.root_cause_summary?.trim()) {
+        const { data: hypId, error: hypError } = await supabase.rpc(
+          "create_hypothesis",
+          {
+            target_problem_solving_case_id: caseId,
+            target_statement: chain.root_cause_summary.trim(),
+            target_rationale: "Drafted from accepted 5 Why chain.",
+          },
+        );
+        if (hypError) throw hypError;
+        await recordAcceptance(supabase, proposal, {
+          hypothesis_id: hypId as string,
+        });
+        return { resultId: hypId as string, resultType: proposal.proposal_type };
+      }
+      await recordAcceptance(supabase, proposal, {});
+      return { resultId: analysisId as string, resultType: proposal.proposal_type };
+    }
+
+    case "fishbone_cause": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const fb = proposalPayloadSchemas.fishbone_cause.parse(editedPayload);
+      let analysisId = fb.analysis_id ?? null;
+      if (!analysisId) {
+        const { data: createdAnalysisId, error: analysisError } =
+          await supabase.rpc("create_analysis", {
+            target_problem_solving_case_id: caseId,
+            target_analysis_type: "fishbone",
+            target_title: fb.analysis_title ?? "Fishbone analysis",
+          });
+        if (analysisError) throw analysisError;
+        analysisId = createdAnalysisId as string;
+      }
+      const { data: nodeId, error: nodeError } = await supabase.rpc(
+        "add_analysis_node",
+        {
+          target_analysis_id: analysisId,
+          target_label: fb.label,
+          target_parent_node_id: fb.parent_node_id ?? null,
+          target_category: fb.category,
+        },
+      );
+      if (nodeError) throw nodeError;
+      await recordAcceptance(supabase, proposal, {});
+      return { resultId: nodeId as string, resultType: proposal.proposal_type };
+    }
+
     default:
       throw new Error("Unsupported proposal type.");
   }

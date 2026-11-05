@@ -612,7 +612,25 @@ describe("runAiTurn stateless tool continuation", () => {
   it("fails the run once when finalisation fails and does not start another provider call", async () => {
     const finishError = { code: "P0001", message: "finish failed" };
     const supabase = {
-      from: sessionLookup("case-1"),
+      from: vi.fn((table: string) => {
+        if (table === "ai_runs") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: "run-finish-failed",
+                    status: "failed",
+                    ai_session_id: "session-finish-failed",
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return sessionLookup("case-1")();
+      }),
       rpc: vi.fn(async (name: string) => {
         if (name === "start_ai_run") {
           return { data: "run-finish-failed", error: null };
@@ -637,7 +655,10 @@ describe("runAiTurn stateless tool continuation", () => {
         idempotencyKey: "idem-finish-failed",
         conversationHistory: [],
       }),
-    ).rejects.toEqual(finishError);
+    ).rejects.toMatchObject({
+      name: "AiProviderError",
+      message: expect.stringMatching(/Retry|did not finish/i),
+    });
     expect(createResponseCalls).toHaveLength(2);
     expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
   });

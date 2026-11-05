@@ -2,7 +2,10 @@ export const AI_TURN_WALL_CLOCK_USER_MESSAGE =
   "Lean AI took too long to finish this turn. Nothing was saved to your case. Your message is still here — try a shorter question or retry in a moment.";
 
 export const AI_TURN_UNCERTAIN_COMPLETION_MESSAGE =
-  "Lean AI did not confirm whether this turn finished. Wait a moment, then send the same message again to collect the result. Do not assume nothing was saved.";
+  "Lean AI lost the connection before confirming this turn. Lean AI is checking whether your case was updated — use Retry to collect the result or start a fresh attempt.";
+
+export const AI_TURN_FAILED_RETRY_MESSAGE =
+  "Lean AI could not finish this turn. Nothing new was applied to your case. Use Retry to try again.";
 
 export const AI_TURN_IN_PROGRESS_MESSAGE =
   "Lean AI is still finishing this request. Wait a moment, then send the same message again to collect the result.";

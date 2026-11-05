@@ -10,6 +10,7 @@ import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { AI_TURN_WALL_CLOCK_USER_MESSAGE } from "@/platform/ai/run-deadline";
 import { AiProviderError } from "@/platform/ai/providers/errors";
 import { runAiTurn } from "@/platform/ai/orchestrator";
+import { reconcileProblemSolvingAiTurnByIdempotencyKey } from "@/platform/ai/problem-solving-turn-reconcile";
 import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-problem-solving-ai-runs";
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
 import { formatProposalAcceptanceError } from "@/platform/ai/proposals/contracts";
@@ -146,6 +147,71 @@ export async function sendProblemSolvingAiMessage(input: {
         error instanceof Error
           ? error.message
           : "Lean AI could not complete this turn.",
+    };
+  }
+}
+
+export async function reconcileProblemSolvingAiTurn(input: {
+  caseId: string;
+  sessionId: string;
+  idempotencyKey: string;
+}): Promise<
+  ActionResult<{
+    state: "completed" | "in_progress" | "failed";
+    runId?: string;
+    assistantMessageId?: string;
+    envelope?: import("@/platform/ai/types").FacilitatorEnvelope;
+    message?: string;
+    pendingProposals?: PendingProposalRow[];
+  }>
+> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const result = await reconcileProblemSolvingAiTurnByIdempotencyKey(
+      supabase,
+      input,
+    );
+
+    if (result.state === "completed") {
+      const { data: sessionDetail } = await supabase.rpc(
+        "get_ai_session_detail",
+        { target_ai_session_id: input.sessionId },
+      );
+      const proposalsRaw =
+        (sessionDetail as { proposals?: PendingProposalRow[] } | null)
+          ?.proposals ?? [];
+      const pendingProposals = proposalsRaw.filter(
+        (row) => row.status === "pending",
+      );
+      revalidatePath(`/platform/problem-solving/${input.caseId}`);
+      return {
+        ok: true,
+        data: {
+          state: "completed",
+          runId: result.runId,
+          assistantMessageId: result.assistantMessageId,
+          envelope: result.envelope,
+          pendingProposals,
+        },
+      };
+    }
+
+    return {
+      ok: true,
+      data: {
+        state: result.state,
+        message: result.message,
+        ...(result.state === "failed" && result.runId
+          ? { runId: result.runId }
+          : {}),
+      },
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not reconcile Lean AI turn.",
     };
   }
 }

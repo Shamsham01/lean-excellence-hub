@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   acceptProblemSolvingAiProposal,
   createProblemSolvingAiSession,
+  reconcileProblemSolvingAiTurn,
   rejectProblemSolvingAiProposal,
   sendProblemSolvingAiMessage,
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
@@ -64,6 +65,67 @@ export function AiFacilitatorPanel({
     message: string;
     idempotencyKey: string;
   } | null>(null);
+  const [reconciling, setReconciling] = useState(false);
+  const [hasPendingTurn, setHasPendingTurn] = useState(false);
+
+  async function applyCompletedTurn(data: {
+    envelope: FacilitatorEnvelope;
+    pendingProposals?: PendingProposal[];
+  }) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: data.envelope.message,
+        envelope: data.envelope,
+      },
+    ]);
+    if (data.pendingProposals) {
+      setPendingProposals(data.pendingProposals);
+    }
+    pendingTurnRef.current = null;
+    setHasPendingTurn(false);
+    setDraft("");
+    setError(null);
+    router.refresh();
+  }
+
+  async function attemptReconcileTurn(userMessage: string): Promise<boolean> {
+    const pending = pendingTurnRef.current;
+    if (!pending || pending.message !== userMessage) {
+      return false;
+    }
+    setReconciling(true);
+    try {
+      const activeSessionId = sessionId ?? (await ensureSession());
+      const result = await reconcileProblemSolvingAiTurn({
+        caseId,
+        sessionId: activeSessionId,
+        idempotencyKey: pending.idempotencyKey,
+      });
+      if (result.error || !result.data) {
+        return false;
+      }
+      if (result.data.state === "completed" && result.data.envelope) {
+        await applyCompletedTurn({
+          envelope: result.data.envelope,
+          ...(result.data.pendingProposals
+            ? { pendingProposals: result.data.pendingProposals }
+            : {}),
+        });
+        return true;
+      }
+      if (result.data.state === "failed" && result.data.message) {
+        setError(result.data.message);
+        pendingTurnRef.current = null;
+        setHasPendingTurn(false);
+        return true;
+      }
+      return false;
+    } finally {
+      setReconciling(false);
+    }
+  }
 
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
@@ -97,6 +159,7 @@ export function AiFacilitatorPanel({
           message: userMessage,
           idempotencyKey: `${activeSessionId}-${crypto.randomUUID()}`,
         };
+        setHasPendingTurn(true);
       }
       const idempotencyKey = pendingTurnRef.current.idempotencyKey;
 
@@ -119,25 +182,24 @@ export function AiFacilitatorPanel({
         throw new Error(result.error ?? "Lean AI failed");
       }
 
-      setDraft("");
-      pendingTurnRef.current = null;
       const data = result.data;
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.envelope.message,
-          envelope: data.envelope,
-        },
-      ]);
-      if (data.pendingProposals) {
-        setPendingProposals(data.pendingProposals);
-      }
-      router.refresh();
+      await applyCompletedTurn({
+        envelope: data.envelope,
+        ...(data.pendingProposals
+          ? { pendingProposals: data.pendingProposals }
+          : {}),
+      });
     } catch (sendError) {
       const message =
         sendError instanceof Error ? sendError.message : "Lean AI failed";
-      setError(problemSolvingClientTurnError(message));
+      const displayMessage = problemSolvingClientTurnError(message);
+      setError(displayMessage);
+      if (userMessage && retainProblemSolvingTurnKey(message)) {
+        const collected = await attemptReconcileTurn(userMessage);
+        if (collected) {
+          return;
+        }
+      }
       if (userMessage) {
         setMessages((previous) => {
           const last = previous.at(-1);
@@ -150,6 +212,7 @@ export function AiFacilitatorPanel({
       }
       if (!retainProblemSolvingTurnKey(message)) {
         pendingTurnRef.current = null;
+        setHasPendingTurn(false);
       }
     } finally {
       setLoading(false);
@@ -244,13 +307,40 @@ export function AiFacilitatorPanel({
           placeholder="Ask Lean AI..."
           disabled={Boolean(disabledReason) || loading}
         />
-        <Button
-          data-testid="lean-ai-send"
-          onClick={() => handleSend()}
-          disabled={Boolean(disabledReason) || loading || !draft.trim()}
-        >
-          {loading ? "Thinking..." : "Send"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            data-testid="lean-ai-send"
+            onClick={() => handleSend()}
+            disabled={
+              Boolean(disabledReason) ||
+              loading ||
+              reconciling ||
+              !draft.trim()
+            }
+          >
+            {loading ? "Thinking..." : "Send"}
+          </Button>
+          {error && hasPendingTurn ? (
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="lean-ai-retry-turn"
+              disabled={Boolean(disabledReason) || loading || reconciling}
+              onClick={() => {
+                const pending = pendingTurnRef.current;
+                if (!pending) return;
+                void (async () => {
+                  const collected = await attemptReconcileTurn(pending.message);
+                  if (!collected) {
+                    void handleSend();
+                  }
+                })();
+              }}
+            >
+              {reconciling ? "Checking…" : "Retry turn"}
+            </Button>
+          ) : null}
+        </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         {actionMessage ? (
           <p className="text-xs text-muted-foreground">{actionMessage}</p>

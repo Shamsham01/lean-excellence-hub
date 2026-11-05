@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { HYPOTHESIS_CATEGORIES } from "@/lib/problem-solving/hypothesis";
 import { CURRENT_CONDITION_CATEGORIES } from "@/lib/problem-solving/types";
 import type { AiProposalType } from "@/platform/ai/types";
 
@@ -79,6 +80,37 @@ export const proposalPayloadSchemas = {
       standardise: z.string().optional(),
       apply_elsewhere: z.string().optional(),
       notes: z.string().optional(),
+    })
+    .strict(),
+  problem_statement: z
+    .object({
+      statement: z.string().trim().min(1).max(4000),
+    })
+    .strict(),
+  five_why_chain: z
+    .object({
+      title: z.string().trim().min(1).max(200).optional(),
+      steps: z
+        .array(
+          z
+            .object({
+              label: z.string().trim().min(1).max(500),
+              evidence: z.string().trim().max(2000).optional(),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(7),
+      root_cause_summary: z.string().trim().max(2000).optional(),
+    })
+    .strict(),
+  fishbone_cause: z
+    .object({
+      analysis_id: z.string().uuid().optional(),
+      analysis_title: z.string().trim().min(1).max(200).optional(),
+      label: z.string().trim().min(1).max(500),
+      category: z.enum(HYPOTHESIS_CATEGORIES),
+      parent_node_id: z.string().uuid().optional(),
     })
     .strict(),
 } satisfies Record<AiProposalType, z.ZodType>;
