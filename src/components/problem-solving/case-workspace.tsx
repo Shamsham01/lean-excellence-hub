@@ -193,7 +193,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       return;
     }
     setPendingProposals((prev) => prev.filter((p) => p.id !== proposal.id));
-    notify("Proposal accepted");
+    notify("Proposal accepted.");
     router.push(`/platform/problem-solving/${detail.id}`);
   }
 
