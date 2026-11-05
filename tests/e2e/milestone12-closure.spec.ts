@@ -129,7 +129,7 @@ test.describe("Milestone 12 closure", () => {
     });
     await page
       .getByTestId("activate-method-select")
-      .selectOption({ label: /A3 \/ 8-Step Structured Problem Solving/i });
+      .selectOption({ label: "A3 / 8-Step Structured Problem Solving" });
     await page.getByTestId("problem-solving-activate-button").click();
     await expect(
       page.getByTestId("problem-solving-header").getByText("Active", {
