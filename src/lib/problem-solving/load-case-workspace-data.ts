@@ -38,6 +38,33 @@ export type CaseWorkspaceData = {
   membershipNameById: Record<string, string>;
 };
 
+function methodStagesFromMethodsCatalog(
+  methodVersionId: string,
+  methods: ProblemSolvingMethodsResponse["items"],
+): MethodStage[] {
+  for (const method of methods) {
+    const version = method.current_version;
+    if (version?.id === methodVersionId && version.stages.length > 0) {
+      return version.stages;
+    }
+  }
+  return [];
+}
+
+export function resolveMethodStagesForCase(
+  methodVersionId: string | null,
+  directStages: MethodStage[],
+  methods: ProblemSolvingMethodsResponse["items"],
+): MethodStage[] {
+  if (directStages.length > 0) {
+    return directStages;
+  }
+  if (!methodVersionId) {
+    return [];
+  }
+  return methodStagesFromMethodsCatalog(methodVersionId, methods);
+}
+
 export function collectMembershipIds(
   detail: ProblemSolvingCaseDetail,
 ): string[] {
@@ -231,13 +258,19 @@ export async function loadCaseWorkspaceData(
       byte_size: row.byte_size as number,
     }));
 
+  const resolvedMethodStages = resolveMethodStagesForCase(
+    detail.method_version_id,
+    methodStages,
+    methods,
+  );
+
   return {
     currentConditionItems,
     containments,
     analyses,
     analysisNodes,
     hypothesisTests,
-    methodStages,
+    methodStages: resolvedMethodStages,
     methods,
     comments,
     evidence,
