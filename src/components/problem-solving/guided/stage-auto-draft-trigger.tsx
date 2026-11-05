@@ -35,12 +35,7 @@ export function StageAutoDraftTrigger({
   const autoRan = useRef(false);
 
   useEffect(() => {
-    if (
-      !canUseAi ||
-      !providerAvailable ||
-      !hasProblemData ||
-      autoRan.current
-    ) {
+    if (!canUseAi || !providerAvailable || !hasProblemData || autoRan.current) {
       return;
     }
     if (typeof window === "undefined") return;

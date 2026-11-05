@@ -1,6 +1,9 @@
 "use client";
 
-import { sortMethodStages, type MethodStage } from "@/lib/problem-solving/stages";
+import {
+  sortMethodStages,
+  type MethodStage,
+} from "@/lib/problem-solving/stages";
 import { cn } from "@/lib/utils";
 
 type StageProgressRailProps = {
@@ -48,8 +51,8 @@ export function StageProgressRail({
                   !canNavigate && !isViewing && "cursor-default opacity-70",
                 )}
               >
-                <span className="font-medium leading-tight">{stage.title}</span>
-                <span className="mt-0.5 text-[0.65rem] uppercase tracking-wide sm:text-[0.7rem]">
+                <span className="leading-tight font-medium">{stage.title}</span>
+                <span className="mt-0.5 text-[0.65rem] tracking-wide uppercase sm:text-[0.7rem]">
                   {isCurrent ? "Current" : isPast ? "Completed" : "Upcoming"}
                 </span>
               </button>

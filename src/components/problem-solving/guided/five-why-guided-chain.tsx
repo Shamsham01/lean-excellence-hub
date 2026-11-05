@@ -34,7 +34,8 @@ function orderedChainNodes(
     chain.push(cursor);
     guard.add(cursor.id);
     cursor =
-      forAnalysis.find((node) => node.parent_node_id === cursor?.id) ?? undefined;
+      forAnalysis.find((node) => node.parent_node_id === cursor?.id) ??
+      undefined;
   }
   if (chain.length === 0) {
     return forAnalysis.sort((a, b) => a.sort_order - b.sort_order);
@@ -74,7 +75,7 @@ export function FiveWhyGuidedChain({
             key={node.id}
             className="relative border-l-2 border-primary/30 pl-4"
           >
-            <p className="text-xs font-medium uppercase text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground uppercase">
               Why {index + 1}
             </p>
             <p className="text-sm font-medium">{node.label}</p>

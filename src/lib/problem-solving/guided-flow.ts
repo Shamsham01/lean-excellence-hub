@@ -36,8 +36,12 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
   },
   TARGET_CONDITION: {
     title: "Target condition",
-    purpose: "Describe the desired observable state after improvement—not the solution.",
-    actions: ["State what good looks like in operation.", "Keep it testable later."],
+    purpose:
+      "Describe the desired observable state after improvement—not the solution.",
+    actions: [
+      "State what good looks like in operation.",
+      "Keep it testable later.",
+    ],
     autoDraftPrompt:
       "Suggest concise target-condition wording and any supporting current-condition facts as draft proposals.",
   },
@@ -79,7 +83,8 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
   },
   SUSTAINMENT: {
     title: "Sustainment",
-    purpose: "Standardise checks so the gain holds after the project team moves on.",
+    purpose:
+      "Standardise checks so the gain holds after the project team moves on.",
     actions: ["Add sustainment checks and lessons learned."],
     autoDraftPrompt:
       "Propose sustainment items and lessons learned drafts for this case.",

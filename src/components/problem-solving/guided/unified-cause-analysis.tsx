@@ -111,7 +111,10 @@ export function UnifiedCauseAnalysis({
   }
 
   return (
-    <div className="flex flex-col gap-6" data-testid="pps-unified-cause-analysis">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="pps-unified-cause-analysis"
+    >
       <FiveWhyGuidedChain analyses={analyses} analysisNodes={analysisNodes} />
 
       <Card>
@@ -127,7 +130,7 @@ export function UnifiedCauseAnalysis({
                 className="rounded-lg border bg-muted/20 p-3"
                 data-testid={`pps-fishbone-${category}`}
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {hypothesisCategoryLabel(category)}
                 </p>
                 <ul className="mt-2 flex flex-col gap-2">

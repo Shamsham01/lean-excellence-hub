@@ -27,7 +27,10 @@ import {
   guidedStageConfig,
   resolveViewStage,
 } from "@/lib/problem-solving/guided-flow";
-import { sortMethodStages, type MethodStage } from "@/lib/problem-solving/stages";
+import {
+  sortMethodStages,
+  type MethodStage,
+} from "@/lib/problem-solving/stages";
 import type {
   ProblemSolvingAnalysis,
   ProblemSolvingAnalysisNode,
@@ -112,7 +115,7 @@ export function CaseWorkspace({
 
   const hasProblemData = Boolean(
     (detail.problem_statement && detail.problem_statement.trim().length > 0) ||
-      currentConditionItems.length > 0,
+    currentConditionItems.length > 0,
   );
 
   const canNavigateStages =
