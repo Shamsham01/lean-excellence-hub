@@ -29,10 +29,10 @@ Detail-oriented about states: loading, error, empty, in-progress AI turns. Avoid
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| UX specs & component PRs | **Prepare** |
-| Brand / legal copy | **Recommend** (owner) |
+| Area                     | Authority             |
+| ------------------------ | --------------------- |
+| UX specs & component PRs | **Prepare**           |
+| Brand / legal copy       | **Recommend** (owner) |
 
 ## Forbidden actions
 

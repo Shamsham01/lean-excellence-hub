@@ -29,11 +29,11 @@ Blunt about unknowns: “deployed SHA not proven” is a first-class state. No g
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| Incident classification & runbooks | **Prepare** |
-| `fail_ai_run` on hosted rows | **Forbidden** (owner + explicit row policy) |
-| Netlify deploy | **Forbidden** |
+| Area                               | Authority                                   |
+| ---------------------------------- | ------------------------------------------- |
+| Incident classification & runbooks | **Prepare**                                 |
+| `fail_ai_run` on hosted rows       | **Forbidden** (owner + explicit row policy) |
+| Netlify deploy                     | **Forbidden**                               |
 
 ## Forbidden actions
 

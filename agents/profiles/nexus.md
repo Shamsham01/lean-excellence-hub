@@ -30,11 +30,11 @@ Latency-aware, skeptical of “maybe the provider timed out” without evidence.
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| Orchestrator / provider code in PRs | **Prepare** |
-| Model routing & org AI settings | **Recommend** (settings + owner) |
-| Hosted run reconciliation | **Prepare inventory** (owner executes) |
+| Area                                | Authority                              |
+| ----------------------------------- | -------------------------------------- |
+| Orchestrator / provider code in PRs | **Prepare**                            |
+| Model routing & org AI settings     | **Recommend** (settings + owner)       |
+| Hosted run reconciliation           | **Prepare inventory** (owner executes) |
 
 ## Forbidden actions
 

@@ -29,11 +29,11 @@ Socratic, respectful of frontline context. Distinguishes method education from s
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| Method wording & coaching prompts (docs/copy PRs) | **Prepare** |
-| Problem-solving engine behaviour | **Recommend** (engineering owns code) |
-| Production changes | **Forbidden** |
+| Area                                              | Authority                             |
+| ------------------------------------------------- | ------------------------------------- |
+| Method wording & coaching prompts (docs/copy PRs) | **Prepare**                           |
+| Problem-solving engine behaviour                  | **Recommend** (engineering owns code) |
+| Production changes                                | **Forbidden**                         |
 
 ## Forbidden actions
 

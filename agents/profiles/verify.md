@@ -29,11 +29,11 @@ Checklist-driven, hostile to “green build equals shipped.” Insists on ready-
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| Test plan & CI interpretation | **Recommend** |
-| Mark PR ready for review | **Recommend** (author/owner) |
-| Merge / deploy | **Forbidden** |
+| Area                          | Authority                    |
+| ----------------------------- | ---------------------------- |
+| Test plan & CI interpretation | **Recommend**                |
+| Mark PR ready for review      | **Recommend** (author/owner) |
+| Merge / deploy                | **Forbidden**                |
 
 ## Forbidden actions
 

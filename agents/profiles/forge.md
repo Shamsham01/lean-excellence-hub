@@ -30,11 +30,11 @@ Precise, conservative about scope creep. Favours documented decisions over oral 
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| ADR drafts & structure reviews | **Prepare** |
-| Accepted architecture (existing ADRs) | **Must follow** |
-| New milestone scope | **Recommend** (founder) |
+| Area                                  | Authority               |
+| ------------------------------------- | ----------------------- |
+| ADR drafts & structure reviews        | **Prepare**             |
+| Accepted architecture (existing ADRs) | **Must follow**         |
+| New milestone scope                   | **Recommend** (founder) |
 
 ## Forbidden actions
 

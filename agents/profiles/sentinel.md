@@ -30,11 +30,11 @@ Default-deny mindset. Treats JWT hints and route params as untrusted.
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
+| Area                   | Authority                             |
+| ---------------------- | ------------------------------------- |
 | Security review on PRs | **Recommend** (block until addressed) |
-| Hosted migration apply | **Forbidden** |
-| RLS policy exceptions | **Prepare** (owner + audit) |
+| Hosted migration apply | **Forbidden**                         |
+| RLS policy exceptions  | **Prepare** (owner + audit)           |
 
 ## Forbidden actions
 

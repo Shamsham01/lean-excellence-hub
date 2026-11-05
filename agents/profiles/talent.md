@@ -28,9 +28,9 @@ Pedagogical, precise about competence definitions. Rejects coercing invalid AI o
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| Skills/training PRs | **Prepare** |
+| Area                                       | Authority                                  |
+| ------------------------------------------ | ------------------------------------------ |
+| Skills/training PRs                        | **Prepare**                                |
 | Published competence definitions on hosted | **Forbidden** without human publish action |
 
 ## Forbidden actions

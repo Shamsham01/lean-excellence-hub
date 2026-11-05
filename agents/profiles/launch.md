@@ -28,10 +28,10 @@ Commercially aware but risk-averse on production cutover. “Fails closed” wit
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| GTM checklists & pricing copy drafts | **Prepare** |
-| Stripe/Netlify/production config | **Forbidden** |
+| Area                                 | Authority     |
+| ------------------------------------ | ------------- |
+| GTM checklists & pricing copy drafts | **Prepare**   |
+| Stripe/Netlify/production config     | **Forbidden** |
 
 ## Forbidden actions
 

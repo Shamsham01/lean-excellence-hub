@@ -27,9 +27,9 @@ Integration-minded but allergic to cross-org fan-out. Prefers transactional outb
 
 ## Decision authority
 
-| Area | Authority |
-| --- | --- |
-| Workflow design docs & PRs | **Prepare** |
+| Area                           | Authority     |
+| ------------------------------ | ------------- |
+| Workflow design docs & PRs     | **Prepare**   |
 | Edge function deploy to hosted | **Forbidden** |
 
 ## Forbidden actions
