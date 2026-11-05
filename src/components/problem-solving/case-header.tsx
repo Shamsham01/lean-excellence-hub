@@ -22,7 +22,6 @@ import {
   priorityLabel,
   severityLabel,
 } from "@/lib/problem-solving/status";
-import type { MethodStage } from "@/lib/problem-solving/stages";
 import type {
   ProblemSolvingCaseDetail,
   ProblemSolvingMethod,
@@ -31,12 +30,10 @@ import { cn } from "@/lib/utils";
 
 type CaseHeaderProps = {
   detail: ProblemSolvingCaseDetail;
-  methodStages: MethodStage[];
   ownerName?: string | null;
   facilitatorName?: string | null;
   targetDueDateLabel?: string | null;
   canManage: boolean;
-  canFacilitate: boolean;
   canClose: boolean;
   methods: ProblemSolvingMethod[];
   pinnedMethodVersion: PinnedMethodVersionContext | null;
@@ -45,12 +42,10 @@ type CaseHeaderProps = {
 
 export function CaseHeader({
   detail,
-  methodStages: _methodStages,
   ownerName,
   facilitatorName,
   targetDueDateLabel,
   canManage,
-  canFacilitate,
   canClose,
   methods,
   pinnedMethodVersion,

@@ -107,7 +107,6 @@ export function StageAutoDraftTrigger({
       autoDraftPrompt,
       canUseAi,
       caseId,
-      hasProblemData,
       onDraftComplete,
       providerAvailable,
       router,
@@ -127,7 +126,10 @@ export function StageAutoDraftTrigger({
       return;
     }
     autoRan.current = true;
-    void runDraft(true);
+    const timer = window.setTimeout(() => {
+      void runDraft(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [canUseAi, providerAvailable, hasProblemData, caseId, stageKey, runDraft]);
 
   if (!canUseAi || !providerAvailable) {

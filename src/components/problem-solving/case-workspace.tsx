@@ -89,7 +89,6 @@ export function CaseWorkspace({
   canManage,
   canContribute,
   canFacilitate,
-  canVerifyCause,
   canClose,
   canUseAi,
   providerAvailable,
@@ -239,12 +238,10 @@ export function CaseWorkspace({
     >
       <CaseHeader
         detail={detail}
-        methodStages={methodStages}
         ownerName={ownerName ?? null}
         facilitatorName={facilitatorName ?? null}
         targetDueDateLabel={targetDueDateLabel ?? null}
         canManage={canManage}
-        canFacilitate={canFacilitate}
         canClose={canClose}
         methods={methods}
         pinnedMethodVersion={pinnedMethodVersion}
