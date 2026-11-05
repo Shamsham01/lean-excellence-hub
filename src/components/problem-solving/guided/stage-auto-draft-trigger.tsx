@@ -94,8 +94,8 @@ export function StageAutoDraftTrigger({
           fromAuto
             ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
             : result.data.pendingProposalCount > 0
-              ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) to review below.`
-              : "Draft finished — check the facilitator panel for Lean AI output.",
+              ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) in Pending Lean AI proposals below.`
+              : "Draft finished — check Pending Lean AI proposals or the facilitator panel.",
         );
         onDraftComplete?.();
         router.refresh();

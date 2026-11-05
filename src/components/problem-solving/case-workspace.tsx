@@ -13,6 +13,8 @@ import { HistoryPanel } from "@/components/problem-solving/history-panel";
 import { OverviewPanel } from "@/components/problem-solving/overview-panel";
 import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
 import { AiFacilitatorPanel } from "@/components/problem-solving/ai/ai-facilitator-panel";
+import { PendingAiProposalsList } from "@/components/problem-solving/ai/pending-ai-proposals-list";
+import type { CasePendingAiProposal } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 import { RelatedWorkPanel } from "@/components/problem-solving/related-work-panel";
 import { VerificationPanel } from "@/components/problem-solving/verification-panel";
 import { StageAutoDraftTrigger } from "@/components/problem-solving/guided/stage-auto-draft-trigger";
@@ -68,6 +70,7 @@ type CaseWorkspaceProps = {
   canClose: boolean;
   canUseAi: boolean;
   providerAvailable: boolean;
+  pendingAiProposals?: CasePendingAiProposal[];
 };
 
 export function CaseWorkspace({
@@ -92,6 +95,7 @@ export function CaseWorkspace({
   canClose,
   canUseAi,
   providerAvailable,
+  pendingAiProposals = [],
 }: CaseWorkspaceProps) {
   const router = useRouter();
   const [toast, setToast] = useState<{
@@ -334,6 +338,16 @@ export function CaseWorkspace({
             providerAvailable={providerAvailable}
             hasProblemData={hasProblemData}
           />
+          {canUseAi && providerAvailable ? (
+            <PendingAiProposalsList
+              key={
+                pendingAiProposals.map((proposal) => proposal.id).join("-") ||
+                "none"
+              }
+              caseId={detail.id}
+              initialProposals={pendingAiProposals}
+            />
+          ) : null}
           <RelatedWorkPanel
             mode="case"
             caseId={detail.id}
