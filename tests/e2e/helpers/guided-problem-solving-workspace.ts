@@ -67,3 +67,22 @@ export async function openProblemSolvingStage(
   await byLabel.scrollIntoViewIfNeeded();
   await byLabel.click();
 }
+
+export const A3_STRUCTURED_METHOD_LABEL =
+  "A3 / 8-Step Structured Problem Solving";
+
+export async function activateA3StructuredMethod(page: Page) {
+  await page
+    .getByTestId("activate-method-select")
+    .selectOption({ label: A3_STRUCTURED_METHOD_LABEL });
+  await page.getByTestId("problem-solving-activate-button").click();
+}
+
+export async function openWorkshopMode(page: Page) {
+  const toggle = page.getByTestId("pps-workshop-toggle");
+  await toggle.scrollIntoViewIfNeeded();
+  await toggle.click();
+  await expect(page.getByTestId("pps-workshop-mode")).toBeVisible({
+    timeout: 15_000,
+  });
+}

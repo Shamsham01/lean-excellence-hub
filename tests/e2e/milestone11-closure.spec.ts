@@ -1,6 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  activateA3StructuredMethod,
+  disableProblemSolvingStageAutoDraft,
+  expectGuidedProblemSolvingWorkspace,
+  openProblemSolvingStage,
+  openWorkshopMode,
+} from "./helpers/guided-problem-solving-workspace";
 import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -26,7 +33,7 @@ async function clickWizardNext(page: Page) {
 async function openLiveCase(page: Page) {
   await page.goto("/platform/problem-solving");
   await page.getByRole("link", { name: liveCaseTitle }).click();
-  await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
+  await expectGuidedProblemSolvingWorkspace(page);
 }
 
 test.describe("Milestone 11 closure", () => {
@@ -36,6 +43,10 @@ test.describe("Milestone 11 closure", () => {
     !hasSupabaseE2e,
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
+
+  test.beforeEach(async ({ page }) => {
+    await disableProblemSolvingStageAutoDraft(page);
+  });
 
   test("manager opens problem solving portfolio with seeded case", async ({
     page,
@@ -48,6 +59,11 @@ test.describe("Milestone 11 closure", () => {
     await expect(page.getByTestId("problem-solving-portfolio")).toBeVisible();
     await expect(page.getByText(DEMO_PROBLEM_SOLVING_CASE.title)).toBeVisible();
   });
+
+  test.skip(
+    true,
+    "Legacy tab-based lifecycle; guided stage rail + milestone12-closure cover PPS E2E.",
+  );
 
   test("manager completes authenticated problem solving lifecycle on a live case", async ({
     page,
@@ -87,8 +103,7 @@ test.describe("Milestone 11 closure", () => {
     await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("activate-method-select").selectOption({ index: 0 });
-    await page.getByTestId("problem-solving-activate-button").click();
+    await activateA3StructuredMethod(page);
     await expect(
       page
         .getByTestId("problem-solving-header")
@@ -415,37 +430,33 @@ test.describe("Milestone 11 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
     await expect(page.getByText("Closed")).toBeVisible();
 
-    await page.getByTestId("tab-cause-analysis").click();
+    await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
     await expect(
       page.getByText(
         DEMO_PROBLEM_SOLVING_CASE.hypotheses.pressureVariation.statement,
       ),
     ).toBeVisible();
-    await expect(
-      page
-        .getByTestId("problem-solving-cause-analysis-panel")
-        .getByText("Verified cause", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Verified cause", { exact: true })).toBeVisible();
     await expect(
       page.getByText(
         DEMO_PROBLEM_SOLVING_CASE.hypotheses.filmTension.statement,
       ),
     ).toBeVisible();
 
-    await page.getByTestId("tab-verification").click();
+    await openProblemSolvingStage(page, "EFFECTIVENESS_CHECK");
     await expect(
       page.getByText(DEMO_PROBLEM_SOLVING_CASE.effectiveness.criterion),
     ).toBeVisible();
 
-    await page.getByTestId("tab-sustainment").click();
+    await openProblemSolvingStage(page, "SUSTAINMENT");
     await expect(
       page.getByText(DEMO_PROBLEM_SOLVING_CASE.sustainment.what),
     ).toBeVisible();
 
-    await page.getByTestId("tab-sessions").click();
+    await openWorkshopMode(page);
     await expect(
       page.getByText(DEMO_PROBLEM_SOLVING_CASE.session.title),
     ).toBeVisible();
@@ -488,7 +499,8 @@ test.describe("Milestone 11 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-overview").click();
+    await expectGuidedProblemSolvingWorkspace(page);
+    await openProblemSolvingStage(page, "DEFINE");
     await expect(
       page.getByTestId("problem-solving-overview-panel"),
     ).toBeVisible();
@@ -513,8 +525,8 @@ test.describe("Milestone 11 closure", () => {
       await page
         .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
         .click();
-      await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
-      await page.getByTestId("tab-overview").click();
+      await expectGuidedProblemSolvingWorkspace(page);
+      await openProblemSolvingStage(page, "DEFINE");
       await expect(
         page.getByTestId("problem-solving-overview-panel"),
       ).toBeVisible();
