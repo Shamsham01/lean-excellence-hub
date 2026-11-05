@@ -1,9 +1,9 @@
 begin;
-select plan(2);
+select plan(3);
 
 select ok(
   (
-    select count(*) = 14
+    select count(*) = 1
     from pg_constraint constraint_row
     join pg_class class_row on class_row.oid = constraint_row.conrelid
     join pg_namespace namespace_row on namespace_row.oid = class_row.relnamespace
@@ -12,6 +12,21 @@ select ok(
       and constraint_row.conname = 'ai_proposals_type_check'
   ),
   'ai_proposals type check exists'
+);
+
+select ok(
+  (
+    select pg_get_constraintdef(constraint_row.oid) ~ 'problem_statement'
+      and pg_get_constraintdef(constraint_row.oid) ~ 'five_why_chain'
+      and pg_get_constraintdef(constraint_row.oid) ~ 'fishbone_cause'
+    from pg_constraint constraint_row
+    join pg_class class_row on class_row.oid = constraint_row.conrelid
+    join pg_namespace namespace_row on namespace_row.oid = class_row.relnamespace
+    where namespace_row.nspname = 'public'
+      and class_row.relname = 'ai_proposals'
+      and constraint_row.conname = 'ai_proposals_type_check'
+  ),
+  'ai_proposals type check includes new write proposal types'
 );
 
 select ok(
