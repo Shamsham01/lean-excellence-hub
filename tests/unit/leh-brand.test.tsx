@@ -142,9 +142,7 @@ describe("LehBrand", () => {
       false,
     );
     expect(within(brand).queryByText(LEH_BRAND.name)).not.toBeInTheDocument();
-    const slot = brand.querySelector(".leh-brand-lockup");
-    expect(slot?.getAttribute("style")).toContain("--leh-crop-w: 1779");
-    expect(slot?.getAttribute("style")).toContain("--leh-src-w: 2172");
+    expect(brand.querySelector(".leh-brand-lockup")).toBeTruthy();
   });
 
   it("pairs theme icons with the product name for the compact mark", () => {
@@ -309,7 +307,7 @@ describe("site identity metadata", () => {
     expect(css).toContain(".leh-brand-lockup-light");
     expect(css).toContain(".dark .leh-brand-lockup-dark");
     expect(css).toContain(".dark .leh-brand-mark-dark");
-    expect(css).toContain("aspect-ratio: 1500 / 337");
+    expect(css).toContain("object-fit: contain");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");
   });

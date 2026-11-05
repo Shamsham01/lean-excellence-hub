@@ -1,7 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
-
 import { cn } from "@/lib/utils";
 
 import {
@@ -30,15 +28,6 @@ type LehBrandProps = {
   strapline?: boolean;
 };
 
-const lockupCropStyle = {
-  "--leh-crop-x": String(LEH_BRAND.horizontalCrop.x),
-  "--leh-crop-y": String(LEH_BRAND.horizontalCrop.y),
-  "--leh-crop-w": String(LEH_BRAND.horizontalCrop.width),
-  "--leh-crop-h": String(LEH_BRAND.horizontalCrop.height),
-  "--leh-src-w": String(LEH_BRAND.horizontalFrame.width),
-  "--leh-src-h": String(LEH_BRAND.horizontalFrame.height),
-} as CSSProperties;
-
 export function LehBrand({
   variant = "full",
   className,
@@ -65,7 +54,7 @@ export function LehBrand({
         : {})}
     >
       {showLockup ? (
-        <span className="leh-brand-lockup" style={lockupCropStyle}>
+        <span className="leh-brand-lockup">
           <Image
             alt={lockupAlt}
             className="leh-brand-lockup-img leh-brand-lockup-light"

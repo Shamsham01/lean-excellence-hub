@@ -312,7 +312,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
 
   return (
     <div
-      className="pps-flagship-workspace flex min-h-[calc(100dvh-7rem)] flex-col lg:max-h-[calc(100dvh-4.25rem)] lg:min-h-0"
+      className="pps-flagship-workspace flex min-h-0 min-w-0 flex-1 flex-col"
       data-testid="problem-solving-workspace"
     >
       <div className="sticky top-0 z-10 shrink-0 border-b border-border/70 bg-card px-4 sm:px-6 lg:px-6">
@@ -346,16 +346,16 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {sortedStages.length > 0 ? (
           <StageProgressRail {...railProps} variant="desktop" />
         ) : null}
 
         <section
-          className="flex min-h-0 min-w-0 flex-1 flex-col bg-background"
+          className="@container/canvas flex min-h-0 min-w-0 flex-1 flex-col bg-background"
           data-testid="pps-stage-canvas"
         >
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-6">
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 lg:px-5">
             <StageCanvasHeader
               config={stageConfig}
               isViewingCurrentStage={isViewingCurrentStage}
@@ -369,7 +369,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
                 : {})}
             />
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-3">
               <StageAutoDraftTrigger
                 caseId={detail.id}
                 stageKey={stageKey ?? "DEFINE"}
@@ -380,7 +380,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
               />
             </div>
 
-            <div className="mt-6 flex flex-col gap-6">
+            <div className="mt-4 flex flex-col gap-4">
               <InlineAiProposals
                 proposals={pendingProposals}
                 busy={proposalBusy}
@@ -401,7 +401,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           className={
             mobileCopilotOpen
               ? "fixed inset-x-0 bottom-0 z-30 flex max-h-[58dvh] min-h-0 flex-col rounded-t-2xl border-t border-border shadow-2xl lg:static lg:max-h-none lg:rounded-none lg:border-t-0 lg:shadow-none"
-              : "hidden min-h-0 lg:flex"
+              : "hidden min-h-0 min-w-0 shrink-0 lg:flex"
           }
         >
           {copilot}

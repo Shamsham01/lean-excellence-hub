@@ -97,7 +97,7 @@ function StageTimelineNode({
         </span>
         <span
           className={cn(
-            "min-w-0 pt-1 leading-snug font-medium",
+            "min-w-0 pt-1 leading-snug font-medium break-words",
             visual === "complete" && "text-foreground",
             visual === "current" && "text-foreground",
             visual === "upcoming" && "text-muted-foreground",

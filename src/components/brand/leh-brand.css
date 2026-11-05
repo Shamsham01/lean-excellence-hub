@@ -10,6 +10,8 @@
   background: transparent;
   --leh-brand-mark: 1.75rem;
   --leh-brand-lockup: 17.5rem;
+  --leh-brand-lockup-height: 2.125rem;
+  --leh-brand-lockup-max-width: 100%;
 }
 
 .leh-brand-link {
@@ -42,25 +44,26 @@
    Ink is positioned from --leh-crop-* / --leh-src-* set on the slot. */
 .leh-brand-lockup {
   position: relative;
-  width: var(--leh-brand-lockup);
-  max-width: 100%;
-  aspect-ratio: 1500 / 337;
+  display: flex;
+  align-items: center;
+  width: auto;
+  max-width: var(--leh-brand-lockup-max-width, var(--leh-brand-lockup));
+  height: var(--leh-brand-lockup-height);
   overflow: hidden;
 }
 
 .leh-brand-lockup-img {
-  position: absolute;
-  max-width: none;
-  width: calc(100% * var(--leh-src-w) / var(--leh-crop-w));
-  height: calc(100% * var(--leh-src-h) / var(--leh-crop-w) * 1500 / 337);
-  left: calc(100% * var(--leh-crop-x) / var(--leh-crop-w) * -1);
-  top: calc(
-    100% *
-      (
-        0.5 * (1 - (1500 / 337) * var(--leh-crop-h) / var(--leh-crop-w)) -
-          (1500 / 337) * var(--leh-crop-y) / var(--leh-crop-w)
-      )
-  );
+  position: relative;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.leh-brand--platform-sidebar {
+  --leh-brand-lockup-height: 2.25rem;
+  --leh-brand-lockup-max-width: 13.75rem;
 }
 
 .leh-brand[data-variant="full"] {

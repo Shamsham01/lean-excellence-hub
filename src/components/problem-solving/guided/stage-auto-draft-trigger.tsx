@@ -92,10 +92,10 @@ export function StageAutoDraftTrigger({
         }
         setMessage(
           fromAuto
-            ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
+            ? "Draft ready — review proposals below."
             : result.data.pendingProposalCount > 0
-              ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) to review below.`
-              : "Draft finished — check the facilitator panel for Lean AI output.",
+              ? `${result.data.pendingProposalCount} proposal(s) to review.`
+              : "Draft finished.",
         );
         onDraftComplete?.();
         router.refresh();
@@ -138,14 +138,10 @@ export function StageAutoDraftTrigger({
 
   return (
     <div
-      className="flex flex-col gap-2 rounded-lg border border-dashed border-border bg-muted/20 p-3 shadow-xs"
+      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border/70 bg-muted/15 px-3 py-2.5"
       data-testid="pps-stage-auto-draft"
     >
-      <p className="text-sm font-medium">Lean AI stage draft</p>
-      <p className="text-xs text-muted-foreground">
-        One automatic draft per stage visit (bounded). Accept proposals before
-        they become case records.
-      </p>
+      <p className="text-sm font-medium">Lean AI draft</p>
       <Button
         type="button"
         size="sm"
@@ -153,20 +149,25 @@ export function StageAutoDraftTrigger({
         disabled={loading || !hasProblemData}
         onClick={() => runDraft(false)}
         data-testid="pps-stage-auto-draft-button"
+        title={
+          hasProblemData
+            ? "Generate one bounded draft for this stage visit"
+            : "Add a problem statement or current-condition facts first"
+        }
       >
         {loading ? "Drafting…" : "Draft this stage"}
       </Button>
       {!hasProblemData ? (
-        <p className="text-xs text-muted-foreground">
-          Add a problem statement or current-condition facts first.
+        <p className="w-full text-xs text-muted-foreground">
+          Add problem or current-condition facts first.
         </p>
       ) : null}
       {message ? (
         <p
           className={
             isError
-              ? "text-xs text-destructive"
-              : "text-xs text-muted-foreground"
+              ? "w-full text-xs text-destructive"
+              : "w-full text-xs text-muted-foreground"
           }
           role={isError ? "alert" : "status"}
         >
