@@ -439,7 +439,9 @@ test.describe("Milestone 11 closure", () => {
         DEMO_PROBLEM_SOLVING_CASE.hypotheses.pressureVariation.statement,
       ),
     ).toBeVisible();
-    await expect(page.getByText("Verified cause", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Verified cause", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByText(
         DEMO_PROBLEM_SOLVING_CASE.hypotheses.filmTension.statement,
