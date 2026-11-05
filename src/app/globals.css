@@ -335,19 +335,24 @@ body {
   background: transparent;
 }
 
+.platform-main-viewport:has(.pps-flagship-workspace) {
+  overflow-x: clip;
+  overflow-y: hidden;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner {
+  display: flex;
+  max-width: none;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  padding: 0;
+}
+
 @media (min-width: 1024px) {
   .platform-scroll:has(.pps-flagship-workspace) {
     overflow-x: clip;
     overflow-y: hidden;
-  }
-
-  .platform-scroll:has(.pps-flagship-workspace) .platform-main-inner {
-    display: flex;
-    max-width: none;
-    min-height: 0;
-    flex: 1 1 0%;
-    flex-direction: column;
-    padding: 0;
   }
 }
 

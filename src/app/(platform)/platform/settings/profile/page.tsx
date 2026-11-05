@@ -1,5 +1,6 @@
 import { ProfileOrganisationMembership } from "@/components/profile/profile-organisation-membership";
 import type { ProfileAccessGrant } from "@/components/profile/profile-access-grants";
+import { ProfileAvatarForm } from "@/components/profile/profile-avatar-form";
 import { ProfileDisplayNameForm } from "@/components/profile/profile-display-name-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -32,7 +33,7 @@ export default async function ProfileSettingsPage() {
       userId
         ? supabase
             .from("profiles")
-            .select("display_name")
+            .select("display_name, avatar_url")
             .eq("user_id", userId)
             .maybeSingle()
         : Promise.resolve({ data: null }),
@@ -83,6 +84,10 @@ export default async function ProfileSettingsPage() {
           <CardTitle className="text-base">Personal profile</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <ProfileAvatarForm
+            displayName={personalDisplayName || organisationDisplayName || "Member"}
+            initialAvatarUrl={profile?.avatar_url ?? null}
+          />
           <p className="text-sm text-muted-foreground">
             Your personal name is saved on your account. The name shown inside
             an organisation comes from your membership there.

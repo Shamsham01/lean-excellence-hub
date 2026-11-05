@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { AiProposalCard } from "@/components/problem-solving/ai-proposal-card";
 
 export type InlineAiProposal = {
   id: string;
@@ -31,47 +30,15 @@ export function InlineAiProposals({
   return (
     <div className="flex flex-col gap-3" data-testid="pps-inline-proposals">
       {proposals.map((proposal) => (
-        <article
+        <AiProposalCard
           key={proposal.id}
-          data-testid="ai-proposal-card"
-          className={cn(
-            "rounded-xl border-2 border-dashed border-primary/45 bg-primary/5 p-5 shadow-sm",
-          )}
-        >
-          <p className="text-xs font-semibold tracking-wide text-primary uppercase">
-            Lean AI proposal · {proposal.proposal_type}
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-foreground">
-            {proposal.human_explanation}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              data-testid="ai-proposal-accept"
-              disabled={busy}
-              onClick={() => onAccept(proposal)}
-            >
-              Accept
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => onEdit(proposal)}
-            >
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              data-testid="ai-proposal-reject"
-              disabled={busy}
-              onClick={() => onReject(proposal.id)}
-            >
-              Reject
-            </Button>
-          </div>
-        </article>
+          proposal={proposal}
+          {...(busy ? { busy } : {})}
+          variant="inline"
+          onAccept={() => onAccept(proposal)}
+          onReject={onReject}
+          onEdit={() => onEdit(proposal)}
+        />
       ))}
     </div>
   );

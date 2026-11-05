@@ -383,6 +383,7 @@ describe("site identity metadata", () => {
     expect(css).toContain(".dark .leh-brand-lockup-dark");
     expect(css).toContain(".dark .leh-brand-mark-dark");
     expect(css).toContain("object-fit: contain");
+    expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");
   });

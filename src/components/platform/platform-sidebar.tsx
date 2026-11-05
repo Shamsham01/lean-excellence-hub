@@ -34,8 +34,10 @@ function DesktopSidebar({
         organisations={organisations}
         siteContext={siteContext}
       />
-      <PlatformNavigation items={items} />
-      <PlatformSidebarFooter member={member} showSettings={showSettings} />
+      <div className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+        <PlatformNavigation items={items} />
+        <PlatformSidebarFooter member={member} showSettings={showSettings} />
+      </div>
     </aside>
   );
 }
