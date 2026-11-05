@@ -35,8 +35,7 @@ export function InlineAiProposals({
           key={proposal.id}
           data-testid="ai-proposal-card"
           className={cn(
-            "rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 shadow-sm",
-            "ring-1 ring-primary/10",
+            "rounded-xl border-2 border-dashed border-primary/45 bg-primary/5 p-5 shadow-sm",
           )}
         >
           <p className="text-xs font-semibold tracking-wide text-primary uppercase">

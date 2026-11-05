@@ -33,7 +33,7 @@ export function StageCanvasHeader({
 
   return (
     <div
-      className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4"
+      className="flex flex-wrap items-start justify-between gap-3"
       data-testid="pps-stage-canvas-header"
     >
       <div className="flex min-w-0 items-center gap-2">

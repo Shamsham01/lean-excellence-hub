@@ -36,7 +36,10 @@ export function PlatformNavItemLink({
       )}
       aria-current={active ? "page" : undefined}
     >
-      <PlatformNavIconComponent icon={item.icon} className="size-4 shrink-0" />
+      <PlatformNavIconComponent
+        icon={item.icon}
+        className="size-[18px] shrink-0"
+      />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.navBadge ? (
         <span className="font-mono-data rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase">

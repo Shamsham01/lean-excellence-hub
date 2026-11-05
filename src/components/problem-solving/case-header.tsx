@@ -33,6 +33,7 @@ type CaseHeaderProps = {
   ownerName?: string | null;
   facilitatorName?: string | null;
   targetDueDateLabel?: string | null;
+  methodLabel?: string | null;
   canManage: boolean;
   canClose: boolean;
   methods: ProblemSolvingMethod[];
@@ -47,6 +48,7 @@ export function CaseHeader({
   ownerName,
   facilitatorName,
   targetDueDateLabel,
+  methodLabel,
   canManage,
   canClose,
   methods,
@@ -132,6 +134,125 @@ export function CaseHeader({
     );
     setLoading(false);
     router.refresh();
+  }
+
+  const flagshipActive = detail.status === "active" && !showActivate;
+
+  if (flagshipActive) {
+    const metaParts = [
+      detail.unit_name ? `Unit: ${detail.unit_name}` : null,
+      ownerName ? `Owner: ${ownerName}` : null,
+      methodLabel ? `Method: ${methodLabel}` : null,
+    ].filter(Boolean);
+
+    return (
+      <div
+        className="flex flex-col gap-3 py-3.5 lg:flex-row lg:items-start lg:justify-between"
+        data-testid="problem-solving-header"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant={problemSolvingStatusBadgeVariant(detail.status)}
+              className="font-mono-data text-[10px] uppercase"
+            >
+              {problemSolvingStatusLabel(detail.status)}
+            </Badge>
+            {detail.case_number ? (
+              <span className="font-mono-data text-xs text-muted-foreground">
+                {detail.case_number}
+              </span>
+            ) : null}
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+              {detail.title}
+            </h1>
+          </div>
+          {metaParts.length > 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {metaParts.join(" · ")}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {historySlot}
+          {activitySlot}
+          {showClose ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowCloseDialog(true)}
+              disabled={loading}
+              data-testid="problem-solving-close-button"
+            >
+              Close case
+            </Button>
+          ) : null}
+          {showCancel ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+        {showCloseDialog ? (
+          <div
+            className="w-full rounded-md border border-border bg-muted/20 p-4"
+            data-testid="problem-solving-close-dialog"
+          >
+            <p className="mb-3 text-sm font-medium">
+              Close problem solving case
+            </p>
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Closure outcome</span>
+                <select
+                  className="border-input min-h-11 rounded-md border bg-elevated px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  value={closureOutcome}
+                  onChange={(e) => setClosureOutcome(e.target.value)}
+                  data-testid="closure-outcome-select"
+                >
+                  {CLOSURE_OUTCOMES.map((outcome) => (
+                    <option key={outcome} value={outcome}>
+                      {closureOutcomeLabel(outcome)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Rationale</span>
+                <textarea
+                  className="border-input min-h-20 rounded-md border bg-background px-3 py-2"
+                  value={closureRationale}
+                  onChange={(e) => setClosureRationale(e.target.value)}
+                  data-testid="closure-rationale"
+                />
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={loading}
+                  onClick={handleClose}
+                  data-testid="confirm-close-case"
+                >
+                  Confirm close
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCloseDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   return (

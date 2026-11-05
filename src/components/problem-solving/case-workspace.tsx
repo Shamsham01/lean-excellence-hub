@@ -312,15 +312,16 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
 
   return (
     <div
-      className="pps-flagship-workspace -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col sm:-mx-6 lg:mx-0 lg:max-h-[calc(100dvh-3rem)] lg:min-h-0"
+      className="pps-flagship-workspace flex min-h-[calc(100dvh-7rem)] flex-col lg:max-h-[calc(100dvh-4.25rem)] lg:min-h-0"
       data-testid="problem-solving-workspace"
     >
-      <div className="sticky top-0 z-10 shrink-0 border-b border-border bg-background/95 px-4 backdrop-blur-sm sm:px-6 lg:px-0">
+      <div className="sticky top-0 z-10 shrink-0 border-b border-border/70 bg-card px-4 sm:px-6 lg:px-6">
         <CaseHeader
           detail={detail}
           ownerName={ownerName ?? null}
           facilitatorName={facilitatorName ?? null}
           targetDueDateLabel={targetDueDateLabel ?? null}
+          methodLabel={pinnedMethodVersion?.methodName ?? null}
           canManage={canManage}
           canClose={canClose}
           methods={methods}
@@ -351,10 +352,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         ) : null}
 
         <section
-          className="flex min-h-0 min-w-0 flex-1 flex-col bg-card lg:border-r lg:border-border/60"
+          className="flex min-h-0 min-w-0 flex-1 flex-col bg-background"
           data-testid="pps-stage-canvas"
         >
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-6">
             <StageCanvasHeader
               config={stageConfig}
               isViewingCurrentStage={isViewingCurrentStage}
@@ -399,7 +400,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         <div
           className={
             mobileCopilotOpen
-              ? "fixed inset-x-0 bottom-0 z-30 flex max-h-[85dvh] min-h-0 flex-col shadow-2xl lg:static lg:max-h-none lg:shadow-none"
+              ? "fixed inset-x-0 bottom-0 z-30 flex max-h-[58dvh] min-h-0 flex-col rounded-t-2xl border-t border-border shadow-2xl lg:static lg:max-h-none lg:rounded-none lg:border-t-0 lg:shadow-none"
               : "hidden min-h-0 lg:flex"
           }
         >

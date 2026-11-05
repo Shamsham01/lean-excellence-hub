@@ -339,6 +339,11 @@ body {
   .platform-scroll:has(.pps-flagship-workspace) {
     overflow: hidden;
   }
+
+  .platform-scroll:has(.pps-flagship-workspace) .platform-main-inner {
+    max-width: none;
+    padding: 0;
+  }
 }
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */

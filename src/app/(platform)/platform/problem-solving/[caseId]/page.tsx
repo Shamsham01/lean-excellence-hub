@@ -104,7 +104,7 @@ export default async function ProblemSolvingCaseDetailPage({
       />
       <AppLink
         href="/platform/problem-solving"
-        className="mt-4 inline-block px-4 text-sm text-muted-foreground hover:underline sm:px-6 lg:px-0"
+        className="mt-4 inline-block px-4 text-sm text-muted-foreground hover:underline sm:px-6 lg:hidden"
         data-testid="problem-solving-back-link"
       >
         ← Problem solving portfolio

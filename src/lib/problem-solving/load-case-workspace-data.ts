@@ -127,7 +127,7 @@ async function loadPinnedMethodVersionContext(
   detail: ProblemSolvingCaseDetail,
   methods: ProblemSolvingMethodsResponse["items"],
 ): Promise<PinnedMethodVersionContext | null> {
-  if (!detail.method_version_id || detail.status !== "draft") {
+  if (!detail.method_version_id) {
     return null;
   }
 

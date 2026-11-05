@@ -11,6 +11,7 @@ import {
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
 import type { InlineAiProposal } from "@/components/problem-solving/inline-ai-proposals";
 import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -253,8 +254,10 @@ export function AiFacilitatorPanel({
   const shellClass =
     layout === "dock"
       ? cn(
-          "pps-lean-ai-copilot flex min-h-0 flex-1 flex-col bg-copilot-surface lg:border-l lg:border-primary/15",
-          collapsed ? "lg:w-12 lg:flex-none" : "lg:w-[min(100%,22rem)] xl:w-96",
+          "pps-lean-ai-copilot flex min-h-0 flex-1 flex-col bg-copilot-surface shadow-[var(--shadow-theme-sm)] lg:border-l lg:border-primary/20",
+          collapsed
+            ? "lg:w-12 lg:flex-none"
+            : "lg:w-[380px] lg:max-w-[380px] lg:shrink-0",
         )
       : "rounded-xl border border-border bg-card shadow-sm";
 
@@ -290,26 +293,61 @@ export function AiFacilitatorPanel({
         data-testid="lean-ai-panel"
       >
         <div className="flex min-w-0 items-center gap-2">
-          <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
+          {layout === "card" ? (
+            <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
+          ) : null}
           <span className="truncate text-sm font-semibold">Lean AI</span>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="lean-ai-mode" className="sr-only">
-            Mode
-          </Label>
-          <select
-            id="lean-ai-mode"
-            data-testid="lean-ai-mode"
-            className="border-input h-8 max-w-[7rem] rounded-md border bg-background px-2 text-xs"
-            value={mode}
-            onChange={(event) => setMode(event.target.value as AiSessionMode)}
-          >
-            {MODES.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          {layout === "dock" ? (
+            <>
+              <Badge
+                variant="secondary"
+                className="font-mono-data rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase"
+              >
+                {mode}
+              </Badge>
+              <Label htmlFor="lean-ai-mode" className="sr-only">
+                Mode
+              </Label>
+              <select
+                id="lean-ai-mode"
+                data-testid="lean-ai-mode"
+                className="sr-only"
+                value={mode}
+                onChange={(event) =>
+                  setMode(event.target.value as AiSessionMode)
+                }
+              >
+                {MODES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              <Label htmlFor="lean-ai-mode" className="sr-only">
+                Mode
+              </Label>
+              <select
+                id="lean-ai-mode"
+                data-testid="lean-ai-mode"
+                className="border-input h-8 max-w-[7rem] rounded-md border bg-background px-2 text-xs"
+                value={mode}
+                onChange={(event) =>
+                  setMode(event.target.value as AiSessionMode)
+                }
+              >
+                {MODES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           {layout === "dock" ? (
             <Button
               type="button"
@@ -342,10 +380,10 @@ export function AiFacilitatorPanel({
               <div
                 key={`${message.role}-${index}`}
                 className={cn(
-                  "rounded-lg px-3 py-2",
+                  "rounded-xl px-3 py-2.5 leading-relaxed",
                   message.role === "user"
-                    ? "ml-6 bg-muted/60"
-                    : "mr-2 bg-primary/5",
+                    ? "ml-8 border border-border/60 bg-card"
+                    : "mr-2 bg-muted/70",
                 )}
               >
                 {message.role === "user" ? (

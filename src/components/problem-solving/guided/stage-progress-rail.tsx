@@ -52,13 +52,13 @@ function StageTimelineNode({
   const visual = stageVisualState(index, currentIndex, isViewing);
 
   return (
-    <li className="relative flex gap-3 pb-1">
+    <li className="relative pb-5 pl-1">
       {!isLast ? (
         <span
           className={cn(
-            "absolute top-9 left-[15px] w-px",
+            "absolute top-10 left-[19px] w-0.5",
             visual === "complete" ? "bg-success" : "bg-border",
-            "h-[calc(100%-0.25rem)]",
+            "h-[calc(100%-12px)]",
           )}
           aria-hidden
         />
@@ -69,17 +69,17 @@ function StageTimelineNode({
         disabled={movingStage}
         onClick={() => onViewStage(stage.id)}
         className={cn(
-          "group flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors duration-150",
+          "group flex w-full items-start gap-3 rounded-lg px-2 py-1 text-left text-sm transition-colors duration-150",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
           visual === "current" &&
-            "bg-primary/5 shadow-[0_0_0_1px_rgb(70_95_255/0.35)] ring-2 ring-primary/50",
+            "bg-primary/10 shadow-[0_0_16px_rgb(70_95_255/0.35)] ring-2 ring-primary/45",
           visual === "upcoming" && "hover:bg-accent/60",
           movingStage && "opacity-70",
         )}
       >
         <span
           className={cn(
-            "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold",
+            "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold",
             visual === "complete" &&
               "border-success bg-success text-success-foreground",
             visual === "current" &&
@@ -131,7 +131,7 @@ function StageButtonMobile({
   return (
     <button
       type="button"
-      data-testid={`pps-stage-${stage.semantic_stage_key}`}
+      data-testid={`pps-stage-mobile-${stage.semantic_stage_key}`}
       disabled={movingStage}
       onClick={() => onViewStage(stage.id)}
       className={cn(
@@ -196,7 +196,7 @@ export function StageProgressRail({
       {showDesktop ? (
         <nav
           aria-label="Problem solving stages"
-          className="hidden min-h-0 w-64 shrink-0 flex-col overflow-y-auto border-r border-border/60 bg-card/50 px-3 py-4 lg:flex"
+          className="hidden min-h-0 w-[290px] shrink-0 flex-col overflow-y-auto border-r border-border/60 bg-card/40 px-5 py-5 lg:flex"
           data-testid="pps-stage-rail"
         >
           <ol className="flex flex-col">
