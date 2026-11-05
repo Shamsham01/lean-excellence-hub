@@ -11,16 +11,13 @@ import {
 } from "./helpers/onboarding-auth";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { loginAsSiteBoundaryPeopleDelegate } from "./helpers/cookieworks-auth";
+import { platformMain } from "./helpers/platform-main";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const PEOPLE_SETTINGS_PATH = "/platform/settings/people";
 
-function peopleSettingsMain(page: Page) {
-  return page.getByTestId("platform-main");
-}
-
 async function assertAuthorisedPeopleControls(page: Page) {
-  const main = peopleSettingsMain(page);
+  const main = platformMain(page);
   const peoplePage = main.getByTestId("people-settings-page");
   await expect(peoplePage).toBeVisible();
   await expect(main.getByTestId("invite-colleague-form")).toBeVisible();
@@ -95,7 +92,7 @@ test.describe("People settings delegation gate stability", () => {
   }) => {
     await signInAsDemoUser(page, "operator");
     await page.goto(PEOPLE_SETTINGS_PATH);
-    const main = peopleSettingsMain(page);
+    const main = platformMain(page);
     await expect(main.getByTestId("people-settings-page")).not.toBeVisible();
     await expect(main.getByTestId("invite-colleague-form")).not.toBeVisible();
     await expect(
@@ -118,7 +115,7 @@ test.describe("People settings delegation gate stability", () => {
 
     await loginAsSiteBoundaryPeopleDelegate(page);
     await page.goto(PEOPLE_SETTINGS_PATH);
-    const main = peopleSettingsMain(page);
+    const main = platformMain(page);
     await expect(main.getByTestId("invite-colleague-form")).toBeVisible({
       timeout: 30_000,
     });
