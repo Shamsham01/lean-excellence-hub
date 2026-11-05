@@ -26,6 +26,8 @@ type LehBrandProps = {
    */
   responsive?: boolean;
   strapline?: boolean;
+  /** Platform sidebar: render horizontal lockups from PNG so crop CSS applies. */
+  lockupRasterOnly?: boolean;
 };
 
 type LehBrandPictureProps = {
@@ -34,6 +36,8 @@ type LehBrandPictureProps = {
   imgClassName: string;
   themeClassName: string;
   priority?: boolean;
+  /** Sidebar / cropped slots: Canva SVGs do not inherit img crop CSS when selected. */
+  rasterOnly?: boolean;
 };
 
 /** SVG-first brand media; PNG masters stay as the `<img>` fallback. */
@@ -43,20 +47,29 @@ function LehBrandPicture({
   imgClassName,
   themeClassName,
   priority = false,
+  rasterOnly = false,
 }: LehBrandPictureProps) {
+  const img = (
+    <img
+      alt={alt}
+      className={imgClassName}
+      decoding="async"
+      height={asset.height}
+      loading={priority ? "eager" : "lazy"}
+      src={asset.rasterFallbackSrc}
+      width={asset.width}
+      {...(priority ? { fetchPriority: "high" as const } : {})}
+    />
+  );
+
+  if (rasterOnly) {
+    return <span className={themeClassName}>{img}</span>;
+  }
+
   return (
     <picture className={themeClassName}>
       <source srcSet={asset.src} type="image/svg+xml" />
-      <img
-        alt={alt}
-        className={imgClassName}
-        decoding="async"
-        height={asset.height}
-        loading={priority ? "eager" : "lazy"}
-        src={asset.rasterFallbackSrc}
-        width={asset.width}
-        {...(priority ? { fetchPriority: "high" as const } : {})}
-      />
+      {img}
     </picture>
   );
 }
@@ -68,6 +81,7 @@ export function LehBrand({
   priority = false,
   responsive = false,
   strapline = variant !== "icon",
+  lockupRasterOnly = false,
 }: LehBrandProps) {
   const showCopy = variant !== "icon";
   const showLockup = variant === "full";
@@ -94,12 +108,14 @@ export function LehBrand({
             imgClassName="leh-brand-lockup-img"
             themeClassName="leh-brand-lockup-light"
             priority={priority}
+            rasterOnly={lockupRasterOnly}
           />
           <LehBrandPicture
             alt={lockupAlt}
             asset={LEH_BRAND.horizontalDark}
             imgClassName="leh-brand-lockup-img"
             themeClassName="leh-brand-lockup-dark"
+            rasterOnly={lockupRasterOnly}
           />
         </span>
       ) : null}

@@ -36,6 +36,8 @@ export function PlatformSidebarHeader({
           decorative
           variant="full"
           strapline={false}
+          lockupRasterOnly
+          priority
           className="leh-brand--platform-sidebar"
         />
       </AppLink>

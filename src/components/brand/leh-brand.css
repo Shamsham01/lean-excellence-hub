@@ -29,6 +29,8 @@
 .leh-brand-mark,
 .leh-brand-lockup,
 .leh-brand-lockup picture,
+.leh-brand-lockup-light,
+.leh-brand-lockup-dark,
 .leh-brand-fallback picture {
   display: block;
   flex-shrink: 0;
@@ -64,7 +66,7 @@
 }
 
 .leh-brand--platform-sidebar {
-  --leh-brand-lockup-height: 2.25rem;
+  --leh-brand-lockup-height: 2.5rem;
   --leh-brand-lockup-max-width: 13.75rem;
   --leh-src-w: 2172;
   --leh-src-h: 724;

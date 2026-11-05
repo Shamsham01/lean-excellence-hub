@@ -309,6 +309,24 @@ describe("site identity metadata", () => {
     ).toBe(true);
   });
 
+  it("can render sidebar lockups from PNG only so crop CSS applies", () => {
+    render(
+      <LehBrand decorative lockupRasterOnly variant="full" className="leh-brand--platform-sidebar" />,
+    );
+    const brand = screen.getByTestId("leh-brand");
+    expect(brand.querySelector("picture source")).toBeNull();
+    const rasterSources = [...brand.querySelectorAll("img")].map((node) =>
+      node.getAttribute("src"),
+    );
+    expect(rasterSources.some((src) => src?.includes("leh-horizontal-light.png"))).toBe(
+      true,
+    );
+    expect(rasterSources.some((src) => src?.includes("leh-horizontal-dark.png"))).toBe(
+      true,
+    );
+    expect(rasterSources.some((src) => src?.includes(".svg"))).toBe(false);
+  });
+
   it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {
     expect(LEH_BRAND.horizontalLight.src).toBe("/brand/leh-horizontal-light.svg");
     expect(LEH_BRAND.horizontalLight.rasterFallbackSrc).toBe(
