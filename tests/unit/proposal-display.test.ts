@@ -8,6 +8,7 @@ import {
 describe("proposal-display", () => {
   it("maps known proposal types to human labels", () => {
     expect(proposalTypeLabel("problem_statement")).toBe("Problem statement");
+    expect(proposalTypeLabel("target_condition")).toBe("Target condition");
     expect(proposalTypeLabel("current_condition_item")).toBe(
       "Current condition",
     );
@@ -21,6 +22,16 @@ describe("proposal-display", () => {
     );
     expect(text).toBe("On Packing Line 1, film wanders after splices.");
     expect(text).not.toContain("{");
+  });
+
+  it("formats target condition statements like problem statements", () => {
+    expect(
+      formatProposalPreview(
+        "target_condition",
+        { statement: "Film stays within ±2 mm of centre for five consecutive shifts." },
+        "",
+      ),
+    ).toBe("Film stays within ±2 mm of centre for five consecutive shifts.");
   });
 
   it("formats fishbone cause labels", () => {

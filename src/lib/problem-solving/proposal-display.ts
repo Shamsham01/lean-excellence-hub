@@ -2,6 +2,7 @@ import type { AiProposalType } from "@/platform/ai/types";
 
 const PROPOSAL_TYPE_LABELS: Record<string, string> = {
   problem_statement: "Problem statement",
+  target_condition: "Target condition",
   current_condition_item: "Current condition",
   hypothesis: "Hypothesis",
   hypothesis_test: "Hypothesis test",
@@ -76,6 +77,7 @@ function formatStructuredProposal(
 
   switch (proposalType) {
     case "problem_statement":
+    case "target_condition":
     case "current_condition_item":
       return readString(data.statement);
     case "hypothesis":

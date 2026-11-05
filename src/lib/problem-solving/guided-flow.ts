@@ -43,7 +43,7 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "Keep it testable later.",
     ],
     autoDraftPrompt:
-      "Suggest concise target-condition wording and any supporting current-condition facts as draft proposals.",
+      "Call propose_target_condition with concise, observable target-condition wording based on the authorised problem statement and current condition, as a draft the human can accept. Describe the desired operational state—not the solution—and do not treat it as already achieved. Do not only ask a question.",
   },
   ROOT_CAUSE_ANALYSIS: {
     title: "Cause analysis",

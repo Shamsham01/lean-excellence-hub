@@ -87,6 +87,11 @@ export const proposalPayloadSchemas = {
       statement: z.string().trim().min(1).max(4000),
     })
     .strict(),
+  target_condition: z
+    .object({
+      statement: z.string().trim().min(1).max(4000),
+    })
+    .strict(),
   five_why_chain: z
     .object({
       title: z.string().trim().min(1).max(200).optional(),

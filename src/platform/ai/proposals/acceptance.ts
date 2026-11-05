@@ -281,6 +281,21 @@ export async function acceptAiProposal(
       return { resultId: caseId, resultType: proposal.proposal_type };
     }
 
+    case "target_condition": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const tc = proposalPayloadSchemas.target_condition.parse(editedPayload);
+      const { error: tcError } = await supabase.rpc(
+        "update_problem_solving_target_condition",
+        {
+          target_case_id: caseId,
+          target_target_condition: tc.statement,
+        },
+      );
+      if (tcError) throw tcError;
+      await recordAcceptance(supabase, proposal, {});
+      return { resultId: caseId, resultType: proposal.proposal_type };
+    }
+
     case "five_why_chain": {
       await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
       const chain = proposalPayloadSchemas.five_why_chain.parse(editedPayload);

@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(4);
 
 select ok(
   (
@@ -17,6 +17,7 @@ select ok(
 select ok(
   (
     select pg_get_constraintdef(constraint_row.oid) ~ 'problem_statement'
+      and pg_get_constraintdef(constraint_row.oid) ~ 'target_condition'
       and pg_get_constraintdef(constraint_row.oid) ~ 'five_why_chain'
       and pg_get_constraintdef(constraint_row.oid) ~ 'fishbone_cause'
     from pg_constraint constraint_row
@@ -38,6 +39,17 @@ select ok(
       and procedure_row.proname = 'update_problem_solving_problem_statement'
   ),
   'update_problem_solving_problem_statement rpc exists'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_proc procedure_row
+    join pg_namespace namespace_row on namespace_row.oid = procedure_row.pronamespace
+    where namespace_row.nspname = 'public'
+      and procedure_row.proname = 'update_problem_solving_target_condition'
+  ),
+  'update_problem_solving_target_condition rpc exists'
 );
 
 select * from finish();
