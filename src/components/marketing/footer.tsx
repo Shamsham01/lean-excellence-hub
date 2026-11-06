@@ -9,6 +9,8 @@ const PLATFORM_LINKS = [
   { href: "/#platform", label: "Platform" },
   { href: "/#why", label: "Why LEH" },
   { href: "/#leanai", label: "LeanAI" },
+  { href: "/#trust", label: "Trust" },
+  { href: "/#faq", label: "FAQ" },
   { href: "/#maturity", label: "Maturity" },
   { href: "/#problem-solving", label: "Problem Solving" },
 ] as const;

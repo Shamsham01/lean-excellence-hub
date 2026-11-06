@@ -225,6 +225,12 @@ describe("public marketing homepage", () => {
     expect(
       within(desktopNav).getByRole("link", { name: "LeanAI" }),
     ).toHaveAttribute("href", "/#leanai");
+    expect(
+      within(desktopNav).getByRole("link", { name: "Trust" }),
+    ).toHaveAttribute("href", "/#trust");
+    expect(
+      within(desktopNav).getByRole("link", { name: "FAQ" }),
+    ).toHaveAttribute("href", "/#faq");
   });
 
   it("keeps footer links on valid homepage anchors and access routes", () => {
@@ -244,6 +250,14 @@ describe("public marketing homepage", () => {
     expect(
       within(footer).getByRole("link", { name: "Actions" }),
     ).toHaveAttribute("href", "/#actions");
+    expect(within(footer).getByRole("link", { name: "Trust" })).toHaveAttribute(
+      "href",
+      "/#trust",
+    );
+    expect(within(footer).getByRole("link", { name: "FAQ" })).toHaveAttribute(
+      "href",
+      "/#faq",
+    );
     expect(
       within(footer).getByText(/© 2026 Lean Excellence Hub/),
     ).toBeInTheDocument();
@@ -632,7 +646,7 @@ describe("homepage authentication routing", () => {
     expect(marketing).toContain(".marketing,\n.marketing-appearance-menu {");
     expect(marketing).toMatch(/--leh-accent: oklch\(/);
     expect(marketing).toMatch(/--leh-canvas-light: oklch\(/);
-    expect(marketing).toContain("--primary: var(--leh-cobalt);");
+    expect(marketing).toContain("--primary: var(--leh-accent);");
     expect(marketing).not.toContain("color-mix(in oklch");
     expect(marketing).toContain("color-mix(in oklab");
     expect(marketing).not.toMatch(/#[0-9a-f]{3,8}\b/i);

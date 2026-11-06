@@ -1,5 +1,5 @@
 .editorial-home {
-  background: var(--background);
+  background: transparent;
   color: var(--foreground);
 }
 
@@ -369,6 +369,115 @@
 
 .editorial-section-head {
   max-width: 44rem;
+}
+
+.editorial-section-premium .editorial-section-head {
+  max-width: 48rem;
+}
+
+.editorial-story-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(0.8rem + 2px);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, var(--primary) 12%);
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in oklab, var(--elevated) 92%, var(--primary) 8%) 0%,
+      var(--elevated) 52%
+    ),
+    var(--elevated);
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
+}
+
+.editorial-trust-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+@media (min-width: 640px) {
+  .editorial-trust-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .editorial-trust-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+.editorial-trust-card {
+  border-radius: 0.75rem;
+}
+
+.editorial-faq {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.editorial-faq-item {
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--elevated);
+  box-shadow: var(--leh-highlight);
+}
+
+.editorial-faq-item summary {
+  transition: background-color 160ms ease;
+}
+
+.editorial-faq-item summary:hover {
+  background: color-mix(in oklab, var(--muted) 35%, var(--elevated));
+}
+
+.editorial-close-premium {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-block: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background:
+    radial-gradient(
+      90% 80% at 18% 0%,
+      color-mix(in oklab, var(--primary) 14%, transparent) 0%,
+      transparent 52%
+    ),
+    radial-gradient(
+      70% 60% at 92% 25%,
+      color-mix(in oklab, var(--success) 10%, transparent) 0%,
+      transparent 55%
+    ),
+    var(--background);
+}
+
+.editorial-modules-premium {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  border-top: none;
+}
+
+.editorial-modules-premium .editorial-module {
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, var(--primary) 8%);
+  border-bottom: none;
+  border-radius: 0.85rem;
+  background: var(--elevated);
+  padding-block: clamp(1.35rem, 3vw, 1.85rem);
+  padding-inline: clamp(1rem, 2.5vw, 1.35rem);
+  box-shadow: var(--leh-highlight);
+}
+
+@media (min-width: 1024px) {
+  .editorial-modules-premium .editorial-module {
+    padding-block: 2.15rem;
+    padding-inline: 2rem;
+  }
 }
 
 .editorial-story {

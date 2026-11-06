@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import {
   MarketingModuleFigure,
+  ProductVignetteChrome,
   type MarketingModuleId,
 } from "@/components/marketing/platform-previews";
 import {
@@ -171,6 +172,29 @@ const MODULES: ReadonlyArray<{
     line: "Build capability against your standards.",
   },
 ];
+
+const FAQ_ITEMS = [
+  {
+    id: "faq-what",
+    q: "What is Lean Excellence Hub?",
+    a: "A B2B platform for Continuous Improvement and Operational Excellence: maturity, Gemba, 5S, suggestions, actions, problem solving, projects, benefits, scheduling, recognition, training and capability in one connected system.",
+  },
+  {
+    id: "faq-demo",
+    q: "How do I book a demonstration?",
+    a: "Use Book a live demo to open the scheduling page. A meeting is confirmed only after the scheduling provider accepts the time you choose.",
+  },
+  {
+    id: "faq-data",
+    q: "Are the records on this page real customer data?",
+    a: "No. Product previews and examples on this marketing site use illustrative records only. They are not customer performance data.",
+  },
+  {
+    id: "faq-leanai",
+    q: "How does LeanAI relate to publishing and access?",
+    a: "LeanAI can find, explain and recommend inside the current organisation, site and workflow. Publishing, closure, access and purchasing stay with a person.",
+  },
+] as const;
 
 const LEAN_BEATS = [
   {
@@ -409,7 +433,7 @@ function FindingStory() {
   }
 
   return (
-    <div className="editorial-story">
+    <div className="editorial-story editorial-story-shell">
       <ol className="editorial-lineage">
         {LINEAGE.map((step) => {
           const selected = step.id === active.id;
@@ -522,7 +546,10 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="why" className="editorial-section editorial-band">
+      <section
+        id="why"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-section-head">
             <p className="marketing-kicker">From one finding</p>
@@ -544,7 +571,10 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="platform" className="editorial-section">
+      <section
+        id="platform"
+        className="editorial-section editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-section-head">
             <p className="marketing-kicker">The platform</p>
@@ -564,7 +594,7 @@ export function EditorialHome() {
               Scheduling and recognition are part of the same operating system.
             </p>
           </div>
-          <ol className="editorial-modules">
+          <ol className="editorial-modules editorial-modules-premium">
             {MODULES.map((module, index) => (
               <li key={module.id} className="editorial-module">
                 <div className="editorial-module-copy">
@@ -581,7 +611,78 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="leanai" className="editorial-section editorial-band">
+      <section
+        id="trust"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
+        <MarketingContainer>
+          <div className="editorial-section-head">
+            <p className="marketing-kicker">Trust</p>
+            <h2 className="editorial-heading">
+              Illustrative examples — not customer proof
+            </h2>
+            <p className="editorial-lede">
+              This marketing page shows how the product works using fictional
+              sites and example records. It does not display customer logos,
+              testimonials, audited metrics, or third‑party certifications.
+            </p>
+          </div>
+          <div className="editorial-trust-grid">
+            <Card className="editorial-trust-card border-border/80 bg-card/80 shadow-none backdrop-blur-sm">
+              <CardHeader className="gap-1 p-5 sm:p-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-base">Example data only</CardTitle>
+                  <StatusChip tone="accent">Marketing</StatusChip>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Previews · Bodmin Bakery (fictional)
+                </p>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                <p className="m-0 text-sm leading-relaxed text-muted-foreground">
+                  Numbers, screenshots and vignettes here are for layout and
+                  workflow explanation — not performance claims.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-trust-card border-border/80 bg-card/80 shadow-none backdrop-blur-sm">
+              <CardHeader className="gap-1 p-5 sm:p-6">
+                <CardTitle className="text-base">Your framework</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  The platform follows your operating model
+                </p>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                <p className="m-0 text-sm leading-relaxed text-muted-foreground">
+                  Standards, maturity models and problem‑solving methods belong
+                  to your organisation. The platform keeps evidence and actions
+                  aligned to them.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-trust-card border-border/80 bg-card/80 shadow-none backdrop-blur-sm">
+              <CardHeader className="gap-1 p-5 sm:p-6">
+                <CardTitle className="text-base">Demo booking</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Scheduling provider
+                </p>
+              </CardHeader>
+              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+                <p className="m-0 text-sm leading-relaxed text-muted-foreground">
+                  {DEMO_BOOKING_CTA} opens the demonstration page. Confirmation
+                  follows the provider’s normal acceptance flow — not a
+                  placeholder calendar on this site.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </MarketingContainer>
+      </section>
+
+      <section
+        id="leanai"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-lean">
             <div className="editorial-section-head">
@@ -608,11 +709,14 @@ export function EditorialHome() {
             </div>
 
             <figure className="editorial-assistant">
-              <div className="marketing-preview">
-                <div className="marketing-preview-chrome">
-                  <p className="marketing-preview-title">LeanAI</p>
-                  <StatusChip tone="accent">Contextual assistant</StatusChip>
-                </div>
+              <div className="marketing-preview marketing-preview-product">
+                <ProductVignetteChrome
+                  title="LeanAI"
+                  route="/platform · Assistant · GEM-214"
+                  badge={
+                    <StatusChip tone="accent">Contextual assistant</StatusChip>
+                  }
+                />
                 <div className="marketing-preview-body">
                   <p className="editorial-label">Context</p>
                   <ol className="editorial-context-path">
@@ -647,7 +751,53 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="close" className="editorial-section editorial-close">
+      <section id="faq" className="editorial-section editorial-section-premium">
+        <MarketingContainer>
+          <div className="editorial-section-head">
+            <p className="marketing-kicker">FAQ</p>
+            <h2 className="editorial-heading">
+              Straight answers — no invented proof
+            </h2>
+            <p className="editorial-lede">
+              Common questions about this page and how to try the product. No
+              customer metrics or logos appear here.
+            </p>
+          </div>
+          <div className="editorial-faq">
+            {FAQ_ITEMS.map((item) => (
+              <details
+                key={item.id}
+                id={item.id}
+                className="editorial-faq-item group border border-border/80 bg-elevated/90"
+              >
+                <summary className="cursor-pointer list-none px-4 py-3.5 text-left text-sm font-semibold text-foreground ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-5 sm:py-4 sm:text-[0.9375rem] [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                </summary>
+                <div className="border-t border-border/60 px-4 pt-0 pb-4 sm:px-5 sm:pb-5">
+                  <p className="m-0 pt-3 text-sm leading-relaxed text-muted-foreground">
+                    {item.a}
+                  </p>
+                  {item.id === "faq-demo" ? (
+                    <p className="mt-3 text-sm">
+                      <Link
+                        href="/demo"
+                        className="font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                      >
+                        {DEMO_BOOKING_CTA}
+                      </Link>
+                    </p>
+                  ) : null}
+                </div>
+              </details>
+            ))}
+          </div>
+        </MarketingContainer>
+      </section>
+
+      <section
+        id="close"
+        className="editorial-section editorial-close editorial-close-premium"
+      >
         <MarketingContainer>
           <p className="marketing-kicker">Your system</p>
           <h2 className="editorial-display editorial-close-title">
