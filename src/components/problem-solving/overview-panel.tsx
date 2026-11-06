@@ -32,35 +32,35 @@ export function OverviewPanel({
 
   return (
     <div
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-3"
       data-testid="problem-solving-overview-panel"
     >
-      <Card>
-        <CardHeader>
-          <CardTitle>Case definition</CardTitle>
+      <Card className="gap-4 p-4 sm:p-5">
+        <CardHeader className="p-0">
+          <CardTitle className="text-base">Case definition</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 text-sm">
+        <CardContent className="flex flex-col gap-3 p-0 text-sm">
           <div>
             <p className="font-medium">Problem statement</p>
             <p className="text-muted-foreground">
               {detail.problem_statement ?? "—"}
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
+          <div className="grid grid-cols-1 gap-3 @md/canvas:grid-cols-2">
+            <div className="min-w-0">
               <p className="font-medium">Background</p>
-              <p className="text-muted-foreground">
+              <p className="wrap-break-word text-muted-foreground">
                 {detail.background ?? "—"}
               </p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-medium">Business impact</p>
-              <p className="text-muted-foreground">
+              <p className="wrap-break-word text-muted-foreground">
                 {detail.business_impact ?? "—"}
               </p>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 @md/canvas:grid-cols-2">
             <div>
               <p className="font-medium">Scope in</p>
               <p className="text-muted-foreground">{detail.scope_in ?? "—"}</p>

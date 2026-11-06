@@ -21,6 +21,7 @@ function queueFromToolArgs(
   ctx: ToolContext,
   proposalType:
     | "problem_statement"
+    | "target_condition"
     | "current_condition_item"
     | "hypothesis"
     | "containment"
@@ -262,6 +263,8 @@ export async function executeProblemSolvingTool(
       }
       case "propose_problem_statement":
         return queueFromToolArgs(ctx, "problem_statement", args);
+      case "propose_target_condition":
+        return queueFromToolArgs(ctx, "target_condition", args);
       case "propose_current_condition_item":
         return queueFromToolArgs(ctx, "current_condition_item", args);
       case "propose_hypothesis":

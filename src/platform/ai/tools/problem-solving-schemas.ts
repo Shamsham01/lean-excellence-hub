@@ -21,6 +21,7 @@ export const searchRelatedCasesSchema = z
 
 export const PROBLEM_SOLVING_WRITE_TOOLS = [
   "propose_problem_statement",
+  "propose_target_condition",
   "propose_current_condition_item",
   "propose_hypothesis",
   "propose_containment",
@@ -56,6 +57,13 @@ export type ProblemSolvingWriteToolName =
   (typeof PROBLEM_SOLVING_WRITE_TOOLS)[number];
 
 const proposeProblemStatementSchema = z
+  .object({
+    statement: z.string().trim().min(1).max(4000),
+    explanation: explanationField,
+  })
+  .strict();
+
+const proposeTargetConditionSchema = z
   .object({
     statement: z.string().trim().min(1).max(4000),
     explanation: explanationField,
@@ -180,6 +188,7 @@ export function getOpenAiToolParametersSchema(
     case "search_related_problem_solving_cases":
       return searchRelatedCasesParametersSchema;
     case "propose_problem_statement":
+    case "propose_target_condition":
       return writeToolParameters(
         {
           statement: { type: "string" },
@@ -355,6 +364,10 @@ export function parseToolArgs(
       return proposeProblemStatementSchema.parse(
         normalizeNullableWriteArgs(args),
       );
+    case "propose_target_condition":
+      return proposeTargetConditionSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     case "propose_current_condition_item":
       return proposeCurrentConditionSchema.parse(
         normalizeNullableWriteArgs(args),
@@ -376,9 +389,18 @@ export function parseToolArgs(
   }
 }
 
+const WRITE_TOOL_DESCRIPTIONS: Partial<
+  Record<(typeof PROBLEM_SOLVING_WRITE_TOOLS)[number], string>
+> = {
+  propose_target_condition:
+    "Queue draft target-condition wording for human approval on the current case. Describes the desired observable operational state—not the solution—and must not be treated as already achieved.",
+};
+
 function toolDescription(name: ProblemSolvingToolName): string {
   if ((PROBLEM_SOLVING_WRITE_TOOLS as readonly string[]).includes(name)) {
-    return `Queue a draft ${name.replace("propose_", "")} proposal for human approval on the current case. Tool: ${name}`;
+    const custom = WRITE_TOOL_DESCRIPTIONS[name as ProblemSolvingWriteToolName];
+    if (custom) return custom;
+    return `Queue a draft ${name.replace("propose_", "").replace(/_/g, " ")} proposal for human approval on the current case. Tool: ${name}`;
   }
   return `Read authorised problem-solving data for the current case. Tool: ${name}`;
 }

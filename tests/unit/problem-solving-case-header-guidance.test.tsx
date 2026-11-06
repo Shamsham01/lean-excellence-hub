@@ -77,8 +77,8 @@ const sampleMethod = {
   current_version: null,
 };
 
-describe("CaseHeader guidance", () => {
-  it("shows draft guidance and activate controls when methods exist", () => {
+describe("CaseHeader", () => {
+  it("shows activate controls for draft cases when methods exist", () => {
     render(
       <CaseHeader
         detail={baseDetail}
@@ -89,8 +89,10 @@ describe("CaseHeader guidance", () => {
       />,
     );
 
-    expect(screen.getByTestId("problem-solving-draft-guidance")).toBeVisible();
     expect(screen.getByTestId("problem-solving-activate-button")).toBeVisible();
+    expect(
+      screen.queryByTestId("problem-solving-draft-guidance"),
+    ).not.toBeInTheDocument();
   });
 
   it("warns when no methods are configured", () => {

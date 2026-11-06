@@ -81,7 +81,7 @@ export function TabsList({
         data-overflow-start={overflow.start ? "true" : "false"}
         data-overflow-end={overflow.end ? "true" : "false"}
         className={cn(
-          "tabs-scroll flex min-h-10 w-full max-w-full min-w-0 items-center justify-start gap-1 overflow-x-auto overscroll-x-contain rounded-lg border border-border bg-muted/40 p-1 pb-1.5",
+          "tabs-scroll flex min-h-9 w-full max-w-full min-w-0 items-center justify-start gap-1 overflow-x-auto overscroll-x-contain rounded-lg border border-border/50 bg-muted/30 p-1",
           className,
         )}
         onScroll={handleScroll}
@@ -119,7 +119,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs",
+        "inline-flex min-h-8 shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm",
         className,
       )}
       {...props}

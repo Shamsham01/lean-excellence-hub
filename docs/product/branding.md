@@ -27,22 +27,21 @@ Organisation names stay separate from the product mark. The sidebar and mobile b
 | `public/brand/leh-icon-light.png` | Blue app icon for light surfaces. Transparent corners |
 | `public/brand/leh-icon-dark.png` | Light app icon for dark surfaces. Transparent corners |
 | `public/brand/leh-icon-dark-128.png` | 128px derivative of the dark icon for the root error document |
-| `public/brand/leh-icon-blue.png` | Blue app icon used for the browser and installed-app icons |
-| `public/brand/leh-icon-blue-192.png` | Manifest icon |
-| `src/app/favicon.ico` | Browser tab icon, 16 and 32px |
-| `src/app/icon.png` | Next.js app icon, same artwork as `leh-icon-blue.png` |
-| `src/app/apple-icon.png` | Apple touch icon, opaque |
+| `public/brand/leh-icon-light-192.png` | Manifest icon (192px), from `leh-icon-light.png` |
+| `public/brand/leh-icon-light-512.png` | Manifest icon (512px); matches `src/app/icon.png` |
+| `public/brand/leh-icon-blue.png` | Legacy blue mark; not used for tabs or manifest |
+| `src/app/favicon.ico` | Browser tab icon (16–64px), from `leh-icon-light.png` |
+| `src/app/icon.png` | Next.js app icon, from `leh-icon-light.png` |
+| `src/app/apple-icon.png` | Apple touch icon, from `leh-icon-light.png` |
 | `public/site.webmanifest` | Installed-app name and icons |
 
 `leh-horizontal.png` and `leh-icon-minimal.png` are the previous pack. They have opaque white fields, so screens no longer reference them.
 
-Root metadata sets `manifest: "/site.webmanifest"` and does not repeat the file-convention icons.
+Root metadata sets `manifest: "/site.webmanifest"` and adds a dark-tab icon via `prefers-color-scheme: dark` (`leh-icon-dark-128.png`). File-convention icons in `src/app/` use the light-theme master.
 
 ## Favicon review
 
-The browser, Apple touch, and manifest icons stay on the blue mark.
-
-`leh-icon-dark.png` is a light tile. At 16px and 32px it disappears on a light browser chrome, so it is not the tab icon. `leh-icon-light.png` is the same blue mark at a larger source, with a lower-contrast fourth node than the current favicon master, so replacing the tab icon would not improve it. The horizontal lockups are not used as favicons.
+Default browser, Apple touch, and manifest icons use the approved light-theme app icon (`leh-icon-light.png`: white rounded square, navy outlines, bright blue fill). When the OS prefers dark chrome, the tab icon switches to `leh-icon-dark-128.png`. The horizontal lockups are not used as favicons.
 
 The root error page is a fixed dark document outside the theme provider. It uses `leh-icon-dark-128.png`.
 

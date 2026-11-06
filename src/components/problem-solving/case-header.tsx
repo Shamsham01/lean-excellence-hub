@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -33,11 +33,14 @@ type CaseHeaderProps = {
   ownerName?: string | null;
   facilitatorName?: string | null;
   targetDueDateLabel?: string | null;
+  methodLabel?: string | null;
   canManage: boolean;
   canClose: boolean;
   methods: ProblemSolvingMethod[];
   pinnedMethodVersion: PinnedMethodVersionContext | null;
   onMessage?: (message: string, tone?: "success" | "error") => void;
+  historySlot?: ReactNode;
+  activitySlot?: ReactNode;
 };
 
 export function CaseHeader({
@@ -45,11 +48,14 @@ export function CaseHeader({
   ownerName,
   facilitatorName,
   targetDueDateLabel,
+  methodLabel,
   canManage,
   canClose,
   methods,
   pinnedMethodVersion,
   onMessage,
+  historySlot,
+  activitySlot,
 }: CaseHeaderProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -130,44 +136,138 @@ export function CaseHeader({
     router.refresh();
   }
 
+  const flagshipActive = detail.status === "active" && !showActivate;
+
+  if (flagshipActive) {
+    const metaParts = [
+      detail.unit_name ? `Unit: ${detail.unit_name}` : null,
+      ownerName ? `Owner: ${ownerName}` : null,
+      methodLabel ? `Method: ${methodLabel}` : null,
+    ].filter(Boolean);
+
+    return (
+      <div
+        className="flex flex-col gap-3 py-3.5 lg:flex-row lg:items-start lg:justify-between"
+        data-testid="problem-solving-header"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant={problemSolvingStatusBadgeVariant(detail.status)}
+              className="font-mono-data text-[10px] uppercase"
+            >
+              {problemSolvingStatusLabel(detail.status)}
+            </Badge>
+            {detail.case_number ? (
+              <span className="font-mono-data text-xs text-muted-foreground">
+                {detail.case_number}
+              </span>
+            ) : null}
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+              {detail.title}
+            </h1>
+          </div>
+          {metaParts.length > 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {metaParts.join(" · ")}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {historySlot}
+          {activitySlot}
+          {showClose ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowCloseDialog(true)}
+              disabled={loading}
+              data-testid="problem-solving-close-button"
+            >
+              Close case
+            </Button>
+          ) : null}
+          {showCancel ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+        {showCloseDialog ? (
+          <div
+            className="w-full rounded-md border border-border bg-muted/20 p-4"
+            data-testid="problem-solving-close-dialog"
+          >
+            <p className="mb-3 text-sm font-medium">
+              Close problem solving case
+            </p>
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Closure outcome</span>
+                <select
+                  className="border-input min-h-11 rounded-md border bg-elevated px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  value={closureOutcome}
+                  onChange={(e) => setClosureOutcome(e.target.value)}
+                  data-testid="closure-outcome-select"
+                >
+                  {CLOSURE_OUTCOMES.map((outcome) => (
+                    <option key={outcome} value={outcome}>
+                      {closureOutcomeLabel(outcome)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Rationale</span>
+                <textarea
+                  className="border-input min-h-20 rounded-md border bg-background px-3 py-2"
+                  value={closureRationale}
+                  onChange={(e) => setClosureRationale(e.target.value)}
+                  data-testid="closure-rationale"
+                />
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={loading}
+                  onClick={handleClose}
+                  data-testid="confirm-close-case"
+                >
+                  Confirm close
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCloseDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-col gap-4 border-b border-border pb-6"
+      className="flex flex-col gap-3 py-3"
       data-testid="problem-solving-header"
     >
-      {detail.status === "draft" ? (
-        <div
-          className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm"
-          data-testid="problem-solving-draft-guidance"
-        >
-          <p className="font-medium text-foreground">
-            Draft case — not in workshop yet
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            Confirm the problem statement on Overview, pick a solving method,
-            then activate the case. Activation unlocks staged work, facilitator
-            sessions, and Lean AI on this record.
-          </p>
-        </div>
-      ) : null}
-      {detail.status === "active" ? (
-        <div
-          className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm"
-          data-testid="problem-solving-active-guidance"
-        >
-          <p className="font-medium text-foreground">Active case</p>
-          <p className="mt-1 text-muted-foreground">
-            Use the Sessions tab to run workshops, capture notes and decisions,
-            then advance stages as the team agrees.
-          </p>
-        </div>
-      ) : null}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {detail.case_number ?? "Draft case"}
           </p>
-          <h1 className="typography-page-title">{detail.title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {detail.title}
+          </h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant={problemSolvingStatusBadgeVariant(detail.status)}>
               {problemSolvingStatusLabel(detail.status)}
@@ -180,7 +280,7 @@ export function CaseHeader({
               </Badge>
             ) : null}
           </div>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-2 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4 lg:text-sm">
             {detail.unit_name ? (
               <div>
                 <dt className="text-muted-foreground">Unit</dt>
@@ -223,7 +323,9 @@ export function CaseHeader({
             ) : null}
           </dl>
         </div>
-        <div className="flex w-full shrink-0 flex-col gap-2 lg:w-auto">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:flex-col lg:items-stretch">
+          {historySlot}
+          {activitySlot}
           {showActivate ? (
             <>
               {pinnedMethodView ? (

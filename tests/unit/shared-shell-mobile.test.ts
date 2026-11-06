@@ -15,6 +15,8 @@ describe("shared platform shell mobile layout", () => {
     expect(mobile).toContain("sticky top-0 z-40");
     expect(mobile).toContain('data-testid="platform-mobile-chrome"');
     expect(mobile).toContain("min-w-0 flex-1 truncate");
+    expect(mobile).toContain('aria-label="Platform"');
+    expect(mobile).toContain('role="navigation"');
   });
 
   it("keeps the platform shell root and main workspace within the viewport width", () => {
@@ -24,9 +26,17 @@ describe("shared platform shell mobile layout", () => {
     expect(shell).toContain(
       "lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden",
     );
+    // Main column locks vertical overflow; nested platform-main-viewport scrolls.
+    expect(shell).toContain('data-testid="platform-main"');
     expect(shell).toContain(
-      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden",
     );
+    expect(shell).toContain("platform-main-viewport");
+    expect(shell).toContain(
+      "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
+    );
+    expect(shell).toContain("platform-main-inner");
+    expect(shell).toContain("PlatformTopbar");
   });
 
   it("allows page header actions to wrap on narrow viewports", () => {

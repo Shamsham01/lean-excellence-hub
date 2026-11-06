@@ -394,6 +394,22 @@ describe("proposal transport regression cases", () => {
   });
 });
 
+describe("tool-only proposal types", () => {
+  it("validates problem_statement and target_condition payloads", () => {
+    const problem = validateProposalPayload("problem_statement", {
+      statement: "Film wanders after splices on line 1.",
+    });
+    const target = validateProposalPayload("target_condition", {
+      statement: "Film stays within ±2 mm for five shifts.",
+    });
+    expect(problem.statement).toContain("Film wanders");
+    expect(target.statement).toContain("±2 mm");
+    expect(safeValidateProposalPayload("target_condition", {}).success).toBe(
+      false,
+    );
+  });
+});
+
 describe("sanitizeEnvelopeProposals", () => {
   it("drops invalid proposals from fake/internal envelopes", () => {
     const sanitized = sanitizeEnvelopeProposals([

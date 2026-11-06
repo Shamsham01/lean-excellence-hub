@@ -73,6 +73,8 @@ export type RunAiTurnInput = {
   caseId: string;
   mode: AiSessionMode;
   stageKey?: string | null;
+  viewStageKey?: string | null;
+  currentStageKey?: string | null;
   userMessage: string;
   idempotencyKey: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
@@ -161,7 +163,10 @@ export async function runAiTurn(
   const deadline = createAiRunDeadline(wallClockMs);
   const expectsStructuredOutput = provider.name === "openai";
 
-  const systemPrompt = buildSystemPrompt(input.mode, input.stageKey);
+  const systemPrompt = buildSystemPrompt(input.mode, input.stageKey, {
+    viewStageKey: input.viewStageKey ?? input.stageKey ?? null,
+    currentStageKey: input.currentStageKey ?? null,
+  });
   const promptHash = hashPrompt(systemPrompt);
   const sessionCaseId = await problemSolvingSessionCaseId(
     input.supabase,
@@ -657,6 +662,10 @@ function displayPermissionFor(proposalType: string): string {
     case "current_condition_item":
     case "session_question":
     case "session_summary":
+    case "fishbone_cause":
+    case "hypothesis":
+    case "hypothesis_test":
+    case "five_why_chain":
       return "problem_solving.contribute";
     default:
       return "problem_solving.manage";

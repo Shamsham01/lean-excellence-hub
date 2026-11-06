@@ -69,12 +69,18 @@ export function MobilePlatformNavigation({
             siteContext={siteContext}
             closeGutter
           />
-          <PlatformNavigation items={items} onNavigate={closeDrawer} />
-          <PlatformSidebarFooter
-            member={member}
-            showSettings={showSettings}
-            onNavigate={closeDrawer}
-          />
+          <div
+            className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
+            role="navigation"
+            aria-label="Platform"
+          >
+            <PlatformNavigation items={items} onNavigate={closeDrawer} />
+            <PlatformSidebarFooter
+              member={member}
+              showSettings={showSettings}
+              onNavigate={closeDrawer}
+            />
+          </div>
         </SheetContent>
       </Sheet>
       <AppLink

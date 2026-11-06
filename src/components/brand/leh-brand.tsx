@@ -1,13 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
-
 import { cn } from "@/lib/utils";
 
 import {
   LEH_BRAND,
   LEH_BRAND_HOME_LABEL,
   LEH_BRAND_LOCKUP_LABEL,
+  type LehBrandMediaAsset,
 } from "./brand-assets";
 import "./leh-brand.css";
 
@@ -28,16 +26,53 @@ type LehBrandProps = {
    */
   responsive?: boolean;
   strapline?: boolean;
+  /** Platform sidebar: render horizontal lockups from PNG so crop CSS applies. */
+  lockupRasterOnly?: boolean;
 };
 
-const lockupCropStyle = {
-  "--leh-crop-x": String(LEH_BRAND.horizontalCrop.x),
-  "--leh-crop-y": String(LEH_BRAND.horizontalCrop.y),
-  "--leh-crop-w": String(LEH_BRAND.horizontalCrop.width),
-  "--leh-crop-h": String(LEH_BRAND.horizontalCrop.height),
-  "--leh-src-w": String(LEH_BRAND.horizontalFrame.width),
-  "--leh-src-h": String(LEH_BRAND.horizontalFrame.height),
-} as CSSProperties;
+type LehBrandPictureProps = {
+  asset: LehBrandMediaAsset;
+  alt: string;
+  imgClassName: string;
+  themeClassName: string;
+  priority?: boolean;
+  /** Sidebar / cropped slots: Canva SVGs do not inherit img crop CSS when selected. */
+  rasterOnly?: boolean;
+};
+
+/** SVG-first brand media; PNG masters stay as the `<img>` fallback. */
+function LehBrandPicture({
+  asset,
+  alt,
+  imgClassName,
+  themeClassName,
+  priority = false,
+  rasterOnly = false,
+}: LehBrandPictureProps) {
+  const img = (
+    <img
+      alt={alt}
+      className={imgClassName}
+      decoding="async"
+      height={asset.height}
+      loading={priority ? "eager" : "lazy"}
+      src={asset.rasterFallbackSrc}
+      width={asset.width}
+      {...(priority ? { fetchPriority: "high" as const } : {})}
+    />
+  );
+
+  if (rasterOnly) {
+    return <span className={themeClassName}>{img}</span>;
+  }
+
+  return (
+    <picture className={themeClassName}>
+      <source srcSet={asset.src} type="image/svg+xml" />
+      {img}
+    </picture>
+  );
+}
 
 export function LehBrand({
   variant = "full",
@@ -46,6 +81,7 @@ export function LehBrand({
   priority = false,
   responsive = false,
   strapline = variant !== "icon",
+  lockupRasterOnly = false,
 }: LehBrandProps) {
   const showCopy = variant !== "icon";
   const showLockup = variant === "full";
@@ -65,46 +101,38 @@ export function LehBrand({
         : {})}
     >
       {showLockup ? (
-        <span className="leh-brand-lockup" style={lockupCropStyle}>
-          <Image
+        <span className="leh-brand-lockup">
+          <LehBrandPicture
             alt={lockupAlt}
-            className="leh-brand-lockup-img leh-brand-lockup-light"
-            height={LEH_BRAND.horizontalLight.height}
+            asset={LEH_BRAND.horizontalLight}
+            imgClassName="leh-brand-lockup-img"
+            themeClassName="leh-brand-lockup-light"
             priority={priority}
-            sizes="22rem"
-            src={LEH_BRAND.horizontalLight.src}
-            width={LEH_BRAND.horizontalLight.width}
+            rasterOnly={lockupRasterOnly}
           />
-          <Image
+          <LehBrandPicture
             alt={lockupAlt}
-            className="leh-brand-lockup-img leh-brand-lockup-dark"
-            fetchPriority={priority ? "low" : undefined}
-            height={LEH_BRAND.horizontalDark.height}
-            loading={priority ? "eager" : undefined}
-            sizes="22rem"
-            src={LEH_BRAND.horizontalDark.src}
-            width={LEH_BRAND.horizontalDark.width}
+            asset={LEH_BRAND.horizontalDark}
+            imgClassName="leh-brand-lockup-img"
+            themeClassName="leh-brand-lockup-dark"
+            rasterOnly={lockupRasterOnly}
           />
         </span>
       ) : null}
       {showMark ? (
         <span className="leh-brand-fallback">
-          <Image
+          <LehBrandPicture
             alt=""
-            className="leh-brand-mark leh-brand-mark-light"
-            height={LEH_BRAND.iconLight.height}
+            asset={LEH_BRAND.iconLight}
+            imgClassName="leh-brand-mark"
+            themeClassName="leh-brand-mark-light"
             priority={priority && variant !== "full"}
-            sizes="2rem"
-            src={LEH_BRAND.iconLight.src}
-            width={LEH_BRAND.iconLight.width}
           />
-          <Image
+          <LehBrandPicture
             alt=""
-            className="leh-brand-mark leh-brand-mark-dark"
-            height={LEH_BRAND.iconDark.height}
-            sizes="2rem"
-            src={LEH_BRAND.iconDark.src}
-            width={LEH_BRAND.iconDark.width}
+            asset={LEH_BRAND.iconDark}
+            imgClassName="leh-brand-mark"
+            themeClassName="leh-brand-mark-dark"
           />
           {showCopy ? (
             <span className="leh-brand-copy">
