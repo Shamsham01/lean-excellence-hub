@@ -9,6 +9,7 @@ export type CasePendingAiProposal = {
   human_explanation: string;
   status: string;
   ai_session_id: string;
+  semantic_stage_key?: string | null;
 };
 
 function canDisplayProposal(
@@ -29,7 +30,7 @@ export async function loadCasePendingAiProposals(
   const { data, error } = await supabase
     .from("ai_proposals")
     .select(
-      "id, proposal_type, payload_json, human_explanation, status, display_permission_key, ai_session_id",
+      "id, proposal_type, payload_json, human_explanation, status, display_permission_key, ai_session_id, semantic_stage_key",
     )
     .eq("problem_solving_case_id", caseId)
     .eq("status", "pending")
@@ -39,16 +40,17 @@ export async function loadCasePendingAiProposals(
     return [];
   }
 
-  return data
-    .filter((row) =>
-      canDisplayProposal(row.display_permission_key, permissions),
-    )
-    .map((row) => ({
-      id: row.id,
-      proposal_type: row.proposal_type,
-      payload_json: (row.payload_json ?? {}) as Record<string, unknown>,
-      human_explanation: row.human_explanation,
-      status: row.status,
-      ai_session_id: row.ai_session_id,
-    }));
+  const rows = data.filter((row) =>
+    canDisplayProposal(row.display_permission_key, permissions),
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    proposal_type: row.proposal_type,
+    payload_json: (row.payload_json ?? {}) as Record<string, unknown>,
+    human_explanation: row.human_explanation,
+    status: row.status,
+    ai_session_id: row.ai_session_id,
+    semantic_stage_key: row.semantic_stage_key ?? null,
+  }));
 }

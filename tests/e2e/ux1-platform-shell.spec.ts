@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
@@ -40,7 +41,10 @@ test.describe("UX1 platform shell", () => {
       page,
       platformE2eCredentials.organisationName,
     );
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    await expect(
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("navigation", { name: "Platform" }),
     ).toBeVisible();
@@ -82,9 +86,15 @@ test.describe("UX1 platform shell", () => {
     await page.setViewportSize({ width: 1280, height: 500 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = page.getByRole("navigation", { name: "Platform" });
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
+    await expect(
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+    ).toBeVisible();
+    await expect(sidebar.getByTestId("platform-sidebar-org-name")).toHaveText(
+      DEMO_ORGANISATION.name,
+    );
     const chrome = page.getByTestId("platform-desktop-main-chrome");
     await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
 
@@ -99,7 +109,9 @@ test.describe("UX1 platform shell", () => {
       await nav.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
       });
-      await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
+      await expect(
+        sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+      ).toBeVisible();
       await expect(
         chrome.getByTestId("platform-chrome-sign-out"),
       ).toBeVisible();

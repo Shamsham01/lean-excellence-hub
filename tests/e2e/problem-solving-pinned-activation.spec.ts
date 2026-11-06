@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { expectGuidedProblemSolvingWorkspace } from "./helpers/guided-problem-solving-workspace";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -24,7 +25,7 @@ test.describe("Problem solving pinned draft activation", () => {
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
 
-  test("manager activates a pinned draft, starts a session, and sees draft guidance beforehand", async ({
+  test("manager activates a pinned draft and opens flagship workspace", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
@@ -56,10 +57,6 @@ test.describe("Problem solving pinned draft activation", () => {
     await expect(page.getByTestId("activate-method-locked")).toBeVisible();
     await expect(page.getByTestId("activate-method-select")).toHaveCount(0);
 
-    await page.getByTestId("tab-sessions").click();
-    await expect(page.getByTestId("sessions-draft-guidance")).toBeVisible();
-
-    await page.getByTestId("tab-overview").click();
     await page.getByTestId("problem-solving-activate-button").click();
     await expect(
       page
@@ -67,12 +64,10 @@ test.describe("Problem solving pinned draft activation", () => {
         .getByText("Active", { exact: true }),
     ).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTestId("tab-sessions").click();
-    await page.getByTestId("session-title").fill("Pinned method workshop");
-    await page.getByTestId("start-session-button").click();
-    await expect(page.getByText("Pinned method workshop")).toBeVisible({
-      timeout: 15_000,
-    });
+    await expectGuidedProblemSolvingWorkspace(page);
+    await expect(page.getByTestId("pps-stage-canvas")).toBeVisible();
+    await page.getByTestId("pps-activity-trigger").click();
+    await expect(page.getByText("Activity & comments")).toBeVisible();
   });
 
   test("pinned activation layout remains usable on mobile", async ({
@@ -84,9 +79,8 @@ test.describe("Problem solving pinned draft activation", () => {
     await page.getByRole("link", { name: pinnedCaseTitle }).click();
     await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
     await expect(page.getByTestId("problem-solving-header")).toBeVisible();
-    await page.getByTestId("tab-sessions").click();
-    await expect(
-      page.getByTestId("problem-solving-sessions-panel"),
-    ).toBeVisible();
+    await expect(page.getByTestId("pps-mobile-copilot-trigger")).toBeVisible();
+    await page.getByTestId("pps-mobile-copilot-trigger").click();
+    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
   });
 });

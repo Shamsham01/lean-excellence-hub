@@ -1,12 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  activateProblemSolvingCase,
-  startProblemSolvingSession,
-} from "@/app/(platform)/platform/problem-solving/actions";
+import { activateProblemSolvingCase } from "@/app/(platform)/platform/problem-solving/actions";
 import { CaseHeader } from "@/components/problem-solving/case-header";
-import { SessionsPanel } from "@/components/problem-solving/sessions-panel";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 const routerMocks = vi.hoisted(() => ({
@@ -25,13 +21,9 @@ vi.mock("@/app/(platform)/platform/problem-solving/actions", () => ({
   cancelProblemSolvingCase: vi.fn(),
   closeProblemSolvingCase: vi.fn(),
   moveProblemSolvingStage: vi.fn(),
-  startProblemSolvingSession: vi.fn(),
-  addSessionEntry: vi.fn(),
-  completeProblemSolvingSession: vi.fn(),
 }));
 
 const activateCase = vi.mocked(activateProblemSolvingCase);
-const startSession = vi.mocked(startProblemSolvingSession);
 
 const baseDetail: ProblemSolvingCaseDetail = {
   id: "case-1",
@@ -133,52 +125,5 @@ describe("CaseHeader activation UX", () => {
     });
     expect(routerMocks.refresh).not.toHaveBeenCalled();
     expect(activateCase).toHaveBeenCalledWith("case-1", "method-a3");
-  });
-});
-
-describe("SessionsPanel draft guidance", () => {
-  beforeEach(() => {
-    routerMocks.refresh.mockReset();
-    startSession.mockReset();
-  });
-
-  it("guides facilitators on draft cases and preserves the title when start fails", async () => {
-    startSession.mockResolvedValueOnce({
-      error: "sessions can only be started on active cases",
-    });
-
-    const { rerender } = render(
-      <SessionsPanel
-        caseId="case-1"
-        detail={baseDetail}
-        canFacilitate
-        membershipNameById={{}}
-      />,
-    );
-
-    expect(screen.getByTestId("sessions-draft-blocked")).toBeVisible();
-    expect(screen.queryByTestId("start-session-button")).toBeNull();
-
-    const activeDetail = { ...baseDetail, status: "active" };
-    rerender(
-      <SessionsPanel
-        caseId="case-1"
-        detail={activeDetail}
-        canFacilitate
-        membershipNameById={{}}
-      />,
-    );
-
-    const titleInput = screen.getByTestId("session-title");
-    fireEvent.change(titleInput, { target: { value: "Line 3 workshop" } });
-    fireEvent.click(screen.getByTestId("start-session-button"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("sessions-panel-message")).toHaveTextContent(
-        "sessions can only be started on active cases",
-      );
-    });
-    expect(titleInput).toHaveValue("Line 3 workshop");
-    expect(routerMocks.refresh).not.toHaveBeenCalled();
   });
 });

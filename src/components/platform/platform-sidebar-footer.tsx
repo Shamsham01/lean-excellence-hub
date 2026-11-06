@@ -1,109 +1,125 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { User } from "lucide-react";
 
+import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { PlatformNavIconComponent } from "@/components/platform/platform-nav-icons";
 import { AppLink } from "@/components/ui/app-link";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import {
   isNavItemActive,
   settingsNavigationItem,
 } from "@/modules/platform-shell/navigation";
-import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import { cn } from "@/lib/utils";
 
+const PROFILE_HREF = "/platform/settings/profile";
+
 type PlatformSidebarFooterProps = {
-  membershipId: string;
   member: PlatformShellMember;
   showSettings: boolean;
   onNavigate?: () => void;
 };
 
-function FooterSettingsLink({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
-  const active = isNavItemActive(pathname, settingsNavigationItem);
-
-  return (
-    <AppLink
-      href={settingsNavigationItem.href}
-      data-testid="platform-nav-settings"
-      {...(onNavigate ? { onClick: onNavigate } : {})}
-      className={cn(
-        "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
-        active
-          ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-      )}
-      aria-current={active ? "page" : undefined}
-    >
-      <PlatformNavIconComponent
-        icon={settingsNavigationItem.icon}
-        className="size-4 shrink-0"
-      />
-      Settings
-    </AppLink>
-  );
-}
-
-function FooterProfileLink({
-  membershipId,
+function CompactNavLink({
+  href,
+  testId,
+  active,
   onNavigate,
+  children,
 }: {
-  membershipId: string;
+  href: string;
+  testId: string;
+  active: boolean;
   onNavigate?: () => void;
+  children: ReactNode;
 }) {
-  const pathname = usePathname();
-  const href = `/platform/people/${membershipId}`;
-  const active = pathname === href || pathname.startsWith(`${href}/`);
-
   return (
     <AppLink
       href={href}
-      data-testid="platform-nav-profile"
+      data-testid={testId}
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
-        "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+        "flex min-h-11 items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
         active
           ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
       )}
       aria-current={active ? "page" : undefined}
     >
-      <User className="size-4 shrink-0" aria-hidden />
-      Profile
+      {children}
     </AppLink>
   );
 }
 
 export function PlatformSidebarFooter({
-  membershipId,
   member,
   showSettings,
   onNavigate,
 }: PlatformSidebarFooterProps) {
+  const pathname = usePathname();
+  const settingsActive = isNavItemActive(pathname, settingsNavigationItem);
+  const profileActive = pathname.startsWith(PROFILE_HREF);
+
   return (
-    <div className="flex shrink-0 flex-col gap-0.5 border-t border-sidebar-border p-2">
-      <div className="px-3 py-2" data-testid="platform-sidebar-account">
-        <p
-          className="truncate text-sm font-semibold text-sidebar-foreground"
-          data-testid="platform-sidebar-display-name"
-          title={member.displayName}
-        >
-          {member.displayName}
-        </p>
-        {member.roleLabel ? (
-          <p className="truncate text-xs text-muted-foreground">
-            {member.roleLabel}
-          </p>
+    <div
+      className="mt-auto flex flex-col gap-2 border-t border-sidebar-border/80 px-2 py-3"
+      data-testid="platform-sidebar-account"
+    >
+      <AppLink
+        href={PROFILE_HREF}
+        className="flex min-w-0 items-center gap-2.5 rounded-md px-1 py-1 hover:bg-sidebar-accent/60"
+        {...(onNavigate ? { onClick: onNavigate } : {})}
+        data-testid="platform-sidebar-profile-link"
+      >
+        {member.avatarUrl ? (
+          <PlatformMemberAvatar
+            displayName={member.displayName}
+            avatarUrl={member.avatarUrl}
+            size="sm"
+          />
         ) : null}
+        <span className="min-w-0 flex-1">
+          <span
+            className="block truncate text-sm font-medium text-sidebar-foreground"
+            data-testid="platform-sidebar-display-name"
+            title={member.displayName}
+          >
+            {member.displayName}
+          </span>
+          {member.roleLabel ? (
+            <span className="block truncate text-[11px] text-muted-foreground">
+              {member.roleLabel}
+            </span>
+          ) : null}
+        </span>
+      </AppLink>
+      <div className="flex flex-wrap items-center gap-1 px-1">
+        {showSettings ? (
+          <CompactNavLink
+            href={settingsNavigationItem.href}
+            testId="platform-nav-settings"
+            active={settingsActive}
+            {...(onNavigate ? { onNavigate } : {})}
+          >
+            <PlatformNavIconComponent
+              icon={settingsNavigationItem.icon}
+              className="size-3.5 shrink-0"
+            />
+            Settings
+          </CompactNavLink>
+        ) : null}
+        <CompactNavLink
+          href={PROFILE_HREF}
+          testId="platform-nav-profile"
+          active={profileActive}
+          {...(onNavigate ? { onNavigate } : {})}
+        >
+          <UserRound className="size-3.5 shrink-0" aria-hidden />
+          Profile
+        </CompactNavLink>
       </div>
-      {showSettings ? (
-        <FooterSettingsLink {...(onNavigate ? { onNavigate } : {})} />
-      ) : null}
-      <FooterProfileLink
-        membershipId={membershipId}
-        {...(onNavigate ? { onNavigate } : {})}
-      />
     </div>
   );
 }

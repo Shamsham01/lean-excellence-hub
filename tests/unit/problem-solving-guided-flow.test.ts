@@ -30,6 +30,11 @@ describe("problem solving guided flow", () => {
     expect(config.autoDraftPrompt).toMatch(/propose/i);
   });
 
+  it("asks stage auto-draft to call propose_target_condition", () => {
+    const config = guidedStageConfig("TARGET_CONDITION");
+    expect(config.autoDraftPrompt).toMatch(/propose_target_condition/i);
+  });
+
   it("resolves the viewed stage by id", () => {
     expect(resolveViewStage(stages, "s2", "s1")?.id).toBe("s2");
     expect(resolveViewStage(stages, null, "s1")?.id).toBe("s1");

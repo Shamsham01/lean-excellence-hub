@@ -43,7 +43,7 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "Keep it testable later.",
     ],
     autoDraftPrompt:
-      "Suggest concise target-condition wording and any supporting current-condition facts as draft proposals.",
+      "Call propose_target_condition with concise, observable target-condition wording based on the authorised problem statement and current condition, as a draft the human can accept. Describe the desired operational state—not the solution—and do not treat it as already achieved. Do not only ask a question.",
   },
   ROOT_CAUSE_ANALYSIS: {
     title: "Cause analysis",
@@ -91,11 +91,16 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
   },
 };
 
+const STAGE_CONFIG_ALIASES: Record<string, keyof typeof STAGE_CONFIG> = {
+  ANALYSE: "ROOT_CAUSE_ANALYSIS",
+};
+
 export function guidedStageConfig(
   semanticKey: string | null | undefined,
   methodStage?: MethodStage | null,
 ): GuidedStageConfig {
-  const key = semanticKey ?? "DEFINE";
+  const rawKey = semanticKey ?? "DEFINE";
+  const key = STAGE_CONFIG_ALIASES[rawKey] ?? rawKey;
   const base = STAGE_CONFIG[key] ?? {
     title: methodStage?.title ?? semanticStageLabel(key),
     purpose:

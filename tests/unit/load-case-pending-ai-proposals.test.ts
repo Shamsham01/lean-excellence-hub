@@ -20,6 +20,7 @@ describe("loadCasePendingAiProposals", () => {
               status: "pending",
               display_permission_key: "problem_solving.manage",
               ai_session_id: "s1",
+              semantic_stage_key: "DEFINE",
             },
             {
               id: "p2",
@@ -29,6 +30,7 @@ describe("loadCasePendingAiProposals", () => {
               status: "pending",
               display_permission_key: "problem_solving.contribute",
               ai_session_id: "s1",
+              semantic_stage_key: "CURRENT_CONDITION",
             },
           ],
           error: null,

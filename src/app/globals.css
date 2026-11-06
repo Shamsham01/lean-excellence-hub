@@ -31,6 +31,7 @@
   --sidebar-foreground: oklch(0.28 0.018 260);
   --sidebar-border: #e2e8f0;
   --sidebar-accent: oklch(0.94 0.01 250);
+  --copilot-surface: #eef2ff;
   --chart-1: oklch(0.55 0.12 250);
   --chart-2: oklch(0.6 0.14 180);
   --chart-3: oklch(0.65 0.12 145);
@@ -74,6 +75,7 @@
   --sidebar-foreground: oklch(0.88 0.01 95);
   --sidebar-border: oklch(0.28 0.018 255);
   --sidebar-accent: oklch(0.22 0.02 255);
+  --copilot-surface: #151d33;
   --chart-1: oklch(0.68 0.12 245);
   --chart-2: oklch(0.7 0.12 180);
   --chart-3: oklch(0.72 0.1 145);
@@ -86,6 +88,45 @@
   --maturity-5: oklch(0.62 0.12 250);
   --ring: #465fff;
   color-scheme: dark;
+}
+
+.font-mono-data {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.leh-shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 4px 12px rgb(15 23 42 / 0.06);
+}
+
+.dark .leh-shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.24),
+    0 8px 24px rgb(0 0 0 / 0.32);
+}
+
+/* TailAdmin-adapted shadows & menu utilities (MIT — see third-party/TAILADMIN-MIT.txt) */
+:root {
+  --shadow-theme-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-theme-sm:
+    0 1px 3px 0 rgb(16 24 40 / 0.1), 0 1px 2px 0 rgb(16 24 40 / 0.06);
+  --shadow-theme-md:
+    0 4px 8px -2px rgb(16 24 40 / 0.1), 0 2px 4px -2px rgb(16 24 40 / 0.06);
+}
+
+@utility leh-menu-item {
+  @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150;
+}
+
+@utility leh-menu-item-active {
+  @apply bg-primary/10 text-primary dark:bg-primary/12 dark:text-primary;
+}
+
+@utility leh-menu-item-inactive {
+  @apply text-muted-foreground hover:bg-accent hover:text-accent-foreground;
 }
 
 /* Dark mode is class-driven via next-themes (.dark). Avoid prefers-color-scheme on :root
@@ -118,6 +159,7 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-copilot-surface: var(--copilot-surface);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -305,6 +347,27 @@ body {
 
 .platform-scroll::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) {
+  overflow-x: clip;
+  overflow-y: hidden;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner {
+  display: flex;
+  max-width: none;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  padding: 0;
+}
+
+@media (min-width: 1024px) {
+  .platform-scroll:has(.pps-flagship-workspace) {
+    overflow-x: clip;
+    overflow-y: hidden;
+  }
 }
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */

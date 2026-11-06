@@ -12,6 +12,7 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 export type PlatformShellMember = {
   displayName: string;
   roleLabel: string | null;
+  avatarUrl: string | null;
 };
 
 type MembershipProfile = {
@@ -22,6 +23,7 @@ type MembershipProfile = {
 const FALLBACK_MEMBER: PlatformShellMember = {
   displayName: "Member",
   roleLabel: null,
+  avatarUrl: null,
 };
 
 export async function loadPlatformShellMember(
@@ -36,10 +38,15 @@ export async function loadPlatformShellMember(
       userId
         ? supabase
             .from("profiles")
-            .select("display_name")
+            .select("display_name, avatar_url")
             .eq("user_id", userId)
             .maybeSingle()
-        : Promise.resolve({ data: null as { display_name?: string } | null }),
+        : Promise.resolve({
+            data: null as {
+              display_name?: string | null;
+              avatar_url?: string | null;
+            } | null,
+          }),
       supabase.rpc("get_own_membership_profile"),
     ]);
 
@@ -54,6 +61,7 @@ export async function loadPlatformShellMember(
       return {
         displayName: resolveDisplayName(profileResult.data?.display_name, null),
         roleLabel: null,
+        avatarUrl: profileResult.data?.avatar_url ?? null,
       };
     }
 
@@ -75,6 +83,7 @@ export async function loadPlatformShellMember(
         ownProfile?.organisation_display_name,
       ),
       roleLabel,
+      avatarUrl: profileResult.data?.avatar_url ?? null,
     };
   } catch (error) {
     unstable_rethrow(error);

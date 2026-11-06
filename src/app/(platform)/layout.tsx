@@ -17,7 +17,6 @@ export default async function PlatformLayout({
       organisationId={current.organisation_id}
       organisations={organisations}
       siteContext={siteContext}
-      membershipId={current.membership_id}
       member={member}
     >
       {children}

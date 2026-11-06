@@ -2,7 +2,15 @@ import { inflateSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 import type { ReactNode } from "react";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({
@@ -39,6 +47,23 @@ function pngHeader(path: string) {
     bitDepth: file[24],
     colorType: file[25],
   };
+}
+
+function svgRoot(path: string) {
+  const file = readFileSync(path, "utf8");
+  expect(file.trimStart().startsWith("<svg")).toBe(true);
+  expect(file).toContain('xmlns="http://www.w3.org/2000/svg"');
+  return file;
+}
+
+function brandMediaSources(container: ParentNode) {
+  const svgSources = [...container.querySelectorAll("picture source")].map(
+    (node) => node.getAttribute("srcSet"),
+  );
+  const rasterSources = [...container.querySelectorAll("picture img")].map(
+    (node) => node.getAttribute("src"),
+  );
+  return { svgSources, rasterSources };
 }
 
 function cornerAlpha(file: Buffer) {
@@ -119,7 +144,23 @@ function cornerAlpha(file: Buffer) {
 }
 
 describe("LehBrand", () => {
+  let brandStyles: HTMLStyleElement;
+
+  beforeAll(() => {
+    brandStyles = document.createElement("style");
+    brandStyles.textContent = readFileSync(
+      "src/components/brand/leh-brand.css",
+      "utf8",
+    );
+    document.head.appendChild(brandStyles);
+  });
+
+  afterAll(() => {
+    brandStyles?.remove();
+  });
+
   afterEach(() => {
+    document.documentElement.classList.remove("dark");
     cleanup();
   });
 
@@ -128,49 +169,95 @@ describe("LehBrand", () => {
 
     const brand = screen.getByTestId("leh-brand");
     expect(brand).toHaveAttribute("data-variant", "full");
-    const lockups = within(brand).getAllByRole("img", {
-      name: LEH_BRAND_LOCKUP_LABEL,
-    });
-    const sources = lockups.map((image) => image.getAttribute("src"));
+    const lockupImgs = brand.querySelectorAll(".leh-brand-lockup img");
+    expect(lockupImgs).toHaveLength(2);
+    expect(brand.querySelector(".leh-brand-lockup-light")).toBeVisible();
+    expect(brand.querySelector(".leh-brand-lockup-dark")).not.toBeVisible();
+    const { svgSources, rasterSources } = brandMediaSources(brand);
     expect(
-      sources.some((src) => src?.includes("leh-horizontal-light.png")),
+      svgSources.some((src) => src?.includes("leh-horizontal-light.svg")),
     ).toBe(true);
     expect(
-      sources.some((src) => src?.includes("leh-horizontal-dark.png")),
+      svgSources.some((src) => src?.includes("leh-horizontal-dark.svg")),
     ).toBe(true);
-    expect(sources.some((src) => src?.includes("leh-horizontal.png"))).toBe(
-      false,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal.png")),
+    ).toBe(false);
     expect(within(brand).queryByText(LEH_BRAND.name)).not.toBeInTheDocument();
-    const slot = brand.querySelector(".leh-brand-lockup");
-    expect(slot?.getAttribute("style")).toContain("--leh-crop-w: 1779");
-    expect(slot?.getAttribute("style")).toContain("--leh-src-w: 2172");
+    expect(brand.querySelector(".leh-brand-lockup")).toBeTruthy();
   });
 
   it("pairs theme icons with the product name for the compact mark", () => {
     render(<LehBrand variant="compact" />);
 
     const brand = screen.getByTestId("leh-brand");
-    const sources = [...brand.querySelectorAll("img")].map((image) =>
-      image.getAttribute("src"),
-    );
-    expect(sources.some((src) => src?.includes("leh-icon-light.png"))).toBe(
+    const { svgSources, rasterSources } = brandMediaSources(brand);
+    expect(svgSources.some((src) => src?.includes("leh-icon-light.svg"))).toBe(
       true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
+    expect(svgSources.some((src) => src?.includes("leh-icon-dark.svg"))).toBe(
       true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-minimal.png"))).toBe(
-      false,
-    );
-    expect(sources.some((src) => src?.includes("leh-icon-blue.png"))).toBe(
-      false,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-light.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-dark.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-minimal.png")),
+    ).toBe(false);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-blue.png")),
+    ).toBe(false);
     expect(
       within(brand).queryByRole("img", { name: LEH_BRAND.name }),
     ).not.toBeInTheDocument();
     expect(within(brand).getByText(LEH_BRAND.name)).toBeVisible();
     expect(within(brand).getByText(LEH_BRAND.strapline)).toBeVisible();
+  });
+
+  it("shows only the light icon mark in light theme", () => {
+    document.documentElement.classList.remove("dark");
+    render(<LehBrand variant="icon" />);
+
+    const brand = screen.getByRole("img", { name: LEH_BRAND.name });
+    const lightWrap = brand.querySelector(".leh-brand-mark-light");
+    const darkWrap = brand.querySelector(".leh-brand-mark-dark");
+    expect(lightWrap).toBeTruthy();
+    expect(darkWrap).toBeTruthy();
+    expect(lightWrap).toBeVisible();
+    expect(darkWrap).not.toBeVisible();
+    expect(lightWrap?.querySelector("img")?.getAttribute("src")).toContain(
+      "leh-icon-light.png",
+    );
+    expect(darkWrap?.querySelector("img")?.getAttribute("src")).toContain(
+      "leh-icon-dark.png",
+    );
+    expect(darkWrap?.querySelector("img")?.getAttribute("src")).not.toContain(
+      "leh-icon-blue",
+    );
+  });
+
+  it("shows only the dark icon mark when html has class dark", () => {
+    document.documentElement.classList.add("dark");
+    render(<LehBrand variant="icon" />);
+
+    const brand = screen.getByRole("img", { name: LEH_BRAND.name });
+    const lightWrap = brand.querySelector(".leh-brand-mark-light");
+    const darkWrap = brand.querySelector(".leh-brand-mark-dark");
+    expect(lightWrap).not.toBeVisible();
+    expect(darkWrap).toBeVisible();
+    expect(darkWrap?.querySelector("img")?.getAttribute("src")).toContain(
+      "leh-icon-dark.png",
+    );
+    document.documentElement.classList.remove("dark");
   });
 
   it("names an icon-only mark without repeating the wordmark", () => {
@@ -179,15 +266,19 @@ describe("LehBrand", () => {
     const brand = screen.getByRole("img", { name: LEH_BRAND.name });
     expect(brand).toHaveAttribute("data-variant", "icon");
     expect(within(brand).queryByText(LEH_BRAND.name)).not.toBeInTheDocument();
-    const sources = [...brand.querySelectorAll("img")].map((image) =>
-      image.getAttribute("src"),
-    );
-    expect(sources.some((src) => src?.includes("leh-icon-light.png"))).toBe(
+    const { svgSources, rasterSources } = brandMediaSources(brand);
+    expect(svgSources.some((src) => src?.includes("leh-icon-light.svg"))).toBe(
       true,
     );
-    expect(sources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
+    expect(svgSources.some((src) => src?.includes("leh-icon-dark.svg"))).toBe(
       true,
     );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-light.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-dark.png")),
+    ).toBe(true);
   });
 
   it("keeps a responsive full mark ready to collapse without a second name", () => {
@@ -195,18 +286,22 @@ describe("LehBrand", () => {
 
     const brand = screen.getByTestId("leh-brand");
     expect(brand).toHaveAttribute("data-responsive", "true");
-    const sources = [...brand.querySelectorAll("img")].map((image) =>
-      image.getAttribute("src"),
-    );
+    const { svgSources, rasterSources } = brandMediaSources(brand);
     expect(
-      sources.filter((src) => src?.includes("leh-horizontal-light.png")),
+      svgSources.filter((src) => src?.includes("leh-horizontal-light.svg")),
     ).toHaveLength(1);
     expect(
-      sources.filter((src) => src?.includes("leh-icon-light.png")),
+      svgSources.filter((src) => src?.includes("leh-icon-light.svg")),
     ).toHaveLength(1);
     expect(
-      within(brand).getAllByRole("img", { name: LEH_BRAND_LOCKUP_LABEL }),
-    ).toHaveLength(2);
+      rasterSources.filter((src) => src?.includes("leh-horizontal-light.png")),
+    ).toHaveLength(1);
+    expect(
+      rasterSources.filter((src) => src?.includes("leh-icon-light.png")),
+    ).toHaveLength(1);
+    expect(brand.querySelectorAll(".leh-brand-lockup img")).toHaveLength(2);
+    expect(brand.querySelector(".leh-brand-lockup-light")).toBeVisible();
+    expect(brand.querySelector(".leh-brand-lockup-dark")).not.toBeVisible();
   });
 
   it("hides a decorative mark from the accessibility tree", () => {
@@ -250,23 +345,93 @@ describe("LehBrand", () => {
 });
 
 describe("site identity metadata", () => {
-  it("points at the web manifest and exposes theme-aware tab icons", () => {
+  it("points at the web manifest and registers theme-aware tab icons", () => {
     expect(rootMetadata.manifest).toBe("/site.webmanifest");
     expect(rootMetadata.applicationName).toBe(LEH_BRAND.name);
-    expect(rootMetadata.icons).toMatchObject({
-      apple: "/apple-icon.png",
-      icon: [
-        { url: "/brand/leh-icon-light.png", type: "image/png" },
-        {
-          url: "/brand/leh-icon-dark.png",
-          type: "image/png",
-          media: "(prefers-color-scheme: dark)",
-        },
-      ],
-    });
+    expect(rootMetadata.icons?.apple).toEqual([
+      {
+        url: "/apple-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ]);
+    const icons = rootMetadata.icons?.icon;
+    expect(Array.isArray(icons)).toBe(true);
+    expect(
+      icons?.some(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "url" in entry &&
+          String(entry.url).includes("icon.png"),
+      ),
+    ).toBe(true);
+    expect(
+      icons?.some(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "url" in entry &&
+          String(entry.url).includes("leh-icon-dark-128"),
+      ),
+    ).toBe(true);
+    expect(
+      icons?.some(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "media" in entry &&
+          String(entry.media).includes("prefers-color-scheme: dark"),
+      ),
+    ).toBe(true);
   });
 
-  it("ships a light-surface favicon and transparent theme masters", () => {
+  it("can render sidebar lockups from PNG only so crop CSS applies", () => {
+    render(
+      <LehBrand
+        decorative
+        lockupRasterOnly
+        variant="full"
+        className="leh-brand--platform-sidebar"
+      />,
+    );
+    const brand = screen.getByTestId("leh-brand");
+    expect(brand.querySelector("picture source")).toBeNull();
+    const rasterSources = [...brand.querySelectorAll("img")].map((node) =>
+      node.getAttribute("src"),
+    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
+    ).toBe(true);
+    expect(rasterSources.some((src) => src?.includes(".svg"))).toBe(false);
+  });
+
+  it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {
+    expect(LEH_BRAND.horizontalLight.src).toBe(
+      "/brand/leh-horizontal-light.svg",
+    );
+    expect(LEH_BRAND.horizontalLight.rasterFallbackSrc).toBe(
+      "/brand/leh-horizontal-light.png",
+    );
+    expect(LEH_BRAND.iconDark.src).toBe("/brand/leh-icon-dark.svg");
+    expect(LEH_BRAND.iconDark.rasterFallbackSrc).toBe(
+      "/brand/leh-icon-dark.png",
+    );
+
+    for (const path of [
+      "public/brand/leh-horizontal-light.svg",
+      "public/brand/leh-horizontal-dark.svg",
+      "public/brand/leh-icon-light.svg",
+      "public/brand/leh-icon-dark.svg",
+    ]) {
+      svgRoot(path);
+    }
+  });
+
+  it("ships the light-theme app icon for tabs and transparent theme masters", () => {
     const favicon = readFileSync("src/app/favicon.ico");
     expect(favicon.readUInt16LE(0)).toBe(0);
     expect(favicon.readUInt16LE(2)).toBe(1);
@@ -279,7 +444,7 @@ describe("site identity metadata", () => {
 
     expect(
       readFileSync("src/app/icon.png").equals(
-        readFileSync("public/brand/leh-icon-light.png"),
+        readFileSync("public/brand/leh-icon-light-512.png"),
       ),
     ).toBe(true);
 
@@ -287,7 +452,7 @@ describe("site identity metadata", () => {
       ["public/brand/leh-horizontal-light.png", 2172, 724],
       ["public/brand/leh-horizontal-dark.png", 2172, 724],
       ["public/brand/leh-icon-light.png", 2000, 2000],
-      ["public/brand/leh-icon-dark.png", 2000, 2000],
+      ["public/brand/leh-icon-dark.png", 1254, 1254],
       ["public/brand/leh-icon-dark-128.png", 128, 128],
     ] as const;
 
@@ -317,9 +482,15 @@ describe("site identity metadata", () => {
   it("switches lockup and icon files from the theme class without resizing the slot", () => {
     const css = readFileSync("src/components/brand/leh-brand.css", "utf8");
     expect(css).toContain(".leh-brand-lockup-light");
-    expect(css).toContain(".dark .leh-brand-lockup-dark");
-    expect(css).toContain(".dark .leh-brand-mark-dark");
-    expect(css).toContain("aspect-ratio: 1500 / 337");
+    expect(css).toContain(".leh-brand-fallback picture.leh-brand-mark-dark");
+    expect(css).toContain(
+      ".dark .leh-brand-lockup picture.leh-brand-lockup-dark",
+    );
+    expect(css).toContain(
+      ".dark .leh-brand-fallback picture.leh-brand-mark-dark",
+    );
+    expect(css).toContain("object-fit: contain");
+    expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");
   });

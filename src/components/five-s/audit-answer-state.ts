@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { saveFiveSAuditAnswer } from "@/app/(platform)/platform/5s/actions";
 import {
@@ -242,8 +242,14 @@ export function useAuditAnswerState({
 
   const answersFingerprint = answersFingerprintFrom(answers);
 
-  useEffect(() => {
+  // Keep confirmedRef in lockstep with committed answers so async paths (e.g.
+  // flushQuestion right after a save resolves) never read a stale fingerprint
+  // and spuriously re-enqueue the same payload.
+  useLayoutEffect(() => {
     confirmedRef.current = confirmedAnswers;
+  }, [confirmedAnswers]);
+
+  useEffect(() => {
     statusRef.current = statuses;
     localAnswersRef.current = localAnswers;
     errorsRef.current = errors;
@@ -258,7 +264,6 @@ export function useAuditAnswerState({
     answers,
     auditId,
     canEdit,
-    confirmedAnswers,
     errors,
     localAnswers,
     invalidScores,
@@ -459,6 +464,9 @@ export function useAuditAnswerState({
   function queueLatestIfStale(questionId: string, saved: AuditAnswer) {
     const runtime = ensureRuntime(questionId);
     const latest = runtime.latest;
+    // When local and confirmed already match the saved payload, do not enqueue
+    // again — avoids stale confirmedRef reads causing duplicate saves during
+    // the same microtask as a successful response (flushQuestion / navigation).
     if (!latest || answersEqual(latest.answer, saved)) return;
     if (
       runtime.pending &&

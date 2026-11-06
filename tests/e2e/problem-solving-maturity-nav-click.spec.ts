@@ -8,6 +8,7 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   disableProblemSolvingStageAutoDraft,
+  goToProblemSolvingPortfolio,
   openProblemSolvingStage,
 } from "./helpers/guided-problem-solving-workspace";
 import {
@@ -107,13 +108,8 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
 
     await page.goto(caseHref ?? "/platform/problem-solving");
     await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible();
-    const back = page.getByTestId("problem-solving-back-link");
-    await expect(back).toHaveAttribute("href", "/platform/problem-solving");
-    await back.click();
+    await goToProblemSolvingPortfolio(page);
     await expect(page).toHaveURL(/\/platform\/problem-solving(?:\?|$)/);
-    await expect(
-      page.getByTestId("problem-solving-portfolio-page"),
-    ).toBeVisible();
   });
 
   test("keyboard Enter on New case navigates", async ({ page }) => {

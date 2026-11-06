@@ -7,6 +7,7 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   disableProblemSolvingStageAutoDraft,
+  expectProblemSolvingPortfolioNavigation,
   openProblemSolvingStage,
 } from "./helpers/guided-problem-solving-workspace";
 
@@ -16,6 +17,9 @@ const RELOAD_COUNT = 10;
 async function assertFunctionalWorkspace(page: Page) {
   const workspace = page.getByTestId("problem-solving-workspace");
   await expect(workspace).toBeVisible();
+  const mainViewport = page.locator(".platform-main-viewport").first();
+  await expect(mainViewport).toBeVisible();
+  await expect(mainViewport).toHaveJSProperty("scrollTop", 0);
   await expect(page.getByTestId("problem-solving-header")).toBeVisible();
   const ownerName = page.getByTestId("problem-solving-owner-name");
   await expect(ownerName).toBeVisible();
@@ -32,7 +36,7 @@ async function assertFunctionalWorkspace(page: Page) {
   ).toBeVisible();
   await expect(page.getByTestId("pps-stage-rail")).toBeVisible();
   await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
-  await expect(page.getByTestId("problem-solving-back-link")).toBeVisible();
+  await expectProblemSolvingPortfolioNavigation(page);
   await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: /couldn’t load/i }),

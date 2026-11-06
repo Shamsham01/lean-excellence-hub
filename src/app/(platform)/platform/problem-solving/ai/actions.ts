@@ -30,6 +30,7 @@ type PendingProposalRow = {
   payload_json: Record<string, unknown>;
   human_explanation: string;
   status: string;
+  semantic_stage_key?: string | null;
 };
 
 export async function createProblemSolvingAiSession(input: {
@@ -64,6 +65,8 @@ export async function sendProblemSolvingAiMessage(input: {
   sessionId: string;
   mode: AiSessionMode;
   stageKey?: string | null;
+  viewStageKey?: string | null;
+  currentStageKey?: string | null;
   message: string;
   idempotencyKey: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
@@ -90,6 +93,8 @@ export async function sendProblemSolvingAiMessage(input: {
       caseId: input.caseId,
       mode: input.mode,
       stageKey: input.stageKey ?? null,
+      viewStageKey: input.viewStageKey ?? input.stageKey ?? null,
+      currentStageKey: input.currentStageKey ?? null,
       userMessage: input.message,
       idempotencyKey: input.idempotencyKey,
       conversationHistory: input.conversationHistory,
@@ -159,6 +164,8 @@ export async function sendProblemSolvingAiMessage(input: {
 export async function draftProblemSolvingStage(input: {
   caseId: string;
   stageKey: string;
+  viewStageKey?: string;
+  currentStageKey?: string | null;
   message: string;
   idempotencyKey: string;
 }): Promise<
@@ -200,6 +207,8 @@ export async function draftProblemSolvingStage(input: {
       caseId: input.caseId,
       mode: "facilitate",
       stageKey: input.stageKey,
+      viewStageKey: input.viewStageKey ?? input.stageKey,
+      currentStageKey: input.currentStageKey ?? null,
       userMessage: input.message,
       idempotencyKey: trimmedKey,
       conversationHistory: [],

@@ -7,7 +7,7 @@ import {
   acceptProblemSolvingAiProposal,
   rejectProblemSolvingAiProposal,
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
-import { Button } from "@/components/ui/button";
+import { AiProposalCard } from "@/components/problem-solving/ai-proposal-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CasePendingAiProposal } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 
@@ -79,36 +79,12 @@ export function PendingAiProposalsList({
         ) : null}
         <div className="flex flex-col gap-3" data-testid="lean-ai-proposals">
           {visible.map((proposal) => (
-            <Card key={proposal.id} data-testid="ai-proposal-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">
-                  {proposal.proposal_type}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2 text-sm">
-                <p>{proposal.human_explanation}</p>
-                <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
-                  {JSON.stringify(proposal.payload_json, null, 2)}
-                </pre>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    data-testid="ai-proposal-accept"
-                    onClick={() => handleAccept(proposal)}
-                  >
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    data-testid="ai-proposal-reject"
-                    onClick={() => handleReject(proposal.id)}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <AiProposalCard
+              key={proposal.id}
+              proposal={proposal}
+              onAccept={() => handleAccept(proposal)}
+              onReject={handleReject}
+            />
           ))}
         </div>
       </CardContent>

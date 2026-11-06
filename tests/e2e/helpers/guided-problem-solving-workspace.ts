@@ -32,6 +32,31 @@ export async function expectGuidedProblemSolvingWorkspace(page: Page) {
   await expect(leanAiPanel(page)).toBeVisible();
 }
 
+/** Mobile footer link is lg:hidden; desktop uses sidebar nav back to the portfolio. */
+export async function expectProblemSolvingPortfolioNavigation(page: Page) {
+  const viewport = page.viewportSize();
+  const back = page.getByTestId("problem-solving-back-link");
+  if (viewport && viewport.width < 1024) {
+    await expect(back).toBeVisible();
+    await expect(back).toHaveAttribute("href", "/platform/problem-solving");
+    return;
+  }
+  await expect(page.getByTestId("platform-nav-problem-solving")).toBeVisible();
+}
+
+export async function goToProblemSolvingPortfolio(page: Page) {
+  const back = page.getByTestId("problem-solving-back-link");
+  if (await back.isVisible()) {
+    await expect(back).toHaveAttribute("href", "/platform/problem-solving");
+    await back.click();
+  } else {
+    await page.getByTestId("platform-nav-problem-solving").click();
+  }
+  await expect(
+    page.getByTestId("problem-solving-portfolio-page"),
+  ).toBeVisible();
+}
+
 const STAGE_BUTTON_LABEL: Record<string, RegExp> = {
   CURRENT_CONDITION: /current condition|gather facts/i,
   ROOT_CAUSE_ANALYSIS: /root cause|cause analysis|analyse/i,
@@ -76,13 +101,4 @@ export async function activateA3StructuredMethod(page: Page) {
     .getByTestId("activate-method-select")
     .selectOption({ label: A3_STRUCTURED_METHOD_LABEL });
   await page.getByTestId("problem-solving-activate-button").click();
-}
-
-export async function openWorkshopMode(page: Page) {
-  const toggle = page.getByTestId("pps-workshop-toggle");
-  await toggle.scrollIntoViewIfNeeded();
-  await toggle.click();
-  await expect(page.getByTestId("pps-workshop-mode")).toBeVisible({
-    timeout: 15_000,
-  });
 }

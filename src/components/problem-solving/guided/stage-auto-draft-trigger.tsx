@@ -16,6 +16,9 @@ import {
 type StageAutoDraftTriggerProps = {
   caseId: string;
   stageKey: string;
+  stageTitle?: string;
+  viewStageKey?: string;
+  currentStageKey?: string | null;
   autoDraftPrompt: string;
   canUseAi: boolean;
   providerAvailable: boolean;
@@ -30,6 +33,9 @@ function storageKey(caseId: string, stageKey: string) {
 export function StageAutoDraftTrigger({
   caseId,
   stageKey,
+  stageTitle,
+  viewStageKey,
+  currentStageKey,
   autoDraftPrompt,
   canUseAi,
   providerAvailable,
@@ -42,6 +48,8 @@ export function StageAutoDraftTrigger({
   const [isError, setIsError] = useState(false);
   const autoRan = useRef(false);
   const pendingTurnRef = useRef<{ idempotencyKey: string } | null>(null);
+
+  const stageLabel = stageTitle ?? stageKey;
 
   const runDraft = useCallback(
     async (fromAuto = false) => {
@@ -61,6 +69,8 @@ export function StageAutoDraftTrigger({
             draftProblemSolvingStage({
               caseId,
               stageKey,
+              viewStageKey: viewStageKey ?? stageKey,
+              currentStageKey: currentStageKey ?? null,
               message: autoDraftPrompt,
               idempotencyKey,
             }),
@@ -87,15 +97,28 @@ export function StageAutoDraftTrigger({
 
         pendingTurnRef.current = null;
 
+        const pendingProposalCount =
+          "pendingProposalCount" in result.data &&
+          typeof result.data.pendingProposalCount === "number"
+            ? result.data.pendingProposalCount
+            : 0;
+
+        if (pendingProposalCount <= 0) {
+          setIsError(true);
+          setMessage(
+            `Lean AI finished but did not create any proposals for ${stageLabel}. Try again or ask in the Lean AI panel.`,
+          );
+          router.refresh();
+          return;
+        }
+
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
         }
         setMessage(
           fromAuto
-            ? "Lean AI drafted suggestions for this stage — review proposals in the facilitator panel."
-            : result.data.pendingProposalCount > 0
-              ? `Draft ready — ${result.data.pendingProposalCount} proposal(s) in Pending Lean AI proposals below.`
-              : "Draft finished — check Pending Lean AI proposals or the facilitator panel.",
+            ? `${pendingProposalCount} proposal(s) ready for ${stageLabel} — review Pending Lean AI proposals below.`
+            : `${pendingProposalCount} proposal(s) for ${stageLabel} — see Pending Lean AI proposals below.`,
         );
         onDraftComplete?.();
         router.refresh();
@@ -107,10 +130,13 @@ export function StageAutoDraftTrigger({
       autoDraftPrompt,
       canUseAi,
       caseId,
+      currentStageKey,
       onDraftComplete,
       providerAvailable,
       router,
       stageKey,
+      stageLabel,
+      viewStageKey,
     ],
   );
 
@@ -138,14 +164,10 @@ export function StageAutoDraftTrigger({
 
   return (
     <div
-      className="flex flex-col gap-2 rounded-lg border border-dashed border-border bg-muted/20 p-3 shadow-xs"
+      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border/70 bg-muted/15 px-3 py-2.5"
       data-testid="pps-stage-auto-draft"
     >
-      <p className="text-sm font-medium">Lean AI stage draft</p>
-      <p className="text-xs text-muted-foreground">
-        One automatic draft per stage visit (bounded). Accept proposals before
-        they become case records.
-      </p>
+      <p className="text-sm font-medium">Lean AI draft · {stageLabel}</p>
       <Button
         type="button"
         size="sm"
@@ -153,20 +175,25 @@ export function StageAutoDraftTrigger({
         disabled={loading || !hasProblemData}
         onClick={() => runDraft(false)}
         data-testid="pps-stage-auto-draft-button"
+        title={
+          hasProblemData
+            ? "Generate one bounded draft for this stage visit"
+            : "Add a problem statement or current-condition facts first"
+        }
       >
         {loading ? "Drafting…" : "Draft this stage"}
       </Button>
       {!hasProblemData ? (
-        <p className="text-xs text-muted-foreground">
-          Add a problem statement or current-condition facts first.
+        <p className="w-full text-xs text-muted-foreground">
+          Add problem or current-condition facts first.
         </p>
       ) : null}
       {message ? (
         <p
           className={
             isError
-              ? "text-xs text-destructive"
-              : "text-xs text-muted-foreground"
+              ? "w-full text-xs text-destructive"
+              : "w-full text-xs text-muted-foreground"
           }
           role={isError ? "alert" : "status"}
         >

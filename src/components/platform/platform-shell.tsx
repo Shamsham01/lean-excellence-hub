@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
 import { PlatformDesktopMainChrome } from "@/components/platform/platform-desktop-main-chrome";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
+import { PlatformTopbar } from "@/components/platform/platform-topbar";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
@@ -15,7 +16,6 @@ type PlatformShellProps = {
   organisationId: string;
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
-  membershipId: string;
   member: PlatformShellMember;
 };
 
@@ -25,7 +25,6 @@ export async function PlatformShell({
   organisationId,
   organisations,
   siteContext,
-  membershipId,
   member,
 }: PlatformShellProps) {
   const navWithSetup = await buildVisibleNavigation();
@@ -44,20 +43,24 @@ export async function PlatformShell({
         organisationName={organisationName}
         organisations={organisations}
         siteContext={siteContext}
-        membershipId={membershipId}
         member={member}
         showSettings={showSettings}
       />
       <LeanAiAssistantShell organisationId={organisationId}>
-        <main
-          data-testid="platform-main"
-          className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
-        >
-          <PlatformDesktopMainChrome />
-          <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background lg:overflow-hidden">
+          <PlatformTopbar member={member} organisationName={organisationName} />
+          <main
+            data-testid="platform-main"
+            className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden"
+          >
+            <PlatformDesktopMainChrome />
+            <div className="platform-main-viewport flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain">
+              <div className="platform-main-inner mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8">
+                {children}
+              </div>
+            </div>
+          </main>
+        </div>
       </LeanAiAssistantShell>
     </div>
   );
