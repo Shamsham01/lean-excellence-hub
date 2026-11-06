@@ -15,6 +15,8 @@ describe("shared platform shell mobile layout", () => {
     expect(mobile).toContain("sticky top-0 z-40");
     expect(mobile).toContain('data-testid="platform-mobile-chrome"');
     expect(mobile).toContain("min-w-0 flex-1 truncate");
+    expect(mobile).toContain('aria-label="Platform"');
+    expect(mobile).toContain('role="navigation"');
   });
 
   it("keeps the platform shell root and main workspace within the viewport width", () => {

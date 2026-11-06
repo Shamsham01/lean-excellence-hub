@@ -69,7 +69,11 @@ export function MobilePlatformNavigation({
             siteContext={siteContext}
             closeGutter
           />
-          <div className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+          <div
+            className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
+            role="navigation"
+            aria-label="Platform"
+          >
             <PlatformNavigation items={items} onNavigate={closeDrawer} />
             <PlatformSidebarFooter
               member={member}

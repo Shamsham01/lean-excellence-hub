@@ -21,7 +21,8 @@ describe("platform sidebar layout", () => {
       "src/components/platform/platform-sidebar-footer.tsx",
     );
 
-    expect(navigation).toContain('aria-label="Platform"');
+    expect(sidebar).toContain('aria-label="Platform"');
+    expect(sidebar).toContain('role="navigation"');
     expect(navigation).not.toContain("overflow-y-auto");
     expect(sidebar).toContain("sidebar-scroll");
     expect(sidebar).toContain("overflow-y-auto");

@@ -41,9 +41,7 @@ export async function expectProblemSolvingPortfolioNavigation(page: Page) {
     await expect(back).toHaveAttribute("href", "/platform/problem-solving");
     return;
   }
-  await expect(
-    page.getByRole("link", { name: "Problem solving", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByTestId("platform-nav-problem-solving")).toBeVisible();
 }
 
 export async function goToProblemSolvingPortfolio(page: Page) {
@@ -52,9 +50,7 @@ export async function goToProblemSolvingPortfolio(page: Page) {
     await expect(back).toHaveAttribute("href", "/platform/problem-solving");
     await back.click();
   } else {
-    await page
-      .getByRole("link", { name: "Problem solving", exact: true })
-      .click();
+    await page.getByTestId("platform-nav-problem-solving").click();
   }
   await expect(
     page.getByTestId("problem-solving-portfolio-page"),
