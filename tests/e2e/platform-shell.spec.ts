@@ -169,7 +169,7 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInAsDemoUser(page, "admin");
 
-    const sidebar = page.locator("aside").first();
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
     const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
 
