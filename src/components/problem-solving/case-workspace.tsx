@@ -380,7 +380,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
                 stageKey={stageKey ?? "DEFINE"}
                 stageTitle={stageConfig.title}
                 viewStageKey={stageKey ?? "DEFINE"}
-                currentStageKey={detail.current_stage?.semantic_stage_key ?? null}
+                currentStageKey={
+                  detail.current_stage?.semantic_stage_key ?? null
+                }
                 autoDraftPrompt={stageConfig.autoDraftPrompt}
                 canUseAi={canUseAi}
                 providerAvailable={providerAvailable}

@@ -17,10 +17,7 @@ export function PlatformNavigation({
   const groups = groupPlatformNavigation(items);
 
   return (
-    <nav
-      className="flex flex-col gap-2 px-2 py-2"
-      aria-label="Platform"
-    >
+    <nav className="flex flex-col gap-2 px-2 py-2" aria-label="Platform">
       {groups.map((group) => (
         <PlatformNavGroup
           key={group.section}

@@ -120,7 +120,10 @@ export function AiFacilitatorPanel({
         return [{ role: "assistant", content: greeting }];
       }
       const [first, ...rest] = previous;
-      if (first?.role === "assistant" && rest.every((row) => row.role !== "user")) {
+      if (
+        first?.role === "assistant" &&
+        rest.every((row) => row.role !== "user")
+      ) {
         return [{ role: "assistant", content: greeting }];
       }
       return previous;

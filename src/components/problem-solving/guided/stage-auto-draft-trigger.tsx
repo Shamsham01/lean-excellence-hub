@@ -167,9 +167,7 @@ export function StageAutoDraftTrigger({
       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-border/70 bg-muted/15 px-3 py-2.5"
       data-testid="pps-stage-auto-draft"
     >
-      <p className="text-sm font-medium">
-        Lean AI draft · {stageLabel}
-      </p>
+      <p className="text-sm font-medium">Lean AI draft · {stageLabel}</p>
       <Button
         type="button"
         size="sm"

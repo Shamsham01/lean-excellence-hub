@@ -2,7 +2,15 @@ import { inflateSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 import type { ReactNode } from "react";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({
@@ -199,15 +207,15 @@ describe("LehBrand", () => {
     expect(
       rasterSources.some((src) => src?.includes("leh-icon-light.png")),
     ).toBe(true);
-    expect(rasterSources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
-      true,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-dark.png")),
+    ).toBe(true);
     expect(
       rasterSources.some((src) => src?.includes("leh-icon-minimal.png")),
     ).toBe(false);
-    expect(rasterSources.some((src) => src?.includes("leh-icon-blue.png"))).toBe(
-      false,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-blue.png")),
+    ).toBe(false);
     expect(
       within(brand).queryByRole("img", { name: LEH_BRAND.name }),
     ).not.toBeInTheDocument();
@@ -226,15 +234,15 @@ describe("LehBrand", () => {
     expect(darkWrap).toBeTruthy();
     expect(lightWrap).toBeVisible();
     expect(darkWrap).not.toBeVisible();
-    expect(
-      lightWrap?.querySelector("img")?.getAttribute("src"),
-    ).toContain("leh-icon-light.png");
-    expect(
-      darkWrap?.querySelector("img")?.getAttribute("src"),
-    ).toContain("leh-icon-dark.png");
-    expect(
-      darkWrap?.querySelector("img")?.getAttribute("src"),
-    ).not.toContain("leh-icon-blue");
+    expect(lightWrap?.querySelector("img")?.getAttribute("src")).toContain(
+      "leh-icon-light.png",
+    );
+    expect(darkWrap?.querySelector("img")?.getAttribute("src")).toContain(
+      "leh-icon-dark.png",
+    );
+    expect(darkWrap?.querySelector("img")?.getAttribute("src")).not.toContain(
+      "leh-icon-blue",
+    );
   });
 
   it("shows only the dark icon mark when html has class dark", () => {
@@ -246,9 +254,9 @@ describe("LehBrand", () => {
     const darkWrap = brand.querySelector(".leh-brand-mark-dark");
     expect(lightWrap).not.toBeVisible();
     expect(darkWrap).toBeVisible();
-    expect(
-      darkWrap?.querySelector("img")?.getAttribute("src"),
-    ).toContain("leh-icon-dark.png");
+    expect(darkWrap?.querySelector("img")?.getAttribute("src")).toContain(
+      "leh-icon-dark.png",
+    );
     document.documentElement.classList.remove("dark");
   });
 
@@ -268,9 +276,9 @@ describe("LehBrand", () => {
     expect(
       rasterSources.some((src) => src?.includes("leh-icon-light.png")),
     ).toBe(true);
-    expect(rasterSources.some((src) => src?.includes("leh-icon-dark.png"))).toBe(
-      true,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-icon-dark.png")),
+    ).toBe(true);
   });
 
   it("keeps a responsive full mark ready to collapse without a second name", () => {
@@ -364,24 +372,31 @@ describe("site identity metadata", () => {
 
   it("can render sidebar lockups from PNG only so crop CSS applies", () => {
     render(
-      <LehBrand decorative lockupRasterOnly variant="full" className="leh-brand--platform-sidebar" />,
+      <LehBrand
+        decorative
+        lockupRasterOnly
+        variant="full"
+        className="leh-brand--platform-sidebar"
+      />,
     );
     const brand = screen.getByTestId("leh-brand");
     expect(brand.querySelector("picture source")).toBeNull();
     const rasterSources = [...brand.querySelectorAll("img")].map((node) =>
       node.getAttribute("src"),
     );
-    expect(rasterSources.some((src) => src?.includes("leh-horizontal-light.png"))).toBe(
-      true,
-    );
-    expect(rasterSources.some((src) => src?.includes("leh-horizontal-dark.png"))).toBe(
-      true,
-    );
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
+    ).toBe(true);
+    expect(
+      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
+    ).toBe(true);
     expect(rasterSources.some((src) => src?.includes(".svg"))).toBe(false);
   });
 
   it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {
-    expect(LEH_BRAND.horizontalLight.src).toBe("/brand/leh-horizontal-light.svg");
+    expect(LEH_BRAND.horizontalLight.src).toBe(
+      "/brand/leh-horizontal-light.svg",
+    );
     expect(LEH_BRAND.horizontalLight.rasterFallbackSrc).toBe(
       "/brand/leh-horizontal-light.png",
     );
@@ -452,8 +467,12 @@ describe("site identity metadata", () => {
     const css = readFileSync("src/components/brand/leh-brand.css", "utf8");
     expect(css).toContain(".leh-brand-lockup-light");
     expect(css).toContain(".leh-brand-fallback picture.leh-brand-mark-dark");
-    expect(css).toContain(".dark .leh-brand-lockup picture.leh-brand-lockup-dark");
-    expect(css).toContain(".dark .leh-brand-fallback picture.leh-brand-mark-dark");
+    expect(css).toContain(
+      ".dark .leh-brand-lockup picture.leh-brand-lockup-dark",
+    );
+    expect(css).toContain(
+      ".dark .leh-brand-fallback picture.leh-brand-mark-dark",
+    );
     expect(css).toContain("object-fit: contain");
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");

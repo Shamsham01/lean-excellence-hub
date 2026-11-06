@@ -40,9 +40,7 @@ function humanizeTypeKey(type: string): string {
 }
 
 export function proposalTypeLabel(proposalType: string): string {
-  return (
-    PROPOSAL_TYPE_LABELS[proposalType] ?? humanizeTypeKey(proposalType)
-  );
+  return PROPOSAL_TYPE_LABELS[proposalType] ?? humanizeTypeKey(proposalType);
 }
 
 function readString(value: unknown): string | null {
@@ -51,7 +49,9 @@ function readString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function unwrapEnvelope(payload: Record<string, unknown>): Record<string, unknown> {
+function unwrapEnvelope(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
   if (
     payload.data &&
     typeof payload.data === "object" &&

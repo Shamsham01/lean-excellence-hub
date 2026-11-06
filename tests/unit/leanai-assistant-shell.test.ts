@@ -14,7 +14,9 @@ describe("LeanAI assistant platform shell integration", () => {
     expect(shell).toContain("organisationId");
     expect(shell).toContain("platform-main-viewport");
     expect(shell).toContain("overflow-y-hidden");
-    expect(shell).toContain("platform-scroll flex min-h-0 min-w-0 flex-1 flex-col");
+    expect(shell).toContain(
+      "platform-scroll flex min-h-0 min-w-0 flex-1 flex-col",
+    );
 
     const chrome = read("src/components/leanai/leanai-assistant-chrome.tsx");
     expect(chrome).toContain("leanai-assistant-open");

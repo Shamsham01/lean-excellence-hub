@@ -85,7 +85,9 @@ export default async function ProfileSettingsPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <ProfileAvatarForm
-            displayName={personalDisplayName || organisationDisplayName || "Member"}
+            displayName={
+              personalDisplayName || organisationDisplayName || "Member"
+            }
             initialAvatarUrl={profile?.avatar_url ?? null}
           />
           <p className="text-sm text-muted-foreground">

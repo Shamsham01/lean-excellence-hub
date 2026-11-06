@@ -28,7 +28,10 @@ describe("proposal-display", () => {
     expect(
       formatProposalPreview(
         "target_condition",
-        { statement: "Film stays within ±2 mm of centre for five consecutive shifts." },
+        {
+          statement:
+            "Film stays within ±2 mm of centre for five consecutive shifts.",
+        },
         "",
       ),
     ).toBe("Film stays within ±2 mm of centre for five consecutive shifts.");
