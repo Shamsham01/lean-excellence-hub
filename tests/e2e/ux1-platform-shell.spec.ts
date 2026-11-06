@@ -50,10 +50,8 @@ test.describe("UX1 platform shell", () => {
     await expect(
       page.getByRole("link", { name: "Settings", exact: true }),
     ).toBeVisible();
-    const chrome = page.getByTestId("platform-chrome-bar");
-    await expect(
-      chrome.getByRole("button", { name: /^Appearance:/ }),
-    ).toBeVisible();
+    const chrome = page.getByTestId("platform-desktop-main-chrome");
+    await expect(chrome.getByTestId("platform-appearance-trigger")).toBeVisible();
     await expect(
       chrome.getByTestId("platform-chrome-sign-out"),
     ).toBeVisible();
@@ -87,7 +85,7 @@ test.describe("UX1 platform shell", () => {
     const nav = page.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
     await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
-    const chrome = page.getByTestId("platform-chrome-bar");
+    const chrome = page.getByTestId("platform-desktop-main-chrome");
     await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
 
     const scrollMetrics = await nav.evaluate((element) => ({

@@ -145,7 +145,9 @@ test.describe("authenticated platform shell", () => {
     await expect(nav).toBeVisible();
     await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
     await expect(
-      page.getByTestId("platform-chrome-sign-out"),
+      page
+        .getByTestId("platform-desktop-main-chrome")
+        .getByTestId("platform-chrome-sign-out"),
     ).toBeVisible();
 
     await expectFinalNavItemReachable(page, nav);
@@ -165,7 +167,11 @@ test.describe("authenticated platform shell", () => {
     await scrollWorkspace(page);
 
     await expect(nav).toBeInViewport();
-    await expect(page.getByTestId("platform-chrome-sign-out")).toBeInViewport();
+    await expect(
+      page
+        .getByTestId("platform-desktop-main-chrome")
+        .getByTestId("platform-chrome-sign-out"),
+    ).toBeInViewport();
     await expect(
       sidebar.getByRole("link", { name: "Settings", exact: true }),
     ).toBeInViewport();
@@ -199,7 +205,11 @@ test.describe("authenticated platform shell", () => {
       const nav = await openMobileDrawer(page);
       const drawer = page.getByRole("dialog");
       await expect(drawer.getByText("Lean Excellence Hub")).toBeVisible();
-      await expect(page.getByTestId("platform-chrome-sign-out")).toBeVisible();
+      await expect(
+        page
+          .getByTestId("platform-mobile-chrome")
+          .getByTestId("platform-chrome-sign-out"),
+      ).toBeVisible();
 
       const { lastLink } = await expectFinalNavItemReachable(page, nav);
       await expect(lastLink).toBeInViewport();
@@ -271,7 +281,11 @@ test.describe("authenticated platform shell", () => {
     await expect(nav).not.toBeVisible();
 
     await openMobileDrawer(page);
-    await expect(page.getByTestId("platform-chrome-sign-out")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("platform-mobile-chrome")
+        .getByTestId("platform-chrome-sign-out"),
+    ).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

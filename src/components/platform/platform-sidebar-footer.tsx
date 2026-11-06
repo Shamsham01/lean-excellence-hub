@@ -9,10 +9,12 @@ import {
   isNavItemActive,
   settingsNavigationItem,
 } from "@/modules/platform-shell/navigation";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import { cn } from "@/lib/utils";
 
 type PlatformSidebarFooterProps = {
   membershipId: string;
+  member: PlatformShellMember;
   showSettings: boolean;
   onNavigate?: () => void;
 };
@@ -27,7 +29,7 @@ function FooterSettingsLink({ onNavigate }: { onNavigate?: () => void }) {
       data-testid="platform-nav-settings"
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
-        "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+        "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
         active
           ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
@@ -61,7 +63,7 @@ function FooterProfileLink({
       data-testid="platform-nav-profile"
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
-        "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+        "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
         active
           ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
@@ -76,11 +78,29 @@ function FooterProfileLink({
 
 export function PlatformSidebarFooter({
   membershipId,
+  member,
   showSettings,
   onNavigate,
 }: PlatformSidebarFooterProps) {
   return (
     <div className="flex shrink-0 flex-col gap-0.5 border-t border-sidebar-border p-2">
+      <div
+        className="px-3 py-2"
+        data-testid="platform-sidebar-account"
+      >
+        <p
+          className="truncate text-sm font-semibold text-sidebar-foreground"
+          data-testid="platform-sidebar-display-name"
+          title={member.displayName}
+        >
+          {member.displayName}
+        </p>
+        {member.roleLabel ? (
+          <p className="truncate text-xs text-muted-foreground">
+            {member.roleLabel}
+          </p>
+        ) : null}
+      </div>
       {showSettings ? (
         <FooterSettingsLink {...(onNavigate ? { onNavigate } : {})} />
       ) : null}

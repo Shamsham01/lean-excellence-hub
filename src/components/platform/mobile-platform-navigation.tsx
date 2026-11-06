@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { LEH_BRAND } from "@/components/brand/brand-assets";
 import { LehBrand } from "@/components/brand/leh-brand";
+import { PlatformChromeActions } from "@/components/platform/platform-chrome-actions";
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
@@ -18,6 +19,7 @@ import {
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 
 type MobilePlatformNavigationProps = {
   items: PlatformNavItem[];
@@ -25,6 +27,7 @@ type MobilePlatformNavigationProps = {
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
   membershipId: string;
+  member: PlatformShellMember;
   showSettings: boolean;
 };
 
@@ -34,6 +37,7 @@ export function MobilePlatformNavigation({
   organisations,
   siteContext,
   membershipId,
+  member,
   showSettings,
 }: MobilePlatformNavigationProps) {
   const [open, setOpen] = useState(false);
@@ -71,6 +75,7 @@ export function MobilePlatformNavigation({
           <PlatformNavigation items={items} onNavigate={closeDrawer} />
           <PlatformSidebarFooter
             membershipId={membershipId}
+            member={member}
             showSettings={showSettings}
             onNavigate={closeDrawer}
           />
@@ -89,6 +94,9 @@ export function MobilePlatformNavigation({
       >
         {organisationName}
       </span>
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <PlatformChromeActions />
+      </div>
     </div>
   );
 }

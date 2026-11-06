@@ -5,6 +5,7 @@ import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-he
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 
 type PlatformSidebarProps = {
   items: PlatformNavItem[];
@@ -12,6 +13,7 @@ type PlatformSidebarProps = {
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
   membershipId: string;
+  member: PlatformShellMember;
   showSettings: boolean;
 };
 
@@ -21,6 +23,7 @@ function DesktopSidebar({
   organisations,
   siteContext,
   membershipId,
+  member,
   showSettings,
 }: PlatformSidebarProps) {
   return (
@@ -36,6 +39,7 @@ function DesktopSidebar({
       <PlatformNavigation items={items} />
       <PlatformSidebarFooter
         membershipId={membershipId}
+        member={member}
         showSettings={showSettings}
       />
     </aside>

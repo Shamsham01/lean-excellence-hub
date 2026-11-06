@@ -24,7 +24,7 @@ Organisation names stay separate from the product mark. The sidebar and mobile b
 | --- | --- |
 | `public/brand/leh-horizontal-light.png` | Horizontal lockup for light surfaces. Transparent exterior |
 | `public/brand/leh-horizontal-dark.png` | Horizontal lockup for dark surfaces. Transparent exterior |
-| `public/brand/leh-icon-light.png` | Blue app icon for light surfaces. Transparent corners |
+| `public/brand/leh-icon-light.png` | Bright azure app icon (≈ `#0058FD`) for light surfaces. Transparent corners |
 | `public/brand/leh-icon-dark.png` | Light app icon for dark surfaces. Transparent corners |
 | `public/brand/leh-icon-dark-128.png` | 128px derivative of the dark icon for the root error document |
 | `public/brand/leh-icon-blue.png` | Legacy blue mark (not used for default tab/install icons) |
@@ -42,7 +42,7 @@ Root metadata sets `manifest: "/site.webmanifest"` and adds `icons` so the defau
 
 ## Favicon review
 
-The browser tab, Apple touch, app-router icons, and web manifest use the official **light-surface** mark (`leh-icon-light.png` and sized derivatives). That is the dark-blue mark intended for light backgrounds.
+The browser tab, Apple touch, app-router icons, and web manifest use the official **light-surface** mark (`leh-icon-light.png` and sized derivatives). That is the bright azure mark intended for light backgrounds.
 
 `leh-icon-dark.png` is the light tile for dark **app** surfaces. Root metadata references it only for **dark browser chrome** (`prefers-color-scheme: dark`), not for in-app sidebars.
 
