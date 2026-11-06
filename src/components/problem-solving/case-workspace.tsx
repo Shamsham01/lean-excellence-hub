@@ -148,8 +148,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     );
   }, [sortedStages, urlStageSemanticKey]);
 
-  const viewStageId =
-    urlResolvedStageId ?? detail.current_method_stage_id;
+  const viewStageId = urlResolvedStageId ?? detail.current_method_stage_id;
 
   const viewStage = resolveViewStage(
     sortedStages,

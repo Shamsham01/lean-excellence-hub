@@ -22,17 +22,19 @@ function createProposalChain(row: Record<string, unknown>) {
 
 describe("acceptAiProposal case-level outcomes", () => {
   it("passes problem_solving_case_id when accepting target_condition", async () => {
-    rpcMock.mockImplementation(async (name: string, args: Record<string, unknown>) => {
-      if (name === "update_problem_solving_target_condition") {
+    rpcMock.mockImplementation(
+      async (name: string, args: Record<string, unknown>) => {
+        if (name === "update_problem_solving_target_condition") {
+          return { error: null };
+        }
+        if (name === "record_ai_proposal_accepted") {
+          expect(args.target_problem_solving_case_id).toBe("case-1");
+          expect(args.target_ai_proposal_id).toBe("prop-1");
+          return { error: null };
+        }
         return { error: null };
-      }
-      if (name === "record_ai_proposal_accepted") {
-        expect(args.target_problem_solving_case_id).toBe("case-1");
-        expect(args.target_ai_proposal_id).toBe("prop-1");
-        return { error: null };
-      }
-      return { error: null };
-    });
+      },
+    );
 
     const fromMock = vi.fn(() =>
       createProposalChain({
