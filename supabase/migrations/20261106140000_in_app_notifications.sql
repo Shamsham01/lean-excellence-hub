@@ -298,9 +298,12 @@ for each row execute function private.notify_in_app_for_suggestion_status_change
 
 -- ---------------------------------------------------------------------------
 -- Overdue action assignees: align rows with current overdue set (called from app)
+-- Public SQL wrappers + private implementations match other migrations: CI cannot
+-- `alter function public.* owner to lean_hub_private_owner` under hardened
+-- `public` schema grants.
 -- ---------------------------------------------------------------------------
 
-create or replace function public.sync_overdue_action_chase_notifications()
+create or replace function private.sync_overdue_action_chase_notifications()
 returns integer
 language plpgsql
 volatile
@@ -396,12 +399,25 @@ begin
 end;
 $$;
 
-revoke all on function public.sync_overdue_action_chase_notifications() from public;
+revoke all on function private.sync_overdue_action_chase_notifications() from public;
+grant execute on function private.sync_overdue_action_chase_notifications() to postgres;
+
+alter function private.sync_overdue_action_chase_notifications() owner to lean_hub_private_owner;
+
+create or replace function public.sync_overdue_action_chase_notifications()
+returns integer
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  select private.sync_overdue_action_chase_notifications()
+$$;
+
+revoke all on function public.sync_overdue_action_chase_notifications() from public, anon;
 grant execute on function public.sync_overdue_action_chase_notifications() to authenticated;
 
-alter function public.sync_overdue_action_chase_notifications() owner to lean_hub_private_owner;
-
-create or replace function public.mark_in_app_notification_read(target_notification_id uuid)
+create or replace function private.mark_in_app_notification_read(target_notification_id uuid)
 returns boolean
 language plpgsql
 volatile
@@ -433,12 +449,25 @@ begin
 end;
 $$;
 
-revoke all on function public.mark_in_app_notification_read(uuid) from public;
+revoke all on function private.mark_in_app_notification_read(uuid) from public;
+grant execute on function private.mark_in_app_notification_read(uuid) to postgres;
+
+alter function private.mark_in_app_notification_read(uuid) owner to lean_hub_private_owner;
+
+create or replace function public.mark_in_app_notification_read(target_notification_id uuid)
+returns boolean
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  select private.mark_in_app_notification_read(target_notification_id)
+$$;
+
+revoke all on function public.mark_in_app_notification_read(uuid) from public, anon;
 grant execute on function public.mark_in_app_notification_read(uuid) to authenticated;
 
-alter function public.mark_in_app_notification_read(uuid) owner to lean_hub_private_owner;
-
-create or replace function public.mark_all_in_app_notifications_read()
+create or replace function private.mark_all_in_app_notifications_read()
 returns boolean
 language plpgsql
 volatile
@@ -470,7 +499,20 @@ begin
 end;
 $$;
 
-revoke all on function public.mark_all_in_app_notifications_read() from public;
-grant execute on function public.mark_all_in_app_notifications_read() to authenticated;
+revoke all on function private.mark_all_in_app_notifications_read() from public;
+grant execute on function private.mark_all_in_app_notifications_read() to postgres;
 
-alter function public.mark_all_in_app_notifications_read() owner to lean_hub_private_owner;
+alter function private.mark_all_in_app_notifications_read() owner to lean_hub_private_owner;
+
+create or replace function public.mark_all_in_app_notifications_read()
+returns boolean
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  select private.mark_all_in_app_notifications_read()
+$$;
+
+revoke all on function public.mark_all_in_app_notifications_read() from public, anon;
+grant execute on function public.mark_all_in_app_notifications_read() to authenticated;
