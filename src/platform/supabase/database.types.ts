@@ -14202,10 +14202,7 @@ export type Database = {
         Args: { target_organisation_id: string; target_suggestion_id: string }
         Returns: string
       }
-      mark_all_in_app_notifications_read: {
-        Args: never
-        Returns: boolean
-      }
+      mark_all_in_app_notifications_read: { Args: never; Returns: boolean }
       mark_benefit_realised: {
         Args: { target_benefit_id: string; target_reason?: string }
         Returns: boolean
@@ -15028,14 +15025,11 @@ export type Database = {
         }
         Returns: boolean
       }
-      sync_overdue_action_chase_notifications: {
-        Args: never
-        Returns: number
-      }
       switch_organisation: {
         Args: { target_organisation_id: string }
         Returns: boolean
       }
+      sync_overdue_action_chase_notifications: { Args: never; Returns: number }
       transfer_organisation_ownership: {
         Args: { target_membership_id: string }
         Returns: Json
