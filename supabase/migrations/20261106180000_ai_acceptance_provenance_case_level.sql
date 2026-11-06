@@ -14,8 +14,8 @@ alter table public.ai_acceptance_provenance
   references public.problem_solving_cases (organisation_id, id)
   on delete restrict;
 
-drop constraint if exists ai_acceptance_provenance_exact_one_check
-  on public.ai_acceptance_provenance;
+alter table public.ai_acceptance_provenance
+  drop constraint if exists ai_acceptance_provenance_exact_one_check;
 
 alter table public.ai_acceptance_provenance
   add constraint ai_acceptance_provenance_exact_one_check
@@ -208,9 +208,14 @@ as $$
   )
 $$;
 
-revoke all on function public.record_ai_proposal_accepted(
+-- CREATE OR REPLACE cannot change arity; the 13-arg definitions above are overloads.
+-- Drop the legacy 12-arg signatures so PostgREST resolves a single public RPC.
+drop function if exists public.record_ai_proposal_accepted(
   uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid
-) from public, anon;
+);
+drop function if exists private.record_ai_proposal_accepted(
+  uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid
+);
 
 grant execute on function public.record_ai_proposal_accepted(
   uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid
