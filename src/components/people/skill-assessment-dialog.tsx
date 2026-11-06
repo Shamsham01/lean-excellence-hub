@@ -171,10 +171,7 @@ export function SkillAssessmentDialog({
         if (!value) reset();
       }}
     >
-      <DialogContent
-        className="max-h-[90vh] max-w-lg overflow-y-auto"
-        data-testid="skill-assessment-dialog"
-      >
+      <DialogContent data-testid="skill-assessment-dialog">
         <DialogHeader>
           <DialogTitle>
             {mode === "self" ? "Self assessment" : "Skill assessment"}
