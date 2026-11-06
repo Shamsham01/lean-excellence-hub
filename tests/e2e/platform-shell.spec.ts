@@ -76,6 +76,15 @@ async function scrollWorkspace(page: Page) {
   });
 }
 
+/** Scroll the sidebar nav column so footer actions (Settings, Sign out) are in view; TailAdmin-style menu is not pinned at the bottom of the viewport. */
+async function scrollDesktopSidebarNavToBottom(
+  nav: ReturnType<Page["getByRole"]>,
+) {
+  await nav.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+}
+
 async function expectFinalNavItemReachable(
   page: Page,
   nav: ReturnType<Page["getByRole"]>,
@@ -174,6 +183,7 @@ test.describe("authenticated platform shell", () => {
     await expect(nav).toBeVisible();
 
     await scrollWorkspace(page);
+    await scrollDesktopSidebarNavToBottom(nav);
 
     await expect(nav).toBeInViewport();
     await expect(
