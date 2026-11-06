@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
 import { AI_DEFAULTS, parseAiEnvironment } from "@/platform/ai/config";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("parseAiEnvironment", () => {
   it("accepts supported reasoning effort values", () => {
@@ -40,5 +44,35 @@ describe("parseAiEnvironment", () => {
     expect(env.AI_MODEL_ECONOMY).toBe("gpt-6-luna");
     expect(env.AI_MODEL_STANDARD).toBe("gpt-6.1-terra");
     expect(env.AI_MODEL_DEEP).toBe("gpt-6.1-sol");
+  });
+});
+
+describe("isApplicationAiProviderAvailable", () => {
+  it("allows fake provider in CI production (Playwright build+start) when explicitly allowed", async () => {
+    vi.resetModules();
+    vi.stubEnv("AI_ENABLED", "1");
+    vi.stubEnv("AI_PROVIDER", "fake");
+    vi.stubEnv("AI_ALLOW_FAKE_PROVIDER", "1");
+    vi.stubEnv("CI", "1");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("E2E_WITH_SUPABASE", "");
+
+    const { isApplicationAiProviderAvailable } =
+      await import("@/platform/ai/config");
+    expect(isApplicationAiProviderAvailable()).toBe(true);
+  });
+
+  it("still blocks fake provider in production when not CI and not local Supabase E2E", async () => {
+    vi.resetModules();
+    vi.stubEnv("AI_ENABLED", "1");
+    vi.stubEnv("AI_PROVIDER", "fake");
+    vi.stubEnv("AI_ALLOW_FAKE_PROVIDER", "1");
+    vi.stubEnv("CI", "");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("E2E_WITH_SUPABASE", "");
+
+    const { isApplicationAiProviderAvailable } =
+      await import("@/platform/ai/config");
+    expect(isApplicationAiProviderAvailable()).toBe(false);
   });
 });
