@@ -1,8 +1,8 @@
 "use client";
 
 import { MessageSquare } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   acceptProblemSolvingAiProposal,
@@ -32,6 +32,7 @@ import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import type { CommentRow } from "@/components/comments/resource-comments";
 import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Button } from "@/components/ui/button";
+import { pendingAiProposalMatchesViewStage } from "@/lib/problem-solving/ai-proposal-stage";
 import {
   guidedStageConfig,
   resolveViewStage,
@@ -104,6 +105,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     pendingAiProposals = [],
   } = props;
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
   const [toast, setToast] = useState<{
     message: string;
     tone: "default" | "error";
@@ -121,9 +125,23 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     () => sortMethodStages(methodStages),
     [methodStages],
   );
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
 
-  const viewStageId = selectedStageId ?? detail.current_method_stage_id;
+  const urlStageSemanticKey = useMemo(() => {
+    const raw = searchParams.get("stage")?.trim() ?? "";
+    return raw.length > 0 ? raw : null;
+  }, [searchParams]);
+
+  const urlResolvedStageId = useMemo(() => {
+    if (!urlStageSemanticKey) return null;
+    return (
+      sortedStages.find(
+        (stage) => stage.semantic_stage_key === urlStageSemanticKey,
+      )?.id ?? null
+    );
+  }, [sortedStages, urlStageSemanticKey]);
+
+  const viewStageId =
+    urlResolvedStageId ?? detail.current_method_stage_id;
 
   const viewStage = resolveViewStage(
     sortedStages,
@@ -138,6 +156,82 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     viewStage?.semantic_stage_key ??
     detail.current_stage?.semantic_stage_key ??
     null;
+
+  const mergeChatPendingProposals = useCallback(
+    (incoming: PendingProposal[]) => {
+      setPendingProposals((previous) => {
+        const byId = new Map(previous.map((row) => [row.id, row]));
+        for (const row of incoming) {
+          byId.set(row.id, row);
+        }
+        return Array.from(byId.values());
+      });
+    },
+    [],
+  );
+
+  const syncStageToUrl = useCallback(
+    (semanticKey: string) => {
+      const params = new URLSearchParams(searchParamsString);
+      params.set("stage", semanticKey);
+      const next = `${pathname}?${params.toString()}`;
+      router.replace(next, { scroll: false });
+    },
+    [pathname, router, searchParamsString],
+  );
+
+  const handleViewStage = useCallback(
+    (stageId: string) => {
+      const stageRow = sortedStages.find((row) => row.id === stageId);
+      if (stageRow) {
+        syncStageToUrl(stageRow.semantic_stage_key);
+      }
+    },
+    [sortedStages, syncStageToUrl],
+  );
+
+  useEffect(() => {
+    if (sortedStages.length === 0) return;
+    const raw = searchParams.get("stage")?.trim();
+    if (!raw) return;
+    const valid = sortedStages.some((s) => s.semantic_stage_key === raw);
+    if (valid) return;
+    const fallbackRow = sortedStages.find(
+      (s) => s.id === detail.current_method_stage_id,
+    );
+    if (fallbackRow) {
+      syncStageToUrl(fallbackRow.semantic_stage_key);
+    }
+  }, [
+    sortedStages,
+    searchParams,
+    detail.current_method_stage_id,
+    syncStageToUrl,
+  ]);
+
+  const stagePendingAiProposals = useMemo(
+    () =>
+      pendingAiProposals.filter((proposal) =>
+        pendingAiProposalMatchesViewStage({
+          proposal_type: proposal.proposal_type,
+          semantic_stage_key: proposal.semantic_stage_key ?? null,
+          viewStageKey: stageKey,
+        }),
+      ),
+    [pendingAiProposals, stageKey],
+  );
+
+  const stageChatProposals = useMemo(
+    () =>
+      pendingProposals.filter((proposal) =>
+        pendingAiProposalMatchesViewStage({
+          proposal_type: proposal.proposal_type,
+          semantic_stage_key: proposal.semantic_stage_key ?? null,
+          viewStageKey: stageKey,
+        }),
+      ),
+    [pendingProposals, stageKey],
+  );
 
   const hasProblemData = Boolean(
     (detail.problem_statement && detail.problem_statement.trim().length > 0) ||
@@ -168,7 +262,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     setMovingStage(true);
     const result = await moveProblemSolvingStage(detail.id, stageId);
     notify(result.error ?? "Stage updated", result.error ? "error" : "success");
-    setSelectedStageId(null);
+    const movedStage = sortedStages.find((row) => row.id === stageId);
+    if (movedStage) {
+      syncStageToUrl(movedStage.semantic_stage_key);
+    }
     setMovingStage(false);
     router.refresh();
   }
@@ -177,7 +274,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     stages: sortedStages,
     currentStageId: detail.current_method_stage_id,
     viewStageId,
-    onViewStage: setSelectedStageId,
+    onViewStage: handleViewStage,
     canMoveStage,
     onMoveStage: handleMoveStage,
     movingStage,
@@ -197,7 +294,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     }
     setPendingProposals((prev) => prev.filter((p) => p.id !== proposal.id));
     notify("Proposal accepted.");
-    router.push(`/platform/problem-solving/${detail.id}`);
+    router.refresh();
   }
 
   async function handleRejectProposal(proposalId: string) {
@@ -308,8 +405,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       layout="dock"
       collapsed={copilotCollapsed}
       onCollapsedChange={setCopilotCollapsed}
-      pendingProposals={pendingProposals}
-      onPendingProposalsChange={setPendingProposals}
+      pendingProposals={stageChatProposals}
+      onPendingProposalsChange={mergeChatPendingProposals}
       {...(editDraft !== undefined ? { draftOverride: editDraft } : {})}
       onDraftOverrideConsumed={() => setEditDraft(undefined)}
     />
@@ -393,17 +490,17 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             <div className="mt-4 flex flex-col gap-4">
               {canUseAi && providerAvailable ? (
                 <PendingAiProposalsList
-                  key={
-                    pendingAiProposals
+                  key={`${detail.id}-${stageKey ?? "stage"}-${
+                    stagePendingAiProposals
                       .map((proposal) => proposal.id)
                       .join("-") || "none"
-                  }
+                  }`}
                   caseId={detail.id}
-                  initialProposals={pendingAiProposals}
+                  initialProposals={stagePendingAiProposals}
                 />
               ) : null}
               <InlineAiProposals
-                proposals={pendingProposals}
+                proposals={stageChatProposals}
                 busy={proposalBusy}
                 onAccept={handleAcceptProposal}
                 onReject={handleRejectProposal}

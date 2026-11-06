@@ -7,6 +7,7 @@ export type FacilitatorPendingProposal = {
   payload_json: Record<string, unknown>;
   human_explanation: string;
   status: string;
+  semantic_stage_key?: string | null;
 };
 
 export type ResolvedFacilitatorTurn =

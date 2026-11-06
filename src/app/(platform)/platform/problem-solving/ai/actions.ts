@@ -30,6 +30,7 @@ type PendingProposalRow = {
   payload_json: Record<string, unknown>;
   human_explanation: string;
   status: string;
+  semantic_stage_key?: string | null;
 };
 
 export async function createProblemSolvingAiSession(input: {
