@@ -152,9 +152,9 @@ test.describe("authenticated platform shell", () => {
     await expect(
       sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
     ).toBeVisible();
-    await expect(
-      sidebar.getByTestId("platform-sidebar-org-name"),
-    ).toHaveText(DEMO_ORGANISATION.name);
+    await expect(sidebar.getByTestId("platform-sidebar-org-name")).toHaveText(
+      DEMO_ORGANISATION.name,
+    );
     await expect(
       sidebar.getByRole("button", { name: "Sign out", exact: true }),
     ).toBeVisible();

@@ -25,9 +25,7 @@ describe("shared platform shell mobile layout", () => {
       "lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden",
     );
     // Main column locks vertical overflow; nested platform-main-viewport scrolls.
-    expect(shell).toContain(
-      'data-testid="platform-main"',
-    );
+    expect(shell).toContain('data-testid="platform-main"');
     expect(shell).toContain(
       "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden",
     );
