@@ -3,31 +3,33 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Platform light theme: cool neutral greys (no warm paper cast). */
-  --background: oklch(0.99 0.002 260);
+  /* Authenticated product UI — TOKENS.md mandatory hex values; other neutrals follow pre-#339 platform (cool slate, no warm paper). */
+  --background: #f8fafc;
   --foreground: oklch(0.22 0.014 260);
   --surface: oklch(0.985 0.003 260);
   --elevated: oklch(1 0 0);
-  --card: oklch(1 0 0);
+  --card: #ffffff;
   --card-foreground: oklch(0.22 0.014 260);
   --muted: oklch(0.96 0.004 260);
   --muted-foreground: oklch(0.46 0.018 260);
-  --border: oklch(0.89 0.006 260);
-  --primary: oklch(0.42 0.09 250);
-  --primary-foreground: oklch(0.99 0.002 260);
+  --border: #e2e8f0;
+  --primary: #465fff;
+  --primary-foreground: #ffffff;
+  /* Body-sized links on dark surfaces: use --primary-text (WCAG AA). Brand chroma stays --primary for fills, ring, large chrome. */
+  --primary-text: var(--primary);
   --accent: oklch(0.945 0.012 250);
   --accent-foreground: oklch(0.28 0.06 250);
-  --success: oklch(0.55 0.14 145);
+  --success: #10b981;
   --success-foreground: oklch(0.98 0.01 145);
-  --warning: oklch(0.72 0.14 75);
+  --warning: #f59e0b;
   --warning-foreground: oklch(0.28 0.06 75);
-  --destructive: oklch(0.55 0.2 25);
+  --destructive: #ef4444;
   --destructive-foreground: oklch(0.98 0.01 25);
   --information: oklch(0.55 0.12 240);
   --information-foreground: oklch(0.98 0.01 240);
   --sidebar: oklch(0.975 0.004 260);
   --sidebar-foreground: oklch(0.28 0.018 260);
-  --sidebar-border: oklch(0.9 0.006 260);
+  --sidebar-border: #e2e8f0;
   --sidebar-accent: oklch(0.94 0.01 250);
   --chart-1: oklch(0.55 0.12 250);
   --chart-2: oklch(0.6 0.14 180);
@@ -39,30 +41,32 @@
   --maturity-3: oklch(0.72 0.1 145);
   --maturity-4: oklch(0.6 0.12 200);
   --maturity-5: oklch(0.5 0.14 250);
-  --ring: oklch(0.55 0.12 250);
+  --ring: #465fff;
   --radius: 0.5rem;
   color-scheme: light;
 }
 
 .dark {
-  --background: oklch(0.16 0.014 255);
-  --foreground: oklch(0.94 0.006 95);
+  --background: #090e17;
+  --foreground: oklch(0.94 0.006 260);
   --surface: oklch(0.19 0.015 255);
   --elevated: oklch(0.23 0.016 255);
-  --card: oklch(0.21 0.016 255);
-  --card-foreground: oklch(0.94 0.006 95);
+  --card: #121b2a;
+  --card-foreground: oklch(0.94 0.006 260);
   --muted: oklch(0.26 0.017 255);
   --muted-foreground: oklch(0.68 0.018 255);
-  --border: oklch(0.32 0.018 255);
-  --primary: oklch(0.68 0.12 245);
-  --primary-foreground: oklch(0.16 0.014 255);
+  --border: #1e2d42;
+  --primary: #465fff;
+  --primary-foreground: #ffffff;
+  /* ~indigo-300: ≥4.5:1 vs #090E17 and #121B2A for normal text / inline links */
+  --primary-text: #a5b4fc;
   --accent: oklch(0.28 0.03 250);
   --accent-foreground: oklch(0.92 0.02 250);
-  --success: oklch(0.65 0.14 145);
+  --success: #10b981;
   --success-foreground: oklch(0.16 0.02 145);
-  --warning: oklch(0.78 0.12 75);
+  --warning: #f59e0b;
   --warning-foreground: oklch(0.2 0.04 75);
-  --destructive: oklch(0.62 0.18 25);
+  --destructive: #ef4444;
   --destructive-foreground: oklch(0.98 0.01 25);
   --information: oklch(0.68 0.1 240);
   --information-foreground: oklch(0.16 0.02 240);
@@ -80,7 +84,7 @@
   --maturity-3: oklch(0.74 0.09 145);
   --maturity-4: oklch(0.68 0.1 200);
   --maturity-5: oklch(0.62 0.12 250);
-  --ring: oklch(0.68 0.12 245);
+  --ring: #465fff;
   color-scheme: dark;
 }
 
@@ -99,6 +103,7 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-success: var(--success);
@@ -147,6 +152,15 @@ body {
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Inline / body links: raw #465FFF on dark canvas fails WCAG AA for normal text (PIXEL). */
+.dark .text-primary {
+  color: var(--primary-text);
+}
+.dark .marketing .text-primary,
+.dark .marketing-appearance-menu .text-primary {
+  color: var(--primary);
 }
 
 *:focus-visible {
