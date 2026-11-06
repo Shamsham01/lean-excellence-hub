@@ -391,29 +391,6 @@
   box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
 }
 
-.editorial-trust-grid {
-  display: grid;
-  gap: 1rem;
-  margin-top: clamp(1.75rem, 4vw, 2.5rem);
-}
-
-@media (min-width: 640px) {
-  .editorial-trust-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .editorial-trust-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-}
-
-.editorial-trust-card {
-  border-radius: 0.75rem;
-}
-
 .editorial-faq {
   display: grid;
   gap: 0.65rem;
@@ -433,6 +410,168 @@
 
 .editorial-faq-item summary:hover {
   background: color-mix(in oklab, var(--muted) 35%, var(--elevated));
+}
+
+.editorial-close-grid {
+  display: grid;
+  gap: clamp(2rem, 5vw, 3rem);
+  align-items: start;
+}
+
+.editorial-close-visual {
+  min-width: 0;
+  margin: 0;
+}
+
+.editorial-framework-shell {
+  overflow: hidden;
+  border-radius: calc(0.8rem + 2px);
+  border: 1px solid color-mix(in oklab, var(--border) 82%, var(--primary) 18%);
+  background: var(--elevated);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
+}
+
+.editorial-framework-chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 52%, var(--elevated));
+  padding: 0.55rem 0.75rem 0.6rem;
+}
+
+.editorial-framework-chrome .editorial-dots i {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--leh-line-strong);
+}
+
+.editorial-framework-body {
+  padding: 0.95rem 1rem 1.1rem;
+}
+
+.editorial-framework-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.editorial-framework-kicker-spaced {
+  margin-top: 1.15rem;
+}
+
+.editorial-framework-layers {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0.55rem 0 0;
+  padding: 0 0 0.15rem 1.05rem;
+  list-style: none;
+}
+
+.editorial-framework-layers::before {
+  content: "";
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.35rem;
+  left: 0.2rem;
+  width: 1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--primary) 58%, transparent) 0%,
+    color-mix(in oklab, var(--primary) 12%, transparent) 100%
+  );
+  box-shadow: 0 0 14px color-mix(in oklab, var(--primary) 22%, transparent);
+}
+
+.editorial-framework-layer {
+  position: relative;
+  z-index: 1;
+  border-radius: 0.55rem;
+  border: 1px solid color-mix(in oklab, var(--border) 78%, var(--primary) 22%);
+  background: color-mix(in oklab, var(--muted) 28%, var(--card));
+  padding: 0.55rem 0.65rem 0.6rem;
+}
+
+.editorial-framework-layer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.editorial-framework-layer-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.editorial-framework-layer-detail {
+  margin: 0.28rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.editorial-framework-cards {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .editorial-framework-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .editorial-framework-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.editorial-framework-card {
+  border-radius: 0.55rem;
+  background: color-mix(in oklab, var(--muted) 22%, var(--card));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .editorial-framework-shell {
+    animation: editorial-framework-shell-in 560ms cubic-bezier(0.16, 1, 0.3, 1)
+      both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editorial-framework-layers::before {
+    box-shadow: none;
+  }
+
+  .editorial-framework-shell {
+    animation: none;
+  }
+}
+
+@keyframes editorial-framework-shell-in {
+  from {
+    opacity: 0;
+    translate: 0 0.45rem;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 
 .editorial-close-premium {
@@ -857,6 +996,16 @@
 }
 
 @media (min-width: 1024px) {
+  .editorial-close-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.95fr);
+    gap: 3.25rem;
+    align-items: center;
+  }
+
+  .editorial-close-title {
+    max-width: none;
+  }
+
   .editorial-hero-grid {
     display: grid;
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);

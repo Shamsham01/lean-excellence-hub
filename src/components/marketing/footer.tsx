@@ -9,7 +9,6 @@ const PLATFORM_LINKS = [
   { href: "/#platform", label: "Platform" },
   { href: "/#why", label: "Why LEH" },
   { href: "/#leanai", label: "LeanAI" },
-  { href: "/#trust", label: "Trust" },
   { href: "/#faq", label: "FAQ" },
   { href: "/#maturity", label: "Maturity" },
   { href: "/#problem-solving", label: "Problem Solving" },
@@ -26,17 +25,17 @@ const SYSTEM_LINKS = [
 
 export function MarketingFooter() {
   return (
-    <footer className="marketing-footer">
+    <footer className="marketing-footer marketing-footer-sleek">
       <MarketingContainer>
-        <div className="marketing-footer-grid">
+        <div className="marketing-footer-sleek-grid">
           <div className="marketing-footer-brand">
-            <MarketingWordmark />
-            <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
+            <MarketingWordmark compact decorative />
+            <p className="marketing-footer-tagline mt-2 max-w-[16rem] text-xs leading-snug text-muted-foreground">
               One connected system for Continuous Improvement.
             </p>
           </div>
 
-          <nav aria-label="Platform">
+          <nav aria-label="Platform" className="marketing-footer-nav-col">
             <p className="marketing-footer-heading">Platform</p>
             <ul className="marketing-footer-list" role="list">
               {PLATFORM_LINKS.map((item) => (
@@ -47,8 +46,11 @@ export function MarketingFooter() {
             </ul>
           </nav>
 
-          <nav aria-label="Improvement system">
-            <p className="marketing-footer-heading">Improvement system</p>
+          <nav
+            aria-label="Improvement system"
+            className="marketing-footer-nav-col"
+          >
+            <p className="marketing-footer-heading">System</p>
             <ul className="marketing-footer-list" role="list">
               {SYSTEM_LINKS.map((item) => (
                 <li key={item.href}>
@@ -58,7 +60,7 @@ export function MarketingFooter() {
             </ul>
           </nav>
 
-          <nav aria-label="Access">
+          <nav aria-label="Access" className="marketing-footer-nav-col">
             <p className="marketing-footer-heading">Access</p>
             <ul className="marketing-footer-list" role="list">
               <li>
@@ -71,8 +73,10 @@ export function MarketingFooter() {
           </nav>
         </div>
 
-        <div className="marketing-footer-meta">
-          <p>© {new Date().getFullYear()} Lean Excellence Hub</p>
+        <div className="marketing-footer-bottom">
+          <p className="marketing-footer-copyright">
+            © {new Date().getFullYear()} Lean Excellence Hub
+          </p>
           <MarketingAppearanceMenu />
         </div>
       </MarketingContainer>

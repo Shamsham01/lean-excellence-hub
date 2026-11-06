@@ -271,8 +271,8 @@ const HERO_KPIS = [
 function HeroComposition() {
   return (
     <figure className="editorial-stage editorial-hero-os">
-      <div className="editorial-hero-os-chrome overflow-hidden rounded-[0.8rem] border border-border bg-elevated shadow-[var(--leh-highlight),var(--marketing-shadow-lift)]">
-        <div className="flex items-center gap-2 border-b border-border bg-[color-mix(in_oklab,var(--muted)_65%,var(--elevated))] px-3 py-2 sm:px-3.5">
+      <div className="editorial-hero-os-surface overflow-hidden rounded-[0.8rem] border border-border bg-elevated shadow-[var(--leh-highlight),var(--marketing-shadow-lift)]">
+        <div className="editorial-hero-os-topbar flex items-center gap-2 border-b border-border bg-[color-mix(in_oklab,var(--muted)_65%,var(--elevated))] px-3 py-2 sm:px-3.5">
           <span
             className="editorial-dots inline-flex gap-[0.3rem]"
             aria-hidden="true"
@@ -289,9 +289,9 @@ function HeroComposition() {
           </div>
         </div>
 
-        <div className="grid min-w-0 grid-cols-1 gap-0 lg:grid-cols-[minmax(7.25rem,9.25rem)_minmax(0,1fr)]">
+        <div className="editorial-hero-os-main grid min-w-0 grid-cols-1 gap-0 lg:grid-cols-[minmax(7.25rem,9.25rem)_minmax(0,1fr)]">
           <div
-            className="border-b border-border bg-[color-mix(in_oklab,var(--muted)_42%,var(--elevated))] p-2 lg:border-r lg:border-b-0"
+            className="editorial-hero-os-rail border-b border-border bg-[color-mix(in_oklab,var(--muted)_42%,var(--elevated))] p-2 lg:border-r lg:border-b-0"
             role="group"
             aria-label="Example methodology-neutral stages"
           >
@@ -357,7 +357,7 @@ function HeroComposition() {
             </ol>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3 p-3 sm:gap-3.5 sm:p-3.5">
+          <div className="editorial-hero-os-detail flex min-w-0 flex-col gap-3 p-3 sm:gap-3.5 sm:p-3.5">
             <div className="min-w-0">
               <p className="editorial-context-kicker">
                 Bodmin Bakery · Packing line 1
@@ -395,14 +395,14 @@ function HeroComposition() {
             </Card>
 
             <div
-              className="grid grid-cols-3 gap-2 border-t border-border/80 pt-3"
+              className="editorial-hero-kpi-strip grid grid-cols-3 gap-2 border-t border-border/80 pt-3"
               role="group"
               aria-label="Example operational KPIs"
             >
               {HERO_KPIS.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="min-w-0 rounded-md border border-border/70 bg-card px-2 py-1.5 text-center sm:px-2.5"
+                  className="editorial-hero-kpi-cell min-w-0 rounded-md border border-border/70 px-2 py-1.5 text-center sm:px-2.5"
                 >
                   <p className="m-0 truncate text-[0.62rem] font-medium tracking-wide text-muted-foreground uppercase sm:text-[0.65rem]">
                     {kpi.label}
@@ -416,9 +416,123 @@ function HeroComposition() {
           </div>
         </div>
       </div>
-      <figcaption>
-        Illustrative product composition. Example records only — Bodmin Bakery
-        is a fictional site.
+      <figcaption className="marketing-preview-aux-note">
+        Example data · fictional site
+      </figcaption>
+    </figure>
+  );
+}
+
+function CloseFrameworkVisual() {
+  return (
+    <figure className="editorial-close-visual editorial-rise editorial-rise-delay">
+      <div className="editorial-framework-shell">
+        <div className="editorial-framework-chrome">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
+            <i />
+            <i />
+            <i />
+          </span>
+          <p className="m-0 min-w-0 flex-1 truncate text-[0.72rem] font-semibold tracking-wide text-foreground">
+            Operating model
+          </p>
+          <StatusChip className="shrink-0">Example</StatusChip>
+        </div>
+        <div className="editorial-framework-body">
+          <p className="editorial-framework-kicker">Structure</p>
+          <ol
+            className="editorial-framework-layers"
+            aria-label="Organisation structure"
+          >
+            <li className="editorial-framework-layer editorial-framework-layer-org">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Organisation</p>
+                <StatusChip tone="accent">Configured</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Harbourfield Foods Group
+              </p>
+            </li>
+            <li className="editorial-framework-layer editorial-framework-layer-site">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Sites</p>
+                <StatusChip tone="connected">Rolled out</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Bodmin Bakery · Manchester DC
+              </p>
+            </li>
+            <li className="editorial-framework-layer editorial-framework-layer-area">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Areas</p>
+                <StatusChip tone="neutral">Scoped</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Packing · Goods-in · Maintenance
+              </p>
+            </li>
+          </ol>
+          <p className="editorial-framework-kicker editorial-framework-kicker-spaced">
+            Your standards & methods
+          </p>
+          <div className="editorial-framework-cards">
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Maturity model
+                  </CardTitle>
+                  <StatusChip tone="accent">Yours</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Framework</p>
+                <p className="marketing-field-value">
+                  LEH Operational Excellence Standard
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Problem solving
+                  </CardTitle>
+                  <StatusChip tone="connected">Method</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Organisation method</p>
+                <p className="marketing-field-value">
+                  The organisation&apos;s chosen method (example: A3 · DMAIC ·
+                  8D)
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Standards library
+                  </CardTitle>
+                  <StatusChip tone="connected">Aligned</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Work standards</p>
+                <p className="marketing-field-value">
+                  Packing changeover · Goods-in 5S · Film path control
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+      <figcaption className="marketing-preview-aux-note">
+        Example data · fictional site
       </figcaption>
     </figure>
   );
@@ -612,74 +726,6 @@ export function EditorialHome() {
       </section>
 
       <section
-        id="trust"
-        className="editorial-section editorial-band editorial-section-premium"
-      >
-        <MarketingContainer>
-          <div className="editorial-section-head">
-            <p className="marketing-kicker">Trust</p>
-            <h2 className="editorial-heading">
-              Illustrative examples — not customer proof
-            </h2>
-            <p className="editorial-lede">
-              This marketing page shows how the product works using fictional
-              sites and example records. It does not display customer logos,
-              testimonials, audited metrics, or third‑party certifications.
-            </p>
-          </div>
-          <div className="editorial-trust-grid">
-            <Card className="editorial-trust-card border-border/80 bg-card/80 shadow-none backdrop-blur-sm">
-              <CardHeader className="gap-1 p-5 sm:p-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <CardTitle className="text-base">Example data only</CardTitle>
-                  <StatusChip tone="accent">Marketing</StatusChip>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Previews · Bodmin Bakery (fictional)
-                </p>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
-                <p className="m-0 text-sm leading-relaxed text-muted-foreground">
-                  Numbers, screenshots and vignettes here are for layout and
-                  workflow explanation — not performance claims.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="editorial-trust-card border-border/80 bg-card/80 shadow-none backdrop-blur-sm">
-              <CardHeader className="gap-1 p-5 sm:p-6">
-                <CardTitle className="text-base">Your framework</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  The platform follows your operating model
-                </p>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
-                <p className="m-0 text-sm leading-relaxed text-muted-foreground">
-                  Standards, maturity models and problem‑solving methods belong
-                  to your organisation. The platform keeps evidence and actions
-                  aligned to them.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="editorial-trust-card border-border/80 bg-card/80 shadow-none backdrop-blur-sm">
-              <CardHeader className="gap-1 p-5 sm:p-6">
-                <CardTitle className="text-base">Demo booking</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Scheduling provider
-                </p>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
-                <p className="m-0 text-sm leading-relaxed text-muted-foreground">
-                  {DEMO_BOOKING_CTA} opens the demonstration page. Confirmation
-                  follows the provider’s normal acceptance flow — not a
-                  placeholder calendar on this site.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </MarketingContainer>
-      </section>
-
-      <section
         id="leanai"
         className="editorial-section editorial-band editorial-section-premium"
       >
@@ -742,6 +788,9 @@ export function EditorialHome() {
                   </div>
                 </div>
               </div>
+              <p className="marketing-preview-aux-note">
+                Example data · fictional site
+              </p>
               <figcaption>
                 Illustrative assistance inside an open record. LeanAI does not
                 publish standards or decide on its own.
@@ -799,32 +848,39 @@ export function EditorialHome() {
         className="editorial-section editorial-close editorial-close-premium"
       >
         <MarketingContainer>
-          <p className="marketing-kicker">Your system</p>
-          <h2 className="editorial-display editorial-close-title">
-            Your framework. Your standards. Your way of working.
-          </h2>
-          <p className="editorial-close-platform">One connected platform.</p>
-          <p className="editorial-lede">
-            LEH supplies the engine, not the doctrine. One site can start. The
-            same framework, standards and permissions extend across the
-            organisation.
-          </p>
-          <div className="editorial-actions">
-            <Button asChild className="marketing-cta">
-              <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/signup">Create an account</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/login">Sign in</Link>
-            </Button>
+          <div className="editorial-close-grid">
+            <div className="editorial-close-copy editorial-rise">
+              <p className="marketing-kicker">Your system</p>
+              <h2 className="editorial-display editorial-close-title">
+                Your framework. Your standards. Your way of working.
+              </h2>
+              <p className="editorial-close-platform">
+                One connected platform.
+              </p>
+              <p className="editorial-lede">
+                LEH supplies the engine, not the doctrine. One site can start.
+                The same framework, standards and permissions extend across the
+                organisation.
+              </p>
+              <div className="editorial-actions">
+                <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/signup">Create an account</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+              </div>
+              <p className="editorial-note">
+                Book a live demo opens the demonstration page. A meeting is
+                confirmed only after the scheduling provider accepts the time
+                you choose.
+              </p>
+            </div>
+            <CloseFrameworkVisual />
           </div>
-          <p className="editorial-note">
-            Book a live demo opens the demonstration page. A meeting is
-            confirmed only after the scheduling provider accepts the time you
-            choose.
-          </p>
         </MarketingContainer>
       </section>
     </div>

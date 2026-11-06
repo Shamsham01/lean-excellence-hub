@@ -69,6 +69,9 @@ function PreviewFrame({
           {children}
         </div>
       </div>
+      <p className="marketing-preview-aux-note">
+        Example data · fictional site
+      </p>
       <PreviewCaption>{caption}</PreviewCaption>
     </figure>
   );

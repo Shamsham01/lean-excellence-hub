@@ -226,9 +226,6 @@ describe("public marketing homepage", () => {
       within(desktopNav).getByRole("link", { name: "LeanAI" }),
     ).toHaveAttribute("href", "/#leanai");
     expect(
-      within(desktopNav).getByRole("link", { name: "Trust" }),
-    ).toHaveAttribute("href", "/#trust");
-    expect(
       within(desktopNav).getByRole("link", { name: "FAQ" }),
     ).toHaveAttribute("href", "/#faq");
   });
@@ -250,10 +247,6 @@ describe("public marketing homepage", () => {
     expect(
       within(footer).getByRole("link", { name: "Actions" }),
     ).toHaveAttribute("href", "/#actions");
-    expect(within(footer).getByRole("link", { name: "Trust" })).toHaveAttribute(
-      "href",
-      "/#trust",
-    );
     expect(within(footer).getByRole("link", { name: "FAQ" })).toHaveAttribute(
       "href",
       "/#faq",
