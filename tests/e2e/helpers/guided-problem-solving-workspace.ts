@@ -32,6 +32,35 @@ export async function expectGuidedProblemSolvingWorkspace(page: Page) {
   await expect(leanAiPanel(page)).toBeVisible();
 }
 
+/** Mobile footer link is lg:hidden; desktop uses sidebar nav back to the portfolio. */
+export async function expectProblemSolvingPortfolioNavigation(page: Page) {
+  const viewport = page.viewportSize();
+  const back = page.getByTestId("problem-solving-back-link");
+  if (viewport && viewport.width < 1024) {
+    await expect(back).toBeVisible();
+    await expect(back).toHaveAttribute("href", "/platform/problem-solving");
+    return;
+  }
+  await expect(
+    page.getByRole("link", { name: "Problem solving", exact: true }),
+  ).toBeVisible();
+}
+
+export async function goToProblemSolvingPortfolio(page: Page) {
+  const back = page.getByTestId("problem-solving-back-link");
+  if (await back.isVisible()) {
+    await expect(back).toHaveAttribute("href", "/platform/problem-solving");
+    await back.click();
+  } else {
+    await page
+      .getByRole("link", { name: "Problem solving", exact: true })
+      .click();
+  }
+  await expect(
+    page.getByTestId("problem-solving-portfolio-page"),
+  ).toBeVisible();
+}
+
 const STAGE_BUTTON_LABEL: Record<string, RegExp> = {
   CURRENT_CONDITION: /current condition|gather facts/i,
   ROOT_CAUSE_ANALYSIS: /root cause|cause analysis|analyse/i,

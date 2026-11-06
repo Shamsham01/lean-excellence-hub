@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -83,16 +83,7 @@ export function AiFacilitatorPanel({
       content: string;
       envelope?: FacilitatorEnvelope;
     }>
-  >(() =>
-    caseStatus === "active"
-      ? [
-          {
-            role: "assistant" as const,
-            content: buildGreeting(caseTitle, stageTitle, stageKey ?? null),
-          },
-        ]
-      : [],
-  );
+  >([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,31 +95,37 @@ export function AiFacilitatorPanel({
   } | null>(null);
   const [reconciling, setReconciling] = useState(false);
   const [hasPendingTurn, setHasPendingTurn] = useState(false);
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  const activeGreeting = useMemo(
+    () =>
+      caseStatus === "active"
+        ? buildGreeting(caseTitle, stageTitle, stageKey ?? viewStageKey ?? null)
+        : null,
+    [caseStatus, caseTitle, stageKey, stageTitle, viewStageKey],
+  );
+
+  const visibleMessages = useMemo(() => {
+    if (!activeGreeting) {
+      return messages;
+    }
+    if (messages.some((row) => row.role === "user")) {
+      return messages;
+    }
+    if (messages.length === 0) {
+      return [{ role: "assistant" as const, content: activeGreeting }];
+    }
+    const [first, ...rest] = messages;
+    if (
+      first?.role === "assistant" &&
+      rest.every((row) => row.role !== "user")
+    ) {
+      return [{ role: "assistant" as const, content: activeGreeting }, ...rest];
+    }
+    return messages;
+  }, [messages, activeGreeting]);
 
   useEffect(() => {
-    if (caseStatus !== "active") return;
-    const greeting = buildGreeting(
-      caseTitle,
-      stageTitle,
-      stageKey ?? viewStageKey ?? null,
-    );
-    setMessages((previous) => {
-      if (previous.length === 0) {
-        return [{ role: "assistant", content: greeting }];
-      }
-      const [first, ...rest] = previous;
-      if (
-        first?.role === "assistant" &&
-        rest.every((row) => row.role !== "user")
-      ) {
-        return [{ role: "assistant", content: greeting }];
-      }
-      return previous;
-    });
-  }, [caseStatus, caseTitle, stageKey, stageTitle, viewStageKey]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [visibleMessages, loading]);
 
   async function applyCompletedTurn(data: {
     envelope: FacilitatorEnvelope;
@@ -436,7 +433,7 @@ export function AiFacilitatorPanel({
           )}
         >
           <div className="flex flex-col gap-3 text-sm">
-            {messages.map((message, index) => (
+            {visibleMessages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
                 className={cn(

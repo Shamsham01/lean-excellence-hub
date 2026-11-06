@@ -7,6 +7,7 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   disableProblemSolvingStageAutoDraft,
+  expectProblemSolvingPortfolioNavigation,
   openProblemSolvingStage,
 } from "./helpers/guided-problem-solving-workspace";
 
@@ -32,7 +33,7 @@ async function assertFunctionalWorkspace(page: Page) {
   ).toBeVisible();
   await expect(page.getByTestId("pps-stage-rail")).toBeVisible();
   await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
-  await expect(page.getByTestId("problem-solving-back-link")).toBeVisible();
+  await expectProblemSolvingPortfolioNavigation(page);
   await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: /couldn’t load/i }),

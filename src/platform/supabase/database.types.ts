@@ -15201,6 +15201,10 @@ export type Database = {
         Args: { target_case_id: string; target_problem_statement: string }
         Returns: boolean
       }
+      update_problem_solving_target_condition: {
+        Args: { target_case_id: string; target_target_condition: string }
+        Returns: boolean
+      }
       update_schedule_definition: {
         Args: {
           target_description?: string
