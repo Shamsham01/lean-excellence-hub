@@ -54,8 +54,7 @@ function FooterProfileLink({
 }) {
   const pathname = usePathname();
   const href = `/platform/people/${membershipId}`;
-  const active =
-    pathname === href || pathname.startsWith(`${href}/`);
+  const active = pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <AppLink
@@ -84,10 +83,7 @@ export function PlatformSidebarFooter({
 }: PlatformSidebarFooterProps) {
   return (
     <div className="flex shrink-0 flex-col gap-0.5 border-t border-sidebar-border p-2">
-      <div
-        className="px-3 py-2"
-        data-testid="platform-sidebar-account"
-      >
+      <div className="px-3 py-2" data-testid="platform-sidebar-account">
         <p
           className="truncate text-sm font-semibold text-sidebar-foreground"
           data-testid="platform-sidebar-display-name"

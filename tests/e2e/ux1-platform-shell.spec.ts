@@ -51,10 +51,10 @@ test.describe("UX1 platform shell", () => {
       page.getByRole("link", { name: "Settings", exact: true }),
     ).toBeVisible();
     const chrome = page.getByTestId("platform-desktop-main-chrome");
-    await expect(chrome.getByTestId("platform-appearance-trigger")).toBeVisible();
     await expect(
-      chrome.getByTestId("platform-chrome-sign-out"),
+      chrome.getByTestId("platform-appearance-trigger"),
     ).toBeVisible();
+    await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
   });
 
   test("desktop navigation highlights active nested routes", async ({
@@ -100,7 +100,9 @@ test.describe("UX1 platform shell", () => {
         element.scrollTop = element.scrollHeight;
       });
       await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
-      await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
+      await expect(
+        chrome.getByTestId("platform-chrome-sign-out"),
+      ).toBeVisible();
     }
   });
 
