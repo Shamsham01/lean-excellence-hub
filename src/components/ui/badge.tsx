@@ -12,7 +12,7 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-muted text-muted-foreground",
         outline: "border-border text-foreground",
         success:
-          "border-transparent bg-success/15 text-success [a&]:hover:bg-success/25",
+          "border-transparent bg-success/15 text-success-foreground [a&]:hover:bg-success/25",
         warning:
           "border-transparent bg-warning/15 text-warning-foreground [a&]:hover:bg-warning/25",
         destructive:
