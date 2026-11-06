@@ -192,7 +192,7 @@
 
 .editorial-finding {
   margin-top: 0.8rem;
-  border: 1px solid var(--leh-cobalt-line);
+  border: 1px solid var(--leh-accent-line);
   border-radius: 0.6rem;
   background: color-mix(in oklab, var(--accent) 62%, var(--elevated));
   padding: 0.8rem 0.85rem 0.9rem;
@@ -309,7 +309,7 @@
   bottom: 0.85rem;
   left: 0.42rem;
   width: 1px;
-  background: var(--leh-cobalt-line);
+  background: var(--leh-accent-line);
 }
 
 .editorial-step {
@@ -337,7 +337,7 @@
   width: 1.7rem;
   height: 1.7rem;
   margin-top: 0.05rem;
-  border: 1px solid var(--leh-cobalt-line);
+  border: 1px solid var(--leh-accent-line);
   border-radius: 999px;
   background: var(--surface);
   font-size: 0.68rem;
@@ -435,7 +435,7 @@
   content: "";
   width: 0.8rem;
   height: 1px;
-  background: var(--leh-cobalt-line);
+  background: var(--leh-accent-line);
 }
 
 .editorial-chain li[data-current="true"] {
