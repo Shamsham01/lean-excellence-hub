@@ -305,6 +305,7 @@ export type Database = {
           id: string
           lesson_learned_id: string | null
           organisation_id: string
+          problem_solving_case_id: string | null
           problem_solving_session_id: string | null
           session_entry_id: string | null
           sustainment_item_id: string | null
@@ -324,6 +325,7 @@ export type Database = {
           id?: string
           lesson_learned_id?: string | null
           organisation_id: string
+          problem_solving_case_id?: string | null
           problem_solving_session_id?: string | null
           session_entry_id?: string | null
           sustainment_item_id?: string | null
@@ -343,6 +345,7 @@ export type Database = {
           id?: string
           lesson_learned_id?: string | null
           organisation_id?: string
+          problem_solving_case_id?: string | null
           problem_solving_session_id?: string | null
           session_entry_id?: string | null
           sustainment_item_id?: string | null
@@ -409,6 +412,13 @@ export type Database = {
             columns: ["organisation_id", "lesson_learned_id"]
             isOneToOne: false
             referencedRelation: "problem_solving_lessons_learned"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_problem_solving_case_id_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
             referencedColumns: ["organisation_id", "id"]
           },
           {
@@ -512,6 +522,7 @@ export type Database = {
           rejection_reason: string | null
           resolved_at: string | null
           resolved_by_membership_id: string | null
+          semantic_stage_key: string | null
           status: string
         }
         Insert: {
@@ -529,6 +540,7 @@ export type Database = {
           rejection_reason?: string | null
           resolved_at?: string | null
           resolved_by_membership_id?: string | null
+          semantic_stage_key?: string | null
           status?: string
         }
         Update: {
@@ -546,6 +558,7 @@ export type Database = {
           rejection_reason?: string | null
           resolved_at?: string | null
           resolved_by_membership_id?: string | null
+          semantic_stage_key?: string | null
           status?: string
         }
         Relationships: [
@@ -14404,6 +14417,7 @@ export type Database = {
           target_hypothesis_id?: string
           target_hypothesis_test_id?: string
           target_lesson_learned_id?: string
+          target_problem_solving_case_id?: string
           target_problem_solving_session_id?: string
           target_session_entry_id?: string
           target_sustainment_item_id?: string

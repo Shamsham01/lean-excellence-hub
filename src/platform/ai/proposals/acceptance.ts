@@ -277,7 +277,9 @@ export async function acceptAiProposal(
         },
       );
       if (psError) throw psError;
-      await recordAcceptance(supabase, proposal, {});
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
       return { resultId: caseId, resultType: proposal.proposal_type };
     }
 
@@ -292,7 +294,9 @@ export async function acceptAiProposal(
         },
       );
       if (tcError) throw tcError;
-      await recordAcceptance(supabase, proposal, {});
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
       return { resultId: caseId, resultType: proposal.proposal_type };
     }
 
@@ -346,7 +350,9 @@ export async function acceptAiProposal(
           resultType: proposal.proposal_type,
         };
       }
-      await recordAcceptance(supabase, proposal, {});
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
       return {
         resultId: analysisId as string,
         resultType: proposal.proposal_type,
@@ -377,7 +383,9 @@ export async function acceptAiProposal(
         },
       );
       if (nodeError) throw nodeError;
-      await recordAcceptance(supabase, proposal, {});
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
       return { resultId: nodeId as string, resultType: proposal.proposal_type };
     }
 
@@ -389,7 +397,7 @@ export async function acceptAiProposal(
 async function recordAcceptance(
   supabase: SupabaseClient,
   proposal: { id: string },
-  resultRef: Record<string, string>,
+  resultRef: Record<string, string | undefined>,
 ): Promise<void> {
   const { error } = await supabase.rpc("record_ai_proposal_accepted", {
     target_ai_proposal_id: proposal.id,
@@ -407,6 +415,8 @@ async function recordAcceptance(
     target_session_entry_id: resultRef.session_entry_id ?? undefined,
     target_action_id: resultRef.action_id ?? undefined,
     target_lesson_learned_id: resultRef.lesson_learned_id ?? undefined,
+    target_problem_solving_case_id:
+      resultRef.problem_solving_case_id ?? undefined,
   });
   if (error) throw error;
 }

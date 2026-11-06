@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(5);
 
 select ok(
   (
@@ -50,6 +50,17 @@ select ok(
       and procedure_row.proname = 'update_problem_solving_target_condition'
   ),
   'update_problem_solving_target_condition rpc exists'
+);
+
+select ok(
+  exists (
+    select 1
+    from information_schema.columns column_row
+    where column_row.table_schema = 'public'
+      and column_row.table_name = 'ai_proposals'
+      and column_row.column_name = 'semantic_stage_key'
+  ),
+  'ai_proposals.semantic_stage_key column exists'
 );
 
 select * from finish();
