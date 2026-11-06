@@ -26,6 +26,7 @@ export const FOUNDATION_TABLES = [
   "business_audit_events",
   "benefit_reporting_settings",
   "membership_notification_contacts",
+  "in_app_notifications",
   "workforce_provision_intents",
   "workforce_import_jobs",
   "workforce_import_rows",

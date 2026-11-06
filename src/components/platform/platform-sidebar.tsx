@@ -2,10 +2,12 @@ import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
+import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
+import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 
 type PlatformSidebarProps = {
   items: PlatformNavItem[];
@@ -14,6 +16,10 @@ type PlatformSidebarProps = {
   siteContext: ActiveSiteContext;
   member: PlatformShellMember;
   showSettings: boolean;
+  notifications: {
+    unreadCount: number;
+    items: PlatformInAppNotification[];
+  } | null;
 };
 
 function DesktopSidebar({
@@ -23,6 +29,7 @@ function DesktopSidebar({
   siteContext,
   member,
   showSettings,
+  notifications,
 }: PlatformSidebarProps) {
   return (
     <aside
@@ -33,6 +40,15 @@ function DesktopSidebar({
         organisationName={organisationName}
         organisations={organisations}
         siteContext={siteContext}
+        notificationsSlot={
+          notifications ? (
+            <PlatformNotificationBell
+              variant="header"
+              initialUnreadCount={notifications.unreadCount}
+              initialItems={notifications.items}
+            />
+          ) : null
+        }
       />
       <PlatformNavigation items={items} />
       <PlatformSidebarFooter member={member} showSettings={showSettings} />

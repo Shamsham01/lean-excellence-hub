@@ -5,6 +5,7 @@ import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { loadPlatformShellMember } from "@/modules/platform-shell/member-context";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
+import { loadPlatformNotificationSnapshot } from "@/modules/platform-shell/notifications";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 
@@ -25,9 +26,10 @@ export async function PlatformShell({
   siteContext,
   membershipId,
 }: PlatformShellProps) {
-  const [navWithSetup, member] = await Promise.all([
+  const [navWithSetup, member, notifications] = await Promise.all([
     buildVisibleNavigation(),
     loadPlatformShellMember(membershipId),
+    loadPlatformNotificationSnapshot(membershipId),
   ]);
 
   const showSettings =
@@ -46,8 +48,12 @@ export async function PlatformShell({
         siteContext={siteContext}
         member={member}
         showSettings={showSettings}
+        notifications={notifications}
       />
-      <LeanAiAssistantShell organisationId={organisationId}>
+      <LeanAiAssistantShell
+        organisationId={organisationId}
+        notifications={notifications}
+      >
         <main
           data-testid="platform-main"
           className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"

@@ -4662,6 +4662,60 @@ export type Database = {
           },
         ]
       }
+      in_app_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string
+          href: string | null
+          id: string
+          membership_id: string
+          notification_type: string
+          organisation_id: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key: string
+          href?: string | null
+          id?: string
+          membership_id: string
+          notification_type: string
+          organisation_id: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string
+          href?: string | null
+          id?: string
+          membership_id?: string
+          notification_type?: string
+          organisation_id?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "in_app_notifications_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "in_app_notifications_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_functions: {
         Row: {
           code: string
@@ -14148,8 +14202,16 @@ export type Database = {
         Args: { target_organisation_id: string; target_suggestion_id: string }
         Returns: string
       }
+      mark_all_in_app_notifications_read: {
+        Args: never
+        Returns: boolean
+      }
       mark_benefit_realised: {
         Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
+      }
+      mark_in_app_notification_read: {
+        Args: { target_notification_id: string }
         Returns: boolean
       }
       mark_suggestion_implemented: {
@@ -14965,6 +15027,10 @@ export type Database = {
           target_status: string
         }
         Returns: boolean
+      }
+      sync_overdue_action_chase_notifications: {
+        Args: never
+        Returns: number
       }
       switch_organisation: {
         Args: { target_organisation_id: string }

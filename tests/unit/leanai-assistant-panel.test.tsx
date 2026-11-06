@@ -124,7 +124,7 @@ describe("LeanAI assistant panel", () => {
   it("renders context, deterministic guidance, and collapse/reopen without sending a chat", async () => {
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -173,7 +173,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -213,7 +213,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -267,7 +267,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -322,7 +322,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -345,7 +345,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -390,7 +390,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -480,7 +480,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -532,7 +532,7 @@ describe("LeanAI assistant panel", () => {
 
     render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -566,7 +566,7 @@ describe("LeanAI assistant panel", () => {
 
     const { rerender } = render(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     await waitFor(() => {
@@ -592,7 +592,7 @@ describe("LeanAI assistant panel", () => {
     });
     rerender(
       <LeanAiAssistantProvider organisationId="org-b">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     await waitFor(() => {
