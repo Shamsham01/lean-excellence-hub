@@ -20,7 +20,7 @@
   --accent: oklch(0.945 0.012 250);
   --accent-foreground: oklch(0.28 0.06 250);
   --success: #10b981;
-  --success-foreground: oklch(0.98 0.01 145);
+  --success-foreground: oklch(0.16 0.02 145);
   --warning: #f59e0b;
   --warning-foreground: oklch(0.28 0.06 75);
   --destructive: #ef4444;
