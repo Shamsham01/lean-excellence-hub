@@ -162,7 +162,14 @@ test.describe("Maturity framework builder with LeanAI", () => {
     ).toContainText(/LeanAI is turned off/i);
     await expect(page.getByTestId("maturity-build-with-leanai")).toHaveCount(0);
     await expect(page.getByTestId("maturity-quick-start-card")).toBeVisible();
-    await expect(page.locator("#maturity-manual-create")).toBeVisible();
+    // `#maturity-manual-create` must stay unique in the primary column; strict
+    // locators fail if a duplicate appears elsewhere in the document (invalid HTML).
+    await expect(
+      page
+        .getByTestId("platform-main")
+        .getByTestId("maturity-manual-create-section")
+        .first(),
+    ).toBeVisible();
 
     await page.goto("/platform/maturity/builder");
     await expect(
