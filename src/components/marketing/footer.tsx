@@ -65,6 +65,9 @@ export function MarketingFooter() {
               <li>
                 <Link href="/login">Sign in</Link>
               </li>
+              <li>
+                <Link href="/privacy/demo-bookings">Demo booking privacy</Link>
+              </li>
             </ul>
           </nav>
         </div>
