@@ -124,7 +124,13 @@ export function AiFacilitatorPanel({
   }, [messages, activeGreeting]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // block: "nearest" keeps scroll inside the copilot transcript; the default "start"
+    // can scroll outer platform ancestors and hide the case header / stage rail on load.
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
   }, [visibleMessages, loading]);
 
   async function applyCompletedTurn(data: {

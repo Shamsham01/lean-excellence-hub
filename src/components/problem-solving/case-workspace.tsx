@@ -1,7 +1,14 @@
 "use client";
 
 import { MessageSquare } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -108,6 +115,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
+  const workspaceRootRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<{
     message: string;
     tone: "default" | "error";
@@ -156,6 +164,28 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     viewStage?.semantic_stage_key ??
     detail.current_stage?.semantic_stage_key ??
     null;
+
+  useLayoutEffect(() => {
+    const root = workspaceRootRef.current;
+    if (!root) return;
+    const viewport = root.closest(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = 0;
+    }
+    const desktopRail = root.querySelector(
+      '[data-testid="pps-stage-rail"]',
+    ) as HTMLElement | null;
+    desktopRail?.scrollTo({ top: 0 });
+    const mobileRail = root.querySelector(
+      '[data-testid="pps-stage-rail-mobile"]',
+    ) as HTMLElement | null;
+    mobileRail?.scrollTo({ left: 0 });
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+  }, [detail.id]);
 
   const mergeChatPendingProposals = useCallback(
     (incoming: PendingProposal[]) => {
@@ -414,6 +444,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
 
   return (
     <div
+      ref={workspaceRootRef}
       className="pps-flagship-workspace flex min-h-0 min-w-0 flex-1 flex-col"
       data-testid="problem-solving-workspace"
     >
