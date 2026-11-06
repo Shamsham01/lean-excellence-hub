@@ -403,21 +403,6 @@ body {
   --leh-connected-bg: oklch(0.963343 0.015089 249.965);
   --leh-connected-ink: oklch(0.455 0.145 268.5);
 
-  /* Legacy marketing variable names — map to the official system (no retired hues). */
-  --leh-paper: var(--leh-canvas-light);
-  --leh-paper-band: var(--leh-surface);
-  --leh-paper-raised: var(--leh-card-light);
-  --leh-paper-muted: var(--leh-muted);
-  --leh-cobalt: var(--leh-accent);
-  --leh-cobalt-strong: var(--leh-accent-hover);
-  --leh-cobalt-ink: var(--leh-accent-ink);
-  --leh-cobalt-soft: var(--leh-accent-soft);
-  --leh-cobalt-line: var(--leh-accent-line);
-  --leh-teal: var(--leh-accent);
-  --leh-teal-ink: var(--leh-connected-ink);
-  --leh-teal-soft: var(--leh-connected-bg);
-  --leh-teal-line: var(--leh-accent-line);
-
   --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.75);
   --leh-shadow-header: 0 10px 24px -20px oklch(0.22 0.025 260 / 0.45);
   --leh-shadow-press: 0 1px 2px oklch(0.22 0.025 260 / 0.16);
@@ -432,7 +417,7 @@ body {
   --muted: var(--leh-muted);
   --muted-foreground: var(--leh-ink-muted);
   --border: var(--leh-line);
-  --primary: var(--leh-cobalt);
+  --primary: var(--leh-accent);
   /* WCAG AA: white on primary fill */
   --primary-foreground: oklch(1 0 none);
   --accent: var(--leh-accent-soft);
@@ -471,19 +456,6 @@ body {
   --leh-accent-line: oklch(0.48 0.12 268);
   --leh-connected-bg: oklch(0.24 0.036 262);
   --leh-connected-ink: var(--leh-accent-ink);
-  --leh-paper: var(--leh-canvas-dark);
-  --leh-paper-band: var(--leh-surface);
-  --leh-paper-raised: var(--leh-card-dark);
-  --leh-paper-muted: var(--leh-muted);
-  --leh-cobalt: var(--leh-accent);
-  --leh-cobalt-strong: var(--leh-accent-hover);
-  --leh-cobalt-ink: var(--leh-accent-ink);
-  --leh-cobalt-soft: var(--leh-accent-soft);
-  --leh-cobalt-line: var(--leh-accent-line);
-  --leh-teal: var(--leh-accent);
-  --leh-teal-ink: var(--leh-connected-ink);
-  --leh-teal-soft: var(--leh-connected-bg);
-  --leh-teal-line: var(--leh-accent-line);
   --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.055);
   --leh-shadow-header: 0 10px 24px -18px oklch(0 0 0 / 0.8);
   --leh-shadow-press: 0 1px 2px oklch(0 0 0 / 0.4);
@@ -498,7 +470,7 @@ body {
   --muted: var(--leh-muted);
   --muted-foreground: var(--leh-ink-muted);
   --border: var(--leh-line);
-  --primary: var(--leh-cobalt);
+  --primary: var(--leh-accent);
   --primary-foreground: oklch(1 0 none);
   --accent: var(--leh-accent-soft);
   --accent-foreground: var(--leh-accent-ink);
@@ -546,6 +518,344 @@ body {
   .marketing {
     --marketing-gutter: 2rem;
     --marketing-section-y: 6.25rem;
+  }
+}
+
+.marketing-landing {
+  /* Light: panel one step below raised card (slate-50 / white) — oklch only in this block */
+  --marketing-vignette-panel: oklch(0.985 0.002 248);
+  --marketing-vignette-raised: oklch(1 0 none);
+  --marketing-vignette-border: color-mix(
+    in oklab,
+    oklch(0.929 0.008 255) 62%,
+    var(--primary) 38%
+  );
+  --marketing-vignette-inner: oklch(0.968 0.007 248);
+  --marketing-vignette-chrome: color-mix(
+    in oklab,
+    oklch(0.985 0.002 248) 45%,
+    oklch(1 0 none) 55%
+  );
+  --marketing-ambient: color-mix(
+    in oklab,
+    var(--primary) 4%,
+    var(--background)
+  );
+  background:
+    radial-gradient(
+      120% 55% at 50% -15%,
+      color-mix(in oklab, var(--primary) 14%, transparent) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      var(--marketing-ambient) 0%,
+      var(--background) 42%,
+      var(--background) 100%
+    );
+}
+
+.dark .marketing-landing {
+  /* Dark: canvas panel, card-level preview — reuse LEH marketing tokens (TOKENS.md anchors) */
+  --marketing-vignette-panel: var(--background);
+  --marketing-vignette-raised: var(--card);
+  --marketing-vignette-border: color-mix(
+    in oklab,
+    var(--border) 68%,
+    var(--primary) 32%
+  );
+  --marketing-vignette-inner: color-mix(
+    in oklab,
+    var(--background) 58%,
+    var(--card) 42%
+  );
+  --marketing-vignette-chrome: color-mix(
+    in oklab,
+    var(--card) 52%,
+    var(--muted) 48%
+  );
+  background:
+    radial-gradient(
+      110% 50% at 50% -12%,
+      color-mix(in oklab, var(--primary) 18%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      var(--marketing-ambient) 0%,
+      var(--background) 38%,
+      var(--background) 100%
+    );
+}
+
+.marketing-landing .marketing-header-bar {
+  border-bottom-color: color-mix(in oklab, var(--border) 82%, transparent);
+  background: color-mix(in oklab, var(--background) 78%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.marketing-landing .marketing-footer-sleek {
+  padding-block: 1.35rem 1rem;
+  border-top-color: color-mix(in oklab, var(--border) 88%, transparent);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in oklab, var(--surface) 42%, var(--background)) 100%
+  );
+}
+
+.marketing-footer-sleek .marketing-footer-sleek-grid {
+  display: grid;
+  gap: 1.25rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-footer-sleek .marketing-footer-sleek-grid {
+    grid-template-columns: minmax(10rem, 1.15fr) repeat(3, minmax(0, 1fr));
+    gap: 1rem 1.75rem;
+    align-items: start;
+  }
+}
+
+.marketing-footer-sleek .marketing-footer-brand .leh-brand {
+  --leh-brand-lockup: 13.5rem;
+}
+
+.marketing-footer-sleek .marketing-footer-heading {
+  margin: 0;
+  letter-spacing: 0.12em;
+}
+
+.marketing-footer-sleek .marketing-footer-list {
+  gap: 0.05rem;
+  margin-top: 0.45rem;
+}
+
+.marketing-footer-sleek .marketing-footer-list a {
+  min-height: 1.75rem;
+  font-size: 0.8125rem;
+}
+
+.marketing-footer-sleek .marketing-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 1.15rem;
+  border-top: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  padding-top: 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.marketing-footer-sleek .marketing-footer-copyright {
+  margin: 0;
+}
+
+.marketing-preview-aux-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.marketing-field-label {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-field-value {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.marketing-landing .marketing-preview.marketing-preview-product {
+  border-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-raised);
+  box-shadow:
+    var(--leh-highlight),
+    var(--marketing-shadow-lift),
+    0 0 0 1px color-mix(in oklab, var(--primary) 9%, transparent);
+}
+
+.marketing-landing .marketing-preview-chrome-product {
+  border-bottom-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-chrome);
+}
+
+.marketing-landing .marketing-preview-body {
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 88%,
+    var(--marketing-vignette-raised) 12%
+  );
+}
+
+.marketing-landing .marketing-preview-record,
+.marketing-landing .marketing-adherence li,
+.marketing-landing .marketing-action-list li {
+  border-color: color-mix(in oklab, var(--border) 72%, var(--primary) 28%);
+  background: var(--marketing-vignette-inner);
+}
+
+.marketing-landing .marketing-matrix th,
+.marketing-landing .marketing-matrix td {
+  border-bottom-color: color-mix(in oklab, var(--border) 78%, transparent);
+}
+
+.marketing-landing .editorial-modules-premium .editorial-module {
+  background: var(--marketing-vignette-panel);
+  border-color: var(--marketing-vignette-border);
+}
+
+.marketing-landing .editorial-story-shell {
+  background: var(--marketing-vignette-raised);
+  border-color: var(--marketing-vignette-border);
+}
+
+.marketing-landing .editorial-record {
+  background: var(--marketing-vignette-inner);
+  border-color: var(--marketing-vignette-border);
+}
+
+.marketing-landing .editorial-hero-os-surface {
+  border-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-raised);
+}
+
+.marketing-landing .editorial-hero-os-topbar {
+  border-bottom-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-chrome);
+}
+
+.marketing-landing .editorial-hero-os-rail {
+  border-color: var(--marketing-vignette-border);
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 55%,
+    var(--marketing-vignette-raised) 45%
+  );
+}
+
+.marketing-landing .editorial-hero-os-detail {
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 88%,
+    var(--marketing-vignette-raised) 12%
+  );
+}
+
+.marketing-landing .editorial-hero-kpi-cell {
+  border-color: color-mix(in oklab, var(--border) 68%, var(--primary) 32%);
+  background: var(--marketing-vignette-inner);
+}
+
+.marketing-landing .editorial-fields > div {
+  border-radius: 0.5rem;
+  border: 1px solid
+    color-mix(in oklab, var(--marketing-vignette-border) 88%, transparent);
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 72%,
+    var(--marketing-vignette-raised) 28%
+  );
+  padding: 0.55rem 0.65rem 0.6rem;
+}
+
+.marketing-landing .editorial-fields dt {
+  color: var(--muted-foreground);
+}
+
+.marketing-landing .editorial-fields dd {
+  font-weight: 650;
+  color: var(--foreground);
+}
+
+.marketing-product-vignette .marketing-preview-caption {
+  margin-top: 0.35rem;
+}
+
+.marketing-product-vignette-dots {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.3rem;
+}
+
+.marketing-product-vignette-dots i {
+  display: block;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--leh-line-strong);
+}
+
+.marketing-preview-chrome-product {
+  gap: 0.65rem;
+}
+
+.marketing-preview-chrome-product-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.marketing-product-vignette-route {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+
+.marketing-preview-product {
+  border-color: color-mix(in oklab, var(--border) 92%, var(--primary) 8%);
+  box-shadow:
+    var(--leh-highlight),
+    var(--marketing-shadow-lift),
+    0 0 0 1px color-mix(in oklab, var(--primary) 6%, transparent);
+}
+
+.marketing-landing .marketing-preview-product {
+  border-radius: calc(var(--marketing-radius) + 0.1rem);
+}
+
+.marketing-preview-body-touch .marketing-adherence li {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-preview-product {
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .marketing-landing .marketing-preview-product:hover {
+    border-color: color-mix(in oklab, var(--border) 72%, var(--primary) 28%);
+    box-shadow:
+      var(--leh-highlight),
+      var(--marketing-shadow-lift),
+      0 0 0 1px color-mix(in oklab, var(--primary) 14%, transparent);
+  }
+
+  .marketing:not(.marketing-landing) .marketing-preview-product:hover {
+    border-color: color-mix(in oklab, var(--border) 78%, var(--primary) 22%);
+    box-shadow:
+      var(--leh-highlight),
+      var(--marketing-shadow-lift),
+      0 0 0 1px color-mix(in oklab, var(--primary) 12%, transparent);
   }
 }
 

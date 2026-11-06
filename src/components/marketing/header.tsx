@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { href: "/#platform", label: "Platform" },
   { href: "/#why", label: "Why LEH" },
   { href: "/#leanai", label: "LeanAI" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 export function MarketingHeader() {

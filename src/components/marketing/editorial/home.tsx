@@ -4,17 +4,19 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
-import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import {
   MarketingModuleFigure,
+  ProductVignetteChrome,
   type MarketingModuleId,
 } from "@/components/marketing/platform-previews";
 import {
   MarketingContainer,
   StatusChip,
 } from "@/components/marketing/primitives";
+import { cn } from "@/lib/utils";
 
 import "./home.css";
 
@@ -124,37 +126,6 @@ const LINEAGE: readonly LineageStep[] = [
   },
 ];
 
-const HERO_LINKS = [
-  {
-    ref: "ACT-318",
-    title: "Corrective action",
-    detail: "Packing supervisor · due Friday",
-    status: "Assigned",
-    tone: "accent" as const,
-  },
-  {
-    ref: "PS-077",
-    title: "Problem solving",
-    detail: "CI team · chosen method",
-    status: "Cause analysis",
-    tone: "accent" as const,
-  },
-  {
-    ref: "PRJ-042",
-    title: "Improvement project",
-    detail: "Film-path countermeasures",
-    status: "Active",
-    tone: "connected" as const,
-  },
-  {
-    ref: "BEN-019",
-    title: "Benefit",
-    detail: "Qualitative · no amount shown",
-    status: "Awaiting validation",
-    tone: "neutral" as const,
-  },
-] as const;
-
 const MODULES: ReadonlyArray<{
   id: MarketingModuleId;
   name: string;
@@ -202,6 +173,29 @@ const MODULES: ReadonlyArray<{
   },
 ];
 
+const FAQ_ITEMS = [
+  {
+    id: "faq-what",
+    q: "What is Lean Excellence Hub?",
+    a: "A B2B platform for Continuous Improvement and Operational Excellence: maturity, Gemba, 5S, suggestions, actions, problem solving, projects, benefits, scheduling, recognition, training and capability in one connected system.",
+  },
+  {
+    id: "faq-demo",
+    q: "How do I book a demonstration?",
+    a: "Use Book a live demo to open the scheduling page. A meeting is confirmed only after the scheduling provider accepts the time you choose.",
+  },
+  {
+    id: "faq-data",
+    q: "Are the records on this page real customer data?",
+    a: "No. Product previews and examples on this marketing site use illustrative records only. They are not customer performance data.",
+  },
+  {
+    id: "faq-leanai",
+    q: "How does LeanAI relate to publishing and access?",
+    a: "LeanAI can find, explain and recommend inside the current organisation, site and workflow. Publishing, closure, access and purchasing stay with a person.",
+  },
+] as const;
+
 const LEAN_BEATS = [
   {
     index: "01",
@@ -235,73 +229,310 @@ const LEAN_BEATS = [
   },
 ] as const;
 
-const WINDOW_NAV = [
-  "Gemba",
-  "Actions",
-  "Problem solving",
-  "Projects",
-  "Benefits",
+const HERO_PS_STAGES = [
+  {
+    id: "clarify",
+    title: "Clarify",
+    caption: "Problem statement",
+    state: "complete" as const,
+  },
+  {
+    id: "measure",
+    title: "Measure",
+    caption: "Evidence & baseline",
+    state: "complete" as const,
+  },
+  {
+    id: "analyse",
+    title: "Analyse",
+    caption: "Root causes",
+    state: "current" as const,
+  },
+  {
+    id: "improve",
+    title: "Improve",
+    caption: "Countermeasures",
+    state: "upcoming" as const,
+  },
+  {
+    id: "sustain",
+    title: "Sustain",
+    caption: "Standards & control",
+    state: "upcoming" as const,
+  },
 ] as const;
 
-function HeroWorkspace() {
+const HERO_KPIS = [
+  { id: "actions", label: "Open actions", value: "12" },
+  { id: "cases", label: "Cases in flight", value: "4" },
+  { id: "validation", label: "Validations due", value: "2" },
+] as const;
+
+function HeroComposition() {
   return (
-    <figure className="editorial-stage">
-      <div className="editorial-window">
-        <div className="editorial-window-bar">
-          <span className="editorial-dots" aria-hidden="true">
+    <figure className="editorial-stage editorial-hero-os">
+      <div className="editorial-hero-os-surface overflow-hidden rounded-[0.8rem] border border-border bg-elevated shadow-[var(--leh-highlight),var(--marketing-shadow-lift)]">
+        <div className="editorial-hero-os-topbar flex items-center gap-2 border-b border-border bg-[color-mix(in_oklab,var(--muted)_65%,var(--elevated))] px-3 py-2 sm:px-3.5">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
             <i />
             <i />
             <i />
           </span>
-          <div className="editorial-window-title">
-            <LehBrand decorative variant="icon" />
-            <p>Lean Excellence Hub</p>
+          <p className="min-w-0 truncate text-[0.75rem] font-semibold tracking-wide text-foreground">
+            Problem solving · PS-077
+          </p>
+          <div className="ml-auto shrink-0">
+            <StatusChip>Example</StatusChip>
           </div>
-          <StatusChip>Example</StatusChip>
         </div>
-        <div className="editorial-window-body">
-          <nav className="editorial-nav" aria-hidden="true">
-            <p>Bodmin Bakery</p>
-            <ul>
-              {WINDOW_NAV.map((item) => (
-                <li key={item} data-current={item === "Gemba" || undefined}>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className="editorial-window-main">
-            <p className="editorial-context-kicker">
-              Harbourfield Foods Group · Bodmin Bakery · Packing
+
+        <div className="editorial-hero-os-main grid min-w-0 grid-cols-1 gap-0 lg:grid-cols-[minmax(7.25rem,9.25rem)_minmax(0,1fr)]">
+          <div
+            className="editorial-hero-os-rail border-b border-border bg-[color-mix(in_oklab,var(--muted)_42%,var(--elevated))] p-2 lg:border-r lg:border-b-0"
+            role="group"
+            aria-label="Example methodology-neutral stages"
+          >
+            <p className="editorial-context-kicker mb-2 px-0.5 text-[0.62rem] sm:text-[0.68rem]">
+              Stages
             </p>
-            <div className="editorial-finding">
-              <div className="editorial-finding-top">
-                <p>GEM-214</p>
-                <StatusChip tone="warning">Issue</StatusChip>
-              </div>
-              <p className="editorial-finding-title">
-                Packaging film misaligned on Packing Line 1
+            <ol className="editorial-hero-os-stages m-0 flex [scrollbar-width:none] list-none flex-row gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+              {HERO_PS_STAGES.map((stage, index) => {
+                const isLast = index === HERO_PS_STAGES.length - 1;
+                return (
+                  <li
+                    key={stage.id}
+                    className={cn(
+                      "editorial-hero-os-stage relative min-w-[5.85rem] flex-1 lg:min-w-0 lg:flex-none",
+                      !isLast && "lg:pb-2",
+                    )}
+                  >
+                    {!isLast ? (
+                      <span
+                        className="editorial-hero-os-connector hidden lg:block"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <div
+                      className={cn(
+                        "editorial-hero-os-stage-inner flex h-full flex-col gap-1 rounded-md border px-2 py-1.5 sm:px-2.5 sm:py-2",
+                        stage.state === "complete" &&
+                          "border-[color-mix(in_oklab,var(--success)_35%,var(--border))] bg-[color-mix(in_oklab,var(--success)_12%,var(--elevated))]",
+                        stage.state === "current" &&
+                          "editorial-hero-os-stage-current border-primary/35 bg-[color-mix(in_oklab,var(--accent)_70%,var(--elevated))] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--primary)_25%,transparent)]",
+                        stage.state === "upcoming" &&
+                          "border-border/80 bg-[color-mix(in_oklab,var(--muted)_55%,var(--elevated))] opacity-[0.92]",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[0.68rem] leading-tight font-semibold tracking-tight text-foreground sm:text-[0.72rem]">
+                          {stage.title}
+                        </span>
+                        {stage.state === "complete" ? (
+                          <StatusChip tone="success">Done</StatusChip>
+                        ) : null}
+                        {stage.state === "current" ? (
+                          <span className="editorial-hero-os-pulse">
+                            <StatusChip tone="warning">Current</StatusChip>
+                          </span>
+                        ) : null}
+                        {stage.state === "upcoming" ? (
+                          <span
+                            className="rounded border border-border/80 bg-muted px-1 py-px text-[0.6rem] font-semibold tracking-wide text-muted-foreground uppercase"
+                            aria-hidden="true"
+                          >
+                            ···
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="m-0 text-[0.62rem] leading-snug text-muted-foreground sm:text-[0.65rem]">
+                        {stage.caption}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <div className="editorial-hero-os-detail flex min-w-0 flex-col gap-3 p-3 sm:gap-3.5 sm:p-3.5">
+            <div className="min-w-0">
+              <p className="editorial-context-kicker">
+                Bodmin Bakery · Packing line 1
               </p>
-              <p className="editorial-finding-meta">
-                Morning Gemba walk · Packing supervisor · finding recorded
+              <h2 className="mt-1 text-base leading-snug font-semibold tracking-tight text-foreground sm:text-lg">
+                Recurring film wander after changeovers
+              </h2>
+              <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted-foreground">
+                Methodology-neutral stages · evidence stays with the case
               </p>
             </div>
-            <ul className="editorial-links">
-              {HERO_LINKS.map((link) => (
-                <li key={link.ref}>
-                  <p className="editorial-link-ref">{link.ref}</p>
-                  <p className="editorial-link-title">{link.title}</p>
-                  <p className="editorial-link-detail">{link.detail}</p>
-                  <StatusChip tone={link.tone}>{link.status}</StatusChip>
-                </li>
+
+            <Card className="gap-3 border-primary/20 bg-[color-mix(in_oklab,var(--accent)_45%,var(--card))] p-4 shadow-none sm:p-4">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-sm font-semibold sm:text-[0.9375rem]">
+                    LeanAI · proposal
+                  </CardTitle>
+                  <StatusChip tone="accent">Review</StatusChip>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Context · PS-077 · Analyse
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2 p-0">
+                <p className="m-0 text-[0.8125rem] leading-relaxed text-foreground">
+                  Add a run chart for film position by changeover batch before
+                  moving to countermeasures. A person chooses whether to apply
+                  this in the case.
+                </p>
+                <p className="m-0 text-[0.7rem] leading-normal text-muted-foreground">
+                  Publishing and closure stay with a person.
+                </p>
+              </CardContent>
+            </Card>
+
+            <div
+              className="editorial-hero-kpi-strip grid grid-cols-3 gap-2 border-t border-border/80 pt-3"
+              role="group"
+              aria-label="Example operational KPIs"
+            >
+              {HERO_KPIS.map((kpi) => (
+                <div
+                  key={kpi.id}
+                  className="editorial-hero-kpi-cell min-w-0 rounded-md border border-border/70 px-2 py-1.5 text-center sm:px-2.5"
+                >
+                  <p className="m-0 truncate text-[0.62rem] font-medium tracking-wide text-muted-foreground uppercase sm:text-[0.65rem]">
+                    {kpi.label}
+                  </p>
+                  <p className="m-0 mt-0.5 text-base font-semibold tracking-tight text-foreground tabular-nums sm:text-lg">
+                    {kpi.value}
+                  </p>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       </div>
-      <figcaption>
-        Illustrative workspace. Harbourfield Foods Group — Bodmin Bakery is a
-        fictional site.
+      <figcaption className="marketing-preview-aux-note">
+        Example data · fictional site
+      </figcaption>
+    </figure>
+  );
+}
+
+function CloseFrameworkVisual() {
+  return (
+    <figure className="editorial-close-visual editorial-rise editorial-rise-delay">
+      <div className="editorial-framework-shell">
+        <div className="editorial-framework-chrome">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
+            <i />
+            <i />
+            <i />
+          </span>
+          <p className="m-0 min-w-0 flex-1 truncate text-[0.72rem] font-semibold tracking-wide text-foreground">
+            Operating model
+          </p>
+          <StatusChip className="shrink-0">Example</StatusChip>
+        </div>
+        <div className="editorial-framework-body">
+          <p className="editorial-framework-kicker">Structure</p>
+          <ol
+            className="editorial-framework-layers"
+            aria-label="Organisation structure"
+          >
+            <li className="editorial-framework-layer editorial-framework-layer-org">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Organisation</p>
+                <StatusChip tone="accent">Configured</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Harbourfield Foods Group
+              </p>
+            </li>
+            <li className="editorial-framework-layer editorial-framework-layer-site">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Sites</p>
+                <StatusChip tone="connected">Rolled out</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Bodmin Bakery · Manchester DC
+              </p>
+            </li>
+            <li className="editorial-framework-layer editorial-framework-layer-area">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Areas</p>
+                <StatusChip tone="neutral">Scoped</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Packing · Goods-in · Maintenance
+              </p>
+            </li>
+          </ol>
+          <p className="editorial-framework-kicker editorial-framework-kicker-spaced">
+            Your standards & methods
+          </p>
+          <div className="editorial-framework-cards">
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Maturity model
+                  </CardTitle>
+                  <StatusChip tone="accent">Yours</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Framework</p>
+                <p className="marketing-field-value">
+                  LEH Operational Excellence Standard
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Problem solving
+                  </CardTitle>
+                  <StatusChip tone="connected">Method</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Organisation method</p>
+                <p className="marketing-field-value">
+                  The organisation&apos;s chosen method (example: A3 · DMAIC ·
+                  8D)
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Standards library
+                  </CardTitle>
+                  <StatusChip tone="connected">Aligned</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Work standards</p>
+                <p className="marketing-field-value">
+                  Packing changeover · Goods-in 5S · Film path control
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+      <figcaption className="marketing-preview-aux-note">
+        Example data · fictional site
       </figcaption>
     </figure>
   );
@@ -316,7 +547,7 @@ function FindingStory() {
   }
 
   return (
-    <div className="editorial-story">
+    <div className="editorial-story editorial-story-shell">
       <ol className="editorial-lineage">
         {LINEAGE.map((step) => {
           const selected = step.id === active.id;
@@ -399,20 +630,27 @@ export function EditorialHome() {
                 organisational learning in one platform built around your
                 standards.
               </p>
-              <div className="editorial-actions">
+              <div className="editorial-actions editorial-hero-actions">
                 <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="editorial-hero-tertiary"
+                >
                   <a href="#platform">
                     Explore the platform
                     <ArrowRight aria-hidden="true" className="size-4" />
                   </a>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/signup">Create an account</Link>
-                </Button>
               </div>
             </div>
             <div className="editorial-rise editorial-rise-delay">
-              <HeroWorkspace />
+              <HeroComposition />
             </div>
           </div>
           <p className="editorial-principle">
@@ -422,7 +660,10 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="why" className="editorial-section editorial-band">
+      <section
+        id="why"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-section-head">
             <p className="marketing-kicker">From one finding</p>
@@ -444,7 +685,10 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="platform" className="editorial-section">
+      <section
+        id="platform"
+        className="editorial-section editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-section-head">
             <p className="marketing-kicker">The platform</p>
@@ -464,7 +708,7 @@ export function EditorialHome() {
               Scheduling and recognition are part of the same operating system.
             </p>
           </div>
-          <ol className="editorial-modules">
+          <ol className="editorial-modules editorial-modules-premium">
             {MODULES.map((module, index) => (
               <li key={module.id} className="editorial-module">
                 <div className="editorial-module-copy">
@@ -481,7 +725,10 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="leanai" className="editorial-section editorial-band">
+      <section
+        id="leanai"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-lean">
             <div className="editorial-section-head">
@@ -508,11 +755,14 @@ export function EditorialHome() {
             </div>
 
             <figure className="editorial-assistant">
-              <div className="marketing-preview">
-                <div className="marketing-preview-chrome">
-                  <p className="marketing-preview-title">LeanAI</p>
-                  <StatusChip tone="accent">Contextual assistant</StatusChip>
-                </div>
+              <div className="marketing-preview marketing-preview-product">
+                <ProductVignetteChrome
+                  title="LeanAI"
+                  route="/platform · Assistant · GEM-214"
+                  badge={
+                    <StatusChip tone="accent">Contextual assistant</StatusChip>
+                  }
+                />
                 <div className="marketing-preview-body">
                   <p className="editorial-label">Context</p>
                   <ol className="editorial-context-path">
@@ -538,6 +788,9 @@ export function EditorialHome() {
                   </div>
                 </div>
               </div>
+              <p className="marketing-preview-aux-note">
+                Example data · fictional site
+              </p>
               <figcaption>
                 Illustrative assistance inside an open record. LeanAI does not
                 publish standards or decide on its own.
@@ -547,34 +800,87 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="close" className="editorial-section editorial-close">
+      <section id="faq" className="editorial-section editorial-section-premium">
         <MarketingContainer>
-          <p className="marketing-kicker">Your system</p>
-          <h2 className="editorial-display editorial-close-title">
-            Your framework. Your standards. Your way of working.
-          </h2>
-          <p className="editorial-close-platform">One connected platform.</p>
-          <p className="editorial-lede">
-            LEH supplies the engine, not the doctrine. One site can start. The
-            same framework, standards and permissions extend across the
-            organisation.
-          </p>
-          <div className="editorial-actions">
-            <Button asChild className="marketing-cta">
-              <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/signup">Create an account</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/login">Sign in</Link>
-            </Button>
+          <div className="editorial-section-head">
+            <p className="marketing-kicker">FAQ</p>
+            <h2 className="editorial-heading">
+              Straight answers — no invented proof
+            </h2>
+            <p className="editorial-lede">
+              Common questions about this page and how to try the product. No
+              customer metrics or logos appear here.
+            </p>
           </div>
-          <p className="editorial-note">
-            Book a live demo opens the demonstration page. A meeting is
-            confirmed only after the scheduling provider accepts the time you
-            choose.
-          </p>
+          <div className="editorial-faq">
+            {FAQ_ITEMS.map((item) => (
+              <details
+                key={item.id}
+                id={item.id}
+                className="editorial-faq-item group border border-border/80 bg-elevated/90"
+              >
+                <summary className="cursor-pointer list-none px-4 py-3.5 text-left text-sm font-semibold text-foreground ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-5 sm:py-4 sm:text-[0.9375rem] [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                </summary>
+                <div className="border-t border-border/60 px-4 pt-0 pb-4 sm:px-5 sm:pb-5">
+                  <p className="m-0 pt-3 text-sm leading-relaxed text-muted-foreground">
+                    {item.a}
+                  </p>
+                  {item.id === "faq-demo" ? (
+                    <p className="mt-3 text-sm">
+                      <Link
+                        href="/demo"
+                        className="font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                      >
+                        {DEMO_BOOKING_CTA}
+                      </Link>
+                    </p>
+                  ) : null}
+                </div>
+              </details>
+            ))}
+          </div>
+        </MarketingContainer>
+      </section>
+
+      <section
+        id="close"
+        className="editorial-section editorial-close editorial-close-premium"
+      >
+        <MarketingContainer>
+          <div className="editorial-close-grid">
+            <div className="editorial-close-copy editorial-rise">
+              <p className="marketing-kicker">Your system</p>
+              <h2 className="editorial-display editorial-close-title">
+                Your framework. Your standards. Your way of working.
+              </h2>
+              <p className="editorial-close-platform">
+                One connected platform.
+              </p>
+              <p className="editorial-lede">
+                LEH supplies the engine, not the doctrine. One site can start.
+                The same framework, standards and permissions extend across the
+                organisation.
+              </p>
+              <div className="editorial-actions">
+                <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/signup">Create an account</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+              </div>
+              <p className="editorial-note">
+                Book a live demo opens the demonstration page. A meeting is
+                confirmed only after the scheduling provider accepts the time
+                you choose.
+              </p>
+            </div>
+            <CloseFrameworkVisual />
+          </div>
         </MarketingContainer>
       </section>
     </div>
