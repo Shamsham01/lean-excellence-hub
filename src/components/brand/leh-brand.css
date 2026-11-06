@@ -86,6 +86,36 @@
   --leh-crop-h: 355;
 }
 
+/* Marketing header: both horizontal masters share one ink box (see LEH_BRAND.horizontalCrop).
+   Without the sidebar crop, light vs dark SVGs can lay out at different heights inside the
+   fixed slot and resize sticky chrome when Appearance flips — breaks marketing-header E2E. */
+.marketing .leh-brand[data-variant="full"] {
+  --leh-src-w: 2172;
+  --leh-src-h: 724;
+  --leh-crop-x: 199;
+  --leh-crop-y: 187;
+  --leh-crop-w: 1779;
+  --leh-crop-h: 355;
+}
+
+.marketing .leh-brand[data-variant="full"] .leh-brand-lockup-img {
+  width: calc(
+    var(--leh-brand-lockup-height) * var(--leh-src-w) / var(--leh-crop-h)
+  );
+  max-width: none;
+  height: calc(
+    var(--leh-brand-lockup-height) * var(--leh-src-h) / var(--leh-crop-h)
+  );
+  margin-left: calc(
+    -1 * var(--leh-brand-lockup-height) * var(--leh-crop-x) / var(--leh-crop-h)
+  );
+  margin-top: calc(
+    -1 * var(--leh-brand-lockup-height) * var(--leh-crop-y) / var(--leh-crop-h)
+  );
+  object-fit: none;
+  object-position: left top;
+}
+
 /* Crop transparent margins so sidebar ink fills the slot (SVG or PNG). */
 .leh-brand--platform-sidebar .leh-brand-lockup-img {
   width: calc(
