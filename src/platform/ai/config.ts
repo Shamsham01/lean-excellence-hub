@@ -66,13 +66,7 @@ export function isApplicationAiProviderAvailable(): boolean {
 
   const provider = env.AI_PROVIDER ?? "openai";
   if (provider === "fake") {
-    const inCiE2eBuild =
-      process.env.CI === "1" && process.env.NODE_ENV === "production";
-    if (
-      process.env.NODE_ENV === "production" &&
-      !isLocalSupabaseE2eRuntime() &&
-      !inCiE2eBuild
-    ) {
+    if (process.env.NODE_ENV === "production" && !isLocalSupabaseE2eRuntime()) {
       return false;
     }
     return env.AI_ALLOW_FAKE_PROVIDER === "1";

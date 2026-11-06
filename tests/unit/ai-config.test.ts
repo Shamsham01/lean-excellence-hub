@@ -48,13 +48,25 @@ describe("parseAiEnvironment", () => {
 });
 
 describe("isApplicationAiProviderAvailable", () => {
-  it("allows fake provider in CI production (Playwright build+start) when explicitly allowed", async () => {
+  it("allows fake provider in production when E2E_WITH_SUPABASE=1 (Playwright webServer)", async () => {
     vi.resetModules();
     vi.stubEnv("AI_ENABLED", "1");
     vi.stubEnv("AI_PROVIDER", "fake");
     vi.stubEnv("AI_ALLOW_FAKE_PROVIDER", "1");
-    vi.stubEnv("CI", "1");
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("E2E_WITH_SUPABASE", "1");
+
+    const { isApplicationAiProviderAvailable } =
+      await import("@/platform/ai/config");
+    expect(isApplicationAiProviderAvailable()).toBe(true);
+  });
+
+  it("allows fake provider in development without E2E_WITH_SUPABASE", async () => {
+    vi.resetModules();
+    vi.stubEnv("AI_ENABLED", "1");
+    vi.stubEnv("AI_PROVIDER", "fake");
+    vi.stubEnv("AI_ALLOW_FAKE_PROVIDER", "1");
+    vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("E2E_WITH_SUPABASE", "");
 
     const { isApplicationAiProviderAvailable } =
@@ -62,14 +74,28 @@ describe("isApplicationAiProviderAvailable", () => {
     expect(isApplicationAiProviderAvailable()).toBe(true);
   });
 
-  it("still blocks fake provider in production when not CI and not local Supabase E2E", async () => {
+  it("blocks fake provider in production when E2E_WITH_SUPABASE is unset (e.g. hosted)", async () => {
     vi.resetModules();
     vi.stubEnv("AI_ENABLED", "1");
     vi.stubEnv("AI_PROVIDER", "fake");
     vi.stubEnv("AI_ALLOW_FAKE_PROVIDER", "1");
-    vi.stubEnv("CI", "");
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("E2E_WITH_SUPABASE", "");
+    vi.stubEnv("CI", "true");
+
+    const { isApplicationAiProviderAvailable } =
+      await import("@/platform/ai/config");
+    expect(isApplicationAiProviderAvailable()).toBe(false);
+  });
+
+  it("blocks fake provider in production when E2E_WITH_SUPABASE is empty string", async () => {
+    vi.resetModules();
+    vi.stubEnv("AI_ENABLED", "1");
+    vi.stubEnv("AI_PROVIDER", "fake");
+    vi.stubEnv("AI_ALLOW_FAKE_PROVIDER", "1");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("E2E_WITH_SUPABASE", "");
+    vi.stubEnv("CI", "1");
 
     const { isApplicationAiProviderAvailable } =
       await import("@/platform/ai/config");
