@@ -1,6 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  activateA3StructuredMethod,
+  disableProblemSolvingStageAutoDraft,
+  expectGuidedProblemSolvingWorkspace,
+  fillLeanAiPrompt,
+  leanAiPanel,
+  openProblemSolvingStage,
+  sendLeanAiPrompt,
+} from "./helpers/guided-problem-solving-workspace";
 import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -21,14 +30,17 @@ test.describe("Milestone 12 closure", () => {
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
 
+  test.beforeEach(async ({ page }) => {
+    await disableProblemSolvingStageAutoDraft(page);
+  });
+
   test("manager opens Lean AI on seeded case", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
   });
 
   test("challenge mode distinguishes assumptions using fake provider", async ({
@@ -39,12 +51,12 @@ test.describe("Milestone 12 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-    await page.getByTestId("lean-ai-mode").selectOption("challenge");
-    await page
-      .getByTestId("lean-ai-input")
-      .fill("Please review assumptions in this case.");
-    await page.getByTestId("lean-ai-send").click();
+    await expectGuidedProblemSolvingWorkspace(page);
+    await leanAiPanel(page)
+      .getByTestId("lean-ai-mode")
+      .selectOption("challenge");
+    await fillLeanAiPrompt(page, "Please review assumptions in this case.");
+    await sendLeanAiPrompt(page);
     await expect(page.getByText("assumption", { exact: false })).toBeVisible({
       timeout: 30_000,
     });
@@ -85,8 +97,7 @@ test.describe("Milestone 12 closure", () => {
     await page
       .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
       .click();
-    await page.getByTestId("tab-lean-ai").click();
-    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
   }
 
   async function createActiveCaseAndOpenLeanAi(page: Page) {
@@ -117,15 +128,13 @@ test.describe("Milestone 12 closure", () => {
     await expect(page.getByTestId("problem-solving-detail-page")).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("activate-method-select").selectOption({ index: 0 });
-    await page.getByTestId("problem-solving-activate-button").click();
+    await activateA3StructuredMethod(page);
     await expect(
       page.getByTestId("problem-solving-header").getByText("Active", {
         exact: true,
       }),
     ).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("tab-lean-ai").click();
-    await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+    await expectGuidedProblemSolvingWorkspace(page);
   }
 
   test("accepts a valid hypothesis proposal from fake provider", async ({
@@ -133,10 +142,11 @@ test.describe("Milestone 12 closure", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await openLeanAiPanel(page);
-    await page
-      .getByTestId("lean-ai-input")
-      .fill("Please propose hypothesis for the hot-running defect pattern.");
-    await page.getByTestId("lean-ai-send").click();
+    await fillLeanAiPrompt(
+      page,
+      "Please propose hypothesis for the hot-running defect pattern.",
+    );
+    await sendLeanAiPrompt(page);
     await expect(page.getByTestId("ai-proposal-card")).toBeVisible({
       timeout: 30_000,
     });
@@ -145,10 +155,8 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
-    await page.getByTestId("tab-cause-analysis").click();
-    const causeAnalysisPanel = page.getByTestId(
-      "problem-solving-cause-analysis-panel",
-    );
+    await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
+    const causeAnalysisPanel = page.getByTestId("pps-unified-cause-analysis");
     await expect(causeAnalysisPanel).toBeVisible();
     await expect(
       causeAnalysisPanel.getByText(HYPOTHESIS_STATEMENT).first(),
@@ -160,10 +168,11 @@ test.describe("Milestone 12 closure", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await openLeanAiPanel(page);
-    await page
-      .getByTestId("lean-ai-input")
-      .fill("Please propose containment for suspect hot-running batches.");
-    await page.getByTestId("lean-ai-send").click();
+    await fillLeanAiPrompt(
+      page,
+      "Please propose containment for suspect hot-running batches.",
+    );
+    await sendLeanAiPrompt(page);
     await expect(page.getByTestId("ai-proposal-card")).toBeVisible({
       timeout: 30_000,
     });
@@ -172,7 +181,7 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
-    await page.getByTestId("tab-containment").click();
+    await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const containmentPanel = page.getByTestId(
       "problem-solving-containment-panel",
     );
@@ -187,10 +196,11 @@ test.describe("Milestone 12 closure", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await createActiveCaseAndOpenLeanAi(page);
-    await page
-      .getByTestId("lean-ai-input")
-      .fill("Please propose condition for the measured hot-running gap.");
-    await page.getByTestId("lean-ai-send").click();
+    await fillLeanAiPrompt(
+      page,
+      "Please propose condition for the measured hot-running gap.",
+    );
+    await sendLeanAiPrompt(page);
     await expect(page.getByTestId("ai-proposal-card")).toBeVisible({
       timeout: 30_000,
     });
@@ -199,7 +209,8 @@ test.describe("Milestone 12 closure", () => {
       timeout: 15_000,
     });
     await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0);
-    await page.getByTestId("tab-current-condition").click();
+    await expectGuidedProblemSolvingWorkspace(page);
+    await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const currentConditionPanel = page.getByTestId(
       "problem-solving-current-condition-panel",
     );
@@ -214,17 +225,32 @@ test.describe("Milestone 12 closure", () => {
     ).toBeVisible();
   });
 
+  test("stage draft lists pending proposals on the case sidebar", async ({
+    page,
+  }) => {
+    await signInAsDemoUser(page, "manager");
+    await page.goto("/platform/problem-solving");
+    await page
+      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
+      .click();
+    await expectGuidedProblemSolvingWorkspace(page);
+    await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible();
+    await page.getByTestId("pps-stage-auto-draft-button").click();
+    await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
+      timeout: 90_000,
+    });
+  });
+
   test("does not surface invalid current condition proposals for acceptance", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
     await createActiveCaseAndOpenLeanAi(page);
-    await page
-      .getByTestId("lean-ai-input")
-      .fill(
-        "Please propose invalid condition for the measured hot-running gap.",
-      );
-    await page.getByTestId("lean-ai-send").click();
+    await fillLeanAiPrompt(
+      page,
+      "Please propose invalid condition for the measured hot-running gap.",
+    );
+    await sendLeanAiPrompt(page);
     await expect(
       page.getByText("invalid current-condition category", {
         exact: false,

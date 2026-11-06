@@ -54,6 +54,8 @@ export const AI_DEFAULTS = {
   model: "gpt-6.1-sol",
   maxOutputTokens: 6000,
   maxToolCalls: 8,
+  /** Bounded tool loop for one-click stage drafts (must finish inside host limit). */
+  stageDraftMaxToolCalls: 4,
   runTimeoutMs: 45_000,
   turnWallClockMs: 45_000,
 } as const;

@@ -8,6 +8,7 @@ import {
   ensureLeanAiAssistantOpen,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import { platformMain } from "./helpers/platform-main";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -106,7 +107,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
   }) => {
     test.setTimeout(90_000);
     await loginAndSelectOrganisation(page, user, user.organisationAName);
-    await expect(page.getByTestId("platform-home-page")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("platform-home-page"),
+    ).toBeVisible();
     await ensureLeanAiAssistantOpen(page);
 
     const coach = page.getByTestId("leanai-coach");
@@ -172,7 +175,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     expect(dismissed?.lastDismissedAt).toBeTruthy();
 
     await page.reload();
-    await expect(page.getByTestId("platform-home-page")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("platform-home-page"),
+    ).toBeVisible();
     await ensureLeanAiAssistantOpen(page);
     const afterReload = page.getByTestId("leanai-coach");
     await expect(afterReload).toBeVisible();
@@ -253,7 +258,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     ).toBeVisible();
 
     await page.goto("/platform");
-    await expect(page.getByTestId("platform-home-page")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("platform-home-page"),
+    ).toBeVisible();
     await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",

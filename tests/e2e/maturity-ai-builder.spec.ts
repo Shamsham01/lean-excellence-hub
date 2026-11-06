@@ -7,6 +7,7 @@ import {
   resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import { platformMain } from "./helpers/platform-main";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const STARTER =
@@ -154,14 +155,15 @@ test.describe("Maturity framework builder with LeanAI", () => {
     await loginAndSelectOrganisation(page, user, user.organisationAName);
 
     await page.goto("/platform/maturity/models");
+    const main = platformMain(page);
     await expect(
-      page.getByTestId("maturity-build-with-leanai-section"),
+      main.getByTestId("maturity-build-with-leanai-section"),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByTestId("maturity-build-with-leanai-unavailable"),
+      main.getByTestId("maturity-build-with-leanai-unavailable"),
     ).toContainText(/LeanAI is turned off/i);
-    await expect(page.getByTestId("maturity-build-with-leanai")).toHaveCount(0);
-    await expect(page.getByTestId("maturity-quick-start-card")).toBeVisible();
+    await expect(main.getByTestId("maturity-build-with-leanai")).toHaveCount(0);
+    await expect(main.getByTestId("maturity-quick-start-card")).toBeVisible();
     // `#maturity-manual-create` must stay unique in the primary column; strict
     // locators fail if a duplicate appears elsewhere in the document (invalid HTML).
     await expect(

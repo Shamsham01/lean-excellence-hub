@@ -7,6 +7,10 @@ import {
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  disableProblemSolvingStageAutoDraft,
+  openProblemSolvingStage,
+} from "./helpers/guided-problem-solving-workspace";
+import {
   selectAssessmentScopeAndWaitForEntities,
   selectAssessmentType,
   selectFirstScopeEntity,
@@ -47,6 +51,10 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
 
+  test.beforeEach(async ({ page }) => {
+    await disableProblemSolvingStageAutoDraft(page);
+  });
+
   test("problem solving hub New case, portfolio row, Back, and source project navigate", async ({
     page,
   }) => {
@@ -80,7 +88,7 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
       page.getByRole("heading", { name: DEMO_CASE_TITLE }),
     ).toBeVisible();
 
-    await page.getByTestId("tab-overview").click();
+    await openProblemSolvingStage(page, "DEFINE");
     const sourceLink = page
       .getByTestId(/^problem-solving-source-link-/)
       .first();

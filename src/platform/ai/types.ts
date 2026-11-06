@@ -35,7 +35,10 @@ export type AiProposalType =
   | "sustainment_item"
   | "session_question"
   | "session_summary"
-  | "lessons_learned";
+  | "lessons_learned"
+  | "problem_statement"
+  | "five_why_chain"
+  | "fishbone_cause";
 
 export const AI_PROPOSAL_TYPES = [
   "current_condition_item",
@@ -49,6 +52,9 @@ export const AI_PROPOSAL_TYPES = [
   "session_question",
   "session_summary",
   "lessons_learned",
+  "problem_statement",
+  "five_why_chain",
+  "fishbone_cause",
 ] as const satisfies readonly AiProposalType[];
 
 export const FORBIDDEN_PROPOSAL_TYPES = [

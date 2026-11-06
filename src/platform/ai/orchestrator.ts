@@ -34,6 +34,7 @@ import {
   AI_TURN_IN_PROGRESS_MESSAGE,
   AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
   AI_STALE_RUN_AFTER_MS,
+  AI_TURN_FINALIZE_BUFFER_MS,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
   runWithinAiTurnBudget,
@@ -52,11 +53,14 @@ import {
 } from "@/platform/ai/source-allowlist";
 import { sanitizeEnvelopeProposals } from "@/platform/ai/proposals/contracts";
 import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-executors";
+import { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import {
-  PROBLEM_SOLVING_READ_TOOLS,
+  PROBLEM_SOLVING_TOOLS,
+  PROBLEM_SOLVING_WRITE_TOOLS,
   buildOpenAiTools,
   type ProblemSolvingToolName,
 } from "@/platform/ai/tools/problem-solving-schemas";
+import { reconcileProblemSolvingAiTurnByIdempotencyKey } from "@/platform/ai/problem-solving-turn-reconcile";
 import type {
   AiSessionMode,
   FacilitatorEnvelope,
@@ -72,6 +76,8 @@ export type RunAiTurnInput = {
   userMessage: string;
   idempotencyKey: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  /** Tighter provider loop for bounded stage-draft actions. */
+  turnProfile?: "default" | "stage_draft";
 };
 
 export type RunAiTurnResult = {
@@ -102,7 +108,26 @@ async function problemSolvingSessionCaseId(
 }
 
 function isProblemSolvingTool(name: string): name is ProblemSolvingToolName {
-  return (PROBLEM_SOLVING_READ_TOOLS as readonly string[]).includes(name);
+  return (PROBLEM_SOLVING_TOOLS as readonly string[]).includes(name);
+}
+
+function isProblemSolvingWriteTool(name: string): boolean {
+  return (PROBLEM_SOLVING_WRITE_TOOLS as readonly string[]).includes(name);
+}
+
+function resolveProblemSolvingWorkflow(
+  mode: AiSessionMode,
+):
+  | "problem_solving_challenge"
+  | "problem_solving_facilitate"
+  | "problem_solving" {
+  if (mode === "challenge") {
+    return "problem_solving_challenge";
+  }
+  if (mode === "facilitate" || mode === "ask" || mode === "review") {
+    return "problem_solving_facilitate";
+  }
+  return "problem_solving";
 }
 
 export async function runAiTurn(
@@ -118,14 +143,16 @@ export async function runAiTurn(
   const provider = resolveAIProvider();
   const model = problemSolvingModelId(env);
   const prepared = prepareWorkflowModelCall({
-    workflow:
-      input.mode === "challenge"
-        ? "problem_solving_challenge"
-        : "problem_solving",
+    workflow: resolveProblemSolvingWorkflow(input.mode),
     model,
     environment: env,
   });
-  const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
+  const configuredMaxToolCalls =
+    env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
+  const maxToolCalls =
+    input.turnProfile === "stage_draft"
+      ? Math.min(AI_DEFAULTS.stageDraftMaxToolCalls, configuredMaxToolCalls)
+      : configuredMaxToolCalls;
   const configuredPerCallTimeoutMs =
     env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
   const wallClockMs = resolveAiTurnWallClockMs(
@@ -224,6 +251,7 @@ export async function runAiTurn(
 
   const allowlist = createSourceAllowlist();
   addCaseToAllowlist(allowlist, input.caseId);
+  const proposalBuffer = new ProblemSolvingProposalBuffer();
 
   const messages = [
     ...input.conversationHistory,
@@ -310,6 +338,7 @@ export async function runAiTurn(
                 supabase: input.supabase,
                 caseId: input.caseId,
                 allowlist,
+                proposalBuffer,
               },
               toolName,
               toolCall.arguments,
@@ -337,7 +366,9 @@ export async function runAiTurn(
             result: result.resultMetadata,
           }),
         );
-        totalToolCalls += 1;
+        if (isProblemSolvingWriteTool(toolName)) {
+          totalToolCalls += 1;
+        }
       }
 
       messages.push({
@@ -363,7 +394,15 @@ export async function runAiTurn(
       envelope.source_refs,
     );
 
-    envelope.proposals = sanitizeEnvelopeProposals(envelope.proposals);
+    const toolProposals = proposalBuffer.drain().map((item) => ({
+      proposal_type: item.proposal_type,
+      payload: item.payload,
+      explanation: item.explanation,
+    }));
+    envelope.proposals = sanitizeEnvelopeProposals([
+      ...envelope.proposals,
+      ...toolProposals,
+    ]);
 
     const sourceRefsDb = envelope.source_refs.map((item) =>
       toDbSourceRef(item.ref),
@@ -450,6 +489,33 @@ export async function runAiTurn(
     if (completedAfterCleanup) {
       return completedAfterCleanup;
     }
+    await recoverStaleAiRunsForSession(
+      input.supabase,
+      input.sessionId,
+      wallClockMs + AI_TURN_FINALIZE_BUFFER_MS + 2_000,
+    );
+    const completedAfterStale = await reconcileCompletedAiRunTurn(
+      input.supabase,
+      runId,
+    );
+    if (completedAfterStale) {
+      return completedAfterStale;
+    }
+    const reconciledByKey = await reconcileProblemSolvingAiTurnByIdempotencyKey(
+      input.supabase,
+      {
+        caseId: input.caseId,
+        sessionId: input.sessionId,
+        idempotencyKey: input.idempotencyKey,
+      },
+    );
+    if (reconciledByKey.state === "completed") {
+      return {
+        runId: reconciledByKey.runId,
+        assistantMessageId: reconciledByKey.assistantMessageId,
+        envelope: reconciledByKey.envelope,
+      };
+    }
     const snapshot = await readExistingAiRun(input.supabase, runId);
     if (
       !snapshot ||
@@ -459,6 +525,21 @@ export async function runAiTurn(
       throw new AiProviderError(
         AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT,
         AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+        { provider: provider.name, model },
+      );
+    }
+    if (snapshot.status === "failed" || snapshot.status === "timed_out") {
+      if (
+        error instanceof AiProviderError &&
+        error.code === AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT
+      ) {
+        throw error;
+      }
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+        reconciledByKey.state === "failed"
+          ? reconciledByKey.message
+          : "That Lean AI attempt did not finish. Your message is still here. Send it again to start a fresh request.",
         { provider: provider.name, model },
       );
     }

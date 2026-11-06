@@ -7,7 +7,6 @@ import {
   activateProblemSolvingCase,
   cancelProblemSolvingCase,
   closeProblemSolvingCase,
-  moveProblemSolvingStage,
 } from "@/app/(platform)/platform/problem-solving/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,10 +22,6 @@ import {
   priorityLabel,
   severityLabel,
 } from "@/lib/problem-solving/status";
-import {
-  sortMethodStages,
-  type MethodStage,
-} from "@/lib/problem-solving/stages";
 import type {
   ProblemSolvingCaseDetail,
   ProblemSolvingMethod,
@@ -35,31 +30,25 @@ import { cn } from "@/lib/utils";
 
 type CaseHeaderProps = {
   detail: ProblemSolvingCaseDetail;
-  methodStages: MethodStage[];
   ownerName?: string | null;
   facilitatorName?: string | null;
   targetDueDateLabel?: string | null;
   canManage: boolean;
-  canFacilitate: boolean;
   canClose: boolean;
   methods: ProblemSolvingMethod[];
   pinnedMethodVersion: PinnedMethodVersionContext | null;
-  message?: string | null;
-  onMessage?: (message: string) => void;
+  onMessage?: (message: string, tone?: "success" | "error") => void;
 };
 
 export function CaseHeader({
   detail,
-  methodStages,
   ownerName,
   facilitatorName,
   targetDueDateLabel,
   canManage,
-  canFacilitate,
   canClose,
   methods,
   pinnedMethodVersion,
-  message,
   onMessage,
 }: CaseHeaderProps) {
   const router = useRouter();
@@ -85,18 +74,10 @@ export function CaseHeader({
     "resolved_verified_cause",
   );
   const [closureRationale, setClosureRationale] = useState("");
-  const sortedStages = sortMethodStages(methodStages);
-  const currentStageId = detail.current_method_stage_id;
-
   const showActivate =
     canManage && detail.status === "draft" && methods.length > 0;
   const showClose = canClose && detail.status === "active";
   const showCancel = canManage && ["draft", "active"].includes(detail.status);
-  const canMoveStage =
-    (canManage || canFacilitate) &&
-    detail.status === "active" &&
-    sortedStages.length > 0;
-
   async function handleActivate() {
     const methodId =
       pinnedMethodView?.methodId || selectedMethodId || methods[0]?.id;
@@ -106,7 +87,7 @@ export function CaseHeader({
     const result = await activateProblemSolvingCase(detail.id, methodId);
     if (result.error) {
       setActivateFeedback({ tone: "error", text: result.error });
-      onMessage?.(result.error);
+      onMessage?.(result.error, "error");
       setLoading(false);
       return;
     }
@@ -114,15 +95,7 @@ export function CaseHeader({
       tone: "success",
       text: "Case activated. Method and first stage are now locked for this investigation.",
     });
-    onMessage?.("Case activated");
-    setLoading(false);
-    router.refresh();
-  }
-
-  async function handleMoveStage(stageId: string) {
-    setLoading(true);
-    const result = await moveProblemSolvingStage(detail.id, stageId);
-    onMessage?.(result.error ?? "Stage updated");
+    onMessage?.("Case activated", "success");
     setLoading(false);
     router.refresh();
   }
@@ -134,7 +107,10 @@ export function CaseHeader({
       closureOutcome,
       closureRationale.trim() || undefined,
     );
-    onMessage?.(result.error ?? "Case closed");
+    onMessage?.(
+      result.error ?? "Case closed",
+      result.error ? "error" : "success",
+    );
     setShowCloseDialog(false);
     setLoading(false);
     router.refresh();
@@ -146,7 +122,10 @@ export function CaseHeader({
       detail.id,
       "Cancelled from workspace",
     );
-    onMessage?.(result.error ?? "Case cancelled");
+    onMessage?.(
+      result.error ?? "Case cancelled",
+      result.error ? "error" : "success",
+    );
     setLoading(false);
     router.refresh();
   }
@@ -268,7 +247,7 @@ export function CaseHeader({
                   <label className="flex flex-col gap-1 text-sm">
                     <span>Method</span>
                     <select
-                      className="border-input min-h-11 w-full rounded-md border bg-background px-3 py-2"
+                      className="border-input min-h-11 w-full rounded-md border bg-elevated px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       value={selectedMethodId}
                       onChange={(e) => setSelectedMethodId(e.target.value)}
                       data-testid="activate-method-select"
@@ -353,7 +332,7 @@ export function CaseHeader({
             <label className="flex flex-col gap-1 text-sm">
               <span>Closure outcome</span>
               <select
-                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                className="border-input min-h-11 rounded-md border bg-elevated px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 value={closureOutcome}
                 onChange={(e) => setClosureOutcome(e.target.value)}
                 data-testid="closure-outcome-select"
@@ -393,45 +372,6 @@ export function CaseHeader({
             </div>
           </div>
         </div>
-      ) : null}
-
-      {sortedStages.length > 0 ? (
-        <nav
-          className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
-          data-testid="problem-solving-stage-stepper"
-        >
-          {sortedStages.map((stage, index) => {
-            const isCurrent = stage.id === currentStageId;
-            const isPast =
-              currentStageId &&
-              sortedStages.findIndex((s) => s.id === currentStageId) > index;
-            return (
-              <button
-                key={stage.id}
-                type="button"
-                disabled={!canMoveStage || loading || isCurrent}
-                onClick={() => handleMoveStage(stage.id)}
-                className={cn(
-                  "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
-                  isCurrent
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : isPast
-                      ? "border-border bg-muted/40 text-muted-foreground"
-                      : "border-border text-muted-foreground",
-                )}
-                data-testid={`problem-solving-stage-${stage.semantic_stage_key}`}
-              >
-                {index + 1}. {stage.title}
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
-
-      {message ? (
-        <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-          {message}
-        </p>
       ) : null}
     </div>
   );

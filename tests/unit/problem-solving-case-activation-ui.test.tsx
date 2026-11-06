@@ -92,9 +92,7 @@ describe("CaseHeader activation UX", () => {
     render(
       <CaseHeader
         detail={baseDetail}
-        methodStages={[]}
         canManage
-        canFacilitate={false}
         canClose={false}
         methods={[
           {

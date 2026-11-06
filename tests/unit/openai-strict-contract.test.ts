@@ -4,6 +4,7 @@ import { assertStrictJsonSchemaCompatible } from "@/platform/ai/providers/openai
 import { facilitatorEnvelopeJsonSchema } from "@/platform/ai/providers/openai-transport";
 import {
   PROBLEM_SOLVING_READ_TOOLS,
+  PROBLEM_SOLVING_TOOLS,
   buildOpenAiTools,
   hypothesisFilterParametersSchema,
   parseToolArgs,
@@ -20,7 +21,7 @@ describe("OpenAI strict request contract", () => {
   });
 
   it("validates every strict function tool parameter schema", () => {
-    expect(tools).toHaveLength(PROBLEM_SOLVING_READ_TOOLS.length);
+    expect(tools).toHaveLength(PROBLEM_SOLVING_TOOLS.length);
 
     for (const tool of tools) {
       expect(tool.strict).toBe(true);
@@ -33,9 +34,9 @@ describe("OpenAI strict request contract", () => {
     }
   });
 
-  it("covers all 13 problem-solving read tools", () => {
+  it("covers all 20 problem-solving read and write tools", () => {
     const toolNames = tools.map((tool) => tool.name);
-    expect(toolNames).toEqual([...PROBLEM_SOLVING_READ_TOOLS]);
+    expect(toolNames).toEqual([...PROBLEM_SOLVING_TOOLS]);
     expect(tools.some((tool) => tool.type === "web_search")).toBe(false);
   });
 });
@@ -90,6 +91,9 @@ describe("search_related_problem_solving_cases strict tool schema", () => {
 describe("empty strict tool parameter schemas", () => {
   const emptyTools = buildOpenAiTools().filter(
     (tool) =>
+      (PROBLEM_SOLVING_READ_TOOLS as readonly string[]).includes(
+        String(tool.name),
+      ) &&
       tool.name !== "get_hypotheses" &&
       tool.name !== "search_related_problem_solving_cases",
   );
@@ -108,10 +112,7 @@ describe("empty strict tool parameter schemas", () => {
   it("parses empty transport args for parameterless tools", () => {
     for (const tool of emptyTools) {
       expect(
-        parseToolArgs(
-          tool.name as (typeof PROBLEM_SOLVING_READ_TOOLS)[number],
-          {},
-        ),
+        parseToolArgs(tool.name as (typeof PROBLEM_SOLVING_TOOLS)[number], {}),
       ).toEqual({});
     }
   });

@@ -127,6 +127,7 @@ vi.mock("@/platform/ai/config", () => ({
     model: "gpt-test",
     maxOutputTokens: 6000,
     maxToolCalls: 8,
+    stageDraftMaxToolCalls: 4,
     runTimeoutMs: 45_000,
     turnWallClockMs: 45_000,
   },
@@ -612,7 +613,25 @@ describe("runAiTurn stateless tool continuation", () => {
   it("fails the run once when finalisation fails and does not start another provider call", async () => {
     const finishError = { code: "P0001", message: "finish failed" };
     const supabase = {
-      from: sessionLookup("case-1"),
+      from: vi.fn((table: string) => {
+        if (table === "ai_runs") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: "run-finish-failed",
+                    status: "failed",
+                    ai_session_id: "session-finish-failed",
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return sessionLookup("case-1")();
+      }),
       rpc: vi.fn(async (name: string) => {
         if (name === "start_ai_run") {
           return { data: "run-finish-failed", error: null };
@@ -637,8 +656,50 @@ describe("runAiTurn stateless tool continuation", () => {
         idempotencyKey: "idem-finish-failed",
         conversationHistory: [],
       }),
-    ).rejects.toEqual(finishError);
+    ).rejects.toMatchObject({
+      name: "AiProviderError",
+      message: expect.stringMatching(/Retry|did not finish/i),
+    });
     expect(createResponseCalls).toHaveLength(2);
     expect(failAiRunBestEffortMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("caps tool iterations for stage_draft turns", async () => {
+    createResponseCalls.length = 0;
+    executeProblemSolvingToolMock.mockClear();
+    providerShouldTimeout = false;
+    providerShouldHang = false;
+
+    const supabase = {
+      from: sessionLookup("case-1"),
+      rpc: vi.fn(async (name: string) => {
+        if (name === "start_ai_run") {
+          return { data: "run-stage-draft", error: null };
+        }
+        if (name === "claim_ai_run_execution") {
+          return { data: "claimed", error: null };
+        }
+        if (name === "finish_ai_run") {
+          return { data: "assistant-msg-stage-draft", error: null };
+        }
+        return { data: null, error: null };
+      }),
+    };
+
+    await runAiTurn({
+      supabase: supabase as never,
+      sessionId: "session-1",
+      caseId: "case-1",
+      mode: "facilitate",
+      userMessage: "Draft current condition proposals only.",
+      idempotencyKey: "idem-stage-draft",
+      conversationHistory: [],
+      turnProfile: "stage_draft",
+    });
+
+    const writeToolCalls = executeProblemSolvingToolMock.mock.calls.filter(
+      ([, toolName]) => String(toolName).startsWith("propose_"),
+    );
+    expect(writeToolCalls.length).toBeLessThanOrEqual(4);
   });
 });
