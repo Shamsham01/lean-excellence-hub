@@ -43,6 +43,7 @@ async function readLayoutMetrics(page: Page) {
     const feed = document.querySelector(
       '[data-testid="leanai-assistant-feed"]',
     );
+    const mainViewport = document.querySelector(".platform-main-viewport");
     const main = document.querySelector('[data-testid="platform-main"]');
     return {
       windowScrollY: window.scrollY,
@@ -55,14 +56,21 @@ async function readLayoutMetrics(page: Page) {
       documentClientWidth: document.documentElement.clientWidth,
       shell: rect('[data-testid="platform-shell"]'),
       sidebar: rect('[data-testid="platform-desktop-sidebar"]'),
-      main: main
+      main: mainViewport
         ? {
-            ...rect('[data-testid="platform-main"]'),
-            scrollTop: (main as HTMLElement).scrollTop,
-            scrollHeight: (main as HTMLElement).scrollHeight,
-            clientHeight: (main as HTMLElement).clientHeight,
+            ...rect(".platform-main-viewport"),
+            scrollTop: (mainViewport as HTMLElement).scrollTop,
+            scrollHeight: (mainViewport as HTMLElement).scrollHeight,
+            clientHeight: (mainViewport as HTMLElement).clientHeight,
           }
-        : null,
+        : main
+          ? {
+              ...rect('[data-testid="platform-main"]'),
+              scrollTop: (main as HTMLElement).scrollTop,
+              scrollHeight: (main as HTMLElement).scrollHeight,
+              clientHeight: (main as HTMLElement).clientHeight,
+            }
+          : null,
       assistant: rect('[data-testid="leanai-assistant-desktop"]'),
       rail: rect('[data-testid="leanai-assistant-rail"]'),
       pane: rect('[data-testid="leanai-assistant-pane"]'),
@@ -290,7 +298,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await waitForAssistantContext(page);
 
     await makeElementOverflow(page, '[data-testid="leanai-assistant-feed"]');
-    await makeElementOverflow(page, '[data-testid="platform-main"]', 1200);
+    await makeElementOverflow(page, ".platform-main-inner", 1200);
 
     const initial = await readLayoutMetrics(page);
     expectViewportLocked(initial);
@@ -338,7 +346,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     expect(afterExtra.sidebar?.top).toBeLessThanOrEqual(2);
     expect(afterExtra.assistant?.top).toBeLessThanOrEqual(2);
 
-    await wheelOver(page, '[data-testid="platform-main"]', 10);
+    await wheelOver(page, ".platform-main-viewport", 10);
     const afterMain = await readLayoutMetrics(page);
     expectViewportLocked(afterMain);
     expect(afterMain.main?.scrollTop ?? 0).toBeGreaterThan(0);

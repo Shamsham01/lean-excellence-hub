@@ -41,6 +41,22 @@ describe("problem solving Lean AI write tools", () => {
     validateProposalPayload("hypothesis", queued.payload);
   });
 
+  it("parses propose_target_condition and queues target_condition payloads", () => {
+    const args = parseToolArgs("propose_target_condition", {
+      statement: "Film wander within ±2 mm for five shifts.",
+      explanation: "Observable target state for the packing line.",
+    });
+    const buffer = new ProblemSolvingProposalBuffer();
+    buffer.queue(
+      "target_condition",
+      { statement: args.statement as string },
+      args.explanation as string,
+    );
+    const drained = buffer.drain();
+    expect(drained[0]?.proposal_type).toBe("target_condition");
+    validateProposalPayload("target_condition", drained[0]?.payload);
+  });
+
   it("validates a five why chain proposal payload", () => {
     const args = parseToolArgs("propose_five_why_chain", {
       title: "Line 3 seal leak",

@@ -14,8 +14,8 @@ export default function GlobalError({
           margin: 0,
           fontFamily:
             "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
-          background: "#0b0f14",
-          color: "#e8eef4",
+          background: "#090e17",
+          color: "#f1f5f9",
         }}
       >
         <div
@@ -40,14 +40,14 @@ export default function GlobalError({
           <h1 style={{ fontSize: 28, margin: 0 }}>
             This workspace couldn’t load
           </h1>
-          <p style={{ margin: 0, color: "#9aa8b5" }}>
+          <p style={{ margin: 0, color: "#94a3b8" }}>
             The page failed to reload. Your previous action may already have
             been saved. Reload before repeating it.
           </p>
           {error.digest ? (
             <p
               data-testid="error-digest"
-              style={{ margin: 0, color: "#9aa8b5" }}
+              style={{ margin: 0, color: "#94a3b8" }}
             >
               Reference {error.digest}
             </p>
@@ -61,8 +61,8 @@ export default function GlobalError({
                 padding: "8px 16px",
                 borderRadius: 8,
                 border: 0,
-                background: "#e8eef4",
-                color: "#0b0f14",
+                background: "#465fff",
+                color: "#ffffff",
                 fontWeight: 600,
               }}
             >
@@ -81,9 +81,9 @@ export default function GlobalError({
                 minHeight: 44,
                 padding: "8px 16px",
                 borderRadius: 8,
-                border: "1px solid #3a4652",
+                border: "1px solid #1e2d42",
                 background: "transparent",
-                color: "#e8eef4",
+                color: "#f1f5f9",
                 fontWeight: 600,
               }}
             >

@@ -17,12 +17,38 @@ export function ThemeToggle() {
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
     >
-      {resolvedTheme === "dark" ? (
-        <Sun className="size-4" />
-      ) : (
-        <Moon className="size-4" />
-      )}
+      <span suppressHydrationWarning>
+        {resolvedTheme === "dark" ? (
+          <Sun className="size-4" />
+        ) : (
+          <Moon className="size-4" />
+        )}
+      </span>
       <span>Theme</span>
+    </Button>
+  );
+}
+
+export function ThemeToggleIcon() {
+  const { resolvedTheme, setTheme } = useTheme();
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      className="size-10 min-h-10 rounded-[10px] shadow-[var(--shadow-theme-xs)]"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      aria-label="Toggle theme"
+      data-testid="platform-theme-toggle"
+    >
+      <span suppressHydrationWarning>
+        {resolvedTheme === "dark" ? (
+          <Sun className="size-4" aria-hidden />
+        ) : (
+          <Moon className="size-4" aria-hidden />
+        )}
+      </span>
     </Button>
   );
 }

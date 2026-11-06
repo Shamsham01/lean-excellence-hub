@@ -31,6 +31,8 @@ export type PlatformNavItem = {
   universalAccess?: boolean;
   section?: PlatformNavSection;
   routeMatcher?: (pathname: string) => boolean;
+  /** Small sidebar badge e.g. NEW */
+  navBadge?: string;
 };
 
 export const platformNavSectionOrder: PlatformNavSection[] = [
@@ -114,6 +116,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "problem-solving",
     section: "improvement",
+    navBadge: "NEW",
   },
   {
     href: "/platform/suggestions",

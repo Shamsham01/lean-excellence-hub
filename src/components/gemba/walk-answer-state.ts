@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { saveGembaWalkAnswer } from "@/app/(platform)/platform/gemba/actions";
 
@@ -153,14 +153,20 @@ export function useWalkAnswerState({
 
   const answersFingerprint = JSON.stringify(answers);
 
-  useEffect(() => {
+  // Keep confirmedRef in lockstep with committed answers so flushQuestion / moveTo
+  // never read a stale fingerprint and spuriously re-enqueue the same payload while
+  // status is still "saving" (Next/Previous stay disabled until the queue drains).
+  useLayoutEffect(() => {
     confirmedRef.current = confirmedAnswers;
+  }, [confirmedAnswers]);
+
+  useEffect(() => {
     statusRef.current = statuses;
     saveAnswerRef.current = saveAnswer;
     walkIdRef.current = walkId;
     canEditRef.current = canEdit;
     answersSnapshotRef.current = answers;
-  }, [answers, walkId, canEdit, confirmedAnswers, saveAnswer, statuses]);
+  }, [answers, walkId, canEdit, saveAnswer, statuses]);
 
   useEffect(() => {
     const snapshot = answersSnapshotRef.current;

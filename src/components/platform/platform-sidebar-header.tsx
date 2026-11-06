@@ -37,7 +37,14 @@ export function PlatformSidebarHeader({
           aria-label={LEH_BRAND.name}
           className="leh-brand-link w-fit max-w-full"
         >
-          <LehBrand decorative variant="compact" />
+          <LehBrand
+            decorative
+            variant="full"
+            strapline={false}
+            lockupRasterOnly
+            priority
+            className="leh-brand--platform-sidebar"
+          />
         </AppLink>
         {notificationsSlot}
       </div>

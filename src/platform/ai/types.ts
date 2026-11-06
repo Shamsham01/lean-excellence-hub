@@ -37,6 +37,7 @@ export type AiProposalType =
   | "session_summary"
   | "lessons_learned"
   | "problem_statement"
+  | "target_condition"
   | "five_why_chain"
   | "fishbone_cause";
 
@@ -53,6 +54,7 @@ export const AI_PROPOSAL_TYPES = [
   "session_summary",
   "lessons_learned",
   "problem_statement",
+  "target_condition",
   "five_why_chain",
   "fishbone_cause",
 ] as const satisfies readonly AiProposalType[];
