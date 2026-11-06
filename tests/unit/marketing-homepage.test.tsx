@@ -601,7 +601,7 @@ describe("homepage authentication routing", () => {
     expect(css).toContain("grid-template-areas");
     expect(css).not.toContain("masonry");
     expect(css).toContain("color-scheme: light dark");
-    expect(css).toContain("--warning-foreground: oklch(0.88 0.08 80)");
+    expect(css).toContain("--warning-foreground: oklch(0.28 0.06 75)");
   });
 
   it("keeps the sticky header bound to the viewport when scroll is locked", () => {
@@ -635,8 +635,8 @@ describe("homepage authentication routing", () => {
     const marketing = css.slice(start, end);
 
     expect(marketing).toContain(".marketing,\n.marketing-appearance-menu {");
-    expect(marketing).toMatch(/--leh-cobalt: oklch\(/);
-    expect(marketing).toMatch(/--leh-teal: oklch\(/);
+    expect(marketing).toMatch(/--leh-accent: oklch\(/);
+    expect(marketing).toMatch(/--leh-canvas-light: oklch\(/);
     expect(marketing).toContain("--primary: var(--leh-cobalt);");
     expect(marketing).not.toContain("color-mix(in oklch");
     expect(marketing).toContain("color-mix(in oklab");
