@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
-import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import {
   MarketingModuleFigure,
@@ -15,6 +15,7 @@ import {
   MarketingContainer,
   StatusChip,
 } from "@/components/marketing/primitives";
+import { cn } from "@/lib/utils";
 
 import "./home.css";
 
@@ -124,37 +125,6 @@ const LINEAGE: readonly LineageStep[] = [
   },
 ];
 
-const HERO_LINKS = [
-  {
-    ref: "ACT-318",
-    title: "Corrective action",
-    detail: "Packing supervisor · due Friday",
-    status: "Assigned",
-    tone: "accent" as const,
-  },
-  {
-    ref: "PS-077",
-    title: "Problem solving",
-    detail: "CI team · chosen method",
-    status: "Cause analysis",
-    tone: "accent" as const,
-  },
-  {
-    ref: "PRJ-042",
-    title: "Improvement project",
-    detail: "Film-path countermeasures",
-    status: "Active",
-    tone: "connected" as const,
-  },
-  {
-    ref: "BEN-019",
-    title: "Benefit",
-    detail: "Qualitative · no amount shown",
-    status: "Awaiting validation",
-    tone: "neutral" as const,
-  },
-] as const;
-
 const MODULES: ReadonlyArray<{
   id: MarketingModuleId;
   name: string;
@@ -235,73 +205,196 @@ const LEAN_BEATS = [
   },
 ] as const;
 
-const WINDOW_NAV = [
-  "Gemba",
-  "Actions",
-  "Problem solving",
-  "Projects",
-  "Benefits",
+const HERO_PS_STAGES = [
+  {
+    id: "clarify",
+    title: "Clarify",
+    caption: "Problem statement",
+    state: "complete" as const,
+  },
+  {
+    id: "measure",
+    title: "Measure",
+    caption: "Evidence & baseline",
+    state: "complete" as const,
+  },
+  {
+    id: "analyse",
+    title: "Analyse",
+    caption: "Root causes",
+    state: "current" as const,
+  },
+  {
+    id: "improve",
+    title: "Improve",
+    caption: "Countermeasures",
+    state: "upcoming" as const,
+  },
+  {
+    id: "sustain",
+    title: "Sustain",
+    caption: "Standards & control",
+    state: "upcoming" as const,
+  },
 ] as const;
 
-function HeroWorkspace() {
+const HERO_KPIS = [
+  { id: "actions", label: "Open actions", value: "12" },
+  { id: "cases", label: "Cases in flight", value: "4" },
+  { id: "validation", label: "Validations due", value: "2" },
+] as const;
+
+function HeroComposition() {
   return (
-    <figure className="editorial-stage">
-      <div className="editorial-window">
-        <div className="editorial-window-bar">
-          <span className="editorial-dots" aria-hidden="true">
+    <figure className="editorial-stage editorial-hero-os">
+      <div className="editorial-hero-os-chrome overflow-hidden rounded-[0.8rem] border border-border bg-elevated shadow-[var(--leh-highlight),var(--marketing-shadow-lift)]">
+        <div className="flex items-center gap-2 border-b border-border bg-[color-mix(in_oklab,var(--muted)_65%,var(--elevated))] px-3 py-2 sm:px-3.5">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
             <i />
             <i />
             <i />
           </span>
-          <div className="editorial-window-title">
-            <LehBrand decorative variant="icon" />
-            <p>Lean Excellence Hub</p>
+          <p className="min-w-0 truncate text-[0.75rem] font-semibold tracking-wide text-foreground">
+            Problem solving · PS-077
+          </p>
+          <div className="ml-auto shrink-0">
+            <StatusChip>Example</StatusChip>
           </div>
-          <StatusChip>Example</StatusChip>
         </div>
-        <div className="editorial-window-body">
-          <nav className="editorial-nav" aria-hidden="true">
-            <p>Bodmin Bakery</p>
-            <ul>
-              {WINDOW_NAV.map((item) => (
-                <li key={item} data-current={item === "Gemba" || undefined}>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className="editorial-window-main">
-            <p className="editorial-context-kicker">
-              Harbourfield Foods Group · Bodmin Bakery · Packing
+
+        <div className="grid min-w-0 grid-cols-1 gap-0 lg:grid-cols-[minmax(7.25rem,9.25rem)_minmax(0,1fr)]">
+          <div
+            className="border-b border-border bg-[color-mix(in_oklab,var(--muted)_42%,var(--elevated))] p-2 lg:border-r lg:border-b-0"
+            role="group"
+            aria-label="Example methodology-neutral stages"
+          >
+            <p className="editorial-context-kicker mb-2 px-0.5 text-[0.62rem] sm:text-[0.68rem]">
+              Stages
             </p>
-            <div className="editorial-finding">
-              <div className="editorial-finding-top">
-                <p>GEM-214</p>
-                <StatusChip tone="warning">Issue</StatusChip>
-              </div>
-              <p className="editorial-finding-title">
-                Packaging film misaligned on Packing Line 1
+            <ol className="editorial-hero-os-stages m-0 flex [scrollbar-width:none] list-none flex-row gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+              {HERO_PS_STAGES.map((stage, index) => {
+                const isLast = index === HERO_PS_STAGES.length - 1;
+                return (
+                  <li
+                    key={stage.id}
+                    className={cn(
+                      "editorial-hero-os-stage relative min-w-[5.85rem] flex-1 lg:min-w-0 lg:flex-none",
+                      !isLast && "lg:pb-2",
+                    )}
+                  >
+                    {!isLast ? (
+                      <span
+                        className="editorial-hero-os-connector hidden lg:block"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <div
+                      className={cn(
+                        "editorial-hero-os-stage-inner flex h-full flex-col gap-1 rounded-md border px-2 py-1.5 sm:px-2.5 sm:py-2",
+                        stage.state === "complete" &&
+                          "border-[color-mix(in_oklab,var(--success)_35%,var(--border))] bg-[color-mix(in_oklab,var(--success)_12%,var(--elevated))]",
+                        stage.state === "current" &&
+                          "editorial-hero-os-stage-current border-primary/35 bg-[color-mix(in_oklab,var(--accent)_70%,var(--elevated))] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--primary)_25%,transparent)]",
+                        stage.state === "upcoming" &&
+                          "border-border/80 bg-[color-mix(in_oklab,var(--muted)_55%,var(--elevated))] opacity-[0.92]",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[0.68rem] leading-tight font-semibold tracking-tight text-foreground sm:text-[0.72rem]">
+                          {stage.title}
+                        </span>
+                        {stage.state === "complete" ? (
+                          <StatusChip tone="success">Done</StatusChip>
+                        ) : null}
+                        {stage.state === "current" ? (
+                          <span className="editorial-hero-os-pulse">
+                            <StatusChip tone="warning">Current</StatusChip>
+                          </span>
+                        ) : null}
+                        {stage.state === "upcoming" ? (
+                          <span
+                            className="rounded border border-border/80 bg-muted px-1 py-px text-[0.6rem] font-semibold tracking-wide text-muted-foreground uppercase"
+                            aria-hidden="true"
+                          >
+                            ···
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="m-0 text-[0.62rem] leading-snug text-muted-foreground sm:text-[0.65rem]">
+                        {stage.caption}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-3 p-3 sm:gap-3.5 sm:p-3.5">
+            <div className="min-w-0">
+              <p className="editorial-context-kicker">
+                Bodmin Bakery · Packing line 1
               </p>
-              <p className="editorial-finding-meta">
-                Morning Gemba walk · Packing supervisor · finding recorded
+              <h2 className="mt-1 text-base leading-snug font-semibold tracking-tight text-foreground sm:text-lg">
+                Recurring film wander after changeovers
+              </h2>
+              <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted-foreground">
+                Methodology-neutral stages · evidence stays with the case
               </p>
             </div>
-            <ul className="editorial-links">
-              {HERO_LINKS.map((link) => (
-                <li key={link.ref}>
-                  <p className="editorial-link-ref">{link.ref}</p>
-                  <p className="editorial-link-title">{link.title}</p>
-                  <p className="editorial-link-detail">{link.detail}</p>
-                  <StatusChip tone={link.tone}>{link.status}</StatusChip>
-                </li>
+
+            <Card className="gap-3 border-primary/20 bg-[color-mix(in_oklab,var(--accent)_45%,var(--card))] p-4 shadow-none sm:p-4">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-sm font-semibold sm:text-[0.9375rem]">
+                    LeanAI · proposal
+                  </CardTitle>
+                  <StatusChip tone="accent">Review</StatusChip>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Context · PS-077 · Analyse
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2 p-0">
+                <p className="m-0 text-[0.8125rem] leading-relaxed text-foreground">
+                  Add a run chart for film position by changeover batch before
+                  moving to countermeasures. A person chooses whether to apply
+                  this in the case.
+                </p>
+                <p className="m-0 text-[0.7rem] leading-normal text-muted-foreground">
+                  Publishing and closure stay with a person.
+                </p>
+              </CardContent>
+            </Card>
+
+            <div
+              className="grid grid-cols-3 gap-2 border-t border-border/80 pt-3"
+              role="group"
+              aria-label="Example operational KPIs"
+            >
+              {HERO_KPIS.map((kpi) => (
+                <div
+                  key={kpi.id}
+                  className="min-w-0 rounded-md border border-border/70 bg-card px-2 py-1.5 text-center sm:px-2.5"
+                >
+                  <p className="m-0 truncate text-[0.62rem] font-medium tracking-wide text-muted-foreground uppercase sm:text-[0.65rem]">
+                    {kpi.label}
+                  </p>
+                  <p className="m-0 mt-0.5 text-base font-semibold tracking-tight text-foreground tabular-nums sm:text-lg">
+                    {kpi.value}
+                  </p>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       </div>
       <figcaption>
-        Illustrative workspace. Harbourfield Foods Group — Bodmin Bakery is a
-        fictional site.
+        Illustrative product composition. Example records only — Bodmin Bakery
+        is a fictional site.
       </figcaption>
     </figure>
   );
@@ -399,20 +492,27 @@ export function EditorialHome() {
                 organisational learning in one platform built around your
                 standards.
               </p>
-              <div className="editorial-actions">
+              <div className="editorial-actions editorial-hero-actions">
                 <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="editorial-hero-tertiary"
+                >
                   <a href="#platform">
                     Explore the platform
                     <ArrowRight aria-hidden="true" className="size-4" />
                   </a>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/signup">Create an account</Link>
-                </Button>
               </div>
             </div>
             <div className="editorial-rise editorial-rise-delay">
-              <HeroWorkspace />
+              <HeroComposition />
             </div>
           </div>
           <p className="editorial-principle">
