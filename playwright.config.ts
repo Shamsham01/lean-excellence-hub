@@ -41,9 +41,7 @@ const webServerCommand = isCi
   ? `npm run build && npm run start -- --hostname 127.0.0.1 --port ${port}`
   : `npm run dev -- --hostname 127.0.0.1 --port ${port}`;
 
-/** Ensure the Next.js child inherits the full parent env; explicit keys still override. */
-const webServerEnv: NodeJS.ProcessEnv = {
-  ...process.env,
+const webServerEnvOverrides: Record<string, string> = {
   APP_ORIGIN: baseURL,
   AUTH_RATE_LIMIT_PEPPER:
     process.env.AUTH_RATE_LIMIT_PEPPER ??
@@ -78,6 +76,13 @@ const webServerEnv: NodeJS.ProcessEnv = {
   // Lets /demo read x-leh-e2e-demo-booking-url. Never set this in production.
   DEMO_BOOKING_E2E: "1",
 };
+
+/** Playwright replaces child env; merge parent env so exports (e.g. E2E_WITH_SUPABASE) reach next start. */
+const webServerEnv: Record<string, string> = Object.fromEntries(
+  Object.entries({ ...process.env, ...webServerEnvOverrides }).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string",
+  ),
+);
 
 export default defineConfig({
   forbidOnly: isCi,
