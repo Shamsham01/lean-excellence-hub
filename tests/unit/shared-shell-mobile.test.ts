@@ -24,9 +24,18 @@ describe("shared platform shell mobile layout", () => {
     expect(shell).toContain(
       "lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden",
     );
+    // Main column locks vertical overflow; nested platform-main-viewport scrolls.
     expect(shell).toContain(
-      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
+      'data-testid="platform-main"',
     );
+    expect(shell).toContain(
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden",
+    );
+    expect(shell).toContain("platform-main-viewport");
+    expect(shell).toContain(
+      "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
+    );
+    expect(shell).toContain("platform-main-inner");
     expect(shell).toContain("PlatformTopbar");
   });
 

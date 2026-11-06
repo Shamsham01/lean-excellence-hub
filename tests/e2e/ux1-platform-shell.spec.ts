@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
@@ -40,7 +41,10 @@ test.describe("UX1 platform shell", () => {
       page,
       platformE2eCredentials.organisationName,
     );
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    await expect(
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("navigation", { name: "Platform" }),
     ).toBeVisible();
@@ -83,11 +87,17 @@ test.describe("UX1 platform shell", () => {
     await page.setViewportSize({ width: 1280, height: 500 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = page.getByRole("navigation", { name: "Platform" });
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+    ).toBeVisible();
+    await expect(
+      sidebar.getByTestId("platform-sidebar-org-name"),
+    ).toHaveText(DEMO_ORGANISATION.name);
+    await expect(
+      sidebar.getByRole("button", { name: "Sign out", exact: true }),
     ).toBeVisible();
 
     const scrollMetrics = await nav.evaluate((element) => ({
@@ -101,9 +111,11 @@ test.describe("UX1 platform shell", () => {
       await nav.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
       });
-      await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Sign out", exact: true }),
+        sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+      ).toBeVisible();
+      await expect(
+        sidebar.getByRole("button", { name: "Sign out", exact: true }),
       ).toBeVisible();
     }
   });

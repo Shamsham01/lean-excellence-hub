@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
@@ -59,13 +60,17 @@ async function expectNoHorizontalOverflow(page: Page) {
 
 async function scrollWorkspace(page: Page) {
   await page.evaluate(() => {
-    const main = document.querySelector("main");
-    const inner = main?.firstElementChild as HTMLElement | null;
+    const inner = document.querySelector(
+      ".platform-main-inner",
+    ) as HTMLElement | null;
     if (inner) {
       inner.style.minHeight = "300vh";
     }
-    if (main) {
-      main.scrollTop = main.scrollHeight;
+    const viewport = document.querySelector(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
     }
     window.scrollTo(0, document.body.scrollHeight);
   });
@@ -141,11 +146,17 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = page.getByRole("navigation", { name: "Platform" });
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+    ).toBeVisible();
+    await expect(
+      sidebar.getByTestId("platform-sidebar-org-name"),
+    ).toHaveText(DEMO_ORGANISATION.name);
+    await expect(
+      sidebar.getByRole("button", { name: "Sign out", exact: true }),
     ).toBeVisible();
 
     await expectFinalNavItemReachable(page, nav);
@@ -200,7 +211,12 @@ test.describe("authenticated platform shell", () => {
 
       const nav = await openMobileDrawer(page);
       const drawer = page.getByRole("dialog");
-      await expect(drawer.getByText("Lean Excellence Hub")).toBeVisible();
+      await expect(
+        drawer.getByRole("link", { name: "Lean Excellence Hub" }),
+      ).toBeVisible();
+      await expect(drawer.getByTestId("platform-sidebar-org-name")).toHaveText(
+        DEMO_ORGANISATION.name,
+      );
       await expect(
         drawer.getByRole("button", { name: "Sign out", exact: true }),
       ).toBeVisible();
