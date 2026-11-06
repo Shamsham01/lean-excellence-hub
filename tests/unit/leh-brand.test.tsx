@@ -250,13 +250,23 @@ describe("LehBrand", () => {
 });
 
 describe("site identity metadata", () => {
-  it("points at the web manifest and leaves file-convention icons alone", () => {
+  it("points at the web manifest and exposes theme-aware tab icons", () => {
     expect(rootMetadata.manifest).toBe("/site.webmanifest");
     expect(rootMetadata.applicationName).toBe(LEH_BRAND.name);
-    expect(rootMetadata).not.toHaveProperty("icons");
+    expect(rootMetadata.icons).toMatchObject({
+      apple: "/apple-icon.png",
+      icon: [
+        { url: "/brand/leh-icon-light.png", type: "image/png" },
+        {
+          url: "/brand/leh-icon-dark.png",
+          type: "image/png",
+          media: "(prefers-color-scheme: dark)",
+        },
+      ],
+    });
   });
 
-  it("ships a sharp blue favicon and transparent theme masters", () => {
+  it("ships a light-surface favicon and transparent theme masters", () => {
     const favicon = readFileSync("src/app/favicon.ico");
     expect(favicon.readUInt16LE(0)).toBe(0);
     expect(favicon.readUInt16LE(2)).toBe(1);
@@ -269,7 +279,7 @@ describe("site identity metadata", () => {
 
     expect(
       readFileSync("src/app/icon.png").equals(
-        readFileSync("public/brand/leh-icon-blue.png"),
+        readFileSync("public/brand/leh-icon-light.png"),
       ),
     ).toBe(true);
 
@@ -294,8 +304,8 @@ describe("site identity metadata", () => {
     );
     expect(manifest.name).toBe(LEH_BRAND.name);
     expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual([
-      "/brand/leh-icon-blue-192.png",
-      "/brand/leh-icon-blue.png",
+      "/brand/leh-icon-light-192.png",
+      "/brand/leh-icon-light-512.png",
     ]);
     expect(
       manifest.icons.some((icon: { src: string }) =>

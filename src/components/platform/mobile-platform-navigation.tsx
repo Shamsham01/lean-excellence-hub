@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/sheet";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
-import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
 
 type MobilePlatformNavigationProps = {
@@ -25,7 +24,7 @@ type MobilePlatformNavigationProps = {
   organisationName: string;
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
-  member: PlatformShellMember;
+  membershipId: string;
   showSettings: boolean;
 };
 
@@ -34,7 +33,7 @@ export function MobilePlatformNavigation({
   organisationName,
   organisations,
   siteContext,
-  member,
+  membershipId,
   showSettings,
 }: MobilePlatformNavigationProps) {
   const [open, setOpen] = useState(false);
@@ -71,7 +70,7 @@ export function MobilePlatformNavigation({
           />
           <PlatformNavigation items={items} onNavigate={closeDrawer} />
           <PlatformSidebarFooter
-            member={member}
+            membershipId={membershipId}
             showSettings={showSettings}
             onNavigate={closeDrawer}
           />

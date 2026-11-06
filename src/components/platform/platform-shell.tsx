@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
+import { PlatformChromeBar } from "@/components/platform/platform-chrome-bar";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
-import { loadPlatformShellMember } from "@/modules/platform-shell/member-context";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
@@ -25,10 +25,7 @@ export async function PlatformShell({
   siteContext,
   membershipId,
 }: PlatformShellProps) {
-  const [navWithSetup, member] = await Promise.all([
-    buildVisibleNavigation(),
-    loadPlatformShellMember(membershipId),
-  ]);
+  const navWithSetup = await buildVisibleNavigation();
 
   const showSettings =
     settingsNavigationItem.universalAccess === true &&
@@ -44,7 +41,7 @@ export async function PlatformShell({
         organisationName={organisationName}
         organisations={organisations}
         siteContext={siteContext}
-        member={member}
+        membershipId={membershipId}
         showSettings={showSettings}
       />
       <LeanAiAssistantShell organisationId={organisationId}>
@@ -52,6 +49,7 @@ export async function PlatformShell({
           data-testid="platform-main"
           className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
         >
+          <PlatformChromeBar />
           <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
             {children}
           </div>

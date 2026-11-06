@@ -50,11 +50,12 @@ test.describe("UX1 platform shell", () => {
     await expect(
       page.getByRole("link", { name: "Settings", exact: true }),
     ).toBeVisible();
+    const chrome = page.getByTestId("platform-chrome-bar");
     await expect(
-      page.getByRole("button", { name: "Toggle theme" }),
+      chrome.getByRole("button", { name: /^Appearance:/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
+      chrome.getByTestId("platform-chrome-sign-out"),
     ).toBeVisible();
   });
 
@@ -86,9 +87,8 @@ test.describe("UX1 platform shell", () => {
     const nav = page.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
     await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
-    ).toBeVisible();
+    const chrome = page.getByTestId("platform-chrome-bar");
+    await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
 
     const scrollMetrics = await nav.evaluate((element) => ({
       scrollHeight: element.scrollHeight,
@@ -102,9 +102,7 @@ test.describe("UX1 platform shell", () => {
         element.scrollTop = element.scrollHeight;
       });
       await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Sign out", exact: true }),
-      ).toBeVisible();
+      await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
     }
   });
 
