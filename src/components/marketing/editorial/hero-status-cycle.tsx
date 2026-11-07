@@ -9,15 +9,11 @@ export function HeroStatusCycle() {
   const [status, setStatus] = useState<"Assigned" | "Verified">("Assigned");
 
   useEffect(() => {
-    if (
+    const prefersReduced =
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      setStatus("Verified");
-      return;
-    }
-
-    const timer = window.setTimeout(() => setStatus("Verified"), 2_400);
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const delay = prefersReduced ? 0 : 2_400;
+    const timer = window.setTimeout(() => setStatus("Verified"), delay);
     return () => window.clearTimeout(timer);
   }, []);
 
