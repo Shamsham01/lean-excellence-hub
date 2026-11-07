@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { ensurePlatformE2eUser, platformE2eCredentials } from "./helpers/platform-auth";
+import {
+  ensurePlatformE2eUser,
+  platformE2eCredentials,
+} from "./helpers/platform-auth";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
