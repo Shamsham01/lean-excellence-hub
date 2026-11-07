@@ -352,7 +352,12 @@ export function getOpenAiToolParametersSchema(
           target_description: { type: ["string", "null"] },
           explanation: { type: "string" },
         },
-        ["criterion", "baseline_description", "target_description", "explanation"],
+        [
+          "criterion",
+          "baseline_description",
+          "target_description",
+          "explanation",
+        ],
       );
     case "propose_sustainment_item":
       return writeToolParameters(
@@ -477,15 +482,21 @@ export function parseToolArgs(
     case "propose_fishbone_cause":
       return proposeFishboneCauseSchema.parse(normalizeNullableWriteArgs(args));
     case "propose_universal_action":
-      return proposeUniversalActionSchema.parse(normalizeNullableWriteArgs(args));
+      return proposeUniversalActionSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     case "propose_effectiveness_check":
       return proposeEffectivenessCheckSchema.parse(
         normalizeNullableWriteArgs(args),
       );
     case "propose_sustainment_item":
-      return proposeSustainmentItemSchema.parse(normalizeNullableWriteArgs(args));
+      return proposeSustainmentItemSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     case "propose_lessons_learned":
-      return proposeLessonsLearnedSchema.parse(normalizeNullableWriteArgs(args));
+      return proposeLessonsLearnedSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
     default:
       return emptyToolArgsSchema.parse(args);
   }

@@ -186,7 +186,9 @@ function inferStageFromPrompt(message: string): string | null {
       "EFFECTIVENESS_CHECK",
       "SUSTAINMENT",
     ]) {
-      if (writeToolsForStage(stage).includes(tool as ProblemSolvingWriteToolName)) {
+      if (
+        writeToolsForStage(stage).includes(tool as ProblemSolvingWriteToolName)
+      ) {
         return stage;
       }
     }

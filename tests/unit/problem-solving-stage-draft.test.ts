@@ -78,10 +78,7 @@ describe("problem solving stage draft coverage", () => {
     expect(response?.toolCalls.length).toBe(1);
     const call = response?.toolCalls[0];
     expect(call?.name).toBe("propose_five_why_chain");
-    const args = parseToolArgs(
-      "propose_five_why_chain",
-      call?.arguments ?? {},
-    );
+    const args = parseToolArgs("propose_five_why_chain", call?.arguments ?? {});
     const buffer = new ProblemSolvingProposalBuffer();
     buffer.queue(
       "five_why_chain",

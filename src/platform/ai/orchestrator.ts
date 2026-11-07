@@ -301,9 +301,11 @@ export async function runAiTurn(
         expectsStructuredOutput,
         systemPrompt,
         messages,
-        stageDraftTools: isStageDraft
-          ? buildOpenAiToolsForStage(facilitationStageKey)
-          : undefined,
+        ...(isStageDraft
+          ? {
+              stageDraftTools: buildOpenAiToolsForStage(facilitationStageKey),
+            }
+          : {}),
       });
 
       providerRequestId = response.responseId ?? providerRequestId;

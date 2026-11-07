@@ -21,21 +21,23 @@ const STAGE_KEY_ALIASES: Record<string, string> = {
   CLOSE: "SUSTAINMENT",
 };
 
-const STAGE_WRITE_TOOLS: Record<string, readonly ProblemSolvingWriteToolName[]> =
-  {
-    DEFINE: ["propose_problem_statement"],
-    CURRENT_CONDITION: ["propose_current_condition_item"],
-    TARGET_CONDITION: ["propose_target_condition"],
-    ROOT_CAUSE_ANALYSIS: [
-      "propose_five_why_chain",
-      "propose_fishbone_cause",
-      "propose_hypothesis",
-    ],
-    COUNTERMEASURES: ["propose_countermeasure"],
-    IMPLEMENTATION: ["propose_universal_action"],
-    EFFECTIVENESS_CHECK: ["propose_effectiveness_check"],
-    SUSTAINMENT: ["propose_sustainment_item", "propose_lessons_learned"],
-  };
+const STAGE_WRITE_TOOLS: Record<
+  string,
+  readonly ProblemSolvingWriteToolName[]
+> = {
+  DEFINE: ["propose_problem_statement"],
+  CURRENT_CONDITION: ["propose_current_condition_item"],
+  TARGET_CONDITION: ["propose_target_condition"],
+  ROOT_CAUSE_ANALYSIS: [
+    "propose_five_why_chain",
+    "propose_fishbone_cause",
+    "propose_hypothesis",
+  ],
+  COUNTERMEASURES: ["propose_countermeasure"],
+  IMPLEMENTATION: ["propose_universal_action"],
+  EFFECTIVENESS_CHECK: ["propose_effectiveness_check"],
+  SUSTAINMENT: ["propose_sustainment_item", "propose_lessons_learned"],
+};
 
 const STAGE_READ_TOOLS: Partial<
   Record<string, readonly ProblemSolvingToolName[]>
@@ -159,9 +161,7 @@ export function readToolsForStage(
   stageKey: string | null | undefined,
 ): readonly ProblemSolvingToolName[] {
   const canonical = resolveCanonicalStageKey(stageKey);
-  return (
-    STAGE_READ_TOOLS[canonical] ?? ["get_problem_solving_case_overview"]
-  );
+  return STAGE_READ_TOOLS[canonical] ?? ["get_problem_solving_case_overview"];
 }
 
 export function buildOpenAiToolsForStage(
@@ -180,7 +180,9 @@ export function buildOpenAiToolsForStage(
  * Bounded auto-draft instruction: names exact write tools so stage drafts cannot
  * exhaust the tool loop on reads alone (ROOT_CAUSE_ANALYSIS regression).
  */
-export function buildStageAutoDraftPrompt(stageKey: string | null | undefined): string {
+export function buildStageAutoDraftPrompt(
+  stageKey: string | null | undefined,
+): string {
   const canonical = resolveCanonicalStageKey(stageKey);
   const writeTools = writeToolsForStage(canonical);
   const toolList = writeTools.join(", ");
