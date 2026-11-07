@@ -1,6 +1,5 @@
 export type FoundingOrganisationDomainHintState =
-  | "none"
-  | "possible_existing_organisation";
+  "none" | "possible_existing_organisation";
 
 export function parseFoundingOrganisationDomainHint(
   payload: unknown,
