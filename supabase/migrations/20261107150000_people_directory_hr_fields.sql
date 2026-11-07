@@ -19,6 +19,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   offset_value integer;
+  effective_page_size integer;
   can_include_inactive boolean := false;
   can_read_identity boolean := false;
   normalized_status text;
@@ -46,7 +47,8 @@ begin
     normalized_status := null;
   end if;
 
-  offset_value := greatest(target_page - 1, 0) * target_page_size;
+  effective_page_size := least(greatest(coalesce(target_page_size, 25), 1), 100);
+  offset_value := greatest(target_page - 1, 0) * effective_page_size;
 
   return (
     with directory_rows as (
@@ -183,14 +185,14 @@ begin
               order by
                 case when directory_row.status = 'active' then 0 else 1 end,
                 directory_row.display_name
-              limit target_page_size offset offset_value
+              limit effective_page_size offset offset_value
             ) row_payload
           ),
           '[]'::jsonb
         ),
       'total_count', (select count(*)::integer from directory_rows),
       'page', target_page,
-      'page_size', target_page_size,
+      'page_size', effective_page_size,
       'include_inactive', can_include_inactive,
       'can_read_identity', can_read_identity
     )
