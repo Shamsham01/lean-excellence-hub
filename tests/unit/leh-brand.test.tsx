@@ -395,7 +395,7 @@ describe("site identity metadata", () => {
     ).toBe(true);
   });
 
-  it("can render sidebar lockups from PNG only so crop CSS applies", () => {
+  it("renders sidebar lockups from PNG only with contained sizing", () => {
     render(
       <LehBrand
         decorative
@@ -502,7 +502,11 @@ describe("site identity metadata", () => {
     expect(css).toContain(
       '.marketing-header .leh-brand[data-variant="full"] .leh-brand-lockup-img',
     );
+    expect(css).toContain(
+      '.leh-brand-auth-shell .leh-brand[data-variant="full"] .leh-brand-lockup-img',
+    );
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
+    expect(css).not.toContain("object-fit: none");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");
   });

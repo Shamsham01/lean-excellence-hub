@@ -1,4 +1,3 @@
-import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-navigation";
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
@@ -63,10 +62,5 @@ function DesktopSidebar({
 }
 
 export function PlatformSidebar(props: PlatformSidebarProps) {
-  return (
-    <>
-      <DesktopSidebar {...props} />
-      <MobilePlatformNavigation {...props} />
-    </>
-  );
+  return <DesktopSidebar {...props} />;
 }

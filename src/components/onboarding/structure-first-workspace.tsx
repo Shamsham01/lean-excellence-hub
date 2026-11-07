@@ -44,8 +44,8 @@ export function StructureFirstWorkspace({
     <div className="structure-first-shell" data-testid="onboarding-setup">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:items-start lg:gap-10 lg:py-10">
         <header className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-8">
-          <div className="min-w-0">
-            <LehBrand className="max-w-full" variant="full" />
+          <div className="leh-brand-auth-shell min-w-0">
+            <LehBrand className="max-w-full" lockupRasterOnly variant="full" />
             <h1 className="mt-3 text-lg font-semibold tracking-tight text-foreground">
               Organisation setup
             </h1>

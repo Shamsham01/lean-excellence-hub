@@ -1,10 +1,13 @@
 "use client";
 
+import { Search } from "lucide-react";
 import { useState } from "react";
 
 import { LEH_BRAND } from "@/components/brand/brand-assets";
 import { LehBrand } from "@/components/brand/leh-brand";
 import { PlatformChromeActions } from "@/components/platform/platform-chrome-actions";
+import { PlatformCommandMenu } from "@/components/platform/platform-command-menu";
+import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
@@ -46,76 +49,103 @@ export function MobilePlatformNavigation({
   notifications,
 }: MobilePlatformNavigationProps) {
   const [open, setOpen] = useState(false);
-
+  const [commandOpen, setCommandOpen] = useState(false);
   const closeDrawer = () => setOpen(false);
 
   return (
-    <div
-      data-testid="platform-mobile-chrome"
-      className="sticky top-0 z-40 flex min-w-0 items-center gap-2 border-b border-border bg-sidebar/95 px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] backdrop-blur-sm lg:hidden"
-    >
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            type="button"
-            aria-label="Open navigation menu"
+    <>
+      <div
+        data-testid="platform-mobile-chrome"
+        className="sticky top-0 z-50 flex min-w-0 items-center gap-1.5 border-b border-border bg-card/95 px-3 py-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-[var(--shadow-theme-xs)] backdrop-blur-sm lg:hidden"
+      >
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              className="shrink-0"
+              aria-label="Open navigation menu"
+            >
+              Menu
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="flex h-dvh max-h-dvh min-h-0 w-[min(100%,16rem)] flex-col gap-0 overflow-hidden bg-sidebar p-0 pb-[env(safe-area-inset-bottom,0px)]"
+            aria-describedby={undefined}
           >
-            Menu
-          </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="left"
-          className="flex h-dvh max-h-dvh min-h-0 w-[min(100%,16rem)] flex-col gap-0 overflow-hidden bg-sidebar p-0 pb-[env(safe-area-inset-bottom,0px)]"
-          aria-describedby={undefined}
-        >
-          <SheetTitle className="sr-only">Platform navigation</SheetTitle>
-          <PlatformSidebarHeader
-            organisationName={organisationName}
-            organisations={organisations}
-            siteContext={siteContext}
-            closeGutter
-            notificationsSlot={
-              notifications ? (
-                <PlatformNotificationBell
-                  variant="header"
-                  initialUnreadCount={notifications.unreadCount}
-                  initialItems={notifications.items}
-                />
-              ) : null
-            }
-          />
-          <div
-            className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
-            role="navigation"
-            aria-label="Platform"
-          >
-            <PlatformNavigation items={items} onNavigate={closeDrawer} />
-            <PlatformSidebarFooter
-              member={member}
-              showSettings={showSettings}
-              onNavigate={closeDrawer}
+            <SheetTitle className="sr-only">Platform navigation</SheetTitle>
+            <PlatformSidebarHeader
+              organisationName={organisationName}
+              organisations={organisations}
+              siteContext={siteContext}
+              closeGutter
+              notificationsSlot={
+                notifications ? (
+                  <PlatformNotificationBell
+                    variant="header"
+                    initialUnreadCount={notifications.unreadCount}
+                    initialItems={notifications.items}
+                  />
+                ) : null
+              }
             />
-          </div>
-        </SheetContent>
-      </Sheet>
-      <AppLink
-        href="/platform"
-        aria-label={LEH_BRAND.name}
-        className="leh-brand-link shrink-0 [--leh-brand-mark:1.75rem]"
-      >
-        <LehBrand decorative variant="icon" />
-      </AppLink>
-      <span
-        className="min-w-0 flex-1 truncate text-sm font-semibold"
-        data-testid="platform-mobile-org-name"
-      >
-        {organisationName}
-      </span>
-      <div className="ml-auto flex shrink-0 items-center gap-1">
-        <PlatformChromeActions />
+            <div
+              className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
+              role="navigation"
+              aria-label="Platform"
+            >
+              <PlatformNavigation items={items} onNavigate={closeDrawer} />
+              <PlatformSidebarFooter
+                member={member}
+                showSettings={showSettings}
+                onNavigate={closeDrawer}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+        <AppLink
+          href="/platform"
+          aria-label={LEH_BRAND.name}
+          className="leh-brand-link shrink-0 [--leh-brand-mark:1.75rem]"
+        >
+          <LehBrand decorative variant="icon" />
+        </AppLink>
+        <span
+          className="min-w-0 flex-1 truncate text-sm font-semibold"
+          data-testid="platform-mobile-org-name"
+        >
+          {organisationName}
+        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="min-h-9 min-w-9 shrink-0"
+            aria-label="Search modules, cases, and actions"
+            data-testid="platform-mobile-command-trigger"
+            onClick={() => setCommandOpen(true)}
+          >
+            <Search className="size-4" aria-hidden />
+          </Button>
+          <PlatformChromeActions />
+          <AppLink
+            href="/platform/settings/profile"
+            className="shrink-0 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+            aria-label="Your profile"
+            data-testid="platform-avatar"
+          >
+            <PlatformMemberAvatar
+              displayName={member.displayName}
+              avatarUrl={member.avatarUrl}
+              size="md"
+            />
+          </AppLink>
+        </div>
       </div>
-    </div>
+      <PlatformCommandMenu open={commandOpen} onOpenChange={setCommandOpen} />
+    </>
   );
 }

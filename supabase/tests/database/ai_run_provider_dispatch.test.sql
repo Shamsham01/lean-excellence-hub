@@ -200,7 +200,8 @@ select public.switch_organisation((select id from ai_dispatch_ids where key = 'o
 
 reset role;
 update public.ai_runs
-set started_at = statement_timestamp() - interval '2 minutes'
+set started_at = statement_timestamp() - interval '2 minutes',
+    provider_dispatched_at = statement_timestamp() - interval '2 minutes'
 where id = (select id from ai_dispatch_ids where key = 'ai_run');
 select set_config(
   'request.jwt.claims',
@@ -252,7 +253,8 @@ select 'ai_run_2', public.start_ai_run(
 
 reset role;
 update public.ai_runs
-set started_at = statement_timestamp() - interval '2 minutes'
+set started_at = statement_timestamp() - interval '2 minutes',
+    execution_claimed_at = statement_timestamp() - interval '2 minutes'
 where id = (select id from ai_dispatch_ids where key = 'ai_run_2');
 select set_config(
   'request.jwt.claims',

@@ -26,7 +26,7 @@ type LehBrandProps = {
    */
   responsive?: boolean;
   strapline?: boolean;
-  /** Platform sidebar: render horizontal lockups from PNG so crop CSS applies. */
+  /** Use official horizontal PNG masters (skip Canva SVG source in picture). */
   lockupRasterOnly?: boolean;
 };
 

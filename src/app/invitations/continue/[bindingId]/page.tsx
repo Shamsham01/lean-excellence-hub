@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AuthBrandMark } from "@/components/brand/auth-brand-mark";
 import { InvitationAcceptanceCard } from "@/components/invitations/invitation-acceptance-card";
 import {
   invitationContinuePath,
@@ -48,6 +49,7 @@ export default async function InvitationContinuePage({
       data-testid="invitation-continue-page"
     >
       <div className="w-full max-w-md">
+        <AuthBrandMark className="mb-8" />
         {acceptError && lifecycle.sessionState === "ready_to_accept" ? (
           <p className="mb-4 text-sm text-destructive" role="alert">
             Unable to accept this invitation right now. Try again or contact

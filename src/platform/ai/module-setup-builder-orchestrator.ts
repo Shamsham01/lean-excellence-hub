@@ -151,7 +151,7 @@ export async function runModuleSetupBuilderTurn(
       toolCallRecords.length > 0
         ? {
             ok: false as const,
-            issues: ["LeanAI requested a tool, which setup does not allow."],
+            issues: ["tool_call_denied:tools"],
           }
         : input.adapter.parseEnvelope(response.parsedJson ?? null);
 
@@ -201,6 +201,13 @@ export async function runModuleSetupBuilderTurn(
       response_status: payload.response_status,
       proposal_status: payload.proposal_status,
       denied_tool_count: toolCallRecords.length,
+      structured_format_name: input.adapter.formatName,
+      json_schema_hash: hashJson(input.adapter.jsonSchema),
+      envelope_parse_issue_codes:
+        payload.response_status === "invalid_response"
+          ? payload.proposal_issues.slice(0, 8)
+          : [],
+      provider_response_id: response.responseId ?? null,
     };
 
     const { error: finishError } = await input.supabase.rpc("finish_ai_run", {
