@@ -29,7 +29,7 @@ export function ActionCreateForm() {
   }
 
   return (
-    <Card data-testid="actions-create-form">
+    <Card id="actions-create-form" data-testid="actions-create-form">
       <CardHeader>
         <CardTitle>Create action</CardTitle>
       </CardHeader>

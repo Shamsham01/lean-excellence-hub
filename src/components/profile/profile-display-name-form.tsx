@@ -35,6 +35,7 @@ export function ProfileDisplayNameForm({
 
   return (
     <form
+      id="profile-display-name-form"
       className="flex flex-col gap-4"
       onSubmit={handleSubmit}
       data-testid="profile-display-name-form"

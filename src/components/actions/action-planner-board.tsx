@@ -9,7 +9,16 @@ import {
   transitionActionStatus,
 } from "@/app/(platform)/platform/actions/actions";
 import { ActionPlannerCard } from "@/components/actions/action-planner-card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/platform/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MoreHorizontal } from "lucide-react";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
 import {
   BOARD_STATUS_COLUMNS,
@@ -48,9 +57,12 @@ export function ActionPlannerBoard({
       map.set(status, []);
     }
     for (const action of actions) {
-      const bucket = map.get(action.status) ?? [];
+      const columnKey =
+        action.status === "verified" ? "completed" : action.status;
+      if (!map.has(columnKey)) continue;
+      const bucket = map.get(columnKey) ?? [];
       bucket.push(action);
-      map.set(action.status, bucket);
+      map.set(columnKey, bucket);
     }
     return map;
   }, [actions]);
@@ -160,7 +172,7 @@ export function ActionPlannerBoard({
             <div
               key={status}
               className={cn(
-                "flex max-w-[20rem] min-w-[17rem] flex-1 flex-col gap-2 rounded-lg border border-border bg-surface/60 p-3",
+                "flex max-w-full min-w-[min(100%,17rem)] flex-1 flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-[var(--shadow-theme-xs)] sm:max-w-[20rem] sm:min-w-[17rem]",
                 droppable &&
                   hoverColumn === status &&
                   "border-primary/50 bg-primary/5",
@@ -179,22 +191,51 @@ export function ActionPlannerBoard({
                 void handleDrop(status);
               }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  {actionStatusLabel(status)}
-                </p>
-                <span className="rounded-md bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  {columnActions.length}
-                </span>
+              <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {actionStatusLabel(status)}
+                  </p>
+                  <span className="font-mono-data rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    {columnActions.length}
+                  </span>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="size-8 p-0"
+                      aria-label={`${actionStatusLabel(status)} column options`}
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setHoverColumn(status);
+                      }}
+                    >
+                      Highlight column
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div className="flex flex-col gap-2">
                 {columnActions.length === 0 ? (
-                  <p
-                    className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground"
-                    data-testid={`actions-board-empty-${status}`}
-                  >
-                    No actions
-                  </p>
+                  <EmptyState
+                    testId={`actions-board-empty-${status}`}
+                    title="No actions"
+                    description="Drag cards here when transitions are permitted."
+                    className="border-none bg-transparent px-2 py-6 shadow-none"
+                    icon={
+                      <span className="font-mono-data text-xs text-muted-foreground">
+                        —
+                      </span>
+                    }
+                  />
                 ) : (
                   columnActions.map((action) => (
                     <ActionPlannerCard

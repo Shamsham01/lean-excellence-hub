@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { expectModulePageHeading } from "./helpers/module-page-heading";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import {
   DEMO_ORGANISATION,
@@ -37,12 +38,10 @@ test.describe("Apex demo seed", () => {
 
     await page.getByRole("link", { name: "Actions" }).click();
     await expect(page).toHaveURL(/\/platform\/actions/);
-    await expect(page.getByRole("heading", { name: "Actions" })).toBeVisible();
+    await expectModulePageHeading(page, "Actions");
 
     await page.getByRole("link", { name: "Templates" }).click();
     await expect(page).toHaveURL(/\/platform\/templates/);
-    await expect(
-      page.getByRole("heading", { name: "Templates" }),
-    ).toBeVisible();
+    await expectModulePageHeading(page, "Templates");
   });
 });

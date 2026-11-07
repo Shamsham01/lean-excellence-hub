@@ -9,7 +9,14 @@ export type ActionPlannerView = (typeof ACTION_PLANNER_VIEWS)[number];
 
 export const ACTION_PLANNER_VIEW_STORAGE_KEY = "leh.actions.plannerView";
 
+/** Primary kanban columns (TailAdmin-style board). Verified/cancelled remain in list/tiles. */
 export const BOARD_STATUS_COLUMNS: ActionStatus[] = [
+  "open",
+  "in_progress",
+  "completed",
+];
+
+export const EXTENDED_BOARD_STATUSES: ActionStatus[] = [
   "open",
   "in_progress",
   "completed",

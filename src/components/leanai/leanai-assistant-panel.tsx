@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { LeanAiCoachCard } from "@/components/leanai/leanai-coach-card";
 import { LeanAiComposer } from "@/components/leanai/leanai-composer";
 import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
+import { LeanAiMessageActions } from "@/components/leanai/leanai-message-actions";
 import { useLeanAiAssistant } from "@/components/leanai/leanai-assistant-provider";
 import { Button } from "@/components/ui/button";
 import { AppLink } from "@/components/ui/app-link";
@@ -169,58 +170,78 @@ export function LeanAiAssistantPanel({
           <div
             key={message.id}
             className={cn(
-              "rounded-md px-3 py-2 text-sm leading-relaxed",
-              message.role === "user"
-                ? "ml-6 bg-muted text-foreground"
-                : "mr-4 border border-primary/20 bg-accent/40 text-foreground",
+              "flex w-full min-w-0",
+              message.role === "user" ? "justify-end" : "justify-start",
             )}
-            data-testid={
-              message.role === "user"
-                ? "leanai-assistant-user-message"
-                : "leanai-assistant-assistant-message"
-            }
           >
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {message.role === "user" ? "You" : "LeanAI"}
-            </p>
-            {message.role === "user" ? (
-              <p className="mt-1 break-words whitespace-pre-wrap">
-                {message.content}
-              </p>
-            ) : (
-              <LeanAiMarkdown className="mt-1" text={message.content} />
-            )}
-            {message.role === "assistant" &&
-            message.externalSources &&
-            message.externalSources.length > 0 ? (
-              <div
-                className="mt-3 border-t border-border/60 pt-2"
-                data-testid="leanai-assistant-sources"
+            <div
+              className={cn(
+                "max-w-[92%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:max-w-[85%]",
+                message.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border/60 bg-card text-foreground shadow-[var(--shadow-theme-xs)]",
+              )}
+              data-testid={
+                message.role === "user"
+                  ? "leanai-assistant-user-message"
+                  : "leanai-assistant-assistant-message"
+              }
+            >
+              <p
+                className={cn(
+                  "text-[11px] font-medium tracking-wide uppercase",
+                  message.role === "user"
+                    ? "text-primary-foreground/80"
+                    : "text-muted-foreground",
+                )}
               >
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Sources
+                {message.role === "user" ? "You" : "LeanAI"}
+              </p>
+              {message.role === "user" ? (
+                <p className="mt-1 break-words whitespace-pre-wrap">
+                  {message.content}
                 </p>
-                <ul className="mt-1 space-y-1">
-                  {message.externalSources.map((source) => (
-                    <li key={source.url}>
-                      <a
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary underline-offset-2 hover:underline"
-                        data-testid="leanai-assistant-source-link"
-                      >
-                        {source.title}
-                        <span className="text-muted-foreground">
-                          {" "}
-                          — {hostLabelFromUrl(source.url)}
-                        </span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
+              ) : (
+                <>
+                  <LeanAiMarkdown className="mt-1" text={message.content} />
+                  <LeanAiMessageActions
+                    className="mt-2 border-t border-border/50 pt-1"
+                    content={message.content}
+                  />
+                </>
+              )}
+              {message.role === "assistant" &&
+              message.externalSources &&
+              message.externalSources.length > 0 ? (
+                <div
+                  className="mt-3 border-t border-border/60 pt-2"
+                  data-testid="leanai-assistant-sources"
+                >
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Sources
+                  </p>
+                  <ul className="mt-1 space-y-1">
+                    {message.externalSources.map((source) => (
+                      <li key={source.url}>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary underline-offset-2 hover:underline"
+                          data-testid="leanai-assistant-source-link"
+                        >
+                          {source.title}
+                          <span className="text-muted-foreground">
+                            {" "}
+                            — {hostLabelFromUrl(source.url)}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
           </div>
         ))}
 

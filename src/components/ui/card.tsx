@@ -18,17 +18,23 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 
 export function CardHeader({
   className,
+  divided,
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: HTMLAttributes<HTMLDivElement> & { divided?: boolean }) {
   return (
     <div
       className={cn(
         "flex flex-col gap-2 group-data-[size=sm]/card:gap-1",
+        divided && "-mx-5 border-b border-border/50 px-5 pb-4 sm:-mx-6 sm:px-6",
         className,
       )}
       {...props}
     />
   );
+}
+
+export function CardDivider({ className }: { className?: string }) {
+  return <div className={cn("-mx-5 h-px bg-border/50 sm:-mx-6", className)} />;
 }
 
 export function CardTitle({

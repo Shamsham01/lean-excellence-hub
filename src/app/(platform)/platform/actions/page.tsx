@@ -5,6 +5,7 @@ import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
 import { PageHeader } from "@/components/platform/page-header";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent } from "@/components/ui/card";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
@@ -103,6 +104,14 @@ export default async function ActionsPage({
       <PageHeader
         title="Actions"
         description="Improvement actions linked to assessments and operational work."
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { label: "Platform", href: "/platform" },
+              { label: "Actions" },
+            ]}
+          />
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -147,6 +156,7 @@ export default async function ActionsPage({
         <ActionPlannerShell
           actions={plannerActions}
           initialOpenActionId={openActionId}
+          canCreate={canCreate}
         />
       </Suspense>
       <WorkplaceSharedRecords module="actions" title="Actions" />

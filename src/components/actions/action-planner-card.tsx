@@ -1,5 +1,7 @@
 import type { DragEvent } from "react";
+import { MessageSquare } from "lucide-react";
 
+import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
@@ -41,6 +43,7 @@ export function ActionPlannerCard({
 }: ActionPlannerCardProps) {
   const hint = sourceHint(action);
   const due = formatDueDate(action.due_at);
+  const assignee = action.assignee_display_name?.trim() || "Unassigned";
 
   return (
     <button
@@ -50,9 +53,10 @@ export function ActionPlannerCard({
       onDragEnd={onDragEnd}
       onClick={() => onOpen(action.id)}
       className={cn(
-        "group w-full rounded-lg border border-border bg-card text-left shadow-[var(--shadow-theme-xs)] transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        "group w-full min-w-0 rounded-xl border border-border/60 bg-card text-left shadow-[var(--shadow-theme-xs)] transition-all hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         layout === "row" ? "px-4 py-3" : "flex h-full flex-col gap-3 p-4",
         draggable && "cursor-grab active:cursor-grabbing",
+        draggable && "task-dragging:opacity-80",
         className,
       )}
       data-testid={`action-planner-card-${action.id}`}
@@ -64,21 +68,26 @@ export function ActionPlannerCard({
         )}
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-foreground">{action.title}</p>
+          <p className="truncate text-sm font-medium text-foreground">
+            {action.title}
+          </p>
           <p className="typography-metadata mt-0.5">
             {formatActionReference(action.action_number, action.title)}
-            {due
-              ? ` · Due ${due}`
-              : ` · ${new Date(action.created_at).toLocaleDateString("en-GB")}`}
           </p>
-          {action.assignee_display_name ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Owner {action.assignee_display_name}
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-muted-foreground">Unassigned</p>
-          )}
-          {hint ? (
+          {layout === "tile" ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {due ? (
+                <span className="font-mono-data text-xs text-muted-foreground">
+                  {due}
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageSquare className="size-3.5" aria-hidden />
+                <span className="font-mono-data">0</span>
+              </span>
+            </div>
+          ) : null}
+          {hint && layout === "row" ? (
             <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
               {hint}
             </p>
@@ -87,15 +96,20 @@ export function ActionPlannerCard({
         <div
           className={cn(
             "flex shrink-0 gap-1.5",
-            layout === "tile" ? "flex-wrap" : "items-center",
+            layout === "tile"
+              ? "flex-wrap items-center justify-between"
+              : "items-center",
           )}
         >
-          <Badge variant={actionStatusBadgeVariant(action.status)}>
-            {actionStatusLabel(action.status)}
-          </Badge>
-          <Badge variant="secondary">
-            {actionPriorityLabel(action.priority)}
-          </Badge>
+          <div className="flex flex-wrap gap-1">
+            <Badge variant={actionStatusBadgeVariant(action.status)}>
+              {actionStatusLabel(action.status)}
+            </Badge>
+            <Badge variant="secondary">
+              {actionPriorityLabel(action.priority)}
+            </Badge>
+          </div>
+          <PlatformMemberAvatar displayName={assignee} size="sm" />
         </div>
       </div>
     </button>

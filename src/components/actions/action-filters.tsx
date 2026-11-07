@@ -51,6 +51,7 @@ export function ActionFilters({
 
   return (
     <form
+      id="actions-filters"
       className="grid gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4"
       data-testid="actions-filters"
       onSubmit={(event) => {
