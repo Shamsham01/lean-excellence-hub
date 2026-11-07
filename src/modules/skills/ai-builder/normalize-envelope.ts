@@ -80,9 +80,6 @@ export function normalizeSkillsBuilderProviderEnvelope(
     change_summary: changeSummary.filter(
       (entry): entry is string => typeof entry === "string",
     ),
-    proposal:
-      value.proposal === undefined
-        ? null
-        : (value.proposal as unknown),
+    proposal: value.proposal === undefined ? null : (value.proposal as unknown),
   };
 }

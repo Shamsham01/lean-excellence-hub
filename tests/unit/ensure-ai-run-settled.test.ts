@@ -18,13 +18,20 @@ describe("ensureAiRunSettledBestEffort", () => {
       from: vi.fn(() => ({
         select: () => ({
           eq: () => ({
-            maybeSingle: async () => ({ data: { status: "running" }, error: null }),
+            maybeSingle: async () => ({
+              data: { status: "running" },
+              error: null,
+            }),
           }),
         }),
       })),
     };
 
-    await ensureAiRunSettledBestEffort(supabase as never, "run-1", new Error("boom"));
+    await ensureAiRunSettledBestEffort(
+      supabase as never,
+      "run-1",
+      new Error("boom"),
+    );
 
     expect(failAiRunBestEffortMock).toHaveBeenCalledWith(
       supabase,
@@ -39,13 +46,20 @@ describe("ensureAiRunSettledBestEffort", () => {
       from: vi.fn(() => ({
         select: () => ({
           eq: () => ({
-            maybeSingle: async () => ({ data: { status: "completed" }, error: null }),
+            maybeSingle: async () => ({
+              data: { status: "completed" },
+              error: null,
+            }),
           }),
         }),
       })),
     };
 
-    await ensureAiRunSettledBestEffort(supabase as never, "run-2", new Error("boom"));
+    await ensureAiRunSettledBestEffort(
+      supabase as never,
+      "run-2",
+      new Error("boom"),
+    );
 
     expect(failAiRunBestEffortMock).not.toHaveBeenCalled();
   });

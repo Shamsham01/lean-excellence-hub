@@ -122,6 +122,22 @@ select is(
   'a second claim for the same running run does not grant another execution'
 );
 
+select lives_ok(
+  format(
+    'select public.fail_ai_run(%L::uuid, %L, %L)',
+    (select id from ai_claim_ids where key = 'ai_run'),
+    'timeout',
+    'stale'
+  ),
+  'stale recovery closes the claimed run without writing a proposal'
+);
+
+select is(
+  public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run')),
+  'timed_out',
+  'a timed-out run is not claimed again'
+);
+
 insert into ai_claim_ids (key, id)
 select 'ai_run_lease', public.start_ai_run(
   (select id from ai_claim_ids where key = 'ai_session'),
@@ -168,22 +184,6 @@ select is(
   ),
   true,
   'expired lease recovery sets completed_at'
-);
-
-select lives_ok(
-  format(
-    'select public.fail_ai_run(%L::uuid, %L, %L)',
-    (select id from ai_claim_ids where key = 'ai_run'),
-    'timeout',
-    'stale'
-  ),
-  'stale recovery closes the claimed run without writing a proposal'
-);
-
-select is(
-  public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run')),
-  'timed_out',
-  'a timed-out run is not claimed again'
 );
 
 insert into ai_claim_ids (key, id)
