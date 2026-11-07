@@ -153,9 +153,11 @@ export function LehBrand({
 export function LehBrandHomeLink({
   className,
   variant = "full",
+  lockupRasterOnly = variant === "full",
 }: {
   className?: string;
   variant?: LehBrandVariant;
+  lockupRasterOnly?: boolean;
 }) {
   return (
     <Link
@@ -163,7 +165,11 @@ export function LehBrandHomeLink({
       aria-label={LEH_BRAND_HOME_LABEL}
       className={cn("leh-brand-link", className)}
     >
-      <LehBrand decorative variant={variant} />
+      <LehBrand
+        decorative
+        lockupRasterOnly={lockupRasterOnly}
+        variant={variant}
+      />
     </Link>
   );
 }

@@ -1178,7 +1178,7 @@
   flex: 1;
   overflow: hidden;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-overflow: ellipsis;
@@ -1369,7 +1369,7 @@
   flex: 1;
   overflow: hidden;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-overflow: ellipsis;

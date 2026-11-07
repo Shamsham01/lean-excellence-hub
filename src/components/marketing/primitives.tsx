@@ -72,6 +72,7 @@ export function MarketingWordmark({
   return (
     <LehBrand
       decorative={decorative}
+      lockupRasterOnly={!compact}
       priority={priority}
       responsive={!compact}
       strapline={!compact}

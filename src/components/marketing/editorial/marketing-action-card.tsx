@@ -57,9 +57,7 @@ export function MarketingGembaFindingCard({
             <i />
             <i />
           </span>
-          <p className="editorial-gemba-finding-route">
-            /platform/gemba · {findingRef}
-          </p>
+          <p className="editorial-gemba-finding-route">Gemba · {findingRef}</p>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
             <StatusChip tone="warning">Finding recorded</StatusChip>
             <StatusChip>Example</StatusChip>
@@ -122,9 +120,7 @@ export function MarketingActionCard({
             <i />
             <i />
           </span>
-          <p className="editorial-action-card-route">
-            /platform/actions · {actionRef}
-          </p>
+          <p className="editorial-action-card-route">Actions · {actionRef}</p>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
             {animateHeroStatus ? (
               <HeroStatusCycle />
