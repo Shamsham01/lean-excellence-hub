@@ -147,18 +147,21 @@ test.describe("Milestone 12 closure", () => {
       "Please propose hypothesis for the hot-running defect pattern.",
     );
     await sendLeanAiPrompt(page);
-    const hypothesisProposal =
-      leanAiPanel(page).getByTestId("ai-proposal-card");
+    const inlineProposals = page.getByTestId("pps-inline-proposals");
+    const hypothesisProposal = inlineProposals.getByTestId("ai-proposal-card");
     await expect(hypothesisProposal).toBeVisible({
       timeout: 30_000,
     });
-    await leanAiPanel(page).getByTestId("ai-proposal-accept").click();
+    await inlineProposals.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0, {
-      timeout: 30_000,
-    });
+    await expect(inlineProposals.getByTestId("ai-proposal-card")).toHaveCount(
+      0,
+      {
+        timeout: 30_000,
+      },
+    );
     await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
     const causeAnalysisPanel = page.getByTestId("pps-unified-cause-analysis");
     await expect(causeAnalysisPanel).toBeVisible();
@@ -177,18 +180,21 @@ test.describe("Milestone 12 closure", () => {
       "Please propose containment for suspect hot-running batches.",
     );
     await sendLeanAiPrompt(page);
-    const containmentProposal =
-      leanAiPanel(page).getByTestId("ai-proposal-card");
+    const inlineProposals = page.getByTestId("pps-inline-proposals");
+    const containmentProposal = inlineProposals.getByTestId("ai-proposal-card");
     await expect(containmentProposal).toBeVisible({
       timeout: 30_000,
     });
-    await leanAiPanel(page).getByTestId("ai-proposal-accept").click();
+    await inlineProposals.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0, {
-      timeout: 30_000,
-    });
+    await expect(inlineProposals.getByTestId("ai-proposal-card")).toHaveCount(
+      0,
+      {
+        timeout: 30_000,
+      },
+    );
     await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const containmentPanel = page.getByTestId(
       "problem-solving-containment-panel",
@@ -209,18 +215,22 @@ test.describe("Milestone 12 closure", () => {
       "Please propose condition for the measured hot-running gap.",
     );
     await sendLeanAiPrompt(page);
+    const inlineProposals = page.getByTestId("pps-inline-proposals");
     const currentConditionProposal =
-      leanAiPanel(page).getByTestId("ai-proposal-card");
+      inlineProposals.getByTestId("ai-proposal-card");
     await expect(currentConditionProposal).toBeVisible({
       timeout: 30_000,
     });
-    await leanAiPanel(page).getByTestId("ai-proposal-accept").click();
+    await inlineProposals.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByTestId("ai-proposal-card")).toHaveCount(0, {
-      timeout: 30_000,
-    });
+    await expect(inlineProposals.getByTestId("ai-proposal-card")).toHaveCount(
+      0,
+      {
+        timeout: 30_000,
+      },
+    );
     await expectGuidedProblemSolvingWorkspace(page);
     await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const currentConditionPanel = page.getByTestId(
@@ -248,7 +258,14 @@ test.describe("Milestone 12 closure", () => {
     await expectGuidedProblemSolvingWorkspace(page);
     await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible();
     await page.getByTestId("pps-stage-auto-draft-button").click();
-    await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
+    await expect(
+      page
+        .locator(
+          '[data-testid="pps-pending-ai-proposals"], [data-testid="pps-inline-proposals"]',
+        )
+        .getByTestId("ai-proposal-card")
+        .first(),
+    ).toBeVisible({
       timeout: 90_000,
     });
   });
