@@ -16,7 +16,9 @@ async function expectMemberAdminPage(page: Page, memberDisplayName: string) {
   await expect(
     page.getByRole("heading", { name: "Organisation" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Access" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Access & Responsibilities" }),
+  ).toBeVisible();
 }
 
 test.describe("Member administration", () => {
