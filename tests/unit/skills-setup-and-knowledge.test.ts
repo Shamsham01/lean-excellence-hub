@@ -521,6 +521,7 @@ describe("Skills runtime assistant context", () => {
       applicationAiAvailable: true,
       conversationAvailable: true,
       conversationUnavailableReason: null,
+      conversationUnavailableCta: null,
       contextLabel: definition.contextLabel,
       page: {
         module: definition.module,

@@ -1,13 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { LogOut, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { PlatformNavIconComponent } from "@/components/platform/platform-nav-icons";
 import { AppLink } from "@/components/ui/app-link";
-import { Button } from "@/components/ui/button";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import {
   isNavItemActive,
@@ -42,7 +41,7 @@ function CompactNavLink({
       data-testid={testId}
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
-        "flex min-h-9 items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+        "flex min-h-11 items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
         active
           ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
@@ -74,13 +73,19 @@ export function PlatformSidebarFooter({
         {...(onNavigate ? { onClick: onNavigate } : {})}
         data-testid="platform-sidebar-profile-link"
       >
-        <PlatformMemberAvatar
-          displayName={member.displayName}
-          avatarUrl={member.avatarUrl}
-          size="sm"
-        />
+        {member.avatarUrl ? (
+          <PlatformMemberAvatar
+            displayName={member.displayName}
+            avatarUrl={member.avatarUrl}
+            size="sm"
+          />
+        ) : null}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-sidebar-foreground">
+          <span
+            className="block truncate text-sm font-medium text-sidebar-foreground"
+            data-testid="platform-sidebar-display-name"
+            title={member.displayName}
+          >
             {member.displayName}
           </span>
           {member.roleLabel ? (
@@ -114,17 +119,6 @@ export function PlatformSidebarFooter({
           <UserRound className="size-3.5 shrink-0" aria-hidden />
           Profile
         </CompactNavLink>
-        <form action="/auth/signout" method="post" className="ms-auto">
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="h-9 gap-1.5 px-2 text-xs text-muted-foreground"
-          >
-            <LogOut className="size-3.5" aria-hidden />
-            Sign out
-          </Button>
-        </form>
       </div>
     </div>
   );

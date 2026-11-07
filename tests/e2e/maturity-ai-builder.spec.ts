@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 import {
+  ensureLeanAiAssistantOpen,
   loginAndSelectOrganisation,
   provisionLeanAiContextE2eUser,
   resolveSupabaseEnv,
@@ -584,6 +585,7 @@ test.describe("Maturity framework builder with LeanAI", () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await page.goto("/platform/maturity/models");
+    await ensureLeanAiAssistantOpen(page);
     const desktop = page.getByTestId("leanai-assistant-desktop");
     await expect(desktop).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);

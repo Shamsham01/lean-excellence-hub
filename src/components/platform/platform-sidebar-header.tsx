@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { LEH_BRAND } from "@/components/brand/brand-assets";
 import { LehBrand } from "@/components/brand/leh-brand";
 import { AppLink } from "@/components/ui/app-link";
@@ -12,6 +14,7 @@ type PlatformSidebarHeaderProps = {
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
   closeGutter?: boolean;
+  notificationsSlot?: ReactNode;
 };
 
 export function PlatformSidebarHeader({
@@ -19,6 +22,7 @@ export function PlatformSidebarHeader({
   organisations,
   siteContext,
   closeGutter = false,
+  notificationsSlot,
 }: PlatformSidebarHeaderProps) {
   return (
     <div
@@ -27,20 +31,23 @@ export function PlatformSidebarHeader({
         closeGutter && "pr-12",
       )}
     >
-      <AppLink
-        href="/platform"
-        aria-label={LEH_BRAND.name}
-        className="leh-brand-link w-fit max-w-full"
-      >
-        <LehBrand
-          decorative
-          variant="full"
-          strapline={false}
-          lockupRasterOnly
-          priority
-          className="leh-brand--platform-sidebar"
-        />
-      </AppLink>
+      <div className="flex items-start justify-between gap-2">
+        <AppLink
+          href="/platform"
+          aria-label={LEH_BRAND.name}
+          className="leh-brand-link w-fit max-w-full"
+        >
+          <LehBrand
+            decorative
+            variant="full"
+            strapline={false}
+            lockupRasterOnly
+            priority
+            className="leh-brand--platform-sidebar"
+          />
+        </AppLink>
+        {notificationsSlot}
+      </div>
       <div className="min-w-0">
         <p
           className="truncate text-sm font-semibold text-sidebar-foreground"

@@ -8,6 +8,7 @@ import { LeanAiComposer } from "@/components/leanai/leanai-composer";
 import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
 import { useLeanAiAssistant } from "@/components/leanai/leanai-assistant-provider";
 import { Button } from "@/components/ui/button";
+import { AppLink } from "@/components/ui/app-link";
 import { hardNavigate } from "@/lib/navigation/navigate";
 import { cn } from "@/lib/utils";
 import { hostLabelFromUrl } from "@/modules/leanai-context/assistant/external-sources";
@@ -232,7 +233,7 @@ export function LeanAiAssistantPanel({
           </p>
         ) : null}
 
-        {messages.length === 0 && view && !sending ? (
+        {messages.length === 0 && view && !sending && conversationAvailable ? (
           <div
             className="flex flex-wrap gap-2"
             data-testid="leanai-assistant-starters"
@@ -243,7 +244,6 @@ export function LeanAiAssistantPanel({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={!conversationAvailable}
                 onClick={() => sendMessage(prompt)}
               >
                 {prompt}
@@ -260,13 +260,22 @@ export function LeanAiAssistantPanel({
           </p>
         ) : null}
         {!conversationAvailable ? (
-          <p
-            className="mb-2 text-sm text-muted-foreground"
+          <div
+            className="mb-2 flex flex-col gap-2"
             data-testid="leanai-assistant-ai-unavailable"
           >
-            {view?.conversationUnavailableReason ??
-              "AI conversation is not enabled. Guidance on this page describes only the access you have."}
-          </p>
+            <p className="text-sm text-muted-foreground">
+              {view?.conversationUnavailableReason ??
+                "LeanAI chat is unavailable. Page guidance above still matches your access."}
+            </p>
+            {view?.conversationUnavailableCta ? (
+              <Button size="sm" variant="outline" className="w-fit" asChild>
+                <AppLink href={view.conversationUnavailableCta.href}>
+                  {view.conversationUnavailableCta.label}
+                </AppLink>
+              </Button>
+            ) : null}
+          </div>
         ) : null}
         <LeanAiComposer
           value={draft}

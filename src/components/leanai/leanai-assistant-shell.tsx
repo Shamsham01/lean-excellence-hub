@@ -2,12 +2,18 @@ import { Suspense, type ReactNode } from "react";
 
 import { LeanAiAssistantChrome } from "@/components/leanai/leanai-assistant-chrome";
 import { LeanAiAssistantProvider } from "@/components/leanai/leanai-assistant-provider";
+import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 
 export function LeanAiAssistantShell({
   organisationId,
+  notifications,
   children,
 }: {
   organisationId: string;
+  notifications: {
+    unreadCount: number;
+    items: PlatformInAppNotification[];
+  } | null;
   children: ReactNode;
 }) {
   return (
@@ -18,7 +24,7 @@ export function LeanAiAssistantShell({
       {children}
       <Suspense fallback={null}>
         <LeanAiAssistantProvider organisationId={organisationId}>
-          <LeanAiAssistantChrome />
+          <LeanAiAssistantChrome notifications={notifications} />
         </LeanAiAssistantProvider>
       </Suspense>
     </div>

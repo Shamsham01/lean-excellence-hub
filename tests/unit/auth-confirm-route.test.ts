@@ -116,6 +116,7 @@ describe("auth confirm route", () => {
       "signup-hash",
     );
     expect(response.cookies.get("leh_confirm_type")?.value).toBe("signup");
+    expect(response.headers.get("Cache-Control")).toContain("no-store");
   });
 
   it("verifies signup confirmation on POST and keeps the session cookie", async () => {

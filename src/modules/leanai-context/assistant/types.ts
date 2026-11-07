@@ -103,6 +103,7 @@ export type LeanAiAssistantView = {
   applicationAiAvailable: boolean;
   conversationAvailable: boolean;
   conversationUnavailableReason: string | null;
+  conversationUnavailableCta: { label: string; href: string } | null;
   contextLabel: string;
   page: LeanAiAssistantPageEnvelope;
   site: {

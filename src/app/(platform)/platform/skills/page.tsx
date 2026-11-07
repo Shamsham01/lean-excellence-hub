@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/platform/empty-state";
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { MetricCard } from "@/components/platform/metric-card";
@@ -8,6 +9,8 @@ import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import type { SkillsSetupSnapshot } from "@/modules/skills/setup-path";
+import { Award } from "lucide-react";
+
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function latestDraftParentId(
@@ -138,6 +141,15 @@ export default async function SkillsOverviewPage() {
         />
         <MetricCard label="Active skills" value={skillCount ?? 0} />
       </div>
+      {canManageCatalog && (skillCount ?? 0) === 0 ? (
+        <EmptyState
+          title="Publish your first skills"
+          description="Use Skills setup to define scales, catalogue skills, and publish a capability set. Coverage stays at 0% until at least one skill is active."
+          actionLabel="Open skills setup"
+          actionHref="/platform/skills/setup"
+          icon={<Award className="size-5 text-primary" aria-hidden />}
+        />
+      ) : null}
       {(setupDrafts ?? []).length > 0 ? (
         <section
           className="flex flex-col gap-2"

@@ -172,6 +172,11 @@ export async function GET(request: NextRequest) {
     new URL(CONFIRM_STAGED_PATH, redirectOrigin),
     { status: 303 },
   );
+  response.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, private",
+  );
+  response.headers.set("Pragma", "no-cache");
   const secure = getServerEnvironment().NODE_ENV === "production";
   const options = confirmCookieOptions(secure);
   response.cookies.set(CONFIRM_TOKEN_COOKIE, tokenHash, options);

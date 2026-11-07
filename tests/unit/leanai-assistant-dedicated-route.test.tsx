@@ -22,6 +22,7 @@ const view: LeanAiAssistantView = {
   applicationAiAvailable: true,
   conversationAvailable: true,
   conversationUnavailableReason: null,
+  conversationUnavailableCta: null,
   contextLabel: "Maturity · Frameworks",
   page: {
     module: "maturity",
@@ -74,7 +75,7 @@ import { LeanAiAssistantProvider } from "@/components/leanai/leanai-assistant-pr
 function renderAssistant() {
   return render(
     <LeanAiAssistantProvider organisationId="org-a">
-      <LeanAiAssistantChrome />
+      <LeanAiAssistantChrome notifications={null} />
     </LeanAiAssistantProvider>,
   );
 }
@@ -98,6 +99,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
       modelClass: "standard",
     });
     window.localStorage.clear();
+    window.localStorage.setItem(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, "1");
     window.sessionStorage.clear();
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: String(query).includes("1024"),
@@ -124,7 +126,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity/builder";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
 
@@ -150,7 +152,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity/models";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     expect(screen.getByTestId("leanai-assistant-desktop")).toBeVisible();
@@ -164,7 +166,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity/builder";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     expect(
@@ -177,7 +179,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     expect(screen.getByTestId("leanai-assistant-rail")).toBeVisible();
@@ -202,7 +204,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity/builder";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     expect(
@@ -212,7 +214,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity/models";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     expect(
@@ -243,7 +245,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
     navigation.pathname = "/platform/maturity/builder";
     rendered.rerender(
       <LeanAiAssistantProvider organisationId="org-a">
-        <LeanAiAssistantChrome />
+        <LeanAiAssistantChrome notifications={null} />
       </LeanAiAssistantProvider>,
     );
     expect(

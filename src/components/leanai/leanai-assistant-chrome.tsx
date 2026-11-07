@@ -6,10 +6,19 @@ import { usePathname } from "next/navigation";
 import { isDedicatedLeanAiRoute } from "@/components/leanai/dedicated-assistant-routes";
 import { LeanAiAssistantPanel } from "@/components/leanai/leanai-assistant-panel";
 import { useLeanAiAssistant } from "@/components/leanai/leanai-assistant-provider";
+import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 
-export function LeanAiAssistantChrome() {
+export function LeanAiAssistantChrome({
+  notifications,
+}: {
+  notifications: {
+    unreadCount: number;
+    items: PlatformInAppNotification[];
+  } | null;
+}) {
   const pathname = usePathname() ?? "";
   const {
     desktopOpen,
@@ -33,6 +42,15 @@ export function LeanAiAssistantChrome() {
           className="hidden h-full max-h-full min-h-0 w-11 shrink-0 flex-col items-center overflow-hidden border-l border-border/40 bg-background lg:flex"
           data-testid="leanai-assistant-rail"
         >
+          {notifications ? (
+            <div className="flex w-full shrink-0 justify-center border-b border-border/40 py-1">
+              <PlatformNotificationBell
+                variant="rail"
+                initialUnreadCount={notifications.unreadCount}
+                initialItems={notifications.items}
+              />
+            </div>
+          ) : null}
           <Button
             type="button"
             size="icon"

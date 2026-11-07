@@ -163,7 +163,7 @@ test.describe("founding organisation onboarding", () => {
       .click();
     await expect(page.getByTestId("billing-settings-page")).toBeVisible();
     await expect(page.getByTestId("billing-settings-page")).toContainText(
-      "professional",
+      "Professional",
     );
   });
 });

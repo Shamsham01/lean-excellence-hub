@@ -22,6 +22,9 @@ const basePermissions: SetupPermissionSnapshot = {
   canReadHierarchy: true,
   canReadMemberships: true,
   canManageProjects: true,
+  canManageSkillsCatalog: true,
+  canManageRecognition: true,
+  canManageSchedules: true,
   currentMembershipAdminHref: "/platform/people/test/admin",
 };
 
@@ -60,6 +63,12 @@ function baseQuery(
     maturityAssessmentUnavailable: false,
     trainingCatalogCount: 0,
     trainingCatalogUnavailable: false,
+    activeSkillCount: 0,
+    activeSkillCountUnavailable: false,
+    recognitionTypeCount: 0,
+    recognitionTypeCountUnavailable: false,
+    scheduleDefinitionCount: 0,
+    scheduleDefinitionCountUnavailable: false,
     hasChildUnits: false,
     childUnitsUnavailable: false,
     currentAdminHasPrimaryAssignment: false,
@@ -81,6 +90,7 @@ describe("organisation setup readiness", () => {
 
     expect(snapshot.core.readyLabel).toBe("ready");
     expect(snapshot.core.allComplete).toBe(true);
+    expect(snapshot.operationalSetupIncomplete).toBe(true);
   });
 
   it("does not mark core ready without an operational unit", () => {
