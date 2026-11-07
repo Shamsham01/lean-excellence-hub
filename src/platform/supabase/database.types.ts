@@ -15044,6 +15044,7 @@ export type Database = {
         Args: { target_organisation_id: string }
         Returns: boolean
       }
+      sync_leanai_operational_chase_notifications: { Args: never; Returns: number }
       sync_overdue_action_chase_notifications: { Args: never; Returns: number }
       transfer_organisation_ownership: {
         Args: { target_membership_id: string }
