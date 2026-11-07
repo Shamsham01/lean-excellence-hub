@@ -1,10 +1,6 @@
-import { createTemplate } from "@/app/(platform)/platform/templates/actions";
+import { CreateTemplateDialog } from "@/app/(platform)/platform/templates/create-template-dialog";
 import { PageHeader } from "@/components/platform/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -16,33 +12,12 @@ export default async function TemplatesPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" data-testid="templates-page">
       <PageHeader
         title="Templates"
         description="Configurable forms and checklists for operational audits."
+        actions={<CreateTemplateDialog />}
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>New template</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            action={createTemplate}
-            className="flex max-w-lg flex-col gap-4"
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="displayName">Name</Label>
-              <Input id="displayName" name="displayName" required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" rows={3} />
-            </div>
-            <Button type="submit">Create draft template</Button>
-          </form>
-        </CardContent>
-      </Card>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {(templates ?? []).map((template) => (

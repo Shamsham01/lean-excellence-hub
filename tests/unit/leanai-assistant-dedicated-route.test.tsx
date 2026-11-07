@@ -22,6 +22,7 @@ const view: LeanAiAssistantView = {
   applicationAiAvailable: true,
   conversationAvailable: true,
   conversationUnavailableReason: null,
+  conversationUnavailableCta: null,
   contextLabel: "Maturity · Frameworks",
   page: {
     module: "maturity",
@@ -98,6 +99,7 @@ describe("LeanAI assistant on the maturity builder route", () => {
       modelClass: "standard",
     });
     window.localStorage.clear();
+    window.localStorage.setItem(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, "1");
     window.sessionStorage.clear();
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: String(query).includes("1024"),

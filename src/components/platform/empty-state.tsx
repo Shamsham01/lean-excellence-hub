@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -32,7 +33,7 @@ export function EmptyState({
         </div>
         {actionLabel && actionHref ? (
           <Button asChild>
-            <a href={actionHref}>{actionLabel}</a>
+            <AppLink href={actionHref}>{actionLabel}</AppLink>
           </Button>
         ) : actionLabel && onAction ? (
           <Button type="button" onClick={onAction}>

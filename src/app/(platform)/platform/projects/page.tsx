@@ -1,23 +1,14 @@
-import { ProjectPortfolio } from "@/components/projects/project-portfolio";
+import { Suspense } from "react";
+
+import { ProjectsPortfolioBody } from "@/app/(platform)/platform/projects/projects-portfolio-body";
+import { ProjectsPortfolioSkeleton } from "@/app/(platform)/platform/projects/projects-portfolio-skeleton";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
-import { computePortfolioMetrics } from "@/lib/projects/portfolio-metrics";
-import {
-  resolvePortfolioOpenActionIds,
-  withPortfolioSiteScope,
-} from "@/lib/projects/site-scope";
-import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
-import type {
-  ProjectPortfolioItem,
-  ProjectPortfolioResponse,
-} from "@/lib/projects/types";
 import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
-import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProjectsPortfolioPage({
   searchParams,
@@ -34,118 +25,7 @@ export default async function ProjectsPortfolioPage({
   });
   if (workplaceView) return workplaceView;
 
-  const supabase = await createServerSupabaseClient();
   const canManage = await currentMemberHasPermission("projects.manage");
-  const selectorOptions = await loadSiteScopedSelectorOptions();
-
-  const { data: portfolioData } =
-    await callProjectRpc<ProjectPortfolioResponse>(
-      supabase,
-      "get_ci_projects_portfolio",
-      withPortfolioSiteScope(
-        {
-          target_search: params.search ?? null,
-          target_status: params.status ?? null,
-          target_page: 1,
-          target_page_size: 25,
-        },
-        selectorOptions.context,
-      ),
-    );
-
-  const portfolio = portfolioData ?? {
-    items: [],
-    total_count: 0,
-    page: 1,
-    page_size: 25,
-  };
-
-  const { data: metricsData } = await callProjectRpc<ProjectPortfolioResponse>(
-    supabase,
-    "get_ci_projects_portfolio",
-    withPortfolioSiteScope(
-      {
-        target_page: 1,
-        target_page_size: 500,
-      },
-      selectorOptions.context,
-    ),
-  );
-
-  const allItems = (metricsData?.items as ProjectPortfolioItem[]) ?? [];
-  const scopedProjectIds = allItems.map((item) => item.id);
-
-  let openActions = 0;
-
-  if (scopedProjectIds.length > 0) {
-    const { data: actionContexts } = await untypedFrom(
-      supabase,
-      "ci_project_action_context",
-    )
-      .select("action_id, project_id")
-      .in("project_id", scopedProjectIds);
-
-    const actionIds = resolvePortfolioOpenActionIds(
-      scopedProjectIds,
-      (actionContexts as Array<{
-        action_id: string;
-        project_id: string;
-      }> | null) ?? [],
-    );
-
-    if (actionIds.length > 0) {
-      const { data: openActionRows } = await supabase
-        .from("actions")
-        .select("id")
-        .in("id", actionIds)
-        .in("status", ["open", "in_progress"]);
-      openActions = openActionRows?.length ?? 0;
-    }
-  }
-
-  const activeProjectIds = allItems
-    .filter((item) => item.status === "active")
-    .map((item) => item.id);
-
-  let meetingTarget = 0;
-  if (activeProjectIds.length > 0) {
-    const { data: metrics } = await untypedFrom(supabase, "ci_project_metrics")
-      .select("id, project_id, target_value")
-      .in("project_id", activeProjectIds);
-
-    const metricRows =
-      (metrics as Array<{ id: string; target_value: number | null }> | null) ??
-      [];
-
-    if (metricRows.length > 0) {
-      const metricIds = metricRows.map((metric) => metric.id);
-      const { data: measurements } = await untypedFrom(
-        supabase,
-        "ci_project_metric_measurements",
-      )
-        .select("metric_id, measured_value, measured_at")
-        .in("metric_id", metricIds)
-        .order("measured_at", { ascending: false });
-
-      const latestByMetric = new Map<string, number>();
-      for (const measurement of (measurements as Array<{
-        metric_id: string;
-        measured_value: number;
-      }> | null) ?? []) {
-        if (!latestByMetric.has(measurement.metric_id)) {
-          latestByMetric.set(measurement.metric_id, measurement.measured_value);
-        }
-      }
-
-      meetingTarget = metricRows.filter((metric) => {
-        if (metric.target_value == null) return false;
-        const latest = latestByMetric.get(metric.id);
-        return latest != null && latest >= metric.target_value;
-      }).length;
-    }
-  }
-
-  const metrics = computePortfolioMetrics(allItems, openActions, meetingTarget);
 
   return (
     <div className="flex flex-col gap-8" data-testid="projects-portfolio">
@@ -175,14 +55,15 @@ export default async function ProjectsPortfolioPage({
           </div>
         }
       />
-      <ProjectPortfolio
-        items={portfolio.items}
-        totalCount={portfolio.total_count}
-        metrics={metrics}
-        statusFilter={params.status ?? null}
-        searchFilter={params.search ?? null}
-        canManage={canManage}
-      />
+      <Suspense fallback={<ProjectsPortfolioSkeleton />}>
+        <ProjectsPortfolioBody
+          searchParams={{
+            status: params.status,
+            search: params.search,
+          }}
+          canManage={canManage}
+        />
+      </Suspense>
       <WorkplaceSharedRecords module="projects" title="Projects" />
     </div>
   );

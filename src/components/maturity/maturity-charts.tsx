@@ -8,13 +8,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type PillarScore = {
-  name: string;
-  score: number;
-};
+import {
+  dedupePillarScores,
+  type PillarScoreRow,
+} from "@/components/maturity/pillar-scores-dedupe";
+
+type PillarScore = PillarScoreRow;
 
 export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
-  if (data.length === 0) {
+  const chartData = dedupePillarScores(data);
+  if (chartData.length === 0) {
     return null;
   }
 
@@ -25,7 +28,7 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
       aria-label="Pillar maturity radar chart"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
+        <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
           <PolarGrid stroke="var(--border)" />
           <PolarAngleAxis
             dataKey="name"
@@ -49,7 +52,7 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
           </tr>
         </thead>
         <tbody>
-          {data.map((row) => (
+          {chartData.map((row) => (
             <tr key={row.name}>
               <td>{row.name}</td>
               <td>{row.score}</td>
@@ -62,9 +65,10 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
 }
 
 export function PillarScoreList({ data }: { data: PillarScore[] }) {
+  const rows = dedupePillarScores(data);
   return (
     <ul className="flex flex-col gap-2">
-      {data.map((pillar) => (
+      {rows.map((pillar) => (
         <li
           key={pillar.name}
           className="flex items-center justify-between gap-4 rounded-md border border-border bg-surface px-3 py-2"

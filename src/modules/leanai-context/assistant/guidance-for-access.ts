@@ -41,14 +41,50 @@ export function conversationUnavailableCopy(input: {
   if (!input.eligible) {
     return (
       input.eligibilityMessage ??
-      "LeanAI conversation is not enabled. Page guidance still describes only the access you have."
+      "LeanAI chat is unavailable until subscription access can be verified."
     );
   }
   if (!input.applicationAvailable) {
-    return "LeanAI conversation is turned off in this environment. Page guidance still describes only the access you have.";
+    return "LeanAI chat is off because AI is not configured in this environment. Setup guidance on this page still works.";
   }
   if (!input.organisationEnabled) {
-    return "LeanAI conversation is turned off for this organisation. Page guidance still describes only the access you have.";
+    return "LeanAI chat is off for this organisation. An administrator can turn it on in AI settings.";
   }
-  return "You do not have permission to use LeanAI conversation. Page guidance still describes only the access you have.";
+  return "Your role does not include LeanAI chat (ai.use). Ask an administrator to grant access.";
+}
+
+/**
+ * Single follow-up action when chat is unavailable (panel stays collapsed by default).
+ */
+export function leanAiConversationUnavailableCta(input: {
+  eligible: boolean;
+  eligibilityDenied?: boolean;
+  applicationAvailable: boolean;
+  organisationEnabled: boolean;
+  canUseConversation: boolean;
+}): { label: string; href: string } | null {
+  if (
+    input.eligible &&
+    input.applicationAvailable &&
+    input.organisationEnabled &&
+    input.canUseConversation
+  ) {
+    return null;
+  }
+  if (!input.eligible && input.eligibilityDenied) {
+    return { label: "Review subscription", href: "/platform/settings/billing" };
+  }
+  if (!input.eligible) {
+    return {
+      label: "Review billing state",
+      href: "/platform/settings/billing",
+    };
+  }
+  if (!input.applicationAvailable) {
+    return null;
+  }
+  if (!input.organisationEnabled) {
+    return { label: "Open AI settings", href: "/platform/settings/ai" };
+  }
+  return { label: "Manage people access", href: "/platform/settings/people" };
 }

@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/platform/empty-state";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import {
   describeRecurrence,
   parseRecurrenceJson,
 } from "@/lib/schedule/recurrence";
+import { CalendarClock } from "lucide-react";
 import { SCHEDULE_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -88,6 +90,14 @@ export default async function ScheduleOverviewPage() {
                 <Badge variant="outline">{effectiveStatus}</Badge>
               </div>
             ))
+          ) : canManage ? (
+            <EmptyState
+              title="No upcoming occurrences"
+              description="Create a recurring schedule for 5S audits or Gemba walks. Occurrences will show here once the first run is planned."
+              actionLabel="New schedule"
+              actionHref="/platform/schedule/new"
+              icon={<CalendarClock className="size-5 text-primary" />}
+            />
           ) : (
             <p className="text-sm text-muted-foreground">
               No open schedule occurrences.
@@ -128,6 +138,14 @@ export default async function ScheduleOverviewPage() {
                 </AppLink>
               );
             })
+          ) : canManage ? (
+            <EmptyState
+              title="No schedules yet"
+              description="Operational cadence starts with a schedule definition. Add audits or walks, then tune recurrence per site."
+              actionLabel="Create first schedule"
+              actionHref="/platform/schedule/new"
+              icon={<CalendarClock className="size-5 text-primary" />}
+            />
           ) : (
             <p className="text-sm text-muted-foreground">
               No schedules configured yet.
