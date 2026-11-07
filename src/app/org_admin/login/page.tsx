@@ -28,8 +28,8 @@ export default async function PlatformLoginPage({
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
-      <div className="flex flex-col gap-4">
-        <LehBrand variant="full" />
+      <div className="leh-brand-auth-shell flex flex-col items-start gap-4">
+        <LehBrand lockupRasterOnly variant="full" />
         <h1 className="text-2xl font-semibold">Sign in</h1>
       </div>
       {message ? (
