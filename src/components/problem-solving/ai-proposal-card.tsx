@@ -41,7 +41,7 @@ export function AiProposalCard({
 
   const body = (
     <>
-      <p className="min-w-0 break-words text-sm leading-relaxed text-foreground">
+      <p className="min-w-0 text-sm leading-relaxed break-words text-foreground">
         {preview}
       </p>
       <div className="flex min-w-0 flex-wrap gap-2">
@@ -81,7 +81,7 @@ export function AiProposalCard({
       <article
         data-testid="ai-proposal-card"
         className={cn(
-          "min-w-0 max-w-full rounded-xl border-2 border-dashed border-primary/45 bg-primary/5 p-5 shadow-sm",
+          "max-w-full min-w-0 rounded-xl border-2 border-dashed border-primary/45 bg-primary/5 p-5 shadow-sm",
         )}
       >
         <p className="text-xs font-semibold tracking-wide text-primary uppercase">
@@ -93,7 +93,7 @@ export function AiProposalCard({
   }
 
   return (
-    <Card data-testid="ai-proposal-card" className="min-w-0 max-w-full">
+    <Card data-testid="ai-proposal-card" className="max-w-full min-w-0">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">{label}</CardTitle>
       </CardHeader>

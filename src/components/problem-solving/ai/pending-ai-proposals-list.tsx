@@ -78,10 +78,7 @@ export function PendingAiProposalsList({
   const rejectHandler = onReject ?? defaultReject;
 
   return (
-    <Card
-      data-testid="pps-pending-ai-proposals"
-      className="min-w-0 max-w-full"
-    >
+    <Card data-testid="pps-pending-ai-proposals" className="max-w-full min-w-0">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>

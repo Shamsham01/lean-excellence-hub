@@ -152,6 +152,7 @@ test.describe("Milestone 12 closure", () => {
     await expect(hypothesisProposal).toBeVisible({
       timeout: 30_000,
     });
+    await expect(page.getByTestId("pps-inline-proposals")).toHaveCount(0);
     await pendingPanel.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
@@ -256,27 +257,6 @@ test.describe("Milestone 12 closure", () => {
         .first(),
     ).toBeVisible({
       timeout: 90_000,
-    });
-  });
-
-  test("chat-created proposals appear in the pending panel and accept", async ({
-    page,
-  }) => {
-    await signInAsDemoUser(page, "manager");
-    await openLeanAiPanel(page);
-    await fillLeanAiPrompt(
-      page,
-      "Please propose hypothesis for the hot-running defect pattern.",
-    );
-    await sendLeanAiPrompt(page);
-    const pendingPanel = page.getByTestId("pps-pending-ai-proposals");
-    await expect(pendingPanel.getByTestId("ai-proposal-card").first()).toBeVisible(
-      { timeout: 30_000 },
-    );
-    await expect(page.getByTestId("pps-inline-proposals")).toHaveCount(0);
-    await pendingPanel.getByTestId("ai-proposal-accept").first().click();
-    await expect(page.getByText("Proposal accepted.")).toBeVisible({
-      timeout: 15_000,
     });
   });
 

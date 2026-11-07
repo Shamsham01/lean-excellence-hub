@@ -189,9 +189,12 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     }
   }, [detail.id]);
 
-  const syncChatPendingProposals = useCallback((incoming: PendingProposal[]) => {
-    setPendingProposals(syncSessionPendingProposals(incoming));
-  }, []);
+  const syncChatPendingProposals = useCallback(
+    (incoming: PendingProposal[]) => {
+      setPendingProposals(syncSessionPendingProposals(incoming));
+    },
+    [],
+  );
 
   const syncStageToUrl = useCallback(
     (semanticKey: string) => {
