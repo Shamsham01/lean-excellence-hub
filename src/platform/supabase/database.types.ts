@@ -14216,12 +14216,24 @@ export type Database = {
         Returns: string
       }
       mark_all_in_app_notifications_read: { Args: never; Returns: boolean }
+      mark_all_platform_admin_in_app_notifications_read: {
+        Args: { actor_user_id: string; authenticator_assurance_level: string }
+        Returns: boolean
+      }
       mark_benefit_realised: {
         Args: { target_benefit_id: string; target_reason?: string }
         Returns: boolean
       }
       mark_in_app_notification_read: {
         Args: { target_notification_id: string }
+        Returns: boolean
+      }
+      mark_platform_admin_in_app_notification_read: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          target_notification_id: string
+        }
         Returns: boolean
       }
       mark_suggestion_implemented: {
@@ -14295,6 +14307,15 @@ export type Database = {
       platform_admin_identity_active: {
         Args: { target_user_id: string }
         Returns: boolean
+      }
+      platform_admin_in_app_notifications: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          result_limit: number
+        }
+        Returns: Json
       }
       platform_admin_notification_history: {
         Args: {

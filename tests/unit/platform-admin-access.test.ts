@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { decidePlatformAdminAccess } from "@/modules/platform-admin/access-decision";
+import { platformAdminInAppSnapshotSchema } from "@/modules/platform-admin/schemas";
 import {
   isOrganisationId,
   parseDirectoryQuery,
@@ -88,6 +89,28 @@ describe("platform billing runtime labels", () => {
         }),
       ),
     ).not.toContain("sk_test_hidden_value");
+  });
+});
+
+describe("platform admin in-app snapshot", () => {
+  it("parses unread counts and alert items from the RPC payload", () => {
+    expect(
+      platformAdminInAppSnapshotSchema.parse({
+        unread_count: 1,
+        items: [
+          {
+            id: "550e8400-e29b-41d4-a716-446655440000",
+            title: "Organisation founded",
+            body: "Acme is provisioning.",
+            href: "/org_admin/organisations/abc",
+            read_at: null,
+            created_at: "2026-11-07T12:00:00.000Z",
+            notification_type: "platform_operator",
+            event_kind: "organisation.founded",
+          },
+        ],
+      }),
+    ).toMatchObject({ unread_count: 1, items: [{ title: "Organisation founded" }] });
   });
 });
 

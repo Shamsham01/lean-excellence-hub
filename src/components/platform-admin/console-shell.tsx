@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 
 import { LehBrand } from "@/components/brand/leh-brand";
+import { PlatformOwnerNotificationBell } from "@/components/platform-admin/notification-bell";
 import { AppLink } from "@/components/ui/app-link";
 import { cn } from "@/lib/utils";
+import type { PlatformAdminInAppSnapshot } from "@/modules/platform-admin/schemas";
 
 const LINKS = [
   { href: "/org_admin", label: "Overview" },
@@ -12,9 +14,11 @@ const LINKS = [
 
 export function PlatformConsoleShell({
   children,
+  inAppNotifications,
   pathname,
 }: {
   children: ReactNode;
+  inAppNotifications: PlatformAdminInAppSnapshot | null;
   pathname: string;
 }) {
   return (
@@ -31,14 +35,22 @@ export function PlatformConsoleShell({
               in each organisation.
             </p>
           </div>
-          <form action="/api/org-admin/logout" method="post">
-            <button
-              className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted"
-              type="submit"
-            >
-              Sign out
-            </button>
-          </form>
+          <div className="flex flex-wrap items-center gap-2">
+            {inAppNotifications ? (
+              <PlatformOwnerNotificationBell
+                initialUnreadCount={inAppNotifications.unread_count}
+                initialItems={inAppNotifications.items}
+              />
+            ) : null}
+            <form action="/api/org-admin/logout" method="post">
+              <button
+                className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted"
+                type="submit"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </header>
         <nav aria-label="Platform owner" className="flex flex-wrap gap-2">
           {LINKS.map((link) => {

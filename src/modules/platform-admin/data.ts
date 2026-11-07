@@ -7,9 +7,11 @@ import type { Database, Json } from "@/platform/supabase/database.types";
 
 import {
   platformDirectorySchema,
+  platformAdminInAppSnapshotSchema,
   platformNotificationHistorySchema,
   platformOrganisationDetailSchema,
   platformOverviewSchema,
+  type PlatformAdminInAppSnapshot,
   type PlatformDirectory,
   type PlatformNotificationHistory,
   type PlatformOrganisationDetail,
@@ -173,4 +175,58 @@ export async function loadPlatformNotificationHistory(input: {
     throw new Error("Platform admin data could not be read.");
   }
   return platformNotificationHistorySchema.parse(data);
+}
+
+export async function loadPlatformAdminInAppSnapshot(input: {
+  limit?: number;
+  requestPath: string | null;
+  userId: string;
+}): Promise<PlatformAdminInAppSnapshot> {
+  const { data, error } = await callPlatformRpc(
+    "platform_admin_in_app_notifications",
+    {
+      actor_user_id: input.userId,
+      authenticator_assurance_level: "aal2",
+      request_path: input.requestPath,
+      result_limit: input.limit ?? 20,
+    },
+  );
+  if (error) {
+    throw new Error("Platform admin in-app notifications could not be read.");
+  }
+  return platformAdminInAppSnapshotSchema.parse(data);
+}
+
+export async function markPlatformAdminInAppNotificationRead(input: {
+  notificationId: string;
+  userId: string;
+}) {
+  const { data, error } = await callPlatformRpc(
+    "mark_platform_admin_in_app_notification_read",
+    {
+      actor_user_id: input.userId,
+      authenticator_assurance_level: "aal2",
+      target_notification_id: input.notificationId,
+    },
+  );
+  if (error) {
+    return { ok: false as const };
+  }
+  return { ok: data === true };
+}
+
+export async function markAllPlatformAdminInAppNotificationsRead(input: {
+  userId: string;
+}) {
+  const { data, error } = await callPlatformRpc(
+    "mark_all_platform_admin_in_app_notifications_read",
+    {
+      actor_user_id: input.userId,
+      authenticator_assurance_level: "aal2",
+    },
+  );
+  if (error) {
+    return { ok: false as const };
+  }
+  return { ok: data === true };
 }
