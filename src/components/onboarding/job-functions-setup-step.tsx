@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   createOnboardingJobFunction,
   removeOnboardingJobFunction,
@@ -311,9 +313,7 @@ export function JobFunctionsSetupStep({
       </ul>
 
       {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
+        <InlineAlert tone="error">{message}</InlineAlert>
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">

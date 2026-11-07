@@ -191,25 +191,27 @@ export default async function MaturityOverviewPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pillar maturity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pillarScores.length > 0 ? (
-              <>
-                <MaturityRadarChart data={pillarScores} />
-                <div className="mt-4 hidden sm:block">
-                  <PillarScoreList data={pillarScores} />
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Complete a formal assessment to see pillar scores.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4">
+          {pillarScores.length > 0 ? (
+            <>
+              <MaturityRadarChart data={pillarScores} />
+              <div className="hidden sm:block">
+                <PillarScoreList data={pillarScores} />
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pillar maturity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Complete a formal assessment to see pillar scores.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card>
           <CardHeader>

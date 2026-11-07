@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -330,9 +332,7 @@ export function CreateWorkforceUserForm({
         </div>
       ) : null}
       {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
+        <InlineAlert tone="error">{message}</InlineAlert>
       ) : null}
       <Button
         type="submit"

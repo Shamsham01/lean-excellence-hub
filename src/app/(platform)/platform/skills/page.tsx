@@ -1,3 +1,4 @@
+import { SkillsCoverageChart } from "@/components/charts/skills-coverage-chart";
 import { EmptyState } from "@/components/platform/empty-state";
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
@@ -141,6 +142,7 @@ export default async function SkillsOverviewPage() {
         />
         <MetricCard label="Active skills" value={skillCount ?? 0} />
       </div>
+      <SkillsCoverageChart coveragePercent={coverage} />
       {canManageCatalog && (skillCount ?? 0) === 0 ? (
         <EmptyState
           title="Publish your first skills"

@@ -14,6 +14,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { ChartCard } from "@/components/charts/chart-card";
+import { LEH_CHART_COLORS, chartTickStyle } from "@/components/charts/chart-theme";
 import {
   createBenefitRealisationEntry,
   submitBenefitRealisationEntry,
@@ -189,16 +191,12 @@ export function BenefitRealisationPanel({
       ) : null}
 
       {chartData.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Forecast vs validated actual</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Bars show forecast; line shows validated actual by period.
-            </p>
-          </CardHeader>
-          <CardContent>
+        <ChartCard
+          title="Forecast vs validated actual"
+          description="Bars show forecast; line shows validated actual by period."
+        >
             <div
-              className="h-72 w-full"
+              className="h-72 w-full min-w-0"
               role="img"
               aria-label="Forecast versus validated actual chart"
             >
@@ -210,15 +208,13 @@ export function BenefitRealisationPanel({
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tick={chartTickStyle}
                     interval={0}
                     angle={-20}
                     textAnchor="end"
                     height={60}
                   />
-                  <YAxis
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                  />
+                  <YAxis tick={chartTickStyle} />
                   <Tooltip
                     formatter={(value, name) => {
                       const numeric =
@@ -241,23 +237,22 @@ export function BenefitRealisationPanel({
                   <Bar
                     dataKey="forecast"
                     name={chartLabels.forecast}
-                    fill="var(--chart-2)"
+                    fill={LEH_CHART_COLORS.warning}
                     fillOpacity={0.35}
-                    radius={[4, 4, 0, 0]}
+                    radius={[6, 6, 0, 0]}
                   />
                   <Line
                     type="monotone"
                     dataKey="validated"
                     name={chartLabels.validated}
-                    stroke="var(--chart-1)"
+                    stroke={LEH_CHART_COLORS.accent}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
+        </ChartCard>
       ) : null}
 
       {canRecord &&

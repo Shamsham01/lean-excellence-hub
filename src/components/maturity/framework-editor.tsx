@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { useAuthoringStep } from "@/components/authoring/use-authoring-step";
 
@@ -458,9 +460,7 @@ export function FrameworkEditor({
       <CardContent className="flex flex-col gap-4">
         <AuthoringSaveFeedback message={saveMessage} />
         {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
+          <InlineAlert tone="error">{error}</InlineAlert>
         ) : null}
 
         {step === "details" ? (

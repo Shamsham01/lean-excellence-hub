@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { returnAssessmentForCorrection } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -48,9 +50,7 @@ export function ReturnForCorrectionForm({
         placeholder="Explain what must be corrected before resubmission."
       />
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <InlineAlert tone="error">{error}</InlineAlert>
       ) : null}
       <Button
         type="submit"

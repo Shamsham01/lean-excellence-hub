@@ -3,6 +3,8 @@
 import { Plus } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   applyStructureDraft,
   confirmSimpleStructure,
@@ -373,9 +375,7 @@ export function StructureSetupStep({
       ) : null}
 
       {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
+        <InlineAlert tone="error">{message}</InlineAlert>
       ) : null}
 
       <AddUnitDrawer

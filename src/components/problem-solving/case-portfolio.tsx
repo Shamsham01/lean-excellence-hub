@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { ProblemSolvingStatusChart } from "@/components/charts/problem-solving-charts";
 import { MetricCard } from "@/components/platform/metric-card";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,8 @@ export function CasePortfolio({
       className="flex flex-col gap-6"
       data-testid="problem-solving-portfolio"
     >
+      <ProblemSolvingStatusChart pipeline={pipeline} />
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard label="Active" value={pipeline.active ?? 0} />
         <MetricCard label="Draft" value={pipeline.draft ?? 0} />

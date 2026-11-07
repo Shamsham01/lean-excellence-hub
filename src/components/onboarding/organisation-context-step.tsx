@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { confirmOrganisationContext } from "@/app/onboarding/setup/actions";
 import { Button } from "@/components/ui/button";
 import { hardNavigate } from "@/lib/navigation/navigate";
@@ -118,9 +120,7 @@ export function OrganisationContextStep({
       </div>
 
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <InlineAlert tone="error">{error}</InlineAlert>
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">

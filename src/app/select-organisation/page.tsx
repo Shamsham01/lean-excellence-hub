@@ -1,3 +1,4 @@
+import { InlineAlert } from "@/components/ui/alert";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { requireClaims } from "@/modules/identity/session";
 
@@ -26,9 +27,7 @@ export default async function SelectOrganisationPage({
           description="Choose which organisation context to work in."
         >
           {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              That organisation is not available.
-            </p>
+            <InlineAlert tone="error">That organisation is not available.</InlineAlert>
           ) : null}
           <div className="flex flex-col gap-2">
             {organisations.map((organisation) => (

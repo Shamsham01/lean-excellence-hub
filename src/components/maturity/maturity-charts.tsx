@@ -8,6 +8,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import { ChartCard } from "@/components/charts/chart-card";
+import { LEH_CHART_COLORS, chartTickStyle } from "@/components/charts/chart-theme";
 import {
   dedupePillarScores,
   type PillarScoreRow,
@@ -22,27 +24,30 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
   }
 
   return (
-    <div
-      className="h-64 w-full"
-      role="img"
-      aria-label="Pillar maturity radar chart"
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
-          <PolarGrid stroke="var(--border)" />
-          <PolarAngleAxis
-            dataKey="name"
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-          />
-          <Radar
-            name="Score"
-            dataKey="score"
-            stroke="var(--chart-1)"
-            fill="var(--chart-1)"
-            fillOpacity={0.25}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
+    <ChartCard title="Pillar maturity" testId="kpi-radar-chart">
+      <div
+        className="h-64 w-full min-w-0"
+        role="img"
+        aria-label="Pillar maturity radar chart"
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
+            <PolarGrid stroke="var(--border)" />
+            <PolarAngleAxis
+              dataKey="name"
+              tick={{ ...chartTickStyle, fontSize: 10 }}
+            />
+            <Radar
+              name="Score"
+              dataKey="score"
+              stroke={LEH_CHART_COLORS.accent}
+              fill={LEH_CHART_COLORS.accent}
+              fillOpacity={0.22}
+              isAnimationActive={false}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
       <table className="sr-only mt-4 w-full text-sm">
         <caption>Pillar scores</caption>
         <thead>
@@ -60,7 +65,7 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ChartCard>
   );
 }
 

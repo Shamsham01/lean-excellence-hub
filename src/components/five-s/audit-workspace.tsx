@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   completeFiveSAudit,
   saveFiveSAuditAnswer,
@@ -86,9 +88,7 @@ function AnswerSaveFeedback({
       ) : null}
       {status === "error" ? (
         <>
-          <p className="text-sm text-destructive" role="alert">
-            {error ?? ANSWER_SAVE_ERROR_MESSAGE}
-          </p>
+          <InlineAlert tone="error">{error ?? ANSWER_SAVE_ERROR_MESSAGE}</InlineAlert>
           {canRetry ? (
             <Button
               type="button"

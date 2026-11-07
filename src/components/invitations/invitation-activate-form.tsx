@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,9 +98,7 @@ export function InvitationActivateForm({
       </dl>
 
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <InlineAlert tone="error">{error}</InlineAlert>
       ) : null}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">

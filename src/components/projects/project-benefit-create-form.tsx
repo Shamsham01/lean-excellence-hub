@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { createBenefitFromCiProject } from "@/app/(platform)/platform/benefits/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,9 +137,7 @@ export function ProjectBenefitCreateForm({
         </div>
       )}
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <InlineAlert tone="error">{error}</InlineAlert>
       ) : null}
       <Button
         size="sm"

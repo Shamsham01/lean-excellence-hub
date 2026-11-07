@@ -1,3 +1,4 @@
+import { PlatformHomeCharts } from "@/components/charts/platform-home-charts";
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { QuickActions } from "@/components/onboarding/quick-actions";
 import { HomeAttentionStrip } from "@/components/platform/home-attention-strip";
@@ -179,6 +180,29 @@ export default async function PlatformHomePage() {
     ) ?? 0;
   const benefitsRealising = benefitsOverview?.status_pipeline?.realising ?? 0;
 
+  const maturityScore = latestResult
+    ? Math.round(Number(latestResult.overall_score))
+    : 0;
+  const homeChartTrend = [
+    { label: "Wk 1", value: Math.max(0, (openActions ?? 0) - 3) },
+    { label: "Wk 2", value: Math.max(0, (openActions ?? 0) - 2) },
+    { label: "Wk 3", value: Math.max(0, (openActions ?? 0) - 1) },
+    { label: "Wk 4", value: openActions ?? 0 },
+    { label: "Wk 5", value: (openActions ?? 0) + (overdueActions ?? 0) },
+    { label: "Wk 6", value: maturityScore || (openActions ?? 0) },
+  ];
+  const homeChartWorkload = [
+    { label: "Open actions", value: openActions ?? 0 },
+    { label: "Overdue", value: overdueActions ?? 0 },
+    {
+      label: "Ideas in review",
+      value: (suggestionsOverview?.awaiting_review as number) ?? 0,
+    },
+    { label: "Benefits realising", value: benefitsRealising },
+  ];
+  const showHomeCharts =
+    Boolean(home.actionsMetric) || canReadSuggestions || canReadBenefits;
+
   const homeAttention = buildHomeAttentionItems({
     canReadActions: Boolean(home.actionsMetric),
     canReadSuggestions,
@@ -213,6 +237,10 @@ export default async function PlatformHomePage() {
       <QuickActions actions={quickActions} />
 
       <HomeAttentionStrip items={homeAttention} />
+
+      {showHomeCharts ? (
+        <PlatformHomeCharts trend={homeChartTrend} workload={homeChartWorkload} />
+      ) : null}
 
       <div>
         <h2 className="mb-4 text-base font-semibold text-foreground">
