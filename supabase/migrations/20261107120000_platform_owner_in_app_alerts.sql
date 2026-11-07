@@ -1,5 +1,6 @@
--- Platform owner in-app signup/billing alerts, neutral operator email default,
--- and version-controlled pg_cron for platform-notification-delivery.
+-- Platform owner in-app signup/billing alerts, neutral operator email default
+-- for new rows only (does not overwrite hosted recipient_email), and
+-- version-controlled pg_cron for platform-notification-delivery.
 
 create table private.platform_admin_in_app_notifications (
   id uuid primary key default gen_random_uuid(),
@@ -57,11 +58,6 @@ for all
 to lean_hub_private_owner
 using (true)
 with check (true);
-
-update private.platform_notification_settings
-set recipient_email = 'notifications-operator@configure.invalid'
-where singleton
-  and recipient_email = 'admin.lean.excellence.hub@gmail.com';
 
 alter table private.platform_notification_settings
   alter column recipient_email set default 'notifications-operator@configure.invalid';
