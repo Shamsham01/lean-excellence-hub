@@ -96,7 +96,7 @@
 .leh-brand--contained-lockup .leh-brand-lockup,
 .marketing-header .leh-brand-lockup,
 .leh-brand--platform-sidebar .leh-brand-lockup {
-  overflow: visible;
+  overflow: hidden;
   width: min(var(--leh-brand-lockup), var(--leh-brand-lockup-max-width, 100%));
   max-width: min(
     var(--leh-brand-lockup),
@@ -109,15 +109,18 @@
   max-width: min(var(--leh-brand-lockup), 42vw);
 }
 
-.leh-brand-auth-shell .leh-brand-lockup span.leh-brand-lockup-light,
-.leh-brand-auth-shell .leh-brand-lockup span.leh-brand-lockup-dark,
-.leh-brand--contained-lockup .leh-brand-lockup span.leh-brand-lockup-light,
-.leh-brand--contained-lockup .leh-brand-lockup span.leh-brand-lockup-dark,
-.marketing-header .leh-brand-lockup span.leh-brand-lockup-light,
-.marketing-header .leh-brand-lockup span.leh-brand-lockup-dark,
-.leh-brand--platform-sidebar .leh-brand-lockup span.leh-brand-lockup-light,
-.leh-brand--platform-sidebar .leh-brand-lockup span.leh-brand-lockup-dark {
-  display: block;
+.leh-brand-auth-shell .leh-brand-lockup > :is(span, picture).leh-brand-lockup-light,
+.leh-brand-auth-shell .leh-brand-lockup > :is(span, picture).leh-brand-lockup-dark,
+.leh-brand--contained-lockup .leh-brand-lockup > :is(span, picture).leh-brand-lockup-light,
+.leh-brand--contained-lockup .leh-brand-lockup > :is(span, picture).leh-brand-lockup-dark,
+.marketing-header .leh-brand-lockup > :is(span, picture).leh-brand-lockup-light,
+.marketing-header .leh-brand-lockup > :is(span, picture).leh-brand-lockup-dark,
+.leh-brand--platform-sidebar
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-light,
+.leh-brand--platform-sidebar
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-dark {
   width: 100%;
   height: 100%;
 }

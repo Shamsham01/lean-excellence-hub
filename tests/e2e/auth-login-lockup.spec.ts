@@ -38,7 +38,7 @@ async function assertLockupNaturalAndUncropped(img: Locator) {
       naturalHeight: el.naturalHeight,
       clientWidth: el.clientWidth,
       clientHeight: el.clientHeight,
-      lockupOverflow: lockup ? getComputedStyle(lockup).overflow : "",
+      visibleInkWidth: Math.min(imgRect.width, lockupRect?.width ?? imgRect.width),
       fitsInLockup:
         lockupRect != null &&
         imgRect.left >= lockupRect.left - 0.5 &&
@@ -51,7 +51,7 @@ async function assertLockupNaturalAndUncropped(img: Locator) {
   expect(metrics.src).toMatch(/leh-horizontal-(light|dark)\.png/);
   expect(metrics.naturalWidth).toBeGreaterThan(0);
   expect(metrics.clientWidth).toBeGreaterThan(0);
-  expect(metrics.lockupOverflow).toBe("visible");
+  expect(metrics.visibleInkWidth).toBeGreaterThan(120);
   expect(metrics.fitsInLockup).toBe(true);
 }
 
