@@ -30,7 +30,10 @@ import { PendingAiProposalsList } from "@/components/problem-solving/ai/pending-
 import { StageAutoDraftTrigger } from "@/components/problem-solving/guided/stage-auto-draft-trigger";
 import { StageProgressRail } from "@/components/problem-solving/guided/stage-progress-rail";
 import { UnifiedCauseAnalysis } from "@/components/problem-solving/guided/unified-cause-analysis";
-import { InlineAiProposals } from "@/components/problem-solving/inline-ai-proposals";
+import {
+  mergeServerAndChatPendingProposals,
+  syncSessionPendingProposals,
+} from "@/lib/problem-solving/sync-session-pending-proposals";
 import { OverviewPanel } from "@/components/problem-solving/overview-panel";
 import { StageCanvasHeader } from "@/components/problem-solving/stage-canvas-header";
 import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
@@ -186,18 +189,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     }
   }, [detail.id]);
 
-  const mergeChatPendingProposals = useCallback(
-    (incoming: PendingProposal[]) => {
-      setPendingProposals((previous) => {
-        const byId = new Map(previous.map((row) => [row.id, row]));
-        for (const row of incoming) {
-          byId.set(row.id, row);
-        }
-        return Array.from(byId.values());
-      });
-    },
-    [],
-  );
+  const syncChatPendingProposals = useCallback((incoming: PendingProposal[]) => {
+    setPendingProposals(syncSessionPendingProposals(incoming));
+  }, []);
 
   const syncStageToUrl = useCallback(
     (semanticKey: string) => {
@@ -260,6 +254,24 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         }),
       ),
     [pendingProposals, stageKey],
+  );
+
+  const unifiedStagePendingProposals = useMemo(
+    () =>
+      mergeServerAndChatPendingProposals(
+        stagePendingAiProposals,
+        stageChatProposals.map((row) => ({
+          ...row,
+          ai_session_id: "",
+        })),
+      ).filter((proposal) =>
+        pendingAiProposalMatchesViewStage({
+          proposal_type: proposal.proposal_type,
+          semantic_stage_key: proposal.semantic_stage_key ?? null,
+          viewStageKey: stageKey,
+        }),
+      ),
+    [stagePendingAiProposals, stageChatProposals, stageKey],
   );
 
   const hasProblemData = Boolean(
@@ -435,7 +447,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       collapsed={copilotCollapsed}
       onCollapsedChange={setCopilotCollapsed}
       pendingProposals={stageChatProposals}
-      onPendingProposalsChange={mergeChatPendingProposals}
+      onPendingProposalsChange={syncChatPendingProposals}
       {...(editDraft !== undefined ? { draftOverride: editDraft } : {})}
       onDraftOverrideConsumed={() => setEditDraft(undefined)}
     />
@@ -447,7 +459,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       className="pps-flagship-workspace flex min-h-0 min-w-0 flex-1 flex-col"
       data-testid="problem-solving-workspace"
     >
-      <div className="sticky top-0 z-10 shrink-0 border-b border-border/70 bg-card px-4 sm:px-6 lg:px-6">
+      <div className="sticky top-0 z-10 min-w-0 shrink-0 border-b border-border/70 bg-card px-4 sm:px-6 lg:px-6">
         <CaseHeader
           detail={detail}
           ownerName={ownerName ?? null}
@@ -520,26 +532,18 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             <div className="mt-4 flex flex-col gap-4">
               {canUseAi && providerAvailable ? (
                 <PendingAiProposalsList
-                  key={`${detail.id}-${stageKey ?? "stage"}-${
-                    stagePendingAiProposals
-                      .map((proposal) => proposal.id)
-                      .join("-") || "none"
-                  }`}
                   caseId={detail.id}
-                  initialProposals={stagePendingAiProposals}
+                  initialProposals={unifiedStagePendingProposals}
+                  busy={proposalBusy}
+                  onAccept={handleAcceptProposal}
+                  onReject={handleRejectProposal}
+                  onEdit={(proposal) =>
+                    setEditDraft(
+                      `Adjust this proposal: ${proposal.human_explanation}`,
+                    )
+                  }
                 />
               ) : null}
-              <InlineAiProposals
-                proposals={stageChatProposals}
-                busy={proposalBusy}
-                onAccept={handleAcceptProposal}
-                onReject={handleRejectProposal}
-                onEdit={(proposal) =>
-                  setEditDraft(
-                    `Adjust this proposal: ${proposal.human_explanation}`,
-                  )
-                }
-              />
               {renderStageBody()}
             </div>
           </div>

@@ -14,7 +14,7 @@ export type ResolvedFacilitatorTurn =
   | {
       status: "completed";
       envelope: FacilitatorEnvelope;
-      pendingProposals?: FacilitatorPendingProposal[];
+      pendingProposals: FacilitatorPendingProposal[];
     }
   | { status: "in_progress"; message: string }
   | { status: "failed"; message: string }
@@ -31,12 +31,9 @@ function readEnvelope(value: unknown): FacilitatorEnvelope | null {
   return value as FacilitatorEnvelope;
 }
 
-function readPendingProposals(
-  value: unknown,
-): FacilitatorPendingProposal[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const rows = value.filter(isRecord) as FacilitatorPendingProposal[];
-  return rows.length > 0 ? rows : undefined;
+function readPendingProposals(value: unknown): FacilitatorPendingProposal[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord) as FacilitatorPendingProposal[];
 }
 
 export function resolveFacilitatorTurnPayload(
@@ -52,7 +49,7 @@ export function resolveFacilitatorTurnPayload(
     return {
       status: "completed",
       envelope: directEnvelope,
-      ...(pendingProposals ? { pendingProposals } : {}),
+      pendingProposals,
     };
   }
 
@@ -63,7 +60,7 @@ export function resolveFacilitatorTurnPayload(
       return {
         status: "completed",
         envelope,
-        ...(pendingProposals ? { pendingProposals } : {}),
+        pendingProposals,
       };
     }
   }

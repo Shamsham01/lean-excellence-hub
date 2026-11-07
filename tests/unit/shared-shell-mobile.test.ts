@@ -12,7 +12,8 @@ describe("shared platform shell mobile layout", () => {
       "src/components/platform/mobile-platform-navigation.tsx",
     );
 
-    expect(mobile).toContain("sticky top-0 z-40");
+    expect(mobile).toContain("sticky top-0 z-50");
+    expect(mobile).toContain("platform-mobile-command-trigger");
     expect(mobile).toContain('data-testid="platform-mobile-chrome"');
     expect(mobile).toContain("min-w-0 flex-1 truncate");
     expect(mobile).toContain('aria-label="Platform"');
@@ -36,6 +37,7 @@ describe("shared platform shell mobile layout", () => {
       "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
     );
     expect(shell).toContain("platform-main-inner");
+    expect(shell).toContain("MobilePlatformNavigation");
     expect(shell).toContain("PlatformTopbar");
   });
 

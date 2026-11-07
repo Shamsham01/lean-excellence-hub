@@ -31,7 +31,7 @@ export function PlatformTopbar({
     <>
       <header
         data-testid="platform-topbar"
-        className="sticky top-0 z-50 flex h-[4.25rem] shrink-0 items-center border-b border-border/80 bg-card px-4 shadow-[var(--shadow-theme-xs)] sm:px-6"
+        className="sticky top-0 z-50 hidden h-[4.25rem] shrink-0 items-center border-b border-border/80 bg-card px-4 shadow-[var(--shadow-theme-xs)] sm:px-6 lg:flex"
       >
         <div className="hidden min-w-0 flex-1 lg:block">
           <p className="truncate text-sm font-medium text-foreground">

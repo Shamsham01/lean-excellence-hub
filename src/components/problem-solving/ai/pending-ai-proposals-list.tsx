@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   acceptProblemSolvingAiProposal,
@@ -16,6 +16,10 @@ type PendingAiProposalsListProps = {
   initialProposals: CasePendingAiProposal[];
   title?: string;
   emptyHint?: string | null;
+  busy?: boolean;
+  onAccept?: (proposal: CasePendingAiProposal) => void | Promise<void>;
+  onReject?: (proposalId: string) => void | Promise<void>;
+  onEdit?: (proposal: CasePendingAiProposal) => void;
 };
 
 export function PendingAiProposalsList({
@@ -23,18 +27,26 @@ export function PendingAiProposalsList({
   initialProposals,
   title = "Pending Lean AI proposals",
   emptyHint = null,
+  busy,
+  onAccept,
+  onReject,
+  onEdit,
 }: PendingAiProposalsListProps) {
   const router = useRouter();
   const [proposals, setProposals] =
     useState<CasePendingAiProposal[]>(initialProposals);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    setProposals(initialProposals);
+  }, [initialProposals]);
+
   const visible = useMemo(
     () => proposals.filter((row) => row.status === "pending"),
     [proposals],
   );
 
-  async function handleAccept(proposal: CasePendingAiProposal) {
+  async function defaultAccept(proposal: CasePendingAiProposal) {
     setActionMessage(null);
     const result = await acceptProblemSolvingAiProposal({
       caseId,
@@ -50,7 +62,7 @@ export function PendingAiProposalsList({
     router.refresh();
   }
 
-  async function handleReject(proposalId: string) {
+  async function defaultReject(proposalId: string) {
     setActionMessage(null);
     const result = await rejectProblemSolvingAiProposal({ caseId, proposalId });
     if (result.error) {
@@ -62,12 +74,18 @@ export function PendingAiProposalsList({
     router.refresh();
   }
 
+  const acceptHandler = onAccept ?? defaultAccept;
+  const rejectHandler = onReject ?? defaultReject;
+
   return (
-    <Card data-testid="pps-pending-ai-proposals">
+    <Card
+      data-testid="pps-pending-ai-proposals"
+      className="min-w-0 max-w-full"
+    >
       <CardHeader className="pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex min-w-0 flex-col gap-3">
         {visible.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             {emptyHint ??
@@ -77,13 +95,18 @@ export function PendingAiProposalsList({
         {actionMessage ? (
           <p className="text-xs text-muted-foreground">{actionMessage}</p>
         ) : null}
-        <div className="flex flex-col gap-3" data-testid="lean-ai-proposals">
+        <div
+          className="flex min-w-0 flex-col gap-3"
+          data-testid="lean-ai-proposals"
+        >
           {visible.map((proposal) => (
             <AiProposalCard
               key={proposal.id}
               proposal={proposal}
-              onAccept={() => handleAccept(proposal)}
-              onReject={handleReject}
+              {...(busy ? { busy } : {})}
+              {...(onEdit ? { onEdit: () => onEdit(proposal) } : {})}
+              onAccept={() => acceptHandler(proposal)}
+              onReject={rejectHandler}
             />
           ))}
         </div>
