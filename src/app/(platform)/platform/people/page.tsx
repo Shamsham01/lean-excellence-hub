@@ -22,10 +22,15 @@ export default async function PeopleDirectoryPage({
   const params = await searchParams;
   const filters = parsePeopleDirectorySearchParams(params);
 
-  const [canManageMemberships, canIncludeInactive] = await Promise.all([
-    currentMemberHasPermission("memberships.read"),
-    currentMemberHasPermission("memberships.manage"),
-  ]);
+  const [canManageMemberships, canIncludeInactive, canInvite, canDelegate] =
+    await Promise.all([
+      currentMemberHasPermission("memberships.read"),
+      currentMemberHasPermission("memberships.manage"),
+      currentMemberHasPermission("invitations.manage"),
+      currentMemberHasPermission("roles.delegate"),
+    ]);
+
+  const canImportColleagues = canInvite && canDelegate;
 
   const { error, people, totalCount, page, pageSize } =
     await fetchPeopleDirectory(supabase, filters, {
@@ -88,6 +93,7 @@ export default async function PeopleDirectoryPage({
           units={units}
           canManageMemberships={canManageMemberships}
           canIncludeInactive={canIncludeInactive}
+          canImportColleagues={canImportColleagues}
         />
       ) : null}
     </div>

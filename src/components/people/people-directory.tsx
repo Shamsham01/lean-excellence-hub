@@ -35,6 +35,7 @@ type PeopleDirectoryProps = {
   units: PeopleDirectoryUnitOption[];
   canManageMemberships: boolean;
   canIncludeInactive: boolean;
+  canImportColleagues?: boolean;
 };
 
 const CLEAR_FILTERS_HREF = peopleDirectoryHref({});
@@ -212,6 +213,7 @@ export function PeopleDirectory({
   units,
   canManageMemberships,
   canIncludeInactive,
+  canImportColleagues = false,
 }: PeopleDirectoryProps) {
   const filteredEmpty =
     people.length === 0 && hasActivePeopleDirectoryFilters(filters);
@@ -219,14 +221,26 @@ export function PeopleDirectory({
   return (
     <Card data-testid="people-directory-card">
       <CardHeader className="gap-4 border-b border-border pb-4">
-        <div className="flex flex-col gap-1">
-          <CardTitle className="text-xl font-semibold tracking-tight">
-            People
-          </CardTitle>
-          <CardDescription>
-            Workforce directory — search colleagues, filter by unit and
-            membership status, and open profiles or administration.
-          </CardDescription>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-xl font-semibold tracking-tight">
+              People
+            </CardTitle>
+            <CardDescription>
+              Workforce directory — search colleagues, filter by unit and
+              membership status, and open profiles or administration.
+            </CardDescription>
+          </div>
+          {canImportColleagues ? (
+            <Button variant="outline" size="sm" asChild className="w-fit shrink-0">
+              <AppLink
+                href="/platform/settings/people/colleague-import"
+                data-testid="people-directory-import-link"
+              >
+                Import colleagues
+              </AppLink>
+            </Button>
+          ) : null}
         </div>
 
         <form

@@ -228,6 +228,16 @@ export default async function PeopleSettingsPage() {
             <CardTitle className="text-base">Invite a colleague</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" asChild className="w-fit">
+                <AppLink
+                  href="/platform/settings/people/colleague-import"
+                  data-testid="import-colleagues-link"
+                >
+                  Import from CSV
+                </AppLink>
+              </Button>
+            </div>
             <p className="mb-4 text-sm text-muted-foreground">
               Create a secure invitation link to copy and share. Email delivery
               is not sent from this screen. Add each application role with its
