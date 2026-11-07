@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(11);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -120,6 +120,54 @@ select is(
   public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run')),
   'in_progress',
   'a second claim for the same running run does not grant another execution'
+);
+
+insert into ai_claim_ids (key, id)
+select 'ai_run_lease', public.start_ai_run(
+  (select id from ai_claim_ids where key = 'ai_session'),
+  'Lease expiry check.',
+  'ai-claim-run-lease',
+  'fake',
+  'fake-model',
+  'problem_solving_facilitator',
+  'v5',
+  'hash-claim-lease'
+);
+
+select is(
+  public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run_lease')),
+  'claimed',
+  'lease test run is claimed'
+);
+
+update public.ai_runs
+set execution_claimed_at = statement_timestamp() - interval '120 seconds',
+    provider_dispatched_at = statement_timestamp() - interval '110 seconds'
+where id = (select id from ai_claim_ids where key = 'ai_run_lease');
+
+select is(
+  public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run_lease')),
+  'timed_out',
+  'an expired execution lease is settled instead of staying in progress'
+);
+
+select is(
+  (
+    select status from public.ai_runs
+    where id = (select id from ai_claim_ids where key = 'ai_run_lease')
+  ),
+  'timed_out',
+  'expired lease recovery writes a terminal status'
+);
+
+select is(
+  (
+    select completed_at is not null
+    from public.ai_runs
+    where id = (select id from ai_claim_ids where key = 'ai_run_lease')
+  ),
+  true,
+  'expired lease recovery sets completed_at'
 );
 
 select lives_ok(

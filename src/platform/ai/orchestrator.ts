@@ -34,6 +34,7 @@ import {
   readExistingAiRun,
 } from "@/platform/ai/ai-run-reconciliation";
 import { failAiRunBestEffort } from "@/platform/ai/fail-ai-run-best-effort";
+import { ensureAiRunSettledBestEffort } from "@/platform/ai/ensure-ai-run-settled";
 import {
   AI_TURN_IN_PROGRESS_MESSAGE,
   AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
@@ -286,6 +287,8 @@ export async function runAiTurn(
   let envelope: FacilitatorEnvelope | undefined;
   let outputText = "";
   const startedAt = Date.now();
+  let turnError: unknown;
+  let turnCompleted = false;
 
   try {
     for (let iteration = 0; iteration <= maxToolCalls; iteration += 1) {
@@ -479,12 +482,14 @@ export async function runAiTurn(
       throw finishError ?? new Error("Failed to finish AI run");
     }
 
+    turnCompleted = true;
     return {
       runId,
       assistantMessageId,
       envelope,
     };
   } catch (error) {
+    turnError = error;
     console.warn(
       "[lean-ai:problem-solving-turn]",
       JSON.stringify({
@@ -565,6 +570,14 @@ export async function runAiTurn(
       );
     }
     throw error;
+  } finally {
+    if (!turnCompleted) {
+      await ensureAiRunSettledBestEffort(
+        input.supabase,
+        runId,
+        turnError ?? new Error("turn_incomplete"),
+      );
+    }
   }
 }
 

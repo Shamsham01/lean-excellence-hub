@@ -6,6 +6,8 @@ export const SKILLS_SETUP_BUILDER_PROMPT_KEY = "leanai-skills-setup-builder";
 export const SKILLS_SETUP_BUILDER_PROMPT_VERSION = "v2";
 export const SKILLS_SETUP_BUILDER_FORMAT_NAME = "skills_setup_builder_envelope";
 
+export const SKILLS_SETUP_BUILDER_SCHEMA_REVISION = "20261107183000";
+
 const nullableString = { type: ["string", "null"] } as const;
 
 export const SKILLS_SETUP_BUILDER_JSON_SCHEMA = {
@@ -155,4 +157,10 @@ export function buildSkillsSetupBuilderSystemPrompt(): string {
 
 export function hashSkillsSetupBuilderPrompt(systemPrompt: string): string {
   return createHash("sha256").update(systemPrompt).digest("hex");
+}
+
+export function hashSkillsSetupBuilderJsonSchema(
+  schema: Record<string, unknown> = SKILLS_SETUP_BUILDER_JSON_SCHEMA,
+): string {
+  return createHash("sha256").update(JSON.stringify(schema)).digest("hex");
 }
