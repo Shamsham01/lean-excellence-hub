@@ -27,7 +27,11 @@ function queueFromToolArgs(
     | "containment"
     | "countermeasure"
     | "five_why_chain"
-    | "fishbone_cause",
+    | "fishbone_cause"
+    | "universal_action"
+    | "effectiveness_check"
+    | "sustainment_item"
+    | "lessons_learned",
   args: Record<string, unknown>,
 ) {
   const explanation = String(args.explanation ?? "");
@@ -277,6 +281,14 @@ export async function executeProblemSolvingTool(
         return queueFromToolArgs(ctx, "five_why_chain", args);
       case "propose_fishbone_cause":
         return queueFromToolArgs(ctx, "fishbone_cause", args);
+      case "propose_universal_action":
+        return queueFromToolArgs(ctx, "universal_action", args);
+      case "propose_effectiveness_check":
+        return queueFromToolArgs(ctx, "effectiveness_check", args);
+      case "propose_sustainment_item":
+        return queueFromToolArgs(ctx, "sustainment_item", args);
+      case "propose_lessons_learned":
+        return queueFromToolArgs(ctx, "lessons_learned", args);
       case "search_related_problem_solving_cases": {
         const limit = (args.limit as number | undefined) ?? 5;
         const { data, error } = await ctx.supabase.rpc(

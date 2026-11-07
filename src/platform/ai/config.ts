@@ -55,7 +55,7 @@ export const AI_DEFAULTS = {
   maxOutputTokens: 6000,
   maxToolCalls: 8,
   /** Bounded tool loop for one-click stage drafts (must finish inside host limit). */
-  stageDraftMaxToolCalls: 4,
+  stageDraftMaxToolCalls: 6,
   runTimeoutMs: 45_000,
   turnWallClockMs: 45_000,
 } as const;

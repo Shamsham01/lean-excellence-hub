@@ -5,6 +5,10 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  buildOpenAiToolsForStage,
+  resolveCanonicalStageKey,
+} from "@/lib/problem-solving/stage-draft";
+import {
   AI_DEFAULTS,
   getAiEnvironment,
   isApplicationAiProviderAvailable,
@@ -163,9 +167,16 @@ export async function runAiTurn(
   const deadline = createAiRunDeadline(wallClockMs);
   const expectsStructuredOutput = provider.name === "openai";
 
-  const systemPrompt = buildSystemPrompt(input.mode, input.stageKey, {
-    viewStageKey: input.viewStageKey ?? input.stageKey ?? null,
-    currentStageKey: input.currentStageKey ?? null,
+  const isStageDraft = input.turnProfile === "stage_draft";
+  const facilitationStageKey = resolveCanonicalStageKey(
+    input.viewStageKey ?? input.stageKey,
+  );
+  const currentStageCanonical = input.currentStageKey
+    ? resolveCanonicalStageKey(input.currentStageKey)
+    : null;
+  const systemPrompt = buildSystemPrompt(input.mode, facilitationStageKey, {
+    viewStageKey: facilitationStageKey,
+    currentStageKey: currentStageCanonical,
   });
   const promptHash = hashPrompt(systemPrompt);
   const sessionCaseId = await problemSolvingSessionCaseId(
@@ -290,6 +301,9 @@ export async function runAiTurn(
         expectsStructuredOutput,
         systemPrompt,
         messages,
+        stageDraftTools: isStageDraft
+          ? buildOpenAiToolsForStage(facilitationStageKey)
+          : undefined,
       });
 
       providerRequestId = response.responseId ?? providerRequestId;
@@ -371,7 +385,7 @@ export async function runAiTurn(
             result: result.resultMetadata,
           }),
         );
-        if (isProblemSolvingWriteTool(toolName)) {
+        if (isStageDraft || isProblemSolvingWriteTool(toolName)) {
           totalToolCalls += 1;
         }
       }
@@ -424,7 +438,7 @@ export async function runAiTurn(
     const manifest = {
       case_id: input.caseId,
       mode: input.mode,
-      stage_key: input.stageKey ?? null,
+      stage_key: facilitationStageKey,
       allowlist_size: allowlist.size,
       wall_clock_ms: wallClockMs,
       elapsed_ms: Date.now() - startedAt,
@@ -563,13 +577,15 @@ async function invokeProblemSolvingProviderResponse(input: {
   expectsStructuredOutput: boolean;
   systemPrompt: string;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
+  stageDraftTools?: Array<Record<string, unknown>>;
 }) {
+  const tools = input.stageDraftTools ?? buildOpenAiTools();
   const callProvider = () =>
     input.provider.createResponse({
       model: input.model,
       systemPrompt: input.systemPrompt,
       messages: input.messages,
-      tools: buildOpenAiTools(),
+      tools,
       maxOutputTokens: input.prepared.maxOutputTokens,
       timeoutMs: input.deadline.providerTimeoutMs(
         input.configuredPerCallTimeoutMs,

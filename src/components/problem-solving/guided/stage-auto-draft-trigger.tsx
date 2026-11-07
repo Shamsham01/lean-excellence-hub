@@ -78,6 +78,8 @@ export function StageAutoDraftTrigger({
             reconcileProblemSolvingStageDraft({
               caseId,
               idempotencyKey,
+              stageKey,
+              viewStageKey: viewStageKey ?? stageKey,
             }),
         });
 

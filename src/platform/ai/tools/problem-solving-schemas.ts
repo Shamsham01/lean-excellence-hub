@@ -28,6 +28,10 @@ export const PROBLEM_SOLVING_WRITE_TOOLS = [
   "propose_countermeasure",
   "propose_five_why_chain",
   "propose_fishbone_cause",
+  "propose_universal_action",
+  "propose_effectiveness_check",
+  "propose_sustainment_item",
+  "propose_lessons_learned",
 ] as const;
 
 export const PROBLEM_SOLVING_READ_TOOLS = [
@@ -132,6 +136,43 @@ const proposeFishboneCauseSchema = z
     label: z.string().trim().min(1).max(500),
     category: z.enum(HYPOTHESIS_CATEGORIES),
     parent_node_id: z.string().uuid().optional(),
+    explanation: explanationField,
+  })
+  .strict();
+
+const proposeUniversalActionSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    description: z.string().trim().max(2000).optional(),
+    context_role: z.enum(["containment", "countermeasure", "sustainment"]),
+    explanation: explanationField,
+  })
+  .strict();
+
+const proposeEffectivenessCheckSchema = z
+  .object({
+    criterion: z.string().trim().min(1).max(2000),
+    baseline_description: z.string().trim().max(2000).optional(),
+    target_description: z.string().trim().max(2000).optional(),
+    explanation: explanationField,
+  })
+  .strict();
+
+const proposeSustainmentItemSchema = z
+  .object({
+    what: z.string().trim().min(1).max(2000),
+    check_method: z.string().trim().max(2000).optional(),
+    explanation: explanationField,
+  })
+  .strict();
+
+const proposeLessonsLearnedSchema = z
+  .object({
+    what_happened: z.string().trim().min(1).max(4000),
+    what_learned: z.string().trim().min(1).max(4000),
+    standardise: z.string().trim().max(2000).optional(),
+    apply_elsewhere: z.string().trim().max(2000).optional(),
+    notes: z.string().trim().max(2000).optional(),
     explanation: explanationField,
   })
   .strict();
@@ -290,6 +331,57 @@ export function getOpenAiToolParametersSchema(
           "explanation",
         ],
       );
+    case "propose_universal_action":
+      return writeToolParameters(
+        {
+          title: { type: "string" },
+          description: { type: ["string", "null"] },
+          context_role: {
+            type: "string",
+            enum: ["containment", "countermeasure", "sustainment"],
+          },
+          explanation: { type: "string" },
+        },
+        ["title", "description", "context_role", "explanation"],
+      );
+    case "propose_effectiveness_check":
+      return writeToolParameters(
+        {
+          criterion: { type: "string" },
+          baseline_description: { type: ["string", "null"] },
+          target_description: { type: ["string", "null"] },
+          explanation: { type: "string" },
+        },
+        ["criterion", "baseline_description", "target_description", "explanation"],
+      );
+    case "propose_sustainment_item":
+      return writeToolParameters(
+        {
+          what: { type: "string" },
+          check_method: { type: ["string", "null"] },
+          explanation: { type: "string" },
+        },
+        ["what", "check_method", "explanation"],
+      );
+    case "propose_lessons_learned":
+      return writeToolParameters(
+        {
+          what_happened: { type: "string" },
+          what_learned: { type: "string" },
+          standardise: { type: ["string", "null"] },
+          apply_elsewhere: { type: ["string", "null"] },
+          notes: { type: ["string", "null"] },
+          explanation: { type: "string" },
+        },
+        [
+          "what_happened",
+          "what_learned",
+          "standardise",
+          "apply_elsewhere",
+          "notes",
+          "explanation",
+        ],
+      );
     default:
       return emptyToolParametersSchema;
   }
@@ -384,6 +476,16 @@ export function parseToolArgs(
       return proposeFiveWhyChainSchema.parse(normalizeNullableWriteArgs(args));
     case "propose_fishbone_cause":
       return proposeFishboneCauseSchema.parse(normalizeNullableWriteArgs(args));
+    case "propose_universal_action":
+      return proposeUniversalActionSchema.parse(normalizeNullableWriteArgs(args));
+    case "propose_effectiveness_check":
+      return proposeEffectivenessCheckSchema.parse(
+        normalizeNullableWriteArgs(args),
+      );
+    case "propose_sustainment_item":
+      return proposeSustainmentItemSchema.parse(normalizeNullableWriteArgs(args));
+    case "propose_lessons_learned":
+      return proposeLessonsLearnedSchema.parse(normalizeNullableWriteArgs(args));
     default:
       return emptyToolArgsSchema.parse(args);
   }
