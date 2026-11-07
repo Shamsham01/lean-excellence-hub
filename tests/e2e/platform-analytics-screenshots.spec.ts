@@ -7,7 +7,8 @@ import { signInAsDemoUser } from "./helpers/demo-auth";
 const capture = process.env.CAPTURE_ANALYTICS_SCREENSHOTS === "1";
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const outDir =
-  process.env.ANALYTICS_SCREENSHOT_DIR ?? "/opt/cursor/artifacts/tailadmin-polish";
+  process.env.ANALYTICS_SCREENSHOT_DIR ??
+  "/opt/cursor/artifacts/tailadmin-polish";
 
 async function setTheme(
   page: import("@playwright/test").Page,
@@ -43,17 +44,17 @@ test.describe("Platform analytics screenshots", () => {
         await page.goto("/platform?range=30");
         await expect(page.getByTestId("platform-home-analytics")).toBeVisible();
         await page.screenshot({
-          path: join(outDir, `platform-home-analytics-${mode}-${viewport.tag}.png`),
+          path: join(
+            outDir,
+            `platform-home-analytics-${mode}-${viewport.tag}.png`,
+          ),
           fullPage: false,
         });
 
         await page.goto("/platform/actions?range=30");
         await expect(page.getByTestId("actions-analytics")).toBeVisible();
         await page.screenshot({
-          path: join(
-            outDir,
-            `actions-analytics-${mode}-${viewport.tag}.png`,
-          ),
+          path: join(outDir, `actions-analytics-${mode}-${viewport.tag}.png`),
           fullPage: false,
         });
       }
