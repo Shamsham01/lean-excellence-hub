@@ -6,6 +6,7 @@ import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { PlatformTopbar } from "@/components/platform/platform-topbar";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
+import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
@@ -17,6 +18,10 @@ type PlatformShellProps = {
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
   member: PlatformShellMember;
+  notifications: {
+    unreadCount: number;
+    items: PlatformInAppNotification[];
+  } | null;
 };
 
 export async function PlatformShell({
@@ -26,6 +31,7 @@ export async function PlatformShell({
   organisations,
   siteContext,
   member,
+  notifications,
 }: PlatformShellProps) {
   const navWithSetup = await buildVisibleNavigation();
 
@@ -45,8 +51,12 @@ export async function PlatformShell({
         siteContext={siteContext}
         member={member}
         showSettings={showSettings}
+        notifications={notifications}
       />
-      <LeanAiAssistantShell organisationId={organisationId}>
+      <LeanAiAssistantShell
+        organisationId={organisationId}
+        notifications={notifications}
+      >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background lg:overflow-hidden">
           <PlatformTopbar member={member} organisationName={organisationName} />
           <main
