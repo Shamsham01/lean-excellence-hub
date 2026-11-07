@@ -66,7 +66,7 @@ export function ActionDetailSheet({
         className="w-full border-border sm:w-[min(100%,42rem)]"
         data-testid="action-detail-sheet"
       >
-        <SheetHeader className="border-b border-border pb-4 pe-10">
+        <SheetHeader className="border-b border-border pe-10 pb-4">
           <SheetTitle>Action</SheetTitle>
           <SheetDescription>
             Review owners, due dates, status, and linked evidence.

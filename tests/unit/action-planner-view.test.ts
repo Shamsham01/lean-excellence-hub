@@ -50,11 +50,7 @@ describe("action planner view helpers", () => {
       canTransitionActionWithPermissions(fullPermissions, "verified", "open"),
     ).toBe(false);
     expect(
-      canTransitionActionWithPermissions(
-        fullPermissions,
-        "completed",
-        "open",
-      ),
+      canTransitionActionWithPermissions(fullPermissions, "completed", "open"),
     ).toBe(true);
   });
 });

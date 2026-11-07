@@ -34,7 +34,9 @@ export function readStoredActionPlannerView(): ActionPlannerView {
 
 const viewStoreListeners = new Set<() => void>();
 
-export function subscribeActionPlannerView(onStoreChange: () => void): () => void {
+export function subscribeActionPlannerView(
+  onStoreChange: () => void,
+): () => void {
   viewStoreListeners.add(onStoreChange);
   if (typeof window !== "undefined") {
     window.addEventListener("storage", onStoreChange);

@@ -277,14 +277,12 @@ export async function loadActionSheetPayload(
       comments: (comments ?? []) as ActionSheetPayload["comments"],
       evidence: (evidence ?? [])
         .filter((item) => item.byte_size != null)
-        .map(
-          (item): ActionSheetPayload["evidence"][number] => ({
-            id: item.id,
-            filename: item.filename,
-            mime_type: item.mime_type,
-            byte_size: item.byte_size as number,
-          }),
-        ),
+        .map((item): ActionSheetPayload["evidence"][number] => ({
+          id: item.id,
+          filename: item.filename,
+          mime_type: item.mime_type,
+          byte_size: item.byte_size as number,
+        })),
       assignablePeople,
       canUploadEvidence,
     },

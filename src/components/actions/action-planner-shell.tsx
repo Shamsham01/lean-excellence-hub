@@ -85,8 +85,7 @@ export function ActionPlannerShell({
     <div className="flex flex-col gap-4" data-testid="actions-planner-shell">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {actions.length} action{actions.length === 1 ? "" : "s"} in your
-          scope
+          {actions.length} action{actions.length === 1 ? "" : "s"} in your scope
         </p>
         <div
           className="inline-flex rounded-lg border border-border bg-surface p-1"

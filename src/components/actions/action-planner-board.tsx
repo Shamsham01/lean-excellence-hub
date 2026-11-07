@@ -145,7 +145,9 @@ export function ActionPlannerBoard({
           const droppable =
             dragging != null &&
             (() => {
-              const action = actions.find((row) => row.id === dragging.actionId);
+              const action = actions.find(
+                (row) => row.id === dragging.actionId,
+              );
               if (!action) return false;
               return canTransitionActionWithPermissions(
                 action.permissions,
@@ -158,7 +160,7 @@ export function ActionPlannerBoard({
             <div
               key={status}
               className={cn(
-                "flex min-w-[17rem] max-w-[20rem] flex-1 flex-col gap-2 rounded-lg border border-border bg-surface/60 p-3",
+                "flex max-w-[20rem] min-w-[17rem] flex-1 flex-col gap-2 rounded-lg border border-border bg-surface/60 p-3",
                 droppable &&
                   hoverColumn === status &&
                   "border-primary/50 bg-primary/5",
