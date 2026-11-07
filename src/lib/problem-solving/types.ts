@@ -34,6 +34,8 @@ export type ProblemSolvingOverview = {
   active_cases: number;
   total_cases: number;
   cases_with_verified_causes: number;
+  /** Total verified hypotheses (root causes) across readable cases */
+  verified_cause_count?: number;
   cases_with_effective_countermeasures: number;
 };
 

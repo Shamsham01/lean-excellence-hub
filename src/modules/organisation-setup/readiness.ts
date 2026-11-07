@@ -323,6 +323,44 @@ function buildRecommendedItems(
   ];
 }
 
+export function computeOperationalSetupIncomplete(
+  data: import("./types").SetupQueryResult,
+  permissions: import("./types").SetupPermissionSnapshot,
+): boolean {
+  const gaps: boolean[] = [];
+
+  if (
+    permissions.canManageSkillsCatalog &&
+    !data.activeSkillCountUnavailable &&
+    (data.activeSkillCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+  if (
+    permissions.canManageRecognition &&
+    !data.recognitionTypeCountUnavailable &&
+    (data.recognitionTypeCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+  if (
+    permissions.canManageSchedules &&
+    !data.scheduleDefinitionCountUnavailable &&
+    (data.scheduleDefinitionCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+  if (
+    permissions.canManageTraining &&
+    !data.trainingCatalogUnavailable &&
+    (data.trainingCatalogCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+
+  return gaps.length > 0 && gaps.some(Boolean);
+}
+
 export function evaluateCoreSetup(items: SetupItem[]): CoreSetupState {
   const assessable = items.filter((item) => item.canAssess);
   const canAssessAll = assessable.length === items.length;
@@ -393,6 +431,10 @@ export function buildOrganisationSetupSnapshot(
   const core = evaluateCoreSetup(coreItems);
   const recommended = evaluateRecommendedSetup(recommendedItems);
   const next = pickNextAction(core, recommended);
+  const operationalSetupIncomplete = computeOperationalSetupIncomplete(
+    data,
+    permissions,
+  );
 
   return {
     organisationName: data.organisationName ?? "Your organisation",
@@ -403,6 +445,7 @@ export function buildOrganisationSetupSnapshot(
     recommended,
     nextActionHref: next.href,
     nextActionLabel: next.label,
+    operationalSetupIncomplete,
   };
 }
 

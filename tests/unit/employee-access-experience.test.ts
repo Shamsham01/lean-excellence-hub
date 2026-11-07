@@ -21,6 +21,9 @@ const noAdmin: SetupPermissionSnapshot = {
   canReadHierarchy: false,
   canReadMemberships: false,
   canManageProjects: false,
+  canManageSkillsCatalog: false,
+  canManageRecognition: false,
+  canManageSchedules: false,
   currentMembershipAdminHref: null,
 };
 
@@ -90,7 +93,7 @@ describe("employee access experience", () => {
     ).toEqual(["What is a programme?"]);
   });
 
-  it("says conversation is not enabled when the member cannot use it", () => {
+  it("explains missing ai.use when the member cannot use chat", () => {
     expect(
       conversationUnavailableCopy({
         eligible: true,
@@ -99,7 +102,7 @@ describe("employee access experience", () => {
         organisationEnabled: true,
         canUseConversation: false,
       }),
-    ).toMatch(/do not have permission to use LeanAI conversation/i);
+    ).toMatch(/ai\.use/);
   });
 
   it("explains access without treating a job function as a permission", () => {

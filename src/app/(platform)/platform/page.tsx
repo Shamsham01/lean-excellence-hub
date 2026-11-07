@@ -207,6 +207,7 @@ export default async function PlatformHomePage() {
         nextActionHref={setupSnapshot.nextActionHref}
         nextActionLabel={setupSnapshot.nextActionLabel}
         compact={setupSnapshot.core.readyLabel === "ready"}
+        operationalSetupIncomplete={setupSnapshot.operationalSetupIncomplete}
       />
 
       <QuickActions actions={quickActions} />

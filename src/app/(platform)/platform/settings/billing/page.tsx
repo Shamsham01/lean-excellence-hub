@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { createCustomerPortalSession } from "@/app/billing/actions";
+import {
+  formatBillingIntervalLabel,
+  formatBillingStateLabel,
+  formatPlanDisplayLabel,
+} from "@/modules/billing/display-labels";
 import { BillingSiteCapacityPanel } from "@/components/billing/billing-site-capacity-panel";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -71,7 +76,7 @@ export default async function OrganisationBillingSettingsPage({
           <div>
             <p className="text-xs font-medium text-muted-foreground">Plan</p>
             <p className="text-sm text-foreground">
-              {snapshot?.plan_code ?? "None"}
+              {formatPlanDisplayLabel(snapshot?.plan_code ?? null)}
             </p>
           </div>
           <div>
@@ -79,7 +84,7 @@ export default async function OrganisationBillingSettingsPage({
               Interval
             </p>
             <p className="text-sm text-foreground">
-              {snapshot?.billing_interval ?? "—"}
+              {formatBillingIntervalLabel(snapshot?.billing_interval)}
             </p>
           </div>
           {siteCapacity ? (
@@ -114,7 +119,7 @@ export default async function OrganisationBillingSettingsPage({
           <div>
             <p className="text-xs font-medium text-muted-foreground">State</p>
             <p className="text-sm text-foreground">
-              {snapshot?.billing_state ?? "pending"}
+              {formatBillingStateLabel(snapshot?.billing_state)}
             </p>
           </div>
           <div>
