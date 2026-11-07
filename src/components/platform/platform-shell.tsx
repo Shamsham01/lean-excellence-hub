@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
+import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-navigation";
 import { PlatformDesktopMainChrome } from "@/components/platform/platform-desktop-main-chrome";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { PlatformTopbar } from "@/components/platform/platform-topbar";
@@ -57,7 +58,16 @@ export async function PlatformShell({
         organisationId={organisationId}
         notifications={notifications}
       >
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background lg:overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background max-lg:min-h-dvh lg:overflow-hidden">
+          <MobilePlatformNavigation
+            items={navWithSetup}
+            organisationName={organisationName}
+            organisations={organisations}
+            siteContext={siteContext}
+            member={member}
+            showSettings={showSettings}
+            notifications={notifications}
+          />
           <PlatformTopbar member={member} organisationName={organisationName} />
           <main
             data-testid="platform-main"

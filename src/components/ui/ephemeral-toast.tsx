@@ -28,7 +28,7 @@ export function EphemeralToast({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed right-4 bottom-4 z-50 max-w-sm rounded-lg border px-4 py-3 text-sm shadow-md",
+        "pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto max-w-sm rounded-lg border px-4 py-3 text-sm wrap-break-word shadow-md sm:inset-x-auto sm:right-4",
         tone === "error"
           ? "border-destructive/40 bg-card text-destructive"
           : "border-border bg-card text-foreground",

@@ -135,7 +135,7 @@ export function AiFacilitatorPanel({
 
   async function applyCompletedTurn(data: {
     envelope: FacilitatorEnvelope;
-    pendingProposals?: PendingProposal[];
+    pendingProposals: PendingProposal[];
   }) {
     setMessages((prev) => [
       ...prev,
@@ -145,9 +145,7 @@ export function AiFacilitatorPanel({
         envelope: data.envelope,
       },
     ]);
-    if (data.pendingProposals) {
-      onPendingProposalsChange(data.pendingProposals);
-    }
+    onPendingProposalsChange(data.pendingProposals ?? []);
     pendingTurnRef.current = null;
     setHasPendingTurn(false);
     setDraft("");
@@ -175,9 +173,7 @@ export function AiFacilitatorPanel({
       if (resolved.status === "completed") {
         await applyCompletedTurn({
           envelope: resolved.envelope,
-          ...(resolved.pendingProposals
-            ? { pendingProposals: resolved.pendingProposals }
-            : {}),
+          pendingProposals: resolved.pendingProposals,
         });
         return true;
       }
@@ -266,9 +262,7 @@ export function AiFacilitatorPanel({
       if (resolved.status === "completed") {
         await applyCompletedTurn({
           envelope: resolved.envelope,
-          ...(resolved.pendingProposals
-            ? { pendingProposals: resolved.pendingProposals }
-            : {}),
+          pendingProposals: resolved.pendingProposals,
         });
         return;
       }

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
+import {
+  DEMO_ORGANISATION,
+  DEMO_PROBLEM_SOLVING_CASE,
+} from "../../scripts/demo-seed/constants";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
@@ -33,6 +36,16 @@ const representativeRoutes = [
   },
   { path: "/platform/actions", testId: "actions-page", label: "Actions" },
   { path: "/platform/settings", testId: "settings-page", label: "Settings" },
+] as const;
+
+const mobileOverflowRoutes = [
+  { path: "/platform", testId: "platform-home-page", label: "Home" },
+  {
+    path: "/platform/people",
+    testId: "people-directory-page",
+    label: "People",
+  },
+  { path: "/platform/actions", testId: "actions-page", label: "Actions" },
 ] as const;
 
 async function loginPlatformE2e(page: Page) {
@@ -261,6 +274,33 @@ test.describe("authenticated platform shell", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  for (const route of mobileOverflowRoutes) {
+    test(`mobile page has no horizontal overflow on ${route.label} at 390x844`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await signInAsDemoUser(page, "admin");
+      await page.goto(route.path);
+      await expect(page.getByTestId(route.testId)).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+    });
+  }
+
+  test("mobile problem-solving case view has no horizontal overflow at 390x844", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "manager");
+    await page.goto("/platform/problem-solving");
+    await page
+      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
+      .click();
+    await expect(page.getByTestId("problem-solving-workspace")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expectNoHorizontalOverflow(page);
+  });
+
   for (const route of representativeRoutes) {
     test(`mobile chrome stays usable on ${route.label} at 390x844`, async ({
       page,
@@ -272,6 +312,10 @@ test.describe("authenticated platform shell", () => {
       await expect(
         page.getByRole("button", { name: "Open navigation menu" }),
       ).toBeInViewport();
+      await expect(
+        page.getByTestId("platform-mobile-command-trigger"),
+      ).toBeInViewport();
+      await expect(page.getByTestId("platform-topbar")).toBeHidden();
       await expectNoHorizontalOverflow(page);
     });
   }

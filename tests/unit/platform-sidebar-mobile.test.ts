@@ -44,7 +44,8 @@ describe("platform sidebar layout", () => {
     expect(mobile).toContain("max-h-dvh");
     expect(mobile).toContain("min-h-0");
     expect(mobile).toContain("overflow-hidden");
-    expect(mobile).toContain("sticky top-0 z-40");
+    expect(mobile).toContain("sticky top-0 z-50");
+    expect(mobile).toContain("platform-mobile-command-trigger");
     expect(mobile).toContain("closeGutter");
     expect(mobile).toContain("PlatformSidebarHeader");
     expect(mobile).toContain("siteContext={siteContext}");
@@ -67,6 +68,7 @@ describe("platform sidebar layout", () => {
     expect(navigationModule).toContain("platformNavigation");
     expect(navigationModule).toContain("groupPlatformNavigation");
     expect(sidebar).not.toContain("platformNavigation:");
+    expect(sidebar).not.toContain("MobilePlatformNavigation");
     expect(mobile).toContain("PlatformNavigation");
   });
 });

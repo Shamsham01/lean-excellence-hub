@@ -147,21 +147,19 @@ test.describe("Milestone 12 closure", () => {
       "Please propose hypothesis for the hot-running defect pattern.",
     );
     await sendLeanAiPrompt(page);
-    const inlineProposals = page.getByTestId("pps-inline-proposals");
-    const hypothesisProposal = inlineProposals.getByTestId("ai-proposal-card");
+    const pendingPanel = page.getByTestId("pps-pending-ai-proposals");
+    const hypothesisProposal = pendingPanel.getByTestId("ai-proposal-card");
     await expect(hypothesisProposal).toBeVisible({
       timeout: 30_000,
     });
-    await inlineProposals.getByTestId("ai-proposal-accept").click();
+    await expect(page.getByTestId("pps-inline-proposals")).toHaveCount(0);
+    await pendingPanel.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(inlineProposals.getByTestId("ai-proposal-card")).toHaveCount(
-      0,
-      {
-        timeout: 30_000,
-      },
-    );
+    await expect(pendingPanel.getByTestId("ai-proposal-card")).toHaveCount(0, {
+      timeout: 30_000,
+    });
     await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
     const causeAnalysisPanel = page.getByTestId("pps-unified-cause-analysis");
     await expect(causeAnalysisPanel).toBeVisible();
@@ -180,21 +178,18 @@ test.describe("Milestone 12 closure", () => {
       "Please propose containment for suspect hot-running batches.",
     );
     await sendLeanAiPrompt(page);
-    const inlineProposals = page.getByTestId("pps-inline-proposals");
-    const containmentProposal = inlineProposals.getByTestId("ai-proposal-card");
+    const pendingPanel = page.getByTestId("pps-pending-ai-proposals");
+    const containmentProposal = pendingPanel.getByTestId("ai-proposal-card");
     await expect(containmentProposal).toBeVisible({
       timeout: 30_000,
     });
-    await inlineProposals.getByTestId("ai-proposal-accept").click();
+    await pendingPanel.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(inlineProposals.getByTestId("ai-proposal-card")).toHaveCount(
-      0,
-      {
-        timeout: 30_000,
-      },
-    );
+    await expect(pendingPanel.getByTestId("ai-proposal-card")).toHaveCount(0, {
+      timeout: 30_000,
+    });
     await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const containmentPanel = page.getByTestId(
       "problem-solving-containment-panel",
@@ -215,22 +210,19 @@ test.describe("Milestone 12 closure", () => {
       "Please propose condition for the measured hot-running gap.",
     );
     await sendLeanAiPrompt(page);
-    const inlineProposals = page.getByTestId("pps-inline-proposals");
+    const pendingPanel = page.getByTestId("pps-pending-ai-proposals");
     const currentConditionProposal =
-      inlineProposals.getByTestId("ai-proposal-card");
+      pendingPanel.getByTestId("ai-proposal-card");
     await expect(currentConditionProposal).toBeVisible({
       timeout: 30_000,
     });
-    await inlineProposals.getByTestId("ai-proposal-accept").click();
+    await pendingPanel.getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(inlineProposals.getByTestId("ai-proposal-card")).toHaveCount(
-      0,
-      {
-        timeout: 30_000,
-      },
-    );
+    await expect(pendingPanel.getByTestId("ai-proposal-card")).toHaveCount(0, {
+      timeout: 30_000,
+    });
     await expectGuidedProblemSolvingWorkspace(page);
     await openProblemSolvingStage(page, "CURRENT_CONDITION");
     const currentConditionPanel = page.getByTestId(
@@ -260,9 +252,7 @@ test.describe("Milestone 12 closure", () => {
     await page.getByTestId("pps-stage-auto-draft-button").click();
     await expect(
       page
-        .locator(
-          '[data-testid="pps-pending-ai-proposals"], [data-testid="pps-inline-proposals"]',
-        )
+        .getByTestId("pps-pending-ai-proposals")
         .getByTestId("ai-proposal-card")
         .first(),
     ).toBeVisible({
