@@ -1,19 +1,41 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
+async function scrollPlatformWorkspaceForStickyFooter(page: Page) {
+  await page.evaluate(() => {
+    const viewport = document.querySelector(".platform-main-viewport");
+    if (viewport instanceof HTMLElement) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
+  });
+}
+
 async function clickVisibleResponsiveControl(
+  page: Page,
   desktop: Locator,
   mobile: Locator,
 ) {
-  if (await mobile.isVisible()) {
-    await mobile.click();
-    return;
+  const candidates = [mobile, desktop];
+  for (const locator of candidates) {
+    if ((await locator.count()) === 0) {
+      continue;
+    }
+    await scrollPlatformWorkspaceForStickyFooter(page);
+    await locator.scrollIntoViewIfNeeded();
+    if (await locator.isVisible()) {
+      await locator.click();
+      return;
+    }
   }
-  await expect(desktop).toBeVisible();
-  await desktop.click();
+
+  await scrollPlatformWorkspaceForStickyFooter(page);
+  const visible = mobile.or(desktop);
+  await expect(visible).toBeVisible();
+  await visible.click();
 }
 
 export async function clickGembaCompleteWalk(page: Page) {
   await clickVisibleResponsiveControl(
+    page,
     page.getByTestId("gemba-complete-walk"),
     page.getByTestId("gemba-complete-walk-mobile"),
   );
@@ -26,6 +48,7 @@ export async function expectNoGembaCompleteWalk(page: Page) {
 
 export async function clickFiveSCompleteAudit(page: Page) {
   await clickVisibleResponsiveControl(
+    page,
     page.getByTestId("five-s-complete-audit"),
     page.getByTestId("five-s-complete-audit-mobile"),
   );

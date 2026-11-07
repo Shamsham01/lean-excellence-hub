@@ -348,6 +348,13 @@ describe("site identity metadata", () => {
   it("points at the web manifest and registers theme-aware tab icons", () => {
     expect(rootMetadata.manifest).toBe("/site.webmanifest");
     expect(rootMetadata.applicationName).toBe(LEH_BRAND.name);
+    expect(rootMetadata.icons?.apple).toEqual([
+      {
+        url: "/apple-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ]);
     const icons = rootMetadata.icons?.icon;
     expect(Array.isArray(icons)).toBe(true);
     expect(
@@ -357,6 +364,15 @@ describe("site identity metadata", () => {
           entry !== null &&
           "url" in entry &&
           String(entry.url).includes("icon.png"),
+      ),
+    ).toBe(true);
+    expect(
+      icons?.some(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "url" in entry &&
+          String(entry.url).includes("leh-icon-dark-128"),
       ),
     ).toBe(true);
     expect(

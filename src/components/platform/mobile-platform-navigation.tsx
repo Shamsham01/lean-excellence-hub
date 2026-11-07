@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { LEH_BRAND } from "@/components/brand/brand-assets";
 import { LehBrand } from "@/components/brand/leh-brand";
+import { PlatformChromeActions } from "@/components/platform/platform-chrome-actions";
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
@@ -18,9 +19,9 @@ import {
 } from "@/components/ui/sheet";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
-import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
 import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 
 type MobilePlatformNavigationProps = {
   items: PlatformNavItem[];
@@ -112,6 +113,9 @@ export function MobilePlatformNavigation({
       >
         {organisationName}
       </span>
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <PlatformChromeActions />
+      </div>
     </div>
   );
 }

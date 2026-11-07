@@ -165,7 +165,9 @@ test.describe("authenticated platform shell", () => {
       DEMO_ORGANISATION.name,
     );
     await expect(
-      sidebar.getByRole("button", { name: "Sign out", exact: true }),
+      page
+        .getByTestId("platform-desktop-main-chrome")
+        .getByTestId("platform-chrome-sign-out"),
     ).toBeVisible();
 
     await expectFinalNavItemReachable(page, nav);
@@ -187,7 +189,9 @@ test.describe("authenticated platform shell", () => {
 
     await expect(nav).toBeInViewport();
     await expect(
-      sidebar.getByRole("button", { name: "Sign out", exact: true }),
+      page
+        .getByTestId("platform-desktop-main-chrome")
+        .getByTestId("platform-chrome-sign-out"),
     ).toBeInViewport();
     await expect(
       sidebar.getByRole("link", { name: "Settings", exact: true }),
@@ -228,7 +232,9 @@ test.describe("authenticated platform shell", () => {
         DEMO_ORGANISATION.name,
       );
       await expect(
-        drawer.getByRole("button", { name: "Sign out", exact: true }),
+        page
+          .getByTestId("platform-mobile-chrome")
+          .getByTestId("platform-chrome-sign-out"),
       ).toBeVisible();
 
       const { lastLink } = await expectFinalNavItemReachable(page, nav);
@@ -303,8 +309,8 @@ test.describe("authenticated platform shell", () => {
     await openMobileDrawer(page);
     await expect(
       page
-        .getByRole("dialog")
-        .getByRole("button", { name: "Sign out", exact: true }),
+        .getByTestId("platform-mobile-chrome")
+        .getByTestId("platform-chrome-sign-out"),
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });

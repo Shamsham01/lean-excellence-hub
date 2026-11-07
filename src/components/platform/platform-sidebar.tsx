@@ -5,9 +5,9 @@ import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-he
 import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
-import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 import type { PlatformNavItem } from "@/modules/platform-shell/navigation";
 import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 
 type PlatformSidebarProps = {
   items: PlatformNavItem[];
