@@ -116,6 +116,18 @@
   object-position: left top;
 }
 
+/* Sticky marketing header uses official PNG lockups with transparent margins.
+   Sidebar crop math does not land ink in this slot height; contain keeps
+   the horizontal lockup visible on light and dark backgrounds. */
+.marketing-header .leh-brand[data-variant="full"] .leh-brand-lockup-img {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+  object-position: left center;
+}
+
 /* Crop transparent margins so sidebar ink fills the slot (SVG or PNG). */
 .leh-brand--platform-sidebar .leh-brand-lockup-img {
   width: calc(

@@ -499,6 +499,9 @@ describe("site identity metadata", () => {
       ".dark .leh-brand-fallback picture.leh-brand-mark-dark",
     );
     expect(css).toContain("object-fit: contain");
+    expect(css).toContain(
+      ".marketing-header .leh-brand[data-variant=\"full\"] .leh-brand-lockup-img",
+    );
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");

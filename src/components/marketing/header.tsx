@@ -48,7 +48,7 @@ export function MarketingHeader() {
         <MarketingContainer className="flex items-center gap-3 py-3 sm:gap-4">
           <Link
             href="/"
-            className="leh-brand-link min-w-0"
+            className="leh-brand-link shrink-0"
             aria-label={LEH_BRAND_HOME_LABEL}
           >
             <MarketingWordmark decorative priority />
