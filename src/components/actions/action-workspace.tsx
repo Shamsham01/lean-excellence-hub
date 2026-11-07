@@ -51,12 +51,14 @@ export function ActionWorkspace({
   evidence,
   assignablePeople,
   canUploadEvidence,
+  showBackLink = true,
 }: {
   detail: ActionDetail;
   comments: CommentRow[];
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
+  showBackLink?: boolean;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(detail.title);
@@ -469,12 +471,14 @@ export function ActionWorkspace({
         </p>
       ) : null}
 
-      <AppLink
-        href="/platform/actions"
-        className="text-sm text-muted-foreground hover:underline"
-      >
-        Back to actions
-      </AppLink>
+      {showBackLink ? (
+        <AppLink
+          href="/platform/actions"
+          className="text-sm text-muted-foreground hover:underline"
+        >
+          Back to actions
+        </AppLink>
+      ) : null}
     </div>
   );
 }

@@ -73,13 +73,13 @@ export function PlatformSidebarFooter({
         {...(onNavigate ? { onClick: onNavigate } : {})}
         data-testid="platform-sidebar-profile-link"
       >
-        {member.avatarUrl ? (
+        <span data-testid="platform-sidebar-avatar">
           <PlatformMemberAvatar
             displayName={member.displayName}
             avatarUrl={member.avatarUrl}
             size="sm"
           />
-        ) : null}
+        </span>
         <span className="min-w-0 flex-1">
           <span
             className="block truncate text-sm font-medium text-sidebar-foreground"
