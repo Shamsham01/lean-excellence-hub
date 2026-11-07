@@ -2,8 +2,11 @@
 
 import { useEffect, useId, useState } from "react";
 
+import { Paperclip, Send } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export const LEANAI_COMPOSER_MAX_LENGTH = 2000;
 
@@ -80,10 +83,26 @@ export function LeanAiComposer({
       <label className="sr-only" htmlFor={inputId}>
         Ask LeanAI
       </label>
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
+      <div
+        className={cn(
+          "flex min-w-0 items-end gap-2 rounded-2xl border border-border/60 bg-card p-2 shadow-[var(--shadow-theme-xs)]",
+          (disabled || sending) && "opacity-80",
+        )}
+      >
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="size-9 shrink-0 rounded-full"
+          disabled={disabled || sending}
+          aria-label="Attach context"
+          title="Attachments follow existing LeanAI workflows"
+        >
+          <Paperclip className="size-4" aria-hidden />
+        </Button>
         <Textarea
           id={inputId}
-          rows={2}
+          rows={1}
           value={value}
           maxLength={LEANAI_COMPOSER_MAX_LENGTH}
           disabled={disabled || sending}
@@ -94,7 +113,7 @@ export function LeanAiComposer({
           }
           aria-describedby={hintId}
           data-testid="leanai-assistant-input"
-          className="[field-sizing:content] h-auto max-h-40 min-h-16 w-full min-w-0 resize-none overflow-y-auto"
+          className="min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
           onChange={(event) =>
             onChange(event.target.value.slice(0, LEANAI_COMPOSER_MAX_LENGTH))
           }
@@ -146,11 +165,13 @@ export function LeanAiComposer({
         />
         <Button
           type="submit"
+          size="sm"
           disabled={disabled || sending || value.trim().length === 0}
-          className="w-full sm:w-auto"
+          className="size-9 shrink-0 rounded-full p-0"
           data-testid="leanai-assistant-send"
+          aria-label="Send message"
         >
-          Send
+          <Send className="size-4" aria-hidden />
         </Button>
       </div>
       <p id={hintId} className="text-xs text-muted-foreground">

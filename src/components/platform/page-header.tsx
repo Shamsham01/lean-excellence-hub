@@ -6,12 +6,14 @@ export function PageHeader({
   title,
   description,
   descriptionTestId,
+  breadcrumb,
   actions,
   className,
 }: {
   title: ReactNode;
   description?: string;
   descriptionTestId?: string;
+  breadcrumb?: ReactNode;
   actions?: ReactNode;
   className?: string;
 }) {
@@ -23,6 +25,7 @@ export function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
+        {breadcrumb}
         <h1 className="typography-page-title">{title}</h1>
         {description ? (
           <p

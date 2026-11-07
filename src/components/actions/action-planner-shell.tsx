@@ -1,14 +1,29 @@
 "use client";
 
-import { Columns3, LayoutGrid, List } from "lucide-react";
+import {
+  ArrowDownAZ,
+  Columns3,
+  Filter,
+  LayoutGrid,
+  List,
+  ListTodo,
+  Plus,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 
 import { ActionDetailSheet } from "@/components/actions/action-detail-sheet";
 import { ActionPlannerBoard } from "@/components/actions/action-planner-board";
 import { ActionPlannerListView } from "@/components/actions/action-planner-list-view";
 import { ActionPlannerTiles } from "@/components/actions/action-planner-tiles";
+import { EmptyState } from "@/components/platform/empty-state";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
 import {
   type ActionPlannerView,
@@ -17,7 +32,6 @@ import {
   writeStoredActionPlannerView,
 } from "@/lib/actions/planner-view";
 import { cn } from "@/lib/utils";
-
 const VIEW_OPTIONS: Array<{
   id: ActionPlannerView;
   label: string;
@@ -28,14 +42,18 @@ const VIEW_OPTIONS: Array<{
   { id: "tiles", label: "Tiles", icon: LayoutGrid },
 ];
 
+type ListSort = "due" | "created" | "title";
+
 type ActionPlannerShellProps = {
   actions: ActionPlannerListItem[];
   initialOpenActionId?: string | null;
+  canCreate?: boolean;
 };
 
 export function ActionPlannerShell({
   actions,
   initialOpenActionId = null,
+  canCreate = false,
 }: ActionPlannerShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,6 +67,7 @@ export function ActionPlannerShell({
   const [selectedActionId, setSelectedActionId] = useState<string | null>(
     initialOpenActionId ?? null,
   );
+  const [listSort, setListSort] = useState<ListSort>("due");
 
   const openAction = useCallback(
     (actionId: string) => {
@@ -81,65 +100,149 @@ export function ActionPlannerShell({
     writeStoredActionPlannerView(next);
   }
 
+  function scrollToFilters() {
+    document
+      .getElementById("actions-filters")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function scrollToCreate() {
+    document
+      .getElementById("actions-create-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const boardActions = useMemo(
+    () =>
+      actions.filter((action) =>
+        ["open", "in_progress", "completed", "verified"].includes(
+          action.status,
+        ),
+      ),
+    [actions],
+  );
+
   return (
-    <div className="flex flex-col gap-4" data-testid="actions-planner-shell">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          {actions.length} action{actions.length === 1 ? "" : "s"} in your scope
-        </p>
-        <div
-          className="inline-flex rounded-lg border border-border bg-surface p-1"
-          role="tablist"
-          aria-label="Action view"
-          data-testid="actions-view-switcher"
-        >
-          {VIEW_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const active = view === option.id;
-            return (
+    <div
+      className="flex w-full min-w-0 flex-col gap-4"
+      data-testid="actions-planner-shell"
+    >
+      <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 shadow-[var(--shadow-theme-xs)] sm:p-4">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <p className="text-sm text-muted-foreground">
+            {actions.length} action{actions.length === 1 ? "" : "s"} in scope
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={scrollToFilters}
+              data-testid="actions-filter-button"
+            >
+              <Filter className="size-3.5" aria-hidden />
+              Filter &amp; sort
+            </Button>
+            {view === "list" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    data-testid="actions-list-sort"
+                  >
+                    <ArrowDownAZ className="size-3.5" aria-hidden />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setListSort("due")}>
+                    Due date
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setListSort("created")}>
+                    Created
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setListSort("title")}>
+                    Title
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+            {canCreate ? (
               <Button
-                key={option.id}
                 type="button"
                 size="sm"
-                variant={active ? "default" : "ghost"}
-                className={cn(
-                  "h-8 gap-1.5 px-2.5",
-                  !active && "text-muted-foreground",
-                )}
-                role="tab"
-                aria-selected={active}
-                data-testid={`actions-view-${option.id}`}
-                onClick={() => selectView(option.id)}
+                className="gap-1.5"
+                onClick={scrollToCreate}
+                data-testid="actions-add-new"
               >
-                <Icon className="size-3.5" aria-hidden />
-                <span className="hidden sm:inline">{option.label}</span>
+                <Plus className="size-3.5" aria-hidden />
+                Add new
               </Button>
-            );
-          })}
+            ) : null}
+            <div
+              className="inline-flex rounded-lg border border-border bg-surface p-1"
+              role="tablist"
+              aria-label="Action view"
+              data-testid="actions-view-switcher"
+            >
+              {VIEW_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const active = view === option.id;
+                return (
+                  <Button
+                    key={option.id}
+                    type="button"
+                    size="sm"
+                    variant={active ? "default" : "ghost"}
+                    className={cn(
+                      "h-8 gap-1.5 px-2.5",
+                      !active && "text-muted-foreground",
+                    )}
+                    role="tab"
+                    aria-selected={active}
+                    data-testid={`actions-view-${option.id}`}
+                    onClick={() => selectView(option.id)}
+                  >
+                    <Icon className="size-3.5" aria-hidden />
+                    <span className="hidden sm:inline">{option.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
       {actions.length === 0 ? (
-        <div
-          className="rounded-lg border border-dashed border-border bg-surface/50 px-4 py-12 text-center"
-          data-testid="actions-empty-state"
-        >
-          <p className="text-sm font-medium text-foreground">
-            No actions are currently available in your scope.
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create an action or adjust filters to see work items here.
-          </p>
-        </div>
+        <EmptyState
+          testId="actions-empty-state"
+          title="No actions in your scope"
+          description="Create an action or adjust filters to see work items here."
+          {...(canCreate
+            ? {
+                actionLabel: "Add new action",
+                onAction: scrollToCreate,
+              }
+            : {})}
+          icon={<ListTodo className="size-5" aria-hidden />}
+        />
       ) : null}
 
       {actions.length > 0 ? (
         <>
           {view === "list" ? (
-            <ActionPlannerListView actions={actions} onOpen={openAction} />
+            <ActionPlannerListView
+              actions={actions}
+              onOpen={openAction}
+              sortBy={listSort}
+            />
           ) : null}
           {view === "board" ? (
-            <ActionPlannerBoard actions={actions} onOpen={openAction} />
+            <ActionPlannerBoard actions={boardActions} onOpen={openAction} />
           ) : null}
           {view === "tiles" ? (
             <ActionPlannerTiles actions={actions} onOpen={openAction} />

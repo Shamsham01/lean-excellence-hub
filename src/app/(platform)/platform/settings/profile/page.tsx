@@ -2,10 +2,11 @@ import { ProfileOrganisationMembership } from "@/components/profile/profile-orga
 import type { ProfileAccessGrant } from "@/components/profile/profile-access-grants";
 import { ProfileAvatarForm } from "@/components/profile/profile-avatar-form";
 import { ProfileDisplayNameForm } from "@/components/profile/profile-display-name-form";
+import { ProfileSettingsSection } from "@/components/profile/profile-settings-section";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -70,6 +71,15 @@ export default async function ProfileSettingsPage() {
       <PageHeader
         title="Your profile"
         description="Manage personal details you control yourself. Organisation-managed assignments are shown for reference."
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { label: "Platform", href: "/platform" },
+              { label: "Settings", href: "/platform/settings" },
+              { label: "Profile" },
+            ]}
+          />
+        }
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">
@@ -79,11 +89,18 @@ export default async function ProfileSettingsPage() {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Personal profile</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+      <div className="rounded-xl border border-border/60 bg-card p-4 shadow-[var(--shadow-theme-xs)] sm:p-6">
+        <h2 className="text-lg font-semibold text-foreground">Profile</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Personal information and organisation context in one place.
+        </p>
+      </div>
+
+      <ProfileSettingsSection
+        title="Personal information"
+        editTargetId="profile-display-name-form"
+      >
+        <div id="profile-avatar-section" className="flex flex-col gap-4">
           <ProfileAvatarForm
             displayName={
               personalDisplayName || organisationDisplayName || "Member"
@@ -100,17 +117,12 @@ export default async function ProfileSettingsPage() {
             }
             onSave={updateProfileDisplayName}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </ProfileSettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Organisation membership</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProfileOrganisationMembership view={membershipView} />
-        </CardContent>
-      </Card>
+      <ProfileSettingsSection title="Organisation & access">
+        <ProfileOrganisationMembership view={membershipView} />
+      </ProfileSettingsSection>
     </div>
   );
 }
