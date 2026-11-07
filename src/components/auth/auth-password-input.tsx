@@ -35,7 +35,7 @@ export function AuthPasswordInput({
         size="icon"
         className="absolute top-0 right-0 size-9 min-h-9 text-muted-foreground hover:text-foreground"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Hide password" : "Show password"}
+        aria-label={visible ? "Hide characters" : "Reveal characters"}
         aria-pressed={visible}
         tabIndex={-1}
       >

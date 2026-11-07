@@ -19,7 +19,7 @@ export default async function FoundingSignupPage({
   if (status === "check-email") {
     return (
       <AuthPageFrame>
-        <AuthBackLink href="/login">Back to sign in</AuthBackLink>
+        <AuthBackLink href="/">Back to home</AuthBackLink>
         <AuthPageHeader
           title="Check your email"
           description="If this is a new account, we've sent a confirmation link. If you already have an account, sign in or reset your password."
