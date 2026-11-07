@@ -1,47 +1,50 @@
-import { PageHeader } from "@/components/platform/page-header";
+import { PeopleDirectory } from "@/components/people/people-directory";
+import { AppLink } from "@/components/ui/app-link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { fetchPeopleDirectory } from "@/lib/people/fetch-people-directory";
+import { parsePeopleDirectorySearchParams } from "@/lib/people/directory-query";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
+import { loadAccessibleOrganisationUnits } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
-import { AppLink } from "@/components/ui/app-link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
-export default async function PeopleDirectoryPage() {
+export default async function PeopleDirectoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentMembershipId = organisations.find(
     (o) => o.selected,
   )?.membership_id;
-  const canManageMemberships =
-    await currentMemberHasPermission("memberships.read");
+  const params = await searchParams;
+  const filters = parsePeopleDirectorySearchParams(params);
 
-  const { data: directory, error } = await supabase.rpc(
-    "get_people_directory",
-    {
-      target_page: 1,
-      target_page_size: 50,
-    },
-  );
+  const [canManageMemberships, canIncludeInactive] = await Promise.all([
+    currentMemberHasPermission("memberships.read"),
+    currentMemberHasPermission("memberships.manage"),
+  ]);
 
-  const directoryObj = directory as {
-    people?: Array<{
-      membership_id: string;
-      display_name: string;
-      job_function_name?: string;
-    }>;
-  } | null;
+  const { error, people, totalCount, page, pageSize } =
+    await fetchPeopleDirectory(supabase, filters, {
+      canIncludeInactive,
+    });
 
-  const people = directoryObj?.people ?? [];
+  const units = canManageMemberships
+    ? (await loadAccessibleOrganisationUnits()).map((unit) => ({
+        id: unit.id,
+        name: unit.name,
+        code: unit.code,
+      }))
+    : [];
+
   const directoryDenied = error?.code === "42501";
   const directoryFailed = Boolean(error) && !directoryDenied;
 
   return (
-    <div className="flex flex-col gap-8" data-testid="people-directory-page">
-      <PageHeader
-        title="People"
-        description="Workforce capability directory — training compliance and skill coverage at a glance."
-      />
-
+    <div className="flex flex-col gap-6" data-testid="people-directory-page">
       {directoryDenied && currentMembershipId ? (
         <Card>
           <CardContent className="flex flex-col gap-4 p-6">
@@ -76,43 +79,16 @@ export default async function PeopleDirectoryPage() {
       ) : null}
 
       {!directoryDenied && !directoryFailed ? (
-        <Card>
-          <CardContent className="divide-y divide-border p-0">
-            {people.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">
-                No people found.
-              </p>
-            ) : (
-              people.map((person) => (
-                <div
-                  key={person.membership_id}
-                  className="flex min-h-11 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <AppLink
-                    href={`/platform/people/${person.membership_id}`}
-                    className="flex flex-1 flex-col gap-0.5 hover:underline"
-                    data-testid={`people-directory-link-${person.membership_id}`}
-                  >
-                    <span className="font-medium">{person.display_name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {person.job_function_name ?? "No job function"}
-                    </span>
-                  </AppLink>
-                  {canManageMemberships ? (
-                    <Button variant="outline" size="sm" asChild>
-                      <AppLink
-                        href={`/platform/people/${person.membership_id}/admin`}
-                        data-testid={`people-manage-link-${person.membership_id}`}
-                      >
-                        Manage
-                      </AppLink>
-                    </Button>
-                  ) : null}
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <PeopleDirectory
+          people={people}
+          totalCount={totalCount}
+          page={page}
+          pageSize={pageSize}
+          filters={filters}
+          units={units}
+          canManageMemberships={canManageMemberships}
+          canIncludeInactive={canIncludeInactive}
+        />
       ) : null}
     </div>
   );

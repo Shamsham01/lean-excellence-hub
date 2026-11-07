@@ -93,16 +93,19 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     await page.goto("/platform/people");
     await expect(page.getByTestId("people-directory-page")).toBeVisible();
 
-    const operatorRow = page.getByRole("link", {
-      name: `${DEMO_USERS.operator.displayName} Operator`,
+    const operatorProfile = page.getByRole("link", {
+      name: DEMO_USERS.operator.displayName,
     });
-    await expect(operatorRow).toBeVisible();
-    const profileHref = await operatorRow.getAttribute("href");
+    await expect(operatorProfile).toBeVisible();
+    const profileHref = await operatorProfile.getAttribute("href");
     expect(profileHref).toMatch(/\/platform\/people\/[0-9a-f-]{36}$/);
 
-    const manage = operatorRow
-      .locator("xpath=..")
-      .getByRole("link", { name: "Manage" });
+    await page
+      .getByRole("button", {
+        name: `Actions for ${DEMO_USERS.operator.displayName}`,
+      })
+      .click();
+    const manage = page.getByRole("menuitem", { name: "Manage" });
     await expect(manage).toHaveAttribute("href", `${profileHref}/admin`);
     await manage.click();
     await expect(page).toHaveURL(new RegExp(`${profileHref}/admin$`));
@@ -114,7 +117,7 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     await expect(page).toHaveURL(/\/platform\/people(?:\?|$)/);
     await expect(page.getByTestId("people-directory-page")).toBeVisible();
 
-    await operatorRow.click();
+    await operatorProfile.click();
     await expect(page).toHaveURL(new RegExp(`${profileHref}$`));
     await expect(
       page.getByRole("heading", { name: DEMO_USERS.operator.displayName }),

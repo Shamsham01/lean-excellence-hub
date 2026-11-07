@@ -16,7 +16,9 @@ async function expectMemberAdminPage(page: Page, memberDisplayName: string) {
   await expect(
     page.getByRole("heading", { name: "Organisation" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Access" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Access & Responsibilities" }),
+  ).toBeVisible();
 }
 
 test.describe("Member administration", () => {
@@ -35,13 +37,12 @@ test.describe("Member administration", () => {
     await page.goto("/platform/people");
     await expect(page.getByTestId("people-directory-page")).toBeVisible();
 
-    const operatorProfileLink = page.getByRole("link", {
-      name: `${DEMO_USERS.operator.displayName} Operator`,
-    });
-    await operatorProfileLink
-      .locator("xpath=..")
-      .getByRole("link", { name: "Manage" })
+    await page
+      .getByRole("button", {
+        name: `Actions for ${DEMO_USERS.operator.displayName}`,
+      })
       .click();
+    await page.getByRole("menuitem", { name: "Manage" }).click();
 
     await expectMemberAdminPage(page, DEMO_USERS.operator.displayName);
   });

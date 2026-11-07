@@ -298,12 +298,11 @@ test.describe("Organisation Structure V2", () => {
       await expect(page.getByTestId("people-directory-page")).toBeVisible();
 
       await page
-        .getByRole("link", {
-          name: `${DEMO_USERS.operator.displayName} Operator`,
+        .getByRole("button", {
+          name: `Actions for ${DEMO_USERS.operator.displayName}`,
         })
-        .locator("xpath=..")
-        .getByRole("link", { name: "Manage" })
         .click();
+      await page.getByRole("menuitem", { name: "Manage" }).click();
       await expect(page.getByTestId("member-access-management")).toBeVisible();
 
       const grantForm = page.getByTestId("member-access-management");
