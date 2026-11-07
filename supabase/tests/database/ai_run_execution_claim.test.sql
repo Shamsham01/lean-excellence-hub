@@ -156,10 +156,18 @@ select is(
   'lease test run is claimed'
 );
 
+reset role;
 update public.ai_runs
 set execution_claimed_at = statement_timestamp() - interval '120 seconds',
     provider_dispatched_at = statement_timestamp() - interval '110 seconds'
 where id = (select id from ai_claim_ids where key = 'ai_run_lease');
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"a1600000-0000-0000-0000-000000000001","role":"authenticated","session_id":"a1610000-0000-0000-0000-000000000001","email":"ai-claim-owner@example.test"}',
+  true
+);
+set local role authenticated;
+select public.switch_organisation((select id from ai_claim_ids where key = 'organisation'));
 
 select is(
   public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run_lease')),
