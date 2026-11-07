@@ -500,7 +500,7 @@ describe("site identity metadata", () => {
     );
     expect(css).toContain("object-fit: contain");
     expect(css).toContain(
-      ".marketing-header .leh-brand[data-variant=\"full\"] .leh-brand-lockup-img",
+      '.marketing-header .leh-brand[data-variant="full"] .leh-brand-lockup-img',
     );
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");
