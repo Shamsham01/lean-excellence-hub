@@ -81,13 +81,16 @@ test.describe("NAV-CLICK-001 shared in-app navigation", () => {
 
     await clickPlatformNav(page, "actions");
     await expect(page).toHaveURL(/\/platform\/actions(?:\?|$)/);
-    await expect(page.getByTestId("actions-list")).toBeVisible();
+    await expect(page.getByTestId("actions-planner-shell")).toBeVisible();
 
-    const actionRow = page.getByTestId(/^action-list-item-/).first();
+    const actionRow = page.getByTestId(/^action-planner-card-/).first();
     await expect(actionRow).toBeVisible();
     await actionRow.click();
-    await expect(page).toHaveURL(/\/platform\/actions\/[0-9a-f-]{36}/);
-    await expect(page.getByTestId("action-detail-page")).toBeVisible();
+    await expect(page).toHaveURL(/\/platform\/actions\?action=/);
+    await expect(page.getByTestId("action-detail-sheet")).toBeVisible();
+    await expect(page.getByTestId("action-detail-sheet-body")).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   test("keyboard Enter on platform nav navigates", async ({ page }) => {

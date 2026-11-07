@@ -99,7 +99,7 @@ describe("public marketing homepage", () => {
     ).toBeInTheDocument();
   });
 
-  it("uses Explore the platform as the hero CTA and keeps account creation on /signup", () => {
+  it("uses Book a live demo and Sign in as hero CTAs with Explore the platform secondary", () => {
     render(<MarketingHome />);
 
     const hero = screen
@@ -110,17 +110,20 @@ describe("public marketing homepage", () => {
     expect(hero).toBeTruthy();
     expect(
       within(hero as HTMLElement).getByRole("link", {
+        name: "Book a live demo",
+      }),
+    ).toHaveAttribute("href", "/demo");
+    expect(
+      within(hero as HTMLElement).getByRole("link", { name: "Sign in" }),
+    ).toHaveAttribute("href", "/login");
+    expect(
+      within(hero as HTMLElement).getByRole("link", {
         name: "Explore the platform",
       }),
     ).toHaveAttribute("href", "#platform");
     expect(
-      within(hero as HTMLElement).getByRole("link", {
-        name: "Create an account",
-      }),
-    ).toHaveAttribute("href", "/signup");
-    expect(
       within(hero as HTMLElement).queryByRole("link", {
-        name: "Book a live demo",
+        name: "Create an account",
       }),
     ).not.toBeInTheDocument();
     expect(
@@ -154,7 +157,7 @@ describe("public marketing homepage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps sign-in on the login route and out of the hero CTA pair", () => {
+  it("keeps every sign-in link on the login route", () => {
     render(<MarketingHome />);
 
     const signInLinks = screen.getAllByRole("link", { name: "Sign in" });
@@ -162,16 +165,6 @@ describe("public marketing homepage", () => {
     for (const link of signInLinks) {
       expect(link).toHaveAttribute("href", "/login");
     }
-
-    const hero = screen
-      .getByRole("heading", {
-        name: "Make continuous improvement visible, accountable and measurable.",
-      })
-      .closest("section");
-    expect(hero).toBeTruthy();
-    expect(
-      within(hero as HTMLElement).queryByRole("link", { name: "Sign in" }),
-    ).not.toBeInTheDocument();
   });
 
   it("renders LEH-native platform previews instead of generic module slogans", () => {
@@ -190,7 +183,9 @@ describe("public marketing homepage", () => {
         "SUG-018 · Move changeover kit to the line-side cupboard.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/methodology-neutral stages/i)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/methodology-neutral stages/i).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("table", { name: /example skills matrix/i }),
     ).toBeInTheDocument();
@@ -230,6 +225,9 @@ describe("public marketing homepage", () => {
     expect(
       within(desktopNav).getByRole("link", { name: "LeanAI" }),
     ).toHaveAttribute("href", "/#leanai");
+    expect(
+      within(desktopNav).getByRole("link", { name: "FAQ" }),
+    ).toHaveAttribute("href", "/#faq");
   });
 
   it("keeps footer links on valid homepage anchors and access routes", () => {
@@ -249,6 +247,10 @@ describe("public marketing homepage", () => {
     expect(
       within(footer).getByRole("link", { name: "Actions" }),
     ).toHaveAttribute("href", "/#actions");
+    expect(within(footer).getByRole("link", { name: "FAQ" })).toHaveAttribute(
+      "href",
+      "/#faq",
+    );
     expect(
       within(footer).getByText(/© 2026 Lean Excellence Hub/),
     ).toBeInTheDocument();
@@ -635,12 +637,12 @@ describe("homepage authentication routing", () => {
     const marketing = css.slice(start, end);
 
     expect(marketing).toContain(".marketing,\n.marketing-appearance-menu {");
-    expect(marketing).toMatch(/--leh-accent: oklch\(/);
-    expect(marketing).toMatch(/--leh-canvas-light: oklch\(/);
-    expect(marketing).toContain("--primary: var(--leh-cobalt);");
+    expect(marketing).toMatch(/--leh-accent: #465fff/);
+    expect(marketing).toMatch(/--leh-canvas-light: #f8fafc/);
+    expect(marketing).toMatch(/--leh-canvas-dark: #090e17/);
+    expect(marketing).toContain("--primary: var(--leh-accent);");
     expect(marketing).not.toContain("color-mix(in oklch");
     expect(marketing).toContain("color-mix(in oklab");
-    expect(marketing).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(marketing).not.toMatch(/\bfrom var\(/);
 
     const primitives = readFileSync(

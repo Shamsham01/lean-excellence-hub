@@ -41,21 +41,28 @@ test("homepage story is reachable from the header and has no playground", async 
   expect(errors).toEqual([]);
 });
 
-test("hero actions reach the platform and account creation", async ({
+test("hero actions reach demo booking, sign-in and platform sections", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
 
-  await page.getByRole("link", { name: "Explore the platform" }).click();
+  await page.getByRole("link", { name: "Book a live demo" }).first().click();
+  await expect(page).toHaveURL(/\/demo/);
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Sign in" }).first().click();
+  await expect(page).toHaveURL(/\/login/);
+
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "Explore the platform" })
+    .first()
+    .click();
   await expect(page).toHaveURL(/#platform/);
   await expect(
     page.getByRole("heading", { name: "One connected improvement system." }),
   ).toBeVisible();
-
-  await page.goto("/");
-  await page.getByRole("link", { name: "Create an account" }).first().click();
-  await expect(page).toHaveURL(/\/signup/);
 });
 
 test("mobile homepage keeps native vertical flow without horizontal overflow", async ({
