@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
-import { LehBrandHomeLink } from "@/components/brand/leh-brand";
+import { AuthBrandMark } from "@/components/brand/auth-brand-mark";
 import { Button } from "@/components/ui/button";
 import { resolveAuthenticatedInvitationContinuation } from "@/modules/identity/invitation-continuation";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -24,7 +24,7 @@ export default async function NoAccessPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
-      <LehBrandHomeLink className="mb-8" />
+      <AuthBrandMark className="mb-8" />
       <div className="w-full max-w-md">
         <AuthCard
           title={

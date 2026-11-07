@@ -27,7 +27,7 @@ Theme-specific marks are the files screens render. Do not redraw them. Originals
 | `public/site.webmanifest`               | Installed-app name and icons                                                          |
 | `public/brand/originals/*.png`          | Unmodified source artwork                                                             |
 
-The four theme SVGs are Canva exports that embed raster PNGs (plus an alpha mask), not path-based vectors. Use the files as supplied; do not trace or simplify them. `LehBrand` serves SVG via `<picture>` with the PNG masters as the `<img>` fallback. The platform sidebar uses `lockupRasterOnly` (PNG only) because crop math does not apply when the browser selects the SVG `<source>`.
+The four theme SVGs are Canva exports that embed raster PNGs (plus an alpha mask), not path-based vectors. Use the files as supplied; do not trace or simplify them. `LehBrand` serves SVG via `<picture>` with the PNG masters as the `<img>` fallback. Sign-in, marketing header, and platform sidebar use `lockupRasterOnly` (PNG only) with `object-fit: contain` in a fixed slot — no crop offsets.
 
 Placement, sizing, and the favicon decision are recorded in `docs/product/branding.md`.
 

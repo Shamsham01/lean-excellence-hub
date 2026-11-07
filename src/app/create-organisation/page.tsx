@@ -1,5 +1,5 @@
 import { AuthCard } from "@/components/auth/auth-card";
-import { LehBrandHomeLink } from "@/components/brand/leh-brand";
+import { AuthBrandMark } from "@/components/brand/auth-brand-mark";
 import { FoundingOrganisationDomainHint } from "@/components/onboarding/founding-organisation-domain-hint";
 import { FoundingOrganisationForm } from "@/components/onboarding/founding-organisation-form";
 import { loadFoundingOrganisationDomainHint } from "@/modules/onboarding/founding-organisation-hint";
@@ -46,7 +46,7 @@ export default async function CreateOrganisationPage({
       className="flex min-h-dvh flex-col items-center justify-center px-4 py-10"
       data-testid="create-organisation-page"
     >
-      <LehBrandHomeLink className="mb-8" />
+      <AuthBrandMark className="mb-8" />
       <div className="w-full max-w-lg">
         <AuthCard
           title="Create your organisation"
