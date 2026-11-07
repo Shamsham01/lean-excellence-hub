@@ -309,7 +309,9 @@ function DashboardOutcomeVisual() {
           <StatusChip tone="connected">Example</StatusChip>
         </div>
         <div className="editorial-dashboard-body">
-          <p className="editorial-context-kicker">Validated outcome</p>
+          <p className="editorial-context-kicker">
+            Stage 4 · Improve · dashboard
+          </p>
           <div
             className="editorial-dashboard-kpis"
             role="group"
@@ -321,9 +323,11 @@ function DashboardOutcomeVisual() {
               <StatusChip tone="success">ACT-318 closed</StatusChip>
             </div>
             <div className="editorial-dashboard-kpi">
-              <p className="editorial-dashboard-kpi-label">Validations due</p>
+              <p className="editorial-dashboard-kpi-label">Benefit validation</p>
               <p className="editorial-dashboard-kpi-value">1</p>
-              <p className="editorial-dashboard-kpi-note">BEN-019 awaiting</p>
+              <p className="editorial-dashboard-kpi-note">
+                BEN-019 · Awaiting validation
+              </p>
             </div>
             <div className="editorial-dashboard-kpi">
               <p className="editorial-dashboard-kpi-label">Cases in flight</p>
@@ -333,16 +337,16 @@ function DashboardOutcomeVisual() {
           </div>
           <MarketingActionCard
             variant="inline"
+            storyStage="Stage 2 · Act · verified on the line"
             actionRef="ACT-318"
             title="Realign the film guide and confirm the first-off pack"
             owner="Packing supervisor"
-            due="Completed"
             status="Verified"
             statusTone="success"
             sourceModule="Gemba"
             sourceRef="GEM-214"
             sourceTitle="Packaging film misaligned on Packing Line 1"
-            validationNote="First-off pack confirmed on line. Benefit validation BEN-019 stays separate — nothing is shown as verified savings."
+            validationNote="Action closure is shown here. Benefit record BEN-019 remains awaiting validation — forecast and realisation stay separate."
           />
         </div>
       </div>
@@ -457,16 +461,16 @@ function StoryEvidencePanel({ step }: { step: LineageStep }) {
       <MarketingActionCard
         variant="inline"
         className="editorial-record-action-tail"
+        storyStage="Stage 5 · Learn · linked action"
         actionRef={SIGNATURE_ACTION.actionRef}
         title={SIGNATURE_ACTION.title}
         owner="CI manager"
-        due="Verified"
         status="Closed"
         statusTone="success"
         sourceModule="Project"
         sourceRef="PRJ-042"
         sourceTitle="Packing Line 1 film-path countermeasures"
-        validationNote="Standard CAP-014 draft references the verified action."
+        validationNote="Standard CAP-014 draft references the closed action. Benefit BEN-019 is still awaiting validation."
       />
     </article>
   );

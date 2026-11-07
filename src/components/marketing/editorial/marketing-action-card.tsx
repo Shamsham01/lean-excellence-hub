@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { Check } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusChip } from "@/components/marketing/primitives";
 import { cn } from "@/lib/utils";
+
+import { HeroStatusCycle } from "./hero-status-cycle";
 
 type ChipTone = "neutral" | "accent" | "connected" | "warning" | "success";
 
@@ -11,7 +12,7 @@ export type MarketingActionCardProps = {
   actionRef: string;
   title: string;
   owner: string;
-  due: string;
+  due?: string;
   status: string;
   statusTone?: ChipTone;
   sourceModule: string;
@@ -25,17 +26,20 @@ export type MarketingActionCardProps = {
   id?: string;
   hideAuxNote?: boolean;
   animateHeroStatus?: boolean;
+  storyStage?: string;
 };
 
 export function MarketingGembaFindingCard({
   findingRef,
   title,
   meta,
+  storyStage = "Stage 1 · Observe",
   className,
 }: {
   findingRef: string;
   title: string;
   meta: string;
+  storyStage?: string;
   className?: string;
 }) {
   return (
@@ -62,6 +66,7 @@ export function MarketingGembaFindingCard({
           </div>
         </div>
         <div className="editorial-gemba-finding-body">
+          <p className="editorial-gemba-finding-stage">{storyStage}</p>
           <p className="editorial-gemba-finding-kicker">
             Gemba · captured on the floor
           </p>
@@ -71,26 +76,6 @@ export function MarketingGembaFindingCard({
         </div>
       </div>
     </article>
-  );
-}
-
-function HeroStatusCycle() {
-  return (
-    <div
-      className="editorial-hero-status-cycle"
-      role="status"
-      aria-label="Example status progresses from Assigned to Verified"
-    >
-      <span className="editorial-hero-status-phase editorial-hero-status-assigned">
-        <StatusChip tone="accent">Assigned</StatusChip>
-      </span>
-      <span className="editorial-hero-status-phase editorial-hero-status-verified">
-        <span className="editorial-hero-status-verified-chip">
-          <Check aria-hidden="true" className="editorial-hero-status-check" />
-          <StatusChip tone="success">Verified</StatusChip>
-        </span>
-      </span>
-    </div>
   );
 }
 
@@ -112,6 +97,7 @@ export function MarketingActionCard({
   id,
   hideAuxNote = false,
   animateHeroStatus = false,
+  storyStage = "Stage 2 · Act",
 }: MarketingActionCardProps) {
   const isHero = variant === "hero";
 
@@ -150,6 +136,7 @@ export function MarketingActionCard({
         </div>
 
         <div className="editorial-action-card-body">
+          <p className="editorial-action-card-stage">{storyStage}</p>
           <p className="editorial-action-card-kicker">{siteLine}</p>
           <h2
             id={id ? `${id}-title` : undefined}
@@ -164,10 +151,12 @@ export function MarketingActionCard({
               <dt>Owner</dt>
               <dd>{owner}</dd>
             </div>
-            <div>
-              <dt>Due</dt>
-              <dd>{due}</dd>
-            </div>
+            {due ? (
+              <div>
+                <dt>Due</dt>
+                <dd>{due}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Source</dt>
               <dd>

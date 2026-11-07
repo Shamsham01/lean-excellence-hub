@@ -637,12 +637,12 @@ describe("homepage authentication routing", () => {
     const marketing = css.slice(start, end);
 
     expect(marketing).toContain(".marketing,\n.marketing-appearance-menu {");
-    expect(marketing).toMatch(/--leh-accent: oklch\(/);
-    expect(marketing).toMatch(/--leh-canvas-light: oklch\(/);
+    expect(marketing).toMatch(/--leh-accent: #465fff/);
+    expect(marketing).toMatch(/--leh-canvas-light: #f8fafc/);
+    expect(marketing).toMatch(/--leh-canvas-dark: #090e17/);
     expect(marketing).toContain("--primary: var(--leh-accent);");
     expect(marketing).not.toContain("color-mix(in oklch");
     expect(marketing).toContain("color-mix(in oklab");
-    expect(marketing).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(marketing).not.toMatch(/\bfrom var\(/);
 
     const primitives = readFileSync(

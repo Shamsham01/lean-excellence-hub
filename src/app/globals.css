@@ -377,18 +377,20 @@ body {
    outside `.marketing`, so it shares these tokens. */
 .marketing,
 .marketing-appearance-menu {
-  /* Canonical palette (oklch, culori-derived from TOKENS.md sRGB anchors) */
-  --leh-canvas-light: oklch(0.984152 0.003413 247.858);
-  --leh-card-light: oklch(1 0 none);
-  --leh-border-light: oklch(0.928761 0.012619 255.508);
-  --leh-canvas-dark: oklch(0.163325 0.020785 261.749);
-  --leh-card-dark: oklch(0.221314 0.032422 260.326);
-  --leh-border-dark: oklch(0.29425 0.043587 256.896);
-  --leh-accent: oklch(0.567984 0.236948 270);
-  --leh-accent-hover: oklch(0.511185 0.213254 270);
-  --leh-success: oklch(0.695873 0.149074 162.48);
-  --leh-warning: oklch(0.76859 0.164659 70.08);
-  --leh-critical: oklch(0.636834 0.207849 25.331);
+  /* Canonical TOKENS.md sRGB anchors — marketing aliases these exactly. */
+  --leh-canvas-light: #f8fafc;
+  --leh-card-light: #ffffff;
+  --leh-border-light: #e2e8f0;
+  --leh-canvas-dark: #090e17;
+  --leh-card-dark: #121b2a;
+  --leh-border-dark: #1e2d42;
+  --leh-accent: #465fff;
+  --leh-accent-hover: #3b51e6;
+  --leh-success: #10b981;
+  --leh-warning: #f59e0b;
+  --leh-critical: #ef4444;
+  --leh-on-canvas-dark: #f1f5f9;
+  --leh-on-canvas-dark-muted: #94a3b8;
 
   --leh-ink: oklch(0.207681 0.039824 265.755);
   --leh-ink-muted: oklch(0.554391 0.040718 257.417);
