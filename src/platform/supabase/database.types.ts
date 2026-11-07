@@ -13856,6 +13856,8 @@ export type Database = {
           target_page?: number
           target_page_size?: number
           target_search?: string
+          target_status?: string
+          target_unit_id?: string
         }
         Returns: Json
       }
