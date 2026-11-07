@@ -220,3 +220,26 @@ export type PlatformOrganisationDetail = z.infer<
 export type PlatformNotificationHistory = z.infer<
   typeof platformNotificationHistorySchema
 >;
+
+export const platformAdminInAppNotificationSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  body: z.string().nullable(),
+  href: z.string().nullable(),
+  read_at: z.string().nullable(),
+  created_at: z.string(),
+  notification_type: z.string(),
+  event_kind: z.string().optional(),
+});
+
+export const platformAdminInAppSnapshotSchema = z.object({
+  unread_count: countSchema,
+  items: z.array(platformAdminInAppNotificationSchema),
+});
+
+export type PlatformAdminInAppNotification = z.infer<
+  typeof platformAdminInAppNotificationSchema
+>;
+export type PlatformAdminInAppSnapshot = z.infer<
+  typeof platformAdminInAppSnapshotSchema
+>;
