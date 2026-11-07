@@ -4,17 +4,23 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
-import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
 import {
   MarketingModuleFigure,
+  ProductVignetteChrome,
   type MarketingModuleId,
 } from "@/components/marketing/platform-previews";
 import {
   MarketingContainer,
   StatusChip,
 } from "@/components/marketing/primitives";
+import {
+  MarketingActionCard,
+  MarketingGembaFindingCard,
+} from "./marketing-action-card";
+import { ScrollReveal } from "./scroll-reveal";
 
 import "./home.css";
 
@@ -124,37 +130,6 @@ const LINEAGE: readonly LineageStep[] = [
   },
 ];
 
-const HERO_LINKS = [
-  {
-    ref: "ACT-318",
-    title: "Corrective action",
-    detail: "Packing supervisor · due Friday",
-    status: "Assigned",
-    tone: "accent" as const,
-  },
-  {
-    ref: "PS-077",
-    title: "Problem solving",
-    detail: "CI team · chosen method",
-    status: "Cause analysis",
-    tone: "accent" as const,
-  },
-  {
-    ref: "PRJ-042",
-    title: "Improvement project",
-    detail: "Film-path countermeasures",
-    status: "Active",
-    tone: "connected" as const,
-  },
-  {
-    ref: "BEN-019",
-    title: "Benefit",
-    detail: "Qualitative · no amount shown",
-    status: "Awaiting validation",
-    tone: "neutral" as const,
-  },
-] as const;
-
 const MODULES: ReadonlyArray<{
   id: MarketingModuleId;
   name: string;
@@ -202,6 +177,29 @@ const MODULES: ReadonlyArray<{
   },
 ];
 
+const FAQ_ITEMS = [
+  {
+    id: "faq-what",
+    q: "What is Lean Excellence Hub?",
+    a: "A B2B platform for Continuous Improvement and Operational Excellence: maturity, Gemba, 5S, suggestions, actions, problem solving, projects, benefits, scheduling, recognition, training and capability in one connected system.",
+  },
+  {
+    id: "faq-demo",
+    q: "How do I book a demonstration?",
+    a: "Use Book a live demo to open the scheduling page. A meeting is confirmed only after the scheduling provider accepts the time you choose.",
+  },
+  {
+    id: "faq-data",
+    q: "Are the records on this page real customer data?",
+    a: "No. Product previews and examples on this marketing site use illustrative records only. They are not customer performance data.",
+  },
+  {
+    id: "faq-leanai",
+    q: "How does LeanAI relate to publishing and access?",
+    a: "LeanAI can find, explain and recommend inside the current organisation, site and workflow. Publishing, closure, access and purchasing stay with a person.",
+  },
+] as const;
+
 const LEAN_BEATS = [
   {
     index: "01",
@@ -235,73 +233,393 @@ const LEAN_BEATS = [
   },
 ] as const;
 
-const WINDOW_NAV = [
-  "Gemba",
-  "Actions",
-  "Problem solving",
-  "Projects",
-  "Benefits",
+const SIGNATURE_ACTION = {
+  actionRef: "ACT-318",
+  title: "Realign the film guide and confirm the first-off pack",
+  owner: "Packing supervisor",
+  due: "Friday",
+  sourceModule: "Gemba",
+  sourceRef: "GEM-214",
+  sourceTitle: "Packaging film misaligned on Packing Line 1",
+} as const;
+
+const STORY_CHIPS = [
+  "GEM-214",
+  "ACT-318",
+  "PS-077",
+  "PRJ-042",
+  "CAP-014",
 ] as const;
 
-function HeroWorkspace() {
+function HeroActionStage() {
   return (
-    <figure className="editorial-stage">
-      <div className="editorial-window">
-        <div className="editorial-window-bar">
-          <span className="editorial-dots" aria-hidden="true">
+    <figure className="editorial-stage editorial-action-stage">
+      <div className="editorial-hero-stack">
+        <div className="editorial-hero-stack-plate" aria-hidden="true" />
+        <MarketingGembaFindingCard
+          className="editorial-hero-stack-gemba"
+          findingRef="GEM-214"
+          title="Packaging film misaligned on Packing Line 1"
+          meta="Morning Gemba walk · Packing supervisor · Packing Line 1"
+        />
+        <MarketingActionCard
+          id="signature-action-hero"
+          variant="hero"
+          className="editorial-hero-stack-action"
+          hideAuxNote
+          animateHeroStatus
+          actionRef={SIGNATURE_ACTION.actionRef}
+          title={SIGNATURE_ACTION.title}
+          owner={SIGNATURE_ACTION.owner}
+          due={SIGNATURE_ACTION.due}
+          status="Assigned"
+          statusTone="accent"
+          sourceModule={SIGNATURE_ACTION.sourceModule}
+          sourceRef={SIGNATURE_ACTION.sourceRef}
+          sourceTitle={SIGNATURE_ACTION.sourceTitle}
+          leanAiSuggestion={
+            <>
+              Confirm first-off pack photos are attached before closure. Link to
+              problem-solving case PS-077 if misalignment repeats.
+            </>
+          }
+        />
+      </div>
+      <p className="marketing-preview-aux-note editorial-hero-stack-note">
+        Example data · fictional site
+      </p>
+      <figcaption className="editorial-stage-caption">
+        The LEH Action Card carries owner, due date, source and status — from
+        floor finding to accountable follow-up.
+      </figcaption>
+    </figure>
+  );
+}
+
+function DashboardOutcomeVisual() {
+  return (
+    <figure className="editorial-dashboard-outcome">
+      <div className="editorial-dashboard-shell">
+        <div className="editorial-dashboard-chrome">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
             <i />
             <i />
             <i />
           </span>
-          <div className="editorial-window-title">
-            <LehBrand decorative variant="icon" />
-            <p>Lean Excellence Hub</p>
-          </div>
-          <StatusChip>Example</StatusChip>
+          <p className="m-0 min-w-0 flex-1 truncate text-[0.72rem] font-semibold tracking-wide text-foreground">
+            Bodmin Bakery · Operations dashboard
+          </p>
+          <StatusChip tone="connected">Example</StatusChip>
         </div>
-        <div className="editorial-window-body">
-          <nav className="editorial-nav" aria-hidden="true">
-            <p>Bodmin Bakery</p>
-            <ul>
-              {WINDOW_NAV.map((item) => (
-                <li key={item} data-current={item === "Gemba" || undefined}>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className="editorial-window-main">
-            <p className="editorial-context-kicker">
-              Harbourfield Foods Group · Bodmin Bakery · Packing
-            </p>
-            <div className="editorial-finding">
-              <div className="editorial-finding-top">
-                <p>GEM-214</p>
-                <StatusChip tone="warning">Issue</StatusChip>
-              </div>
-              <p className="editorial-finding-title">
-                Packaging film misaligned on Packing Line 1
+        <div className="editorial-dashboard-body">
+          <p className="editorial-context-kicker">
+            Stage 4 · Improve · dashboard
+          </p>
+          <div
+            className="editorial-dashboard-kpis"
+            role="group"
+            aria-label="Example operational KPIs"
+          >
+            <div className="editorial-dashboard-kpi">
+              <p className="editorial-dashboard-kpi-label">Open actions</p>
+              <p className="editorial-dashboard-kpi-value">11</p>
+              <StatusChip tone="success">ACT-318 closed</StatusChip>
+            </div>
+            <div className="editorial-dashboard-kpi">
+              <p className="editorial-dashboard-kpi-label">
+                Benefit validation
               </p>
-              <p className="editorial-finding-meta">
-                Morning Gemba walk · Packing supervisor · finding recorded
+              <p className="editorial-dashboard-kpi-value">1</p>
+              <p className="editorial-dashboard-kpi-note">
+                BEN-019 · Awaiting validation
               </p>
             </div>
-            <ul className="editorial-links">
-              {HERO_LINKS.map((link) => (
-                <li key={link.ref}>
-                  <p className="editorial-link-ref">{link.ref}</p>
-                  <p className="editorial-link-title">{link.title}</p>
-                  <p className="editorial-link-detail">{link.detail}</p>
-                  <StatusChip tone={link.tone}>{link.status}</StatusChip>
-                </li>
-              ))}
-            </ul>
+            <div className="editorial-dashboard-kpi">
+              <p className="editorial-dashboard-kpi-label">Cases in flight</p>
+              <p className="editorial-dashboard-kpi-value">4</p>
+              <p className="editorial-dashboard-kpi-note">PS-077 · Analyse</p>
+            </div>
+          </div>
+          <MarketingActionCard
+            variant="inline"
+            storyStage="Stage 2 · Act · verified on the line"
+            actionRef="ACT-318"
+            title="Realign the film guide and confirm the first-off pack"
+            owner="Packing supervisor"
+            status="Verified"
+            statusTone="success"
+            sourceModule="Gemba"
+            sourceRef="GEM-214"
+            sourceTitle="Packaging film misaligned on Packing Line 1"
+            validationNote="Action closure is shown here. Benefit record BEN-019 remains awaiting validation — forecast and realisation stay separate."
+          />
+        </div>
+      </div>
+      <figcaption className="marketing-preview-aux-note">
+        Example data · fictional site
+      </figcaption>
+    </figure>
+  );
+}
+
+function StoryEvidencePanel({ step }: { step: LineageStep }) {
+  if (step.id === "observe") {
+    return (
+      <article className="editorial-record editorial-record-gemba">
+        <div className="editorial-record-head">
+          <div>
+            <p className="editorial-record-ref">{step.ref}</p>
+            <h3>{step.recordTitle}</h3>
+          </div>
+          <StatusChip tone={step.tone}>{step.status}</StatusChip>
+        </div>
+        <div className="editorial-finding editorial-record-finding">
+          <p className="editorial-finding-meta">
+            Packing Line 1 · Photo attached · Issue recorded on walk
+          </p>
+        </div>
+        <StoryRecordMeta step={step} />
+      </article>
+    );
+  }
+
+  if (step.id === "act") {
+    return (
+      <MarketingActionCard
+        variant="story"
+        actionRef={SIGNATURE_ACTION.actionRef}
+        title={SIGNATURE_ACTION.title}
+        owner={SIGNATURE_ACTION.owner}
+        due={SIGNATURE_ACTION.due}
+        status="Assigned"
+        statusTone="accent"
+        sourceModule={SIGNATURE_ACTION.sourceModule}
+        sourceRef={SIGNATURE_ACTION.sourceRef}
+        sourceTitle={SIGNATURE_ACTION.sourceTitle}
+      />
+    );
+  }
+
+  if (step.id === "solve") {
+    return (
+      <div className="editorial-record-stack">
+        <article className="editorial-record">
+          <div className="editorial-record-head">
+            <div>
+              <p className="editorial-record-ref">{step.ref}</p>
+              <h3>{step.recordTitle}</h3>
+            </div>
+            <StatusChip tone={step.tone}>{step.status}</StatusChip>
+          </div>
+          <StoryRecordMeta step={step} />
+        </article>
+        <MarketingActionCard
+          variant="story"
+          actionRef={SIGNATURE_ACTION.actionRef}
+          title={SIGNATURE_ACTION.title}
+          owner={SIGNATURE_ACTION.owner}
+          due={SIGNATURE_ACTION.due}
+          status="In progress"
+          statusTone="warning"
+          sourceModule={SIGNATURE_ACTION.sourceModule}
+          sourceRef={SIGNATURE_ACTION.sourceRef}
+          sourceTitle={SIGNATURE_ACTION.sourceTitle}
+          leanAiSuggestion={
+            <>
+              Add a run chart for film position by changeover batch before
+              moving to countermeasures. Linked context: PS-077 · Cause
+              analysis.
+            </>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (step.id === "improve") {
+    return (
+      <div className="editorial-record-stack">
+        <article className="editorial-record">
+          <div className="editorial-record-head">
+            <div>
+              <p className="editorial-record-ref">{step.ref}</p>
+              <h3>{step.recordTitle}</h3>
+            </div>
+            <StatusChip tone={step.tone}>{step.status}</StatusChip>
+          </div>
+          <StoryRecordMeta step={step} />
+        </article>
+        <DashboardOutcomeVisual />
+      </div>
+    );
+  }
+
+  return (
+    <article className="editorial-record">
+      <div className="editorial-record-head">
+        <div>
+          <p className="editorial-record-ref">{step.ref}</p>
+          <h3>{step.recordTitle}</h3>
+        </div>
+        <StatusChip tone={step.tone}>{step.status}</StatusChip>
+      </div>
+      <StoryRecordMeta step={step} />
+      <MarketingActionCard
+        variant="inline"
+        className="editorial-record-action-tail"
+        storyStage="Stage 5 · Learn · linked action"
+        actionRef={SIGNATURE_ACTION.actionRef}
+        title={SIGNATURE_ACTION.title}
+        owner="CI manager"
+        status="Closed"
+        statusTone="success"
+        sourceModule="Project"
+        sourceRef="PRJ-042"
+        sourceTitle="Packing Line 1 film-path countermeasures"
+        validationNote="Standard CAP-014 draft references the closed action. Benefit BEN-019 is still awaiting validation."
+      />
+    </article>
+  );
+}
+
+function StoryRecordMeta({ step }: { step: LineageStep }) {
+  return (
+    <>
+      <ol className="editorial-chain" aria-label="Connected records">
+        {STORY_CHIPS.map((ref) => (
+          <li key={ref} data-current={ref === step.ref || undefined}>
+            {ref}
+          </li>
+        ))}
+      </ol>
+      <dl className="editorial-fields">
+        {step.fields.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="editorial-record-foot">
+        Same system · Harbourfield Foods Group — Bodmin Bakery · {step.module}
+      </p>
+    </>
+  );
+}
+
+function CloseFrameworkVisual() {
+  return (
+    <figure className="editorial-close-visual editorial-rise editorial-rise-delay">
+      <div className="editorial-framework-shell">
+        <div className="editorial-framework-chrome">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
+            <i />
+            <i />
+            <i />
+          </span>
+          <p className="m-0 min-w-0 flex-1 truncate text-[0.72rem] font-semibold tracking-wide text-foreground">
+            Operating model
+          </p>
+          <StatusChip className="shrink-0">Example</StatusChip>
+        </div>
+        <div className="editorial-framework-body">
+          <p className="editorial-framework-kicker">Structure</p>
+          <ol
+            className="editorial-framework-layers"
+            aria-label="Organisation structure"
+          >
+            <li className="editorial-framework-layer editorial-framework-layer-org">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Organisation</p>
+                <StatusChip tone="accent">Configured</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Harbourfield Foods Group
+              </p>
+            </li>
+            <li className="editorial-framework-layer editorial-framework-layer-site">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Sites</p>
+                <StatusChip tone="connected">Rolled out</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Bodmin Bakery · Manchester DC
+              </p>
+            </li>
+            <li className="editorial-framework-layer editorial-framework-layer-area">
+              <div className="editorial-framework-layer-head">
+                <p className="editorial-framework-layer-title">Areas</p>
+                <StatusChip tone="neutral">Scoped</StatusChip>
+              </div>
+              <p className="editorial-framework-layer-detail">
+                Packing · Goods-in · Maintenance
+              </p>
+            </li>
+          </ol>
+          <p className="editorial-framework-kicker editorial-framework-kicker-spaced">
+            Your standards & methods
+          </p>
+          <div className="editorial-framework-cards">
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Maturity model
+                  </CardTitle>
+                  <StatusChip tone="accent">Yours</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Framework</p>
+                <p className="marketing-field-value">
+                  LEH Operational Excellence Standard
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Problem solving
+                  </CardTitle>
+                  <StatusChip tone="connected">Method</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Organisation method</p>
+                <p className="marketing-field-value">
+                  The organisation&apos;s chosen method (example: A3 · DMAIC ·
+                  8D)
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
+              <CardHeader className="gap-1 p-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold sm:text-sm">
+                    Standards library
+                  </CardTitle>
+                  <StatusChip tone="connected">Aligned</StatusChip>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="marketing-field-label">Work standards</p>
+                <p className="marketing-field-value">
+                  Packing changeover · Goods-in 5S · Film path control
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-      <figcaption>
-        Illustrative workspace. Harbourfield Foods Group — Bodmin Bakery is a
-        fictional site.
+      <figcaption className="marketing-preview-aux-note">
+        Example data · fictional site
       </figcaption>
     </figure>
   );
@@ -316,7 +634,7 @@ function FindingStory() {
   }
 
   return (
-    <div className="editorial-story">
+    <div className="editorial-story editorial-story-shell">
       <ol className="editorial-lineage">
         {LINEAGE.map((step) => {
           const selected = step.id === active.id;
@@ -341,42 +659,14 @@ function FindingStory() {
         })}
       </ol>
 
-      <article
+      <div
         id="finding-record"
-        className="editorial-record"
+        className="editorial-story-evidence"
         aria-labelledby={`finding-step-${active.id}`}
         key={active.id}
       >
-        <div className="editorial-record-head">
-          <div>
-            <p className="editorial-record-ref">{active.ref}</p>
-            <h3>{active.recordTitle}</h3>
-          </div>
-          <StatusChip tone={active.tone}>{active.status}</StatusChip>
-        </div>
-        <ol className="editorial-chain" aria-label="Connected records">
-          {LINEAGE.map((step) => (
-            <li
-              key={step.ref}
-              data-current={step.id === active.id || undefined}
-            >
-              {step.ref}
-            </li>
-          ))}
-        </ol>
-        <dl className="editorial-fields">
-          {active.fields.map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="editorial-record-foot">
-          Same system · Harbourfield Foods Group — Bodmin Bakery ·{" "}
-          {active.module}
-        </p>
-      </article>
+        <StoryEvidencePanel step={active} />
+      </div>
     </div>
   );
 }
@@ -399,21 +689,28 @@ export function EditorialHome() {
                 organisational learning in one platform built around your
                 standards.
               </p>
-              <div className="editorial-actions">
+              <div className="editorial-actions editorial-hero-actions">
                 <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="editorial-hero-tertiary"
+                >
                   <a href="#platform">
                     Explore the platform
                     <ArrowRight aria-hidden="true" className="size-4" />
                   </a>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/signup">Create an account</Link>
-                </Button>
               </div>
             </div>
-            <div className="editorial-rise editorial-rise-delay">
-              <HeroWorkspace />
-            </div>
+            <ScrollReveal className="editorial-rise editorial-rise-delay" delay>
+              <HeroActionStage />
+            </ScrollReveal>
           </div>
           <p className="editorial-principle">
             <strong>One connected platform.</strong>
@@ -422,7 +719,28 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="why" className="editorial-section editorial-band">
+      <section
+        className="editorial-statement editorial-statement-connected"
+        aria-label="Positioning statement"
+      >
+        <MarketingContainer wide>
+          <ScrollReveal>
+            <p className="editorial-statement-text">
+              Operational excellence.{" "}
+              <span className="editorial-statement-accent">Connected.</span>
+            </p>
+            <p className="editorial-statement-sub">
+              One spine of evidence — from the floor, through LeanAI, into owned
+              actions, to verified results on the dashboard.
+            </p>
+          </ScrollReveal>
+        </MarketingContainer>
+      </section>
+
+      <section
+        id="why"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-section-head">
             <p className="marketing-kicker">From one finding</p>
@@ -440,11 +758,55 @@ export function EditorialHome() {
               savings are shown.
             </p>
           </div>
-          <FindingStory />
+          <ScrollReveal>
+            <FindingStory />
+          </ScrollReveal>
         </MarketingContainer>
       </section>
 
-      <section id="platform" className="editorial-section">
+      <section
+        className="editorial-statement editorial-statement-evidence"
+        aria-label="Product evidence"
+      >
+        <MarketingContainer>
+          <ScrollReveal delay>
+            <div className="editorial-statement-grid">
+              <div className="editorial-statement-copy">
+                <p className="marketing-kicker">The Action Card</p>
+                <h2 className="editorial-heading editorial-statement-heading">
+                  Accountability you can see on the floor and on the dashboard.
+                </h2>
+                <p className="editorial-lede">
+                  The same object carries owner, due date, linked source and
+                  status whether it started on a Gemba walk, a 5S audit or a
+                  problem-solving case.
+                </p>
+                <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+              </div>
+              <MarketingActionCard
+                variant="story"
+                className="editorial-action-card-parallax"
+                actionRef={SIGNATURE_ACTION.actionRef}
+                title={SIGNATURE_ACTION.title}
+                owner={SIGNATURE_ACTION.owner}
+                due={SIGNATURE_ACTION.due}
+                status="Assigned"
+                statusTone="accent"
+                sourceModule={SIGNATURE_ACTION.sourceModule}
+                sourceRef={SIGNATURE_ACTION.sourceRef}
+                sourceTitle={SIGNATURE_ACTION.sourceTitle}
+              />
+            </div>
+          </ScrollReveal>
+        </MarketingContainer>
+      </section>
+
+      <section
+        id="platform"
+        className="editorial-section editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-section-head">
             <p className="marketing-kicker">The platform</p>
@@ -464,7 +826,7 @@ export function EditorialHome() {
               Scheduling and recognition are part of the same operating system.
             </p>
           </div>
-          <ol className="editorial-modules">
+          <ol className="editorial-modules editorial-modules-premium">
             {MODULES.map((module, index) => (
               <li key={module.id} className="editorial-module">
                 <div className="editorial-module-copy">
@@ -481,7 +843,10 @@ export function EditorialHome() {
         </MarketingContainer>
       </section>
 
-      <section id="leanai" className="editorial-section editorial-band">
+      <section
+        id="leanai"
+        className="editorial-section editorial-band editorial-section-premium"
+      >
         <MarketingContainer>
           <div className="editorial-lean">
             <div className="editorial-section-head">
@@ -507,74 +872,157 @@ export function EditorialHome() {
               </ol>
             </div>
 
-            <figure className="editorial-assistant">
-              <div className="marketing-preview">
-                <div className="marketing-preview-chrome">
-                  <p className="marketing-preview-title">LeanAI</p>
-                  <StatusChip tone="accent">Contextual assistant</StatusChip>
-                </div>
-                <div className="marketing-preview-body">
-                  <p className="editorial-label">Context</p>
-                  <ol className="editorial-context-path">
-                    <li>Harbourfield Foods Group</li>
-                    <li>Bodmin Bakery</li>
-                    <li>Gemba</li>
-                    <li>GEM-214</li>
-                  </ol>
-                  <p className="editorial-label">Recommendation</p>
-                  <p className="editorial-recommend">
-                    Link the Gemba finding to an owned action before the next
-                    walk.
-                  </p>
-                  <div className="marketing-governance">
-                    <p className="editorial-label">Governance</p>
-                    <p className="editorial-authority">
-                      A person reviews. A person decides.
+            <div className="editorial-lean-visuals">
+              <figure className="editorial-assistant">
+                <div className="marketing-preview marketing-preview-product">
+                  <ProductVignetteChrome
+                    title="LeanAI"
+                    route="/platform · Assistant · GEM-214"
+                    badge={
+                      <StatusChip tone="accent">
+                        Contextual assistant
+                      </StatusChip>
+                    }
+                  />
+                  <div className="marketing-preview-body">
+                    <p className="editorial-label">Context</p>
+                    <ol className="editorial-context-path">
+                      <li>Harbourfield Foods Group</li>
+                      <li>Bodmin Bakery</li>
+                      <li>Gemba</li>
+                      <li>GEM-214</li>
+                    </ol>
+                    <p className="editorial-label">Recommendation</p>
+                    <p className="editorial-recommend">
+                      Link the Gemba finding to an owned action before the next
+                      walk.
                     </p>
-                    <p>
-                      LeanAI does not publish frameworks, close actions, grant
-                      access or purchase site capacity.
-                    </p>
+                    <div className="marketing-governance">
+                      <p className="editorial-label">Governance</p>
+                      <p className="editorial-authority">
+                        A person reviews. A person decides.
+                      </p>
+                      <p>
+                        LeanAI does not publish frameworks, close actions, grant
+                        access or purchase site capacity.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <figcaption>
-                Illustrative assistance inside an open record. LeanAI does not
-                publish standards or decide on its own.
-              </figcaption>
-            </figure>
+                <p className="marketing-preview-aux-note">
+                  Example data · fictional site
+                </p>
+                <figcaption>
+                  Illustrative assistance inside an open record. LeanAI does not
+                  publish standards or decide on its own.
+                </figcaption>
+              </figure>
+              <ScrollReveal delay>
+                <MarketingActionCard
+                  variant="story"
+                  actionRef={SIGNATURE_ACTION.actionRef}
+                  title={SIGNATURE_ACTION.title}
+                  owner={SIGNATURE_ACTION.owner}
+                  due={SIGNATURE_ACTION.due}
+                  status="In progress"
+                  statusTone="warning"
+                  sourceModule={SIGNATURE_ACTION.sourceModule}
+                  sourceRef={SIGNATURE_ACTION.sourceRef}
+                  sourceTitle={SIGNATURE_ACTION.sourceTitle}
+                  leanAiSuggestion={
+                    <>
+                      Link the Gemba finding to an owned action before the next
+                      walk. Context: GEM-214 · Packing Line 1.
+                    </>
+                  }
+                />
+              </ScrollReveal>
+            </div>
           </div>
         </MarketingContainer>
       </section>
 
-      <section id="close" className="editorial-section editorial-close">
+      <section id="faq" className="editorial-section editorial-section-premium">
         <MarketingContainer>
-          <p className="marketing-kicker">Your system</p>
-          <h2 className="editorial-display editorial-close-title">
-            Your framework. Your standards. Your way of working.
-          </h2>
-          <p className="editorial-close-platform">One connected platform.</p>
-          <p className="editorial-lede">
-            LEH supplies the engine, not the doctrine. One site can start. The
-            same framework, standards and permissions extend across the
-            organisation.
-          </p>
-          <div className="editorial-actions">
-            <Button asChild className="marketing-cta">
-              <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/signup">Create an account</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/login">Sign in</Link>
-            </Button>
+          <div className="editorial-section-head">
+            <p className="marketing-kicker">FAQ</p>
+            <h2 className="editorial-heading">
+              Straight answers — no invented proof
+            </h2>
+            <p className="editorial-lede">
+              Common questions about this page and how to try the product. No
+              customer metrics or logos appear here.
+            </p>
           </div>
-          <p className="editorial-note">
-            Book a live demo opens the demonstration page. A meeting is
-            confirmed only after the scheduling provider accepts the time you
-            choose.
-          </p>
+          <div className="editorial-faq">
+            {FAQ_ITEMS.map((item) => (
+              <details
+                key={item.id}
+                id={item.id}
+                className="editorial-faq-item group border border-border/80 bg-elevated/90"
+              >
+                <summary className="cursor-pointer list-none px-4 py-3.5 text-left text-sm font-semibold text-foreground ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-5 sm:py-4 sm:text-[0.9375rem] [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                </summary>
+                <div className="border-t border-border/60 px-4 pt-0 pb-4 sm:px-5 sm:pb-5">
+                  <p className="m-0 pt-3 text-sm leading-relaxed text-muted-foreground">
+                    {item.a}
+                  </p>
+                  {item.id === "faq-demo" ? (
+                    <p className="mt-3 text-sm">
+                      <Link
+                        href="/demo"
+                        className="font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                      >
+                        {DEMO_BOOKING_CTA}
+                      </Link>
+                    </p>
+                  ) : null}
+                </div>
+              </details>
+            ))}
+          </div>
+        </MarketingContainer>
+      </section>
+
+      <section
+        id="close"
+        className="editorial-section editorial-close editorial-close-premium"
+      >
+        <MarketingContainer>
+          <div className="editorial-close-grid">
+            <div className="editorial-close-copy editorial-rise">
+              <p className="marketing-kicker">Your system</p>
+              <h2 className="editorial-display editorial-close-title">
+                Your framework. Your standards. Your way of working.
+              </h2>
+              <p className="editorial-close-platform">
+                One connected platform.
+              </p>
+              <p className="editorial-lede">
+                LEH supplies the engine, not the doctrine. One site can start.
+                The same framework, standards and permissions extend across the
+                organisation.
+              </p>
+              <div className="editorial-actions">
+                <Button asChild className="marketing-cta">
+                  <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/signup">Create an account</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+              </div>
+              <p className="editorial-note">
+                Book a live demo opens the demonstration page. A meeting is
+                confirmed only after the scheduling provider accepts the time
+                you choose.
+              </p>
+            </div>
+            <CloseFrameworkVisual />
+          </div>
         </MarketingContainer>
       </section>
     </div>
