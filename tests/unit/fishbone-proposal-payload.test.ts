@@ -11,9 +11,9 @@ describe("fishbone_cause proposal payload", () => {
     expect(motherNature.success).toBe(true);
     expect(motherNature.success).toBe(true);
     if (!motherNature.success) return;
-    expect(
-      (motherNature.data as { category: string }).category,
-    ).toBe("environment");
+    expect((motherNature.data as { category: string }).category).toBe(
+      "environment",
+    );
 
     const people = safeValidateProposalPayload("fishbone_cause", {
       label: "Shift handover gaps",

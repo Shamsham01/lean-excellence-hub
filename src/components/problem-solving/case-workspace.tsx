@@ -129,11 +129,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     tone: "default" | "error";
   } | null>(null);
   const [movingStage, setMovingStage] = useState(false);
-  const initialCopilotPrefs =
-    readPpsCopilotPreference(detail.id) ?? {
-      mobileOpen: false,
-      dockCollapsed: false,
-    };
+  const initialCopilotPrefs = readPpsCopilotPreference(detail.id) ?? {
+    mobileOpen: false,
+    dockCollapsed: false,
+  };
   const [copilotCollapsed, setCopilotCollapsed] = useState(
     initialCopilotPrefs.dockCollapsed,
   );
@@ -635,7 +634,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         {!isMobileViewport ? (
           <div
             data-testid="pps-lean-ai-dock"
-            className="hidden min-h-0 min-w-0 max-w-full shrink-0 overflow-x-hidden lg:flex"
+            className="hidden min-h-0 max-w-full min-w-0 shrink-0 overflow-x-hidden lg:flex"
           >
             {copilot}
           </div>

@@ -14,7 +14,9 @@ const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 const FISHBONE_CAUSE_LABEL = "Guide roller wear after heat soak";
 
-async function expectNoHorizontalOverflow(page: import("@playwright/test").Page) {
+async function expectNoHorizontalOverflow(
+  page: import("@playwright/test").Page,
+) {
   const overflow = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
@@ -32,7 +34,9 @@ async function openActiveCaseFishboneStage(
   await page.getByTestId("create-case-title").fill(title);
   await wizard.getByTestId("case-unit-select").selectOption({ index: 1 });
   await wizard.getByTestId("create-case-owner").selectOption({ index: 1 });
-  await wizard.getByTestId("create-case-facilitator").selectOption({ index: 1 });
+  await wizard
+    .getByTestId("create-case-facilitator")
+    .selectOption({ index: 1 });
   await wizard.getByRole("button", { name: "Next", exact: true }).click();
   await wizard
     .getByLabel("Problem statement")

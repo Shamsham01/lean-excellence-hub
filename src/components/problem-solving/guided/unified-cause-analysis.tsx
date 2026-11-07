@@ -126,22 +126,22 @@ export function UnifiedCauseAnalysis({
 
   return (
     <div
-      className="flex min-w-0 max-w-full flex-col gap-6 overflow-x-hidden"
+      className="flex max-w-full min-w-0 flex-col gap-6 overflow-x-hidden"
       data-testid="pps-unified-cause-analysis"
     >
       <FiveWhyGuidedChain analyses={analyses} analysisNodes={analysisNodes} />
 
-      <Card className="min-w-0 max-w-full">
+      <Card className="max-w-full min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Fishbone (6M)</CardTitle>
         </CardHeader>
-        <CardContent className="grid min-w-0 max-w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="grid max-w-full min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {HYPOTHESIS_CATEGORIES.map((category) => {
             const nodes = nodesByCategory.get(category) ?? [];
             return (
               <div
                 key={category}
-                className="min-w-0 max-w-full rounded-lg border bg-muted/20 p-3"
+                className="max-w-full min-w-0 rounded-lg border bg-muted/20 p-3"
                 data-testid={`pps-fishbone-${category}`}
               >
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -156,7 +156,7 @@ export function UnifiedCauseAnalysis({
                     nodes.map((node) => (
                       <li
                         key={node.id}
-                        className="min-w-0 max-w-full rounded-md border bg-background p-2 text-sm"
+                        className="max-w-full min-w-0 rounded-md border bg-background p-2 text-sm"
                       >
                         <p className="break-words">{node.label}</p>
                         {(canManage || canContribute) && !node.hypothesis_id ? (

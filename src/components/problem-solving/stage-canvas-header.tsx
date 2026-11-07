@@ -39,7 +39,7 @@ export function StageCanvasHeader({
 
   return (
     <div
-      className="flex min-w-0 max-w-full flex-wrap items-start justify-between gap-3"
+      className="flex max-w-full min-w-0 flex-wrap items-start justify-between gap-3"
       data-testid="pps-stage-canvas-header"
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -95,18 +95,18 @@ export function StageCanvasHeader({
             {leanAiOpen ? "Hide Lean AI" : "Lean AI"}
           </Button>
         ) : null}
-      {!isViewingCurrentStage && canMoveStage && onAdvanceToViewedStage ? (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={advancing}
-          data-testid="pps-advance-to-viewed-stage"
-          onClick={onAdvanceToViewedStage}
-        >
-          {advancing ? "Updating…" : "Set as current stage"}
-        </Button>
-      ) : null}
+        {!isViewingCurrentStage && canMoveStage && onAdvanceToViewedStage ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={advancing}
+            data-testid="pps-advance-to-viewed-stage"
+            onClick={onAdvanceToViewedStage}
+          >
+            {advancing ? "Updating…" : "Set as current stage"}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

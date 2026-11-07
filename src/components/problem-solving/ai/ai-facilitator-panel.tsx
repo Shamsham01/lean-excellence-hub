@@ -349,7 +349,7 @@ export function AiFacilitatorPanel({
       data-testid="lean-ai-panel"
       aria-label="Lean AI copilot"
     >
-      <div className="flex min-w-0 max-w-full shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+      <div className="flex max-w-full min-w-0 shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           {layout === "card" ? (
             <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
@@ -465,7 +465,7 @@ export function AiFacilitatorPanel({
           ) : null}
         </div>
 
-        <div className="min-w-0 max-w-full shrink-0 border-t border-border bg-card p-3">
+        <div className="max-w-full min-w-0 shrink-0 border-t border-border bg-card p-3">
           <Textarea
             ref={draftInputRef}
             data-testid="lean-ai-input"

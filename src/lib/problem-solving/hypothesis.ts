@@ -100,7 +100,10 @@ const FISHBONE_CATEGORY_ALIAS_KEYS: Record<string, HypothesisCategory> = {
 };
 
 function fishboneAliasLookupKey(raw: string): string {
-  const compact = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  const compact = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_");
   return compact.replace(/^_+|_+$/g, "");
 }
 
