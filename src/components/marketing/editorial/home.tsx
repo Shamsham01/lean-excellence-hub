@@ -243,7 +243,13 @@ const SIGNATURE_ACTION = {
   sourceTitle: "Packaging film misaligned on Packing Line 1",
 } as const;
 
-const STORY_CHIPS = ["GEM-214", "ACT-318", "PS-077", "PRJ-042", "CAP-014"] as const;
+const STORY_CHIPS = [
+  "GEM-214",
+  "ACT-318",
+  "PS-077",
+  "PRJ-042",
+  "CAP-014",
+] as const;
 
 function HeroActionStage() {
   return (
@@ -323,7 +329,9 @@ function DashboardOutcomeVisual() {
               <StatusChip tone="success">ACT-318 closed</StatusChip>
             </div>
             <div className="editorial-dashboard-kpi">
-              <p className="editorial-dashboard-kpi-label">Benefit validation</p>
+              <p className="editorial-dashboard-kpi-label">
+                Benefit validation
+              </p>
               <p className="editorial-dashboard-kpi-value">1</p>
               <p className="editorial-dashboard-kpi-note">
                 BEN-019 · Awaiting validation
@@ -422,7 +430,8 @@ function StoryEvidencePanel({ step }: { step: LineageStep }) {
           leanAiSuggestion={
             <>
               Add a run chart for film position by changeover batch before
-              moving to countermeasures. Linked context: PS-077 · Cause analysis.
+              moving to countermeasures. Linked context: PS-077 · Cause
+              analysis.
             </>
           }
         />
@@ -864,68 +873,70 @@ export function EditorialHome() {
             </div>
 
             <div className="editorial-lean-visuals">
-            <figure className="editorial-assistant">
-              <div className="marketing-preview marketing-preview-product">
-                <ProductVignetteChrome
-                  title="LeanAI"
-                  route="/platform · Assistant · GEM-214"
-                  badge={
-                    <StatusChip tone="accent">Contextual assistant</StatusChip>
-                  }
-                />
-                <div className="marketing-preview-body">
-                  <p className="editorial-label">Context</p>
-                  <ol className="editorial-context-path">
-                    <li>Harbourfield Foods Group</li>
-                    <li>Bodmin Bakery</li>
-                    <li>Gemba</li>
-                    <li>GEM-214</li>
-                  </ol>
-                  <p className="editorial-label">Recommendation</p>
-                  <p className="editorial-recommend">
-                    Link the Gemba finding to an owned action before the next
-                    walk.
-                  </p>
-                  <div className="marketing-governance">
-                    <p className="editorial-label">Governance</p>
-                    <p className="editorial-authority">
-                      A person reviews. A person decides.
+              <figure className="editorial-assistant">
+                <div className="marketing-preview marketing-preview-product">
+                  <ProductVignetteChrome
+                    title="LeanAI"
+                    route="/platform · Assistant · GEM-214"
+                    badge={
+                      <StatusChip tone="accent">
+                        Contextual assistant
+                      </StatusChip>
+                    }
+                  />
+                  <div className="marketing-preview-body">
+                    <p className="editorial-label">Context</p>
+                    <ol className="editorial-context-path">
+                      <li>Harbourfield Foods Group</li>
+                      <li>Bodmin Bakery</li>
+                      <li>Gemba</li>
+                      <li>GEM-214</li>
+                    </ol>
+                    <p className="editorial-label">Recommendation</p>
+                    <p className="editorial-recommend">
+                      Link the Gemba finding to an owned action before the next
+                      walk.
                     </p>
-                    <p>
-                      LeanAI does not publish frameworks, close actions, grant
-                      access or purchase site capacity.
-                    </p>
+                    <div className="marketing-governance">
+                      <p className="editorial-label">Governance</p>
+                      <p className="editorial-authority">
+                        A person reviews. A person decides.
+                      </p>
+                      <p>
+                        LeanAI does not publish frameworks, close actions, grant
+                        access or purchase site capacity.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <p className="marketing-preview-aux-note">
-                Example data · fictional site
-              </p>
-              <figcaption>
-                Illustrative assistance inside an open record. LeanAI does not
-                publish standards or decide on its own.
-              </figcaption>
-            </figure>
-            <ScrollReveal delay>
-              <MarketingActionCard
-                variant="story"
-                actionRef={SIGNATURE_ACTION.actionRef}
-                title={SIGNATURE_ACTION.title}
-                owner={SIGNATURE_ACTION.owner}
-                due={SIGNATURE_ACTION.due}
-                status="In progress"
-                statusTone="warning"
-                sourceModule={SIGNATURE_ACTION.sourceModule}
-                sourceRef={SIGNATURE_ACTION.sourceRef}
-                sourceTitle={SIGNATURE_ACTION.sourceTitle}
-                leanAiSuggestion={
-                  <>
-                    Link the Gemba finding to an owned action before the next
-                    walk. Context: GEM-214 · Packing Line 1.
-                  </>
-                }
-              />
-            </ScrollReveal>
+                <p className="marketing-preview-aux-note">
+                  Example data · fictional site
+                </p>
+                <figcaption>
+                  Illustrative assistance inside an open record. LeanAI does not
+                  publish standards or decide on its own.
+                </figcaption>
+              </figure>
+              <ScrollReveal delay>
+                <MarketingActionCard
+                  variant="story"
+                  actionRef={SIGNATURE_ACTION.actionRef}
+                  title={SIGNATURE_ACTION.title}
+                  owner={SIGNATURE_ACTION.owner}
+                  due={SIGNATURE_ACTION.due}
+                  status="In progress"
+                  statusTone="warning"
+                  sourceModule={SIGNATURE_ACTION.sourceModule}
+                  sourceRef={SIGNATURE_ACTION.sourceRef}
+                  sourceTitle={SIGNATURE_ACTION.sourceTitle}
+                  leanAiSuggestion={
+                    <>
+                      Link the Gemba finding to an owned action before the next
+                      walk. Context: GEM-214 · Packing Line 1.
+                    </>
+                  }
+                />
+              </ScrollReveal>
             </div>
           </div>
         </MarketingContainer>

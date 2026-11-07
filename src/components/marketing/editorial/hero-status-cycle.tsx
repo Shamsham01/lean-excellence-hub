@@ -22,7 +22,11 @@ export function HeroStatusCycle() {
   }, []);
 
   return (
-    <div className="editorial-hero-status-cycle" role="status" aria-live="polite">
+    <div
+      className="editorial-hero-status-cycle"
+      role="status"
+      aria-live="polite"
+    >
       {status === "Assigned" ? (
         <StatusChip tone="accent">Assigned</StatusChip>
       ) : (
