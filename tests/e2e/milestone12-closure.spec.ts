@@ -147,10 +147,12 @@ test.describe("Milestone 12 closure", () => {
       "Please propose hypothesis for the hot-running defect pattern.",
     );
     await sendLeanAiPrompt(page);
-    await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
+    const hypothesisProposal =
+      leanAiPanel(page).getByTestId("ai-proposal-card");
+    await expect(hypothesisProposal).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("ai-proposal-accept").first().click();
+    await leanAiPanel(page).getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
@@ -175,10 +177,12 @@ test.describe("Milestone 12 closure", () => {
       "Please propose containment for suspect hot-running batches.",
     );
     await sendLeanAiPrompt(page);
-    await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
+    const containmentProposal =
+      leanAiPanel(page).getByTestId("ai-proposal-card");
+    await expect(containmentProposal).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("ai-proposal-accept").first().click();
+    await leanAiPanel(page).getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
@@ -205,10 +209,12 @@ test.describe("Milestone 12 closure", () => {
       "Please propose condition for the measured hot-running gap.",
     );
     await sendLeanAiPrompt(page);
-    await expect(page.getByTestId("ai-proposal-card").first()).toBeVisible({
+    const currentConditionProposal =
+      leanAiPanel(page).getByTestId("ai-proposal-card");
+    await expect(currentConditionProposal).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("ai-proposal-accept").first().click();
+    await leanAiPanel(page).getByTestId("ai-proposal-accept").click();
     await expect(page.getByText("Proposal accepted.")).toBeVisible({
       timeout: 15_000,
     });
