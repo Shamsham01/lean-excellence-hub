@@ -37,8 +37,8 @@ describe("PlatformOwnerNotificationBell", () => {
     expect(
       screen.getByRole("button", { name: /Alerts, 2 unread/i }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("platform-owner-notification-count")).toHaveTextContent(
-      "2",
-    );
+    expect(
+      screen.getByTestId("platform-owner-notification-count"),
+    ).toHaveTextContent("2");
   });
 });

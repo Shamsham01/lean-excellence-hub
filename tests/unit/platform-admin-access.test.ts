@@ -110,7 +110,10 @@ describe("platform admin in-app snapshot", () => {
           },
         ],
       }),
-    ).toMatchObject({ unread_count: 1, items: [{ title: "Organisation founded" }] });
+    ).toMatchObject({
+      unread_count: 1,
+      items: [{ title: "Organisation founded" }],
+    });
   });
 });
 

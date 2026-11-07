@@ -112,7 +112,7 @@ export function PlatformOwnerNotificationBell({
                     });
                   }}
                 >
-                  <span className="text-sm font-medium leading-snug">
+                  <span className="text-sm leading-snug font-medium">
                     {item.title}
                   </span>
                   {item.body ? (
