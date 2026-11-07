@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
 import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
@@ -11,6 +11,10 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
 const createAction = vi.mocked(createMaturityAction);
 
 describe("AssessmentActionForm context", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     createAction.mockReset();
     createAction.mockResolvedValue({ actionId: "action-99" });
