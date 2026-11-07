@@ -48,8 +48,15 @@ functions stop at **60 seconds** and that limit is not configurable. Problem Sol
 provider retries (`maxRetries: 0`) and races the provider call against the turn budget so a
 timeout can still call `fail_ai_run` before the host kills the process. The OpenAI SDK otherwise
 retries a connection timeout, and that second attempt is what leaves `ai_runs.status = running`
-with no usage row. Bounded tool iterations, context size, and response size. Timeout fails safely;
+with no usage row. Execution claims expire after 70 seconds in PostgreSQL (`claim_ai_run_execution`
+and case-scoped stale recovery) so abandoned rows settle to a terminal status instead of blocking
+the next turn. Bounded tool iterations, context size, and response size. Timeout fails safely;
 core domains continue without AI.
+
+If synchronous Server Actions cannot reliably cover long tool loops, the minimal follow-up is an
+async turn: keep `start_ai_run` + claim in the action, enqueue provider work with a durable lease,
+and let the client poll `reconcileProblemSolvingAiTurn` until `finish_ai_run` or `fail_ai_run`.
+That split is documented here only; M12 does not implement a background worker.
 
 ### Usage ledger
 

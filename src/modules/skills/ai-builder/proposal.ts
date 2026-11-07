@@ -14,6 +14,17 @@ import {
   SKILLS_BUILDER_LIMITS as LIMITS,
   type SkillsBuilderProposal,
 } from "./types";
+import { normalizeSkillsBuilderProviderEnvelope } from "./normalize-envelope";
+
+export function formatSkillsEnvelopeParseIssues(error: z.ZodError): string[] {
+  return error.issues.slice(0, 8).map((issue) => {
+    const path =
+      issue.path.length > 0
+        ? issue.path.map((segment) => String(segment)).join(".")
+        : "root";
+    return `${issue.code}@${path}`;
+  });
+}
 
 function requirePresent(
   result: { ok: true; value: string | null } | { ok: false; issue: string },
@@ -76,23 +87,19 @@ const understandingSchema = z
   })
   .strict();
 
-export const rawSkillsBuilderEnvelopeSchema = z
-  .object({
-    message: z.string(),
-    phase: z.enum(["discovery", "proposal"]),
-    understanding: understandingSchema,
-    questions: z.array(
-      z
-        .object({
-          question: z.string(),
-          suggested_answers: z.array(z.string()),
-        })
-        .strict(),
-    ),
-    change_summary: z.array(z.string()),
-    proposal: rawSkillsBuilderProposalSchema.nullable(),
-  })
-  .strict();
+export const rawSkillsBuilderEnvelopeSchema = z.object({
+  message: z.string(),
+  phase: z.enum(["discovery", "proposal"]),
+  understanding: understandingSchema,
+  questions: z.array(
+    z.object({
+      question: z.string(),
+      suggested_answers: z.array(z.string()),
+    }),
+  ),
+  change_summary: z.array(z.string()),
+  proposal: rawSkillsBuilderProposalSchema.nullable(),
+});
 
 const FORBIDDEN_PROPOSAL =
   /assessment|competent employee|grant permission|publish now|employee id/i;
@@ -269,11 +276,13 @@ export function parseSkillsBuilderEnvelope(value: unknown):
       };
     }
   | { ok: false; issues: string[] } {
-  const parsed = rawSkillsBuilderEnvelopeSchema.safeParse(value);
+  const parsed = rawSkillsBuilderEnvelopeSchema.safeParse(
+    normalizeSkillsBuilderProviderEnvelope(value),
+  );
   if (!parsed.success) {
     return {
       ok: false,
-      issues: ["LeanAI returned an unexpected Skills proposal."],
+      issues: formatSkillsEnvelopeParseIssues(parsed.error),
     };
   }
   const message = requirePresent(boundedText(parsed.data.message, 2000, true));

@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(13);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -136,6 +136,72 @@ select is(
   public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run')),
   'timed_out',
   'a timed-out run is not claimed again'
+);
+
+insert into ai_claim_ids (key, id)
+select 'ai_run_lease', public.start_ai_run(
+  (select id from ai_claim_ids where key = 'ai_session'),
+  'Lease expiry check.',
+  'ai-claim-run-lease',
+  'fake',
+  'fake-model',
+  'problem_solving_facilitator',
+  'v5',
+  'hash-claim-lease'
+);
+
+select is(
+  public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run_lease')),
+  'claimed',
+  'lease test run is claimed'
+);
+
+reset role;
+update public.ai_runs
+set execution_claimed_at = statement_timestamp() - interval '120 seconds',
+    provider_dispatched_at = statement_timestamp() - interval '110 seconds'
+where id = (select id from ai_claim_ids where key = 'ai_run_lease');
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"a1600000-0000-0000-0000-000000000001","role":"authenticated","session_id":"a1610000-0000-0000-0000-000000000001","email":"ai-claim-owner@example.test"}',
+  true
+);
+set local role authenticated;
+select public.switch_organisation((select id from ai_claim_ids where key = 'organisation'));
+
+select is(
+  public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run_lease')),
+  'failed',
+  'an expired execution lease is settled instead of staying in progress'
+);
+
+select is(
+  (
+    select status from public.ai_runs
+    where id = (select id from ai_claim_ids where key = 'ai_run_lease')
+  ),
+  'failed',
+  'expired lease recovery writes a terminal status'
+);
+
+select is(
+  (
+    select error_category
+    from public.ai_runs
+    where id = (select id from ai_claim_ids where key = 'ai_run_lease')
+  ),
+  'interrupted_unknown_billing',
+  'expired lease with dispatch evidence records billing uncertainty'
+);
+
+select is(
+  (
+    select completed_at is not null
+    from public.ai_runs
+    where id = (select id from ai_claim_ids where key = 'ai_run_lease')
+  ),
+  true,
+  'expired lease recovery sets completed_at'
 );
 
 insert into ai_claim_ids (key, id)
