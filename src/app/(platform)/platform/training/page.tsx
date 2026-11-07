@@ -1,5 +1,6 @@
 import { GraduationCap } from "lucide-react";
 
+import { EmptyState } from "@/components/platform/empty-state";
 import { MetricCard } from "@/components/platform/metric-card";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
@@ -90,6 +91,19 @@ export default async function TrainingOverviewPage() {
 
       {activeSiteName ? (
         <TrainingCatalogueScopeNote siteName={activeSiteName} />
+      ) : null}
+
+      {canManageCatalog &&
+      courses.length === 0 &&
+      (compliance === 0 || compliance === null) &&
+      outstanding === 0 ? (
+        <EmptyState
+          title="Training compliance starts with your catalogue"
+          description="Add at least one active course, then assign requirements through curriculum. Compliance stays at 0% until people have assigned training."
+          actionLabel="Add your first course"
+          actionHref="/platform/training/courses?new=1"
+          icon={<GraduationCap className="size-5 text-primary" aria-hidden />}
+        />
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

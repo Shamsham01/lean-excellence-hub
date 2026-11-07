@@ -16,6 +16,9 @@ const DEMO_METHODOLOGY_NAME = DEMO_CI_METHODOLOGIES[0].name;
 async function openProjectsHub(page: Page) {
   await page.goto("/platform/projects");
   await expect(page.getByTestId("projects-portfolio")).toBeVisible();
+  await expect(page.getByTestId("projects-portfolio-skeleton")).toHaveCount(0, {
+    timeout: 30_000,
+  });
 }
 
 async function openBenefitsHub(page: Page) {
@@ -81,7 +84,8 @@ test.describe("NAV-CLICK-001 Projects and Benefits navigation", () => {
 
     await openProjectsHub(page);
     const projectRow = page
-      .getByRole("link", { name: new RegExp(DEMO_PROJECT_TITLE) })
+      .locator('[data-testid^="project-portfolio-item-"]')
+      .filter({ hasText: DEMO_PROJECT_TITLE })
       .first();
     await expect(projectRow).toBeVisible();
     const projectHref = await projectRow.getAttribute("href");

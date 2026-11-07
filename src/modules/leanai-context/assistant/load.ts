@@ -27,6 +27,7 @@ import { buildMaturityAuthoringState } from "./maturity-state";
 import { buildMaturityAssessmentAssistantState } from "./maturity-assessment-state";
 import {
   conversationUnavailableCopy,
+  leanAiConversationUnavailableCta,
   starterPromptsForAccess,
 } from "./guidance-for-access";
 import { assistantPageDefinitionFor } from "./product-pages";
@@ -44,6 +45,58 @@ export type AssistantRouteInput = {
   pathname: string;
   search?: string;
 };
+
+async function membershipHasOrganisationOwnerGrant(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  organisationId: string,
+  membershipId: string,
+): Promise<boolean> {
+  const { data: grants, error } = await supabase
+    .from("access_grants")
+    .select(
+      "id, role_versions!inner(status, roles!inner(is_owner_role, status))",
+    )
+    .eq("organisation_id", organisationId)
+    .eq("status", "active")
+    .eq("scope_type", "organisation")
+    .eq("grantee_membership_id", membershipId);
+
+  if (error) {
+    return false;
+  }
+
+  return (grants ?? []).some((grant) => {
+    const roleVersion = grant.role_versions as {
+      status: string;
+      roles: { is_owner_role: boolean; status: string };
+    } | null;
+    return (
+      roleVersion?.status === "published" &&
+      roleVersion.roles?.is_owner_role === true &&
+      roleVersion.roles?.status === "active"
+    );
+  });
+}
+
+/**
+ * Organisation owners should have LeanAI chat when the org and app allow it,
+ * even if the default application role has not yet granted `ai.use`.
+ */
+async function resolveLeanAiConversationPermission(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  organisationId: string,
+  membershipId: string,
+  hasAiUsePermission: boolean,
+): Promise<boolean> {
+  if (hasAiUsePermission) {
+    return true;
+  }
+  return membershipHasOrganisationOwnerGrant(
+    supabase,
+    organisationId,
+    membershipId,
+  );
+}
 
 function flattenRemaining(
   items: Array<{ key: string; status: string; reason: string }>,
@@ -105,20 +158,41 @@ export async function resolveLeanAiAssistantView(
   const organisationAiEnabled =
     leanAiItem?.reasonCode !== "lean_ai_disabled" &&
     leanAiItem?.supportingMetrics.organisation_enabled !== false;
+
+  const canUseAiForChat = await resolveLeanAiConversationPermission(
+    supabase,
+    snapshot.journey.organisationId,
+    snapshot.journey.membershipId,
+    canUseAi,
+  );
+
+  const readinessAllowsUser =
+    leanAiItem?.supportingMetrics.current_user_can_use !== false;
+
   const conversationAvailable =
     eligibility.ok &&
     snapshot.applicationAiAvailable &&
     organisationAiEnabled &&
-    canUseAi &&
-    leanAiItem?.supportingMetrics.current_user_can_use !== false;
+    canUseAiForChat &&
+    readinessAllowsUser;
 
   const conversationUnavailableReason = conversationUnavailableCopy({
     eligible: eligibility.ok,
     eligibilityMessage: eligibility.ok ? null : eligibility.message,
     applicationAvailable: snapshot.applicationAiAvailable,
     organisationEnabled: organisationAiEnabled,
-    canUseConversation:
-      canUseAi && leanAiItem?.supportingMetrics.current_user_can_use !== false,
+    canUseConversation: canUseAiForChat && readinessAllowsUser,
+  });
+
+  const eligibilityDenied =
+    !eligibility.ok && eligibility.reason === "entitlement_denied";
+
+  const conversationUnavailableCta = leanAiConversationUnavailableCta({
+    eligible: eligibility.ok,
+    eligibilityDenied,
+    applicationAvailable: snapshot.applicationAiAvailable,
+    organisationEnabled: organisationAiEnabled,
+    canUseConversation: canUseAiForChat && readinessAllowsUser,
   });
 
   const recommendation = selectAssistantIntervention({
@@ -441,6 +515,7 @@ export async function resolveLeanAiAssistantView(
     applicationAiAvailable: snapshot.applicationAiAvailable,
     conversationAvailable,
     conversationUnavailableReason,
+    conversationUnavailableCta,
     contextLabel,
     page: {
       module: identity.module,

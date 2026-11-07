@@ -1,3 +1,6 @@
+import { Sparkles } from "lucide-react";
+
+import { EmptyState } from "@/components/platform/empty-state";
 import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
@@ -21,6 +24,10 @@ export default async function RecognitionPage() {
   const supabase = await createServerSupabaseClient();
   const canAward = await currentMemberHasPermission("recognition.award");
   const canManage = await currentMemberHasPermission("recognition.manage");
+
+  const { count: typeCount } = await supabase
+    .from("recognition_types")
+    .select("id", { count: "exact", head: true });
 
   const { data: awards, error: awardsError } = await supabase
     .from("recognition_awards")
@@ -86,10 +93,36 @@ export default async function RecognitionPage() {
 
       <div className="grid gap-3">
         {feedItems.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-            No recognition awards are available with your access. Awards shared
-            with your site or organisation will appear here.
-          </div>
+          canAward || canManage ? (
+            typeCount === 0 ? (
+              <EmptyState
+                title="Create a recognition type first"
+                description="Recognition types define what people can award — for example “Safety hero” or “Kaizen contribution”. Then you can publish awards to the feed."
+                actionLabel="Set up recognition types"
+                actionHref="/platform/recognition/types"
+                icon={<Sparkles className="size-5 text-primary" aria-hidden />}
+              />
+            ) : (
+              <EmptyState
+                title="No awards yet"
+                description="When someone receives recognition, it appears here for people who can see that site or organisation."
+                actionLabel={
+                  canAward ? "Award recognition" : "View recognition types"
+                }
+                actionHref={
+                  canAward
+                    ? "/platform/recognition/new"
+                    : "/platform/recognition/types"
+                }
+                icon={<Sparkles className="size-5 text-primary" aria-hidden />}
+              />
+            )
+          ) : (
+            <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+              No recognition awards are available with your access. Awards
+              shared with your site or organisation will appear here.
+            </div>
+          )
         ) : (
           feedItems.map((item) => (
             <AppLink

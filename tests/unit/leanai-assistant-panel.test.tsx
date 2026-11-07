@@ -7,6 +7,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY } from "@/modules/leanai-context/assistant/constants";
 import type { LeanAiAssistantView } from "@/modules/leanai-context/assistant/types";
 
 const view: LeanAiAssistantView = {
@@ -18,6 +19,7 @@ const view: LeanAiAssistantView = {
   conversationAvailable: false,
   conversationUnavailableReason:
     "LeanAI conversation is turned off in this environment. Setup guidance below still works.",
+  conversationUnavailableCta: null,
   contextLabel: "Suggestions · Configuration",
   page: {
     module: "suggestions",
@@ -103,6 +105,7 @@ describe("LeanAI assistant panel", () => {
       messages: [],
     });
     window.localStorage.clear();
+    window.localStorage.setItem(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, "1");
     window.sessionStorage.clear();
     window.history.replaceState({}, "", "/platform/suggestions/programmes");
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -202,6 +205,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage.mockResolvedValue({
@@ -249,6 +253,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
         capabilities: { webSearchEnabled: true },
       },
     });
@@ -339,6 +344,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage.mockImplementation(() => new Promise(() => undefined));
@@ -372,6 +378,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage
@@ -475,6 +482,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
 
@@ -527,6 +535,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
 
@@ -555,6 +564,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage.mockResolvedValue({
@@ -588,6 +598,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     rerender(

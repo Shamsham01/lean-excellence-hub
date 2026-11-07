@@ -38,6 +38,7 @@ export default async function SetupPage() {
         core={snapshot.core}
         nextActionHref={snapshot.nextActionHref}
         nextActionLabel={snapshot.nextActionLabel}
+        operationalSetupIncomplete={snapshot.operationalSetupIncomplete}
       />
 
       <SetupChecklist

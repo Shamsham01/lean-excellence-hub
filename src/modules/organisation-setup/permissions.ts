@@ -1,7 +1,12 @@
 import "server-only";
 
 import { listEligibleOrganisations } from "@/modules/organisations/context";
-import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
+import {
+  RECOGNITION_PERMISSIONS,
+  SCHEDULE_PERMISSIONS,
+  SKILLS_PERMISSIONS,
+  TRAINING_PERMISSIONS,
+} from "@/modules/operational/permissions";
 import {
   currentMemberHasOrganisationScopedPermission,
   currentMemberHasPermission,
@@ -29,6 +34,9 @@ export async function loadSetupPermissions(): Promise<SetupPermissionSnapshot> {
     canReadHierarchy,
     canReadMemberships,
     canManageProjects,
+    canManageSkillsCatalog,
+    canManageRecognition,
+    canManageSchedules,
   ] = await Promise.all([
     currentMemberHasPermission("hierarchy.manage"),
     currentMemberHasOrganisationScopedPermission("hierarchy.manage"),
@@ -43,6 +51,9 @@ export async function loadSetupPermissions(): Promise<SetupPermissionSnapshot> {
     currentMemberHasPermission("hierarchy.read"),
     currentMemberHasPermission("memberships.read"),
     currentMemberHasPermission("projects.manage"),
+    currentMemberHasPermission(SKILLS_PERMISSIONS.catalogManage),
+    currentMemberHasPermission(RECOGNITION_PERMISSIONS.manage),
+    currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage),
   ]);
 
   const canManageTraining =
@@ -62,6 +73,9 @@ export async function loadSetupPermissions(): Promise<SetupPermissionSnapshot> {
     canReadHierarchy,
     canReadMemberships,
     canManageProjects,
+    canManageSkillsCatalog,
+    canManageRecognition,
+    canManageSchedules,
     currentMembershipAdminHref: currentMembershipId
       ? `/platform/people/${currentMembershipId}/admin`
       : null,

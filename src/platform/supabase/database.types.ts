@@ -13413,6 +13413,7 @@ export type Database = {
       }
       current_can_found_organisation: { Args: never; Returns: boolean }
       current_can_manage_billing: { Args: never; Returns: boolean }
+      current_founding_organisation_domain_hint: { Args: never; Returns: Json }
       current_identity_state: {
         Args: never
         Returns: {

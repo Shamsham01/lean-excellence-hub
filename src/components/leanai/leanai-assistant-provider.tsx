@@ -82,10 +82,10 @@ function subscribeDesktopOpen(onStoreChange: () => void) {
 }
 
 function getDesktopOpenSnapshot() {
-  return readStoredBoolean(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, true);
+  return readStoredBoolean(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, false);
 }
 
-function setDesktopOpenPreference(open: boolean) {
+export function setDesktopOpenPreference(open: boolean) {
   try {
     window.localStorage.setItem(
       LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY,
@@ -202,7 +202,7 @@ export function LeanAiAssistantProvider({
   const desktopOpen = useSyncExternalStore(
     subscribeDesktopOpen,
     getDesktopOpenSnapshot,
-    () => true,
+    () => false,
   );
   const isDesktop = useSyncExternalStore(
     subscribeDesktopMedia,

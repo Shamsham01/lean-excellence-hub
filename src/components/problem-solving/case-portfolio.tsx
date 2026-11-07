@@ -71,8 +71,12 @@ export function CasePortfolio({
         <MetricCard label="Closed" value={pipeline.closed ?? 0} />
         <MetricCard
           label="Verified causes"
-          value={overview?.cases_with_verified_causes ?? 0}
-          hint={`${overview?.active_cases ?? 0} open cases`}
+          value={
+            overview?.verified_cause_count ??
+            overview?.cases_with_verified_causes ??
+            0
+          }
+          hint={`${overview?.cases_with_verified_causes ?? 0} cases · ${overview?.active_cases ?? 0} open`}
         />
         <MetricCard
           label="Effective countermeasures"
