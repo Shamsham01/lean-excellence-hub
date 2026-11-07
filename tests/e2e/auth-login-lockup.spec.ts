@@ -38,7 +38,10 @@ async function assertLockupNaturalAndUncropped(img: Locator) {
       naturalHeight: el.naturalHeight,
       clientWidth: el.clientWidth,
       clientHeight: el.clientHeight,
-      visibleInkWidth: Math.min(imgRect.width, lockupRect?.width ?? imgRect.width),
+      visibleInkWidth: Math.min(
+        imgRect.width,
+        lockupRect?.width ?? imgRect.width,
+      ),
       fitsInLockup:
         lockupRect != null &&
         imgRect.left >= lockupRect.left - 0.5 &&

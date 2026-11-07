@@ -109,10 +109,18 @@
   max-width: min(var(--leh-brand-lockup), 42vw);
 }
 
-.leh-brand-auth-shell .leh-brand-lockup > :is(span, picture).leh-brand-lockup-light,
-.leh-brand-auth-shell .leh-brand-lockup > :is(span, picture).leh-brand-lockup-dark,
-.leh-brand--contained-lockup .leh-brand-lockup > :is(span, picture).leh-brand-lockup-light,
-.leh-brand--contained-lockup .leh-brand-lockup > :is(span, picture).leh-brand-lockup-dark,
+.leh-brand-auth-shell
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-light,
+.leh-brand-auth-shell
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-dark,
+.leh-brand--contained-lockup
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-light,
+.leh-brand--contained-lockup
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-dark,
 .marketing-header .leh-brand-lockup > :is(span, picture).leh-brand-lockup-light,
 .marketing-header .leh-brand-lockup > :is(span, picture).leh-brand-lockup-dark,
 .leh-brand--platform-sidebar
