@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(12);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -171,7 +171,7 @@ select public.switch_organisation((select id from ai_claim_ids where key = 'orga
 
 select is(
   public.claim_ai_run_execution((select id from ai_claim_ids where key = 'ai_run_lease')),
-  'timed_out',
+  'failed',
   'an expired execution lease is settled instead of staying in progress'
 );
 
@@ -180,8 +180,18 @@ select is(
     select status from public.ai_runs
     where id = (select id from ai_claim_ids where key = 'ai_run_lease')
   ),
-  'timed_out',
+  'failed',
   'expired lease recovery writes a terminal status'
+);
+
+select is(
+  (
+    select error_category
+    from public.ai_runs
+    where id = (select id from ai_claim_ids where key = 'ai_run_lease')
+  ),
+  'interrupted_unknown_billing',
+  'expired lease with dispatch evidence records billing uncertainty'
 );
 
 select is(
