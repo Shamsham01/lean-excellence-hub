@@ -6933,6 +6933,180 @@ export type Database = {
         }
         Relationships: []
       }
+      people_invitation_import_jobs: {
+        Row: {
+          completed_at: string | null
+          content_fingerprint: string | null
+          created_at: string
+          created_by_membership_id: string
+          created_invitation_rows: number
+          created_unit_rows: number
+          error_rows: number
+          failed_rows: number
+          id: string
+          organisation_id: string
+          original_filename: string
+          skipped_rows: number
+          started_at: string | null
+          status: string
+          total_rows: number
+          updated_at: string
+          valid_rows: number
+          validation_completed_at: string | null
+          warning_rows: number
+        }
+        Insert: {
+          completed_at?: string | null
+          content_fingerprint?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          created_invitation_rows?: number
+          created_unit_rows?: number
+          error_rows?: number
+          failed_rows?: number
+          id?: string
+          organisation_id: string
+          original_filename: string
+          skipped_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validation_completed_at?: string | null
+          warning_rows?: number
+        }
+        Update: {
+          completed_at?: string | null
+          content_fingerprint?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          created_invitation_rows?: number
+          created_unit_rows?: number
+          error_rows?: number
+          failed_rows?: number
+          id?: string
+          organisation_id?: string
+          original_filename?: string
+          skipped_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validation_completed_at?: string | null
+          warning_rows?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_invitation_import_jobs_actor_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_jobs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people_invitation_import_rows: {
+        Row: {
+          created_at: string
+          created_invitation_id: string | null
+          created_unit_id: string | null
+          error_code: string | null
+          error_message: string | null
+          field_errors: Json | null
+          id: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          recipient_key: string | null
+          record_type: string
+          resolved_payload: Json | null
+          row_number: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_invitation_id?: string | null
+          created_unit_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          field_errors?: Json | null
+          id?: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          recipient_key?: string | null
+          record_type?: string
+          resolved_payload?: Json | null
+          row_number: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_invitation_id?: string | null
+          created_unit_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          field_errors?: Json | null
+          id?: string
+          import_job_id?: string
+          input_payload?: Json
+          organisation_id?: string
+          recipient_key?: string | null
+          record_type?: string
+          resolved_payload?: Json | null
+          row_number?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_invitation_import_rows_created_invitation_id_fkey"
+            columns: ["created_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "people_invitation_import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_invitation_fkey"
+            columns: ["organisation_id", "created_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_job_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "people_invitation_import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permission_definitions: {
         Row: {
           created_at: string
@@ -12604,6 +12778,12 @@ export type Database = {
           source_domain_event_id: string
         }[]
       }
+      claim_people_invitation_import_batch: {
+        Args: { target_batch_size?: number; target_import_job_id: string }
+        Returns: {
+          import_row_id: string
+        }[]
+      }
       claim_platform_notifications_for_worker: {
         Args: { batch_size?: number; lease_seconds?: number }
         Returns: {
@@ -13174,6 +13354,13 @@ export type Database = {
         }
         Returns: string
       }
+      create_people_invitation_import_job: {
+        Args: {
+          target_content_fingerprint?: string
+          target_original_filename: string
+        }
+        Returns: string
+      }
       create_problem_solving_action: {
         Args: {
           target_containment_id?: string
@@ -13628,6 +13815,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      finalize_people_invitation_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
+      }
       finalize_workforce_credential_reset: {
         Args: { target_auth_user_id: string; target_intent_id: string }
         Returns: string
@@ -13860,6 +14051,33 @@ export type Database = {
           target_unit_id?: string
         }
         Returns: Json
+      }
+      get_people_invitation_import_preview_rows: {
+        Args: { target_import_job_id: string }
+        Returns: {
+          access_scope_site: string
+          application_role: string
+          department: string
+          display_name: string
+          email: string
+          record_type: string
+          row_number: number
+          site: string
+        }[]
+      }
+      get_people_invitation_import_progress: {
+        Args: { target_import_job_id: string }
+        Returns: Json
+      }
+      get_people_invitation_import_validation_rows: {
+        Args: { target_import_job_id: string }
+        Returns: {
+          field_errors: Json
+          label: string
+          record_type: string
+          row_number: number
+          status: string
+        }[]
       }
       get_potential_benefit_overlaps: {
         Args: { target_benefit_id: string }
@@ -14975,6 +15193,10 @@ export type Database = {
             }
             Returns: string
           }
+      start_people_invitation_import: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
+      }
       start_problem_solving_session: {
         Args: {
           target_case_id: string
@@ -15045,6 +15267,10 @@ export type Database = {
       submit_maturity_assessment: {
         Args: { target_assessment_id: string }
         Returns: boolean
+      }
+      submit_people_invitation_import_rows: {
+        Args: { target_import_job_id: string; target_rows: Json }
+        Returns: undefined
       }
       submit_project: { Args: { target_project_id: string }; Returns: boolean }
       submit_suggestion: {
@@ -15459,6 +15685,10 @@ export type Database = {
       validate_benefit_realisation_entry: {
         Args: { target_entry_id: string }
         Returns: boolean
+      }
+      validate_people_invitation_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: Json
       }
       validate_workforce_import_job: {
         Args: { target_import_job_id: string }
