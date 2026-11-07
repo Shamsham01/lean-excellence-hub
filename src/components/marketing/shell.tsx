@@ -5,7 +5,7 @@ import { MarketingHeader } from "./header";
 
 export function MarketingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="marketing min-h-dvh">
+    <div className="marketing marketing-landing min-h-dvh">
       <a className="marketing-skip" href="#main">
         Skip to main content
       </a>

@@ -1,10 +1,13 @@
+import { Suspense } from "react";
+
 import { ActionCreateForm } from "@/components/actions/action-create-form";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
-import { ActionList } from "@/components/actions/action-list";
+import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
 import { PageHeader } from "@/components/platform/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
+import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -37,7 +40,7 @@ export default async function ActionsPage({
   let actionQuery = supabase
     .from("actions")
     .select(
-      "id, action_number, title, status, priority, created_at, due_at, unit_id, source_resource_id",
+      "id, action_number, title, status, priority, created_at, due_at, unit_id, source_resource_id, version",
     )
     .order("created_at", { ascending: false });
 
@@ -56,6 +59,7 @@ export default async function ActionsPage({
     priority: string;
     created_at: string;
     due_at: string | null;
+    version: number;
   }> = [];
 
   if (sourceActionIds && sourceActionIds.length === 0) {
@@ -84,6 +88,15 @@ export default async function ActionsPage({
   const openCount = actions.filter(
     (a) => a.status === "open" || a.status === "in_progress",
   ).length;
+
+  const plannerActions = await loadActionPlannerSummaries(actions);
+  const openActionParam =
+    typeof rawParams.action === "string"
+      ? rawParams.action
+      : Array.isArray(rawParams.action)
+        ? rawParams.action[0]
+        : undefined;
+  const openActionId = openActionParam ?? null;
 
   return (
     <div className="flex flex-col gap-8" data-testid="actions-page">
@@ -130,7 +143,12 @@ export default async function ActionsPage({
 
       {canCreate ? <ActionCreateForm /> : null}
 
-      <ActionList actions={actions} />
+      <Suspense fallback={null}>
+        <ActionPlannerShell
+          actions={plannerActions}
+          initialOpenActionId={openActionId}
+        />
+      </Suspense>
       <WorkplaceSharedRecords module="actions" title="Actions" />
     </div>
   );

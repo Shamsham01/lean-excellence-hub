@@ -72,6 +72,7 @@ export function MarketingWordmark({
   return (
     <LehBrand
       decorative={decorative}
+      lockupRasterOnly={!compact}
       priority={priority}
       responsive={!compact}
       strapline={!compact}
@@ -131,12 +132,14 @@ export function PreviewCaption({ children }: { children: ReactNode }) {
 export function StatusChip({
   children,
   tone = "neutral",
+  className,
 }: {
   children: ReactNode;
   tone?: "neutral" | "accent" | "connected" | "warning" | "success" | "danger";
+  className?: string;
 }) {
   return (
-    <span className={cn("marketing-chip", `marketing-chip-${tone}`)}>
+    <span className={cn("marketing-chip", `marketing-chip-${tone}`, className)}>
       {children}
     </span>
   );

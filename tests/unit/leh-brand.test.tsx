@@ -330,6 +330,16 @@ describe("LehBrand", () => {
       "data-responsive",
       "true",
     );
+    const brand = screen.getByTestId("leh-brand");
+    expect(brand.querySelector(".leh-brand-lockup picture source")).toBeNull();
+    const lockupSrcs = [...brand.querySelectorAll(".leh-brand-lockup img")].map(
+      (node) => node.getAttribute("src"),
+    );
+    expect(
+      lockupSrcs.every(
+        (src) => src?.includes(".png") && !src?.includes(".svg"),
+      ),
+    ).toBe(true);
   });
 
   it("exposes a home link with a decorative mark", () => {
@@ -337,10 +347,9 @@ describe("LehBrand", () => {
 
     const link = screen.getByRole("link", { name: LEH_BRAND_HOME_LABEL });
     expect(link).toHaveAttribute("href", "/");
-    expect(within(link).getByTestId("leh-brand")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
+    const brand = within(link).getByTestId("leh-brand");
+    expect(brand).toHaveAttribute("aria-hidden", "true");
+    expect(brand.querySelector(".leh-brand-lockup picture source")).toBeNull();
   });
 });
 
@@ -490,6 +499,9 @@ describe("site identity metadata", () => {
       ".dark .leh-brand-fallback picture.leh-brand-mark-dark",
     );
     expect(css).toContain("object-fit: contain");
+    expect(css).toContain(
+      '.marketing-header .leh-brand[data-variant="full"] .leh-brand-lockup-img',
+    );
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");

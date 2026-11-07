@@ -23,10 +23,15 @@ export async function loadPlatformNotificationSnapshot(
   const supabase = await createServerSupabaseClient();
 
   const syncResult = await supabase.rpc(
-    "sync_overdue_action_chase_notifications",
+    "sync_leanai_operational_chase_notifications",
   );
   if (syncResult.error) {
-    /* Migration may not be applied on older databases; ignore and continue. */
+    const legacySync = await supabase.rpc(
+      "sync_overdue_action_chase_notifications",
+    );
+    if (legacySync.error) {
+      /* Migration may not be applied on older databases; ignore and continue. */
+    }
   }
 
   const [{ count, error: countError }, { data: rows, error: listError }] =
