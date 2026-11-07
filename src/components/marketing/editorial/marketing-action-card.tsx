@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Check } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusChip } from "@/components/marketing/primitives";
@@ -22,7 +23,76 @@ export type MarketingActionCardProps = {
   variant?: "hero" | "story" | "inline";
   className?: string;
   id?: string;
+  hideAuxNote?: boolean;
+  animateHeroStatus?: boolean;
 };
+
+export function MarketingGembaFindingCard({
+  findingRef,
+  title,
+  meta,
+  className,
+}: {
+  findingRef: string;
+  title: string;
+  meta: string;
+  className?: string;
+}) {
+  return (
+    <article
+      className={cn("editorial-gemba-finding-card", className)}
+      aria-label={`Gemba finding ${findingRef}`}
+    >
+      <div className="editorial-gemba-finding-shell">
+        <div className="editorial-gemba-finding-chrome">
+          <span
+            className="editorial-dots inline-flex gap-[0.3rem]"
+            aria-hidden="true"
+          >
+            <i />
+            <i />
+            <i />
+          </span>
+          <p className="editorial-gemba-finding-route">
+            /platform/gemba · {findingRef}
+          </p>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+            <StatusChip tone="warning">Finding recorded</StatusChip>
+            <StatusChip>Example</StatusChip>
+          </div>
+        </div>
+        <div className="editorial-gemba-finding-body">
+          <p className="editorial-gemba-finding-kicker">
+            Gemba · captured on the floor
+          </p>
+          <p className="editorial-gemba-finding-ref">{findingRef}</p>
+          <h3 className="editorial-gemba-finding-title">{title}</h3>
+          <p className="editorial-gemba-finding-meta">{meta}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function HeroStatusCycle() {
+  return (
+    <div
+      className="editorial-hero-status-cycle"
+      role="status"
+      aria-label="Example status progresses from Assigned to Verified"
+    >
+      <span className="editorial-hero-status-phase editorial-hero-status-assigned">
+        <StatusChip tone="accent">Assigned</StatusChip>
+      </span>
+      <span className="editorial-hero-status-phase editorial-hero-status-verified">
+        <span className="editorial-hero-status-verified-chip">
+          <Check aria-hidden="true" className="editorial-hero-status-check" />
+          <StatusChip tone="success">Verified</StatusChip>
+        </span>
+      </span>
+    </div>
+  );
+}
 
 export function MarketingActionCard({
   actionRef,
@@ -40,6 +110,8 @@ export function MarketingActionCard({
   variant = "story",
   className,
   id,
+  hideAuxNote = false,
+  animateHeroStatus = false,
 }: MarketingActionCardProps) {
   const isHero = variant === "hero";
 
@@ -68,7 +140,11 @@ export function MarketingActionCard({
             /platform/actions · {actionRef}
           </p>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
-            <StatusChip tone={statusTone}>{status}</StatusChip>
+            {animateHeroStatus ? (
+              <HeroStatusCycle />
+            ) : (
+              <StatusChip tone={statusTone}>{status}</StatusChip>
+            )}
             <StatusChip>Example</StatusChip>
           </div>
         </div>
@@ -133,9 +209,11 @@ export function MarketingActionCard({
           ) : null}
         </div>
       </div>
-      <p className="marketing-preview-aux-note">
-        Example data · fictional site
-      </p>
+      {hideAuxNote ? null : (
+        <p className="marketing-preview-aux-note">
+          Example data · fictional site
+        </p>
+      )}
     </article>
   );
 }

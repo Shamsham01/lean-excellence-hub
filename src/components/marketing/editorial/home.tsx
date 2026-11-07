@@ -16,7 +16,10 @@ import {
   MarketingContainer,
   StatusChip,
 } from "@/components/marketing/primitives";
-import { MarketingActionCard } from "./marketing-action-card";
+import {
+  MarketingActionCard,
+  MarketingGembaFindingCard,
+} from "./marketing-action-card";
 import { ScrollReveal } from "./scroll-reveal";
 
 import "./home.css";
@@ -245,37 +248,40 @@ const STORY_CHIPS = ["GEM-214", "ACT-318", "PS-077", "PRJ-042", "CAP-014"] as co
 function HeroActionStage() {
   return (
     <figure className="editorial-stage editorial-action-stage">
-      <div className="editorial-action-stage-backdrop" aria-hidden="true">
-        <div className="editorial-floor-capture">
-          <p className="editorial-context-kicker">Gemba · captured on the floor</p>
-          <p className="editorial-floor-capture-title">
-            Packaging film misaligned on Packing Line 1
-          </p>
-          <p className="editorial-floor-capture-meta">
-            GEM-214 · Morning walk · Packing supervisor
-          </p>
-        </div>
+      <div className="editorial-hero-stack">
+        <div className="editorial-hero-stack-plate" aria-hidden="true" />
+        <MarketingGembaFindingCard
+          className="editorial-hero-stack-gemba"
+          findingRef="GEM-214"
+          title="Packaging film misaligned on Packing Line 1"
+          meta="Morning Gemba walk · Packing supervisor · Packing Line 1"
+        />
+        <MarketingActionCard
+          id="signature-action-hero"
+          variant="hero"
+          className="editorial-hero-stack-action"
+          hideAuxNote
+          animateHeroStatus
+          actionRef={SIGNATURE_ACTION.actionRef}
+          title={SIGNATURE_ACTION.title}
+          owner={SIGNATURE_ACTION.owner}
+          due={SIGNATURE_ACTION.due}
+          status="Assigned"
+          statusTone="accent"
+          sourceModule={SIGNATURE_ACTION.sourceModule}
+          sourceRef={SIGNATURE_ACTION.sourceRef}
+          sourceTitle={SIGNATURE_ACTION.sourceTitle}
+          leanAiSuggestion={
+            <>
+              Confirm first-off pack photos are attached before closure. Link to
+              problem-solving case PS-077 if misalignment repeats.
+            </>
+          }
+        />
       </div>
-      <MarketingActionCard
-        id="signature-action-hero"
-        variant="hero"
-        className="editorial-action-stage-card"
-        actionRef={SIGNATURE_ACTION.actionRef}
-        title={SIGNATURE_ACTION.title}
-        owner={SIGNATURE_ACTION.owner}
-        due={SIGNATURE_ACTION.due}
-        status="Assigned"
-        statusTone="accent"
-        sourceModule={SIGNATURE_ACTION.sourceModule}
-        sourceRef={SIGNATURE_ACTION.sourceRef}
-        sourceTitle={SIGNATURE_ACTION.sourceTitle}
-        leanAiSuggestion={
-          <>
-            Confirm first-off pack photos are attached before closure. Link to
-            problem-solving case PS-077 if misalignment repeats.
-          </>
-        }
-      />
+      <p className="marketing-preview-aux-note editorial-hero-stack-note">
+        Example data · fictional site
+      </p>
       <figcaption className="editorial-stage-caption">
         The LEH Action Card carries owner, due date, source and status — from
         floor finding to accountable follow-up.
@@ -701,7 +707,7 @@ export function EditorialHome() {
       </section>
 
       <section
-        className="editorial-statement"
+        className="editorial-statement editorial-statement-connected"
         aria-label="Positioning statement"
       >
         <MarketingContainer wide>
