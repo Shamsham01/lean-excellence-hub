@@ -54,12 +54,11 @@ test.describe("UX1 platform shell", () => {
     await expect(
       page.getByRole("link", { name: "Settings", exact: true }),
     ).toBeVisible();
+    const chrome = page.getByTestId("platform-desktop-main-chrome");
     await expect(
-      page.getByRole("button", { name: "Toggle theme" }),
+      chrome.getByTestId("platform-appearance-trigger"),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
-    ).toBeVisible();
+    await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
   });
 
   test("desktop navigation highlights active nested routes", async ({
@@ -96,9 +95,8 @@ test.describe("UX1 platform shell", () => {
     await expect(sidebar.getByTestId("platform-sidebar-org-name")).toHaveText(
       DEMO_ORGANISATION.name,
     );
-    await expect(
-      sidebar.getByRole("button", { name: "Sign out", exact: true }),
-    ).toBeVisible();
+    const chrome = page.getByTestId("platform-desktop-main-chrome");
+    await expect(chrome.getByTestId("platform-chrome-sign-out")).toBeVisible();
 
     const scrollMetrics = await nav.evaluate((element) => ({
       scrollHeight: element.scrollHeight,
@@ -115,7 +113,7 @@ test.describe("UX1 platform shell", () => {
         sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
       ).toBeVisible();
       await expect(
-        sidebar.getByRole("button", { name: "Sign out", exact: true }),
+        chrome.getByTestId("platform-chrome-sign-out"),
       ).toBeVisible();
     }
   });
