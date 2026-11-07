@@ -4,9 +4,7 @@ import { PeopleInvitationImportWizard } from "@/components/people/people-invitat
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import {
-  currentMemberHasPermission,
-} from "@/modules/platform-shell/permissions";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 
 import {
   buildColleagueImportErrorReport,

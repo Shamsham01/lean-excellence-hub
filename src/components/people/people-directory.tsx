@@ -232,7 +232,12 @@ export function PeopleDirectory({
             </CardDescription>
           </div>
           {canImportColleagues ? (
-            <Button variant="outline" size="sm" asChild className="w-fit shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="w-fit shrink-0"
+            >
               <AppLink
                 href="/platform/settings/people/colleague-import"
                 data-testid="people-directory-import-link"

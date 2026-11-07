@@ -33,7 +33,8 @@ export function validateHeaders(headers: string[]): FileParseError | null {
     seen.add(header);
   }
 
-  const hasName = normalized.includes("display_name") || normalized.includes("name");
+  const hasName =
+    normalized.includes("display_name") || normalized.includes("name");
   if (!hasName) {
     return {
       error: "Missing required column: display_name (or name).",

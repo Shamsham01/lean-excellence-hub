@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { parseCsvContent } from "@/modules/people-invitation-import/parse-csv";
-import { buildPeopleInvitationCsvTemplate, fingerprintImportContent } from "@/modules/people-invitation-import/parse-file";
+import {
+  buildPeopleInvitationCsvTemplate,
+  fingerprintImportContent,
+} from "@/modules/people-invitation-import/parse-file";
 
 const HEADER =
   "record_type,display_name,email,department,site,role,access_scope_site,parent_site_path,area_name,area_code,unit_type";

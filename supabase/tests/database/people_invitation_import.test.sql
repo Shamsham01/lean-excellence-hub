@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(18);
 
 create temporary table people_inv_import_ids (
   key text primary key,
@@ -42,6 +42,17 @@ values
     '{}',
     false,
     false
+  ),
+  (
+    '14000000-0000-0000-0000-000000000003',
+    'colleague-import-member@example.test',
+    statement_timestamp(),
+    statement_timestamp(),
+    statement_timestamp(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    false,
+    false
   );
 
 insert into people_inv_import_ids (key, id)
@@ -74,6 +85,12 @@ values
   (
     '24000000-0000-0000-0000-000000000002',
     '14000000-0000-0000-0000-000000000002',
+    statement_timestamp(),
+    statement_timestamp()
+  ),
+  (
+    '24000000-0000-0000-0000-000000000003',
+    '14000000-0000-0000-0000-000000000003',
     statement_timestamp(),
     statement_timestamp()
   );
@@ -216,6 +233,119 @@ select is(
   ),
   0::bigint,
   'organisation A actor cannot read organisation B import jobs'
+);
+
+select is(
+  (
+    select count(*)
+    from public.people_invitation_import_rows import_row
+    where import_row.organisation_id = (select id from people_inv_import_ids where key = 'org_b')
+  ),
+  0::bigint,
+  'organisation A actor cannot read organisation B import rows'
+);
+
+select ok(
+  public.switch_organisation((select id from people_inv_import_ids where key = 'org_b')),
+  'owner switches into organisation B for cross-tenant RPC guard'
+);
+
+select throws_ok(
+  format(
+    'select public.validate_people_invitation_import_job(%L::uuid)',
+    (select id from people_inv_import_ids where key = 'job_a')
+  ),
+  'P0002',
+  'import job does not exist',
+  'cannot validate another organisation import job from the wrong tenant context'
+);
+
+select ok(
+  public.switch_organisation((select id from people_inv_import_ids where key = 'org_a')),
+  'owner returns to organisation A before member fixture'
+);
+
+set local role lean_hub_private_owner;
+
+insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
+values
+  (
+    (select id from people_inv_import_ids where key = 'org_a'),
+    '14000000-0000-0000-0000-000000000003',
+    'active',
+    statement_timestamp()
+  );
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = '14000000-0000-0000-0000-000000000003';
+
+insert into people_inv_import_ids (key, id)
+select
+  'member_membership',
+  membership.id
+from public.organisation_memberships membership
+where membership.organisation_id = (select id from people_inv_import_ids where key = 'org_a')
+  and membership.user_id = '14000000-0000-0000-0000-000000000003';
+
+insert into people_inv_import_ids (key, id)
+select
+  'team_member_role_version',
+  role_version.id
+from public.role_versions role_version
+join public.roles role_row
+  on role_row.organisation_id = role_version.organisation_id
+ and role_row.id = role_version.role_id
+where role_version.organisation_id = (select id from people_inv_import_ids where key = 'org_a')
+  and role_row.canonical_name = 'team-member'
+  and role_version.status = 'published';
+
+set local role authenticated;
+
+insert into people_inv_import_ids (key, id)
+select
+  'production_unit',
+  public.create_organisation_unit(
+    (select id from people_inv_import_ids where key = 'org_a'),
+    null,
+    'colleague-import-production',
+    'Production',
+    'site'
+  );
+
+select ok(
+  public.grant_role_version(
+    (select id from people_inv_import_ids where key = 'org_a'),
+    (select id from people_inv_import_ids where key = 'member_membership'),
+    (select id from people_inv_import_ids where key = 'team_member_role_version'),
+    'unit_subtree',
+    (select id from people_inv_import_ids where key = 'production_unit')
+  ) is not null,
+  'owner grants team-member role for import guard test'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"14000000-0000-0000-0000-000000000003","role":"authenticated","session_id":"24000000-0000-0000-0000-000000000003","email":"colleague-import-member@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from people_inv_import_ids where key = 'org_a')),
+  'team member switches into organisation A'
+);
+
+select throws_ok(
+  format(
+    'select public.create_people_invitation_import_job(%L, %L)',
+    'member.csv',
+    'fingerprint-member'
+  ),
+  '42501',
+  'people invitation import is not authorised',
+  'non-admin team member cannot create import job'
 );
 
 select * from finish();

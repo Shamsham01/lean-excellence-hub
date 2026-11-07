@@ -593,7 +593,7 @@ declare
   area_name text := btrim(coalesce(target_payload ->> 'area_name', target_payload ->> 'unit_name', ''));
   area_code text := upper(btrim(coalesce(target_payload ->> 'area_code', target_payload ->> 'unit_code', '')));
   unit_type text := lower(btrim(coalesce(target_payload ->> 'unit_type', 'area')));
-  parent_unit_id uuid;
+  resolved_parent_unit_id uuid;
   parent_status text;
   parent_message text;
   parent_suggestion text;
@@ -646,7 +646,7 @@ begin
       resolution_status,
       resolution_message,
       resolution_suggestion
-    into parent_unit_id, parent_status, parent_message, parent_suggestion
+    into resolved_parent_unit_id, parent_status, parent_message, parent_suggestion
     from private.resolve_organisation_unit_path(target_organisation_id, parent_path);
 
     if parent_status <> 'resolved' then
@@ -686,13 +686,13 @@ begin
     return;
   end if;
 
-  if parent_unit_id is not null then
+  if resolved_parent_unit_id is not null then
     select unit_row.id
     into existing_unit_id
     from public.organisation_units unit_row
     where unit_row.organisation_id = target_organisation_id
       and unit_row.status = 'active'
-      and unit_row.parent_unit_id = parent_unit_id
+      and unit_row.parent_unit_id = resolved_parent_unit_id
       and lower(unit_row.name) = lower(area_name)
     order by unit_row.id
     limit 1;
@@ -708,7 +708,7 @@ begin
       );
       resolved := jsonb_build_object(
         'existing_unit_id', existing_unit_id,
-        'parent_unit_id', parent_unit_id,
+        'parent_unit_id', resolved_parent_unit_id,
         'area_name', area_name,
         'area_code', nullif(area_code, ''),
         'unit_type', unit_type,
@@ -719,7 +719,7 @@ begin
   end if;
 
   resolved := jsonb_build_object(
-    'parent_unit_id', parent_unit_id,
+    'parent_unit_id', resolved_parent_unit_id,
     'area_name', area_name,
     'area_code', nullif(area_code, ''),
     'unit_type', unit_type,
@@ -1181,6 +1181,8 @@ declare
   unit_id uuid;
   generated_code text;
 begin
+  perform private.assert_people_invitation_import_authorised(org_id, actor_membership_id);
+
   select *
   into import_row
   from public.people_invitation_import_rows import_row_table
@@ -1189,6 +1191,11 @@ begin
   for update;
 
   if import_row.id is null then
+    raise exception 'import row does not exist'
+      using errcode = 'P0002';
+  end if;
+
+  if import_row.organisation_id is distinct from org_id then
     raise exception 'import row does not exist'
       using errcode = 'P0002';
   end if;
@@ -1336,7 +1343,6 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   candidate_row public.people_invitation_import_rows%rowtype;
   claimed integer := 0;
-  outcome text;
   pending_count integer;
 begin
   perform private.assert_people_invitation_import_authorised(org_id, actor_membership_id);
@@ -1360,7 +1366,7 @@ begin
         updated_at = statement_timestamp()
     where id = candidate_row.id;
 
-    outcome := private.process_people_invitation_import_row(candidate_row.id);
+    perform private.process_people_invitation_import_row(candidate_row.id);
 
     import_row_id := candidate_row.id;
     claimed := claimed + 1;

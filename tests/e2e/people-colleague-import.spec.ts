@@ -27,7 +27,9 @@ test.describe("People colleague CSV import", () => {
   test("admin sees validation errors for invalid rows", async ({ page }) => {
     await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     await page.goto("/platform/settings/people/colleague-import");
-    await expect(page.getByTestId("people-invitation-import-wizard")).toBeVisible();
+    await expect(
+      page.getByTestId("people-invitation-import-wizard"),
+    ).toBeVisible();
 
     const invalidCsv = [
       HEADER,

@@ -41,14 +41,13 @@ type PeopleInvitationImportWizardProps = {
   onValidate: (
     jobId: string,
   ) => Promise<
-    { ok: true; data: PeopleInvitationImportValidationSummary } | { error: string }
+    | { ok: true; data: PeopleInvitationImportValidationSummary }
+    | { error: string }
   >;
   onLoadValidationRows: (
     jobId: string,
   ) => Promise<{ ok: true; data: ValidationRow[] } | { error: string }>;
-  onLoadPreviewRows: (
-    jobId: string,
-  ) => Promise<
+  onLoadPreviewRows: (jobId: string) => Promise<
     | {
         ok: true;
         data: Array<{
@@ -119,9 +118,8 @@ export function PeopleInvitationImportWizard({
       application_role: string | null;
     }>
   >([]);
-  const [progress, setProgress] = useState<PeopleInvitationImportProgress | null>(
-    null,
-  );
+  const [progress, setProgress] =
+    useState<PeopleInvitationImportProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -269,8 +267,8 @@ export function PeopleInvitationImportWizard({
         <p className="text-sm text-muted-foreground">
           Upload a CSV to invite colleagues using your existing invitation
           pipeline. Set{" "}
-          <span className="font-mono text-xs">record_type=unit</span> on optional
-          rows to create work areas before inviting people.
+          <span className="font-mono text-xs">record_type=unit</span> on
+          optional rows to create work areas before inviting people.
         </p>
         <div
           className="flex flex-wrap gap-2 text-xs text-muted-foreground"
@@ -310,7 +308,10 @@ export function PeopleInvitationImportWizard({
               Download CSV template
             </Button>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium" htmlFor="colleague-import-file">
+              <label
+                className="text-sm font-medium"
+                htmlFor="colleague-import-file"
+              >
                 Upload filled CSV
               </label>
               <Input
@@ -331,8 +332,9 @@ export function PeopleInvitationImportWizard({
         {step === 1 && jobId ? (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">
-              File <span className="font-medium text-foreground">{filename}</span>{" "}
-              is ready for validation.
+              File{" "}
+              <span className="font-medium text-foreground">{filename}</span> is
+              ready for validation.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -358,7 +360,7 @@ export function PeopleInvitationImportWizard({
             {validationRows.length > 0 ? (
               <div className="max-h-80 overflow-auto rounded-md border">
                 <table className="w-full min-w-[32rem] text-left text-sm">
-                  <thead className="sticky top-0 bg-muted/80 text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="sticky top-0 bg-muted/80 text-xs tracking-wide text-muted-foreground uppercase">
                     <tr>
                       <th className="px-3 py-2">Row</th>
                       <th className="px-3 py-2">Label</th>
@@ -426,7 +428,10 @@ export function PeopleInvitationImportWizard({
         {step === 3 ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">Import in progress…</p>
-            <Progress value={progressPercent} data-testid="colleague-import-progress" />
+            <Progress
+              value={progressPercent}
+              data-testid="colleague-import-progress"
+            />
           </div>
         ) : null}
 

@@ -14,8 +14,7 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export type PeopleInvitationImportActionResult<T> =
-  | { ok: true; data: T }
-  | { error: string };
+  { ok: true; data: T } | { error: string };
 
 async function assertCanImport(): Promise<{ error: string } | null> {
   const [canInvite, canDelegate] = await Promise.all([
@@ -50,10 +49,7 @@ export async function createColleagueImportJob(
 
   if (error || !data) {
     return {
-      error: toCustomerErrorMessage(
-        error,
-        "Unable to start colleague import.",
-      ),
+      error: toCustomerErrorMessage(error, "Unable to start colleague import."),
     };
   }
 
@@ -84,7 +80,9 @@ export async function submitColleagueImportRows(
 
 export async function validateColleagueImportJob(
   jobId: string,
-): Promise<PeopleInvitationImportActionResult<PeopleInvitationImportValidationSummary>> {
+): Promise<
+  PeopleInvitationImportActionResult<PeopleInvitationImportValidationSummary>
+> {
   const denied = await assertCanImport();
   if (denied) return denied;
 
@@ -293,9 +291,7 @@ export async function buildColleagueImportErrorReport(
     return { error: rowsResult.error };
   }
 
-  const lines = [
-    "row_number,record_type,label,status,field,issue,suggestion",
-  ];
+  const lines = ["row_number,record_type,label,status,field,issue,suggestion"];
 
   for (const row of rowsResult.data) {
     if (row.status === "valid") continue;

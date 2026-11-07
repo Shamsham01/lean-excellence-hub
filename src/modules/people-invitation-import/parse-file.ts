@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 
 import { parseCsvContent } from "./parse-csv";
-import type { FileParseError, ParsedPeopleInvitationImportFile } from "./headers";
+import type {
+  FileParseError,
+  ParsedPeopleInvitationImportFile,
+} from "./headers";
 
 export async function parsePeopleInvitationImportFile(
   file: File,
@@ -28,6 +31,9 @@ export function buildPeopleInvitationCsvTemplate(): string {
 }
 
 export function fingerprintImportContent(content: string): string {
-  const normalized = content.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").trim();
+  const normalized = content
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .trim();
   return createHash("sha256").update(normalized).digest("hex");
 }
