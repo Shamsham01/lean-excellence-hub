@@ -1,7 +1,13 @@
 import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { GEMBA_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadGembaAnalytics } from "@/modules/platform-analytics/gemba";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
@@ -18,7 +24,15 @@ import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Footprints } from "lucide-react";
 
-export default async function GembaOverviewPage() {
+export default async function GembaOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: GEMBA_PERMISSIONS.read,
     module: "gemba",
@@ -71,6 +85,7 @@ export default async function GembaOverviewPage() {
   const { count: observationCount } = await supabase
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
+  const gembaAnalytics = await loadGembaAnalytics(supabase, analyticsRange);
 
   if (catalog === "empty") {
     return (
@@ -131,11 +146,11 @@ export default async function GembaOverviewPage() {
           </>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetricCard label="Walks in progress" value={activeWalkCount ?? 0} />
-        <MetricCard label="Completed walks" value={walkCount ?? 0} />
-        <MetricCard label="Observations" value={observationCount ?? 0} />
-      </div>
+      <ModuleAnalyticsDashboard
+        snapshot={gembaAnalytics}
+        icons={GEMBA_ANALYTICS_ICONS}
+        testId="gemba-analytics"
+      />
       <Card>
         <CardHeader>
           <CardTitle>Walks in progress</CardTitle>

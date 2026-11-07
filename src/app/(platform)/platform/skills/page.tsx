@@ -1,9 +1,10 @@
-import { SkillsCoverageChart } from "@/components/charts/skills-coverage-chart";
 import { EmptyState } from "@/components/platform/empty-state";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { SKILLS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
-import { MetricCard } from "@/components/platform/metric-card";
 import { PageHeader } from "@/components/platform/page-header";
+import { loadSkillsAnalytics } from "@/modules/platform-analytics/skills";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
@@ -50,6 +51,7 @@ export default async function SkillsOverviewPage() {
     skill_coverage_percent?: number | null;
   } | null;
   const coverage = dashboard?.skill_coverage_percent ?? null;
+  const skillsAnalytics = await loadSkillsAnalytics(supabase);
 
   const [
     { count: skillCount },
@@ -135,14 +137,12 @@ export default async function SkillsOverviewPage() {
           </div>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <MetricCard
-          label="Skill coverage"
-          value={coverage != null ? `${coverage}%` : "—"}
-        />
-        <MetricCard label="Active skills" value={skillCount ?? 0} />
-      </div>
-      <SkillsCoverageChart coveragePercent={coverage} />
+      <ModuleAnalyticsDashboard
+        snapshot={skillsAnalytics}
+        icons={SKILLS_ANALYTICS_ICONS}
+        testId="skills-analytics"
+        showDateRange={false}
+      />
       {canManageCatalog && (skillCount ?? 0) === 0 ? (
         <EmptyState
           title="Publish your first skills"

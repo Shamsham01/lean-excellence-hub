@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 
-import { MetricCard } from "@/components/platform/metric-card";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestions";
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
@@ -59,6 +65,9 @@ export default async function SuggestionsOverviewPage({
 
   const params = await searchParams;
   const filters = parseSuggestionPortfolioSearchParams(params);
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const supabase = await createServerSupabaseClient();
   const canReview = await currentMemberHasPermission("suggestions.review");
   const canManageProgrammes = await currentMemberHasPermission(
@@ -78,6 +87,7 @@ export default async function SuggestionsOverviewPage({
   ]);
 
   const pipeline = overview.pipeline;
+  const analytics = await loadSuggestionsAnalytics(supabase, analyticsRange);
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
@@ -110,15 +120,11 @@ export default async function SuggestionsOverviewPage({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Submitted this month"
-          value={overview.submitted_this_month}
-        />
-        <MetricCard label="Awaiting review" value={overview.awaiting_review} />
-        <MetricCard label="Implementing" value={overview.implementing} />
-        <MetricCard label="Implemented" value={overview.implemented} />
-      </div>
+      <ModuleAnalyticsDashboard
+        snapshot={analytics}
+        icons={SUGGESTION_ANALYTICS_ICONS}
+        testId="suggestions-analytics"
+      />
 
       <Card>
         <CardHeader>

@@ -1,8 +1,14 @@
 import { Layers, Plus } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { MATURITY_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadMaturityAnalytics } from "@/modules/platform-analytics/maturity";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {
@@ -22,7 +28,15 @@ import {
 } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function MaturityOverviewPage() {
+export default async function MaturityOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: MATURITY_PERMISSIONS.read,
     module: "maturity",
@@ -73,10 +87,7 @@ export default async function MaturityOverviewPage() {
     }
   }
 
-  const { count: openActions } = await supabase
-    .from("actions")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["open", "in_progress"]);
+  const analytics = await loadMaturityAnalytics(supabase, analyticsRange);
 
   const { data: assessments } = await supabase
     .from("maturity_assessments")
@@ -155,40 +166,11 @@ export default async function MaturityOverviewPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Current maturity"
-          value={
-            latestResult ? (
-              <ScoreBadge score={Number(latestResult.overall_score)} />
-            ) : (
-              "—"
-            )
-          }
-          hint={
-            latestResult?.published_at
-              ? `Last formal: ${new Date(latestResult.published_at).toLocaleDateString("en-GB")}`
-              : "No official result yet"
-          }
-        />
-        <MetricCard label="Open actions" value={openActions ?? 0} />
-        <MetricCard
-          label="Draft assessments"
-          value={
-            assessments?.filter(
-              (a) => a.status === "draft" || a.status === "in_progress",
-            ).length ?? 0
-          }
-        />
-        <MetricCard
-          label="In review"
-          value={
-            assessments?.filter(
-              (a) => a.status === "submitted" || a.status === "assessor_review",
-            ).length ?? 0
-          }
-        />
-      </div>
+      <ModuleAnalyticsDashboard
+        snapshot={analytics}
+        icons={MATURITY_ANALYTICS_ICONS}
+        testId="maturity-analytics"
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-4">

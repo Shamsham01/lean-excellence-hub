@@ -1,16 +1,17 @@
-import { PlatformHomeCharts } from "@/components/charts/platform-home-charts";
 import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { QuickActions } from "@/components/onboarding/quick-actions";
 import { HomeAttentionStrip } from "@/components/platform/home-attention-strip";
-import { MetricCard } from "@/components/platform/metric-card";
+import { PlatformHomeAnalytics } from "@/components/platform/platform-home-analytics";
 import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
 import { formatBenefitCurrencyAmount } from "@/lib/benefits/forecast";
 import type { BenefitsOverview } from "@/lib/benefits/types";
+import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
 import {
-  AssessmentStatusBadge,
-  ScoreBadge,
-} from "@/modules/maturity/status-badges";
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadPlatformHomeAnalytics } from "@/modules/platform-analytics/home";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,15 @@ import {
   currentMemberHasPermission,
 } from "@/modules/platform-shell/permissions";
 
-export default async function PlatformHomePage() {
+export default async function PlatformHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentOrg = organisations.find((o) => o.selected);
@@ -180,28 +189,11 @@ export default async function PlatformHomePage() {
     ) ?? 0;
   const benefitsRealising = benefitsOverview?.status_pipeline?.realising ?? 0;
 
-  const maturityScore = latestResult
-    ? Math.round(Number(latestResult.overall_score))
-    : 0;
-  const homeChartTrend = [
-    { label: "Wk 1", value: Math.max(0, (openActions ?? 0) - 3) },
-    { label: "Wk 2", value: Math.max(0, (openActions ?? 0) - 2) },
-    { label: "Wk 3", value: Math.max(0, (openActions ?? 0) - 1) },
-    { label: "Wk 4", value: openActions ?? 0 },
-    { label: "Wk 5", value: (openActions ?? 0) + (overdueActions ?? 0) },
-    { label: "Wk 6", value: maturityScore || (openActions ?? 0) },
-  ];
-  const homeChartWorkload = [
-    { label: "Open actions", value: openActions ?? 0 },
-    { label: "Overdue", value: overdueActions ?? 0 },
-    {
-      label: "Ideas in review",
-      value: (suggestionsOverview?.awaiting_review as number) ?? 0,
-    },
-    { label: "Benefits realising", value: benefitsRealising },
-  ];
-  const showHomeCharts =
-    Boolean(home.actionsMetric) || canReadSuggestions || canReadBenefits;
+  const homeAnalytics = await loadPlatformHomeAnalytics(
+    supabase,
+    analyticsRange,
+    home,
+  );
 
   const homeAttention = buildHomeAttentionItems({
     canReadActions: Boolean(home.actionsMetric),
@@ -238,108 +230,7 @@ export default async function PlatformHomePage() {
 
       <HomeAttentionStrip items={homeAttention} />
 
-      {showHomeCharts ? (
-        <PlatformHomeCharts
-          trend={homeChartTrend}
-          workload={homeChartWorkload}
-        />
-      ) : null}
-
-      <div>
-        <h2 className="mb-4 text-base font-semibold text-foreground">
-          Your Lean system
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {home.maturityMetric ? (
-            <MetricCard
-              label="Maturity"
-              value={
-                latestResult ? (
-                  <ScoreBadge score={Number(latestResult.overall_score)} />
-                ) : (
-                  "—"
-                )
-              }
-              hint={
-                latestResult?.published_at
-                  ? `Last formal: ${new Date(latestResult.published_at).toLocaleDateString("en-GB")}`
-                  : "No official result"
-              }
-            />
-          ) : null}
-          {home.actionsMetric ? (
-            <MetricCard
-              label="Open actions"
-              value={openActions ?? 0}
-              hint={`${overdueActions ?? 0} overdue`}
-            />
-          ) : null}
-          {home.assessmentMetric ? (
-            <MetricCard
-              label="Assessments"
-              value={recentAssessments?.length ?? 0}
-              hint="Recent activity"
-            />
-          ) : null}
-          {home.fiveSMetric ? (
-            <MetricCard
-              label="5S"
-              value={
-                latestFiveS?.overall_score_percent != null
-                  ? `${latestFiveS.overall_score_percent}%`
-                  : "—"
-              }
-              hint="Latest completed audit"
-            />
-          ) : null}
-          {home.gembaMetric ? (
-            <MetricCard
-              label="Gemba walks"
-              value={gembaWalkCount ?? 0}
-              hint="Completed"
-            />
-          ) : null}
-          {home.capability ? (
-            <MetricCard
-              label="Capability"
-              value={
-                capabilityObj?.training_compliance_percent != null
-                  ? `${capabilityObj.training_compliance_percent}%`
-                  : "—"
-              }
-              hint={
-                capabilityObj?.skill_coverage_percent != null
-                  ? `Skill coverage ${capabilityObj.skill_coverage_percent}%`
-                  : "Training compliance"
-              }
-            />
-          ) : null}
-          {home.templates ? (
-            <MetricCard label="Templates" value={templateCount ?? 0} />
-          ) : null}
-          {canReadSuggestions ? (
-            <MetricCard
-              label="Ideas awaiting review"
-              value={(suggestionsOverview?.awaiting_review as number) ?? 0}
-              hint={`${(suggestionsOverview?.submitted_this_month as number) ?? 0} submitted this month`}
-            />
-          ) : null}
-          {canReadBenefits ? (
-            <MetricCard
-              label="Benefits realising"
-              value={benefitsRealising}
-              hint={`${benefitsAwaitingValidation} awaiting validation`}
-            />
-          ) : null}
-          {canReadBenefits ? (
-            <MetricCard
-              label="Validated benefits YTD"
-              value={formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
-              hint="Financial portfolio (allocated)"
-            />
-          ) : null}
-        </div>
-      </div>
+      <PlatformHomeAnalytics data={homeAnalytics} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card data-testid="home-your-profile">

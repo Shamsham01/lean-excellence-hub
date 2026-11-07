@@ -1,6 +1,12 @@
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { FIVE_S_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadFiveSAnalytics } from "@/modules/platform-analytics/five-s";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
@@ -13,7 +19,15 @@ import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Sparkles } from "lucide-react";
 
-export default async function FiveSOverviewPage() {
+export default async function FiveSOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: FIVE_S_PERMISSIONS.read,
     module: "five_s",
@@ -67,6 +81,7 @@ export default async function FiveSOverviewPage() {
     .from("schedule_occurrences")
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
+  const analytics = await loadFiveSAnalytics(supabase, analyticsRange);
 
   if (catalog === "empty") {
     return (
@@ -128,24 +143,11 @@ export default async function FiveSOverviewPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Latest score"
-          value={
-            latestAudit?.overall_score_percent != null
-              ? `${latestAudit.overall_score_percent}%`
-              : "—"
-          }
-          hint={
-            latestAudit?.target_percent != null
-              ? `Target ${latestAudit.target_percent}%`
-              : "No completed audits"
-          }
-        />
-        <MetricCard label="Completed audits" value={auditCount ?? 0} />
-        <MetricCard label="Open schedule slots" value={openOccurrences ?? 0} />
-        <MetricCard label="Standards" value={standardCount ?? 0} />
-      </div>
+      <ModuleAnalyticsDashboard
+        snapshot={analytics}
+        icons={FIVE_S_ANALYTICS_ICONS}
+        testId="five-s-analytics"
+      />
 
       <Card>
         <CardHeader>

@@ -1,5 +1,12 @@
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { BENEFITS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadBenefitsAnalytics } from "@/modules/platform-analytics/benefits";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -20,9 +27,13 @@ export default async function BenefitsPortfolioPage({
     status?: string;
     search?: string;
     benefit_class?: string;
+    range?: string;
   }>;
 }) {
   const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: BENEFITS_PERMISSIONS.read,
     module: "benefits",
@@ -34,6 +45,10 @@ export default async function BenefitsPortfolioPage({
 
   const supabase = await createServerSupabaseClient();
   const canCreate = await currentMemberHasPermission("benefits.create");
+  const benefitsAnalytics = await loadBenefitsAnalytics(
+    supabase,
+    analyticsRange,
+  );
 
   const { data: overviewData } = await callBenefitRpc<BenefitsOverview>(
     supabase,
@@ -94,6 +109,12 @@ export default async function BenefitsPortfolioPage({
             </Button>
           </div>
         }
+      />
+      <ModuleAnalyticsDashboard
+        snapshot={benefitsAnalytics}
+        icons={BENEFITS_ANALYTICS_ICONS}
+        testId="benefits-analytics"
+        donutCenterLabel="Benefits"
       />
       <BenefitPortfolio
         items={portfolio.items}

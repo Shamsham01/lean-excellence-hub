@@ -1,9 +1,15 @@
 import { GraduationCap } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +21,15 @@ import { TrainingCatalogueScopeNote } from "@/components/training/training-catal
 import { resolveTrainingCatalogListResult } from "@/modules/training/resolve-catalog-load";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function TrainingOverviewPage() {
+export default async function TrainingOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: TRAINING_PERMISSIONS.read,
     module: "training",
@@ -42,7 +56,10 @@ export default async function TrainingOverviewPage() {
 
   const compliance = summaryObj?.compliance_percent ?? null;
   const outstanding = summaryObj?.outstanding_required ?? 0;
-  const expiring = summaryObj?.expiring_in_30_days ?? 0;
+  const trainingAnalytics = await loadTrainingAnalytics(
+    supabase,
+    analyticsRange,
+  );
 
   const courses = await resolveTrainingCatalogListResult(
     await supabase
@@ -106,30 +123,11 @@ export default async function TrainingOverviewPage() {
         />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetricCard
-          label="Training compliance"
-          value={
-            <span data-testid="training-compliance-percent">
-              {compliance != null ? `${compliance}%` : "—"}
-            </span>
-          }
-        />
-        <MetricCard
-          label="Outstanding required"
-          value={
-            <span data-testid="training-outstanding-required">
-              {outstanding}
-            </span>
-          }
-        />
-        <MetricCard
-          label="Expiring in 30 days"
-          value={
-            <span data-testid="training-expiring-required">{expiring}</span>
-          }
-        />
-      </div>
+      <ModuleAnalyticsDashboard
+        snapshot={trainingAnalytics}
+        icons={TRAINING_ANALYTICS_ICONS}
+        testId="training-analytics"
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
