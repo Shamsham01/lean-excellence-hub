@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   acceptProblemSolvingAiProposal,
@@ -33,17 +33,16 @@ export function PendingAiProposalsList({
   onEdit,
 }: PendingAiProposalsListProps) {
   const router = useRouter();
-  const [proposals, setProposals] =
-    useState<CasePendingAiProposal[]>(initialProposals);
+  const [hiddenProposalIds, setHiddenProposalIds] = useState<string[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    setProposals(initialProposals);
-  }, [initialProposals]);
-
   const visible = useMemo(
-    () => proposals.filter((row) => row.status === "pending"),
-    [proposals],
+    () =>
+      initialProposals.filter(
+        (row) =>
+          row.status === "pending" && !hiddenProposalIds.includes(row.id),
+      ),
+    [hiddenProposalIds, initialProposals],
   );
 
   async function defaultAccept(proposal: CasePendingAiProposal) {
@@ -58,7 +57,7 @@ export function PendingAiProposalsList({
       return;
     }
     setActionMessage("Proposal accepted.");
-    setProposals((prev) => prev.filter((item) => item.id !== proposal.id));
+    setHiddenProposalIds((prev) => [...prev, proposal.id]);
     router.refresh();
   }
 
@@ -70,7 +69,7 @@ export function PendingAiProposalsList({
       return;
     }
     setActionMessage("Proposal rejected.");
-    setProposals((prev) => prev.filter((item) => item.id !== proposalId));
+    setHiddenProposalIds((prev) => [...prev, proposalId]);
     router.refresh();
   }
 
