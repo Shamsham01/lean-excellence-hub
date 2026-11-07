@@ -239,7 +239,10 @@ export default async function PlatformHomePage() {
       <HomeAttentionStrip items={homeAttention} />
 
       {showHomeCharts ? (
-        <PlatformHomeCharts trend={homeChartTrend} workload={homeChartWorkload} />
+        <PlatformHomeCharts
+          trend={homeChartTrend}
+          workload={homeChartWorkload}
+        />
       ) : null}
 
       <div>

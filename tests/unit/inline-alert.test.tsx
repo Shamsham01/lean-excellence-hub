@@ -22,10 +22,18 @@ describe("InlineAlert", () => {
       </div>,
     );
 
-    expect(screen.getByTestId("alert-success")).toHaveClass("border-success/40");
-    expect(screen.getByTestId("alert-warning")).toHaveClass("border-warning/40");
-    expect(screen.getByTestId("alert-error")).toHaveClass("border-destructive/40");
-    expect(screen.getByTestId("alert-info")).toHaveClass("border-information/40");
+    expect(screen.getByTestId("alert-success")).toHaveClass(
+      "border-success/40",
+    );
+    expect(screen.getByTestId("alert-warning")).toHaveClass(
+      "border-warning/40",
+    );
+    expect(screen.getByTestId("alert-error")).toHaveClass(
+      "border-destructive/40",
+    );
+    expect(screen.getByTestId("alert-info")).toHaveClass(
+      "border-information/40",
+    );
   });
 
   it("exposes alert role on Alert component", () => {

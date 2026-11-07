@@ -178,7 +178,9 @@ export function FiveSScoringScaleFields({
           {formatFiveSScalePreview(parsed)}
         </p>
       ) : (
-        <InlineAlert tone="error">Enter a minimum, maximum and step that land on exact increments.</InlineAlert>
+        <InlineAlert tone="error">
+          Enter a minimum, maximum and step that land on exact increments.
+        </InlineAlert>
       )}
     </fieldset>
   );

@@ -40,22 +40,46 @@ export function LehBarChart({
       aria-label={ariaLabel}
     >
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke={chartGridStroke} strokeDasharray="4 4" vertical={false} />
-          <XAxis dataKey="label" tick={chartTickStyle} axisLine={false} tickLine={false} />
-          <YAxis tick={chartTickStyle} axisLine={false} tickLine={false} width={36} />
+        <BarChart
+          data={data}
+          margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid
+            stroke={chartGridStroke}
+            strokeDasharray="4 4"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="label"
+            tick={chartTickStyle}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={chartTickStyle}
+            axisLine={false}
+            tickLine={false}
+            width={36}
+          />
           <Tooltip {...chartTooltipStyle} />
-          <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48} isAnimationActive={false}>
+          <Bar
+            dataKey="value"
+            radius={[6, 6, 0, 0]}
+            maxBarSize={48}
+            isAnimationActive={false}
+          >
             {data.map((entry, index) => {
               const fill =
                 entry.fill ??
-                LEH_CHART_COLORS.series[index % LEH_CHART_COLORS.series.length]!;
+                LEH_CHART_COLORS.series[
+                  index % LEH_CHART_COLORS.series.length
+                ]!;
               return <Cell key={entry.label} fill={fill} />;
             })}
             <LabelList
               dataKey="value"
               position="top"
-              className="fill-foreground text-[10px] font-mono tabular-nums"
+              className="fill-foreground font-mono text-[10px] tabular-nums"
             />
           </Bar>
         </BarChart>

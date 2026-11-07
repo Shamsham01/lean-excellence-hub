@@ -150,9 +150,7 @@ export function PeopleSetupStep({
         />
       </div>
 
-      {message ? (
-        <InlineAlert tone="error">{message}</InlineAlert>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button

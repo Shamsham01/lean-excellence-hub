@@ -27,7 +27,9 @@ export default async function SelectOrganisationPage({
           description="Choose which organisation context to work in."
         >
           {error ? (
-            <InlineAlert tone="error">That organisation is not available.</InlineAlert>
+            <InlineAlert tone="error">
+              That organisation is not available.
+            </InlineAlert>
           ) : null}
           <div className="flex flex-col gap-2">
             {organisations.map((organisation) => (

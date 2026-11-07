@@ -25,10 +25,7 @@ export function ChartCard({
   headerAction?: ReactNode;
 }) {
   return (
-    <Card
-      className={cn("overflow-hidden", className)}
-      data-testid={testId}
-    >
+    <Card className={cn("overflow-hidden", className)} data-testid={testId}>
       <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-border pb-4">
         <div className="min-w-0">
           <CardTitle className="text-base">{title}</CardTitle>

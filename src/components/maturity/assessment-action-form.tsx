@@ -88,9 +88,7 @@ export function AssessmentActionForm({
         </div>
       ) : null}
       <Textarea name="description" rows={2} placeholder="Finding context" />
-      {error ? (
-        <InlineAlert tone="error">{error}</InlineAlert>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
       {createdActionId ? (
         <p
           className="text-sm text-muted-foreground"

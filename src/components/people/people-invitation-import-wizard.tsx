@@ -291,9 +291,7 @@ export function PeopleInvitationImportWizard({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {message ? (
-          <InlineAlert tone="error">{message}</InlineAlert>
-        ) : null}
+        {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
 
         {step === 0 ? (
           <div className="flex flex-col gap-4">

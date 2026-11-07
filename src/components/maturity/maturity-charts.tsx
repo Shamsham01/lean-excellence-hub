@@ -9,7 +9,10 @@ import {
 } from "recharts";
 
 import { ChartCard } from "@/components/charts/chart-card";
-import { LEH_CHART_COLORS, chartTickStyle } from "@/components/charts/chart-theme";
+import {
+  LEH_CHART_COLORS,
+  chartTickStyle,
+} from "@/components/charts/chart-theme";
 import {
   dedupePillarScores,
   type PillarScoreRow,

@@ -139,8 +139,10 @@ export function ReadinessSummaryStep({
       </div>
 
       {completeError ? (
-        <InlineAlert tone="error">Guided setup could not be completed. Check organisation access and try
-          again.</InlineAlert>
+        <InlineAlert tone="error">
+          Guided setup could not be completed. Check organisation access and try
+          again.
+        </InlineAlert>
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">

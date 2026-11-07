@@ -374,9 +374,7 @@ export function StructureSetupStep({
         </div>
       ) : null}
 
-      {message ? (
-        <InlineAlert tone="error">{message}</InlineAlert>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
 
       <AddUnitDrawer
         open={drawerOpen}

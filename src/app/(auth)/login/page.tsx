@@ -69,7 +69,10 @@ export default async function LoginPage({
           <Link href="/signup" className="text-primary hover:underline">
             Create your account
           </Link>
-          <Link href="/workforce-login" className="text-primary hover:underline">
+          <Link
+            href="/workforce-login"
+            className="text-primary hover:underline"
+          >
             Workforce sign in
           </Link>
         </footer>

@@ -150,7 +150,9 @@ export default async function OnboardingPage({
           description={`${current.organisation_name} · ${snapshot?.intended_site_quantity ?? 1} site(s). Enterprise is Contact Sales only. Founder Pilot is not public.`}
         >
           {error ? (
-            <InlineAlert tone="error">Select Essentials or Professional to continue.</InlineAlert>
+            <InlineAlert tone="error">
+              Select Essentials or Professional to continue.
+            </InlineAlert>
           ) : null}
           <form
             action={startCheckout}

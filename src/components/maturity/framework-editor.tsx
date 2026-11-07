@@ -459,9 +459,7 @@ export function FrameworkEditor({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <AuthoringSaveFeedback message={saveMessage} />
-        {error ? (
-          <InlineAlert tone="error">{error}</InlineAlert>
-        ) : null}
+        {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
         {step === "details" ? (
           <form

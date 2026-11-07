@@ -39,7 +39,9 @@ export function FoundingOrganisationForm({
       data-testid="create-organisation-form"
     >
       {error ? (
-        <InlineAlert tone="error">Check the organisation details and try again.</InlineAlert>
+        <InlineAlert tone="error">
+          Check the organisation details and try again.
+        </InlineAlert>
       ) : null}
 
       <fieldset className="flex flex-col gap-3">

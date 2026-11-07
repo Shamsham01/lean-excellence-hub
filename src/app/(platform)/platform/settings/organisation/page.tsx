@@ -85,8 +85,10 @@ export default async function OrganisationSettingsPage({
             data-testid="multi-site-intent-form"
           >
             {error === "intent" ? (
-              <InlineAlert tone="error">Organisation context could not be updated. Ask an organisation
-                administrator if this continues.</InlineAlert>
+              <InlineAlert tone="error">
+                Organisation context could not be updated. Ask an organisation
+                administrator if this continues.
+              </InlineAlert>
             ) : null}
             <label htmlFor="multiSiteIntent" className="text-sm font-medium">
               Wider multi-site organisation

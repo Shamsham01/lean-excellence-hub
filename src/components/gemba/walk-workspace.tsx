@@ -123,7 +123,9 @@ function AnswerSaveFeedback({
       ) : null}
       {status === "error" ? (
         <>
-          <InlineAlert tone="error">{error ?? ANSWER_SAVE_ERROR_MESSAGE}</InlineAlert>
+          <InlineAlert tone="error">
+            {error ?? ANSWER_SAVE_ERROR_MESSAGE}
+          </InlineAlert>
           {canRetry ? (
             <Button
               type="button"

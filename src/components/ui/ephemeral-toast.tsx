@@ -25,7 +25,10 @@ export function EphemeralToast({
 
   if (!message) return null;
 
-  const toneClasses: Record<NonNullable<EphemeralToastProps["tone"]>, string> = {
+  const toneClasses: Record<
+    NonNullable<EphemeralToastProps["tone"]>,
+    string
+  > = {
     default: "border-border bg-card text-foreground",
     success: "border-success/40 bg-success/10 text-success",
     warning: "border-warning/40 bg-warning/10 text-warning",

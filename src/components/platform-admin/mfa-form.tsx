@@ -128,18 +128,14 @@ export function PlatformMfaForm({
               onChange={(event) => setCode(event.target.value)}
             />
           </div>
-          {error ? (
-            <InlineAlert tone="error">{error}</InlineAlert>
-          ) : null}
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
           <Button type="submit" disabled={pending}>
             Confirm authenticator
           </Button>
         </form>
       ) : (
         <div className="flex flex-col gap-3">
-          {error ? (
-            <InlineAlert tone="error">{error}</InlineAlert>
-          ) : null}
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
           <Button type="button" onClick={enroll} disabled={pending}>
             Set up authenticator
           </Button>

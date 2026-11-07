@@ -33,7 +33,7 @@ for (const file of files) {
   }
   const next = src.replace(
     /<p className="text-sm text-destructive" role="alert">\s*([\s\S]*?)\s*<\/p>/g,
-    "<InlineAlert tone=\"error\">$1</InlineAlert>",
+    '<InlineAlert tone="error">$1</InlineAlert>',
   );
   if (next !== src) {
     writeFileSync(file, next);

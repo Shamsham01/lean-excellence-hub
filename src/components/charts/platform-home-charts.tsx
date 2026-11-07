@@ -10,7 +10,10 @@ export type PlatformHomeChartInput = {
   workload: Array<{ label: string; value: number }>;
 };
 
-export function PlatformHomeCharts({ trend, workload }: PlatformHomeChartInput) {
+export function PlatformHomeCharts({
+  trend,
+  workload,
+}: PlatformHomeChartInput) {
   const barData = workload.map((row, index) => ({
     ...row,
     fill:

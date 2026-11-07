@@ -97,9 +97,7 @@ export function InvitationActivateForm({
         </div>
       </dl>
 
-      {error ? (
-        <InlineAlert tone="error">{error}</InlineAlert>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">

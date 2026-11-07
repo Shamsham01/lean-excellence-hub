@@ -41,16 +41,41 @@ export function LehAreaLineChart({
       aria-label={ariaLabel}
     >
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <LineChart
+          data={data}
+          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={LEH_CHART_COLORS.accent} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={LEH_CHART_COLORS.accent} stopOpacity={0.02} />
+              <stop
+                offset="0%"
+                stopColor={LEH_CHART_COLORS.accent}
+                stopOpacity={0.35}
+              />
+              <stop
+                offset="100%"
+                stopColor={LEH_CHART_COLORS.accent}
+                stopOpacity={0.02}
+              />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke={chartGridStroke} strokeDasharray="4 4" vertical={false} />
-          <XAxis dataKey="label" tick={chartTickStyle} axisLine={false} tickLine={false} />
-          <YAxis tick={chartTickStyle} axisLine={false} tickLine={false} width={36} />
+          <CartesianGrid
+            stroke={chartGridStroke}
+            strokeDasharray="4 4"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="label"
+            tick={chartTickStyle}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={chartTickStyle}
+            axisLine={false}
+            tickLine={false}
+            width={36}
+          />
           <Tooltip {...chartTooltipStyle} />
           <Area
             type="monotone"

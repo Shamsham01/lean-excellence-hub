@@ -13,11 +13,7 @@ export function SignupForm({
   testId?: string;
 }) {
   return (
-    <form
-      action={action}
-      className="flex flex-col gap-4"
-      data-testid={testId}
-    >
+    <form action={action} className="flex flex-col gap-4" data-testid={testId}>
       <div className="flex flex-col gap-2">
         <AuthFieldLabel htmlFor="email" required>
           Email

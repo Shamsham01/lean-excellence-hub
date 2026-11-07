@@ -49,9 +49,7 @@ export function ReturnForCorrectionForm({
         onChange={(event) => setReason(event.target.value)}
         placeholder="Explain what must be corrected before resubmission."
       />
-      {error ? (
-        <InlineAlert tone="error">{error}</InlineAlert>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
       <Button
         type="submit"
         variant="outline"

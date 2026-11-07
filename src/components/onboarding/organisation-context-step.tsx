@@ -119,9 +119,7 @@ export function OrganisationContextStep({
         </p>
       </div>
 
-      {error ? (
-        <InlineAlert tone="error">{error}</InlineAlert>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button

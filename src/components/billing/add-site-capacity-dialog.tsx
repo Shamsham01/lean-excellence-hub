@@ -273,9 +273,7 @@ export function AddSiteCapacityDialog({
           </p>
         ) : null}
 
-        {error ? (
-          <InlineAlert tone="error">{error}</InlineAlert>
-        ) : null}
+        {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
         <DialogFooter>
           {step === "choose" ? (

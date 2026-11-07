@@ -54,7 +54,7 @@ export function LehDonutChart({
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+          <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">
             {centreValue}
           </span>
           <span className="text-xs text-muted-foreground">{centreLabel}</span>
@@ -80,7 +80,7 @@ export function LehDonutChart({
               />
               {segment.name}
             </span>
-            <span className="font-mono tabular-nums text-foreground">
+            <span className="font-mono text-foreground tabular-nums">
               {segment.value}
             </span>
           </li>

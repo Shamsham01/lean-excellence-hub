@@ -18,7 +18,8 @@ async function applyTheme(page, theme) {
   await page.evaluate((t) => {
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(t);
-    document.documentElement.style.colorScheme = t === "dark" ? "dark" : "light";
+    document.documentElement.style.colorScheme =
+      t === "dark" ? "dark" : "light";
   }, theme);
 }
 
@@ -41,16 +42,8 @@ for (const viewport of [
     const t = `${theme}-${viewport.tag}`;
     await capture(page, `sign-in-${t}.png`, "/login");
     await capture(page, `reset-password-${t}.png`, "/update-password");
-    await capture(
-      page,
-      `recover-alert-info-${t}.png`,
-      "/recover?sent=true",
-    );
-    await capture(
-      page,
-      `sign-in-error-alert-${t}.png`,
-      "/login?error=invalid",
-    );
+    await capture(page, `recover-alert-info-${t}.png`, "/recover?sent=true");
+    await capture(page, `sign-in-error-alert-${t}.png`, "/login?error=invalid");
     await context.close();
   }
 }

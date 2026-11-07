@@ -136,9 +136,7 @@ export function StartAssessmentForm({
       className="flex max-w-lg flex-col gap-4"
       data-testid="start-assessment-form"
     >
-      {error ? (
-        <InlineAlert tone="error">{error}</InlineAlert>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="modelVersionId">Framework version</Label>

@@ -331,9 +331,7 @@ export function CreateWorkforceUserForm({
           </select>
         </div>
       ) : null}
-      {message ? (
-        <InlineAlert tone="error">{message}</InlineAlert>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
       <Button
         type="submit"
         disabled={loading || offers.length === 0}

@@ -208,9 +208,7 @@ export function RolloutWorkspace({
               </Button>
             </div>
           </form>
-          {message ? (
-            <InlineAlert tone="error">{message}</InlineAlert>
-          ) : null}
+          {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
         </section>
       ) : null}
 

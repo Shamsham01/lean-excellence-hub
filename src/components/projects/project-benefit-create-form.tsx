@@ -136,9 +136,7 @@ export function ProjectBenefitCreateForm({
           </select>
         </div>
       )}
-      {error ? (
-        <InlineAlert tone="error">{error}</InlineAlert>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
       <Button
         size="sm"
         onClick={() => void handleCreate()}

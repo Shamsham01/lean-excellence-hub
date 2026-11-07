@@ -65,9 +65,11 @@ export async function SuggestionContributorAccess({
             Your suggestions
           </h2>
           {own?.status === "error" || own?.status === "unavailable" ? (
-            <InlineAlert tone="error">{own.status === "error"
+            <InlineAlert tone="error">
+              {own.status === "error"
                 ? own.message
-                : "Your suggestions could not be loaded."}</InlineAlert>
+                : "Your suggestions could not be loaded."}
+            </InlineAlert>
           ) : own?.suggestions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               You have not created a suggestion yet.
