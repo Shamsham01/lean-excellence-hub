@@ -1,6 +1,7 @@
 import { MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/maturity-framework-builder";
 import { fakeMaturityBuilderResponse } from "@/platform/ai/providers/fake-maturity-builder";
 import { fakeModuleSetupBuilderResponse } from "@/platform/ai/providers/fake-module-setup-builder";
+import { fakeStageDraftToolResponse } from "@/platform/ai/providers/fake-stage-draft";
 import type {
   AIProvider,
   CreateResponseInput,
@@ -107,6 +108,11 @@ export class FakeAIProvider implements AIProvider {
           reasoningTokens: 0,
         },
       };
+    }
+
+    const stageDraft = fakeStageDraftToolResponse(lastUser, input.tools);
+    if (stageDraft) {
+      return stageDraft;
     }
 
     if (lastUser.toLowerCase().includes("propose hypothesis")) {

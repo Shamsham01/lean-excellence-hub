@@ -127,7 +127,7 @@ vi.mock("@/platform/ai/config", () => ({
     model: "gpt-test",
     maxOutputTokens: 6000,
     maxToolCalls: 8,
-    stageDraftMaxToolCalls: 4,
+    stageDraftMaxToolCalls: 6,
     runTimeoutMs: 45_000,
     turnWallClockMs: 45_000,
   },
@@ -700,6 +700,6 @@ describe("runAiTurn stateless tool continuation", () => {
     const writeToolCalls = executeProblemSolvingToolMock.mock.calls.filter(
       ([, toolName]) => String(toolName).startsWith("propose_"),
     );
-    expect(writeToolCalls.length).toBeLessThanOrEqual(4);
+    expect(writeToolCalls.length).toBeLessThanOrEqual(6);
   });
 });

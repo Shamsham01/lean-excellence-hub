@@ -15,6 +15,10 @@ import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-proble
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
 import { formatProposalAcceptanceError } from "@/platform/ai/proposals/contracts";
 import type { AiSessionMode } from "@/platform/ai/types";
+import {
+  countPendingProposalsForViewStage,
+  resolveCanonicalStageKey,
+} from "@/lib/problem-solving/stage-draft";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type ActionResult<T = undefined> = { error?: string; ok?: true; data?: T };
@@ -224,9 +228,13 @@ export async function draftProblemSolvingStage(input: {
     const proposalsRaw =
       (sessionDetail as { proposals?: PendingProposalRow[] } | null)
         ?.proposals ?? [];
-    const pendingProposalCount = proposalsRaw.filter(
-      (row) => row.status === "pending",
-    ).length;
+    const viewStage = resolveCanonicalStageKey(
+      input.viewStageKey ?? input.stageKey,
+    );
+    const pendingProposalCount = countPendingProposalsForViewStage(
+      proposalsRaw,
+      viewStage,
+    );
 
     revalidatePath(`/platform/problem-solving/${input.caseId}`);
     return {
@@ -277,6 +285,8 @@ export async function draftProblemSolvingStage(input: {
 export async function reconcileProblemSolvingStageDraft(input: {
   caseId: string;
   idempotencyKey: string;
+  stageKey?: string;
+  viewStageKey?: string;
 }): Promise<
   ActionResult<{
     sessionId: string;
@@ -317,15 +327,19 @@ export async function reconcileProblemSolvingStageDraft(input: {
       const proposalsRaw =
         (sessionDetail as { proposals?: PendingProposalRow[] } | null)
           ?.proposals ?? [];
+      const viewStage = resolveCanonicalStageKey(
+        input.viewStageKey ?? input.stageKey ?? "DEFINE",
+      );
       revalidatePath(`/platform/problem-solving/${input.caseId}`);
       return {
         ok: true,
         data: toPlainJson({
           sessionId: runRow.ai_session_id,
           runId: reconciled.runId,
-          pendingProposalCount: proposalsRaw.filter(
-            (row) => row.status === "pending",
-          ).length,
+          pendingProposalCount: countPendingProposalsForViewStage(
+            proposalsRaw,
+            viewStage,
+          ),
         }),
       };
     }

@@ -1,3 +1,4 @@
+import { buildStageAutoDraftPrompt } from "@/lib/problem-solving/stage-draft";
 import type { MethodStage } from "@/lib/problem-solving/stages";
 import { semanticStageLabel } from "@/lib/problem-solving/stages";
 
@@ -20,8 +21,7 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "Confirm the problem statement is observable and specific.",
       "Capture scope, impact, and target condition.",
     ],
-    autoDraftPrompt:
-      "Review the case definition. Propose an improved problem statement and any missing current-condition facts as draft proposals I can accept.",
+    autoDraftPrompt: "",
   },
   CURRENT_CONDITION: {
     title: "Current condition",
@@ -31,8 +31,7 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "Add observations and measured facts with evidence.",
       "Challenge assumptions before cause analysis.",
     ],
-    autoDraftPrompt:
-      "From the authorised case data, propose current-condition items (observations and measured facts only) as draft proposals.",
+    autoDraftPrompt: "",
   },
   TARGET_CONDITION: {
     title: "Target condition",
@@ -42,8 +41,7 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "State what good looks like in operation.",
       "Keep it testable later.",
     ],
-    autoDraftPrompt:
-      "Call propose_target_condition with concise, observable target-condition wording based on the authorised problem statement and current condition, as a draft the human can accept. Describe the desired operational state—not the solution—and do not treat it as already achieved. Do not only ask a question.",
+    autoDraftPrompt: "",
   },
   ROOT_CAUSE_ANALYSIS: {
     title: "Cause analysis",
@@ -54,8 +52,7 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "Place fishbone causes on the 6M diagram and promote strong causes to hypotheses.",
       "Plan a test before calling anything a root cause.",
     ],
-    autoDraftPrompt:
-      "Using read tools first, draft a 5 Why chain and fishbone causes relevant to this case as propose_* draft proposals. Do not verify root cause.",
+    autoDraftPrompt: "",
   },
   COUNTERMEASURES: {
     title: "Countermeasures",
@@ -64,30 +61,26 @@ const STAGE_CONFIG: Record<string, Omit<GuidedStageConfig, "semanticKey">> = {
       "Tie countermeasures to tested hypotheses.",
       "Note safety and unintended effects.",
     ],
-    autoDraftPrompt:
-      "Propose countermeasures linked to the leading hypotheses as draft proposals.",
+    autoDraftPrompt: "",
   },
   IMPLEMENTATION: {
     title: "Implementation",
     purpose: "Track doing the work separately from proving it worked.",
     actions: ["Create actions with clear owners and due dates."],
-    autoDraftPrompt:
-      "Propose implementation actions (universal_action) for the selected countermeasures as draft proposals.",
+    autoDraftPrompt: "",
   },
   EFFECTIVENESS_CHECK: {
     title: "Effectiveness check",
     purpose: "Compare results to criteria after changes are in place.",
     actions: ["Define criteria, baseline, and target before claiming success."],
-    autoDraftPrompt:
-      "Propose effectiveness check criteria for this case as draft proposals.",
+    autoDraftPrompt: "",
   },
   SUSTAINMENT: {
     title: "Sustainment",
     purpose:
       "Standardise checks so the gain holds after the project team moves on.",
     actions: ["Add sustainment checks and lessons learned."],
-    autoDraftPrompt:
-      "Propose sustainment items and lessons learned drafts for this case.",
+    autoDraftPrompt: "",
   },
 };
 
@@ -107,10 +100,10 @@ export function guidedStageConfig(
       methodStage?.description ??
       "Work this stage with the team; accept Lean AI drafts before saving records.",
     actions: ["Use Lean AI drafts, then accept or edit each proposal."],
-    autoDraftPrompt:
-      "Facilitate this investigation stage and propose the next useful draft records.",
+    autoDraftPrompt: "",
   };
-  return { semanticKey: key, ...base };
+  const autoDraftPrompt = buildStageAutoDraftPrompt(key);
+  return { semanticKey: key, ...base, autoDraftPrompt };
 }
 
 export function resolveViewStage(

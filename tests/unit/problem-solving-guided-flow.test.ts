@@ -33,6 +33,7 @@ describe("problem solving guided flow", () => {
   it("asks stage auto-draft to call propose_target_condition", () => {
     const config = guidedStageConfig("TARGET_CONDITION");
     expect(config.autoDraftPrompt).toMatch(/propose_target_condition/i);
+    expect(config.autoDraftPrompt.toLowerCase()).toMatch(/queue at least/);
   });
 
   it("resolves the viewed stage by id", () => {
