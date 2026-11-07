@@ -98,35 +98,31 @@
   --leh-crop-h: 355;
 }
 
-.marketing .leh-brand[data-variant="full"] .leh-brand-lockup-img {
-  width: calc(
-    var(--leh-brand-lockup-height) * var(--leh-src-w) / var(--leh-crop-h)
-  );
-  max-width: none;
-  height: calc(
-    var(--leh-brand-lockup-height) * var(--leh-src-h) / var(--leh-crop-h)
-  );
-  margin-left: calc(
-    -1 * var(--leh-brand-lockup-height) * var(--leh-crop-x) / var(--leh-crop-h)
-  );
-  margin-top: calc(
-    -1 * var(--leh-brand-lockup-height) * var(--leh-crop-y) / var(--leh-crop-h)
-  );
-  object-fit: none;
-  object-position: left top;
-}
-
 /* Sticky marketing header uses official PNG lockups with transparent margins.
    Sidebar crop math does not land ink in this slot height; contain keeps
    the horizontal lockup visible on light and dark backgrounds. */
 .marketing-header .leh-brand[data-variant="full"] {
+  --leh-brand-lockup: 12.75rem;
   --leh-brand-lockup-height: 3.35rem;
 }
 
-.marketing-header .leh-brand[data-variant="full"] .leh-brand-lockup-img {
-  width: auto;
-  max-width: 100%;
+.marketing-header .leh-brand-lockup {
+  width: min(var(--leh-brand-lockup), 42vw);
+  max-width: min(var(--leh-brand-lockup), 42vw);
+}
+
+.marketing-header .leh-brand-lockup span.leh-brand-lockup-light,
+.marketing-header .leh-brand-lockup span.leh-brand-lockup-dark {
+  display: block;
+  width: 100%;
   height: 100%;
+}
+
+.marketing-header .leh-brand[data-variant="full"] .leh-brand-lockup-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
   margin: 0;
   object-fit: contain;
   object-position: left center;

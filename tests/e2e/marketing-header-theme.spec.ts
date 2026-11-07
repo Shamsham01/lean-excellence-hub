@@ -40,8 +40,11 @@ test.describe("marketing header theme stability", () => {
     expect(before.height).toBeGreaterThan(0);
     expect(before.scrollY).toBe(SCROLL_Y);
 
+    const appearanceTrigger = page
+      .locator(".marketing-header-bar")
+      .getByRole("button", { name: /^Appearance: / });
     for (const choice of ["Dark", "Light", "Dark", "System"] as const) {
-      await banner.getByRole("button", { name: /^Appearance: / }).click();
+      await appearanceTrigger.click();
       await expect(
         page.getByRole("menu", { name: "Appearance" }),
       ).toBeVisible();
