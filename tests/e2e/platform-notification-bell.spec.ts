@@ -26,14 +26,15 @@ test.describe("Platform notification bell", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/platform/);
 
-    const bell = page.getByTestId("platform-notification-bell");
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const bell = page
+      .getByTestId("leanai-assistant-rail")
+      .getByTestId("platform-notification-bell");
     await expect(bell).toBeVisible();
     await bell.click();
-
-    await expect(page.getByTestId("platform-notification-list")).toContainText(
-      /caught up/i,
-    );
-    await expect(page.getByTestId("platform-notification-count")).toHaveCount(
+    await expect(bell).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByText("You are all caught up.")).toBeVisible();
+    await expect(bell.getByTestId("platform-notification-count")).toHaveCount(
       0,
     );
   });

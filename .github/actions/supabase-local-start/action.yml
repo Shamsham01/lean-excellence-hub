@@ -39,8 +39,19 @@ runs:
           done
         }
 
+        release_local_supabase_ports() {
+          local ports=(54321 54322 54320 54323 54324 54327 54329)
+          if command -v fuser >/dev/null 2>&1; then
+            for port in "${ports[@]}"; do
+              fuser -k "${port}/tcp" 2>/dev/null || true
+            done
+          fi
+          docker ps -aq --filter "name=supabase" | xargs -r docker rm -f 2>/dev/null || true
+        }
+
         stop_partial_stack() {
           npm run db:stop || true
+          release_local_supabase_ports
         }
 
         exclude_flags=()
@@ -54,9 +65,12 @@ runs:
           done
         fi
 
+        release_local_supabase_ports
+
         attempt=1
         while [ "${attempt}" -le "${MAX_ATTEMPTS}" ]; do
           echo "Supabase startup attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${STARTUP_TIMEOUT_MINUTES}m)"
+          release_local_supabase_ports
           start_epoch="$(date +%s)"
           if timeout "${STARTUP_TIMEOUT_MINUTES}m" npx supabase start "${exclude_flags[@]}"; then
             end_epoch="$(date +%s)"

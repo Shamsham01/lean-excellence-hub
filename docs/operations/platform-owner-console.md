@@ -135,10 +135,18 @@ where auth_user_id = '<auth-user-uuid>'
   and status = 'active';
 ```
 
-## Operator email
+## Operator email and in-app alerts
 
-`private.platform_notification_settings` is created with delivery disabled and
-recipient `admin.lean.excellence.hub@gmail.com`. Triggers enqueue:
+Authorisation uses `private.platform_admins` (Auth user UUID allowlist). There is
+no env-var shortcut for console access.
+
+Email delivery uses `private.platform_notification_settings.recipient_email`.
+The migration default is `notifications-operator@configure.invalid` until a
+database owner sets a production recipient. In-app signup and billing alerts fan
+out to every active allowlisted platform admin when a non-suppressed row is
+inserted into `private.platform_notification_events`.
+
+Triggers enqueue:
 
 - `founder.email_confirmed` when a founding signup binding is consumed by a
   confirmed Auth user;
@@ -158,7 +166,9 @@ The `platform-notification-delivery` Edge Function claims due rows, sends
 through the existing Resend operational email provider, and completes or
 retries with the same lease token. It authenticates with the same secret-key
 check as `notification-delivery` (`verify_jwt = false` in `config.toml` because
-the function checks the key itself).
+the function checks the key itself). The pg_cron job
+`leh_platform_notification_delivery_every_minute` invokes the worker only while
+`delivery_enabled` is true.
 
 Leave delivery disabled until the function secrets below are set. Enabling it
 sends every still-pending row, including events queued while delivery was off.
