@@ -17,6 +17,7 @@ import {
   hypothesisCategoryLabel,
   hypothesisStatusBadgeVariant,
   hypothesisStatusLabel,
+  normalizeFishboneCategory,
 } from "@/lib/problem-solving/hypothesis";
 import type {
   ProblemSolvingAnalysis,
@@ -54,8 +55,21 @@ export function UnifiedCauseAnalysis({
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fishboneAnalysis =
-    analyses.find((item) => item.analysis_type === "fishbone") ?? null;
+  const fishboneAnalysis = useMemo(() => {
+    const fishbones = analyses.filter(
+      (item) => item.analysis_type === "fishbone",
+    );
+    if (fishbones.length === 0) return null;
+    return fishbones.reduce((primary, candidate) => {
+      const primaryCount = analysisNodes.filter(
+        (node) => node.analysis_id === primary.id,
+      ).length;
+      const candidateCount = analysisNodes.filter(
+        (node) => node.analysis_id === candidate.id,
+      ).length;
+      return candidateCount > primaryCount ? candidate : primary;
+    });
+  }, [analyses, analysisNodes]);
 
   const fishboneNodes = useMemo(() => {
     if (!fishboneAnalysis) return [] as AnalysisNodeView[];
@@ -70,7 +84,7 @@ export function UnifiedCauseAnalysis({
       map.set(category, []);
     }
     for (const node of fishboneNodes) {
-      const key = node.category ?? "other";
+      const key = normalizeFishboneCategory(node.category);
       const list = map.get(key) ?? [];
       list.push(node);
       map.set(key, list);
@@ -112,22 +126,22 @@ export function UnifiedCauseAnalysis({
 
   return (
     <div
-      className="flex flex-col gap-6"
+      className="flex min-w-0 max-w-full flex-col gap-6 overflow-x-hidden"
       data-testid="pps-unified-cause-analysis"
     >
       <FiveWhyGuidedChain analyses={analyses} analysisNodes={analysisNodes} />
 
-      <Card>
+      <Card className="min-w-0 max-w-full">
         <CardHeader>
           <CardTitle className="text-base">Fishbone (6M)</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="grid min-w-0 max-w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {HYPOTHESIS_CATEGORIES.map((category) => {
             const nodes = nodesByCategory.get(category) ?? [];
             return (
               <div
                 key={category}
-                className="rounded-lg border bg-muted/20 p-3"
+                className="min-w-0 max-w-full rounded-lg border bg-muted/20 p-3"
                 data-testid={`pps-fishbone-${category}`}
               >
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -142,9 +156,9 @@ export function UnifiedCauseAnalysis({
                     nodes.map((node) => (
                       <li
                         key={node.id}
-                        className="rounded-md border bg-background p-2 text-sm"
+                        className="min-w-0 max-w-full rounded-md border bg-background p-2 text-sm"
                       >
-                        <p>{node.label}</p>
+                        <p className="break-words">{node.label}</p>
                         {(canManage || canContribute) && !node.hypothesis_id ? (
                           <Button
                             type="button"

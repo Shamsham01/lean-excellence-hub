@@ -115,6 +115,22 @@ export class FakeAIProvider implements AIProvider {
       return stageDraft;
     }
 
+    if (lastUser.toLowerCase().includes("propose fishbone")) {
+      return this.envelopeResponse(
+        "A fishbone machine cause is queued for your review.",
+        {
+          proposal_type: "fishbone_cause",
+          payload: {
+            analysis_title: "Film wander fishbone",
+            label: "Guide roller wear after heat soak",
+            category: "machine",
+          },
+          explanation:
+            "Machine branch cause for the 6M fishbone — accept to add it to the diagram.",
+        },
+      );
+    }
+
     if (lastUser.toLowerCase().includes("propose hypothesis")) {
       return this.envelopeResponse(
         "A technical hypothesis remains unverified until tested.",

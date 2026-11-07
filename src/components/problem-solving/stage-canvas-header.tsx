@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, MessageSquare } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,9 @@ type StageCanvasHeaderProps = {
   canMoveStage: boolean;
   onAdvanceToViewedStage?: () => void;
   advancing?: boolean;
+  leanAiOpen?: boolean;
+  canToggleLeanAi?: boolean;
+  onToggleLeanAi?: () => void;
 };
 
 export function StageCanvasHeader({
@@ -28,15 +31,18 @@ export function StageCanvasHeader({
   canMoveStage,
   onAdvanceToViewedStage,
   advancing,
+  leanAiOpen = true,
+  canToggleLeanAi = false,
+  onToggleLeanAi,
 }: StageCanvasHeaderProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <div
-      className="flex flex-wrap items-start justify-between gap-3"
+      className="flex min-w-0 max-w-full flex-wrap items-start justify-between gap-3"
       data-testid="pps-stage-canvas-header"
     >
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <h2 className="text-lg font-semibold tracking-tight text-foreground">
           {config.title}
         </h2>
@@ -71,6 +77,24 @@ export function StageCanvasHeader({
           </DialogContent>
         </Dialog>
       </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {canToggleLeanAi && onToggleLeanAi ? (
+          <Button
+            type="button"
+            size="sm"
+            variant={leanAiOpen ? "secondary" : "default"}
+            className="gap-1.5"
+            data-testid="pps-lean-ai-header-toggle"
+            aria-pressed={leanAiOpen}
+            aria-label={
+              leanAiOpen ? "Hide Lean AI copilot" : "Open Lean AI copilot"
+            }
+            onClick={onToggleLeanAi}
+          >
+            <MessageSquare className="size-4 shrink-0" aria-hidden />
+            {leanAiOpen ? "Hide Lean AI" : "Lean AI"}
+          </Button>
+        ) : null}
       {!isViewingCurrentStage && canMoveStage && onAdvanceToViewedStage ? (
         <Button
           type="button"
@@ -83,6 +107,7 @@ export function StageCanvasHeader({
           {advancing ? "Updating…" : "Set as current stage"}
         </Button>
       ) : null}
+      </div>
     </div>
   );
 }

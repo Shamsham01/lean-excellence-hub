@@ -11,6 +11,34 @@ export function leanAiPanel(page: Page) {
   return page.getByTestId("lean-ai-panel");
 }
 
+export async function ensureLeanAiPanelOpen(page: Page) {
+  const panel = leanAiPanel(page);
+  if (await panel.isVisible()) {
+    return;
+  }
+  const mobileTrigger = page.getByTestId("pps-mobile-copilot-trigger");
+  if (await mobileTrigger.isVisible()) {
+    await mobileTrigger.click();
+    await expect(panel).toBeVisible();
+    return;
+  }
+  const headerToggle = page.getByTestId("pps-lean-ai-header-toggle");
+  if (await headerToggle.isVisible()) {
+    const pressed = await headerToggle.getAttribute("aria-pressed");
+    if (pressed === "true") {
+      return;
+    }
+    await headerToggle.click();
+    await expect(panel).toBeVisible();
+    return;
+  }
+  const expand = page.getByTestId("lean-ai-expand");
+  if (await expand.isVisible()) {
+    await expand.click();
+    await expect(panel).toBeVisible();
+  }
+}
+
 export async function fillLeanAiPrompt(page: Page, text: string) {
   const input = leanAiPanel(page).getByTestId("lean-ai-input");
   await input.scrollIntoViewIfNeeded();
@@ -29,6 +57,10 @@ export async function sendLeanAiPrompt(page: Page) {
 export async function expectGuidedProblemSolvingWorkspace(page: Page) {
   await expect(page.getByTestId("problem-solving-workspace")).toBeVisible();
   await expect(page.getByTestId("pps-stage-rail")).toBeVisible();
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width < 1024) {
+    return;
+  }
   await expect(leanAiPanel(page)).toBeVisible();
 }
 
@@ -72,11 +104,18 @@ export async function openProblemSolvingStage(
   page: Page,
   semanticStageKey: string,
 ) {
-  const rail = page.getByTestId("pps-stage-rail");
+  const viewport = page.viewportSize();
+  const useMobileRail = Boolean(viewport && viewport.width < 1024);
+  const rail = useMobileRail
+    ? page.getByTestId("pps-stage-rail-mobile")
+    : page.getByTestId("pps-stage-rail");
   await expect(rail).toBeVisible({
     timeout: 15_000,
   });
-  const stage = page.getByTestId(`pps-stage-${semanticStageKey}`);
+  const stageTestId = useMobileRail
+    ? `pps-stage-mobile-${semanticStageKey}`
+    : `pps-stage-${semanticStageKey}`;
+  const stage = page.getByTestId(stageTestId);
   if ((await stage.count()) > 0) {
     await expect(stage).toBeVisible({ timeout: 15_000 });
     await stage.scrollIntoViewIfNeeded();
