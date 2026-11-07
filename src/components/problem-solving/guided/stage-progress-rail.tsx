@@ -174,7 +174,7 @@ export function StageProgressRail({
       {showMobile ? (
         <nav
           aria-label="Problem solving stages"
-          className="tabs-scroll min-w-0 overflow-x-auto pb-2 lg:hidden"
+          className="tabs-scroll max-w-full min-w-0 overflow-x-auto pb-2 lg:hidden"
           data-testid="pps-stage-rail-mobile"
         >
           <ol className="flex min-w-max gap-2">

@@ -64,7 +64,66 @@ export function hypothesisStatusBadgeVariant(
 
 export function hypothesisCategoryLabel(category: string | null): string {
   if (!category) return "—";
-  return CATEGORY_LABELS[category as HypothesisCategory] ?? category;
+  const normalized = normalizeFishboneCategory(category);
+  return CATEGORY_LABELS[normalized] ?? category;
+}
+
+const FISHBONE_CATEGORY_ALIAS_KEYS: Record<string, HypothesisCategory> = {
+  man: "man",
+  people: "man",
+  person: "man",
+  human: "man",
+  humans: "man",
+  personnel: "man",
+  operator: "man",
+  operators: "man",
+  machine: "machine",
+  machines: "machine",
+  equipment: "machine",
+  material: "material",
+  materials: "material",
+  method: "method",
+  methods: "method",
+  process: "method",
+  measurement: "measurement",
+  measurements: "measurement",
+  measure: "measurement",
+  environment: "environment",
+  environments: "environment",
+  mothernature: "environment",
+  mother_nature: "environment",
+  nature: "environment",
+  other: "other",
+  uncategorised: "other",
+  uncategorized: "other",
+  unknown: "other",
+};
+
+function fishboneAliasLookupKey(raw: string): string {
+  const compact = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_");
+  return compact.replace(/^_+|_+$/g, "");
+}
+
+/** Map fishbone / 6M labels (including demo title case and Lean AI aliases) to canonical keys. */
+export function normalizeFishboneCategory(
+  raw: string | null | undefined,
+): HypothesisCategory {
+  if (!raw || !raw.trim()) {
+    return "other";
+  }
+  const trimmed = raw.trim();
+  const lookup = fishboneAliasLookupKey(trimmed);
+  const direct = FISHBONE_CATEGORY_ALIAS_KEYS[lookup];
+  if (direct) {
+    return direct;
+  }
+  if ((HYPOTHESIS_CATEGORIES as readonly string[]).includes(lookup)) {
+    return lookup as HypothesisCategory;
+  }
+  return "other";
 }
 
 export const HYPOTHESIS_TEST_CONCLUSIONS = [

@@ -314,10 +314,10 @@ export function AiFacilitatorPanel({
   const shellClass =
     layout === "dock"
       ? cn(
-          "pps-lean-ai-copilot flex min-h-0 flex-1 flex-col bg-copilot-surface shadow-[var(--shadow-theme-sm)] lg:border-l lg:border-primary/20",
+          "pps-lean-ai-copilot flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden bg-copilot-surface shadow-[var(--shadow-theme-sm)] lg:border-l lg:border-primary/20",
           collapsed
-            ? "lg:w-12 lg:flex-none"
-            : "lg:w-[380px] lg:max-w-[380px] lg:shrink-0",
+            ? "lg:w-12 lg:max-w-12 lg:flex-none"
+            : "w-full max-w-full lg:w-[380px] lg:max-w-[380px] lg:shrink-0",
         )
       : "rounded-xl border border-border bg-card shadow-sm";
 
@@ -334,6 +334,7 @@ export function AiFacilitatorPanel({
           size="icon"
           className="m-2"
           aria-label="Expand Lean AI"
+          data-testid="lean-ai-expand"
           onClick={() => onCollapsedChange?.(false)}
         >
           <ChevronLeft className="size-4" aria-hidden />
@@ -348,7 +349,7 @@ export function AiFacilitatorPanel({
       data-testid="lean-ai-panel"
       aria-label="Lean AI copilot"
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+      <div className="flex max-w-full min-w-0 shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           {layout === "card" ? (
             <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
@@ -439,8 +440,8 @@ export function AiFacilitatorPanel({
                 className={cn(
                   "rounded-xl px-3 py-2.5 leading-relaxed",
                   message.role === "user"
-                    ? "ml-8 border border-border/60 bg-card"
-                    : "mr-2 bg-muted/70",
+                    ? "ml-2 max-w-full border border-border/60 bg-card sm:ml-6"
+                    : "mr-0 max-w-full bg-muted/70 sm:mr-2",
                 )}
               >
                 {message.role === "user" ? (
@@ -464,7 +465,7 @@ export function AiFacilitatorPanel({
           ) : null}
         </div>
 
-        <div className="shrink-0 border-t border-border bg-card p-3">
+        <div className="max-w-full min-w-0 shrink-0 border-t border-border bg-card p-3">
           <Textarea
             ref={draftInputRef}
             data-testid="lean-ai-input"
@@ -476,7 +477,7 @@ export function AiFacilitatorPanel({
               }
             }}
             placeholder="Reply to Lean AI…"
-            className="min-h-[72px] resize-none bg-background"
+            className="min-h-[72px] max-w-full resize-none bg-background"
             disabled={Boolean(disabledReason) || loading}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {

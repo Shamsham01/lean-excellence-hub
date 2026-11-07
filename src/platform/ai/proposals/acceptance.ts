@@ -4,6 +4,7 @@ import { PROBLEM_SOLVING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeFishboneCategory } from "@/lib/problem-solving/hypothesis";
 import type { AiProposalType } from "@/platform/ai/types";
 import { proposalPayloadSchemas } from "@/platform/ai/proposals/contracts";
 
@@ -362,16 +363,31 @@ export async function acceptAiProposal(
     case "fishbone_cause": {
       await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
       const fb = proposalPayloadSchemas.fishbone_cause.parse(editedPayload);
+      const category = normalizeFishboneCategory(fb.category);
       let analysisId = fb.analysis_id ?? null;
       if (!analysisId) {
-        const { data: createdAnalysisId, error: analysisError } =
-          await supabase.rpc("create_analysis", {
-            target_problem_solving_case_id: caseId,
-            target_analysis_type: "fishbone",
-            target_title: fb.analysis_title ?? "Fishbone analysis",
-          });
-        if (analysisError) throw analysisError;
-        analysisId = createdAnalysisId as string;
+        const { data: existingRows, error: existingError } = await supabase
+          .from("problem_solving_analyses")
+          .select("id")
+          .eq("problem_solving_case_id", caseId)
+          .eq("analysis_type", "fishbone")
+          .order("created_at", { ascending: true })
+          .limit(1);
+        if (existingError) throw existingError;
+        const existingId =
+          (existingRows as Array<{ id: string }> | null)?.[0]?.id ?? null;
+        if (existingId) {
+          analysisId = existingId;
+        } else {
+          const { data: createdAnalysisId, error: analysisError } =
+            await supabase.rpc("create_analysis", {
+              target_problem_solving_case_id: caseId,
+              target_analysis_type: "fishbone",
+              target_title: fb.analysis_title ?? "Fishbone analysis",
+            });
+          if (analysisError) throw analysisError;
+          analysisId = createdAnalysisId as string;
+        }
       }
       const { data: nodeId, error: nodeError } = await supabase.rpc(
         "add_analysis_node",
@@ -379,7 +395,7 @@ export async function acceptAiProposal(
           target_analysis_id: analysisId,
           target_label: fb.label,
           target_parent_node_id: fb.parent_node_id ?? null,
-          target_category: fb.category,
+          target_category: category,
         },
       );
       if (nodeError) throw nodeError;

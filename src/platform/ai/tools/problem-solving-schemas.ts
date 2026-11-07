@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { HYPOTHESIS_CATEGORIES } from "@/lib/problem-solving/hypothesis";
+import {
+  HYPOTHESIS_CATEGORIES,
+  normalizeFishboneCategory,
+} from "@/lib/problem-solving/hypothesis";
 import { CURRENT_CONDITION_CATEGORIES } from "@/lib/problem-solving/types";
 
 export const emptyToolArgsSchema = z.object({}).strict();
@@ -134,7 +137,11 @@ const proposeFishboneCauseSchema = z
     analysis_id: z.string().uuid().optional(),
     analysis_title: z.string().trim().min(1).max(200).optional(),
     label: z.string().trim().min(1).max(500),
-    category: z.enum(HYPOTHESIS_CATEGORIES),
+    category: z.preprocess(
+      (value) =>
+        typeof value === "string" ? normalizeFishboneCategory(value) : value,
+      z.enum(HYPOTHESIS_CATEGORIES),
+    ),
     parent_node_id: z.string().uuid().optional(),
     explanation: explanationField,
   })

@@ -349,9 +349,11 @@ body {
   background: transparent;
 }
 
-.platform-main-viewport:has(.pps-flagship-workspace) {
-  overflow-x: clip;
-  overflow-y: hidden;
+@media (min-width: 1024px) {
+  .platform-main-viewport:has(.pps-flagship-workspace) {
+    overflow-x: clip;
+    overflow-y: hidden;
+  }
 }
 
 .platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner {

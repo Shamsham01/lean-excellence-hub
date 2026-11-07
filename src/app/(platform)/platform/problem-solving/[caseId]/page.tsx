@@ -75,6 +75,7 @@ export default async function ProblemSolvingCaseDetailPage({
       data-testid="problem-solving-detail-page"
     >
       <CaseWorkspace
+        key={caseId}
         detail={detail}
         targetDueDateLabel={targetDueDateLabel}
         currentConditionItems={workspaceData.currentConditionItems}

@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
 
 import {
   acceptProblemSolvingAiProposal,
@@ -43,6 +44,10 @@ import type { CommentRow } from "@/components/comments/resource-comments";
 import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Button } from "@/components/ui/button";
 import { pendingAiProposalMatchesViewStage } from "@/lib/problem-solving/ai-proposal-stage";
+import {
+  readPpsCopilotPreference,
+  writePpsCopilotPreference,
+} from "@/lib/problem-solving/copilot-preference";
 import {
   guidedStageConfig,
   resolveViewStage,
@@ -124,8 +129,23 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     tone: "default" | "error";
   } | null>(null);
   const [movingStage, setMovingStage] = useState(false);
-  const [copilotCollapsed, setCopilotCollapsed] = useState(false);
-  const [mobileCopilotOpen, setMobileCopilotOpen] = useState(false);
+  const initialCopilotPrefs = readPpsCopilotPreference(detail.id) ?? {
+    mobileOpen: false,
+    dockCollapsed: false,
+  };
+  const [copilotCollapsed, setCopilotCollapsed] = useState(
+    initialCopilotPrefs.dockCollapsed,
+  );
+  const [mobileCopilotOpen, setMobileCopilotOpen] = useState(
+    initialCopilotPrefs.mobileOpen,
+  );
+  const copilotPrefsHydratedRef = useRef(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
     [],
   );
@@ -166,6 +186,47 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     viewStage?.semantic_stage_key ??
     detail.current_stage?.semantic_stage_key ??
     null;
+
+  useLayoutEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const apply = () => setIsMobileViewport(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (!copilotPrefsHydratedRef.current) {
+      copilotPrefsHydratedRef.current = true;
+      return;
+    }
+    writePpsCopilotPreference(detail.id, {
+      mobileOpen: mobileCopilotOpen,
+      dockCollapsed: copilotCollapsed,
+    });
+  }, [detail.id, mobileCopilotOpen, copilotCollapsed]);
+
+  const leanAiPanelOpen = isMobileViewport
+    ? mobileCopilotOpen
+    : !copilotCollapsed;
+
+  const openLeanAiPanel = useCallback(() => {
+    setCopilotCollapsed(false);
+    setMobileCopilotOpen(true);
+  }, []);
+
+  const closeLeanAiPanel = useCallback(() => {
+    setCopilotCollapsed(true);
+    setMobileCopilotOpen(false);
+  }, []);
+
+  const toggleLeanAiPanel = useCallback(() => {
+    if (leanAiPanelOpen) {
+      closeLeanAiPanel();
+      return;
+    }
+    openLeanAiPanel();
+  }, [closeLeanAiPanel, leanAiPanelOpen, openLeanAiPanel]);
 
   useLayoutEffect(() => {
     const root = workspaceRootRef.current;
@@ -448,13 +509,28 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       providerAvailable={providerAvailable}
       layout="dock"
       collapsed={copilotCollapsed}
-      onCollapsedChange={setCopilotCollapsed}
+      onCollapsedChange={(next) => {
+        setCopilotCollapsed(next);
+        if (next) {
+          setMobileCopilotOpen(false);
+        }
+      }}
       pendingProposals={stageChatProposals}
       onPendingProposalsChange={syncChatPendingProposals}
       {...(editDraft !== undefined ? { draftOverride: editDraft } : {})}
       onDraftOverrideConsumed={() => setEditDraft(undefined)}
     />
   );
+
+  const mobileCopilotSheet =
+    isMobileViewport && mobileCopilotOpen ? (
+      <div
+        data-testid="pps-lean-ai-dock"
+        className="fixed inset-x-0 bottom-0 z-30 flex max-h-[58dvh] min-h-0 w-full max-w-full flex-col overflow-x-hidden rounded-t-2xl border-t border-border bg-background shadow-2xl"
+      >
+        {copilot}
+      </div>
+    ) : null;
 
   return (
     <div
@@ -508,6 +584,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
               isViewingCurrentStage={isViewingCurrentStage}
               canMoveStage={canMoveStage}
               advancing={movingStage}
+              leanAiOpen={leanAiPanelOpen}
+              canToggleLeanAi={canUseAi && providerAvailable}
+              onToggleLeanAi={toggleLeanAiPanel}
               {...(viewStageId && canMoveStage && !isViewingCurrentStage
                 ? {
                     onAdvanceToViewedStage: () =>
@@ -552,41 +631,50 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           </div>
         </section>
 
-        <div
-          className={
-            mobileCopilotOpen
-              ? "fixed inset-x-0 bottom-0 z-30 flex max-h-[58dvh] min-h-0 flex-col rounded-t-2xl border-t border-border shadow-2xl lg:static lg:max-h-none lg:rounded-none lg:border-t-0 lg:shadow-none"
-              : "hidden min-h-0 min-w-0 shrink-0 lg:flex"
-          }
-        >
-          {copilot}
-        </div>
+        {!isMobileViewport ? (
+          <div
+            data-testid="pps-lean-ai-dock"
+            className="hidden min-h-0 max-w-full min-w-0 shrink-0 overflow-x-hidden lg:flex"
+          >
+            {copilot}
+          </div>
+        ) : null}
       </div>
 
-      <div className="fixed right-4 bottom-4 z-20 flex gap-2 lg:hidden">
-        {mobileCopilotOpen ? (
+      {mobileCopilotSheet && typeof document !== "undefined"
+        ? createPortal(mobileCopilotSheet, document.body)
+        : null}
+
+      {canUseAi && providerAvailable && !leanAiPanelOpen ? (
+        <div className="pointer-events-none fixed right-4 bottom-4 z-20 flex max-w-[calc(100%-2rem)] gap-2 lg:hidden">
+          <Button
+            type="button"
+            size="default"
+            className="pointer-events-auto gap-2 rounded-full shadow-lg"
+            data-testid="pps-mobile-copilot-trigger"
+            aria-label="Open Lean AI copilot"
+            onClick={openLeanAiPanel}
+          >
+            <MessageSquare className="size-4 shrink-0" aria-hidden />
+            Lean AI
+          </Button>
+        </div>
+      ) : null}
+      {canUseAi && providerAvailable && mobileCopilotOpen ? (
+        <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex gap-2 lg:hidden">
           <Button
             type="button"
             variant="outline"
             size="default"
-            className="rounded-full bg-card shadow-lg"
-            onClick={() => setMobileCopilotOpen(false)}
+            className="pointer-events-auto rounded-full bg-card shadow-lg"
+            data-testid="pps-mobile-copilot-close"
+            aria-label="Close Lean AI copilot"
+            onClick={closeLeanAiPanel}
           >
             Close
           </Button>
-        ) : (
-          <Button
-            type="button"
-            size="default"
-            className="gap-2 rounded-full shadow-lg"
-            data-testid="pps-mobile-copilot-trigger"
-            onClick={() => setMobileCopilotOpen(true)}
-          >
-            <MessageSquare className="size-4" aria-hidden />
-            Lean AI
-          </Button>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <EphemeralToast
         message={toast?.message ?? null}
