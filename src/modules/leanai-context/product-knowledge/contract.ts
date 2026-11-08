@@ -85,7 +85,9 @@ export function knowledgeFieldGaps(
   articles: readonly PlatformKnowledgeArticle[],
 ): string[] {
   const present = new Set(
-    articles.flatMap((article) => article.fields.map((field) => field.identifier)),
+    articles.flatMap((article) =>
+      article.fields.map((field) => field.identifier),
+    ),
   );
   return auditedIdentifiers.filter((identifier) => !present.has(identifier));
 }
@@ -125,7 +127,9 @@ export function knowledgeField(
   return null;
 }
 
-export function moduleFromPathname(pathname: string): PlatformKnowledgeModuleKey | null {
+export function moduleFromPathname(
+  pathname: string,
+): PlatformKnowledgeModuleKey | null {
   const path = pathname.replace(/\/$/, "") || "/";
   if (path.startsWith("/platform/skills")) return "skills";
   if (path.startsWith("/platform/problem-solving")) return "problem_solving";

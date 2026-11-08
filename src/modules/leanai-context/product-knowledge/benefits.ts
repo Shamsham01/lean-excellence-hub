@@ -23,7 +23,8 @@ const benefitFields: PlatformKnowledgeField[] = [
     mistakes: "Entering currency amounts on a non-financial benefit.",
     dependencies: "Validation queues differ for CI and finance approvers.",
     permissions: `${BENEFITS_PERMISSIONS.create} to draft. ${BENEFITS_PERMISSIONS.validateFinance} for financial validation.`,
-    lifecycle: "draft → submitted → approved → realising → realised (or rejected/withdrawn/cancelled).",
+    lifecycle:
+      "draft → submitted → approved → realising → realised (or rejected/withdrawn/cancelled).",
     consequences: "Realisation recording is separate from approval.",
     setupSteps: "Benefits → Create → class → type → planned values.",
   },
@@ -34,7 +35,8 @@ const benefitFields: PlatformKnowledgeField[] = [
     required: "optional",
     constraints: "Must follow date ordering rules in benefits validation.",
     example: "2026-12-31",
-    mistakes: "Backdating realised benefits without realisation.record permission.",
+    mistakes:
+      "Backdating realised benefits without realisation.record permission.",
     dependencies: BENEFITS_PERMISSIONS.realisationRecord,
     permissions: BENEFITS_PERMISSIONS.manage,
     lifecycle: "Updated while draft or submitted unless locked by status.",
@@ -72,27 +74,31 @@ const provenance = (id: string, workflow: string) =>
     coverageStatus: "partial",
   });
 
-export const BENEFITS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
-  {
-    id: "benefits.overview",
-    module: "benefits",
-    title: "Benefits overview",
-    workflows: ["benefits_portfolio", "benefit_workspace"],
-    routePrefixes: ["/platform/benefits"],
-    purpose: "Track financial and non-financial value from improvement work.",
-    intendedUsers: "CI and finance validators with benefits permissions.",
-    facts: [
-      "Benefits link to projects or other sources; they are not invoices.",
-      "LeanAI cannot approve, validate, or record realisation.",
-      "Separate CI and finance validation permissions exist.",
-    ],
-    fields: benefitFields,
-    provenance: provenance("benefits.overview", "benefits_portfolio"),
-  },
-];
+export const BENEFITS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] =
+  [
+    {
+      id: "benefits.overview",
+      module: "benefits",
+      title: "Benefits overview",
+      workflows: ["benefits_portfolio", "benefit_workspace"],
+      routePrefixes: ["/platform/benefits"],
+      purpose: "Track financial and non-financial value from improvement work.",
+      intendedUsers: "CI and finance validators with benefits permissions.",
+      facts: [
+        "Benefits link to projects or other sources; they are not invoices.",
+        "LeanAI cannot approve, validate, or record realisation.",
+        "Separate CI and finance validation permissions exist.",
+      ],
+      fields: benefitFields,
+      provenance: provenance("benefits.overview", "benefits_portfolio"),
+    },
+  ];
 
 export function benefitsKnowledgeFieldGaps(): string[] {
-  return knowledgeFieldGaps(BENEFITS_AUDITED_FIELD_IDENTIFIERS, BENEFITS_KNOWLEDGE_ARTICLES);
+  return knowledgeFieldGaps(
+    BENEFITS_AUDITED_FIELD_IDENTIFIERS,
+    BENEFITS_KNOWLEDGE_ARTICLES,
+  );
 }
 
 export function benefitsKnowledgeForPath(pathname: string) {

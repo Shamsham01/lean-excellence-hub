@@ -22,9 +22,11 @@ const gembaFields: PlatformKnowledgeField[] = [
     mistakes: "Starting walks while the definition is still draft-only.",
     dependencies: "Sites are required before Gemba readiness completes.",
     permissions: `${GEMBA_PERMISSIONS.definitionsManage} to publish. ${GEMBA_PERMISSIONS.read} to view.`,
-    lifecycle: "Draft → published; walks instantiate from published definitions.",
+    lifecycle:
+      "Draft → published; walks instantiate from published definitions.",
     consequences: "Observation answers are stored per walk instance.",
-    setupSteps: "/platform/gemba/setup → publish definition → schedule or start walk.",
+    setupSteps:
+      "/platform/gemba/setup → publish definition → schedule or start walk.",
   },
   {
     name: "Observation answer",
@@ -42,7 +44,10 @@ const gembaFields: PlatformKnowledgeField[] = [
   },
 ];
 
-export const GEMBA_AUDITED_FIELD_IDENTIFIERS = ["definition_name", "observation_text"] as const;
+export const GEMBA_AUDITED_FIELD_IDENTIFIERS = [
+  "definition_name",
+  "observation_text",
+] as const;
 
 const provenance = (id: string, workflow: string) =>
   platformKnowledgeProvenance({
@@ -60,7 +65,8 @@ export const GEMBA_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
     title: "Gemba overview",
     workflows: ["gemba_definitions", "gemba_walks", "gemba_setup"],
     routePrefixes: ["/platform/gemba"],
-    purpose: "Published walk definitions and structured observations from the workplace.",
+    purpose:
+      "Published walk definitions and structured observations from the workplace.",
     intendedUsers: "Supervisors and reviewers with gemba permissions.",
     facts: [
       "Definitions are organisation templates; walks are instances on units.",
@@ -73,7 +79,10 @@ export const GEMBA_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
 ];
 
 export function gembaKnowledgeFieldGaps(): string[] {
-  return knowledgeFieldGaps(GEMBA_AUDITED_FIELD_IDENTIFIERS, GEMBA_KNOWLEDGE_ARTICLES);
+  return knowledgeFieldGaps(
+    GEMBA_AUDITED_FIELD_IDENTIFIERS,
+    GEMBA_KNOWLEDGE_ARTICLES,
+  );
 }
 
 export function gembaKnowledgeForPath(pathname: string) {

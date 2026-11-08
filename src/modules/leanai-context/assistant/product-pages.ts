@@ -613,7 +613,8 @@ function definitionFor(
       workflow: identity.workflow,
       pageTitle: identity.pageTitle ?? "Actions",
       contextLabel: "Actions",
-      summary: articles[0]?.purpose ?? "Follow-up tasks across improvement modules.",
+      summary:
+        articles[0]?.purpose ?? "Follow-up tasks across improvement modules.",
       terminology: defaultTerminology(identity),
       starterPrompts: [
         "What is an action?",

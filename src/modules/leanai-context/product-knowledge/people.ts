@@ -19,11 +19,13 @@ const peopleFields: PlatformKnowledgeField[] = [
   {
     name: "Job function",
     identifier: "job_function",
-    purpose: "Describes the work someone performs, not application permissions.",
+    purpose:
+      "Describes the work someone performs, not application permissions.",
     required: "required",
     constraints: "Active job function in the organisation catalogue.",
     example: "Line Operator",
-    mistakes: "Treating job function as a substitute for Workplace Viewer or admin roles.",
+    mistakes:
+      "Treating job function as a substitute for Workplace Viewer or admin roles.",
     dependencies: "Used by Training curriculum and Skills requirements.",
     permissions: `${JOB_FUNCTION_PERMISSIONS.manage} to maintain. ${PEOPLE_PERMISSIONS.capabilityRead} to view capability profiles.`,
     lifecycle: "Archived functions stop appearing on new assignments.",
@@ -39,7 +41,8 @@ const peopleFields: PlatformKnowledgeField[] = [
     example: "Workplace Viewer + Suggestions Contributor at Bodmin site",
     mistakes: "Assuming Operator preset cannot be edited before send.",
     dependencies: "Operator preset bundles two roles at one site.",
-    permissions: "people.invite and role-specific grants managed by administrators.",
+    permissions:
+      "people.invite and role-specific grants managed by administrators.",
     lifecycle: "Becomes active membership grants when accepted.",
     consequences: "Editing one site's grant does not change another site.",
     setupSteps: "People → Invite → choose roles and scope → send.",
@@ -51,7 +54,8 @@ const peopleFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "Active assignment on an organisational unit.",
     example: "Bodmin packaging area",
-    mistakes: "Leaving primary assignment empty then wondering why submit is blocked.",
+    mistakes:
+      "Leaving primary assignment empty then wondering why submit is blocked.",
     dependencies: "Distinct from job function and from RBAC scope.",
     permissions: PEOPLE_PERMISSIONS.capabilityRead,
     lifecycle: "Can be updated by administrators without changing login email.",
@@ -82,7 +86,8 @@ export const PEOPLE_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
     title: "People overview",
     workflows: ["people_directory", "people_invite", "people_capability"],
     routePrefixes: ["/platform/people", "/platform/settings/people"],
-    purpose: "Directory, invitations, and capability views separate work roles from access grants.",
+    purpose:
+      "Directory, invitations, and capability views separate work roles from access grants.",
     intendedUsers: "HR administrators and members reviewing their own access.",
     facts: [
       "Job functions describe work. Roles describe application permissions.",
@@ -96,7 +101,10 @@ export const PEOPLE_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
 ];
 
 export function peopleKnowledgeFieldGaps(): string[] {
-  return knowledgeFieldGaps(PEOPLE_AUDITED_FIELD_IDENTIFIERS, PEOPLE_KNOWLEDGE_ARTICLES);
+  return knowledgeFieldGaps(
+    PEOPLE_AUDITED_FIELD_IDENTIFIERS,
+    PEOPLE_KNOWLEDGE_ARTICLES,
+  );
 }
 
 export function peopleKnowledgeForPath(pathname: string) {

@@ -21,7 +21,8 @@ const projectFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "1 to 200 characters typical; see create wizard validation.",
     example: "Reduce film waste phase 1",
-    mistakes: "Using a project to track a single task better suited to Actions.",
+    mistakes:
+      "Using a project to track a single task better suited to Actions.",
     dependencies: "May originate from an accepted suggestion via explicit RPC.",
     permissions: `${PROJECTS_PERMISSIONS.manage} to create and advance. ${PROJECTS_PERMISSIONS.read} to view.`,
     lifecycle: `Statuses: ${PROJECT_STATUSES.join(", ")}.`,
@@ -49,8 +50,10 @@ const projectFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "Charter extension fields per milestone 8 migrations.",
     example: "Seal defect rate 3% above target since changeover.",
-    mistakes: "Copying a verified root cause from an unrelated problem-solving case.",
-    dependencies: "Linked suggestion or problem-solving record when created from them.",
+    mistakes:
+      "Copying a verified root cause from an unrelated problem-solving case.",
+    dependencies:
+      "Linked suggestion or problem-solving record when created from them.",
     permissions: PROJECTS_PERMISSIONS.manage,
     lifecycle: "Charter refined while draft or submitted.",
     consequences: "Approved charter gates activation.",
@@ -73,27 +76,32 @@ const provenance = (id: string, workflow: string) =>
     coverageStatus: "partial",
   });
 
-export const PROJECTS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
-  {
-    id: "projects.overview",
-    module: "projects",
-    title: "Projects overview",
-    workflows: ["projects_portfolio", "project_workspace"],
-    routePrefixes: ["/platform/projects"],
-    purpose: "Structured improvement projects with charter, phases, and methodology.",
-    intendedUsers: "CI leaders and sponsors with projects permissions.",
-    facts: [
-      "Projects are distinct from universal Actions and from Problem Solving cases.",
-      "Creating a project from a suggestion is a deliberate workflow, not automatic on accept.",
-      "LeanAI does not approve charters or change project status.",
-    ],
-    fields: projectFields,
-    provenance: provenance("projects.overview", "projects_portfolio"),
-  },
-];
+export const PROJECTS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] =
+  [
+    {
+      id: "projects.overview",
+      module: "projects",
+      title: "Projects overview",
+      workflows: ["projects_portfolio", "project_workspace"],
+      routePrefixes: ["/platform/projects"],
+      purpose:
+        "Structured improvement projects with charter, phases, and methodology.",
+      intendedUsers: "CI leaders and sponsors with projects permissions.",
+      facts: [
+        "Projects are distinct from universal Actions and from Problem Solving cases.",
+        "Creating a project from a suggestion is a deliberate workflow, not automatic on accept.",
+        "LeanAI does not approve charters or change project status.",
+      ],
+      fields: projectFields,
+      provenance: provenance("projects.overview", "projects_portfolio"),
+    },
+  ];
 
 export function projectsKnowledgeFieldGaps(): string[] {
-  return knowledgeFieldGaps(PROJECTS_AUDITED_FIELD_IDENTIFIERS, PROJECTS_KNOWLEDGE_ARTICLES);
+  return knowledgeFieldGaps(
+    PROJECTS_AUDITED_FIELD_IDENTIFIERS,
+    PROJECTS_KNOWLEDGE_ARTICLES,
+  );
 }
 
 export function projectsKnowledgeForPath(pathname: string) {

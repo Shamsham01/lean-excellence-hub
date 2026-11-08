@@ -9,7 +9,8 @@ import {
   type PlatformKnowledgeField,
 } from "./contract";
 
-const SOURCE = "src/app/(platform)/platform/recognition and recognition migrations";
+const SOURCE =
+  "src/app/(platform)/platform/recognition and recognition migrations";
 
 const recognitionFields: PlatformKnowledgeField[] = [
   {
@@ -19,12 +20,14 @@ const recognitionFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "At least one active type required for recognition readiness.",
     example: "Safety highlight",
-    mistakes: "Creating types but leaving them inactive so readiness stays incomplete.",
+    mistakes:
+      "Creating types but leaving them inactive so readiness stays incomplete.",
     dependencies: "Active sites are a hard prerequisite.",
     permissions: `${RECOGNITION_PERMISSIONS.manage} to maintain types. ${RECOGNITION_PERMISSIONS.award} to nominate.`,
     lifecycle: "Types can be activated or deactivated.",
     consequences: "Inactive-only catalogues block recognition readiness.",
-    setupSteps: "Recognition → Types → activate at least one type per site rollout.",
+    setupSteps:
+      "Recognition → Types → activate at least one type per site rollout.",
   },
   {
     name: "Award recipient",
@@ -56,24 +59,26 @@ const provenance = (id: string, workflow: string) =>
     coverageStatus: "partial",
   });
 
-export const RECOGNITION_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
-  {
-    id: "recognition.overview",
-    module: "recognition",
-    title: "Recognition overview",
-    workflows: ["recognition_types", "recognition_award"],
-    routePrefixes: ["/platform/recognition"],
-    purpose: "Acknowledge behaviours and outcomes using organisation-defined types.",
-    intendedUsers: "Managers and peers with recognition.award.",
-    facts: [
-      "Recognition is not compensation, billing, or HR payroll.",
-      "Setup readiness needs active types and sites.",
-      "LeanAI does not submit awards on someone's behalf.",
-    ],
-    fields: recognitionFields,
-    provenance: provenance("recognition.overview", "recognition_types"),
-  },
-];
+export const RECOGNITION_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] =
+  [
+    {
+      id: "recognition.overview",
+      module: "recognition",
+      title: "Recognition overview",
+      workflows: ["recognition_types", "recognition_award"],
+      routePrefixes: ["/platform/recognition"],
+      purpose:
+        "Acknowledge behaviours and outcomes using organisation-defined types.",
+      intendedUsers: "Managers and peers with recognition.award.",
+      facts: [
+        "Recognition is not compensation, billing, or HR payroll.",
+        "Setup readiness needs active types and sites.",
+        "LeanAI does not submit awards on someone's behalf.",
+      ],
+      fields: recognitionFields,
+      provenance: provenance("recognition.overview", "recognition_types"),
+    },
+  ];
 
 export function recognitionKnowledgeFieldGaps(): string[] {
   return knowledgeFieldGaps(

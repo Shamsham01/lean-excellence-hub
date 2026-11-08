@@ -21,12 +21,16 @@ const submissionFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "Must be an active programme with a published version.",
     example: "Continuous Improvement 2026",
-    mistakes: "Confusing programme with category, or submitting while only a draft programme exists.",
-    dependencies: "Organisation maintains categories separately from programmes.",
+    mistakes:
+      "Confusing programme with category, or submitting while only a draft programme exists.",
+    dependencies:
+      "Organisation maintains categories separately from programmes.",
     permissions: `${SUGGESTIONS_PERMISSIONS.submit} to submit. ${SUGGESTIONS_PERMISSIONS.programmesManage} to publish programmes.`,
     lifecycle: "Programme version lifecycle: draft → published → archived.",
-    consequences: "Submit is blocked until a published programme version is active.",
-    setupSteps: "Settings → Suggestion programmes → publish a version before opening submissions.",
+    consequences:
+      "Submit is blocked until a published programme version is active.",
+    setupSteps:
+      "Settings → Suggestion programmes → publish a version before opening submissions.",
   },
   {
     name: "Category",
@@ -35,12 +39,14 @@ const submissionFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "Must be an active organisation category.",
     example: "Safety",
-    mistakes: "Creating a category per programme instead of using the shared catalogue.",
+    mistakes:
+      "Creating a category per programme instead of using the shared catalogue.",
     dependencies: "Categories are not children of programmes.",
     permissions: `${SUGGESTIONS_PERMISSIONS.programmesManage} to maintain categories.`,
     lifecycle: "Categories can be activated or deactivated in the catalogue.",
     consequences: "Inactive categories cannot be chosen on new submissions.",
-    setupSteps: "Configure categories in Suggestions configuration alongside programmes.",
+    setupSteps:
+      "Configure categories in Suggestions configuration alongside programmes.",
   },
   {
     name: "Suggestion title",
@@ -49,12 +55,15 @@ const submissionFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: "1 to 200 characters, trimmed.",
     example: "Reduce film waste on Packing Line 1",
-    mistakes: "Putting the whole solution in the title without describing the opportunity.",
+    mistakes:
+      "Putting the whole solution in the title without describing the opportunity.",
     dependencies: "Requires programme version, category, and primary unit.",
     permissions: SUGGESTIONS_PERMISSIONS.submit,
     lifecycle: `Author may edit in draft. Status progresses: ${SUGGESTION_STATUSES.join(", ")}.`,
-    consequences: "Title is visible to reviewers with suggestions.read in scope.",
-    setupSteps: "New suggestion → pick programme → category → unit → title and narrative fields.",
+    consequences:
+      "Title is visible to reviewers with suggestions.read in scope.",
+    setupSteps:
+      "New suggestion → pick programme → category → unit → title and narrative fields.",
   },
   {
     name: "Problem or opportunity",
@@ -66,7 +75,8 @@ const submissionFields: PlatformKnowledgeField[] = [
     mistakes: "Jumping to the fix without stating the observed gap.",
     dependencies: "Paired with proposed idea and optional benefit summary.",
     permissions: SUGGESTIONS_PERMISSIONS.submit,
-    lifecycle: "Editable while draft; locked by workflow after submit depending on status.",
+    lifecycle:
+      "Editable while draft; locked by workflow after submit depending on status.",
     consequences: "Feeds review and similarity search.",
     setupSteps: "Complete noticed/problem field before submit.",
   },
@@ -102,27 +112,32 @@ const provenance = (id: string, workflow: string) =>
     sourcePath: SOURCE,
   });
 
-export const SUGGESTIONS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
-  {
-    id: "suggestions.overview",
-    module: "suggestions",
-    title: "Suggestions overview",
-    workflows: ["programme_configuration", "suggestions_overview", "suggestion_submit"],
-    routePrefixes: ["/platform/suggestions"],
-    purpose:
-      "Capture improvement ideas under published programmes using organisation-level categories.",
-    intendedUsers: "Contributors, reviewers, and programme administrators.",
-    facts: [
-      "A programme is the campaign. A category is the type of idea. They are different catalogues.",
-      "People cannot submit until an active programme has a published version.",
-      "Reviewers may park with rationale, accept, reject, or progress to implementation.",
-      "Linked actions and projects are created through explicit human actions, not by LeanAI.",
-      `Statuses include parked: ${SUGGESTION_STATUSES.join(", ")}.`,
-    ],
-    fields: submissionFields,
-    provenance: provenance("suggestions.overview", "programme_configuration"),
-  },
-];
+export const SUGGESTIONS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] =
+  [
+    {
+      id: "suggestions.overview",
+      module: "suggestions",
+      title: "Suggestions overview",
+      workflows: [
+        "programme_configuration",
+        "suggestions_overview",
+        "suggestion_submit",
+      ],
+      routePrefixes: ["/platform/suggestions"],
+      purpose:
+        "Capture improvement ideas under published programmes using organisation-level categories.",
+      intendedUsers: "Contributors, reviewers, and programme administrators.",
+      facts: [
+        "A programme is the campaign. A category is the type of idea. They are different catalogues.",
+        "People cannot submit until an active programme has a published version.",
+        "Reviewers may park with rationale, accept, reject, or progress to implementation.",
+        "Linked actions and projects are created through explicit human actions, not by LeanAI.",
+        `Statuses include parked: ${SUGGESTION_STATUSES.join(", ")}.`,
+      ],
+      fields: submissionFields,
+      provenance: provenance("suggestions.overview", "programme_configuration"),
+    },
+  ];
 
 export function suggestionsKnowledgeFieldGaps(): string[] {
   return knowledgeFieldGaps(

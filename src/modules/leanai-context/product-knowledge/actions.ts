@@ -26,11 +26,13 @@ const actionFields: PlatformKnowledgeField[] = [
     constraints: "1 to 200 characters, trimmed.",
     example: "Replace sealer jaw before Monday run",
     mistakes: "Using vague titles like Fix it without a verifiable outcome.",
-    dependencies: "May link to a source record such as maturity, suggestion, or problem solving.",
+    dependencies:
+      "May link to a source record such as maturity, suggestion, or problem solving.",
     permissions: `${ACTIONS_PERMISSIONS.create} to create. ${ACTIONS_PERMISSIONS.read} to view in granted scope.`,
     lifecycle: `Statuses: ${ACTION_STATUSES.join(", ")}. From open: ${allowedActionTransitions("open").join(", ")}.`,
     consequences: "Completing does not automatically verify effectiveness.",
-    setupSteps: "Actions → Create → title, unit, priority, optional description.",
+    setupSteps:
+      "Actions → Create → title, unit, priority, optional description.",
   },
   {
     name: "Priority",
@@ -54,7 +56,8 @@ const actionFields: PlatformKnowledgeField[] = [
     constraints: "Must be a unit in the current organisation.",
     example: "Bodmin packaging",
     mistakes: "Choosing a unit assignees cannot access.",
-    dependencies: "Org-wide actions.read can see all units; site scope cannot see siblings.",
+    dependencies:
+      "Org-wide actions.read can see all units; site scope cannot see siblings.",
     permissions: ACTIONS_PERMISSIONS.read,
     lifecycle: "Set at creation; moves may require update permission.",
     consequences: "Hidden from members without read access to that unit.",
@@ -71,7 +74,8 @@ const actionFields: PlatformKnowledgeField[] = [
     dependencies: `${ACTIONS_PERMISSIONS.assign} to change assignee.`,
     permissions: `${ACTIONS_PERMISSIONS.assign} and ${ACTIONS_PERMISSIONS.read}`,
     lifecycle: "Can change while open or in progress.",
-    consequences: "Assignee sees the action in their planner, not automatic completion.",
+    consequences:
+      "Assignee sees the action in their planner, not automatic completion.",
     setupSteps: "Open action → Assign → choose member.",
   },
   {
@@ -81,8 +85,10 @@ const actionFields: PlatformKnowledgeField[] = [
     required: "required",
     constraints: ACTION_STATUSES.join(" | "),
     example: "in_progress",
-    mistakes: "Jumping to verified without evidence when your organisation expects verification.",
-    dependencies: "actions.complete to mark completed. actions.verify exists in the permission registry for verification workflows.",
+    mistakes:
+      "Jumping to verified without evidence when your organisation expects verification.",
+    dependencies:
+      "actions.complete to mark completed. actions.verify exists in the permission registry for verification workflows.",
     permissions: `${ACTIONS_PERMISSIONS.complete} to complete. Verification may need actions.verify where enabled.`,
     lifecycle: `Transitions follow allowedActionTransitions in src/lib/actions/status.ts.`,
     consequences: "Reopen from completed or cancelled returns to open.",
@@ -113,7 +119,8 @@ export const ACTIONS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
     title: "Actions overview",
     workflows: ["actions_list", "actions_planner", "action_detail"],
     routePrefixes: ["/platform/actions"],
-    purpose: "Universal follow-up tasks across improvement modules with scoped visibility.",
+    purpose:
+      "Universal follow-up tasks across improvement modules with scoped visibility.",
     intendedUsers: "Operators through CI leads with actions permissions.",
     facts: [
       "Actions can originate from maturity gaps, suggestions, problem solving, and other sources.",
@@ -127,7 +134,10 @@ export const ACTIONS_KNOWLEDGE_ARTICLES: readonly PlatformKnowledgeArticle[] = [
 ];
 
 export function actionsKnowledgeFieldGaps(): string[] {
-  return knowledgeFieldGaps(ACTIONS_AUDITED_FIELD_IDENTIFIERS, ACTIONS_KNOWLEDGE_ARTICLES);
+  return knowledgeFieldGaps(
+    ACTIONS_AUDITED_FIELD_IDENTIFIERS,
+    ACTIONS_KNOWLEDGE_ARTICLES,
+  );
 }
 
 export function actionsKnowledgeForPath(pathname: string) {

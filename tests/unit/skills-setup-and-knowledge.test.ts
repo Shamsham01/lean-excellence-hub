@@ -270,8 +270,9 @@ describe("Skills product knowledge", () => {
         ?.status,
     ).toBe("complete");
     expect(
-      PLATFORM_KNOWLEDGE_COVERAGE.filter((item) => item.status === "complete")
-        .map((item) => item.module),
+      PLATFORM_KNOWLEDGE_COVERAGE.filter(
+        (item) => item.status === "complete",
+      ).map((item) => item.module),
     ).toEqual(
       expect.arrayContaining(["skills", "problem_solving", "maturity"]),
     );

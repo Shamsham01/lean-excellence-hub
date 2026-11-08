@@ -28,7 +28,9 @@ export const PLATFORM_KNOWLEDGE_COVERAGE: readonly PlatformKnowledgeCoverage[] =
     {
       module: "problem_solving",
       status:
-        problemSolvingKnowledgeFieldGaps().length === 0 ? "complete" : "partial",
+        problemSolvingKnowledgeFieldGaps().length === 0
+          ? "complete"
+          : "partial",
       followUp:
         problemSolvingKnowledgeFieldGaps().length === 0
           ? "Audited case fields, seeded methods, permissions, and closure outcomes ship in this bundle."

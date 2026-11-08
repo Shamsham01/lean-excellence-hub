@@ -60,7 +60,10 @@ describe("platform product knowledge bundle", () => {
     expect(suggestionBundle).toMatch(/SUGGESTION_STATUSES\.join\(/);
 
     const actionsBundle = readFileSync(
-      path.join(root, "src/modules/leanai-context/product-knowledge/actions.ts"),
+      path.join(
+        root,
+        "src/modules/leanai-context/product-knowledge/actions.ts",
+      ),
       "utf8",
     );
     expect(actionsBundle).toContain("ACTION_STATUSES");
