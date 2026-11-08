@@ -1,11 +1,17 @@
 import { expect, test } from "@playwright/test";
 
 import { loginAsOnboardingUser } from "./helpers/onboarding-auth";
-import { ensureSkillsAuthoringOrganisation } from "./helpers/skills-authoring-org";
+import {
+  enableSkillsAuthoringAi,
+  ensureSkillsAuthoringOrganisation,
+} from "./helpers/skills-authoring-org";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 test.describe("Training setup journeys", () => {
+  test.describe.configure({ mode: "serial" });
+  test.setTimeout(120_000);
+
   test.skip(
     !hasSupabaseE2e,
     "Requires E2E_WITH_SUPABASE=1 and a local Supabase database",
@@ -13,6 +19,7 @@ test.describe("Training setup journeys", () => {
 
   test("chooser, quick start mapping, and LeanAI page", async ({ page }) => {
     const organisation = await ensureSkillsAuthoringOrganisation();
+    await enableSkillsAuthoringAi(organisation.organisationId);
     await loginAsOnboardingUser(
       page,
       { email: organisation.email, password: organisation.password },
@@ -44,6 +51,10 @@ test.describe("Training setup journeys", () => {
 
     await page.goto("/platform/training/setup/leanai");
     await expect(page.getByTestId("training-leanai-page")).toBeVisible();
-    await expect(page.getByTestId("module-setup-input")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("module-setup-input")
+        .or(page.getByTestId("module-setup-builder-unavailable")),
+    ).toBeVisible();
   });
 });

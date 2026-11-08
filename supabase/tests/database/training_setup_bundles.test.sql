@@ -1,7 +1,7 @@
 -- Training setup bundle RPCs (manual path smoke)
 
 begin;
-select plan(6);
+select plan(7);
 
 select has_function(
   'public',
@@ -28,14 +28,17 @@ select has_function(
   'save_training_setup_preparation exists'
 );
 
-select tables_are(
-  'public',
-  array[
-    'training_setup_bundles',
-    'training_setup_bundle_items',
-    'training_setup_preparations'
-  ],
-  'training setup tables exist'
+select ok(
+  to_regclass('public.training_setup_bundles') is not null,
+  'training_setup_bundles exists'
+);
+select ok(
+  to_regclass('public.training_setup_bundle_items') is not null,
+  'training_setup_bundle_items exists'
+);
+select ok(
+  to_regclass('public.training_setup_preparations') is not null,
+  'training_setup_preparations exists'
 );
 
 select * from finish();
