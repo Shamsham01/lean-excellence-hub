@@ -13,6 +13,7 @@ import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -26,6 +27,7 @@ export default async function TrainingOverviewPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePlanModuleEntitlement("training");
   const params = await searchParams;
   const analyticsRange = buildAnalyticsDateRange(
     parseAnalyticsRangeDays(params.range),

@@ -6,6 +6,8 @@ import type {
   PlanCode,
   SelfServicePlanCode,
 } from "./types";
+import { buildPlanModuleEntitlements } from "./module-entitlements";
+import { resolveLeanAiCreditPolicyDefault } from "./leanai-credit-policy";
 
 export const BILLING_CURRENCY = "GBP" as const;
 export const ANNUAL_DISCOUNT_PERCENT = 10;
@@ -16,14 +18,23 @@ export const MAX_SITE_QUANTITY = 500;
 // monitoring. It is not a customer hard quota and start_ai_run does not read
 // it. A null Enterprise value is not an unlimited promise. Customer copy is
 // describeLeanAiCustomerInclusion.
+const professionalPolicy = resolveLeanAiCreditPolicyDefault("professional");
+
 const PROFESSIONAL_ENTITLEMENTS: OrganisationEntitlements = {
   coreModules: true,
+  modules: buildPlanModuleEntitlements({
+    planCode: "professional",
+    legacyGrandfather: false,
+  }),
   advancedBenefitsGovernance: true,
   advancedAnalytics: true,
-  apiAccess: true,
-  integrations: true,
+  apiAccess: false,
+  integrations: false,
   leanAiTier: "enhanced",
-  leanAiMonthlyTokenAllowance: 2_000_000,
+  leanAiMonthlyTokenAllowance:
+    professionalPolicy.catalogueTokenAllowanceMetadata,
+  leanAiMonthlyCreditAllowancePerSite:
+    professionalPolicy.monthlyCreditAllowancePerSite,
   enterpriseSso: false,
   enterpriseGovernance: false,
   crossSiteBenchmarking: false,
@@ -31,14 +42,22 @@ const PROFESSIONAL_ENTITLEMENTS: OrganisationEntitlements = {
   supportTier: "priority",
 };
 
+const essentialsPolicy = resolveLeanAiCreditPolicyDefault("essentials");
+
 const ESSENTIALS_ENTITLEMENTS: OrganisationEntitlements = {
   coreModules: true,
-  advancedBenefitsGovernance: false,
-  advancedAnalytics: false,
+  modules: buildPlanModuleEntitlements({
+    planCode: "essentials",
+    legacyGrandfather: false,
+  }),
+  advancedBenefitsGovernance: true,
+  advancedAnalytics: true,
   apiAccess: false,
   integrations: false,
   leanAiTier: "standard",
-  leanAiMonthlyTokenAllowance: 500_000,
+  leanAiMonthlyTokenAllowance: essentialsPolicy.catalogueTokenAllowanceMetadata,
+  leanAiMonthlyCreditAllowancePerSite:
+    essentialsPolicy.monthlyCreditAllowancePerSite,
   enterpriseSso: false,
   enterpriseGovernance: false,
   crossSiteBenchmarking: false,
@@ -46,10 +65,18 @@ const ESSENTIALS_ENTITLEMENTS: OrganisationEntitlements = {
   supportTier: "standard",
 };
 
+const enterprisePolicy = resolveLeanAiCreditPolicyDefault("enterprise");
+
 const ENTERPRISE_ENTITLEMENTS: OrganisationEntitlements = {
   ...PROFESSIONAL_ENTITLEMENTS,
+  modules: buildPlanModuleEntitlements({
+    planCode: "enterprise",
+    legacyGrandfather: false,
+  }),
   leanAiTier: "enterprise",
-  leanAiMonthlyTokenAllowance: null,
+  leanAiMonthlyTokenAllowance: enterprisePolicy.catalogueTokenAllowanceMetadata,
+  leanAiMonthlyCreditAllowancePerSite:
+    enterprisePolicy.monthlyCreditAllowancePerSite,
   enterpriseSso: false,
   enterpriseGovernance: false,
   crossSiteBenchmarking: false,
@@ -68,7 +95,7 @@ export const PLAN_CATALOGUE: Record<PlanCode, PlanCatalogueEntry> = {
     annualAvailable: true,
     monthlySitePriceMinor: 49_900,
     currency: BILLING_CURRENCY,
-    setupFeeMinor: 150_000,
+    setupFeeMinor: null,
     setupFeeCollectedInCheckout: false,
     entitlements: ESSENTIALS_ENTITLEMENTS,
     active: true,
@@ -83,7 +110,7 @@ export const PLAN_CATALOGUE: Record<PlanCode, PlanCatalogueEntry> = {
     annualAvailable: true,
     monthlySitePriceMinor: 99_900,
     currency: BILLING_CURRENCY,
-    setupFeeMinor: 250_000,
+    setupFeeMinor: null,
     setupFeeCollectedInCheckout: false,
     entitlements: PROFESSIONAL_ENTITLEMENTS,
     active: true,

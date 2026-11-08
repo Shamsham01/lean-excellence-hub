@@ -5,10 +5,8 @@ import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlanUpgradePrompt } from "@/components/billing/plan-upgrade-prompt";
 import { BenefitValidationActions } from "@/components/benefits/benefit-validation-queue-actions";
-import { organisationHasEntitlement } from "@/modules/billing/entitlements";
-import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
+import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import {
   classificationSummary,
@@ -28,6 +26,8 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitValidationQueuePage() {
+  await requirePlanModuleEntitlement("benefits");
+
   const [canValidateCi, canValidateFinance, canValidateRealisation] =
     await Promise.all([
       currentMemberHasPermission("benefits.validate.ci"),
@@ -45,14 +45,6 @@ export default async function BenefitValidationQueuePage() {
   );
 
   const queue = queueData ?? { benefits: [], realisation_entries: [] };
-  const entitlements = await loadCurrentOrganisationEntitlements();
-  const financeGated =
-    canValidateFinance &&
-    !organisationHasEntitlement(entitlements, "advancedBenefitsGovernance");
-  const financeQueueItems =
-    queue.benefits.filter((b) => b.validation_role === "finance").length +
-    queue.realisation_entries.length;
-
   return (
     <div
       className="flex flex-col gap-6"
@@ -62,13 +54,6 @@ export default async function BenefitValidationQueuePage() {
         title="Benefit validation queue"
         description="Benefits and realisation entries awaiting your validation decision."
       />
-
-      {financeGated && financeQueueItems > 0 ? (
-        <PlanUpgradePrompt
-          capability="advancedBenefitsGovernance"
-          testId="benefit-validation-finance-upgrade"
-        />
-      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

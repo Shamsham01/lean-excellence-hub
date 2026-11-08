@@ -1,5 +1,7 @@
 export type PlatformNavSection = "main" | "improvement" | "people" | "platform";
 
+import type { PlanModuleCode } from "@/modules/billing/module-entitlements";
+
 export type PlatformNavIcon =
   | "home"
   | "maturity"
@@ -26,6 +28,8 @@ export type PlatformNavItem = {
   permission: string;
   viewPermission?: string;
   alternatePermissions?: readonly string[];
+  /** When set, plan entitlement AND RBAC must pass. */
+  planModule?: PlanModuleCode;
   icon: PlatformNavIcon;
   organisationScopeOnly?: boolean;
   universalAccess?: boolean;
@@ -68,6 +72,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "maturity",
     section: "improvement",
+    planModule: "maturity",
   },
   {
     href: "/platform/5s",
@@ -76,6 +81,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "five-s",
     section: "improvement",
+    planModule: "five_s",
   },
   {
     href: "/platform/gemba",
@@ -84,6 +90,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "gemba",
     section: "improvement",
+    planModule: "gemba",
   },
   {
     href: "/platform/actions",
@@ -92,6 +99,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "actions",
     section: "improvement",
+    planModule: "actions",
   },
   {
     href: "/platform/projects",
@@ -100,6 +108,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "projects",
     section: "improvement",
+    planModule: "projects",
   },
   {
     href: "/platform/benefits",
@@ -108,6 +117,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "benefits",
     section: "improvement",
+    planModule: "benefits",
   },
   {
     href: "/platform/problem-solving",
@@ -117,6 +127,7 @@ export const platformNavigation: PlatformNavItem[] = [
     icon: "problem-solving",
     section: "improvement",
     navBadge: "NEW",
+    planModule: "problem_solving",
   },
   {
     href: "/platform/suggestions",
@@ -126,6 +137,7 @@ export const platformNavigation: PlatformNavItem[] = [
     alternatePermissions: ["suggestions.submit"],
     icon: "suggestions",
     section: "improvement",
+    planModule: "suggestions",
   },
   {
     href: "/platform/people",
@@ -141,6 +153,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "training",
     section: "people",
+    planModule: "training",
   },
   {
     href: "/platform/skills",
@@ -149,6 +162,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "skills",
     section: "people",
+    planModule: "skills",
   },
   {
     href: "/platform/recognition",
@@ -157,6 +171,7 @@ export const platformNavigation: PlatformNavItem[] = [
     viewPermission: "workplace.view",
     icon: "recognition",
     section: "people",
+    planModule: "recognition",
   },
   {
     href: "/platform/schedule",
@@ -164,6 +179,7 @@ export const platformNavigation: PlatformNavItem[] = [
     permission: "schedules.read",
     icon: "schedule",
     section: "platform",
+    planModule: "schedule",
   },
   {
     href: "/platform/templates",
@@ -171,6 +187,7 @@ export const platformNavigation: PlatformNavItem[] = [
     permission: "templates.read",
     icon: "templates",
     section: "platform",
+    planModule: "templates",
   },
   {
     href: "/platform/settings/ai",

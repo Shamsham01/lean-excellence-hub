@@ -15,6 +15,7 @@ import type {
   BenefitsListResponse,
   BenefitsOverview,
 } from "@/lib/benefits/types";
+import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { BENEFITS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
@@ -30,6 +31,7 @@ export default async function BenefitsPortfolioPage({
     range?: string;
   }>;
 }) {
+  await requirePlanModuleEntitlement("benefits");
   const params = await searchParams;
   const analyticsRange = buildAnalyticsDateRange(
     parseAnalyticsRangeDays(params.range),

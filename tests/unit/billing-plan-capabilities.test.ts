@@ -13,7 +13,8 @@ describe("plan capabilities", () => {
         PLAN_CATALOGUE.essentials.entitlements,
         "advancedAnalytics",
       ),
-    ).toBe(false);
+    ).toBe(true);
+    expect(PLAN_CATALOGUE.essentials.entitlements.modules.benefits).toBe(false);
     expect(
       entitlementCapabilityGranted(
         PLAN_CATALOGUE.professional.entitlements,

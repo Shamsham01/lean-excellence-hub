@@ -7,12 +7,14 @@ import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-
 import { RecognitionHistory } from "@/components/recognition/recognition-history";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { RECOGNITION_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function RecognitionPage() {
+  await requirePlanModuleEntitlement("recognition");
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: RECOGNITION_PERMISSIONS.read,
     module: "recognition",

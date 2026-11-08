@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import type { LucideIcon } from "lucide-react";
 
-import { PlanUpgradePrompt } from "@/components/billing/plan-upgrade-prompt";
 import { ChartCard } from "@/components/charts/chart-card";
 import { LehAreaLineChart } from "@/components/charts/leh-area-line-chart";
 import { LehBarChart } from "@/components/charts/leh-bar-chart";
@@ -10,8 +9,6 @@ import { AnalyticsAgeingTable } from "@/components/platform/analytics-ageing-tab
 import { AnalyticsDateRangeToolbar } from "@/components/platform/analytics-date-range-toolbar";
 import { KpiStatCard } from "@/components/platform/kpi-stat-card";
 import { KpiStatGrid } from "@/components/platform/kpi-stat-grid";
-import { organisationHasEntitlement } from "@/modules/billing/entitlements";
-import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
 import type { ModuleAnalyticsSnapshot } from "@/modules/platform-analytics/types";
 
 export async function ModuleAnalyticsDashboard({
@@ -29,16 +26,6 @@ export async function ModuleAnalyticsDashboard({
   showAgeingTable?: boolean;
   donutCenterLabel?: string;
 }) {
-  const entitlements = await loadCurrentOrganisationEntitlements();
-  if (!organisationHasEntitlement(entitlements, "advancedAnalytics")) {
-    return (
-      <PlanUpgradePrompt
-        capability="advancedAnalytics"
-        testId={`${testId}-upgrade`}
-      />
-    );
-  }
-
   const donutTotal = snapshot.statusBreakdown.reduce(
     (sum, row) => sum + row.value,
     0,

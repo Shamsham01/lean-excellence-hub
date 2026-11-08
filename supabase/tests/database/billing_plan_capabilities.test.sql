@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(17);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -82,8 +82,8 @@ select is(
     (select id from plan_cap_ids where key = 'organisation_a'),
     'advanced_analytics'
   ),
-  false,
-  'essentials trialing denies advanced analytics'
+  true,
+  'essentials includes analytics for entitled modules'
 );
 
 select is(
@@ -91,8 +91,35 @@ select is(
     (select id from plan_cap_ids where key = 'organisation_a'),
     'advanced_benefits_governance'
   ),
+  true,
+  'essentials retains in-module benefits governance within entitled modules'
+);
+
+select is(
+  private.organisation_plan_capability(
+    (select id from plan_cap_ids where key = 'organisation_a'),
+    'module_benefits'
+  ),
   false,
-  'essentials trialing denies finance governance'
+  'essentials denies benefits module'
+);
+
+select is(
+  private.organisation_plan_capability(
+    (select id from plan_cap_ids where key = 'organisation_a'),
+    'module_maturity'
+  ),
+  true,
+  'essentials grants maturity module'
+);
+
+select is(
+  private.organisation_plan_capability(
+    (select id from plan_cap_ids where key = 'organisation_b'),
+    'module_benefits'
+  ),
+  true,
+  'professional grants benefits module'
 );
 
 select is(
@@ -128,7 +155,7 @@ select is(
 select is(
   private.organisation_plan_capability(
     (select id from plan_cap_ids where key = 'organisation_a'),
-    'advanced_analytics'
+    'module_benefits'
   ),
   false,
   'tenant a remains essentials after tenant b subscribes'

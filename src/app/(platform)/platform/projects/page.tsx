@@ -6,6 +6,7 @@ import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
@@ -15,6 +16,7 @@ export default async function ProjectsPortfolioPage({
 }: {
   searchParams: Promise<{ status?: string; search?: string }>;
 }) {
+  await requirePlanModuleEntitlement("projects");
   const params = await searchParams;
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: PROJECTS_PERMISSIONS.read,

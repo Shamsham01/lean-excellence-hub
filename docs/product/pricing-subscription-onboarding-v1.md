@@ -35,18 +35,13 @@ Includes:
 - Gemba
 - Suggestions
 - Actions
-- Projects
-- Problem Solving
-- Training
-- Skills
-- Recognition
-- basic Benefits / Savings tracking
-- standard dashboards and exports
-- LeanAI included at no extra charge, subject to reasonable fair use
-- standard support
-- unlimited/generous users
+- Schedule and Templates utilities for entitled modules
+- Standard dashboards and exports **within included modules**
+- LeanAI included at no extra charge, subject to reasonable fair use (lower pooled allowance than Professional — see `leanai-credit-policy-estimates.md`)
+- Standard support
+- Unlimited/generous users (no per-user fee)
 
-Essentials must still allow an organisation to **Assess → Improve → Develop → Prove**. Benefits are therefore not removed from this tier; advanced financial governance is the differentiator.
+Does **not** include Professional modules: Projects, Problem Solving, Training, Skills, Recognition, Benefits / savings portfolio, People HR product surfaces.
 
 ### Professional — Run an Operational Excellence system
 
@@ -110,14 +105,13 @@ Do not introduce complicated volume tiers in v1. Site quantity can initially be 
 
 ### Onboarding / implementation fee
 
-Working baseline:
+**No mandatory setup or deployment fee** in self-service Checkout. Optional bespoke onboarding consultancy may be quoted separately and is never auto-charged.
 
-| Plan | Implementation / onboarding |
-| --- | ---: |
-| Essentials | £1,500 |
-| Professional | £2,500 |
-| Enterprise | Custom |
-| Founder Pilot | Waived or reduced |
+| Plan | Optional consultancy |
+| --- | --- |
+| Essentials / Professional | Quoted separately |
+| Enterprise | Custom programme |
+| Founder Pilot | As agreed in founder offer |
 
 Implementation can include organisation setup, initial hierarchy, framework configuration, training, imports and launch support.
 

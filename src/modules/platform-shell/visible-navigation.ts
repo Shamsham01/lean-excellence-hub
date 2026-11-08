@@ -1,3 +1,5 @@
+import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
+import { organisationHasModuleEntitlement } from "@/modules/billing/module-entitlements";
 import { platformHomeFallbackPermissions } from "@/modules/platform-shell/home-fallback";
 import {
   platformNavigation,
@@ -28,9 +30,16 @@ export async function canAccessSetupNavigation() {
 
 export async function buildVisibleNavigation() {
   await prefetchMemberPermissions(collectPlatformShellPermissionKeys());
+  const entitlements = await loadCurrentOrganisationEntitlements();
 
   const access = await Promise.all(
     platformNavigation.map(async (item) => {
+      if (
+        item.planModule &&
+        !organisationHasModuleEntitlement(entitlements, item.planModule)
+      ) {
+        return { item, canAccess: false };
+      }
       const alternateAccess = await Promise.all(
         (item.alternatePermissions ?? []).map((permission) =>
           currentMemberHasPermission(permission),
