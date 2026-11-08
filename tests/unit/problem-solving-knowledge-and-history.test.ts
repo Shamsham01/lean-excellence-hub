@@ -278,12 +278,18 @@ describe("authorised problem solving consultation", () => {
   });
 
   it("tells the facilitator to test a cause instead of assuming it", () => {
-    expect(PROMPT_VERSION).toBe("v8");
+    expect(PROMPT_VERSION).toBe("v9");
     const prompt = buildSystemPrompt("challenge", "ROOT_CAUSE_ANALYSIS");
     expect(prompt).toMatch(/operator error/);
     expect(prompt).toMatch(/could disprove/);
     expect(prompt).toMatch(/must not mark the cause verified|never verify/i);
     expect(prompt).toMatch(/no accessible match was found/);
+    expect(prompt).toMatch(/search_operational_knowledge/);
     expect(prompt).toMatch(/DMAIC/);
+    const facilitatePrompt = buildSystemPrompt(
+      "facilitate",
+      "ROOT_CAUSE_ANALYSIS",
+    );
+    expect(facilitatePrompt).not.toMatch(/search_operational_knowledge/);
   });
 });
