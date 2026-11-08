@@ -361,10 +361,7 @@ body {
 }
 
 .leh-recharts .recharts-default-tooltip,
-.leh-recharts .recharts-tooltip-label,
-.leh-recharts .recharts-tooltip-item-name,
-.leh-recharts .recharts-tooltip-item-value,
-.leh-recharts .recharts-tooltip-item-list li {
+.leh-recharts .recharts-tooltip-label {
   color: var(--card-foreground);
 }
 

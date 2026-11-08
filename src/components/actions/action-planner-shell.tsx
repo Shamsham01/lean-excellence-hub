@@ -10,7 +10,14 @@ import {
   Plus,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { ActionCreateDialog } from "@/components/actions/action-create-form";
 import { ActionDetailSheet } from "@/components/actions/action-detail-sheet";
@@ -70,6 +77,15 @@ export function ActionPlannerShell({
   );
   const [listSort, setListSort] = useState<ListSort>("due");
   const [createOpen, setCreateOpen] = useState(false);
+  const addNewButtonRef = useRef<HTMLButtonElement>(null);
+  const createWasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (createWasOpenRef.current && !createOpen) {
+      addNewButtonRef.current?.focus();
+    }
+    createWasOpenRef.current = createOpen;
+  }, [createOpen]);
 
   const openAction = useCallback(
     (actionId: string) => {
@@ -178,6 +194,7 @@ export function ActionPlannerShell({
             ) : null}
             {canCreate ? (
               <Button
+                ref={addNewButtonRef}
                 type="button"
                 size="sm"
                 className="gap-1.5"

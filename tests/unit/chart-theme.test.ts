@@ -7,11 +7,11 @@ import {
 } from "@/components/charts/chart-theme";
 
 describe("chart-theme tooltips", () => {
-  it("uses card foreground for tooltip text", () => {
+  it("uses card foreground for tooltip chrome and label only", () => {
     expect(chartTooltipStyle.contentStyle?.color).toBe(
       "var(--card-foreground)",
     );
-    expect(chartTooltipStyle.itemStyle?.color).toBe("var(--card-foreground)");
+    expect(chartTooltipStyle).not.toHaveProperty("itemStyle");
   });
 
   it("uses a subtle theme-aware bar hover band", () => {

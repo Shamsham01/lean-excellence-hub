@@ -34,7 +34,6 @@ export const chartTooltipStyle = {
     color: "var(--card-foreground)",
   },
   labelStyle: { color: "var(--card-foreground)" },
-  itemStyle: { color: "var(--card-foreground)" },
 };
 
 /** Props spread onto Recharts `<Tooltip />` for bar charts. */
