@@ -85,7 +85,7 @@ export default async function FiveSOverviewPage({
 
   if (catalog === "empty") {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8" data-testid="five-s-empty-state">
         <PageHeader
           title="5S Audits"
           description="Digital 5S auditing with scoring, evidence, and accountability."
