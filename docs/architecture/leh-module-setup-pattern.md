@@ -1,9 +1,9 @@
 # LEH Module Setup Pattern
 
-Status: **Implemented for 5S and Gemba** (`LEANAI-MODULE-SETUP-01A` / #271)
+Status: **Implemented for 5S, Gemba, Skills, and Training** (#267 slices)
 
-Parent: **#267** remains open. Training, Skills, and other configurable modules
-are later slices.
+Parent: **#267** remains open for modules that still use legacy authoring only
+(Suggestions, recognition, schedules, billing, People, Actions, and others).
 
 Date: **2026-10-07**
 
@@ -14,7 +14,7 @@ LEH is an engine, not a prescribed Lean methodology.
 > Your framework. Your standards. Your way of working.
 
 Configurable modules can offer the same three ways to start that Maturity
-already uses. This slice proves that pattern for **5S** and **Gemba** only.
+already uses. This pattern is proven for **5S**, **Gemba**, **Skills**, and **Training**.
 It does not claim that every LEH module can be built with LeanAI.
 
 | Path | Meaning | Output |
@@ -38,8 +38,10 @@ Dedicated routes, not a setup wall on the operational dashboard:
 - `/platform/gemba/setup`
 - `/platform/gemba/setup/quick-start`
 - `/platform/gemba/setup/leanai`
+- `/platform/skills/setup` (+ manual, quick-start, leanai)
+- `/platform/training/setup` (+ manual, quick-start, leanai)
 
-An empty module offers **Set up 5S** or **Set up Gemba**. A module that already
+An empty module offers **Set up 5S**, **Set up Gemba**, **Set up Skills**, or **Set up Training**. A module that already
 has configuration keeps its operational overview and offers **New standard** or
 **New definition**, which opens the same chooser.
 
@@ -151,6 +153,7 @@ standard, or choose where a draft applies.
 
 ## What this slice does not do
 
-Training and Skills still use their existing authoring. Maturity keeps its own
-three-mode implementation. Later work can adopt these primitives without
-turning this layer into a generic CMS.
+**Suggestions**, recognition, schedules, billing, **People**, and **Actions**
+do not use this chooser yet. Maturity keeps its own three-mode implementation.
+Detailed editors (course versions, skill scales, Gemba prompt libraries) stay
+beside setup; setup only creates organisation-owned drafts.

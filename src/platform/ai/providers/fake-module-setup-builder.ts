@@ -10,6 +10,9 @@ import { FIVE_S_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/five-s-s
 import { GEMBA_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/gemba-setup-builder";
 import { SKILLS_GENERATE_DRAFT_INSTRUCTION } from "@/modules/skills/ai-builder/generate-draft-instruction";
 import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
+import { TRAINING_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/training-setup-builder";
+import { TRAINING_BUILDER_CONTEXT_CONTRACT } from "@/modules/training/ai-builder/types";
+import { TRAINING_GENERATE_DRAFT_INSTRUCTION } from "@/modules/training/ai-builder/generate-draft-instruction";
 import type { CreateResponseResult } from "@/platform/ai/types";
 
 const USAGE = {
@@ -26,7 +29,8 @@ export function fakeModuleSetupBuilderResponse(
   if (
     formatName !== FIVE_S_SETUP_BUILDER_FORMAT_NAME &&
     formatName !== GEMBA_SETUP_BUILDER_FORMAT_NAME &&
-    formatName !== SKILLS_SETUP_BUILDER_FORMAT_NAME
+    formatName !== SKILLS_SETUP_BUILDER_FORMAT_NAME &&
+    formatName !== TRAINING_SETUP_BUILDER_FORMAT_NAME
   ) {
     return null;
   }
@@ -36,7 +40,9 @@ export function fakeModuleSetupBuilderResponse(
       ? FIVE_S_BUILDER_CONTEXT_CONTRACT
       : formatName === GEMBA_SETUP_BUILDER_FORMAT_NAME
         ? GEMBA_BUILDER_CONTEXT_CONTRACT
-        : SKILLS_BUILDER_CONTEXT_CONTRACT;
+        : formatName === TRAINING_SETUP_BUILDER_FORMAT_NAME
+          ? TRAINING_BUILDER_CONTEXT_CONTRACT
+          : SKILLS_BUILDER_CONTEXT_CONTRACT;
   const markers = contextMarkers(contract);
   const context = extractModuleSetupBuilderContext(
     lastUser,
@@ -69,7 +75,9 @@ export function fakeModuleSetupBuilderResponse(
       ? fiveSEnvelope(context, request)
       : formatName === GEMBA_SETUP_BUILDER_FORMAT_NAME
         ? gembaEnvelope(context, request)
-        : skillsEnvelope(context, request);
+        : formatName === TRAINING_SETUP_BUILDER_FORMAT_NAME
+          ? trainingEnvelope(context, request)
+          : skillsEnvelope(context, request);
 
   return {
     outputText: envelope.message,
@@ -83,6 +91,83 @@ function extractRequest(lastUser: string): string {
   const marker = "User request:\n";
   const index = lastUser.lastIndexOf(marker);
   return (index >= 0 ? lastUser.slice(index + marker.length) : lastUser).trim();
+}
+
+function trainingEnvelope(
+  _context: ModuleSetupBuilderContext | null,
+  request: string,
+) {
+  const explicitDraft = request.includes(TRAINING_GENERATE_DRAFT_INSTRUCTION);
+  if (request.includes("TRAINING_DISCOVERY_TEST") && !explicitDraft) {
+    return {
+      message: "Which roles need which courses?",
+      phase: "discovery",
+      understanding: {
+        operation: "Manufacturing line",
+        audience: null,
+        delivery: null,
+        compliance: null,
+        curriculum: null,
+      },
+      questions: [
+        {
+          question: "Which roles should the starter courses target?",
+          suggested_answers: ["Line Operator", "Team Leader"],
+        },
+      ],
+      change_summary: [],
+      proposal: null,
+    };
+  }
+
+  return {
+    message:
+      "Here is a draft Training catalogue. Nothing is scheduled or published.",
+    phase: "proposal",
+    understanding: {
+      operation: "Line operation",
+      audience: "New starters",
+      delivery: "Mixed classroom and practical",
+      compliance: "Mandatory safety",
+      curriculum: "Job function requirements",
+    },
+    questions: [],
+    change_summary: ["Proposed two starter courses."],
+    proposal: {
+      title: "Line operator onboarding",
+      courses: [
+        {
+          name: "Induction and site safety",
+          category: "Safety",
+          description: "Site rules and emergencies.",
+          duration_minutes: 90,
+          delivery_method: "classroom",
+          learning_objectives: "Describe hazards and escalation.",
+        },
+        {
+          name: "Quality at the point of work",
+          category: "Quality",
+          description: "Checks and containment.",
+          duration_minutes: 60,
+          delivery_method: "workshop",
+          learning_objectives: "Complete defined checks.",
+        },
+      ],
+      curriculum: {
+        name: "Operator requirements",
+        description: null,
+        requirements: [
+          {
+            course_name: "Induction and site safety",
+            suggested_job_function: "Line Operator",
+            mandatory: true,
+            notes: null,
+          },
+        ],
+      },
+      notes: ["Sample proposal. Not published."],
+    },
+  };
 }
 
 function emptySkillsUnderstanding() {

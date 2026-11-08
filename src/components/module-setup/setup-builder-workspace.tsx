@@ -39,7 +39,7 @@ type SendResult =
 
 type SetupBuilderWorkspaceProps = {
   moduleLabel: string;
-  noun: "5S standard" | "Gemba definition";
+  noun: "5S standard" | "Gemba definition" | "Training catalogue";
   setupHref: string;
   manualHref: string;
   quickStartHref: string;
@@ -48,6 +48,7 @@ type SetupBuilderWorkspaceProps = {
   units: UnitSelectOption[];
   requiresSiteSelection: boolean;
   showThreshold: boolean;
+  showApplicability?: boolean;
   initial: ModuleSetupBuilderSnapshot | null;
   unavailableMessage: string | null;
   send: (input: {
@@ -75,6 +76,7 @@ export function SetupBuilderWorkspace({
   units,
   requiresSiteSelection,
   showThreshold,
+  showApplicability = true,
   initial,
   unavailableMessage,
   send,
@@ -532,11 +534,13 @@ export function SetupBuilderWorkspace({
                   />
                 </div>
               ) : null}
-              <ApplicableUnitsField
-                options={units}
-                requiresSiteSelection={requiresSiteSelection}
-                description="You choose where this draft applies."
-              />
+              {showApplicability ? (
+                <ApplicableUnitsField
+                  options={units}
+                  requiresSiteSelection={requiresSiteSelection}
+                  description="You choose where this draft applies."
+                />
+              ) : null}
               {createError ? (
                 <p
                   role="alert"

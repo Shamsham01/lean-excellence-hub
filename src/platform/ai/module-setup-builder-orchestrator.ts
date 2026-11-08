@@ -43,7 +43,7 @@ type ParsedEnvelope = {
 };
 
 export type ModuleSetupBuilderAdapter = {
-  moduleKey: "five_s" | "gemba" | "skills";
+  moduleKey: "five_s" | "gemba" | "skills" | "training";
   interventionKey: "setup_builder";
   payloadKind: string;
   contextContract: string;

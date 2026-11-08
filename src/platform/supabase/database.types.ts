@@ -10370,6 +10370,135 @@ export type Database = {
           },
         ]
       }
+      training_setup_bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          organisation_id?: string
+          ownership?: string
+          record_id?: string
+          record_kind?: string
+        }
+        Relationships: []
+      }
+      training_setup_bundles: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          curriculum_id: string | null
+          curriculum_version_id: string | null
+          discarded_at: string | null
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          published_at: string | null
+          request_definition: Json
+          sample: boolean
+          source: string
+          status: string
+          template_key: string | null
+          template_version: string | null
+          title: string
+          unresolved: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          curriculum_id?: string | null
+          curriculum_version_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          published_at?: string | null
+          request_definition: Json
+          sample?: boolean
+          source: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          curriculum_id?: string | null
+          curriculum_version_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          published_at?: string | null
+          request_definition?: Json
+          sample?: boolean
+          source?: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title?: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      training_setup_preparations: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          source?: string
+          state?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           category: string | null
@@ -13563,6 +13692,30 @@ export type Database = {
       }
       create_training_course_successor_version: {
         Args: { target_course_id: string }
+        Returns: string
+      }
+      create_training_setup_draft: {
+        Args: { target_definition: Json; target_idempotency_key: string }
+        Returns: string
+      }
+      discard_training_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
+      preview_training_setup_bundle_discard: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
+      publish_training_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: boolean
+      }
+      save_training_setup_preparation: {
+        Args: {
+          target_source: string
+          target_state: Json
+          target_template_key: string
+        }
         Returns: string
       }
       create_training_curriculum_draft: {

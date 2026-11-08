@@ -314,7 +314,7 @@ function buildRecommendedItems(
       status: trainingStatus,
       canAssess: !data.trainingCatalogUnavailable,
       canPerform: permissions.canManageTraining,
-      href: "/platform/training/courses",
+      href: "/platform/training/setup",
       helperMessage: adminHelper(
         permissions.canManageTraining,
         permissions.canManageTraining,
