@@ -8,8 +8,13 @@ import type {
 } from "./types";
 import { buildPlanModuleEntitlements } from "./module-entitlements";
 import { resolveLeanAiCreditPolicyDefault } from "./leanai-credit-policy";
+import {
+  LEH_COMMERCIAL_PRINCIPLES,
+  UNLIMITED_MEMBERSHIP_PER_SITE,
+} from "./commercial-principles";
 
 export const BILLING_CURRENCY = "GBP" as const;
+export { UNLIMITED_MEMBERSHIP_PER_SITE, LEH_COMMERCIAL_PRINCIPLES };
 export const ANNUAL_DISCOUNT_PERCENT = 10;
 export const MIN_SITE_QUANTITY = 1;
 export const MAX_SITE_QUANTITY = 500;

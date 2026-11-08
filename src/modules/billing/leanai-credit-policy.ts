@@ -15,7 +15,10 @@ export const LEH_AI_CREDIT_POLICY_ENFORCED = false;
 export type LeanAiCreditPolicyDefault = {
   /** Illustrative internal provider budget per subscribed site/month (GBP minor). */
   internalProviderBudgetGbpPerSiteMinor: number;
-  /** Candidate pooled monthly credits per subscribed site (not a customer hard quota yet). */
+  /**
+   * Candidate pooled monthly credits per **billed site** in the subscription
+   * (× site quantity at org level). Not per employee and not a seat cap.
+   */
   monthlyCreditAllowancePerSite: number;
   /** Historical catalogue token metadata; not enforced by start_ai_run. */
   catalogueTokenAllowanceMetadata: number;
@@ -58,6 +61,6 @@ export function resolvePooledMonthlyCreditAllowance(input: {
   siteQuantity: number;
 }) {
   const defaults = resolveLeanAiCreditPolicyDefault(input.planCode);
-  const sites = Math.max(1, input.siteQuantity);
-  return defaults.monthlyCreditAllowancePerSite * sites;
+  const subscribedSites = Math.max(1, input.siteQuantity);
+  return defaults.monthlyCreditAllowancePerSite * subscribedSites;
 }

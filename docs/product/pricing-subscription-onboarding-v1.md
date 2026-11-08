@@ -9,12 +9,13 @@ This document is the commercial and product baseline for Lean Excellence Hub (LE
 ## 1. Commercial principles
 
 1. **Organisation = customer / tenant.**
-2. **Site = primary billable unit.**
-3. **Do not charge per user.** LEH should encourage broad frontline participation in Continuous Improvement rather than penalise adoption.
-4. Core Operational Excellence functionality should remain coherent across plans. Higher tiers primarily add **analytics, financial governance, integration, AI capacity, security/governance and service level**, not arbitrary removal of essential Lean workflows.
-5. Pricing and feature access must be represented through a **plan + entitlement layer**, not hard-coded plan names throughout application code.
-6. Stripe is the billing provider; LEH remains the source of truth for tenant access and entitlements.
-7. Enterprise is **sales-managed / Contact Sales**, not a requirement to build every future enterprise feature before launch.
+2. **Site = primary billable unit** (number of subscribed sites/locations). Price is **per site**, not per person.
+3. **Unlimited employees (memberships) per site on every plan.** No seat caps, headcount bands, or per-user fees. Invitations and onboarding must not be gated by employee count.
+4. **Do not charge per user.** LEH should encourage broad frontline participation in Continuous Improvement rather than penalise adoption.
+5. Core Operational Excellence functionality should remain coherent across plans. Higher tiers primarily add **analytics, financial governance, integration, AI capacity, security/governance and service level**, not arbitrary removal of essential Lean workflows.
+6. Pricing and feature access must be represented through a **plan + entitlement layer**, not hard-coded plan names throughout application code.
+7. Stripe is the billing provider; LEH remains the source of truth for tenant access and entitlements.
+8. Enterprise is **sales-managed / Contact Sales**, not a requirement to build every future enterprise feature before launch.
 
 All prices below are working commercial prices and should be treated as market hypotheses until validated with paying customers. Prices exclude VAT where applicable.
 

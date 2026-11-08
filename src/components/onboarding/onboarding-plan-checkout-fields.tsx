@@ -55,8 +55,10 @@ export function OnboardingPlanCheckoutFields() {
           </label>
         ))}
         <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-          Optional onboarding consultancy is quoted separately. There is no
-          mandatory setup fee in Checkout. Enterprise is Contact Sales only.
+          Price is per <strong>site</strong> (location), not per person.
+          Unlimited employees per site on every plan. Optional onboarding
+          consultancy is quoted separately; no mandatory setup fee in Checkout.
+          Enterprise is Contact Sales only.
         </p>
       </fieldset>
       <div className="flex flex-col gap-2">

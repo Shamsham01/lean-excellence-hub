@@ -8,7 +8,7 @@ Prior BILLING-02 work gated finance validation and cross-module analytics by pla
 
 ## Decision
 
-1. **Catalogue** remains £499 Essentials / £999 Professional per site, 10% annual discount, Founder Pilot price and Professional entitlements preserved.
+1. **Catalogue** remains £499 Essentials / £999 Professional **per subscribed site**, 10% annual discount, Founder Pilot price and Professional entitlements preserved. **Unlimited memberships per site** on all plans (t116u); billed quantity is **sites**, not employees.
 2. **Module entitlements** are the primary commercial gate (`modules.*` in app, `module_*` in Postgres). RBAC remains mandatory (plan never grants permissions alone).
 3. **Essentials modules:** Maturity, 5S, Gemba, Actions, Suggestions, Schedule, Templates utilities. **Professional** adds Projects, Benefits, Problem solving, Training, Skills, Recognition, People HR.
 4. **Setup fees** removed from catalogue (`setupFeeMinor: null`); onboarding copy states optional bespoke services.

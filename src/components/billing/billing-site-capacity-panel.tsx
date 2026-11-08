@@ -54,6 +54,9 @@ export function BillingSiteCapacityPanel({
   return (
     <div data-testid="billing-site-capacity">
       <p className="text-xs font-medium text-muted-foreground">Site capacity</p>
+      <p className="text-xs text-muted-foreground">
+        Billed by subscribed sites, not by people. Unlimited employees per site.
+      </p>
       <p
         className="text-sm text-foreground"
         data-testid="billing-site-capacity-headline"

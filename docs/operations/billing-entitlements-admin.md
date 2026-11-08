@@ -4,26 +4,21 @@ Product source of truth: [pricing-subscription-onboarding-v1.md](../product/pric
 
 ## Plan codes
 
-| Code | Checkout | Professional entitlements |
+| Code | Checkout | Module scope |
 | --- | --- | --- |
-| `essentials` | Public self-service | No — advanced analytics and finance benefit validation are gated |
-| `professional` | Public self-service | Yes |
-| `founder` | Private price IDs | Yes (Professional-level) |
+| `essentials` | Public self-service | Core modules (Maturity, 5S, Gemba, Actions, Suggestions + Schedule/Templates utilities) |
+| `professional` | Public self-service | Full module set |
+| `founder` | Private price IDs | Professional-level modules + Founder price |
 | `enterprise` | Contact sales only | Negotiated |
 
-Legacy tenants with **no** subscription row (for example CookieWorks) keep Professional-level capabilities until a subscription is attached.
+**Membership:** unlimited employees/users **per site** on every plan. Billing counts **subscribed sites** only (`site_quantity`), not headcount. See ADR-0018 and `commercial-principles.ts`.
 
-## Enforcement layers (BILLING-02)
+Legacy tenants with **no** subscription row (for example CookieWorks) keep Professional-level module access until a subscription is attached.
 
-1. **Postgres** — `private.organisation_plan_capability` / `private.current_organisation_plan_capability` mirror the catalogue for:
-   - `advanced_benefits_governance`
-   - `advanced_analytics`
-   - `api_access`
-   - `integrations`  
-   Finance benefit validation (`record_benefit_validation` with role `finance`) fails closed when the plan is Essentials.
+## Enforcement layers (BILLING-02 / BILLING-03)
 
-2. **Application** — `resolveOrganisationEntitlements` + `ModuleAnalyticsDashboard` upgrade prompt for advanced analytics; benefit validation queue shows an upgrade card for finance work on Essentials.
-
+1. **Postgres** — `private.organisation_plan_capability` for `module_*` keys and Benefits via `module_benefits`.
+2. **Application** — `resolveOrganisationEntitlements.modules`, nav `planModule`, route `requirePlanModuleEntitlement`.
 3. **Operational billing** — `trialing`, `active`, `cancel_at_period_end`, and in-grace `past_due` grant capabilities. Ended or expired grace denies operational access before entitlements are evaluated.
 
 ## Owner billing UI

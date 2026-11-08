@@ -23,7 +23,7 @@ export type LeanAiCustomerInclusion = {
 };
 
 const SITE_NOTE =
-  "Usage is one shared organisation total. Subscribed site quantity scales the LEH subscription. It does not create a separate LeanAI limit for each site or each person.";
+  "Unlimited people may use each subscribed site. Usage is one shared organisation LeanAI total; subscribed site quantity scales the LEH subscription and pooled credit estimates — not a per-person seat cap.";
 
 function planName(planCode: PlanCode) {
   return PLAN_CATALOGUE[planCode].name;
