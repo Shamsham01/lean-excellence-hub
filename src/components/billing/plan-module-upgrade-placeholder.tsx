@@ -22,9 +22,9 @@ export function PlanModuleUpgradePlaceholder({
       <CardContent className="flex flex-col gap-4 text-sm text-muted-foreground">
         <p>{moduleUpgradeDescription(module)}</p>
         <p>
-          You can still open historical records you already have access to. New
-          work in this module needs Professional (or your current plan&apos;s
-          module set).
+          You can still view and export historical records you already have
+          access to. Creating or changing records in this module needs
+          Professional (or your current plan&apos;s module set).
         </p>
         <Button size="sm" className="self-start" asChild>
           <AppLink

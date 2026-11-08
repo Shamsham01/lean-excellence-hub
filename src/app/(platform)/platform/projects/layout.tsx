@@ -1,4 +1,4 @@
-import { PlanModuleRouteGate } from "@/components/billing/plan-module-route-gate";
+import { PlanModuleEntitlementShell } from "@/components/billing/plan-module-entitlement-shell";
 
 export default async function ProjectsModuleLayout({
   children,
@@ -6,6 +6,6 @@ export default async function ProjectsModuleLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PlanModuleRouteGate module="projects">{children}</PlanModuleRouteGate>
+    <PlanModuleEntitlementShell module="projects">{children}</PlanModuleEntitlementShell>
   );
 }

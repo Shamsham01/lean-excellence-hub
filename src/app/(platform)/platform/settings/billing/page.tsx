@@ -13,6 +13,12 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  moduleUpgradeDescription,
+  moduleUpgradeTitle,
+  PLAN_MODULE_CODES,
+  type PlanModuleCode,
+} from "@/modules/billing/module-entitlements";
 import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
 import { isFakeBillingEnabled } from "@/modules/billing/env";
 import { loadProviderPendingSiteQuantity } from "@/modules/billing/increase-site-quantity";
@@ -30,7 +36,7 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 export default async function OrganisationBillingSettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ addCapacity?: string }>;
+  searchParams: Promise<{ addCapacity?: string; module?: string }>;
 }) {
   if (!(await currentMemberHasPermission("billing.manage"))) {
     notFound();
@@ -56,6 +62,11 @@ export default async function OrganisationBillingSettingsPage({
   const canCreateSite =
     await currentMemberHasOrganisationScopedPermission("hierarchy.manage");
   const operationalNotices = buildBillingOperationalNotices(snapshot);
+  const focusedModule = PLAN_MODULE_CODES.includes(
+    params.module as PlanModuleCode,
+  )
+    ? (params.module as PlanModuleCode)
+    : null;
 
   return (
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
@@ -72,6 +83,24 @@ export default async function OrganisationBillingSettingsPage({
       />
 
       <BillingOperationalNoticesPanel notices={operationalNotices} />
+
+      {focusedModule ? (
+        <Card data-testid="billing-focused-module-upgrade">
+          <CardHeader>
+            <CardTitle className="text-base">
+              {moduleUpgradeTitle(focusedModule)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            <p>{moduleUpgradeDescription(focusedModule)}</p>
+            <p className="mt-2">
+              Upgrade to Professional (or your negotiated plan) to create or
+              change records in this module. Historical data remains readable
+              after downgrade.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

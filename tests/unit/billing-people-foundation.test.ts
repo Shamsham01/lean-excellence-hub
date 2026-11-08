@@ -8,12 +8,22 @@ import {
 import { buildPlanModuleEntitlements } from "@/modules/billing/module-entitlements";
 
 describe("people foundation vs paid HR", () => {
+  it("keeps job functions off the paid HR route list", () => {
+    const jobFunctionsPath = "/platform/settings/job-functions";
+    const hrPrefixes = PEOPLE_HR_ROUTE_PREFIXES as readonly string[];
+    expect(
+      hrPrefixes.some((prefix) => jobFunctionsPath.startsWith(prefix)),
+    ).toBe(false);
+  });
+
   it("keeps invitations/settings root off the paid HR route list", () => {
     expect(PEOPLE_FOUNDATION_ROUTE_PREFIXES).toContain(
       "/platform/settings/people",
     );
     expect(
-      PEOPLE_HR_ROUTE_PREFIXES.some((p) => p === "/platform/settings/people"),
+      (PEOPLE_HR_ROUTE_PREFIXES as readonly string[]).includes(
+        "/platform/settings/people",
+      ),
     ).toBe(false);
     expect(PEOPLE_HR_ROUTE_PREFIXES).toContain(
       "/platform/settings/people/create",

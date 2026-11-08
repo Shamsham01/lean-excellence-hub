@@ -1,4 +1,4 @@
-import { PlanModuleRouteGate } from "@/components/billing/plan-module-route-gate";
+import { PlanModuleEntitlementShell } from "@/components/billing/plan-module-entitlement-shell";
 
 export default async function RecognitionModuleLayout({
   children,
@@ -6,6 +6,8 @@ export default async function RecognitionModuleLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PlanModuleRouteGate module="recognition">{children}</PlanModuleRouteGate>
+    <PlanModuleEntitlementShell module="recognition">
+      {children}
+    </PlanModuleEntitlementShell>
   );
 }

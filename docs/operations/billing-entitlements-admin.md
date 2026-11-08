@@ -34,7 +34,7 @@ Suspended organisations land on `/billing` with recovery copy keyed to billing s
 | `/platform/settings/people` invitations | **None** (all plans) | `invitations.manage`, `roles.delegate` |
 | Colleague CSV import (invitations) | **None** | import permissions |
 | Workforce create / import | `people_hr` module | `workforce.provision` / `workforce.import` |
-| Job functions settings | `people_hr` | `job_functions.*` |
+| Job functions + org structure | **None** (all plans) | `job_functions.*` |
 | `/platform/people/[id]/admin` | `people_hr` | membership admin |
 
 ## Security checklist (billing slice)
@@ -48,7 +48,7 @@ Suspended organisations land on `/billing` with recovery copy keyed to billing s
 ## Test and rehearsal
 
 - Unit: `tests/unit/billing-entitlements.test.ts`, `billing-plan-capabilities.test.ts`, `billing-operational-notices.test.ts`
-- pgTAP: `supabase/tests/database/billing_plan_capabilities.test.sql`
+- pgTAP: `billing_plan_capabilities.test.sql`, `billing_plan_rpc_bypass_representative.test.sql`, `leanai_credit_lifecycle.test.sql` (full suite: `npm run test:db`)
 - Playwright: `tests/e2e/billing-trial-site-upgrade.spec.ts` (trialing Essentials → site limit → billing upgrade prompt), plus existing `site-capacity.spec.ts` and `billing-founding-onboarding.spec.ts`
 
 Fake billing may set `BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS=trialing` for local/E2E Stripe trial simulation without live keys.
