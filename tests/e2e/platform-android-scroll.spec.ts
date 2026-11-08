@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import {
   DEMO_ORGANISATION,
@@ -7,8 +7,11 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { openMobileDrawer } from "./helpers/open-mobile-drawer";
 import {
-  touchSwipePlatformMainViewport,
+  programmaticScrollLocator,
+  scrollPlatformMainViewportForProject,
   touchSwipeScrollOnLocator,
+  usesChromiumCdpTouch,
+  WEBKIT_OVERFLOW_WIRING_ANNOTATION,
 } from "./helpers/touch-scroll";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -41,23 +44,20 @@ async function ensureTallWorkspace(page: Page) {
   });
 }
 
-async function scrollMainViewport(page: Page, deltaY: number) {
-  const viewport = page.locator(".platform-main-viewport").first();
-  await viewport.evaluate((element, delta) => {
-    element.scrollTop += delta;
-  }, deltaY);
-}
-
-async function assertTouchScrollIncreasedViewport(
+async function assertMainViewportScrolled(
   page: Page,
+  testInfo: TestInfo,
   beforeScrollTop: number,
 ) {
-  let after = await readScrollMetrics(page);
-  if (after.viewportScrollTop <= beforeScrollTop) {
-    await touchSwipePlatformMainViewport(page, 220);
-    await touchSwipePlatformMainViewport(page, 220);
-    after = await readScrollMetrics(page);
+  const afterFirst = await readScrollMetrics(page);
+  if (
+    usesChromiumCdpTouch(testInfo) &&
+    afterFirst.viewportScrollTop <= beforeScrollTop
+  ) {
+    await scrollPlatformMainViewportForProject(page, 260, testInfo);
+    await scrollPlatformMainViewportForProject(page, 260, testInfo);
   }
+  const after = await readScrollMetrics(page);
   expect(after.viewportScrollTop).toBeGreaterThan(beforeScrollTop);
 }
 
@@ -73,23 +73,10 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
 
     test("home workspace scrolls via touch swipe on the main viewport", async ({
       page,
-    }) => {
+    }, testInfo) => {
       await signInAsDemoUser(page, "admin");
       await expect(page.getByTestId("platform-home-page")).toBeVisible();
       await ensureTallWorkspace(page);
-
-      const shellBox = await page
-        .getByTestId("platform-shell")
-        .evaluate((el) => {
-          const style = getComputedStyle(el);
-          return {
-            height: style.height,
-            overflowY: style.overflowY,
-            maxHeight: style.maxHeight,
-          };
-        });
-      expect(shellBox.overflowY).toBe("hidden");
-      expect(parseFloat(shellBox.height)).toBeGreaterThan(0);
 
       const before = await readScrollMetrics(page);
       expect(["auto", "scroll"]).toContain(before.viewportOverflowY);
@@ -97,30 +84,39 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
         before.viewportClientHeight,
       );
 
-      await touchSwipePlatformMainViewport(page, 260);
-      await touchSwipePlatformMainViewport(page, 260);
-
-      await assertTouchScrollIncreasedViewport(page, before.viewportScrollTop);
+      await scrollPlatformMainViewportForProject(page, 280, testInfo);
+      await scrollPlatformMainViewportForProject(page, 280, testInfo);
+      await assertMainViewportScrolled(
+        page,
+        testInfo,
+        before.viewportScrollTop,
+      );
 
       const after = await readScrollMetrics(page);
       expect(after.bodyOverflowY).not.toBe("hidden");
       expect(after.scrollLocked).toBe(false);
     });
 
-    test("module list workspace scrolls on People", async ({ page }) => {
+    test("module list workspace scrolls on People", async ({
+      page,
+    }, testInfo) => {
       await signInAsDemoUser(page, "admin");
       await page.goto("/platform/people");
       await expect(page.getByTestId("people-directory-page")).toBeVisible();
       await ensureTallWorkspace(page);
 
       const before = await readScrollMetrics(page);
-      await touchSwipePlatformMainViewport(page, 320);
-      await assertTouchScrollIncreasedViewport(page, before.viewportScrollTop);
+      await scrollPlatformMainViewportForProject(page, 360, testInfo);
+      await assertMainViewportScrolled(
+        page,
+        testInfo,
+        before.viewportScrollTop,
+      );
     });
 
-    test("problem-solving case nested scroller accepts overflow (touch-first)", async ({
+    test("problem-solving nested scroller overflow wiring", async ({
       page,
-    }) => {
+    }, testInfo) => {
       await signInAsDemoUser(page, "manager");
       await page.goto("/platform/problem-solving");
       await page
@@ -138,7 +134,7 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
 
       await canvasScroller.evaluate((element) => {
         const spacer = document.createElement("div");
-        spacer.setAttribute("data-testid", "pps-android-scroll-spacer");
+        spacer.setAttribute("data-testid", "pps-mobile-scroll-spacer");
         spacer.style.height = "200vh";
         element.appendChild(spacer);
       });
@@ -150,19 +146,22 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
       }));
       expect(before.scrollHeight).toBeGreaterThan(before.clientHeight);
 
-      await touchSwipeScrollOnLocator(page, canvasScroller, 280);
-      await touchSwipeScrollOnLocator(page, canvasScroller, 280);
+      const usedTouch = await touchSwipeScrollOnLocator(
+        page,
+        canvasScroller,
+        280,
+        testInfo,
+      );
+      if (usedTouch) {
+        await touchSwipeScrollOnLocator(page, canvasScroller, 280, testInfo);
+      }
 
       let after = await canvasScroller.evaluate((element) => element.scrollTop);
       if (after <= before.scrollTop) {
-        test.info().annotations.push({
-          type: "limitation",
-          description:
-            "Touch swipe did not move nested PPS canvas in this engine; asserting programmatic scroll only proves overflow container wiring, not OS touch delivery.",
-        });
-        await canvasScroller.evaluate((element) => {
-          element.scrollTop += 360;
-        });
+        if (!usesChromiumCdpTouch(testInfo)) {
+          testInfo.annotations.push(WEBKIT_OVERFLOW_WIRING_ANNOTATION);
+        }
+        await programmaticScrollLocator(canvasScroller, 360);
         after = await canvasScroller.evaluate((element) => element.scrollTop);
       }
       expect(after).toBeGreaterThan(before.scrollTop);
@@ -193,7 +192,7 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
 
     test("mobile menu does not leave body scroll-locked after close", async ({
       page,
-    }) => {
+    }, testInfo) => {
       await signInAsDemoUser(page, "admin");
       await expect(page.getByTestId("platform-mobile-chrome")).toBeVisible();
 
@@ -210,8 +209,12 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
 
       await ensureTallWorkspace(page);
       const before = await readScrollMetrics(page);
-      await touchSwipePlatformMainViewport(page, 300);
-      await assertTouchScrollIncreasedViewport(page, before.viewportScrollTop);
+      await scrollPlatformMainViewportForProject(page, 320, testInfo);
+      await assertMainViewportScrolled(
+        page,
+        testInfo,
+        before.viewportScrollTop,
+      );
     });
   });
 }

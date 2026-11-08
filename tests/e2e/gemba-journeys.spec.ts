@@ -236,6 +236,15 @@ test.describe("Milestone 6 Gemba journeys", () => {
       page.getByRole("button", { name: "Next", exact: true }),
     ).toBeDisabled();
 
+    await page.goBack();
+    await expect(page.getByRole("heading", { name: firstPrompt })).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.goForward();
+    await expect(page.getByRole("heading", { name: secondPrompt })).toBeVisible(
+      { timeout: 15_000 },
+    );
+
     await page.reload();
     await expect(page.getByRole("heading", { name: secondPrompt })).toBeVisible(
       { timeout: 15_000 },

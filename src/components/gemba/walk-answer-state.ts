@@ -82,6 +82,39 @@ function isSaveSuccess(result: unknown) {
   return record.ok === true && record.error == null;
 }
 
+export function questionHasUncommittedWork(
+  runtime: QuestionRuntime | undefined,
+  serverAnswer: WalkAnswer | undefined,
+  questionId: string,
+  confirmed: WalkAnswer | undefined,
+) {
+  if (!runtime) {
+    return false;
+  }
+  if (
+    runtime.debounceTimer ||
+    runtime.inFlight ||
+    runtime.pending ||
+    runtime.current
+  ) {
+    return true;
+  }
+  const local = runtime.latest?.answer;
+  if (local && !answersEqual(local, serverAnswer)) {
+    return true;
+  }
+  if (local && !answersEqual(local, confirmed)) {
+    return true;
+  }
+  if (
+    runtime.lastFailed &&
+    !answersEqual(runtime.lastFailed.answer, serverAnswer)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Local Gemba walk answer state.
  *
@@ -174,31 +207,101 @@ export function useWalkAnswerState({
     const runtimes = runtimesRef.current;
     const walkChanged = resetWalkIdRef.current !== walkId;
     resetWalkIdRef.current = walkId;
-    epochRef.current += 1;
-    for (const runtime of runtimes.values()) {
-      if (runtime.debounceTimer) {
-        clearTimeout(runtime.debounceTimer);
-        runtime.debounceTimer = null;
-      }
-      runtime.current = null;
-      runtime.pending = null;
-      runtime.latest = null;
-      runtime.lastFailed = null;
-      const waiters = runtime.waiters.splice(0);
-      for (const waiter of waiters) waiter(!walkChanged);
-    }
-    setLocalAnswers(cloneAnswers(snapshot));
-    setConfirmedAnswers(cloneAnswers(snapshot));
-    setStatuses({});
-    setErrors({});
-    return () => {
+
+    if (walkChanged) {
+      epochRef.current += 1;
       for (const runtime of runtimes.values()) {
         if (runtime.debounceTimer) {
           clearTimeout(runtime.debounceTimer);
           runtime.debounceTimer = null;
         }
+        runtime.current = null;
+        runtime.pending = null;
+        runtime.latest = null;
+        runtime.lastFailed = null;
+        const waiters = runtime.waiters.splice(0);
+        for (const waiter of waiters) waiter(false);
       }
-    };
+      runtimes.clear();
+      setLocalAnswers(cloneAnswers(snapshot));
+      setConfirmedAnswers(cloneAnswers(snapshot));
+      setStatuses({});
+      setErrors({});
+      return () => {
+        for (const runtime of runtimes.values()) {
+          if (runtime.debounceTimer) {
+            clearTimeout(runtime.debounceTimer);
+            runtime.debounceTimer = null;
+          }
+        }
+      };
+    }
+
+    setConfirmedAnswers((previous) => {
+      const next = { ...previous };
+      for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+        const runtime = runtimes.get(questionId);
+        if (
+          questionHasUncommittedWork(
+            runtime,
+            serverAnswer,
+            questionId,
+            previous[questionId],
+          )
+        ) {
+          continue;
+        }
+        next[questionId] = { ...serverAnswer };
+      }
+      return next;
+    });
+
+    setLocalAnswers((previous) => {
+      const next = { ...previous };
+      for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+        const runtime = runtimes.get(questionId);
+        if (runtime?.latest?.answer) {
+          next[questionId] = { ...runtime.latest.answer };
+          continue;
+        }
+        if (
+          questionHasUncommittedWork(
+            runtime,
+            serverAnswer,
+            questionId,
+            confirmedRef.current[questionId],
+          )
+        ) {
+          continue;
+        }
+        next[questionId] = { ...serverAnswer };
+      }
+      return next;
+    });
+
+    for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+      const runtime = runtimes.get(questionId);
+      if (
+        !runtime ||
+        questionHasUncommittedWork(
+          runtime,
+          serverAnswer,
+          questionId,
+          confirmedRef.current[questionId],
+        )
+      ) {
+        continue;
+      }
+      if (
+        answersEqual(runtime.latest?.answer, serverAnswer) &&
+        !runtime.inFlight &&
+        !runtime.pending &&
+        !runtime.debounceTimer
+      ) {
+        setStatuses((current) => ({ ...current, [questionId]: "saved" }));
+        setErrors((current) => ({ ...current, [questionId]: null }));
+      }
+    }
   }, [walkId, answersFingerprint]);
 
   function ensureRuntime(questionId: string) {

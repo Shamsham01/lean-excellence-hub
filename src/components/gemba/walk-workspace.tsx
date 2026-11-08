@@ -1,14 +1,12 @@
 "use client";
 
-import { unstable_rethrow, useRouter } from "next/navigation";
 import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+  unstable_rethrow,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { InlineAlert } from "@/components/ui/alert";
 
@@ -55,11 +53,10 @@ import {
 import {
   buildGembaWalkPromptSearch,
   clearStoredGembaWalkPromptId,
+  GEMBA_WALK_PROMPT_PARAM,
   gembaWalkPath,
-  readGembaWalkPromptIdFromSearch,
   readStoredGembaWalkPromptId,
   resolveGembaWalkPromptIndex,
-  subscribeGembaWalkPromptLocation,
   writeStoredGembaWalkPromptId,
 } from "@/modules/operational/gemba-walk-prompt";
 
@@ -184,6 +181,10 @@ export function GembaWalkWorkspace({
   onComplete = completeGembaWalk,
 }: GembaWalkWorkspaceProps) {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const promptFromUrl =
+    searchParams.get(GEMBA_WALK_PROMPT_PARAM)?.trim() ?? null;
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
@@ -191,24 +192,12 @@ export function GembaWalkWorkspace({
     () => sections.flatMap((section) => section.questions.map((q) => q.id)),
     [sections],
   );
-  const restoredPromptId = useSyncExternalStore(
-    subscribeGembaWalkPromptLocation,
-    () =>
-      readGembaWalkPromptIdFromSearch(window.location.search) ??
-      readStoredGembaWalkPromptId(walkId),
-    () => initialPromptId,
-  );
+  const storedPromptId = readStoredGembaWalkPromptId(walkId);
   const restoredIndex = resolveGembaWalkPromptIndex({
     questionIds,
-    preferredQuestionId: restoredPromptId ?? initialPromptId,
-    storedQuestionId: restoredPromptId,
+    preferredQuestionId: promptFromUrl ?? initialPromptId,
+    storedQuestionId: promptFromUrl ?? storedPromptId,
   });
-  const [userIndex, setUserIndex] = useState<number | null>(null);
-  const [indexWalkId, setIndexWalkId] = useState(walkId);
-  if (indexWalkId !== walkId) {
-    setIndexWalkId(walkId);
-    setUserIndex(null);
-  }
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -229,7 +218,15 @@ export function GembaWalkWorkspace({
   const handleObservationsChange = useCallback((next: WalkObservation[]) => {
     setLiveObservations(next);
   }, []);
-  const index = userIndex ?? restoredIndex;
+  const urlPromptIndex =
+    promptFromUrl != null && promptFromUrl !== ""
+      ? resolveGembaWalkPromptIndex({
+          questionIds,
+          preferredQuestionId: promptFromUrl,
+          storedQuestionId: promptFromUrl,
+        })
+      : null;
+  const index = urlPromptIndex ?? restoredIndex;
   const safeIndex =
     flatQuestions.length === 0
       ? 0
@@ -256,26 +253,35 @@ export function GembaWalkWorkspace({
   });
 
   const syncPromptLocation = useCallback(
-    (questionId: string) => {
+    (questionId: string, mode: "push" | "replace" = "replace") => {
       writeStoredGembaWalkPromptId(walkId, questionId);
-      const nextSearch = buildGembaWalkPromptSearch(questionId);
-      if (window.location.search !== nextSearch) {
-        window.history.replaceState(
-          null,
-          "",
-          `${window.location.pathname}${nextSearch}`,
-        );
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      }
+      const nextPath = `${pathname}${buildGembaWalkPromptSearch(questionId)}`;
+      const currentPath = `${pathname}${window.location.search}`;
+      if (currentPath === nextPath) return;
+      const navigate = mode === "push" ? router.push : router.replace;
+      navigate(nextPath, { scroll: false });
     },
-    [walkId],
+    [pathname, router, walkId],
   );
 
   useEffect(() => {
+    if (status !== "in_progress" || completing) return;
+    if (promptFromUrl) {
+      writeStoredGembaWalkPromptId(walkId, promptFromUrl);
+      return;
+    }
     const questionId = flatQuestions[safeIndex]?.question.id;
-    if (!questionId || status !== "in_progress" || completing) return;
-    syncPromptLocation(questionId);
-  }, [completing, flatQuestions, safeIndex, status, syncPromptLocation]);
+    if (!questionId) return;
+    syncPromptLocation(questionId, "replace");
+  }, [
+    completing,
+    flatQuestions,
+    promptFromUrl,
+    safeIndex,
+    status,
+    syncPromptLocation,
+    walkId,
+  ]);
 
   useEffect(() => {
     const viewport = document.querySelector(
@@ -293,13 +299,9 @@ export function GembaWalkWorkspace({
     if (!target) return;
     setNavigating(true);
     try {
-      let saved = await flushQuestion(current.question.id);
-      if (!saved) {
-        saved = await flushQuestion(current.question.id);
-      }
+      const saved = await flushQuestion(current.question.id);
       if (!saved) return;
-      syncPromptLocation(target.question.id);
-      setUserIndex(nextIndex);
+      syncPromptLocation(target.question.id, "push");
     } finally {
       setNavigating(false);
     }

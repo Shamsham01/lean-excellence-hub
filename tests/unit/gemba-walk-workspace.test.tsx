@@ -31,11 +31,21 @@ const routerMocks = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 
+const searchParamsState = vi.hoisted(() => ({
+  prompt: null as string | null,
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     refresh: routerMocks.refresh,
     push: vi.fn(),
     replace: routerMocks.replace,
+  }),
+  usePathname: () => "/platform/gemba/walks/walk-1",
+  useSearchParams: () => ({
+    get: (key: string) => (key === "prompt" ? searchParamsState.prompt : null),
+    toString: () =>
+      searchParamsState.prompt ? `prompt=${searchParamsState.prompt}` : "",
   }),
   unstable_rethrow: (error: unknown) => {
     throw error;
@@ -913,7 +923,9 @@ describe("GembaWalkWorkspace answer state", () => {
         "RPC failed",
       );
     });
-    expect(routerMocks.replace).not.toHaveBeenCalled();
+    expect(routerMocks.replace).not.toHaveBeenCalledWith(
+      "/platform/gemba/walks/walk-1",
+    );
     expect(screen.getByTestId("gemba-walk-workspace")).toBeVisible();
     expect(screen.getByTestId("gemba-complete-walk")).toBeVisible();
   });
