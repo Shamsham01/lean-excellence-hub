@@ -1,6 +1,6 @@
 begin;
 
-select plan(32);
+select plan(33);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -404,6 +404,26 @@ select is(
   0::bigint,
   'delegation revokes prior pending approver in-app task'
 );
+
+reset role;
+set local role service_role;
+
+select is(
+  (
+    select coalesce(array_length(
+      public.lookup_suggestion_approval_notification_recipients_for_worker(
+        (select id from t119_ids where key = 'organisation'),
+        (select id from t119_ids where key = 'suggestion')
+      ),
+      1
+    ), 0)
+  ),
+  0::integer,
+  'worker lookup suppresses stale SuggestionSubmitted email after delegation'
+);
+
+reset role;
+set local role lean_hub_private_owner;
 
 select is(
   (

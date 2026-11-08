@@ -32,5 +32,7 @@ Operational email uses the existing notification pipeline (`notification-project
 ## Verification
 
 - pgTAP: `suggestion_approval_routing_delegation.test.sql`, `suggestion_approval_routing_security.test.sql`, `in_app_notification_emitters_slice341.test.sql`.
-- Integration: `npm run test:db:integration:n1b` (projector + worker recipient lookup).
+- Integration: `npm run test:db:integration:n1b` (projector + worker recipient lookup); after Playwright, `npm run test:db:integration:suggestion-approval-delegation` (queued vs fake-provider delivery, stale `SuggestionSubmitted` suppression).
+- UI (required): `E2E_WITH_SUPABASE=1 npx playwright test tests/e2e/suggestion-approval-delegation.spec.ts` after `npm run db:seed-demo` — operator submit → manager notification → delegate → finance approve; manager has no unread task for that `suggestionId`.
 - UI: delegate control only lists eligible reviewers from `get_suggestion_review_context`.
+- Late `SuggestionSubmitted` projection: worker lookup returns **no** `suggestions.awaiting_review` recipient once `notification_generation > 1` or `task_owner` ≠ snapshotted `email_recipient` (delegation advanced routing).
