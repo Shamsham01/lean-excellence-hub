@@ -28,8 +28,8 @@ export default async function PlatformLeanAiCostPage() {
           LeanAI cost governance
         </h2>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Internal provider cost estimates for platform operators. Customers do not
-          see USD figures, margins, or other tenants. Figures are planning
+          Internal provider cost estimates for platform operators. Customers do
+          not see USD figures, margins, or other tenants. Figures are planning
           estimates from the versioned rate card — not invoices.
         </p>
       </div>
