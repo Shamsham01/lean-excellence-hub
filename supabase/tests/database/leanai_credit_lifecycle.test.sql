@@ -1,6 +1,6 @@
 begin;
 
-select plan(4);
+select plan(8);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -99,6 +99,30 @@ select throws_ok(
   '42501',
   'leanai credit allowance exceeded for this period',
   'reserve rejects over-allowance when enforced'
+);
+
+select ok(
+  private.ai_credit_try_reserve(
+    'b2520000-0000-4000-8000-000000000010'::uuid,
+    'credit-test-reserve-settle',
+    100
+  ),
+  'reserve for settle path'
+);
+
+select lives_ok(
+  $$ select private.ai_credit_settle('b2520000-0000-4000-8000-000000000010'::uuid, 40) $$,
+  'settle consumes reserved credits once'
+);
+
+select lives_ok(
+  $$ select private.ai_credit_settle('b2520000-0000-4000-8000-000000000010'::uuid, 40) $$,
+  'idempotent settle does not double-charge'
+);
+
+select lives_ok(
+  $$ select private.ai_credit_release(gen_random_uuid()) $$,
+  'release on unknown reservation is a no-op'
 );
 
 select * from finish();

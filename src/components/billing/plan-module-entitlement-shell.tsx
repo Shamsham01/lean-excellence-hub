@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PlanModuleUpgradePlaceholder } from "@/components/billing/plan-module-upgrade-placeholder";
+import { ModuleWriteEntitlementProvider } from "@/modules/billing/module-write-context";
 import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
 import {
   organisationHasModuleEntitlement,
@@ -30,7 +31,9 @@ export async function PlanModuleEntitlementShell({
       {!writeAllowed ? (
         <PlanModuleUpgradePlaceholder module={module} />
       ) : null}
-      {children}
+      <ModuleWriteEntitlementProvider writeAllowed={writeAllowed}>
+        {children}
+      </ModuleWriteEntitlementProvider>
     </div>
   );
 }

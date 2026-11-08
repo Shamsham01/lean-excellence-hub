@@ -22,6 +22,7 @@ import {
   type WorkforceImportRowInput,
   type WorkforceImportValidationSummary,
 } from "@/modules/workforce-import/constants";
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export type WorkforceImportActionResult<T> =
@@ -38,6 +39,8 @@ async function assertCanImport(): Promise<{ error: string } | null> {
 export async function createImportJob(
   originalFilename: string,
 ): Promise<WorkforceImportActionResult<{ jobId: string }>> {
+  const moduleGate = await assertPlanModuleWrite("people_hr");
+  if (!moduleGate.ok) return { error: moduleGate.error };
   const denied = await assertCanImport();
   if (denied) return denied;
 
