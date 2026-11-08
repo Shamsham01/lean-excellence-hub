@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(7);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -123,6 +123,13 @@ select lives_ok(
     );
   $$,
   'essentials foundations: workforce preauthorize is not people_hr gated'
+);
+
+select lives_ok(
+  $$
+    select public.create_workforce_import_job('essentials-import.csv')
+  $$,
+  'essentials foundations: workforce CSV import job is not people_hr gated'
 );
 
 select * from finish();

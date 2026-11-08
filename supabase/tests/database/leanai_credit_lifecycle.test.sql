@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(13);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -74,7 +74,8 @@ select ok(
   private.ai_credit_try_reserve(
     gen_random_uuid(),
     'credit-test-reserve-1',
-    100
+    100::bigint,
+    null::jsonb
   ),
   'reserve succeeds under enforced policy with headroom'
 );
@@ -83,7 +84,8 @@ select ok(
   private.ai_credit_try_reserve(
     gen_random_uuid(),
     'credit-test-reserve-1',
-    100
+    100::bigint,
+    null::jsonb
   ),
   'idempotent reserve by idempotency key'
 );
@@ -105,7 +107,8 @@ select ok(
   private.ai_credit_try_reserve(
     'b2520000-0000-4000-8000-000000000010'::uuid,
     'credit-test-reserve-settle',
-    100
+    100::bigint,
+    null::jsonb
   ),
   'reserve for settle path'
 );
@@ -147,6 +150,31 @@ select ok(
       and reservation.status = 'reserved'
   ),
   'direct reserve row remains reserved before settle'
+);
+
+select ok(
+  private.ai_credit_try_reserve(
+    'b2520000-0000-4000-8000-000000000020'::uuid,
+    'credit-clamp-reserve',
+    4::bigint,
+    null::jsonb
+  ),
+  'reserve small budget for clamp'
+);
+
+select lives_ok(
+  $$ select private.ai_credit_settle('b2520000-0000-4000-8000-000000000020'::uuid, 500) $$,
+  'settle clamps customer charge to reserved amount'
+);
+
+select is(
+  (
+    select customer_settled_credits
+    from public.organisation_ai_credit_reservations
+    where ai_run_id = 'b2520000-0000-4000-8000-000000000020'::uuid
+  ),
+  4::bigint,
+  'customer settled credits cannot exceed reservation'
 );
 
 select * from finish();

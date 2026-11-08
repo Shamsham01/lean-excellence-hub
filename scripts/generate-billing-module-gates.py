@@ -63,7 +63,18 @@ FOUNDATION_RPC_UNGATED = frozenset(
         "preauthorize_workforce_provision",
     }
 )
-FOUNDATION_RPC_EXCLUDE = FOUNDATION_RPC_UNGATED | frozenset(
+WORKFORCE_IDENTITY_IMPORT_FOUNDATION = frozenset(
+    {
+        "archive_workforce_import_job",
+        "claim_workforce_import_batch",
+        "create_workforce_import_job",
+        "retry_workforce_import_failed_rows",
+        "start_workforce_import_provisioning",
+        "submit_workforce_import_rows",
+        "validate_workforce_import_job",
+    }
+)
+FOUNDATION_RPC_EXCLUDE = FOUNDATION_RPC_UNGATED | WORKFORCE_IDENTITY_IMPORT_FOUNDATION | frozenset(
     {"ensure_problem_solving_methods_provisioned"}
 )
 
@@ -80,17 +91,10 @@ MODULE_BY_FUNCTION: dict[str, str] = {}
 PUBLIC_ONLY = frozenset(
     {
         "ack_workforce_import_credentials_exported",
-        "archive_workforce_import_job",
         "assert_workforce_import_credential_export_access",
         "begin_workforce_import_credential_export",
-        "claim_workforce_import_batch",
-        "create_workforce_import_job",
         "mark_workforce_import_credentials_exported",
         "preauthorize_workforce_credential_reset",
-        "retry_workforce_import_failed_rows",
-        "start_workforce_import_provisioning",
-        "submit_workforce_import_rows",
-        "validate_workforce_import_job",
     }
 )
 
@@ -125,12 +129,16 @@ def parse_inventory() -> None:
             or fn.endswith("_people_invitation_import_job")
         ):
             continue
-        if fn in PUBLIC_ONLY:
+        if fn in WORKFORCE_IDENTITY_IMPORT_FOUNDATION:
+            MODULE_BY_FUNCTION[fn] = "foundation"
+        elif fn in PUBLIC_ONLY:
             MODULE_BY_FUNCTION[fn] = "people_hr"
         else:
             MODULE_BY_FUNCTION[fn] = (
                 mod if mod != "ai" or fn in AI_SESSION_CREATES else "ai_run"
             )
+    for fn in WORKFORCE_IDENTITY_IMPORT_FOUNDATION:
+        MODULE_BY_FUNCTION.setdefault(fn, "foundation")
     for fn in PUBLIC_ONLY:
         if fn not in MODULE_BY_FUNCTION:
             MODULE_BY_FUNCTION[fn] = "people_hr"
@@ -161,7 +169,9 @@ def collect_versions(name: str) -> list[tuple[str, str, int]]:
         if path.name == OUT_NAME:
             continue
         body = extract_function(
-            path.read_text(), name, public=(name in PUBLIC_ONLY)
+            path.read_text(),
+            name,
+            public=(name in PUBLIC_ONLY or name in WORKFORCE_IDENTITY_IMPORT_FOUNDATION),
         )
         if body:
             versions.append((path.name, body, len(body)))
@@ -295,7 +305,12 @@ $$;"""
 
 
 def patch_function(fn: str, body: str) -> str:
-    if fn in FOUNDATION_RPC_EXCLUDE:
+    if fn in FOUNDATION_RPC_EXCLUDE or MODULE_BY_FUNCTION.get(fn) == "foundation":
+        body = re.sub(
+            r"\s*perform private\.assert_current_organisation_module_entitled\([^)]+\);\s*\n",
+            "\n",
+            body,
+        )
         return body
 
     if fn in SQL_DELEGATE_GATES:

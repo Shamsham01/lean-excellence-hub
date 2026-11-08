@@ -12,7 +12,8 @@ import type { PlanCode } from "./types";
  * Hard admission remains off until operator sets `credit_policy_enforced` and
  * rate cards are reviewed (cards stay `provisional=true` until then).
  */
-export const LEANAI_CREDIT_MICRO_GBP_PER_CREDIT = 10; // 0.1p illustrative; not invoicing
+/** 1 cost credit = £0.001 reporting-currency budget (1000 micro-GBP). Illustrative until invoicing. */
+export const LEANAI_CREDIT_MICRO_GBP_PER_CREDIT = 1_000;
 
 /** Do not enable hard admission until rate cards are verified and usage reviewed. */
 export const LEH_AI_CREDIT_POLICY_ENFORCED = false;

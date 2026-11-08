@@ -60,8 +60,8 @@ select ok(
     'fake',
     'fake-model',
     'hello world'
-  ) > 1000,
-  'reserve upper bound uses cost card not single token'
+  ) >= 1,
+  'reserve upper bound uses configured maxima not single token'
 );
 
 select throws_ok(

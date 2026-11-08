@@ -1264,8 +1264,6 @@ declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   update public.workforce_import_jobs import_job
@@ -2067,8 +2065,6 @@ declare
   claimed integer := 0;
   intent_id uuid;
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   if target_batch_size < 1 or target_batch_size > 50 then
@@ -6843,8 +6839,6 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   new_job_id uuid;
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   if target_original_filename is null
@@ -10938,8 +10932,6 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   reset_count integer := 0;
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   update public.workforce_import_rows import_row
@@ -11862,8 +11854,6 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   job_row public.workforce_import_jobs%rowtype;
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   select *
@@ -12448,8 +12438,6 @@ declare
   row_index integer := 0;
   row_count integer;
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   select *
@@ -13618,8 +13606,6 @@ declare
   error_count integer := 0;
   warning_count integer := 0;
 begin
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   perform private.assert_workforce_import_authorised(org_id, actor_membership_id);
 
   select *

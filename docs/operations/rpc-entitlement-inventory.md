@@ -19,7 +19,7 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `approve_benefit_forecast` | benefits | no |  |
 | `approve_project` | projects | yes | 20261108232000_billing_06_module_mutation_gates.sql |
 | `archive_benefit_category` | benefits | no |  |
-| `archive_workforce_import_job` | people_hr | no |  |
+| `archive_workforce_import_job` | foundation | no |  |
 | `assert_workforce_import_credential_export_access` | people_hr | no |  |
 | `assign_ci_project_team_member` | projects | no |  |
 | `award_recognition` | recognition | yes | 20261108237000_billing_11_recognition_module_gates.sql |
@@ -30,7 +30,7 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `cancel_project` | projects | yes | 20261108235000_billing_09_extended_module_gates.sql |
 | `claim_ai_run_execution` | ai | no |  |
 | `claim_people_invitation_import_batch` | people_hr | no |  |
-| `claim_workforce_import_batch` | people_hr | no |  |
+| `claim_workforce_import_batch` | foundation | no |  |
 | `close_problem_solving_case` | problem_solving | yes | 20261108235000_billing_09_extended_module_gates.sql |
 | `complete_hypothesis_test` | problem_solving | no |  |
 | `complete_problem_solving_session` | problem_solving | no |  |
@@ -76,7 +76,7 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `create_training_curriculum_successor_version` | training | no |  |
 | `create_training_session` | training | no |  |
 | `create_training_setup_draft` | training | yes | 20261108235000_billing_09_extended_module_gates.sql |
-| `create_workforce_import_job` | people_hr | yes | 20261108232000_billing_06_module_mutation_gates.sql |
+| `create_workforce_import_job` | foundation | no | 20261108232000_billing_06_module_mutation_gates.sql |
 | `discard_skill_setup_bundle` | skills | no |  |
 | `discard_training_setup_bundle` | training | no |  |
 | `ensure_problem_solving_methods_provisioned` | problem_solving | no |  |
@@ -124,7 +124,7 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `remove_training_session_participant` | training | no |  |
 | `replace_benefit_forecast_periods` | benefits | no |  |
 | `resume_project` | projects | yes | 20261108235000_billing_09_extended_module_gates.sql |
-| `retry_workforce_import_failed_rows` | people_hr | no |  |
+| `retry_workforce_import_failed_rows` | foundation | no |  |
 | `return_benefit_to_draft` | benefits | no |  |
 | `return_project_to_draft` | projects | no |  |
 | `revoke_recognition` | recognition | yes | 20261108237000_billing_11_recognition_module_gates.sql |
@@ -137,14 +137,14 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `start_people_invitation_import` | people_hr | no |  |
 | `start_problem_solving_session` | problem_solving | no |  |
 | `start_project` | projects | yes | 20261108235000_billing_09_extended_module_gates.sql |
-| `start_workforce_import_provisioning` | people_hr | no |  |
+| `start_workforce_import_provisioning` | foundation | no |  |
 | `submit_benefit` | benefits | yes | 20261108232000_billing_06_module_mutation_gates.sql |
 | `submit_benefit_forecast` | benefits | no |  |
 | `submit_benefit_realisation_entry` | benefits | no |  |
 | `submit_ci_project_charter` | projects | yes | 20261108235000_billing_09_extended_module_gates.sql |
 | `submit_people_invitation_import_rows` | people_hr | no |  |
 | `submit_project` | projects | yes | 20261108232000_billing_06_module_mutation_gates.sql |
-| `submit_workforce_import_rows` | people_hr | no |  |
+| `submit_workforce_import_rows` | foundation | no |  |
 | `sync_leanai_operational_chase_notifications` | ai | no |  |
 | `update_benefit_category` | benefits | no |  |
 | `update_benefit_draft` | benefits | yes | 20261108232000_billing_06_module_mutation_gates.sql |
@@ -160,7 +160,7 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `upsert_benefit_reporting_settings` | benefits | no |  |
 | `validate_benefit_realisation_entry` | benefits | no |  |
 | `validate_people_invitation_import_job` | people_hr | no |  |
-| `validate_workforce_import_job` | people_hr | no |  |
+| `validate_workforce_import_job` | foundation | no |  |
 | `verify_cause_hypothesis` | problem_solving | no |  |
 | `verify_current_condition_item` | problem_solving | no |  |
 | `withdraw_benefit` | benefits | yes | 20261108235000_billing_09_extended_module_gates.sql |
@@ -207,24 +207,28 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 - `upsert_benefit_reporting_settings`
 - `validate_benefit_realisation_entry`
 
+### foundation (workforce identity — all plans)
+- `archive_workforce_import_job`
+- `claim_workforce_import_batch`
+- `create_workforce_import_job`
+- `preauthorize_workforce_provision`
+- `retry_workforce_import_failed_rows`
+- `start_workforce_import_provisioning`
+- `submit_workforce_import_rows`
+- `validate_workforce_import_job`
+
 ### people_hr
 - `ack_workforce_import_credentials_exported`
-- `archive_workforce_import_job`
 - `assert_workforce_import_credential_export_access`
 - `begin_workforce_import_credential_export`
 - `claim_people_invitation_import_batch`
-- `claim_workforce_import_batch`
 - `create_people_invitation_import_job`
 - `finalize_people_invitation_import_job`
 - `mark_workforce_import_credentials_exported`
 - `preauthorize_workforce_credential_reset`
-- `retry_workforce_import_failed_rows`
 - `start_people_invitation_import`
-- `start_workforce_import_provisioning`
 - `submit_people_invitation_import_rows`
-- `submit_workforce_import_rows`
 - `validate_people_invitation_import_job`
-- `validate_workforce_import_job`
 
 ### problem_solving
 - `add_problem_solving_participant`

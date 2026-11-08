@@ -23,9 +23,6 @@ import {
   currentMemberHasPermission,
   loadDelegatableAccessOffers,
 } from "@/modules/platform-shell/permissions";
-import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
-import { organisationHasModuleEntitlement } from "@/modules/billing/module-entitlements";
-import { PlanModuleUpgradePlaceholder } from "@/components/billing/plan-module-upgrade-placeholder";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import {
@@ -46,12 +43,6 @@ export default async function PeopleSettingsPage() {
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
-  const entitlements = await loadCurrentOrganisationEntitlements();
-  const hasPeopleHr = organisationHasModuleEntitlement(
-    entitlements,
-    "people_hr",
-  );
-
   if (
     !canManageInvitations &&
     !canProvisionWorkforce &&
@@ -196,43 +187,39 @@ export default async function PeopleSettingsPage() {
       />
 
       {canProvisionWorkforce && canDelegateRoles ? (
-        hasPeopleHr ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Create workforce user</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-sm">
-              <p className="text-muted-foreground">
-                Add an employee with a username and system-generated temporary
-                password for workforce sign-in. Invitations above remain
-                available on every plan; this HR provisioning path requires
-                Professional.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild className="w-fit">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Create workforce user</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm">
+            <p className="text-muted-foreground">
+              Add employees with workforce sign-in credentials or import rows from
+              a spreadsheet. Available on every plan when your role includes
+              workforce provisioning; advanced HR admin tools remain a paid
+              module.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="w-fit">
+                <AppLink
+                  href="/platform/settings/people/create"
+                  data-testid="people-settings-create-link"
+                >
+                  Add employee
+                </AppLink>
+              </Button>
+              {canImportWorkforce ? (
+                <Button variant="outline" asChild className="w-fit">
                   <AppLink
-                    href="/platform/settings/people/create"
-                    data-testid="people-settings-create-link"
+                    href="/platform/settings/people/import"
+                    data-testid="import-workforce-link"
                   >
-                    Add employee
+                    Import workforce
                   </AppLink>
                 </Button>
-                {canImportWorkforce ? (
-                  <Button variant="outline" asChild className="w-fit">
-                    <AppLink
-                      href="/platform/settings/people/import"
-                      data-testid="import-workforce-link"
-                    >
-                      Import workforce
-                    </AppLink>
-                  </Button>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <PlanModuleUpgradePlaceholder module="people_hr" />
-        )
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
 
       {canManageInvitations && canDelegateRoles ? (

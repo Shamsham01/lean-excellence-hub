@@ -1,7 +1,7 @@
 -- BILLING-08: Cost-based LeanAI credits (provisional rate cards). Enforcement remains
 -- opt-in via organisation_ai_settings.credit_policy_enforced (default false).
--- 1 credit = 1 micro-unit of organisation reporting currency at provider cost
--- (NOT 1 token). Allowance pools are monthly cost-credit budgets per billed site.
+-- 1 credit = 1000 micro-GBP (£0.001) of customer budget at settlement (see billing_10).
+-- NOT 1 token. Allowance pools are monthly cost-credit budgets per billed site.
 
 create table if not exists private.leanai_provider_rate_cards (
   id uuid primary key default gen_random_uuid(),

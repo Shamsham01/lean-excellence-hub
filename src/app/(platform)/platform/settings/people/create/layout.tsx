@@ -1,11 +1,7 @@
-import { PlanModuleRouteGate } from "@/components/billing/plan-module-route-gate";
-
-export default async function WorkforceCreateLayout({
+export default function WorkforceCreateLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <PlanModuleRouteGate module="people_hr">{children}</PlanModuleRouteGate>
-  );
+  return children;
 }

@@ -1,6 +1,7 @@
 -- AUTO-GENERATED: python3 scripts/audit-private-write-grants.py
 -- Revoke default PUBLIC execute on reachable private write RPCs.
--- Skips same-named public SECURITY INVOKER wrappers still granted to authenticated.
+-- Skips when a public SECURITY INVOKER wrapper with the EXACT same identity
+-- arguments remains granted to authenticated.
 
 do $$
 declare
@@ -10,8 +11,7 @@ begin
     select
       n.nspname as schema_name,
       p.proname as function_name,
-      pg_catalog.pg_get_function_identity_arguments(p.oid) as args,
-      p.oid as private_oid
+      pg_catalog.pg_get_function_identity_arguments(p.oid) as args
     from pg_catalog.pg_proc p
     join pg_catalog.pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'private'
@@ -24,6 +24,7 @@ begin
       where pub_ns.nspname = 'public'
         and pub.proname = proc_row.function_name
         and pub.prosecdef = false
+        and pg_catalog.pg_get_function_identity_arguments(pub.oid) = proc_row.args
         and pg_catalog.has_function_privilege('authenticated', pub.oid, 'EXECUTE')
     ) then
       continue;
