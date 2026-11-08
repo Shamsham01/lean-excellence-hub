@@ -101,6 +101,8 @@ const KNOWLEDGE: Partial<
     facts: [
       "A catalogue listing alone is not enough.",
       "Curriculum requirements tell Lean Excellence Hub who needs which course.",
+      "Setup supports manual, LEH Quick Start, and Build with LeanAI at /platform/training/setup.",
+      "Field-level product knowledge for courses and curriculum ships in the versioned bundle.",
     ],
     recommendedPath: "/platform/training/curriculum",
   },

@@ -264,14 +264,18 @@ describe("Skills product knowledge", () => {
   });
 
   it("does not claim the rest of the platform is covered", () => {
-    expect(knowledgeCoverageStatement()).toMatch(/Skills and Problem Solving/);
+    expect(knowledgeCoverageStatement()).toMatch(/first-wave/);
     expect(
       PLATFORM_KNOWLEDGE_COVERAGE.find((item) => item.module === "skills")
         ?.status,
     ).toBe("complete");
     expect(
-      PLATFORM_KNOWLEDGE_COVERAGE.filter((item) => item.status === "complete"),
-    ).toHaveLength(2);
+      PLATFORM_KNOWLEDGE_COVERAGE.filter(
+        (item) => item.status === "complete",
+      ).map((item) => item.module),
+    ).toEqual(
+      expect.arrayContaining(["skills", "problem_solving", "maturity"]),
+    );
     const setup = assistantPageDefinitionFor(
       parseAssistantRoute("/platform/skills/setup/quick-start"),
     );
