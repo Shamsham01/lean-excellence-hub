@@ -501,25 +501,25 @@ end;
 $$;
 
 create or replace function public.create_training_setup_draft(target_idempotency_key text, target_definition jsonb)
-returns uuid language sql volatile security invoker set search_path = '' as $$
+returns uuid language sql volatile security definer set search_path = '' as $$
   select private.create_training_setup_draft(target_idempotency_key, target_definition)
 $$;
 create or replace function public.publish_training_setup_bundle(target_bundle_id uuid)
-returns boolean language sql volatile security invoker set search_path = '' as $$
+returns boolean language sql volatile security definer set search_path = '' as $$
   select private.publish_training_setup_bundle(target_bundle_id)
 $$;
 create or replace function public.discard_training_setup_bundle(target_bundle_id uuid)
-returns jsonb language sql volatile security invoker set search_path = '' as $$
+returns jsonb language sql volatile security definer set search_path = '' as $$
   select private.discard_training_setup_bundle(target_bundle_id)
 $$;
 create or replace function public.preview_training_setup_bundle_discard(target_bundle_id uuid)
-returns jsonb language sql volatile security invoker set search_path = '' as $$
+returns jsonb language sql volatile security definer set search_path = '' as $$
   select private.preview_training_setup_bundle_discard(target_bundle_id)
 $$;
 create or replace function public.save_training_setup_preparation(
   target_source text, target_template_key text, target_state jsonb
 )
-returns uuid language sql volatile security invoker set search_path = '' as $$
+returns uuid language sql volatile security definer set search_path = '' as $$
   select private.save_training_setup_preparation(target_source, target_template_key, target_state)
 $$;
 
@@ -530,14 +530,21 @@ alter function private.discard_training_setup_bundle(uuid) owner to lean_hub_pri
 alter function private.preview_training_setup_bundle_discard(uuid) owner to lean_hub_private_owner;
 alter function private.save_training_setup_preparation(text, text, jsonb) owner to lean_hub_private_owner;
 
+revoke all on function private.training_setup_authorised(uuid) from public, anon, authenticated, service_role;
+revoke all on function private.create_training_setup_draft(text, jsonb) from public, anon, authenticated, service_role;
+revoke all on function private.publish_training_setup_bundle(uuid) from public, anon, authenticated, service_role;
+revoke all on function private.discard_training_setup_bundle(uuid) from public, anon, authenticated, service_role;
+revoke all on function private.preview_training_setup_bundle_discard(uuid) from public, anon, authenticated, service_role;
+revoke all on function private.save_training_setup_preparation(text, text, jsonb) from public, anon, authenticated, service_role;
+
 grant execute on function public.create_training_setup_draft(text, jsonb) to authenticated;
 grant execute on function public.publish_training_setup_bundle(uuid) to authenticated;
 grant execute on function public.discard_training_setup_bundle(uuid) to authenticated;
 grant execute on function public.preview_training_setup_bundle_discard(uuid) to authenticated;
 grant execute on function public.save_training_setup_preparation(text, text, jsonb) to authenticated;
 
-revoke all on function public.create_training_setup_draft(text, jsonb) from public, anon;
-revoke all on function public.publish_training_setup_bundle(uuid) from public, anon;
-revoke all on function public.discard_training_setup_bundle(uuid) from public, anon;
-revoke all on function public.preview_training_setup_bundle_discard(uuid) from public, anon;
-revoke all on function public.save_training_setup_preparation(text, text, jsonb) from public, anon;
+revoke all on function public.create_training_setup_draft(text, jsonb) from public, anon, service_role;
+revoke all on function public.publish_training_setup_bundle(uuid) from public, anon, service_role;
+revoke all on function public.discard_training_setup_bundle(uuid) from public, anon, service_role;
+revoke all on function public.preview_training_setup_bundle_discard(uuid) from public, anon, service_role;
+revoke all on function public.save_training_setup_preparation(text, text, jsonb) from public, anon, service_role;
