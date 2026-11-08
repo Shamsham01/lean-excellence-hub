@@ -47,7 +47,7 @@ export function DiscardSetupDraft({
         Discard setup draft
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[min(85dvh,40rem)] w-[calc(100%-1.5rem)] overflow-y-auto">
+        <DialogContent className="w-[calc(100%-1.5rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Discard this setup draft?</DialogTitle>
             <DialogDescription>
