@@ -87,6 +87,16 @@ export default async function TrainingOverviewPage({
             {canManageCatalog ? (
               <Button size="sm" asChild>
                 <AppLink
+                  href="/platform/training/setup"
+                  data-testid="training-setup-link"
+                >
+                  Set up training
+                </AppLink>
+              </Button>
+            ) : null}
+            {canManageCatalog ? (
+              <Button variant="outline" size="sm" asChild>
+                <AppLink
                   href="/platform/training/courses?new=1"
                   data-testid="training-hub-new-course-link"
                 >
@@ -116,9 +126,9 @@ export default async function TrainingOverviewPage({
       outstanding === 0 ? (
         <EmptyState
           title="Training compliance starts with your catalogue"
-          description="Add at least one active course, then assign requirements through curriculum. Compliance stays at 0% until people have assigned training."
-          actionLabel="Add your first course"
-          actionHref="/platform/training/courses?new=1"
+          description="Use Training setup to add courses and curriculum requirements. Compliance stays at 0% until people have assigned training."
+          actionLabel="Set up training"
+          actionHref="/platform/training/setup"
           icon={<GraduationCap className="size-5 text-primary" aria-hidden />}
         />
       ) : null}

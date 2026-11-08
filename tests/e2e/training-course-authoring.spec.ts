@@ -64,7 +64,9 @@ test.describe("Training course catalogue bootstrap", () => {
     const trainingSetup = page.getByTestId("setup-item-training_configuration");
     await expect(trainingSetup).toBeVisible();
     await trainingSetup.getByRole("link", { name: "Set up" }).click();
-    await expect(page).toHaveURL(/\/platform\/training\/courses/);
+    await expect(page).toHaveURL(/\/platform\/training\/setup/);
+    await expect(page.getByTestId("training-setup-page")).toBeVisible();
+    await page.goto("/platform/training/courses");
     await expect(page.getByTestId("training-courses-page")).toBeVisible();
 
     if ((await page.getByTestId("training-course-create-form").count()) === 0) {

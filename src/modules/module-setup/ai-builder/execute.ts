@@ -69,7 +69,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type ModuleSetupBuilderModule<TProposal> = {
-  moduleKey: "five_s" | "gemba" | "skills";
+  moduleKey: "five_s" | "gemba" | "skills" | "training";
   interventionKey: "setup_builder";
   sessionTitle: string;
   contextContract: string;
@@ -95,7 +95,8 @@ export type ModuleSetupBuilderModule<TProposal> = {
   rpc:
     | "create_five_s_standard_draft_from_definition"
     | "create_gemba_definition_draft_from_definition"
-    | "create_skill_setup_draft";
+    | "create_skill_setup_draft"
+    | "create_training_setup_draft";
   loadConfigurationNames?: (supabase: ServerSupabase) => Promise<{
     names: string[];
     count: number;
@@ -634,12 +635,17 @@ export async function createModuleSetupDraftFromProposal<TProposal>(
     };
   }
 
-  if (module.rpc === "create_skill_setup_draft") {
+  if (
+    module.rpc === "create_skill_setup_draft" ||
+    module.rpc === "create_training_setup_draft"
+  ) {
     return {
       ok: false,
       reason: "invalid_request",
       message:
-        "Confirm job functions and applicability, then create the Skills draft from the stored proposal.",
+        module.rpc === "create_skill_setup_draft"
+          ? "Confirm job functions and applicability, then create the Skills draft from the stored proposal."
+          : "Map job functions to roles, then create the Training draft from the stored proposal.",
     };
   }
   const { data, error } = await supabase.rpc(module.rpc, {

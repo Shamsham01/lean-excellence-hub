@@ -187,9 +187,9 @@ describe("organisation setup readiness", () => {
     );
 
     expect(trainingNotStarted?.status).toBe("not_started");
-    expect(trainingNotStarted?.href).toBe("/platform/training/courses");
+    expect(trainingNotStarted?.href).toBe("/platform/training/setup");
     expect(trainingStarted?.status).toBe("setup_started");
-    expect(trainingStarted?.href).toBe("/platform/training/courses");
+    expect(trainingStarted?.href).toBe("/platform/training/setup");
   });
 
   it("picks next core action when unit is missing", () => {

@@ -11949,6 +11949,187 @@ export type Database = {
           },
         ]
       }
+      training_setup_bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          organisation_id?: string
+          ownership?: string
+          record_id?: string
+          record_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_setup_bundle_items_bundle_fkey"
+            columns: ["organisation_id", "bundle_id"]
+            isOneToOne: false
+            referencedRelation: "training_setup_bundles"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_setup_bundles: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          curriculum_id: string | null
+          curriculum_version_id: string | null
+          discarded_at: string | null
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          published_at: string | null
+          request_definition: Json
+          sample: boolean
+          source: string
+          status: string
+          template_key: string | null
+          template_version: string | null
+          title: string
+          unresolved: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          curriculum_id?: string | null
+          curriculum_version_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          published_at?: string | null
+          request_definition: Json
+          sample?: boolean
+          source: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          curriculum_id?: string | null
+          curriculum_version_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          published_at?: string | null
+          request_definition?: Json
+          sample?: boolean
+          source?: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title?: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_setup_bundles_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_bundles_curriculum_fkey"
+            columns: ["organisation_id", "curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "training_curricula"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_bundles_curriculum_version_fkey"
+            columns: ["organisation_id", "curriculum_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_curriculum_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_bundles_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_setup_preparations: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          source?: string
+          state?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_setup_preparations_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_preparations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workforce_import_jobs: {
         Row: {
           archived_from_recent_at: string | null
@@ -13594,6 +13775,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_training_setup_draft: {
+        Args: { target_definition: Json; target_idempotency_key: string }
+        Returns: string
+      }
       create_workforce_import_job: {
         Args: { target_original_filename: string }
         Returns: string
@@ -13700,6 +13885,10 @@ export type Database = {
         Returns: number
       }
       discard_skill_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
+      discard_training_setup_bundle: {
         Args: { target_bundle_id: string }
         Returns: Json
       }
@@ -14628,6 +14817,10 @@ export type Database = {
         Args: { target_bundle_id: string }
         Returns: Json
       }
+      preview_training_setup_bundle_discard: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
       provision_organisation: {
         Args: {
           organisation_code: string
@@ -14708,6 +14901,10 @@ export type Database = {
       }
       publish_training_curriculum_version: {
         Args: { target_curriculum_version_id: string }
+        Returns: boolean
+      }
+      publish_training_setup_bundle: {
+        Args: { target_bundle_id: string }
         Returns: boolean
       }
       reactivate_schedule_definition: {
@@ -15080,6 +15277,14 @@ export type Database = {
         Returns: boolean
       }
       save_skill_setup_preparation: {
+        Args: {
+          target_source: string
+          target_state: Json
+          target_template_key: string
+        }
+        Returns: string
+      }
+      save_training_setup_preparation: {
         Args: {
           target_source: string
           target_state: Json

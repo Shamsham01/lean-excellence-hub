@@ -176,7 +176,7 @@ export const LEANAI_INTERVENTION_CATALOGUE: readonly LeanAiInterventionDefinitio
       explain:
         "Training readiness needs at least one published course and a published curriculum that assigns a requirement. This tells Lean Excellence Hub who needs which course, rather than only listing catalogue items.",
       primaryCtaLabel: "Set it up",
-      targetRoute: "/platform/training/curriculum",
+      targetRoute: "/platform/training/setup",
       dismissCooldownHours: DEFAULT_DISMISS_HOURS,
       snoozeMinutes: DEFAULT_SNOOZE_MINUTES,
     },
