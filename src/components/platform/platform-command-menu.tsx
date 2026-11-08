@@ -53,7 +53,9 @@ export function PlatformCommandMenu({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-lg gap-3 p-0"
+        className="max-w-lg"
+        flush
+        bodyClassName="gap-3 p-0"
         data-testid="platform-command-menu"
       >
         <DialogHeader className="border-b border-border px-4 py-3">
