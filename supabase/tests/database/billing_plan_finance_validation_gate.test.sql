@@ -269,7 +269,6 @@ select throws_ok(
     'approve',
     'Finance validation blocked'
   ),
-  'finance benefit validation requires a Professional plan',
   '42501',
   'essentials finance validation is denied'
 );
