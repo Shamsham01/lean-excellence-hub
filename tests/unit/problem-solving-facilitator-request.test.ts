@@ -58,26 +58,26 @@ describe("problem solving facilitator provider request", () => {
     });
     const prepared = prepareWorkflowModelCall({
       workflow: "problem_solving_facilitate",
-      model: "gpt-6.1-sol",
+      model: "gpt-6.1-terra",
       environment: {},
     });
     const tools = buildProblemSolvingFacilitatorProviderTools({
       mode: "facilitate",
     });
     const params = buildResponsesCreateParams({
-      model: "gpt-6.1-sol",
+      model: "gpt-6.1-terra",
       systemPrompt: prompt,
       messages: [{ role: "user", content: "RCA for seal defects" }],
       tools,
       maxOutputTokens: prepared.maxOutputTokens,
-      timeoutMs: 24_000,
+      timeoutMs: 42_500,
       maxRetries: 0,
       reasoningEffort: prepared.reasoningEffort,
       expectsStructuredOutput: true,
     });
     const requestBytes = JSON.stringify(params).length;
     expect(requestBytes).toBeLessThanOrEqual(19_000);
-    expect(prepared.maxOutputTokens).toBe(5_000);
+    expect(prepared.maxOutputTokens).toBe(3_000);
     expect(prepared.reasoningEffort).toBe("low");
     expect(PROMPT_VERSION).toBe("v9");
   });

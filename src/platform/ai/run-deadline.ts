@@ -21,8 +21,15 @@ export const AI_TURN_MIN_PROVIDER_TIMEOUT_MS = 1_000;
 /**
  * Reserve budget so a facilitator turn can complete a tool round-trip and a
  * second provider call before finalisation (v7 typical ~22–26s across two hops).
+ * Applied only after the first provider hop.
  */
 export const AI_TURN_CONTINUATION_RESERVE_MS = 18_000;
+
+/** When less than this remains after a tool hop, finish with a partial answer. */
+export const AI_TURN_PARTIAL_CONTINUATION_MIN_REMAINING_MS = 8_000;
+
+export const AI_TURN_PARTIAL_CONTINUATION_MESSAGE =
+  "Here is what I have so far. Send your message again to continue this turn.";
 
 /**
  * One provider attempt plus finalisation must finish inside Netlify's
@@ -32,7 +39,7 @@ export const AI_TURN_CONTINUATION_RESERVE_MS = 18_000;
  */
 export const AI_TURN_WALL_CLOCK_DEFAULT_MS = 45_000;
 
-/** Netlify synchronous execution limit. Not configurable. */
+/** Netlify synchronous execution limit. Not configurable */
 export const AI_SYNC_HOST_LIMIT_MS = 60_000;
 
 /**
@@ -44,6 +51,11 @@ export const AI_STALE_RUN_GRACE_MS = 5_000;
 export const AI_STALE_RUN_AFTER_MS =
   AI_SYNC_HOST_LIMIT_MS + AI_STALE_RUN_GRACE_MS;
 
+export type ProviderTimeoutHop = {
+  hopIndex?: number;
+  isFirstHop?: boolean;
+};
+
 export type AiRunDeadline = {
   readonly wallClockMs: number;
   readonly startedAt: number;
@@ -53,8 +65,22 @@ export type AiRunDeadline = {
     configuredPerCallMs: number,
     provider: string,
     model: string,
+    hop?: ProviderTimeoutHop,
   ): number;
 };
+
+export function resolveFirstProviderHop(hop?: ProviderTimeoutHop): boolean {
+  if (hop?.isFirstHop !== undefined) {
+    return hop.isFirstHop;
+  }
+  return (hop?.hopIndex ?? 0) === 0;
+}
+
+export function shouldFinalizePartialContinuation(
+  deadline: AiRunDeadline,
+): boolean {
+  return deadline.remainingMs() < AI_TURN_PARTIAL_CONTINUATION_MIN_REMAINING_MS;
+}
 
 export function resolveAiTurnWallClockMs(
   configured: number | undefined,
@@ -85,14 +111,17 @@ export function createAiRunDeadline(wallClockMs: number): AiRunDeadline {
       configuredPerCallMs: number,
       provider: string,
       model: string,
+      hop?: ProviderTimeoutHop,
     ) {
       const remaining = deadlineAt - Date.now() - AI_TURN_FINALIZE_BUFFER_MS;
       if (remaining <= 0) {
         throw turnWallClockExceededError(provider, model);
       }
+      const isFirstHop = resolveFirstProviderHop(hop);
       const reservedForContinuation =
+        !isFirstHop &&
         remaining >
-        AI_TURN_CONTINUATION_RESERVE_MS + AI_TURN_MIN_PROVIDER_TIMEOUT_MS
+          AI_TURN_CONTINUATION_RESERVE_MS + AI_TURN_MIN_PROVIDER_TIMEOUT_MS
           ? AI_TURN_CONTINUATION_RESERVE_MS
           : 0;
       const capAfterReserve = remaining - reservedForContinuation;

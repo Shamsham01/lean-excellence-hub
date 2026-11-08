@@ -1,6 +1,6 @@
 import type { AiEnvironment } from "@/platform/ai/config";
 import { AI_DEFAULTS } from "@/platform/ai/config";
-import type { AiLogicalModelClass } from "@/platform/ai/types";
+import type { AiLogicalModelClass, AiSessionMode } from "@/platform/ai/types";
 import { AI_LOGICAL_MODEL_CLASSES } from "@/platform/ai/types";
 
 /**
@@ -106,4 +106,15 @@ export function assertModelClassNotEscalated(
 
 export function problemSolvingModelId(environment: AiEnvironment): string {
   return environment.AI_MODEL_DEFAULT?.trim() || AI_DEFAULTS.model;
+}
+
+/** Facilitate and ask use standard tier; review and challenge stay on the deep default. */
+export function selectProblemSolvingModelId(
+  mode: AiSessionMode,
+  environment: AiEnvironment,
+): string {
+  if (mode === "facilitate" || mode === "ask") {
+    return resolveLogicalModelId("standard", environment);
+  }
+  return problemSolvingModelId(environment);
 }
