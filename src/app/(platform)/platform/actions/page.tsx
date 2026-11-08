@@ -125,6 +125,7 @@ export default async function ActionsPage({
         snapshot={analytics}
         icons={ACTION_ANALYTICS_ICONS}
         testId="actions-analytics"
+        showAgeingTable={false}
       />
 
       <ActionFilters

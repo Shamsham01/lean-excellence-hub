@@ -58,6 +58,7 @@ export function PlatformHomeAnalytics({ data }: { data: HomeAnalyticsBundle }) {
               value={stat.value}
               icon={HOME_ICONS[stat.id] ?? ListChecks}
               {...(stat.trend ? { trend: stat.trend } : {})}
+              {...(stat.valueTestId ? { valueTestId: stat.valueTestId } : {})}
               testId={`home-stat-${stat.id}`}
             />
           ))}

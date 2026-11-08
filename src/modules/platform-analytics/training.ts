@@ -50,11 +50,12 @@ export async function loadTrainingAnalytics(
     stats: [
       {
         id: "compliance",
-        label: "Compliance",
+        label: "Training compliance",
         value:
           summaryObj?.compliance_percent != null
             ? `${summaryObj.compliance_percent}%`
             : "—",
+        valueTestId: "training-compliance-percent",
       },
       {
         id: "sessions",
@@ -66,6 +67,7 @@ export async function loadTrainingAnalytics(
         id: "outstanding",
         label: "Outstanding required",
         value: summaryObj?.outstanding_required ?? 0,
+        valueTestId: "training-outstanding-required",
       },
       {
         id: "expiring",

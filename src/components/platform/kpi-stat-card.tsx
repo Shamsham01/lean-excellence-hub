@@ -12,6 +12,7 @@ export function KpiStatCard({
   trend,
   className,
   testId,
+  valueTestId,
 }: {
   label: string;
   value: string | number;
@@ -19,6 +20,7 @@ export function KpiStatCard({
   trend?: TrendDelta;
   className?: string;
   testId?: string;
+  valueTestId?: string;
 }) {
   const trendTone =
     trend?.direction === "up"
@@ -43,7 +45,9 @@ export function KpiStatCard({
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
           <p
             className="mt-1 font-mono text-2xl font-semibold text-foreground tabular-nums"
-            data-testid={testId ? `${testId}-value` : undefined}
+            data-testid={
+              valueTestId ?? (testId ? `${testId}-value` : undefined)
+            }
           >
             {value}
           </p>

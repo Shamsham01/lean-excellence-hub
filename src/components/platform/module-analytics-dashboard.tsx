@@ -16,12 +16,14 @@ export function ModuleAnalyticsDashboard({
   icons,
   testId,
   showDateRange = true,
+  showAgeingTable = true,
   donutCenterLabel = "Total",
 }: {
   snapshot: ModuleAnalyticsSnapshot;
   icons: Record<string, LucideIcon>;
   testId: string;
   showDateRange?: boolean;
+  showAgeingTable?: boolean;
   donutCenterLabel?: string;
 }) {
   const donutTotal = snapshot.statusBreakdown.reduce(
@@ -58,6 +60,7 @@ export function ModuleAnalyticsDashboard({
               value={stat.value}
               icon={Icon}
               {...(stat.trend ? { trend: stat.trend } : {})}
+              {...(stat.valueTestId ? { valueTestId: stat.valueTestId } : {})}
               testId={`${testId}-stat-${stat.id}`}
             />
           );
@@ -107,17 +110,19 @@ export function ModuleAnalyticsDashboard({
           </ChartCard>
         ) : null}
 
-        <ChartCard
-          title="Ageing & overdue"
-          description="Items that need attention"
-          className="lg:col-span-2"
-        >
-          <AnalyticsAgeingTable
-            title="Ageing and overdue items"
-            rows={snapshot.ageingRows}
-            emptyLabel="Nothing overdue in this period."
-          />
-        </ChartCard>
+        {showAgeingTable ? (
+          <ChartCard
+            title="Ageing & overdue"
+            description="Items that need attention"
+            className="lg:col-span-2"
+          >
+            <AnalyticsAgeingTable
+              title="Ageing and overdue items"
+              rows={snapshot.ageingRows}
+              emptyLabel="Nothing overdue in this period."
+            />
+          </ChartCard>
+        ) : null}
       </div>
     </section>
   );

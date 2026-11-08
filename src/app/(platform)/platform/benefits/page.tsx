@@ -115,6 +115,7 @@ export default async function BenefitsPortfolioPage({
         icons={BENEFITS_ANALYTICS_ICONS}
         testId="benefits-analytics"
         donutCenterLabel="Benefits"
+        showAgeingTable={false}
       />
       <BenefitPortfolio
         items={portfolio.items}

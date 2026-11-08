@@ -43,7 +43,7 @@ export async function loadGembaAnalytics(
     stats: [
       {
         id: "completed",
-        label: "Completed",
+        label: "Completed walks",
         value: completedCurrent,
         trend: comparePeriods(completedCurrent, completedPrevious),
       },

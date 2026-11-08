@@ -94,7 +94,7 @@ export async function loadFiveSAnalytics(
     stats: [
       {
         id: "completed",
-        label: "Completed",
+        label: "Completed audits",
         value: completedCurrent.length,
         trend: comparePeriods(completedCurrent.length, completedPrevious),
       },

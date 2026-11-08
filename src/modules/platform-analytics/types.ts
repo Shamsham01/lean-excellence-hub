@@ -5,6 +5,8 @@ export type KpiStat = {
   label: string;
   value: string | number;
   trend?: TrendDelta;
+  /** Stable e2e hook on the value element (legacy MetricCard ids). */
+  valueTestId?: string;
 };
 
 export type AnalyticsSeriesPoint = { label: string; value: number };
