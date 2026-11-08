@@ -30,7 +30,11 @@ function formatRatio(value: number | null) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }) {
+export function LeanAiCostPanel({
+  report,
+}: {
+  report: PlatformLeanAiCostReport;
+}) {
   const reviewPercent = (report.review_target_ratio * 100).toFixed(0);
 
   return (
@@ -52,7 +56,8 @@ export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }
         {report.fx_reference ? (
           <p className="mt-2">
             GBP comparison uses {report.fx_reference.id} at{" "}
-            {report.fx_reference.usd_to_gbp} ({report.fx_reference.source_label}).
+            {report.fx_reference.usd_to_gbp} ({report.fx_reference.source_label}
+            ).
           </p>
         ) : null}
       </div>
@@ -61,7 +66,9 @@ export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }
         <h3 className="text-base font-semibold">Period totals</h3>
         <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border border-border bg-card p-4">
-            <dt className="text-xs text-muted-foreground">Priced estimate (USD)</dt>
+            <dt className="text-xs text-muted-foreground">
+              Priced estimate (USD)
+            </dt>
             <dd className="mt-1 font-mono text-lg">
               {formatUsd(report.totals.estimated_usd_complete)}
             </dd>
@@ -73,7 +80,9 @@ export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }
             </dd>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <dt className="text-xs text-muted-foreground">Unpriced / incomplete</dt>
+            <dt className="text-xs text-muted-foreground">
+              Unpriced / incomplete
+            </dt>
             <dd className="mt-1 font-mono text-lg">
               {report.totals.incomplete_or_unpriced_event_count.toLocaleString(
                 "en-GB",
@@ -90,8 +99,9 @@ export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }
           </div>
         </dl>
         <p className="mt-2 text-xs text-muted-foreground">
-          Internal review target: about {reviewPercent}% of recurring subscription
-          revenue per organisation — an alert signal only, not a customer promise.
+          Internal review target: about {reviewPercent}% of recurring
+          subscription revenue per organisation — an alert signal only, not a
+          customer promise.
         </p>
       </section>
 

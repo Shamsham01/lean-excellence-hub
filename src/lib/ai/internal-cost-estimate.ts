@@ -48,12 +48,8 @@ export function billableTokenComponents(usage: TokenUsageForEstimate): {
   issues: CostEstimateIssue[];
 } {
   const issues: CostEstimateIssue[] = [];
-  const {
-    inputTokens,
-    cachedInputTokens,
-    outputTokens,
-    reasoningTokens,
-  } = usage;
+  const { inputTokens, cachedInputTokens, outputTokens, reasoningTokens } =
+    usage;
 
   if (
     inputTokens < 0 ||
