@@ -34,8 +34,8 @@ Status is based on code, migrations, and tests on `main` at the start of this pr
 | Skills field-level product knowledge | IMPLEMENTED | Versioned bundle. Coverage `complete` only when field gaps are empty. |
 | Problem Solving field-level product knowledge | IMPLEMENTED in this slice | `product-knowledge/problem-solving.ts`. Audited case fields, seeded methods, permissions, closure. |
 | Deterministic Problem Solving answers when the model is off | IMPLEMENTED in this slice | `explainProblemSolvingQuestion` and the related-work panel. No provider call. |
-| Product knowledge for Maturity, 5S, Gemba, Training, Suggestions, People | PARTIAL | Coach facts and, for Maturity, 5S, Gemba, and Skills, setup builders. No audited field bundle except Skills. |
-| Recognition, Projects and Benefits, Billing and administration knowledge | MISSING | Coverage `not_started`. |
+| Product knowledge for Maturity, Suggestions, Actions, Training | IMPLEMENTED first wave | Versioned bundles in `product-knowledge/` with CI gap checks (`verify:product-knowledge`). |
+| Product knowledge for People, 5S, Gemba, Recognition, Projects, Benefits, Billing | PARTIAL | Smaller audited field slices; deeper editor coverage backlog. |
 | Three-path setup for Maturity, 5S, Gemba, Skills | IMPLEMENTED | Manual, LEH Quick Start, Build with LeanAI. Draft until a person publishes. |
 | Three-path setup for Problem Solving methods | PLANNED, not applicable yet | Methods are seeded. There is no method-authoring screen. Manual case creation remains. |
 | Setup readiness and interventions | IMPLEMENTED | Zero-token. Problem Solving is not a readiness key. |
@@ -66,7 +66,7 @@ flowchart LR
 
 Each Problem Solving article carries a knowledge id, module, workflow, source path, release version, validation date, and coverage status. Field articles add the field identifier.
 
-`PLATFORM_KNOWLEDGE_COVERAGE` marks Problem Solving complete only when the audited field list is present. Maturity, 5S, Gemba, Training, Suggestions, and People stay partial. Recognition, Projects and Benefits, and Billing stay not started.
+`PLATFORM_KNOWLEDGE_COVERAGE` marks a module complete only when `*KnowledgeFieldGaps()` is empty. Release `LEH_PRODUCT_KNOWLEDGE_VERSION` bumps with each knowledge slice. `npm run verify:product-knowledge` fails CI when audited identifiers are missing from articles.
 
 A unit test reads the permission registry, the latest closure-outcome constraint, and the seeded method codes. A code change that drops those contracts out of the knowledge bundle fails the test.
 

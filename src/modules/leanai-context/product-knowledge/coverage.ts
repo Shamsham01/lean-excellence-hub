@@ -1,3 +1,4 @@
+import { allPlatformKnowledgeFieldGaps } from "./registry";
 import { problemSolvingKnowledgeFieldGaps } from "./problem-solving";
 import { skillsKnowledgeFieldGaps } from "./skills";
 
@@ -7,84 +8,108 @@ export type PlatformKnowledgeCoverage = {
   followUp: string;
 };
 
-const skillsFieldGaps = skillsKnowledgeFieldGaps();
-const problemSolvingFieldGaps = problemSolvingKnowledgeFieldGaps();
+const gaps = allPlatformKnowledgeFieldGaps();
 
-/** Skills and Problem Solving are the audited field-level bundles in this release. */
+function bundleComplete(module: keyof typeof gaps): boolean {
+  return gaps[module].length === 0;
+}
+
+/** Release-matched coverage ledger for LeanAI answers and CI drift checks. */
 export const PLATFORM_KNOWLEDGE_COVERAGE: readonly PlatformKnowledgeCoverage[] =
   [
     {
       module: "skills",
-      status: skillsFieldGaps.length === 0 ? "complete" : "partial",
+      status: skillsKnowledgeFieldGaps().length === 0 ? "complete" : "partial",
       followUp:
-        skillsFieldGaps.length === 0
-          ? "Audited Skills authoring and assessment fields are in this bundle. Guided setup labels What the scale means, What this level means, and Target proficiency map to Scale description, Level guidance, and Required level. Matrix states are facts, not data-entry fields. Other modules are not covered by this bundle."
-          : `These audited Skills fields are not in the bundle yet: ${skillsFieldGaps.join(", ")}.`,
-    },
-    {
-      module: "maturity",
-      status: "partial",
-      followUp:
-        "Builder prompts and coach facts exist. Field-level knowledge for levels, pillars, criteria, and questions is not in the versioned bundle.",
-    },
-    {
-      module: "five_s",
-      status: "partial",
-      followUp:
-        "Setup builder and Quick Start exist. Audit scoring fields are not in the versioned knowledge bundle.",
-    },
-    {
-      module: "gemba",
-      status: "partial",
-      followUp:
-        "Setup builder and Quick Start exist. Walk question fields are not in the versioned knowledge bundle.",
-    },
-    {
-      module: "training",
-      status: "partial",
-      followUp:
-        "Readiness copy exists. Course, curriculum, and completion fields are not covered. No three-path setup yet.",
-    },
-    {
-      module: "suggestions",
-      status: "partial",
-      followUp:
-        "Programme versus category is documented for the assistant. Submission and review fields are not a full bundle.",
-    },
-    {
-      module: "people",
-      status: "partial",
-      followUp:
-        "Job functions and invitations have coach facts. Assessment knowledge is included only because Skills owns that workflow.",
-    },
-    {
-      module: "recognition",
-      status: "not_started",
-      followUp:
-        "Add recognition types, nominations, and permissions before claiming coverage.",
+        skillsKnowledgeFieldGaps().length === 0
+          ? "Audited Skills authoring and assessment fields ship in this bundle."
+          : `Missing Skills fields: ${skillsKnowledgeFieldGaps().join(", ")}.`,
     },
     {
       module: "problem_solving",
-      status: problemSolvingFieldGaps.length === 0 ? "complete" : "partial",
+      status:
+        problemSolvingKnowledgeFieldGaps().length === 0 ? "complete" : "partial",
       followUp:
-        problemSolvingFieldGaps.length === 0
-          ? "Audited case fields, seeded methods, permissions, and closure outcomes are in this bundle. DMAIC, 8D, and vector search are not product capabilities in this release. Other modules are not covered by this bundle."
-          : `These audited Problem Solving fields are not in the bundle yet: ${problemSolvingFieldGaps.join(", ")}.`,
+        problemSolvingKnowledgeFieldGaps().length === 0
+          ? "Audited case fields, seeded methods, permissions, and closure outcomes ship in this bundle."
+          : `Missing Problem Solving fields: ${problemSolvingKnowledgeFieldGaps().join(", ")}.`,
     },
     {
-      module: "projects_and_benefits",
-      status: "not_started",
+      module: "maturity",
+      status: bundleComplete("maturity") ? "complete" : "partial",
       followUp:
-        "Charter, milestone, and benefit fields need their own articles.",
+        gaps.maturity.length === 0
+          ? "First-wave framework and assessment lifecycle fields are audited."
+          : `Maturity bundle gaps: ${gaps.maturity.join(", ")}. Pillar or question scoring metadata not fully audited.`,
+    },
+    {
+      module: "suggestions",
+      status: bundleComplete("suggestions") ? "complete" : "partial",
+      followUp:
+        gaps.suggestions.length === 0
+          ? "Programme, category, submission, and park rationale fields are audited."
+          : `Suggestions gaps: ${gaps.suggestions.join(", ")}.`,
+    },
+    {
+      module: "actions",
+      status: bundleComplete("actions") ? "complete" : "partial",
+      followUp:
+        gaps.actions.length === 0
+          ? "Core action create, priority, unit, assignee, and status fields are audited."
+          : `Actions gaps: ${gaps.actions.join(", ")}.`,
+    },
+    {
+      module: "training",
+      status: bundleComplete("training") ? "complete" : "partial",
+      followUp:
+        gaps.training.length === 0
+          ? "Course, curriculum requirement, and session lifecycle fields are audited. Three-path setup ships at /platform/training/setup."
+          : `Training gaps: ${gaps.training.join(", ")}.`,
+    },
+    {
+      module: "people",
+      status: bundleComplete("people") ? "complete" : "partial",
+      followUp:
+        "Job functions, invitations, and primary assignment are audited. HR import columns and full directory columns remain partial.",
+    },
+    {
+      module: "five_s",
+      status: bundleComplete("five_s") ? "complete" : "partial",
+      followUp:
+        "Standard publish and audit score fields are audited. Full scoring-scale editor fields remain partial.",
+    },
+    {
+      module: "gemba",
+      status: bundleComplete("gemba") ? "complete" : "partial",
+      followUp:
+        "Definition publish and observation fields are audited. Route-question editor fields remain partial.",
+    },
+    {
+      module: "recognition",
+      status: bundleComplete("recognition") ? "complete" : "partial",
+      followUp:
+        "Type and recipient fields are audited. Nomination approval chains not fully audited.",
+    },
+    {
+      module: "projects",
+      status: bundleComplete("projects") ? "complete" : "partial",
+      followUp:
+        "Title, priority, and charter problem statement are audited. Phase and milestone fields remain partial.",
+    },
+    {
+      module: "benefits",
+      status: bundleComplete("benefits") ? "complete" : "partial",
+      followUp:
+        "Class, planned realisation, and status are audited. Forecast line items and validation queues remain partial.",
     },
     {
       module: "billing_and_administration",
-      status: "not_started",
+      status: bundleComplete("billing_administration") ? "complete" : "partial",
       followUp:
-        "Do not answer plan, invoice, or ownership-transfer questions from the Skills bundle.",
+        "Capacity and ownership transfer boundaries are audited. Payment instrument and invoice line detail are not in the bundle.",
     },
   ];
 
 export function knowledgeCoverageStatement(): string {
-  return "LeanAI has complete field-level product knowledge for Skills and Problem Solving. Other modules are partial or not started, so answer those from the shorter coach facts or say the detailed guide is not available yet.";
+  return "LeanAI ships release-matched product knowledge bundles. Skills, Problem Solving, Maturity, Suggestions, Actions, and Training have audited first-wave field coverage. Other modules have smaller bundles or coach facts only. If a screen or field is not in the bundle, LeanAI states the gap instead of inventing it.";
 }

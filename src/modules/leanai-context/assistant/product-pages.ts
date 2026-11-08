@@ -8,6 +8,10 @@ import {
   skillsKnowledgeForPath,
   skillsRuntimeGuidance,
 } from "@/modules/leanai-context/product-knowledge/skills";
+import { maturityKnowledgeForPath } from "@/modules/leanai-context/product-knowledge/maturity";
+import { suggestionsKnowledgeForPath } from "@/modules/leanai-context/product-knowledge/suggestions";
+import { actionsKnowledgeForPath } from "@/modules/leanai-context/product-knowledge/actions";
+import { trainingKnowledgeForPath } from "@/modules/leanai-context/product-knowledge/training";
 
 import {
   MATURITY_AUTHORING_STEP_LABELS,
@@ -131,6 +135,9 @@ function definitionFor(
   if (identity.workflow === "maturity_authoring") {
     const step = identity.authoringStep ?? "details";
     const stepLabel = MATURITY_AUTHORING_STEP_LABELS[step];
+    const bundleFields = maturityKnowledgeForPath(identity.pathname)
+      .flatMap((item) => item.fields)
+      .slice(0, 4);
     return {
       module: "maturity",
       workflow: identity.workflow,
@@ -143,6 +150,11 @@ function definitionFor(
         ...knowledge.facts,
         "Authoring tabs change the current LeanAI page context. Conversation history is kept, but the live page is this step.",
         "LeanAI does not publish, delete, or rewrite the framework. An authorised person applies changes in Maturity authoring.",
+        knowledgeCoverageStatement(),
+        ...bundleFields.map(
+          (field) =>
+            `${field.name} (${field.required}): ${field.purpose} Permission: ${field.permissions}`,
+        ),
       ],
     };
   }
@@ -510,6 +522,112 @@ function definitionFor(
         ...field,
         provenance: problemSolvingFieldProvenance(field).sourcePath,
       })),
+    };
+  }
+
+  if (identity.module === "maturity") {
+    const articles = maturityKnowledgeForPath(identity.pathname);
+    const fields = articles.flatMap((item) => item.fields).slice(0, 6);
+    return {
+      module: "maturity",
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel: defaultContextLabel(identity),
+      summary: articles[0]?.purpose ?? knowledge.summary,
+      terminology: maturityTerminology(identity.authoringStep ?? "details"),
+      starterPrompts: maturityStepStarters(identity.authoringStep ?? "details"),
+      facts: [
+        ...knowledge.facts,
+        ...articles.flatMap((item) => item.facts),
+        knowledgeCoverageStatement(),
+        ...fields.map(
+          (field) =>
+            `${field.name} (${field.required}): ${field.purpose} Permission: ${field.permissions}`,
+        ),
+      ],
+    };
+  }
+
+  if (identity.module === "suggestions") {
+    const articles = suggestionsKnowledgeForPath(identity.pathname);
+    const fields = articles.flatMap((item) => item.fields).slice(0, 6);
+    return {
+      module: "suggestions",
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel: defaultContextLabel(identity),
+      summary: articles[0]?.purpose ?? knowledge.summary,
+      terminology: [
+        { term: "Programme", meaning: PROGRAMME_MEANING },
+        { term: "Category", meaning: CATEGORY_MEANING },
+      ],
+      starterPrompts: [
+        "What is a Suggestion Programme?",
+        "What is the difference between a Programme and Category?",
+        "What should I enter in this field?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        ...articles.flatMap((item) => item.facts),
+        knowledgeCoverageStatement(),
+        ...fields.map(
+          (field) =>
+            `${field.name} (${field.required}): ${field.purpose} Permission: ${field.permissions}`,
+        ),
+      ],
+    };
+  }
+
+  if (identity.module === "training") {
+    const articles = trainingKnowledgeForPath(identity.pathname);
+    const fields = articles.flatMap((item) => item.fields).slice(0, 6);
+    return {
+      module: "training",
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle,
+      contextLabel: defaultContextLabel(identity),
+      summary: articles[0]?.purpose ?? knowledge.summary,
+      terminology: defaultTerminology(identity),
+      starterPrompts: [
+        "What makes training readiness complete?",
+        "Does training completion prove competence?",
+        "What should I enter in this field?",
+      ],
+      facts: [
+        ...knowledge.facts,
+        ...articles.flatMap((item) => item.facts),
+        knowledgeCoverageStatement(),
+        ...fields.map(
+          (field) =>
+            `${field.name} (${field.required}): ${field.purpose} Permission: ${field.permissions}`,
+        ),
+      ],
+    };
+  }
+
+  if (identity.pathname.startsWith("/platform/actions")) {
+    const articles = actionsKnowledgeForPath(identity.pathname);
+    const fields = articles.flatMap((item) => item.fields).slice(0, 6);
+    return {
+      module: identity.module,
+      workflow: identity.workflow,
+      pageTitle: identity.pageTitle ?? "Actions",
+      contextLabel: "Actions",
+      summary: articles[0]?.purpose ?? "Follow-up tasks across improvement modules.",
+      terminology: defaultTerminology(identity),
+      starterPrompts: [
+        "What is an action?",
+        "What do action statuses mean?",
+        "What should I enter in this field?",
+      ],
+      facts: [
+        ...articles.flatMap((item) => item.facts),
+        knowledgeCoverageStatement(),
+        ...fields.map(
+          (field) =>
+            `${field.name} (${field.required}): ${field.purpose} Permission: ${field.permissions}`,
+        ),
+      ],
     };
   }
 

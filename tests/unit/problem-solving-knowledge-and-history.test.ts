@@ -66,13 +66,13 @@ describe("problem solving product knowledge", () => {
 
   it("covers the audited case fields and records provenance", () => {
     expect(problemSolvingKnowledgeFieldGaps()).toEqual([]);
-    expect(LEH_PRODUCT_KNOWLEDGE_VERSION).toBe("2026-11-04");
+    expect(LEH_PRODUCT_KNOWLEDGE_VERSION).toBe("2026-11-08");
     expect(
       PLATFORM_KNOWLEDGE_COVERAGE.find(
         (item) => item.module === "problem_solving",
       )?.status,
     ).toBe("complete");
-    expect(knowledgeCoverageStatement()).toMatch(/Skills and Problem Solving/);
+    expect(knowledgeCoverageStatement()).toMatch(/first-wave/);
     for (const article of PROBLEM_SOLVING_KNOWLEDGE_ARTICLES) {
       expect(article.provenance.coverageStatus).toBe("audited");
       expect(article.provenance.sourceRevision).toBe(
