@@ -7061,28 +7061,6 @@ begin
 end;
 $$;
 
-create or replace function public.ensure_problem_solving_methods_provisioned()
-returns boolean
-language plpgsql
-volatile
-security definer
-set search_path = ''
-as $$
-declare
-  org_id uuid := private.current_organisation_id();
-begin
-  if org_id is null then
-    raise exception 'organisation context is required'
-      using errcode = '42501';
-  end if;
-
-  perform private.assert_current_organisation_module_entitled('problem_solving');
-
-  perform private.ensure_builtin_problem_solving_methods(org_id);
-  return true;
-end;
-$$;
-
 create or replace function private.fail_ai_run(
   target_ai_run_id uuid,
   target_error_category text,

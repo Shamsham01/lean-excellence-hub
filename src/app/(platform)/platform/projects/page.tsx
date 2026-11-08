@@ -4,6 +4,7 @@ import { ProjectsPortfolioBody } from "@/app/(platform)/platform/projects/projec
 import { ProjectsPortfolioSkeleton } from "@/app/(platform)/platform/projects/projects-portfolio-skeleton";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
@@ -35,14 +36,12 @@ export default async function ProjectsPortfolioPage({
         actions={
           <div className="flex gap-2">
             {canManage ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/projects/new"
-                  data-testid="projects-new-link"
-                >
-                  New project
-                </AppLink>
-              </Button>
+              <ModulePortfolioNewLink
+                href="/platform/projects/new"
+                testId="projects-new-link"
+              >
+                New project
+              </ModulePortfolioNewLink>
             ) : null}
             <Button size="sm" variant="outline" asChild>
               <AppLink

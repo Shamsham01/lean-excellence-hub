@@ -26,6 +26,7 @@
     "test:e2e:cookieworks": "playwright test tests/e2e/cookieworks-ci-loop.spec.ts tests/e2e/cookieworks-two-site-hostile.spec.ts --workers=1",
     "test:e2e:install": "playwright install chromium",
     "test:db": "supabase test db --local supabase/tests/database",
+    "verify:billing-gates": "python3 scripts/verify-billing-module-gates.py",
     "test:db:integration": "node --import tsx scripts/test-n1a-worker-api-integration.ts",
     "test:db:integration:n1b": "node --import tsx scripts/test-n1b-notification-projector-integration.ts",
     "test:db:integration:n1c": "node --import tsx scripts/test-n1c-notification-delivery-integration.ts",

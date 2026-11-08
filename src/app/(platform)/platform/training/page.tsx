@@ -10,6 +10,7 @@ import {
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,14 +96,12 @@ export default async function TrainingOverviewPage({
               </Button>
             ) : null}
             {canManageCatalog ? (
-              <Button variant="outline" size="sm" asChild>
-                <AppLink
-                  href="/platform/training/courses?new=1"
-                  data-testid="training-hub-new-course-link"
-                >
-                  New course
-                </AppLink>
-              </Button>
+              <ModulePortfolioNewLink
+                href="/platform/training/courses?new=1"
+                testId="training-hub-new-course-link"
+              >
+                New course
+              </ModulePortfolioNewLink>
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink

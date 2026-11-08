@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "supabase/migrations"
-OUT_NAME = "20261108240000_billing_comprehensive_module_mutation_gates.sql"
+OUT_NAME = "20261109000000_billing_comprehensive_module_mutation_gates.sql"
 
 DEPRIORITISE = frozenset(
     {
@@ -56,6 +56,14 @@ AI_ASSERT_PS_MODULE = frozenset(
 AI_ASSERT_ORG_SETTINGS = frozenset({"sync_leanai_operational_chase_notifications"})
 
 ARTIFACT = Path("/opt/cursor/artifacts/rpc-entitlement-table.md")
+# Foundation / cross-plan operations — never add plan asserts.
+FOUNDATION_RPC_EXCLUDE = frozenset(
+    {
+        "ensure_problem_solving_methods_provisioned",
+        "create_job_function",
+        "update_job_function",
+    }
+)
 MODULE_BY_FUNCTION: dict[str, str] = {}
 PUBLIC_ONLY = frozenset(
     {
@@ -65,7 +73,6 @@ PUBLIC_ONLY = frozenset(
         "begin_workforce_import_credential_export",
         "claim_workforce_import_batch",
         "create_workforce_import_job",
-        "ensure_problem_solving_methods_provisioned",
         "mark_workforce_import_credentials_exported",
         "preauthorize_workforce_credential_reset",
         "retry_workforce_import_failed_rows",
@@ -86,6 +93,8 @@ def parse_inventory() -> None:
         if len(parts) < 5:
             continue
         fn = parts[1].strip("`")
+        if fn in FOUNDATION_RPC_EXCLUDE:
+            continue
         mod = parts[2].strip()
         if mod == "ai" and fn not in AI_RUN_MUTATIONS and fn not in AI_SESSION_CREATES:
             continue
@@ -101,22 +110,14 @@ def parse_inventory() -> None:
         ):
             continue
         if fn in PUBLIC_ONLY:
-            MODULE_BY_FUNCTION[fn] = (
-                "people_hr"
-                if fn != "ensure_problem_solving_methods_provisioned"
-                else "problem_solving"
-            )
+            MODULE_BY_FUNCTION[fn] = "people_hr"
         else:
             MODULE_BY_FUNCTION[fn] = (
                 mod if mod != "ai" or fn in AI_SESSION_CREATES else "ai_run"
             )
     for fn in PUBLIC_ONLY:
         if fn not in MODULE_BY_FUNCTION:
-            MODULE_BY_FUNCTION[fn] = (
-                "problem_solving"
-                if fn == "ensure_problem_solving_methods_provisioned"
-                else "people_hr"
-            )
+            MODULE_BY_FUNCTION[fn] = "people_hr"
 
 
 def migration_order() -> list[Path]:

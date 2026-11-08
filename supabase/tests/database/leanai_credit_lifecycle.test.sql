@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(9);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -123,6 +123,19 @@ select lives_ok(
 select lives_ok(
   $$ select private.ai_credit_release(gen_random_uuid()) $$,
   'release on unknown reservation is a no-op'
+);
+
+select throws_ok(
+  $$
+    select private.ai_credit_try_reserve(
+      gen_random_uuid(),
+      'credit-test-second-reserve',
+      1000000
+    );
+  $$,
+  '42501',
+  'leanai credit allowance exceeded for this period',
+  'second reserve in same period fails after first reservation'
 );
 
 select * from finish();
