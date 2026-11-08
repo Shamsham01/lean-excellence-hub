@@ -10,6 +10,7 @@ import {
   ensurePlatformE2eUser,
   platformE2eCredentials,
 } from "./helpers/platform-auth";
+import { expectModulePageHeading } from "./helpers/module-page-heading";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -159,7 +160,7 @@ test.describe("authenticated platform shell", () => {
 
     await page.getByRole("link", { name: "Actions" }).click();
     await expect(page).toHaveURL(/\/platform\/actions/);
-    await expect(page.getByRole("heading", { name: "Actions" })).toBeVisible();
+    await expectModulePageHeading(page, "Actions");
   });
 
   test("desktop shell keeps sidebar navigation usable at 1440x900", async ({

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { expectModulePageHeading } from "./helpers/module-page-heading";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -17,9 +18,7 @@ test.describe("Milestone 6 scheduling journeys", () => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/schedule");
 
-    await expect(
-      page.getByRole("heading", { name: "Schedule", exact: true }),
-    ).toBeVisible();
+    await expectModulePageHeading(page, "Schedule");
     await expect(page.getByText("Weekly Production 5S").first()).toBeVisible();
     await expect(
       page.getByText("Weekly Operations Gemba").first(),

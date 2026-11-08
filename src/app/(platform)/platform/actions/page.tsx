@@ -7,6 +7,7 @@ import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
 import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
 import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   buildAnalyticsDateRange,
   parseAnalyticsRangeDays,
@@ -110,6 +111,14 @@ export default async function ActionsPage({
       <PageHeader
         title="Actions"
         description="Improvement actions linked to assessments and operational work."
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { label: "Platform", href: "/platform" },
+              { label: "Actions" },
+            ]}
+          />
+        }
       />
 
       <ModuleAnalyticsDashboard
@@ -145,6 +154,7 @@ export default async function ActionsPage({
         <ActionPlannerShell
           actions={plannerActions}
           initialOpenActionId={openActionId}
+          canCreate={canCreate}
         />
       </Suspense>
       <WorkplaceSharedRecords module="actions" title="Actions" />

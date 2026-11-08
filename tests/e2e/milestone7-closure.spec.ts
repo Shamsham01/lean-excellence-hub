@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { expectExactHeading } from "./helpers/module-page-heading";
 import {
   DEMO_TRAINING_COURSES,
   DEMO_TRAINING_SESSION,
@@ -89,8 +90,8 @@ test.describe("Milestone 7 closure", () => {
     await signInAsDemoUser(page, "operator");
     await page.goto("/platform/people/me");
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Training" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Skills" })).toBeVisible();
+    await expectExactHeading(page, "Training");
+    await expectExactHeading(page, "Skills");
 
     await page.goto(managerHref!);
     await expect(page.getByTestId("capability-profile-page")).not.toBeVisible();

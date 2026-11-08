@@ -1,6 +1,7 @@
+import { EmptyState } from "@/components/platform/empty-state";
 import { AppLink } from "@/components/ui/app-link";
-
 import { Badge } from "@/components/ui/badge";
+import { ListTodo } from "lucide-react";
 import {
   actionPriorityLabel,
   actionStatusBadgeVariant,
@@ -22,14 +23,12 @@ export type ActionListItem = {
 export function ActionList({ actions }: { actions: ActionListItem[] }) {
   if (actions.length === 0) {
     return (
-      <div
-        className="rounded-lg border border-dashed border-border px-4 py-10 text-center"
-        data-testid="actions-empty-state"
-      >
-        <p className="text-sm font-medium">
-          No actions are currently available in your scope.
-        </p>
-      </div>
+      <EmptyState
+        testId="actions-empty-state"
+        title="No actions in your scope"
+        description="No actions are currently available in your scope."
+        icon={<ListTodo className="size-5" aria-hidden />}
+      />
     );
   }
 
