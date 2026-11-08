@@ -88,8 +88,14 @@ export type SuggestionReviewContextPermissions = {
   is_active_reviewer: boolean;
   can_claim: boolean;
   can_assign: boolean;
+  can_delegate: boolean;
   can_begin_review: boolean;
   can_record_review: boolean;
+};
+
+export type SuggestionReviewContextPendingApprover = {
+  member_id: string;
+  display_name: string | null;
 };
 
 export type SuggestionEligibleReviewer = {
@@ -100,6 +106,7 @@ export type SuggestionEligibleReviewer = {
 export type SuggestionReviewContext = {
   suggestion: SuggestionReviewContextSuggestion;
   reviewer: SuggestionReviewContextReviewer | null;
+  pending_approver: SuggestionReviewContextPendingApprover | null;
   permissions: SuggestionReviewContextPermissions;
   eligible_reviewers: SuggestionEligibleReviewer[];
 };

@@ -24,6 +24,7 @@ export const SUGGESTION_REVIEWER_ASSIGNED_KIND =
   "suggestions.reviewer_assigned";
 export const SUGGESTION_REVIEWER_REASSIGNED_KIND =
   "suggestions.reviewer_reassigned";
+export const SUGGESTION_AWAITING_REVIEW_KIND = "suggestions.awaiting_review";
 export const SUGGESTION_MORE_INFORMATION_REQUIRED_KIND =
   "suggestions.more_information_required";
 export const SUGGESTION_APPROVED_KIND = "suggestions.approved";
@@ -182,6 +183,18 @@ function renderSuggestionReviewerEmail(
         "You received this operational notification from Lean Excellence Hub.",
     }),
   };
+}
+
+export function renderSuggestionAwaitingReviewEmail(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  return renderSuggestionReviewerEmail(
+    context,
+    appOrigin,
+    "Idea awaiting your approval",
+    "A submitted improvement idea needs your approval",
+  );
 }
 
 export function renderSuggestionReviewerAssignedEmail(

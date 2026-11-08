@@ -57,6 +57,24 @@ Deno.serve((request) =>
 
           return typeof data === "string" ? data : null;
         },
+        lookupSuggestionApprovalRecipients: async (
+          organisationId,
+          suggestionId,
+        ) => {
+          const { data, error } = await serviceClient.rpc(
+            "lookup_suggestion_approval_notification_recipients_for_worker",
+            {
+              target_organisation_id: organisationId,
+              target_suggestion_id: suggestionId,
+            },
+          );
+
+          if (error) {
+            throw error;
+          }
+
+          return Array.isArray(data) ? data.filter((id) => typeof id === "string") : [];
+        },
       });
     },
   }),

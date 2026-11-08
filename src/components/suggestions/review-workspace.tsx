@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   approveSuggestion,
   assignSuggestionReviewer,
+  delegateSuggestionApproval,
   beginSuggestionReview,
   claimSuggestionForReview,
   declineSuggestion,
@@ -43,7 +44,8 @@ function actionErrorMessage(error: unknown): string {
 
 export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const router = useRouter();
-  const { suggestion, reviewer, permissions, eligible_reviewers } = context;
+  const { suggestion, reviewer, pending_approver, permissions, eligible_reviewers } =
+    context;
   const parkedPresentation = deriveParkedPresentation({
     status: suggestion.status,
     parkedAt: suggestion.parked_at,
@@ -56,6 +58,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const [employeeFeedback, setEmployeeFeedback] = useState("");
   const [implementationRecommendation, setImplementationRecommendation] =
     useState("");
+  const [delegationReason, setDelegationReason] = useState("");
   const [selectedReviewerId, setSelectedReviewerId] = useState(
     eligible_reviewers[0]?.member_id ?? "",
   );
@@ -153,6 +156,18 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
           </p>
         ) : null}
 
+        {pending_approver ? (
+          <p
+            className="mt-2 text-sm text-muted-foreground"
+            data-testid="review-workspace-pending-approver"
+          >
+            <span className="font-medium text-foreground">
+              Pending approval owner:{" "}
+            </span>
+            {pending_approver.display_name ?? "Reviewer"}
+          </p>
+        ) : null}
+
         {managerOverrideVisible ? (
           <p className="mt-2 text-sm text-muted-foreground">
             Manager override available for this suggestion.
@@ -230,6 +245,78 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               }
             >
               {loadingAction === "claim" ? "Claiming…" : "Claim suggestion"}
+            </Button>
+          </div>
+        ) : null}
+
+        {permissions.can_delegate ? (
+          <div
+            className="flex flex-col gap-3 border-t border-border pt-5"
+            data-testid="review-delegate-controls"
+          >
+            <p className="font-medium">Delegate approval</p>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Transfer this approval request to another eligible reviewer in
+              your organisation. The previous owner will no longer see this
+              pending task.
+            </p>
+            <label className="flex flex-col gap-1">
+              <Label htmlFor="review-delegate-reviewer">Eligible reviewer</Label>
+              <select
+                id="review-delegate-reviewer"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                value={selectedReviewerId}
+                onChange={(event) => setSelectedReviewerId(event.target.value)}
+                data-testid="review-delegate-select"
+              >
+                {eligible_reviewers.length === 0 ? (
+                  <option value="">No eligible reviewers</option>
+                ) : (
+                  eligible_reviewers.map((candidate) => (
+                    <option
+                      key={candidate.member_id}
+                      value={candidate.member_id}
+                    >
+                      {candidate.display_name ?? "Reviewer"}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <Label htmlFor="review-delegate-reason">
+                Reason (optional)
+              </Label>
+              <Textarea
+                id="review-delegate-reason"
+                className="min-h-20"
+                value={delegationReason}
+                onChange={(event) => setDelegationReason(event.target.value)}
+                placeholder="For example: on leave next week"
+                data-testid="review-delegate-reason"
+              />
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={
+                loadingAction !== null ||
+                !selectedReviewerId ||
+                eligible_reviewers.length === 0
+              }
+              data-testid="review-delegate-button"
+              onClick={() =>
+                runAction("delegate", () =>
+                  delegateSuggestionApproval(
+                    suggestion.id,
+                    selectedReviewerId,
+                    delegationReason,
+                  ),
+                )
+              }
+            >
+              {loadingAction === "delegate" ? "Delegating…" : "Delegate approval"}
             </Button>
           </div>
         ) : null}
