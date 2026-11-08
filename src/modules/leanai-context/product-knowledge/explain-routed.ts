@@ -188,15 +188,15 @@ export function explainPlatformQuestion(input: {
   permissions?: Record<string, boolean>;
 }): PlatformKnowledgeExplanation {
   const pathname = input.pathname ?? "/platform";
-  const module = moduleFromPathname(pathname);
+  const resolvedModule = moduleFromPathname(pathname);
 
   const liveStateSummary = filterLiveStateSummaryForKnowledge({
-    module,
+    module: resolvedModule,
     summary: input.liveStateSummary,
     permissions: input.permissions ?? {},
   });
 
-  if (module === "skills") {
+  if (resolvedModule === "skills") {
     const skills = explainSkillsQuestion({
       question: input.question,
       pathname,
@@ -213,7 +213,7 @@ export function explainPlatformQuestion(input: {
     };
   }
 
-  if (module === "problem_solving") {
+  if (resolvedModule === "problem_solving") {
     const ps = explainProblemSolvingQuestion({
       question: input.question,
       pathname,
@@ -230,14 +230,14 @@ export function explainPlatformQuestion(input: {
     };
   }
 
-  if (module && MODULE_CONFIG[module]) {
+  if (resolvedModule && MODULE_CONFIG[resolvedModule]) {
     return explainGenericModule({
       question: input.question,
       pathname,
       ...(input.fieldName ? { fieldName: input.fieldName } : {}),
       ...(liveStateSummary ? { liveStateSummary } : {}),
-      module,
-      config: MODULE_CONFIG[module]!,
+      module: resolvedModule,
+      config: MODULE_CONFIG[resolvedModule]!,
     });
   }
 
@@ -245,7 +245,7 @@ export function explainPlatformQuestion(input: {
     answer: knowledgeCoverageStatement(),
     sources: [],
     knowledgeVersion: LEH_PRODUCT_KNOWLEDGE_VERSION,
-    module,
+    module: resolvedModule,
     acknowledgedGap: true,
     usedLiveContext: false,
   };
