@@ -73,7 +73,9 @@ Deno.serve((request) =>
             throw error;
           }
 
-          return Array.isArray(data) ? data.filter((id) => typeof id === "string") : [];
+          return Array.isArray(data)
+            ? data.filter((id) => typeof id === "string")
+            : [];
         },
       });
     },

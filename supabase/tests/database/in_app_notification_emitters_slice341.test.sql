@@ -217,7 +217,15 @@ select is(
       and notification_row.membership_id = (select id from slice341_ids where key = 'manager_membership')
       and notification_row.notification_type = 'suggestions.awaiting_review'
       and notification_row.dedupe_key = (
-        'suggestion:' || (select id from slice341_ids where key = 'suggestion')::text || ':submitted'
+        'suggestion:'
+        || (select id from slice341_ids where key = 'suggestion')::text
+        || ':approval:v'
+        || (
+          select routing_row.notification_generation::text
+          from public.suggestion_approval_routing routing_row
+          where routing_row.organisation_id = (select id from slice341_ids where key = 'organisation')
+            and routing_row.suggestion_id = (select id from slice341_ids where key = 'suggestion')
+        )
       )
   ),
   1::bigint,

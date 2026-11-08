@@ -44,8 +44,14 @@ function actionErrorMessage(error: unknown): string {
 
 export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const router = useRouter();
-  const { suggestion, reviewer, pending_approver, permissions, eligible_reviewers } =
-    context;
+  const {
+    suggestion,
+    reviewer,
+    pending_approver,
+    task_owner,
+    permissions,
+    eligible_reviewers,
+  } = context;
   const parkedPresentation = deriveParkedPresentation({
     status: suggestion.status,
     parkedAt: suggestion.parked_at,
@@ -162,9 +168,19 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
             data-testid="review-workspace-pending-approver"
           >
             <span className="font-medium text-foreground">
-              Pending approval owner:{" "}
+              Primary approver:{" "}
             </span>
             {pending_approver.display_name ?? "Reviewer"}
+          </p>
+        ) : null}
+
+        {task_owner && pending_approver?.member_id !== task_owner.member_id ? (
+          <p
+            className="mt-2 text-sm text-muted-foreground"
+            data-testid="review-workspace-task-owner"
+          >
+            <span className="font-medium text-foreground">Task owner: </span>
+            {task_owner.display_name ?? "Reviewer"}
           </p>
         ) : null}
 
@@ -255,13 +271,15 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
             data-testid="review-delegate-controls"
           >
             <p className="font-medium">Delegate approval</p>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Transfer this approval request to another eligible reviewer in
-              your organisation. The previous owner will no longer see this
-              pending task.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {permissions.delegation_authority === "manager_override"
+                ? "Manager override: reassign the approval task to another eligible reviewer."
+                : "Transfer this approval task to another eligible reviewer. Superseded pending tasks are cleared."}
             </p>
             <label className="flex flex-col gap-1">
-              <Label htmlFor="review-delegate-reviewer">Eligible reviewer</Label>
+              <Label htmlFor="review-delegate-reviewer">
+                Eligible reviewer
+              </Label>
               <select
                 id="review-delegate-reviewer"
                 className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
@@ -284,9 +302,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               </select>
             </label>
             <label className="flex flex-col gap-1">
-              <Label htmlFor="review-delegate-reason">
-                Reason (optional)
-              </Label>
+              <Label htmlFor="review-delegate-reason">Reason (optional)</Label>
               <Textarea
                 id="review-delegate-reason"
                 className="min-h-20"
@@ -316,7 +332,9 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
                 )
               }
             >
-              {loadingAction === "delegate" ? "Delegating…" : "Delegate approval"}
+              {loadingAction === "delegate"
+                ? "Delegating…"
+                : "Delegate approval"}
             </Button>
           </div>
         ) : null}

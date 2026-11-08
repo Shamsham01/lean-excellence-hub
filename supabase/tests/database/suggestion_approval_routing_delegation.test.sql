@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(32);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -323,12 +323,23 @@ select is(
 );
 
 select ok(
-  private.is_suggestion_pending_approver(
+  private.is_suggestion_primary_approver(
     (select id from t119_ids where key = 'organisation'),
     (select id from t119_ids where key = 'suggestion'),
     (select id from t119_ids where key = 'site_manager_membership')
   ),
-  'site manager is deterministic pending approver'
+  'site manager is snapshotted primary approver'
+);
+
+select is(
+  (
+    select routing_row.notification_generation
+    from public.suggestion_approval_routing routing_row
+    where routing_row.organisation_id = (select id from t119_ids where key = 'organisation')
+      and routing_row.suggestion_id = (select id from t119_ids where key = 'suggestion')
+  ),
+  1,
+  'submit snapshots notification generation 1'
 );
 
 reset role;
@@ -451,6 +462,86 @@ select throws_ok(
   ),
   'cannot delegate approval to yourself',
   'self delegation is rejected'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+select ok(
+  private.is_suggestion_primary_approver(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'site_manager_membership')
+  ),
+  'primary approver unchanged while delegate holds active assignment'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'site manager session for blocked delegation'
+);
+
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'site_manager_membership'),
+    'primary tries to pull back'
+  ),
+  'approval delegation is not authorised',
+  'primary cannot delegate while active reviewer holds claim'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000004","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000004","email":"t119-delegate@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'delegate selects organisation to complete approval'
+);
+
+select ok(
+  public.begin_suggestion_review((select id from t119_ids where key = 'suggestion')),
+  'delegate begins review after assignment'
+);
+
+select ok(
+  public.approve_suggestion(
+    (select id from t119_ids where key = 'suggestion'),
+    'medium',
+    'medium',
+    'Internal',
+    'Approved by delegate'
+  ) is not null,
+  'delegate approves after manager delegation'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+select is(
+  (
+    select suggestion_row.status
+    from public.improvement_suggestions suggestion_row
+    where suggestion_row.id = (select id from t119_ids where key = 'suggestion')
+  ),
+  'accepted',
+  'suggestion ends accepted after delegate approval'
 );
 
 select * from finish();

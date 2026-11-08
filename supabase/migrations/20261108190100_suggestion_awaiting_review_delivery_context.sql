@@ -1,4 +1,4 @@
--- Patch delivery context for suggestions.awaiting_review (SuggestionSubmitted).
+-- Patch delivery context for suggestions.awaiting_review (snapshotted recipient).
 
 create or replace function private.get_notification_delivery_context(
   target_organisation_id uuid,
@@ -234,15 +234,10 @@ begin
         event_row.resource_record_id is null
         or not exists (
           select 1
-          from public.improvement_suggestions jurisdiction_row
-          cross join lateral private.resolve_suggestion_approval_notification_recipients(
-            jurisdiction_row.organisation_id,
-            jurisdiction_row.review_jurisdiction_unit_id,
-            jurisdiction_row.author_membership_id
-          ) resolved
-          where jurisdiction_row.organisation_id = target_organisation_id
-            and jurisdiction_row.id = event_row.resource_record_id
-            and resolved.membership_id = delivery_row.recipient_membership_id
+          from public.suggestion_approval_routing routing_row
+          where routing_row.organisation_id = target_organisation_id
+            and routing_row.suggestion_id = event_row.resource_record_id
+            and routing_row.email_recipient_membership_id = delivery_row.recipient_membership_id
         )
         or not private.membership_can_read_improvement_suggestion(
           target_organisation_id,

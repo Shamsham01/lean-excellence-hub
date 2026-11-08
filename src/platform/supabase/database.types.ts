@@ -10488,6 +10488,8 @@ export type Database = {
           delegated_by_membership_id: string
           from_membership_id: string
           id: string
+          idempotency_key: string | null
+          notification_generation: number | null
           organisation_id: string
           reason: string | null
           suggestion_id: string
@@ -10498,6 +10500,8 @@ export type Database = {
           delegated_by_membership_id: string
           from_membership_id: string
           id?: string
+          idempotency_key?: string | null
+          notification_generation?: number | null
           organisation_id: string
           reason?: string | null
           suggestion_id: string
@@ -10508,6 +10512,8 @@ export type Database = {
           delegated_by_membership_id?: string
           from_membership_id?: string
           id?: string
+          idempotency_key?: string | null
+          notification_generation?: number | null
           organisation_id?: string
           reason?: string | null
           suggestion_id?: string
@@ -10553,30 +10559,46 @@ export type Database = {
       }
       suggestion_approval_routing: {
         Row: {
+          email_recipient_membership_id: string | null
+          notification_generation: number
           organisation_id: string
-          pending_approver_membership_id: string | null
+          primary_approver_membership_id: string | null
           recipient_count: number
           routing_basis: string
           suggestion_id: string
+          task_owner_membership_id: string | null
           updated_at: string
         }
         Insert: {
+          email_recipient_membership_id?: string | null
+          notification_generation?: number
           organisation_id: string
-          pending_approver_membership_id?: string | null
+          primary_approver_membership_id?: string | null
           recipient_count?: number
           routing_basis?: string
           suggestion_id: string
+          task_owner_membership_id?: string | null
           updated_at?: string
         }
         Update: {
+          email_recipient_membership_id?: string | null
+          notification_generation?: number
           organisation_id?: string
-          pending_approver_membership_id?: string | null
+          primary_approver_membership_id?: string | null
           recipient_count?: number
           routing_basis?: string
           suggestion_id?: string
+          task_owner_membership_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "suggestion_approval_routing_email_recipient_fkey"
+            columns: ["organisation_id", "email_recipient_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
           {
             foreignKeyName: "suggestion_approval_routing_organisation_id_fkey"
             columns: ["organisation_id"]
@@ -10585,8 +10607,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "suggestion_approval_routing_pending_approver_fkey"
-            columns: ["organisation_id", "pending_approver_membership_id"]
+            foreignKeyName: "suggestion_approval_routing_primary_approver_fkey"
+            columns: ["organisation_id", "primary_approver_membership_id"]
             isOneToOne: false
             referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
@@ -10596,6 +10618,13 @@ export type Database = {
             columns: ["organisation_id", "suggestion_id"]
             isOneToOne: true
             referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_task_owner_fkey"
+            columns: ["organisation_id", "task_owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
