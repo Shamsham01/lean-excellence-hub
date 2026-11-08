@@ -44,6 +44,9 @@ import { resolveAIProvider } from "@/platform/ai/registry";
 import type { CoachEnvelope } from "@/platform/ai/types";
 import type { CoachExplainContext } from "@/modules/leanai-context/coach/context-assembly";
 import { wrapUntrustedCoachData } from "@/modules/leanai-context/coach/context-assembly";
+import { createSourceAllowlist } from "@/platform/ai/source-allowlist";
+import { executeOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-executors";
+import { isOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-schemas";
 import {
   coachStructuredPayload,
   workspaceAssistantTools,
@@ -165,14 +168,15 @@ export async function runCoachAiTurn(
     reasoningTokens: 0,
   };
 
+  const allowlist = createSourceAllowlist();
+  const conversationMessages: Array<{ role: "user" | "assistant"; content: string }> =
+    [...input.conversationHistory, { role: "user", content: userMessage }];
+
   try {
-    const response = await provider.createResponse({
+    let response = await provider.createResponse({
       model,
       systemPrompt,
-      messages: [
-        ...input.conversationHistory,
-        { role: "user", content: userMessage },
-      ],
+      messages: conversationMessages,
       tools,
       maxOutputTokens: prepared.maxOutputTokens,
       timeoutMs,
@@ -194,7 +198,14 @@ export async function runCoachAiTurn(
     totalUsage.reasoningTokens += response.usage.reasoningTokens;
 
     if (response.toolCalls.length > 0) {
-      for (const toolCall of response.toolCalls) {
+      const operationalCalls = response.toolCalls.filter((toolCall) =>
+        isOperationalRetrievalTool(toolCall.name),
+      );
+      const deniedCalls = response.toolCalls.filter(
+        (toolCall) => !isOperationalRetrievalTool(toolCall.name),
+      );
+
+      for (const toolCall of deniedCalls) {
         toolCallRecords.push({
           sequence_number: toolCallRecords.length + 1,
           tool_name: toolCall.name,
@@ -208,10 +219,68 @@ export async function runCoachAiTurn(
           duration_ms: 0,
         });
       }
-      envelope = fallbackCoachEnvelope(
-        "I can explain this setup step, but I cannot run organisation tools or make changes.",
-      );
-    } else {
+
+      if (operationalCalls.length > 0) {
+        const toolResults: string[] = [];
+        for (const toolCall of operationalCalls) {
+          const started = Date.now();
+          const result = await executeOperationalRetrievalTool(
+            { supabase: input.supabase, allowlist },
+            toolCall.name as "search_operational_knowledge" | "get_operational_record_context",
+            toolCall.arguments,
+          );
+          toolCallRecords.push({
+            sequence_number: toolCallRecords.length + 1,
+            tool_name: toolCall.name,
+            arguments_json: toolCall.arguments,
+            arguments_hash: hashJson(toolCall.arguments),
+            status: result.status,
+            denial_reason: result.denialReason,
+            result_metadata_json: result.resultMetadata,
+            duration_ms: Date.now() - started,
+          });
+          toolResults.push(
+            JSON.stringify({
+              tool: toolCall.name,
+              status: result.status,
+              result: result.resultMetadata,
+            }),
+          );
+        }
+        conversationMessages.push({
+          role: "user",
+          content: `Authorised operational retrieval results:\n${toolResults.join("\n")}`,
+        });
+        response = await provider.createResponse({
+          model,
+          systemPrompt,
+          messages: conversationMessages,
+          tools,
+          maxOutputTokens: prepared.maxOutputTokens,
+          timeoutMs,
+          reasoningEffort: prepared.reasoningEffort,
+          expectsStructuredOutput: true,
+          structuredOutputFormat: {
+            name: "coach_envelope",
+            schema: COACH_ENVELOPE_JSON_SCHEMA as unknown as Record<
+              string,
+              unknown
+            >,
+          },
+        });
+        providerRequestId = response.responseId ?? providerRequestId;
+        totalUsage.inputTokens += response.usage.inputTokens;
+        totalUsage.outputTokens += response.usage.outputTokens;
+        totalUsage.cachedInputTokens += response.usage.cachedInputTokens;
+        totalUsage.reasoningTokens += response.usage.reasoningTokens;
+      } else if (deniedCalls.length > 0) {
+        envelope = fallbackCoachEnvelope(
+          "I can explain this setup step, but I cannot run organisation tools or make changes.",
+        );
+      }
+    }
+
+    if (!envelope) {
       try {
         envelope = parseCoachEnvelope(
           response.parsedJson ??

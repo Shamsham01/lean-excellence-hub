@@ -15095,6 +15095,18 @@ export type Database = {
         Args: { target_limit?: number; target_query: string }
         Returns: Json
       }
+      search_authorised_operational_knowledge: {
+        Args: {
+          target_domains?: string[] | null
+          target_limit?: number
+          target_query: string
+        }
+        Returns: Json
+      }
+      get_authorised_operational_record_context: {
+        Args: { target_record_id: string; target_record_type: string }
+        Returns: Json
+      }
       search_similar_problem_solving_cases: {
         Args: { target_case_id: string; target_limit?: number }
         Returns: Json

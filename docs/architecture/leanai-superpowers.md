@@ -42,8 +42,8 @@ Status is based on code, migrations, and tests on `main` at the start of this pr
 | Permission-aware closed-case lexical search | IMPLEMENTED | `search_similar_problem_solving_cases`, extended by `search_authorised_problem_solving_history`. |
 | Semantic / pgvector search | PLANNED | Not in this release. Milestone scope excluded it. Do not add a global vector store. |
 | Related-work panel before a new case is saved | IMPLEMENTED for Problem Solving | Explicit search. Does not block the new case. |
-| Suggestions and Actions duplicate search | MISSING | No equivalent RPC. Backlog issue. |
-| Cross-module operational knowledge search | MISSING | Backlog. Must reuse each family's read predicate. |
+| Suggestions and Actions duplicate search | IMPLEMENTED | Create-form related search (#364). Not the cross-module facade. |
+| Cross-module operational knowledge search | IMPLEMENTED | `search_authorised_operational_knowledge`, LeanAI read tools. Lexical only; pgvector deferred. |
 | Organisational learning graph and proactive advice | PLANNED | Design only. Out of this pull request. |
 | Cross-customer benchmarks | BLOCKED BY SECURITY | Requires a separate privacy design and consent. Out of scope. |
 | Autonomous domain writes by the model | BLOCKED BY SECURITY | Not allowed. Drafts stay human-accepted. |
