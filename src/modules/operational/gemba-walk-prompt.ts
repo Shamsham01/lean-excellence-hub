@@ -58,7 +58,29 @@ export function buildGembaWalkPromptSearch(questionId: string) {
 
 export function subscribeGembaWalkPromptLocation(onStoreChange: () => void) {
   window.addEventListener("popstate", onStoreChange);
-  return () => window.removeEventListener("popstate", onStoreChange);
+  const originalPushState = history.pushState.bind(history);
+  const originalReplaceState = history.replaceState.bind(history);
+  history.pushState = (...args: Parameters<History["pushState"]>) => {
+    const before = window.location.search;
+    const result = originalPushState(...args);
+    if (window.location.search !== before) {
+      onStoreChange();
+    }
+    return result;
+  };
+  history.replaceState = (...args: Parameters<History["replaceState"]>) => {
+    const before = window.location.search;
+    const result = originalReplaceState(...args);
+    if (window.location.search !== before) {
+      onStoreChange();
+    }
+    return result;
+  };
+  return () => {
+    window.removeEventListener("popstate", onStoreChange);
+    history.pushState = originalPushState;
+    history.replaceState = originalReplaceState;
+  };
 }
 
 export function resolveGembaWalkPromptIndex({
@@ -79,4 +101,48 @@ export function resolveGembaWalkPromptIndex({
   }
 
   return 0;
+}
+
+/** URL identity wins; session storage is only used when the URL has no prompt param. */
+export function resolveGembaWalkPromptId({
+  windowPromptId,
+  routerPromptId,
+}: {
+  windowPromptId?: string | null;
+  routerPromptId?: string | null;
+}) {
+  const windowId = windowPromptId ?? null;
+  const routerId = routerPromptId ?? null;
+  if (windowId && routerId && windowId !== routerId) {
+    return windowId;
+  }
+  return routerId ?? windowId;
+}
+
+export function resolveActiveGembaWalkPromptIndex({
+  questionIds,
+  urlPromptId,
+  initialPromptId,
+  storedPromptId,
+}: {
+  questionIds: string[];
+  urlPromptId?: string | null;
+  initialPromptId?: string | null;
+  storedPromptId?: string | null;
+}) {
+  if (urlPromptId) {
+    return resolveGembaWalkPromptIndex({
+      questionIds,
+      preferredQuestionId: urlPromptId,
+      storedQuestionId: urlPromptId,
+    });
+  }
+
+  return resolveGembaWalkPromptIndex({
+    questionIds,
+    ...(initialPromptId != null
+      ? { preferredQuestionId: initialPromptId }
+      : {}),
+    ...(storedPromptId != null ? { storedQuestionId: storedPromptId } : {}),
+  });
 }

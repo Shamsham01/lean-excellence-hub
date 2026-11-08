@@ -101,48 +101,88 @@ describe("assessment navigation scroll targeting", () => {
     expect(ASSESSMENT_NAV_SCROLL_BEHAVIOR).toBe("auto");
   });
 
-  it("scrolls the criterion start anchor for criterion-only navigation", () => {
+  it("scrolls the criterion start anchor inside the platform main viewport", () => {
+    const viewport = document.createElement("div");
+    viewport.className = "platform-main-viewport";
+    Object.defineProperty(viewport, "clientHeight", { value: 400 });
+    Object.defineProperty(viewport, "scrollHeight", { value: 2000 });
+    viewport.scrollTop = 500;
+
     const criterionTop = document.createElement("div");
-    const question = document.createElement("article");
-    question.setAttribute("data-question-id", "q-missing");
-    const topScroll = vi.fn();
-    const questionScroll = vi.fn();
-    criterionTop.scrollIntoView = topScroll;
-    question.scrollIntoView = questionScroll;
-    document.body.append(criterionTop, question);
+    criterionTop.getBoundingClientRect = () =>
+      ({
+        top: 180,
+        height: 1,
+        left: 0,
+        right: 0,
+        bottom: 181,
+        width: 100,
+        x: 0,
+        y: 180,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    viewport.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        height: 400,
+        left: 0,
+        right: 0,
+        bottom: 400,
+        width: 100,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    viewport.append(criterionTop);
+    document.body.append(viewport);
 
     scrollAssessmentTarget({ kind: "criterion-top" }, criterionTop);
 
-    expect(topScroll).toHaveBeenCalledWith({
-      behavior: "auto",
-      block: "start",
-    });
-    expect(questionScroll).not.toHaveBeenCalled();
-    criterionTop.remove();
-    question.remove();
+    expect(viewport.scrollTop).toBe(680);
+    viewport.remove();
   });
 
-  it("scrolls only the targeted question when a question id is supplied", () => {
-    const criterionTop = document.createElement("div");
+  it("scrolls only the targeted question inside the platform main viewport", () => {
+    const viewport = document.createElement("div");
+    viewport.className = "platform-main-viewport";
+    Object.defineProperty(viewport, "clientHeight", { value: 500 });
+    Object.defineProperty(viewport, "scrollHeight", { value: 2400 });
+    viewport.scrollTop = 300;
+
     const question = document.createElement("article");
     question.setAttribute("data-question-id", "q-missing");
-    const topScroll = vi.fn();
-    const questionScroll = vi.fn();
-    criterionTop.scrollIntoView = topScroll;
-    question.scrollIntoView = questionScroll;
-    document.body.append(criterionTop, question);
+    question.getBoundingClientRect = () =>
+      ({
+        top: 520,
+        height: 120,
+        left: 0,
+        right: 0,
+        bottom: 640,
+        width: 100,
+        x: 0,
+        y: 520,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    viewport.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        height: 500,
+        left: 0,
+        right: 0,
+        bottom: 500,
+        width: 100,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
 
-    scrollAssessmentTarget(
-      { kind: "question", questionId: "q-missing" },
-      criterionTop,
-    );
+    viewport.append(question);
+    document.body.append(viewport);
 
-    expect(questionScroll).toHaveBeenCalledWith({
-      behavior: "auto",
-      block: "center",
-    });
-    expect(topScroll).not.toHaveBeenCalled();
-    criterionTop.remove();
-    question.remove();
+    scrollAssessmentTarget({ kind: "question", questionId: "q-missing" }, null);
+
+    expect(viewport.scrollTop).toBe(630);
+    viewport.remove();
   });
 });

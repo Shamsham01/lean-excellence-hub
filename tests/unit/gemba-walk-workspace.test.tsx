@@ -26,16 +26,41 @@ import {
 } from "@/components/gemba/walk-workspace";
 import { gembaWalkPromptStorageKey } from "@/modules/operational/gemba-walk-prompt";
 
+const searchParamsState = vi.hoisted(() => ({
+  prompt: null as string | null,
+}));
+
+function syncMockPromptNavigation(path: string) {
+  const url = new URL(path, "http://localhost");
+  searchParamsState.prompt = url.searchParams.get("prompt");
+  window.history.replaceState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
 const routerMocks = vi.hoisted(() => ({
   refresh: vi.fn(),
-  replace: vi.fn(),
+  push: vi.fn((path: string) => {
+    const url = new URL(path, "http://localhost");
+    searchParamsState.prompt = url.searchParams.get("prompt");
+    window.history.pushState(null, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }),
+  replace: vi.fn((path: string) => {
+    syncMockPromptNavigation(path);
+  }),
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     refresh: routerMocks.refresh,
-    push: vi.fn(),
+    push: routerMocks.push,
     replace: routerMocks.replace,
+  }),
+  usePathname: () => "/platform/gemba/walks/walk-1",
+  useSearchParams: () => ({
+    get: (key: string) => (key === "prompt" ? searchParamsState.prompt : null),
+    toString: () =>
+      searchParamsState.prompt ? `prompt=${searchParamsState.prompt}` : "",
   }),
   unstable_rethrow: (error: unknown) => {
     throw error;
@@ -157,6 +182,7 @@ function confirmCompleteWalk() {
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
+  searchParamsState.prompt = null;
   window.history.replaceState(null, "", "/");
 });
 
@@ -780,6 +806,56 @@ describe("GembaWalkWorkspace answer state", () => {
     });
   });
 
+  it("prefers the URL prompt over session storage after browser back", async () => {
+    sessionStorage.setItem(gembaWalkPromptStorageKey("walk-1"), SECOND_ID);
+    searchParamsState.prompt = SECOND_ID;
+    window.history.replaceState(
+      null,
+      "",
+      `/platform/gemba/walks/walk-1?prompt=${SECOND_ID}`,
+    );
+    renderWorkspace();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "What help does the team need?" }),
+      ).toBeVisible();
+    });
+
+    searchParamsState.prompt = SECOND_ID;
+    window.history.replaceState(
+      null,
+      "",
+      `/platform/gemba/walks/walk-1?prompt=${FIRST_ID}`,
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", {
+          name: "What did you observe on the operations floor?",
+        }),
+      ).toBeVisible();
+    });
+    expect(sessionStorage.getItem(gembaWalkPromptStorageKey("walk-1"))).toBe(
+      FIRST_ID,
+    );
+  });
+
+  it("pushes a history entry when moving to the next prompt", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(routerMocks.push).toHaveBeenCalledWith(
+        `/platform/gemba/walks/walk-1?prompt=${SECOND_ID}`,
+        { scroll: false },
+      );
+    });
+    expect(routerMocks.replace).not.toHaveBeenCalledWith(
+      `/platform/gemba/walks/walk-1?prompt=${SECOND_ID}`,
+      { scroll: false },
+    );
+  });
+
   it("blocks completion while an observation editor is dirty", async () => {
     const onComplete = vi.fn().mockResolvedValue({ ok: true });
     renderWorkspace({
@@ -913,7 +989,9 @@ describe("GembaWalkWorkspace answer state", () => {
         "RPC failed",
       );
     });
-    expect(routerMocks.replace).not.toHaveBeenCalled();
+    expect(routerMocks.replace).not.toHaveBeenCalledWith(
+      "/platform/gemba/walks/walk-1",
+    );
     expect(screen.getByTestId("gemba-walk-workspace")).toBeVisible();
     expect(screen.getByTestId("gemba-complete-walk")).toBeVisible();
   });

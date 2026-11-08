@@ -1,6 +1,11 @@
 "use client";
 
-import { unstable_rethrow, useRouter } from "next/navigation";
+import {
+  unstable_rethrow,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -55,13 +60,20 @@ import {
 import {
   buildGembaWalkPromptSearch,
   clearStoredGembaWalkPromptId,
+  GEMBA_WALK_PROMPT_PARAM,
   gembaWalkPath,
   readGembaWalkPromptIdFromSearch,
   readStoredGembaWalkPromptId,
-  resolveGembaWalkPromptIndex,
+  resolveActiveGembaWalkPromptIndex,
+  resolveGembaWalkPromptId,
   subscribeGembaWalkPromptLocation,
   writeStoredGembaWalkPromptId,
 } from "@/modules/operational/gemba-walk-prompt";
+
+function readPromptIdFromWindowLocation() {
+  if (typeof window === "undefined") return null;
+  return readGembaWalkPromptIdFromSearch(window.location.search);
+}
 
 type Section = {
   id: string;
@@ -184,6 +196,19 @@ export function GembaWalkWorkspace({
   onComplete = completeGembaWalk,
 }: GembaWalkWorkspaceProps) {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const promptFromRouter =
+    searchParams.get(GEMBA_WALK_PROMPT_PARAM)?.trim() ?? null;
+  const promptFromWindow = useSyncExternalStore(
+    subscribeGembaWalkPromptLocation,
+    readPromptIdFromWindowLocation,
+    () => null,
+  );
+  const urlPromptId = resolveGembaWalkPromptId({
+    windowPromptId: promptFromWindow,
+    routerPromptId: promptFromRouter,
+  });
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
@@ -191,24 +216,14 @@ export function GembaWalkWorkspace({
     () => sections.flatMap((section) => section.questions.map((q) => q.id)),
     [sections],
   );
-  const restoredPromptId = useSyncExternalStore(
-    subscribeGembaWalkPromptLocation,
-    () =>
-      readGembaWalkPromptIdFromSearch(window.location.search) ??
-      readStoredGembaWalkPromptId(walkId),
-    () => initialPromptId,
-  );
-  const restoredIndex = resolveGembaWalkPromptIndex({
+  const storedPromptId = readStoredGembaWalkPromptId(walkId);
+  const promptIndex = resolveActiveGembaWalkPromptIndex({
     questionIds,
-    preferredQuestionId: restoredPromptId ?? initialPromptId,
-    storedQuestionId: restoredPromptId,
+    urlPromptId,
+    initialPromptId,
+    storedPromptId,
   });
-  const [userIndex, setUserIndex] = useState<number | null>(null);
-  const [indexWalkId, setIndexWalkId] = useState(walkId);
-  if (indexWalkId !== walkId) {
-    setIndexWalkId(walkId);
-    setUserIndex(null);
-  }
+  const urlCanonicalizedWalkIdRef = useRef<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -229,11 +244,10 @@ export function GembaWalkWorkspace({
   const handleObservationsChange = useCallback((next: WalkObservation[]) => {
     setLiveObservations(next);
   }, []);
-  const index = userIndex ?? restoredIndex;
   const safeIndex =
     flatQuestions.length === 0
       ? 0
-      : Math.min(Math.max(index, 0), flatQuestions.length - 1);
+      : Math.min(Math.max(promptIndex, 0), flatQuestions.length - 1);
   const current = flatQuestions[safeIndex];
   const progress = flatQuestions.length
     ? Math.round(((safeIndex + 1) / flatQuestions.length) * 100)
@@ -255,28 +269,73 @@ export function GembaWalkWorkspace({
     saveAnswer: saveGembaWalkAnswer,
   });
 
+  const syncPromptLocation = useCallback(
+    (questionId: string, mode: "push" | "replace" = "replace") => {
+      writeStoredGembaWalkPromptId(walkId, questionId);
+      const nextPath = `${pathname}${buildGembaWalkPromptSearch(questionId)}`;
+      const currentPath = `${pathname}${window.location.search}`;
+      if (currentPath === nextPath) return;
+      const navigate = mode === "push" ? router.push : router.replace;
+      navigate(nextPath, { scroll: false });
+    },
+    [pathname, router, walkId],
+  );
+
   useEffect(() => {
-    const questionId = flatQuestions[safeIndex]?.question.id;
-    if (!questionId || status !== "in_progress" || completing) return;
-    writeStoredGembaWalkPromptId(walkId, questionId);
-    const nextSearch = buildGembaWalkPromptSearch(questionId);
-    if (window.location.search !== nextSearch) {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${nextSearch}`,
-      );
+    if (status !== "in_progress" || completing) return;
+
+    const windowPrompt = readPromptIdFromWindowLocation();
+    if (windowPrompt) {
+      writeStoredGembaWalkPromptId(walkId, windowPrompt);
+      if (urlCanonicalizedWalkIdRef.current !== walkId) {
+        urlCanonicalizedWalkIdRef.current = walkId;
+      }
+      return;
     }
-  }, [flatQuestions, safeIndex, status, walkId, completing]);
+
+    if (urlCanonicalizedWalkIdRef.current === walkId) {
+      return;
+    }
+
+    const bootstrapIndex = resolveActiveGembaWalkPromptIndex({
+      questionIds,
+      urlPromptId: null,
+      initialPromptId,
+      storedPromptId: null,
+    });
+    const questionId = flatQuestions[bootstrapIndex]?.question.id;
+    if (!questionId) return;
+    syncPromptLocation(questionId, "replace");
+    urlCanonicalizedWalkIdRef.current = walkId;
+  }, [
+    completing,
+    flatQuestions,
+    initialPromptId,
+    questionIds,
+    status,
+    syncPromptLocation,
+    walkId,
+  ]);
+
+  useEffect(() => {
+    const viewport = document.querySelector(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = 0;
+    }
+  }, [safeIndex]);
 
   async function moveTo(nextIndex: number) {
     if (!current) return;
     if (nextIndex === safeIndex) return;
+    const target = flatQuestions[nextIndex];
+    if (!target) return;
     setNavigating(true);
     try {
       const saved = await flushQuestion(current.question.id);
       if (!saved) return;
-      setUserIndex(nextIndex);
+      syncPromptLocation(target.question.id, "push");
     } finally {
       setNavigating(false);
     }

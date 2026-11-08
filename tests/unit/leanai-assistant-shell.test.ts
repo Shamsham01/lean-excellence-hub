@@ -42,7 +42,7 @@ describe("LeanAI assistant platform shell integration", () => {
     );
     expect(assistantShell).toContain("fallback={null}");
     expect(assistantShell).toContain(
-      "lg:h-full lg:max-h-full lg:overflow-hidden",
+      "h-full max-h-full min-h-0 min-w-0 flex-1 overflow-hidden",
     );
     expect(assistantShell).toContain('data-testid="leanai-assistant-shell"');
     expect(assistantShell.indexOf("{children}")).toBe(
