@@ -332,6 +332,13 @@ body {
     transparent;
 }
 
+@media (max-width: 1023px) {
+  .platform-main-viewport {
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .platform-scroll::-webkit-scrollbar {
   width: 6px;
 }

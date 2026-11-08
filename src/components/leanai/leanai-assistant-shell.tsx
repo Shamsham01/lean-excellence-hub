@@ -19,7 +19,7 @@ export function LeanAiAssistantShell({
   return (
     <div
       data-testid="leanai-assistant-shell"
-      className="flex min-h-0 min-w-0 flex-1 lg:h-full lg:max-h-full lg:overflow-hidden"
+      className="flex h-full max-h-full min-h-0 min-w-0 flex-1 overflow-hidden"
     >
       {children}
       <Suspense fallback={null}>
