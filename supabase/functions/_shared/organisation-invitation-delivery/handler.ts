@@ -23,7 +23,10 @@ type DispatchDependencies = {
     text: string;
     idempotencyKey: string;
   }) => Promise<{ providerMessageId: string | null }>;
-  createServiceClient: (url: string, serviceKey: string) => ReturnType<typeof createClient>;
+  createServiceClient: (
+    url: string,
+    serviceKey: string,
+  ) => ReturnType<typeof createClient>;
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -51,14 +54,28 @@ function formatFrom(fromName: string, fromEmail: string): string {
   return `${fromName.trim()} <${fromEmail}>`;
 }
 
-async function inboxProofDigestHex(inboxProof: string): Promise<string> {
+async function sha256ByteaHex(value: string): Promise<string> {
   const hash = await crypto.subtle.digest(
     "SHA-256",
-    new TextEncoder().encode(inboxProof),
+    new TextEncoder().encode(value),
   );
   return `\\x${[...new Uint8Array(hash)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("")}`;
+}
+
+function normalisePgByteaHex(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.startsWith("\\x")) {
+    return trimmed;
+  }
+  if (/^[0-9a-f]{64}$/.test(trimmed)) {
+    return `\\x${trimmed}`;
+  }
+  return trimmed;
 }
 
 function buildActivateUrl(
@@ -67,7 +84,7 @@ function buildActivateUrl(
   inboxProof: string,
 ): string {
   const url = new URL(
-    `/invitations/${encodeURIComponent(invitationToken)}/activate`,
+    `/api/invitations/${encodeURIComponent(invitationToken)}/stage-inbox-proof`,
     appOrigin,
   );
   url.searchParams.set("inbox_proof", inboxProof);
@@ -112,19 +129,19 @@ export async function handleOrganisationInvitationDeliveryRequest(
       return jsonResponse({ error: "Worker is not configured." }, 500);
     }
     const appOrigin = readRequiredEnv(dependencies.readEnv, "APP_ORIGIN");
-    const fromEmail = readRequiredEnv(
-      dependencies.readEnv,
-      "AUTH_EMAIL_FROM",
-    );
+    const fromEmail = readRequiredEnv(dependencies.readEnv, "AUTH_EMAIL_FROM");
     const fromName =
       dependencies.readEnv("AUTH_EMAIL_FROM_NAME")?.trim() ||
       "Lean Excellence Hub";
 
     const client = dependencies.createServiceClient(supabaseUrl, serviceKey);
 
-    const begin = await client.rpc("begin_organisation_invitation_delivery_send", {
-      target_delivery_id: payload.delivery_id,
-    });
+    const begin = await client.rpc(
+      "begin_organisation_invitation_delivery_send",
+      {
+        target_delivery_id: payload.delivery_id,
+      },
+    );
 
     const row = begin.data?.[0] as
       | {
@@ -134,14 +151,37 @@ export async function handleOrganisationInvitationDeliveryRequest(
           recipient_email: string;
           organisation_name: string;
           intended_display_name: string | null;
+          invitation_token_digest: string;
+          inbox_proof_digest: string;
         }
       | undefined;
 
     if (begin.error || !row?.delivery_id || !row.lease_token) {
-      return jsonResponse(
-        { error: "Delivery is not available to send." },
-        409,
-      );
+      return jsonResponse({ error: "Delivery is not available to send." }, 409);
+    }
+
+    const submittedTokenDigest = await sha256ByteaHex(payload.invitation_token);
+    const submittedProofDigest = await sha256ByteaHex(payload.inbox_proof);
+    const expectedTokenDigest = normalisePgByteaHex(
+      row.invitation_token_digest,
+    );
+    const expectedProofDigest = normalisePgByteaHex(row.inbox_proof_digest);
+
+    if (
+      !expectedTokenDigest ||
+      !expectedProofDigest ||
+      submittedTokenDigest.toLowerCase() !== expectedTokenDigest ||
+      submittedProofDigest.toLowerCase() !== expectedProofDigest
+    ) {
+      await client.rpc("fail_organisation_invitation_delivery_for_worker", {
+        target_delivery_id: row.delivery_id,
+        target_lease_token: row.lease_token,
+        target_error_code: "delivery_mismatch",
+        target_error_detail:
+          "Invitation token or inbox proof did not match the delivery record.",
+        target_retryable: false,
+      });
+      return jsonResponse({ error: "Delivery payload mismatch." }, 400);
     }
 
     const activateUrl = buildActivateUrl(

@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -8,22 +8,28 @@ import {
   invitationContinuePath,
   INVITATION_TOKEN_PATTERN,
 } from "@/modules/identity/invitation-constants";
-import { attestOrganisationInvitationInbox } from "@/modules/identity/attest-invitation-inbox";
+import {
+  INVITATION_INBOX_PROOF_COOKIE,
+  isInvitationInboxProofValue,
+} from "@/modules/identity/invitation-inbox-cookie";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
+import { redeemOrganisationInvitationInboxProof } from "@/modules/identity/redeem-invitation-inbox";
 import { invitationTokenDigest } from "@/modules/identity/invitations";
 import { passwordUpdateSchema } from "@/modules/identity/auth-input";
-import { resolveApplicationOrigin } from "@/platform/application-origin";
+import { recordAuthenticationRateLimitFailure } from "@/platform/supabase/secret";
 import {
   assertInvitationInboxVerifiedForBinding,
   createConfirmedInvitationAuthUser,
   recordInvitationSignupDisplayName,
 } from "@/platform/supabase/secret";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { getServerEnvironment } from "@/platform/env";
+import { createHmac } from "node:crypto";
+import { headers } from "next/headers";
 
 const activationSchema = z
   .object({
     token: z.string().regex(INVITATION_TOKEN_PATTERN),
-    inboxProof: z.string().min(16).max(64).optional().or(z.literal("")),
     displayName: z.string().trim().max(120).optional().or(z.literal("")),
     password: passwordUpdateSchema.shape.password,
     confirmPassword: z.string(),
@@ -70,7 +76,6 @@ function mapSignupError(message: string) {
 export async function createInvitationAccount(formData: FormData) {
   const parsed = activationSchema.safeParse({
     token: formData.get("token"),
-    inboxProof: formData.get("inboxProof") ?? "",
     displayName: formData.get("displayName") ?? "",
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
@@ -117,10 +122,35 @@ export async function createInvitationAccount(formData: FormData) {
     }
   }
 
-  const inboxProof = parsed.data.inboxProof?.trim();
-  if (inboxProof) {
-    await attestOrganisationInvitationInbox(parsed.data.token, inboxProof);
+  const cookieStore = await cookies();
+  const inboxProof = cookieStore.get(INVITATION_INBOX_PROOF_COOKIE)?.value;
+
+  if (!isInvitationInboxProofValue(inboxProof)) {
+    await recordInvitationActivationFailure(parsed.data.token);
+    return {
+      error:
+        "Open the invitation email and use the Create account button before setting your password.",
+    };
   }
+
+  const redeemed = await redeemOrganisationInvitationInboxProof({
+    invitationToken: parsed.data.token,
+    inboxProof: inboxProof!,
+    bindingId,
+  });
+
+  if (!redeemed) {
+    await recordInvitationActivationFailure(parsed.data.token);
+    return {
+      error:
+        "This invitation email link has already been used or is no longer valid. Ask your administrator to resend the invitation.",
+    };
+  }
+
+  cookieStore.delete({
+    name: INVITATION_INBOX_PROOF_COOKIE,
+    path: `/invitations/${parsed.data.token}/activate`,
+  });
 
   const inboxVerified = await assertInvitationInboxVerifiedForBinding(bindingId);
   if (inboxVerified.error || inboxVerified.data !== true) {
@@ -157,10 +187,23 @@ export async function createInvitationAccount(formData: FormData) {
   };
 }
 
-export async function ensureActivationAllowed(
-  token: string,
-  inboxProof?: string | null,
-) {
+function hashRateLimitKey(token: string) {
+  const pepper = getServerEnvironment().AUTH_RATE_LIMIT_PEPPER;
+  return `\\x${createHmac("sha256", pepper)
+    .update(`invitation-activate:${token}`)
+    .digest("hex")}`;
+}
+
+async function recordInvitationActivationFailure(token: string) {
+  await recordAuthenticationRateLimitFailure(
+    "invitation",
+    "recipient",
+    hashRateLimitKey(token),
+    30,
+  );
+}
+
+export async function ensureActivationAllowed(token: string) {
   if (!INVITATION_TOKEN_PATTERN.test(token)) {
     redirect("/login");
   }
@@ -174,10 +217,6 @@ export async function ensureActivationAllowed(
   const lifecycle = await loadInvitationLifecycle(token);
   if (lifecycle.state !== "valid" || !lifecycle.recipientEmail) {
     redirect(`/invitations/${token}`);
-  }
-
-  if (inboxProof?.trim()) {
-    await attestOrganisationInvitationInbox(token, inboxProof.trim());
   }
 
   return lifecycle;

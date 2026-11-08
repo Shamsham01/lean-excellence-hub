@@ -15,12 +15,12 @@ import { createInvitationAccount } from "@/app/invitations/[token]/activate/acti
 
 export function InvitationActivateForm({
   token,
-  inboxProof,
+  hasInboxProofCookie,
   lifecycle,
   loginPath,
 }: {
   token: string;
-  inboxProof: string;
+  hasInboxProofCookie: boolean;
   lifecycle: InvitationLifecycleView;
   loginPath: string;
 }) {
@@ -38,7 +38,6 @@ export function InvitationActivateForm({
 
     const formData = new FormData();
     formData.set("token", token);
-    formData.set("inboxProof", inboxProof);
     formData.set("displayName", displayName);
     formData.set("password", password);
     formData.set("confirmPassword", confirmPassword);
@@ -86,7 +85,7 @@ export function InvitationActivateForm({
 
       {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
-      {!inboxProof ? (
+      {!hasInboxProofCookie ? (
         <InlineAlert tone="warning">
           Open the invitation email and use the Create account button on this
           device before setting your password.

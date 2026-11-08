@@ -1,6 +1,7 @@
 import { execFileSync, execSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
+import { expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { invitationExpiresAt } from "@/modules/identity/invitation-constants";
@@ -316,9 +317,15 @@ function runPsql(
   sql: string,
   variables: Record<string, string>,
   query: boolean,
+  uuidVariableKeys?: ReadonlySet<string>,
 ) {
-  for (const value of Object.values(variables)) {
-    assertUuid(value);
+  const uuidKeys = uuidVariableKeys ?? new Set(Object.keys(variables));
+  for (const [key, value] of Object.entries(variables)) {
+    if (uuidKeys.has(key)) {
+      assertUuid(value);
+    } else if (/['\\]/.test(value)) {
+      throw new Error(`Refusing unsafe psql variable ${key}.`);
+    }
   }
 
   return execFileSync(
@@ -348,15 +355,147 @@ function runPsql(
   );
 }
 
-function runLocalSql(sql: string, variables: Record<string, string>) {
-  runPsql(sql, variables, false);
+function runLocalSql(
+  sql: string,
+  variables: Record<string, string>,
+  uuidVariableKeys?: ReadonlySet<string>,
+) {
+  runPsql(sql, variables, false, uuidVariableKeys);
 }
 
-function queryLocalSql(sql: string, variables: Record<string, string>) {
-  return runPsql(sql, variables, true)
+function queryLocalSql(
+  sql: string,
+  variables: Record<string, string>,
+  uuidVariableKeys?: ReadonlySet<string>,
+) {
+  return runPsql(sql, variables, true, uuidVariableKeys)
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+}
+
+function invitationInboxProofDigest(inboxProof: string) {
+  return `\\x${createHash("sha256").update(inboxProof).digest("hex")}`;
+}
+
+export async function issueInvitationWithDeliveredInboxProof(
+  ownerClient: SupabaseClient,
+  input: Parameters<typeof issueInvitationForEmail>[1],
+) {
+  const issued = await issueInvitationForEmail(ownerClient, input);
+  const invitationId = queryLocalSql(
+    `select invitation.id::text
+     from public.organisation_invitations invitation
+     where invitation.canonical_recipient = lower(:'email')
+       and invitation.status = 'pending'
+     order by invitation.created_at desc
+     limit 1;`,
+    { email: input.email },
+    new Set(),
+  )[0];
+
+  if (!invitationId) {
+    throw new Error("Issued invitation row was not found for delivered proof.");
+  }
+
+  assertUuid(invitationId);
+  const inboxProof = randomBytes(32).toString("base64url");
+  const { error: registerError } = await ownerClient.rpc(
+    "register_organisation_invitation_delivery",
+    {
+      target_invitation_id: invitationId,
+      target_inbox_proof_digest: invitationInboxProofDigest(inboxProof),
+    },
+  );
+  if (registerError) {
+    throw registerError;
+  }
+
+  runLocalSql(
+    `update private.organisation_invitation_deliveries
+       set status = 'sent',
+           sent_at = statement_timestamp(),
+           next_attempt_at = statement_timestamp()
+     where invitation_id = (:'invitation_id')::uuid
+       and cancelled_at is null;`,
+    { invitation_id: invitationId },
+  );
+
+  return {
+    ...issued,
+    invitationId,
+    inboxProof,
+    activateEmailPath: `/api/invitations/${issued.token}/stage-inbox-proof?inbox_proof=${encodeURIComponent(inboxProof)}`,
+  };
+}
+
+export async function createAccountThroughInvitationEmail(
+  page: import("@playwright/test").Page,
+  input: {
+    activateEmailPath: string;
+    password: string;
+  },
+) {
+  const origin = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+  await page.goto(
+    input.activateEmailPath.startsWith("http")
+      ? input.activateEmailPath
+      : `${origin}${input.activateEmailPath}`,
+  );
+  await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate$/, {
+    timeout: 30_000,
+  });
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).some(
+        (cookie) => cookie.name === "leh_invitation_inbox_proof",
+      ),
+    )
+    .toBe(true);
+  await page.locator("#password").fill(input.password);
+  await page.locator("#confirm-password").fill(input.password);
+  await page
+    .getByRole("button", { name: "Create account and continue" })
+    .click();
+  await expect(page).toHaveURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
+    timeout: 30_000,
+  });
+}
+
+export async function prefetchInvitationActivateUrl(activateEmailPath: string) {
+  const origin = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+  const url = activateEmailPath.startsWith("http")
+    ? activateEmailPath
+    : `${origin}${activateEmailPath}`;
+  let current = url;
+  for (let hop = 0; hop < 6; hop += 1) {
+    const response = await fetch(current, {
+      redirect: "manual",
+      headers: { accept: "text/html" },
+    });
+    if (response.status < 300 || response.status >= 400) {
+      return;
+    }
+    const location = response.headers.get("location");
+    if (!location) {
+      return;
+    }
+    current = new URL(location, current).toString();
+  }
+}
+
+export async function countEmailsToRecipient(email: string) {
+  const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
+  const response = await fetch(`${mailpitUrl}/api/v1/messages`);
+  if (!response.ok) {
+    return 0;
+  }
+  const payload = (await response.json()) as {
+    messages?: Array<{ To?: Array<{ Address: string }> }>;
+  };
+  return (payload.messages ?? []).filter((entry) =>
+    entry.To?.some((recipient) => recipient.Address === email),
+  ).length;
 }
 
 export function expireInvitationSignupBinding(bindingId: string) {

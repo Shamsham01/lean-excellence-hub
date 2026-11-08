@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
 import type { Database } from "@/platform/supabase/database.types";
 
-function createSecretClient() {
+export function createSecretClient() {
   const publicEnvironment = getPublicEnvironment();
   const serverEnvironment = getServerEnvironment();
 
@@ -182,7 +182,9 @@ export async function recordInvitationSignupDisplayName(
   });
 }
 
-export async function assertInvitationInboxVerifiedForBinding(bindingId: string) {
+export async function assertInvitationInboxVerifiedForBinding(
+  bindingId: string,
+) {
   return createSecretClient().rpc(
     "assert_invitation_inbox_verified_for_binding",
     {
@@ -197,6 +199,19 @@ export async function createConfirmedInvitationAuthUser(input: {
   invitationSignupBindingId: string;
 }) {
   const client = createSecretClient();
+  const authorized = await client.rpc("authorize_invitation_identity_signup", {
+    target_binding_id: input.invitationSignupBindingId,
+    target_user_email: input.email,
+  });
+
+  if (authorized.error || authorized.data !== true) {
+    return {
+      error: new Error(
+        "Account creation requires a valid organisation invitation.",
+      ),
+    };
+  }
+
   const created = await client.auth.admin.createUser({
     email: input.email,
     password: input.password,

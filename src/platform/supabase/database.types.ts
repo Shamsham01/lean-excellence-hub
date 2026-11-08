@@ -12860,6 +12860,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      authorize_invitation_identity_signup: {
+        Args: { target_binding_id: string; target_user_email: string }
+        Returns: boolean
+      }
       award_recognition: {
         Args: {
           target_contribution_summaries?: string[]
@@ -12882,7 +12886,9 @@ export type Database = {
         Returns: {
           delivery_id: string
           delivery_key: string
+          inbox_proof_digest: string
           intended_display_name: string
+          invitation_token_digest: string
           lease_token: string
           organisation_name: string
           provider_idempotency_key: string
@@ -15149,6 +15155,14 @@ export type Database = {
         Args: { target_problem_solving_case_id: string }
         Returns: number
       }
+      redeem_organisation_invitation_inbox_proof: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
       register_organisation_invitation_delivery: {
         Args: {
           target_inbox_proof_digest: string
@@ -15979,6 +15993,13 @@ export type Database = {
       }
       validate_benefit_realisation_entry: {
         Args: { target_entry_id: string }
+        Returns: boolean
+      }
+      validate_organisation_invitation_inbox_proof_staging: {
+        Args: {
+          invitation_token_digest: string
+          target_inbox_proof_digest: string
+        }
         Returns: boolean
       }
       validate_people_invitation_import_job: {
