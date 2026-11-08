@@ -5,6 +5,7 @@ import {
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
+import { navigateGembaPrompt } from "./helpers/gemba-walk-navigation";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -31,11 +32,8 @@ async function moveGembaPromptWithRecovery(
   direction: "Next" | "Previous",
   expectedPrompt: string,
 ) {
-  const expectedHeading = page.getByRole("heading", { name: expectedPrompt });
-  await page.getByRole("button", { name: direction, exact: true }).click();
-
   try {
-    await expect(expectedHeading).toBeVisible({ timeout: 5_000 });
+    await navigateGembaPrompt(page, direction, expectedPrompt);
     return;
   } catch {
     // A compiled-server Server Action can persist the mutation while its RSC
@@ -46,14 +44,8 @@ async function moveGembaPromptWithRecovery(
       timeout: 15_000,
     });
     await expectWorkspaceHealthy(page);
+    await navigateGembaPrompt(page, direction, expectedPrompt);
   }
-
-  if (await expectedHeading.isVisible().catch(() => false)) {
-    return;
-  }
-
-  await page.getByRole("button", { name: direction, exact: true }).click();
-  await expect(expectedHeading).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe("platform reliability after shared RSC refresh", () => {

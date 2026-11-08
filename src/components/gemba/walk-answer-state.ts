@@ -152,6 +152,7 @@ export function useWalkAnswerState({
   >(() => undefined);
 
   const answersFingerprint = JSON.stringify(answers);
+  const resetWalkIdRef = useRef(walkId);
 
   // Keep confirmedRef in lockstep with committed answers so flushQuestion / moveTo
   // never read a stale fingerprint and spuriously re-enqueue the same payload while
@@ -171,6 +172,8 @@ export function useWalkAnswerState({
   useEffect(() => {
     const snapshot = answersSnapshotRef.current;
     const runtimes = runtimesRef.current;
+    const walkChanged = resetWalkIdRef.current !== walkId;
+    resetWalkIdRef.current = walkId;
     epochRef.current += 1;
     for (const runtime of runtimes.values()) {
       if (runtime.debounceTimer) {
@@ -182,7 +185,7 @@ export function useWalkAnswerState({
       runtime.latest = null;
       runtime.lastFailed = null;
       const waiters = runtime.waiters.splice(0);
-      for (const waiter of waiters) waiter(false);
+      for (const waiter of waiters) waiter(!walkChanged);
     }
     setLocalAnswers(cloneAnswers(snapshot));
     setConfirmedAnswers(cloneAnswers(snapshot));
