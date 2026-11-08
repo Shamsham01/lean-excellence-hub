@@ -5,6 +5,7 @@ import { useState } from "react";
 import { awardRecognition } from "@/app/(platform)/platform/recognition/actions";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { navigateTo } from "@/lib/navigation/navigate";
@@ -135,14 +136,14 @@ export function AwardRecognitionForm({
             testId="recognition-recipient-select"
           />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button
+          <ModuleWriteButton
             type="submit"
             className="min-h-11"
             disabled={!unitId || !recipientId}
             data-testid="award-recognition-submit"
           >
             Award
-          </Button>
+          </ModuleWriteButton>
         </form>
       </CardContent>
     </Card>

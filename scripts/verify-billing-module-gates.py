@@ -9,6 +9,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "supabase/migrations"
 GATE_FILE = MIGRATIONS / "20261109000000_billing_comprehensive_module_mutation_gates.sql"
+INVENTORY = ROOT / "docs/operations/rpc-entitlement-inventory.md"
+
+STRUCTURAL_REWRITES = frozenset(
+    {
+        "remove_training_session_participant",
+        "finish_ai_run",
+        "fail_ai_run",
+        "start_ai_run",
+    }
+)
+
+REQUIRED_ASSERT_SNIPPETS: dict[str, list[str]] = {
+    "record_ai_proposal_accepted": ["assert_ai_session_module_entitled"],
+    "reject_ai_proposal": ["assert_ai_session_module_entitled"],
+    "start_ai_run": ["assert_ai_session_module_entitled", "ai_credit_try_reserve"],
+    "finish_ai_run": ["ai_credit_settle"],
+    "fail_ai_run": ["ai_credit_release"],
+    "remove_training_session_participant": [
+        "assert_current_organisation_module_entitled('training')"
+    ],
+    "preauthorize_workforce_provision": [],  # foundation — must not carry people_hr assert
+}
 DEPRIORITISE = frozenset(
     {
         "20261108235000_billing_09_extended_module_gates.sql",
@@ -18,6 +40,18 @@ DEPRIORITISE = frozenset(
 )
 
 ASSERT_PATTERNS = [
+    re.compile(
+        r"if coalesce\(target_module_key, ''\) not in \('onboarding'\) then\s*"
+        r"perform private\.assert_current_organisation_module_entitled\('problem_solving'\);\s*"
+        r"end if;",
+        re.I | re.S,
+    ),
+    re.compile(
+        r"if not coalesce\(\s*private\.ai_credit_try_reserve\([^;]+;\s*end if;",
+        re.I | re.S,
+    ),
+    re.compile(r"perform private\.ai_credit_settle\([^;]+;", re.I),
+    re.compile(r"perform private\.ai_credit_release\([^;]+;", re.I),
     re.compile(r"perform private\.assert_current_organisation_module_entitled\([^)]+\);", re.I),
     re.compile(r"perform private\.assert_ai_session_module_entitled\([^;]+;", re.I | re.S),
 ]
@@ -64,11 +98,25 @@ def canonical_private(name: str) -> str | None:
 
 
 def main() -> int:
+    if not INVENTORY.exists():
+        print(f"Missing {INVENTORY}", file=sys.stderr)
+        return 1
     if not GATE_FILE.exists():
         print(f"Missing {GATE_FILE}", file=sys.stderr)
         return 1
     gated = extract_all(GATE_FILE)
     failures: list[str] = []
+    for fn, snippets in REQUIRED_ASSERT_SNIPPETS.items():
+        body = gated.get(f"private.{fn}", "")
+        if not body:
+            failures.append(f"{fn}: missing from gate migration")
+            continue
+        for snippet in snippets:
+            if snippet and snippet not in body:
+                failures.append(f"{fn}: missing required gate/hook `{snippet}`")
+        if fn == "preauthorize_workforce_provision":
+            if "assert_current_organisation_module_entitled('people_hr')" in body:
+                failures.append(f"{fn}: foundation RPC must not be people_hr gated")
     for key, body in sorted(gated.items()):
         if not key.startswith("private."):
             continue
@@ -77,7 +125,7 @@ def main() -> int:
         if not base:
             failures.append(f"{name}: no canonical baseline")
             continue
-        if normalize(body) != normalize(base):
+        if name not in STRUCTURAL_REWRITES and normalize(body) != normalize(base):
             failures.append(f"{name}: body drift vs {canonical_private.__name__}")
     print(f"Checked {len([k for k in gated if k.startswith('private.')])} private functions")
     if failures:

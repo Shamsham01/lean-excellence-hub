@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 
-import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { invokeWorkforceProvision } from "@/modules/workforce-provision/client";
@@ -37,11 +36,6 @@ export async function createWorkforceUser(
   const canProvision = await currentMemberHasPermission("workforce.provision");
   if (!canProvision) {
     return { error: "You do not have permission to create workforce users." };
-  }
-
-  const moduleGate = await assertPlanModuleWrite("people_hr");
-  if (!moduleGate.ok) {
-    return { error: moduleGate.error };
   }
 
   const supabase = await createServerSupabaseClient();

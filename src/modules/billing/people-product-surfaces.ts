@@ -12,7 +12,6 @@ export const PEOPLE_FOUNDATION_ROUTE_PREFIXES = [
 /** Paths that require `people_hr` module entitlement (in addition to RBAC). */
 /** Job functions + org structure stay on all plans (5S/Gemba/Actions/invites depend on them). */
 export const PEOPLE_HR_ROUTE_PREFIXES = [
-  "/platform/settings/people/create",
   "/platform/settings/people/import",
   "/platform/people/", // membership HR admin lives under .../admin (layout-gated)
 ] as const;

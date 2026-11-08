@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -136,6 +136,17 @@ select throws_ok(
   '42501',
   'leanai credit allowance exceeded for this period',
   'second reserve in same period fails after first reservation'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.organisation_ai_credit_reservations reservation
+    where reservation.organisation_id = (select id from credit_ids where key = 'organisation')
+      and reservation.idempotency_key = 'credit-test-reserve-1'
+      and reservation.status = 'reserved'
+  ),
+  'direct reserve row remains reserved before settle'
 );
 
 select * from finish();

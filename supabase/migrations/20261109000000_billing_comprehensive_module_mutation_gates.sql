@@ -5053,6 +5053,57 @@ begin
   return new_project_id;
 end; $$;
 
+create or replace function private.create_job_function(
+  target_name text,
+  target_code text,
+  target_description text default null
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  new_job_function_id uuid;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.can_manage_job_functions(org_id) then
+    raise exception 'job function creation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  insert into public.job_functions (
+    organisation_id,
+    name,
+    code,
+    description,
+    created_by_membership_id
+  )
+  values (
+    org_id,
+    btrim(target_name),
+    lower(btrim(target_code)),
+    target_description,
+    actor_membership_id
+  )
+  returning id into new_job_function_id;
+
+  perform private.append_business_audit(
+    org_id,
+    'job_function.created',
+    null,
+    'succeeded',
+    jsonb_build_object('job_function_id', new_job_function_id, 'code', lower(btrim(target_code)))
+  );
+
+  return new_job_function_id;
+end;
+$$;
+
 create or replace function private.create_problem_solving_action(
   target_title text,
   target_problem_solving_case_id uuid,
@@ -8366,8 +8417,6 @@ begin
       using errcode = '42501';
   end if;
 
-  perform private.assert_current_organisation_module_entitled('people_hr');
-
   if not exists (
     select 1
     from public.organisations organisation
@@ -9103,6 +9152,18 @@ begin
       using errcode = '42501';
   end if;
 
+
+  perform private.assert_ai_session_module_entitled(
+    (select s.context_type from public.ai_proposals p
+       join public.ai_runs r on r.id = p.run_id
+       join public.ai_sessions s on s.id = r.ai_session_id
+     where p.organisation_id = org_id and p.id = target_proposal_id),
+    (select s.module_key from public.ai_proposals p
+       join public.ai_runs r on r.id = p.run_id
+       join public.ai_sessions s on s.id = r.ai_session_id
+     where p.organisation_id = org_id and p.id = target_proposal_id)
+  );
+
   select proposal_table.*
   into proposal_row
   from public.ai_proposals proposal_table
@@ -9598,7 +9659,9 @@ begin
       using errcode = '42501';
   end if;
 
-  perform private.assert_current_organisation_module_entitled('problem_solving');
+  if coalesce(target_module_key, '') not in ('onboarding') then
+    perform private.assert_current_organisation_module_entitled('problem_solving');
+  end if;
 
   perform private.leanai_validate_semantic_event_payload(
     target_event_key,
@@ -10007,6 +10070,18 @@ begin
     raise exception 'ai proposal rejection is not authorised'
       using errcode = '42501';
   end if;
+
+
+  perform private.assert_ai_session_module_entitled(
+    (select s.context_type from public.ai_proposals p
+       join public.ai_runs r on r.id = p.run_id
+       join public.ai_sessions s on s.id = r.ai_session_id
+     where p.organisation_id = org_id and p.id = target_proposal_id),
+    (select s.module_key from public.ai_proposals p
+       join public.ai_runs r on r.id = p.run_id
+       join public.ai_sessions s on s.id = r.ai_session_id
+     where p.organisation_id = org_id and p.id = target_proposal_id)
+  );
 
   select proposal_table.*
   into proposal_row
@@ -10640,16 +10715,28 @@ create or replace function private.remove_training_session_participant(
   target_participant_id uuid
 )
 returns boolean
-language sql
+language plpgsql
 volatile
 security definer
 set search_path = ''
 as $$
-  select private.update_training_session_participant_status(
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'operation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  perform private.assert_current_organisation_module_entitled('training');
+
+  return private.update_training_session_participant_status(
     target_session_id,
     target_participant_id,
     'cancelled'
-  )
+  );
+end;
 $$;
 
 create or replace function private.replace_benefit_forecast_periods(
@@ -11460,6 +11547,19 @@ begin
       'context_type', session_row.context_type
     )
   );
+
+
+  if not coalesce(
+    private.ai_credit_try_reserve(
+      new_run_id,
+      btrim(target_idempotency_key),
+      greatest(1::bigint, 1::bigint)
+    ),
+    true
+  ) then
+    raise exception 'leanai credit allowance exceeded for this period'
+      using errcode = '42501';
+  end if;
 
   return new_run_id;
 end;
@@ -13108,6 +13208,53 @@ begin
       'from_status', hypothesis_row.status,
       'to_status', target_status
     )
+  );
+
+  return true;
+end;
+$$;
+
+create or replace function private.update_job_function(
+  target_job_function_id uuid,
+  target_name text,
+  target_description text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+begin
+  if org_id is null
+    or not private.can_manage_job_functions(org_id) then
+    raise exception 'job function update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.job_functions job_function_row
+  set
+    name = btrim(target_name),
+    description = target_description,
+    version = job_function_row.version + 1,
+    updated_at = statement_timestamp()
+  where job_function_row.organisation_id = org_id
+    and job_function_row.id = target_job_function_id
+    and job_function_row.status = 'active';
+
+  if not found then
+    raise exception 'job function not found or not active'
+      using errcode = 'P0002';
+  end if;
+
+  perform private.append_business_audit(
+    org_id,
+    'job_function.updated',
+    null,
+    'succeeded',
+    jsonb_build_object('job_function_id', target_job_function_id)
   );
 
   return true;

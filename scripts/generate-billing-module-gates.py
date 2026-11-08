@@ -49,21 +49,34 @@ AI_ASSERT_BY_PROPOSAL = frozenset(
 AI_ASSERT_PS_MODULE = frozenset(
     {
         "recover_stale_ai_runs_for_problem_solving_case",
-        "record_leanai_semantic_event",
     }
 )
 
 AI_ASSERT_ORG_SETTINGS = frozenset({"sync_leanai_operational_chase_notifications"})
 
-ARTIFACT = Path("/opt/cursor/artifacts/rpc-entitlement-table.md")
+ARTIFACT = ROOT / "docs/operations/rpc-entitlement-inventory.md"
 # Foundation / cross-plan operations — never add plan asserts.
-FOUNDATION_RPC_EXCLUDE = frozenset(
+FOUNDATION_RPC_UNGATED = frozenset(
     {
-        "ensure_problem_solving_methods_provisioned",
         "create_job_function",
         "update_job_function",
+        "preauthorize_workforce_provision",
     }
 )
+FOUNDATION_RPC_EXCLUDE = FOUNDATION_RPC_UNGATED | frozenset(
+    {"ensure_problem_solving_methods_provisioned"}
+)
+
+CANONICAL_SOURCE_FILE = {
+    "finish_ai_run": "20261108233000_billing_07_leanai_credit_lifecycle.sql",
+    "fail_ai_run": "20261108233000_billing_07_leanai_credit_lifecycle.sql",
+}
+
+SQL_DELEGATE_GATES: dict[str, str] = {
+    "remove_training_session_participant": "training",
+}
+
+PROVISIONAL_RUN_CREDIT_ESTIMATE = 1
 MODULE_BY_FUNCTION: dict[str, str] = {}
 PUBLIC_ONLY = frozenset(
     {
@@ -85,7 +98,7 @@ PUBLIC_ONLY = frozenset(
 
 def parse_inventory() -> None:
     if not ARTIFACT.exists():
-        raise SystemExit(f"Missing {ARTIFACT}")
+        raise SystemExit(f"Missing inventory {ARTIFACT} (commit docs/operations/rpc-entitlement-inventory.md)")
     for line in ARTIFACT.read_text().splitlines():
         if not line.startswith("| `"):
             continue
@@ -118,6 +131,8 @@ def parse_inventory() -> None:
     for fn in PUBLIC_ONLY:
         if fn not in MODULE_BY_FUNCTION:
             MODULE_BY_FUNCTION[fn] = "people_hr"
+    for fn in FOUNDATION_RPC_UNGATED:
+        MODULE_BY_FUNCTION.setdefault(fn, "foundation")
 
 
 def migration_order() -> list[Path]:
@@ -151,13 +166,26 @@ def collect_versions(name: str) -> list[tuple[str, str, int]]:
 
 
 def pick_canonical(name: str) -> str | None:
+    preferred = CANONICAL_SOURCE_FILE.get(name)
+    if preferred:
+        path = MIGRATIONS / preferred
+        if path.exists():
+            body = extract_function(path.read_text(), name)
+            if body:
+                return body
     versions = collect_versions(name)
     if not versions:
         return None
-    good = [v for v in versions if v[0] not in DEPRIORITISE]
-    pool = good if good else versions
+    if name in FOUNDATION_RPC_EXCLUDE:
+        for path_name, body, _ in sorted(versions, key=lambda v: v[0], reverse=True):
+            if path_name == OUT_NAME:
+                continue
+            if "assert_current_organisation_module_entitled" not in body:
+                return body
+    good = [v for v in versions if v[0] not in DEPRIORITISE and v[0] != OUT_NAME]
+    pool = good if good else [v for v in versions if v[0] != OUT_NAME]
     pool.sort(key=lambda v: v[0])
-    return pool[-1][1]
+    return pool[-1][1] if pool else versions[-1][1]
 
 
 AUTH_BLOCK = re.compile(
@@ -178,11 +206,82 @@ def after_auth_insert(body: str, insert: str) -> str:
     return body
 
 
+def inject_start_ai_run_credit_reserve(body: str) -> str:
+    if "ai_credit_try_reserve" in body:
+        return body
+    hook = f"""
+  if not coalesce(
+    private.ai_credit_try_reserve(
+      new_run_id,
+      btrim(target_idempotency_key),
+      greatest(1::bigint, {PROVISIONAL_RUN_CREDIT_ESTIMATE}::bigint)
+    ),
+    true
+  ) then
+    raise exception 'leanai credit allowance exceeded for this period'
+      using errcode = '42501';
+  end if;
+
+"""
+    needle = "  return new_run_id;\nend;\n$$;"
+    if needle in body:
+        return body.replace(needle, hook + needle, 1)
+    return body
+
+
+def sql_delegate_to_plpgsql(fn: str, body: str, module: str) -> str:
+    """Gate SQL-language delegates that call another private RPC."""
+    m = re.search(
+        rf"create or replace function private\.{fn}\([^)]*\)\s*returns\s+(\w+).*?as \$\$\s*(.+?)\s*\$\$;",
+        body,
+        re.I | re.S,
+    )
+    if not m:
+        return body
+    return_type = m.group(1)
+    inner = m.group(2).strip().rstrip(";")
+    if inner.lower().startswith("select "):
+        inner = inner[7:].strip()
+    sig_m = re.search(rf"function private\.{fn}\(([^)]*)\)", body, re.I)
+    args = sig_m.group(1) if sig_m else ""
+    return f"""create or replace function private.{fn}({args})
+returns {return_type}
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'operation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  perform private.assert_current_organisation_module_entitled('{module}');
+
+  return {inner.rstrip()};
+end;
+$$;"""
+
+
 def patch_function(fn: str, body: str) -> str:
-    if "assert_current_organisation_module_entitled" in body or (
-        "assert_ai_session_module_entitled" in body
+    if fn in FOUNDATION_RPC_EXCLUDE:
+        return body
+
+    if fn in SQL_DELEGATE_GATES:
+        return sql_delegate_to_plpgsql(fn, body, SQL_DELEGATE_GATES[fn])
+
+    if fn != "start_ai_run" and (
+        "assert_current_organisation_module_entitled" in body
+        or "assert_ai_session_module_entitled" in body
     ):
         return body
+
+    if fn not in MODULE_BY_FUNCTION:
+        raise SystemExit(f"inventory missing module for {fn}")
 
     module = MODULE_BY_FUNCTION[fn]
 
@@ -209,7 +308,19 @@ def patch_function(fn: str, body: str) -> str:
   );
 
 """
-        return after_auth_insert(body, ins)
+        if "assert_ai_session_module_entitled" not in body:
+            body = after_auth_insert(body, ins)
+        return inject_start_ai_run_credit_reserve(body)
+
+    if fn == "record_leanai_semantic_event":
+        return after_auth_insert(
+            body,
+            """  if coalesce(target_module_key, '') not in ('onboarding') then
+    perform private.assert_current_organisation_module_entitled('problem_solving');
+  end if;
+
+""",
+        )
 
     if fn in AI_ASSERT_PS_MODULE:
         return after_auth_insert(
@@ -248,6 +359,8 @@ def patch_function(fn: str, body: str) -> str:
 
 """
             return after_auth_insert(body, ins)
+        if fn in AI_ASSERT_BY_PROPOSAL:
+            return after_auth_insert(body, ins)
         return body
 
     ins = (
@@ -276,8 +389,18 @@ def main() -> None:
     path.write_text("\n".join(out))
     done = len(MODULE_BY_FUNCTION) - len(missing)
     print(f"Wrote {path.name}: {done} functions, {len(missing)} missing")
+    for fn in sorted(FOUNDATION_RPC_EXCLUDE):
+        if fn in MODULE_BY_FUNCTION:
+            continue
+        body = pick_canonical(fn)
+        if not body:
+            continue
+        out.append(body)
+        out.append("")
+
     if missing:
         print("Missing:", ", ".join(missing))
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

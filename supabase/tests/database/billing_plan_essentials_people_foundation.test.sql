@@ -1,6 +1,6 @@
 begin;
 
-select plan(4);
+select plan(6);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -90,6 +90,39 @@ select is(
   ),
   true,
   'essentials keeps maturity module'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b2300000-0000-4000-8000-000000000001","role":"authenticated","session_id":"b2310000-0000-4000-8000-000000000001"}',
+  true
+);
+set local role authenticated;
+select ok(
+  public.switch_organisation((select id from ess_people_ids where key = 'organisation')),
+  'essentials owner selects organisation'
+);
+
+select lives_ok(
+  $$
+    select public.preauthorize_workforce_provision(
+      'Frontline Operator',
+      'frontline.operator',
+      (
+        select role_version.id
+        from public.role_versions role_version
+        join public.roles role_row
+          on role_row.organisation_id = role_version.organisation_id
+         and role_row.id = role_version.role_id
+        where role_version.organisation_id = (select id from ess_people_ids where key = 'organisation')
+          and role_row.canonical_name = 'organisation-administrator'
+          and role_version.status = 'published'
+        limit 1
+      ),
+      'organisation'
+    );
+  $$,
+  'essentials foundations: workforce preauthorize is not people_hr gated'
 );
 
 select * from finish();

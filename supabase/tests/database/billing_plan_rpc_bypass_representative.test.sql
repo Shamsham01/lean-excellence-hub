@@ -126,7 +126,7 @@ select throws_ok(
   'essentials cannot create benefit drafts via public RPC'
 );
 
-select throws_ok(
+select lives_ok(
   $$
     select public.preauthorize_workforce_provision(
       'Bypass User',
@@ -145,9 +145,7 @@ select throws_ok(
       'organisation'
     );
   $$,
-  '42501',
-  null,
-  'essentials cannot preauthorize workforce via public RPC'
+  'essentials may preauthorize foundation workforce provisioning (not paid HR import)'
 );
 
 select lives_ok(

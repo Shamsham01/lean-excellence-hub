@@ -1,13 +1,14 @@
 import type { PlanCode } from "./types";
 
 /**
- * Customer-facing LeanAI credits are policy defaults only until founder sign-off
- * and verified production usage review enable enforcement.
+ * LeanAI credits are internal ledger units (provisional, unverified for billing).
+ * Settlement today maps 1 credit := 1 counted token (input + output only; reasoning
+ * is tracked separately and must not be double-counted at settle time).
  *
- * 1 credit = £0.001 (0.1p) for simple customer maths. This is not a published
- * invoice unit and does not authorise automatic overage billing.
+ * GBP mapping below is illustrative for cost review only — not a customer price
+ * list and not enforced as automatic overage billing.
  */
-export const LEANAI_CREDIT_GBP_VALUE_MINOR = 10; // 0.1p per credit in GBP minor units
+export const LEANAI_CREDIT_GBP_VALUE_MINOR = 10; // provisional 0.1p/credit for internal estimates only
 
 /** Do not enable hard admission until rate cards are verified and usage reviewed. */
 export const LEH_AI_CREDIT_POLICY_ENFORCED = false;

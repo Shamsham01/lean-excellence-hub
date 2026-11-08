@@ -19,16 +19,10 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
   });
 
   await page.getByTestId("structure-first-start-simple").click();
-  const reachedJobFunctions = await page
-    .waitForURL(/\/onboarding\/setup\?step=job_functions/, {
-      timeout: 45_000,
-      waitUntil: "load",
-    })
-    .then(() => true)
-    .catch(() => false);
-  if (!reachedJobFunctions) {
-    await page.goto("/onboarding/setup?step=job_functions");
-  }
+  await page.waitForURL(/\/onboarding\/setup\?step=job_functions/, {
+    timeout: 45_000,
+    waitUntil: "load",
+  });
   await expect(page.getByTestId("structure-first-job-functions-step")).toBeVisible({
     timeout: 30_000,
   });

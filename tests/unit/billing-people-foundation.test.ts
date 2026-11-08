@@ -25,7 +25,7 @@ describe("people foundation vs paid HR", () => {
         "/platform/settings/people",
       ),
     ).toBe(false);
-    expect(PEOPLE_HR_ROUTE_PREFIXES).toContain(
+    expect(PEOPLE_HR_ROUTE_PREFIXES).not.toContain(
       "/platform/settings/people/create",
     );
   });
