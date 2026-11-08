@@ -123,7 +123,7 @@ export function estimateAiUsageCostUsd(input: {
     issues.includes("cached_exceeds_input") ||
     issues.includes("reasoning_exceeds_output");
 
-  let tokenCostUsd =
+  const tokenCostUsd =
     (billableInput * input.modelRate.input) / MILLION +
     (billableCached * input.modelRate.cachedInput) / MILLION +
     (billableOutput * input.modelRate.output) / MILLION;

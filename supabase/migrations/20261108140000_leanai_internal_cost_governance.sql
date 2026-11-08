@@ -95,17 +95,63 @@ create table private.platform_fx_reference_rates (
 comment on table private.platform_fx_reference_rates is
   'Planning FX rates for cross-currency internal benchmarks only — not billing.';
 
-revoke all on private.ai_provider_rate_card_versions from public, anon, authenticated;
-revoke all on private.ai_provider_model_rates from public, anon, authenticated;
-revoke all on private.ai_provider_tool_rates from public, anon, authenticated;
-revoke all on private.platform_billing_catalogue_reference from public, anon, authenticated;
-revoke all on private.platform_fx_reference_rates from public, anon, authenticated;
+alter table private.ai_provider_rate_card_versions enable row level security;
+alter table private.ai_provider_rate_card_versions force row level security;
+alter table private.ai_provider_model_rates enable row level security;
+alter table private.ai_provider_model_rates force row level security;
+alter table private.ai_provider_tool_rates enable row level security;
+alter table private.ai_provider_tool_rates force row level security;
+alter table private.platform_billing_catalogue_reference enable row level security;
+alter table private.platform_billing_catalogue_reference force row level security;
+alter table private.platform_fx_reference_rates enable row level security;
+alter table private.platform_fx_reference_rates force row level security;
+
+revoke all on table private.ai_provider_rate_card_versions
+  from public, anon, authenticated, service_role;
+revoke all on table private.ai_provider_model_rates
+  from public, anon, authenticated, service_role;
+revoke all on table private.ai_provider_tool_rates
+  from public, anon, authenticated, service_role;
+revoke all on table private.platform_billing_catalogue_reference
+  from public, anon, authenticated, service_role;
+revoke all on table private.platform_fx_reference_rates
+  from public, anon, authenticated, service_role;
 
 grant select on private.ai_provider_rate_card_versions to lean_hub_private_owner;
 grant select on private.ai_provider_model_rates to lean_hub_private_owner;
 grant select on private.ai_provider_tool_rates to lean_hub_private_owner;
 grant select on private.platform_billing_catalogue_reference to lean_hub_private_owner;
 grant select on private.platform_fx_reference_rates to lean_hub_private_owner;
+
+create policy private_owner_select_ai_provider_rate_card_versions
+on private.ai_provider_rate_card_versions
+for select
+to lean_hub_private_owner
+using (true);
+
+create policy private_owner_select_ai_provider_model_rates
+on private.ai_provider_model_rates
+for select
+to lean_hub_private_owner
+using (true);
+
+create policy private_owner_select_ai_provider_tool_rates
+on private.ai_provider_tool_rates
+for select
+to lean_hub_private_owner
+using (true);
+
+create policy private_owner_select_platform_billing_catalogue_reference
+on private.platform_billing_catalogue_reference
+for select
+to lean_hub_private_owner
+using (true);
+
+create policy private_owner_select_platform_fx_reference_rates
+on private.platform_fx_reference_rates
+for select
+to lean_hub_private_owner
+using (true);
 
 insert into private.ai_provider_rate_card_versions (
   id,
@@ -241,12 +287,14 @@ values
 
 insert into private.platform_fx_reference_rates (
   id,
+  quote_currency,
   rate,
   effective_from,
   source_label
 )
 values (
   'usd-gbp-planning-2026-11-01',
+  'GBP',
   0.79,
   timestamptz '2026-11-01 00:00:00+00',
   'Internal planning benchmark — USD/GBP spot reference for operator review only (not billing).'
@@ -752,26 +800,34 @@ begin
       select jsonb_agg(row_json order by row_json ->> 'estimated_usd' desc)
       from (
         select jsonb_build_object(
-          'workflow_key',
+          'workflow_key', workflow_rows.workflow_key,
+          'usage_event_count', workflow_rows.usage_event_count,
+          'estimated_usd_complete', workflow_rows.estimated_usd_complete,
+          'incomplete_or_unpriced_event_count',
+            workflow_rows.incomplete_or_unpriced_event_count
+        ) as row_json
+        from (
+          select
             coalesce(
               usage_enriched.prompt_key,
-              usage_enriched.context_type || ':' || coalesce(usage_enriched.module_key, 'unknown')
-            ),
-          'usage_event_count', count(*)::integer,
-          'estimated_usd_complete', coalesce(
-            sum(
-              (usage_enriched.cost_estimate ->> 'estimated_usd')::numeric
-            ) filter (
-              where usage_enriched.cost_estimate ->> 'pricing_status' = 'complete'
-            ),
-            0
-          ),
-          'incomplete_or_unpriced_event_count', count(*) filter (
-            where usage_enriched.cost_estimate ->> 'pricing_status' <> 'complete'
-          )::integer
-        ) as row_json
-        from usage_enriched
-        group by 1
+              usage_enriched.context_type || ':'
+                || coalesce(usage_enriched.module_key, 'unknown')
+            ) as workflow_key,
+            count(*)::integer as usage_event_count,
+            coalesce(
+              sum(
+                (usage_enriched.cost_estimate ->> 'estimated_usd')::numeric
+              ) filter (
+                where usage_enriched.cost_estimate ->> 'pricing_status' = 'complete'
+              ),
+              0
+            ) as estimated_usd_complete,
+            count(*) filter (
+              where usage_enriched.cost_estimate ->> 'pricing_status' <> 'complete'
+            )::integer as incomplete_or_unpriced_event_count
+          from usage_enriched
+          group by 1
+        ) workflow_rows
       ) workflow_rows
     ), '[]'::jsonb),
     'by_date', coalesce((
@@ -915,9 +971,21 @@ as $$
   )
 $$;
 
+revoke all on function private.ai_rate_card_version_for_timestamp(timestamptz)
+  from public, anon, authenticated, service_role;
+revoke all on function private.estimate_ai_provider_usage_cost_usd(
+  text, text, integer, integer, integer, integer, integer, timestamptz
+) from public, anon, authenticated, service_role;
+revoke all on function private.platform_catalogue_monthly_revenue_gbp(
+  text, text, integer, timestamptz
+) from public, anon, authenticated, service_role;
+revoke all on function private.platform_admin_leanai_cost_governance(
+  uuid, text, text, uuid, timestamptz, timestamptz
+) from public, anon, authenticated, service_role;
+
 revoke all on function public.platform_admin_leanai_cost_governance(
   uuid, text, text, uuid, timestamptz, timestamptz
-) from public, anon, authenticated;
+) from public, anon, authenticated, service_role;
 
 grant execute on function public.platform_admin_leanai_cost_governance(
   uuid, text, text, uuid, timestamptz, timestamptz

@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(31);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -38,6 +38,146 @@ select is(
   ),
   false,
   'anon cannot execute leanai cost governance RPC'
+);
+
+select is(
+  has_function_privilege(
+    'anon',
+    'private.platform_admin_leanai_cost_governance(uuid, text, text, uuid, timestamptz, timestamptz)',
+    'execute'
+  ),
+  false,
+  'anon cannot execute private leanai cost governance'
+);
+
+select is(
+  has_function_privilege(
+    'authenticated',
+    'private.platform_admin_leanai_cost_governance(uuid, text, text, uuid, timestamptz, timestamptz)',
+    'execute'
+  ),
+  false,
+  'authenticated cannot execute private leanai cost governance'
+);
+
+select is(
+  has_function_privilege(
+    'anon',
+    'private.estimate_ai_provider_usage_cost_usd(text, text, integer, integer, integer, integer, integer, timestamptz)',
+    'execute'
+  ),
+  false,
+  'anon cannot execute internal usage cost estimator'
+);
+
+select is(
+  has_function_privilege(
+    'authenticated',
+    'private.estimate_ai_provider_usage_cost_usd(text, text, integer, integer, integer, integer, integer, timestamptz)',
+    'execute'
+  ),
+  false,
+  'authenticated cannot execute internal usage cost estimator'
+);
+
+select is(
+  has_function_privilege(
+    'anon',
+    'private.ai_rate_card_version_for_timestamp(timestamptz)',
+    'execute'
+  ),
+  false,
+  'anon cannot execute rate card version resolver'
+);
+
+select is(
+  has_function_privilege(
+    'authenticated',
+    'private.ai_rate_card_version_for_timestamp(timestamptz)',
+    'execute'
+  ),
+  false,
+  'authenticated cannot execute rate card version resolver'
+);
+
+select is(
+  has_function_privilege(
+    'anon',
+    'private.platform_catalogue_monthly_revenue_gbp(text, text, integer, timestamptz)',
+    'execute'
+  ),
+  false,
+  'anon cannot execute catalogue revenue benchmark helper'
+);
+
+select is(
+  has_function_privilege(
+    'authenticated',
+    'private.platform_catalogue_monthly_revenue_gbp(text, text, integer, timestamptz)',
+    'execute'
+  ),
+  false,
+  'authenticated cannot execute catalogue revenue benchmark helper'
+);
+
+select ok(
+  not pg_catalog.has_table_privilege('anon', 'private.ai_provider_rate_card_versions', 'SELECT')
+  and not pg_catalog.has_table_privilege('anon', 'private.ai_provider_model_rates', 'SELECT')
+  and not pg_catalog.has_table_privilege('anon', 'private.ai_provider_tool_rates', 'SELECT')
+  and not pg_catalog.has_table_privilege(
+    'anon', 'private.platform_billing_catalogue_reference', 'SELECT'
+  )
+  and not pg_catalog.has_table_privilege('anon', 'private.platform_fx_reference_rates', 'SELECT'),
+  'anon cannot select internal cost governance reference tables'
+);
+
+select ok(
+  not pg_catalog.has_table_privilege(
+    'authenticated', 'private.ai_provider_rate_card_versions', 'SELECT'
+  )
+  and not pg_catalog.has_table_privilege(
+    'authenticated', 'private.ai_provider_model_rates', 'SELECT'
+  )
+  and not pg_catalog.has_table_privilege(
+    'authenticated', 'private.ai_provider_tool_rates', 'SELECT'
+  )
+  and not pg_catalog.has_table_privilege(
+    'authenticated', 'private.platform_billing_catalogue_reference', 'SELECT'
+  )
+  and not pg_catalog.has_table_privilege(
+    'authenticated', 'private.platform_fx_reference_rates', 'SELECT'
+  ),
+  'authenticated cannot select internal cost governance reference tables'
+);
+
+set local role authenticated;
+
+select throws_ok(
+  $$select id from private.ai_provider_rate_card_versions limit 1$$,
+  '42501',
+  null,
+  'authenticated role cannot read rate card versions'
+);
+
+select throws_ok(
+  $$select private.estimate_ai_provider_usage_cost_usd(
+    'openai', 'gpt-6-luna', 0, 0, 0, 0, 0, statement_timestamp()
+  )$$,
+  '42501',
+  null,
+  'authenticated role cannot call the usage cost estimator'
+);
+
+reset role;
+
+select is(
+  has_function_privilege(
+    'service_role',
+    'public.platform_admin_leanai_cost_governance(uuid, text, text, uuid, timestamptz, timestamptz)',
+    'execute'
+  ),
+  true,
+  'service_role can execute the public leanai cost governance RPC'
 );
 
 select throws_ok(
@@ -148,7 +288,7 @@ select ok(
       timestamptz '2026-11-01 00:00:00+00'
     ) ->> 'estimated_usd'
   )::numeric
-  >
+  <
   (
     private.estimate_ai_provider_usage_cost_usd(
       'openai',
@@ -265,17 +405,21 @@ select ok(
   'usage before a new rate card keeps the prior version'
 );
 
+set local role service_role;
+
 select is(
   (
-    select private.platform_admin_leanai_cost_governance(
+    select public.platform_admin_leanai_cost_governance(
       'e3160000-0000-4000-8000-0000000000aa',
       'aal2',
       '/org_admin/leanai-cost'
     ) -> 'totals' ->> 'usage_event_count'
   ),
   '0',
-  'empty report returns safe totals without cross-tenant prompts'
+  'service_role reaches leanai cost governance with empty usage totals'
 );
+
+reset role;
 
 select ok(
   exists (

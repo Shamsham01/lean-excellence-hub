@@ -143,7 +143,7 @@ export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }
             rows={report.by_model.map((row) => ({
               key: `${row.provider}:${row.model}`,
               cells: [
-                <span className="font-mono text-xs">
+                <span key="model" className="font-mono text-xs">
                   {row.provider} / {row.model}
                 </span>,
                 row.usage_event_count.toLocaleString("en-GB"),
@@ -161,7 +161,9 @@ export function LeanAiCostPanel({ report }: { report: PlatformLeanAiCostReport }
             rows={report.by_workflow.map((row) => ({
               key: row.workflow_key,
               cells: [
-                <span className="font-mono text-xs">{row.workflow_key}</span>,
+                <span key="workflow" className="font-mono text-xs">
+                  {row.workflow_key}
+                </span>,
                 row.usage_event_count.toLocaleString("en-GB"),
                 formatUsd(row.estimated_usd_complete),
                 row.incomplete_or_unpriced_event_count.toLocaleString("en-GB"),
