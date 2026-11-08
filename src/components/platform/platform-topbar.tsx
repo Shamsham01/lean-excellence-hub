@@ -4,9 +4,8 @@ import { Search } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { PlatformCommandMenu } from "@/components/platform/platform-command-menu";
-import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
+import { PlatformUserMenu } from "@/components/platform/platform-user-menu";
 import { ThemeToggleIcon } from "@/components/platform/theme-toggle";
-import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import {
   InputGroup,
@@ -18,11 +17,13 @@ import type { PlatformShellMember } from "@/modules/platform-shell/member-contex
 type PlatformTopbarProps = {
   member: PlatformShellMember;
   organisationName: string;
+  showSettings?: boolean;
 };
 
 export function PlatformTopbar({
   member,
   organisationName,
+  showSettings = true,
 }: PlatformTopbarProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -61,18 +62,7 @@ export function PlatformTopbar({
         </div>
         <div className="ml-auto flex items-center gap-1.5 ps-2">
           <ThemeToggleIcon />
-          <AppLink
-            href="/platform/settings/profile"
-            className="rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-            aria-label="Your profile"
-            data-testid="platform-avatar"
-          >
-            <PlatformMemberAvatar
-              displayName={member.displayName}
-              avatarUrl={member.avatarUrl}
-              size="md"
-            />
-          </AppLink>
+          <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </header>
       <PlatformCommandMenu open={commandOpen} onOpenChange={setCommandOpen} />

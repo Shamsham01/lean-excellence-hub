@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
+import { PlatformSignOutButton } from "@/components/platform/platform-sign-out-button";
 import { PlatformNavIconComponent } from "@/components/platform/platform-nav-icons";
 import { AppLink } from "@/components/ui/app-link";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
@@ -119,6 +120,19 @@ export function PlatformSidebarFooter({
           <UserRound className="size-3.5 shrink-0" aria-hidden />
           Profile
         </CompactNavLink>
+      </div>
+      <div className="border-t border-sidebar-border/80 pt-2">
+        <PlatformSignOutButton
+          showIcon={false}
+          className={cn(
+            "flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+          )}
+        >
+          <>
+            <LogOut className="size-3.5 shrink-0" aria-hidden />
+            Sign out
+          </>
+        </PlatformSignOutButton>
       </div>
     </div>
   );
