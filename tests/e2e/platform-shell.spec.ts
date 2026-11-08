@@ -11,6 +11,8 @@ import {
   platformE2eCredentials,
 } from "./helpers/platform-auth";
 import { expectModulePageHeading } from "./helpers/module-page-heading";
+import { openMobileDrawer } from "./helpers/open-mobile-drawer";
+import { platformSidebarSignOut } from "./helpers/platform-sign-out";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -53,15 +55,14 @@ async function loginPlatformE2e(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(platformE2eCredentials.email);
   await page.getByLabel("Password").fill(platformE2eCredentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-}
-
-async function openMobileDrawer(page: Page) {
-  await page.getByRole("button", { name: "Open navigation menu" }).click();
-  const nav = page.getByRole("navigation", { name: "Platform" });
-  await expect(nav).toBeVisible();
-  return nav;
+  await Promise.all([
+    page.waitForURL(/\/platform/, { timeout: 30_000 }),
+    page.getByRole("button", { name: /sign in/i }).click(),
+  ]);
+  await expectPlatformOrganisationName(
+    page,
+    platformE2eCredentials.organisationName,
+  );
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -179,10 +180,12 @@ test.describe("authenticated platform shell", () => {
       DEMO_ORGANISATION.name,
     );
     await expect(
-      page
-        .getByTestId("platform-desktop-main-chrome")
-        .getByTestId("platform-chrome-sign-out"),
+      page.getByTestId("platform-topbar").getByTestId("platform-theme-toggle"),
     ).toBeVisible();
+    await expect(platformSidebarSignOut(page)).toBeVisible();
+    await expect(page.getByTestId("platform-desktop-main-chrome")).toHaveCount(
+      0,
+    );
 
     await expectFinalNavItemReachable(page, nav);
     await expectNoHorizontalOverflow(page);
@@ -202,11 +205,7 @@ test.describe("authenticated platform shell", () => {
     await scrollDesktopSidebarNavToBottom(nav);
 
     await expect(nav).toBeInViewport();
-    await expect(
-      page
-        .getByTestId("platform-desktop-main-chrome")
-        .getByTestId("platform-chrome-sign-out"),
-    ).toBeInViewport();
+    await expect(platformSidebarSignOut(page)).toBeInViewport();
     await expect(
       sidebar.getByRole("link", { name: "Settings", exact: true }),
     ).toBeInViewport();
@@ -237,19 +236,14 @@ test.describe("authenticated platform shell", () => {
       });
       await signInAsDemoUser(page, "admin");
 
-      const nav = await openMobileDrawer(page);
-      const drawer = page.getByRole("dialog");
+      const { drawer, nav } = await openMobileDrawer(page);
       await expect(
         drawer.getByRole("link", { name: "Lean Excellence Hub" }),
       ).toBeVisible();
       await expect(drawer.getByTestId("platform-sidebar-org-name")).toHaveText(
         DEMO_ORGANISATION.name,
       );
-      await expect(
-        page
-          .getByTestId("platform-mobile-chrome")
-          .getByTestId("platform-chrome-sign-out"),
-      ).toBeVisible();
+      await expect(platformSidebarSignOut(page)).toBeVisible();
 
       const { lastLink } = await expectFinalNavItemReachable(page, nav);
       await expect(lastLink).toBeInViewport();
@@ -327,7 +321,7 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = await openMobileDrawer(page);
+    const { nav } = await openMobileDrawer(page);
     const recognitionLink = nav.getByRole("link", {
       name: "Recognition",
       exact: true,
@@ -347,16 +341,12 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = await openMobileDrawer(page);
+    const { nav } = await openMobileDrawer(page);
     await page.keyboard.press("Escape");
     await expect(nav).not.toBeVisible();
 
     await openMobileDrawer(page);
-    await expect(
-      page
-        .getByTestId("platform-mobile-chrome")
-        .getByTestId("platform-chrome-sign-out"),
-    ).toBeVisible();
+    await expect(platformSidebarSignOut(page)).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

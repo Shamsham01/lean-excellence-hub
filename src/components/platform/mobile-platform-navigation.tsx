@@ -5,9 +5,9 @@ import { useState } from "react";
 
 import { LEH_BRAND } from "@/components/brand/brand-assets";
 import { LehBrand } from "@/components/brand/leh-brand";
-import { PlatformChromeActions } from "@/components/platform/platform-chrome-actions";
 import { PlatformCommandMenu } from "@/components/platform/platform-command-menu";
-import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
+import { PlatformUserMenu } from "@/components/platform/platform-user-menu";
+import { ThemeToggleIcon } from "@/components/platform/theme-toggle";
 import { PlatformNavigation } from "@/components/platform/platform-navigation";
 import { PlatformSidebarFooter } from "@/components/platform/platform-sidebar-footer";
 import { PlatformSidebarHeader } from "@/components/platform/platform-sidebar-header";
@@ -130,19 +130,8 @@ export function MobilePlatformNavigation({
           >
             <Search className="size-4" aria-hidden />
           </Button>
-          <PlatformChromeActions />
-          <AppLink
-            href="/platform/settings/profile"
-            className="shrink-0 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-            aria-label="Your profile"
-            data-testid="platform-avatar"
-          >
-            <PlatformMemberAvatar
-              displayName={member.displayName}
-              avatarUrl={member.avatarUrl}
-              size="md"
-            />
-          </AppLink>
+          <ThemeToggleIcon />
+          <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </div>
       <PlatformCommandMenu open={commandOpen} onOpenChange={setCommandOpen} />

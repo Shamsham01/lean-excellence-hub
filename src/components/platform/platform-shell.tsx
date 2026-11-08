@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
 import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-navigation";
-import { PlatformDesktopMainChrome } from "@/components/platform/platform-desktop-main-chrome";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { PlatformTopbar } from "@/components/platform/platform-topbar";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
@@ -68,12 +67,15 @@ export async function PlatformShell({
             showSettings={showSettings}
             notifications={notifications}
           />
-          <PlatformTopbar member={member} organisationName={organisationName} />
+          <PlatformTopbar
+            member={member}
+            organisationName={organisationName}
+            showSettings={showSettings}
+          />
           <main
             data-testid="platform-main"
             className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden"
           >
-            <PlatformDesktopMainChrome />
             <div className="platform-main-viewport flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain">
               <div className="platform-main-inner mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8">
                 {children}
