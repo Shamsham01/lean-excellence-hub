@@ -169,8 +169,10 @@ export async function runCoachAiTurn(
   };
 
   const allowlist = createSourceAllowlist();
-  const conversationMessages: Array<{ role: "user" | "assistant"; content: string }> =
-    [...input.conversationHistory, { role: "user", content: userMessage }];
+  const conversationMessages: Array<{
+    role: "user" | "assistant";
+    content: string;
+  }> = [...input.conversationHistory, { role: "user", content: userMessage }];
 
   try {
     let response = await provider.createResponse({
@@ -226,7 +228,8 @@ export async function runCoachAiTurn(
           const started = Date.now();
           const result = await executeOperationalRetrievalTool(
             { supabase: input.supabase, allowlist },
-            toolCall.name as "search_operational_knowledge" | "get_operational_record_context",
+            toolCall.name as
+              "search_operational_knowledge" | "get_operational_record_context",
             toolCall.arguments,
           );
           toolCallRecords.push({

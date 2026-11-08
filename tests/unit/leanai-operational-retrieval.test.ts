@@ -36,7 +36,9 @@ describe("parseAuthorisedOperationalKnowledge", () => {
       },
     ]);
     expect(matches).toHaveLength(1);
-    expect(JSON.stringify(matches)).not.toMatch(/overlap_count|search_rank|0\.88/);
+    expect(JSON.stringify(matches)).not.toMatch(
+      /overlap_count|search_rank|0\.88/,
+    );
   });
 
   it("labels stored text as untrusted in citation lines", () => {
@@ -77,7 +79,9 @@ describe("migration security contract", () => {
       ),
       "utf8",
     );
-    expect(sql).toContain("when query_lexeme_count <= 3 then query_lexeme_count");
+    expect(sql).toContain(
+      "when query_lexeme_count <= 3 then query_lexeme_count",
+    );
     expect(sql).toContain("private.can_use_ai(org_id)");
     expect(sql).not.toMatch(/\bpgvector\b/i);
     expect(sql).toMatch(

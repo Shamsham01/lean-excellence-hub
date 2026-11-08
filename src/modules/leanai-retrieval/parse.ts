@@ -19,7 +19,10 @@ function boundedText(value: unknown, max: number): string {
   return value.trim().slice(0, max);
 }
 
-function expectedHref(recordType: OperationalKnowledgeDomain, recordId: string): string {
+function expectedHref(
+  recordType: OperationalKnowledgeDomain,
+  recordId: string,
+): string {
   switch (recordType) {
     case "problem_solving_case":
       return `/platform/problem-solving/${recordId}`;
@@ -46,7 +49,9 @@ function expectedHref(recordType: OperationalKnowledgeDomain, recordId: string):
   }
 }
 
-function isOperationalDomain(value: string): value is OperationalKnowledgeDomain {
+function isOperationalDomain(
+  value: string,
+): value is OperationalKnowledgeDomain {
   return (OPERATIONAL_KNOWLEDGE_DOMAINS as readonly string[]).includes(value);
 }
 

@@ -41,7 +41,9 @@ export function parseOperationalRetrievalToolArgs(
   }
 }
 
-export function buildOperationalRetrievalOpenAiTools(): Array<Record<string, unknown>> {
+export function buildOperationalRetrievalOpenAiTools(): Array<
+  Record<string, unknown>
+> {
   return OPERATIONAL_RETRIEVAL_READ_TOOLS.map((name) => ({
     type: "function",
     name,
@@ -51,7 +53,9 @@ export function buildOperationalRetrievalOpenAiTools(): Array<Record<string, unk
   }));
 }
 
-function toolParameters(name: OperationalRetrievalToolName): Record<string, unknown> {
+function toolParameters(
+  name: OperationalRetrievalToolName,
+): Record<string, unknown> {
   switch (name) {
     case "search_operational_knowledge":
       return {

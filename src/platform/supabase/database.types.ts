@@ -13868,6 +13868,10 @@ export type Database = {
         Returns: Json
       }
       get_ai_usage_summary: { Args: never; Returns: Json }
+      get_authorised_operational_record_context: {
+        Args: { target_record_id: string; target_record_type: string }
+        Returns: Json
+      }
       get_available_suggestion_submission_configuration: {
         Args: never
         Returns: Json
@@ -15091,20 +15095,16 @@ export type Database = {
         Args: { target_limit?: number; target_query: string }
         Returns: Json
       }
-      search_authorised_problem_solving_history: {
-        Args: { target_limit?: number; target_query: string }
-        Returns: Json
-      }
       search_authorised_operational_knowledge: {
         Args: {
-          target_domains?: string[] | null
+          target_domains?: string[]
           target_limit?: number
           target_query: string
         }
         Returns: Json
       }
-      get_authorised_operational_record_context: {
-        Args: { target_record_id: string; target_record_type: string }
+      search_authorised_problem_solving_history: {
+        Args: { target_limit?: number; target_query: string }
         Returns: Json
       }
       search_similar_problem_solving_cases: {

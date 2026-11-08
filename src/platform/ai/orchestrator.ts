@@ -610,9 +610,10 @@ async function invokeProblemSolvingProviderResponse(input: {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   stageDraftTools?: Array<Record<string, unknown>>;
 }) {
-  const tools =
-    input.stageDraftTools ??
-    [...buildOpenAiTools(), ...buildOperationalRetrievalOpenAiTools()];
+  const tools = input.stageDraftTools ?? [
+    ...buildOpenAiTools(),
+    ...buildOperationalRetrievalOpenAiTools(),
+  ];
   const callProvider = () =>
     input.provider.createResponse({
       model: input.model,
