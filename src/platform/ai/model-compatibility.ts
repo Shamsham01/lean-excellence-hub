@@ -73,7 +73,7 @@ export const WORKFLOW_VISIBLE_OUTPUT_TOKENS: Record<AiWorkflow, number> = {
   framework_builder: 6_000,
   complex_reasoning: 6_000,
   problem_solving: 6_000,
-  problem_solving_facilitate: 3_500,
+  problem_solving_facilitate: 1_500,
   problem_solving_challenge: 6_000,
 };
 

@@ -224,9 +224,10 @@ describe("runAiTurn stateless tool continuation", () => {
       "session-1",
       AI_STALE_RUN_AFTER_MS,
     );
-    expect(createResponseCalls[0]?.model).toBe("gpt-test");
+    expect(createResponseCalls[0]?.model).toBe("gpt-6.1-terra");
     expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
-    expect(createResponseCalls[0]?.timeoutMs).toBeLessThanOrEqual(45_000);
+    expect(createResponseCalls[0]?.timeoutMs).toBeGreaterThanOrEqual(41_000);
+    expect(createResponseCalls[1]?.timeoutMs).toBeLessThanOrEqual(45_000);
     const toolNames = (createResponseCalls[0]?.tools ?? []).map(
       (tool) => (tool as { name?: string }).name,
     );

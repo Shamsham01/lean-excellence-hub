@@ -34,7 +34,7 @@ describe("workflow reasoning", () => {
       environment: {},
     });
     expect(prepared.reasoningEffort).toBe("low");
-    expect(prepared.maxOutputTokens).toBeLessThan(8_000);
+    expect(prepared.maxOutputTokens).toBe(3_000);
   });
 
   it("lets AI_MODEL_REASONING replace the task default without changing the model", () => {
