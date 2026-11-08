@@ -173,4 +173,123 @@ describe("useWalkAnswerState same-walk answers reconciliation", () => {
     });
     expect(flushOk).toBe(false);
   }, 15_000);
+
+  it("resolves q2 to saved after save completes despite a stale q2 snapshot", async () => {
+    let releaseSave: (value: { ok: true }) => void = () => undefined;
+    const saveDeferred = new Promise<{ ok: true }>((resolve) => {
+      releaseSave = resolve;
+    });
+    saveAnswer.mockImplementation(() => saveDeferred);
+
+    type AnswersProps = Record<
+      string,
+      { text_value: string | null; is_not_applicable: boolean }
+    >;
+
+    const initial: AnswersProps = {
+      q1: { text_value: "First prompt notes.", is_not_applicable: false },
+      q2: { text_value: null, is_not_applicable: false },
+    };
+
+    const { result, rerender } = renderHook(
+      ({ answers }: { answers: AnswersProps }) =>
+        useWalkAnswerState({
+          walkId: "walk-a",
+          answers,
+          canEdit: true,
+          saveAnswer,
+        }),
+      { initialProps: { answers: initial } },
+    );
+
+    act(() => {
+      result.current.changeText("q2", "Second prompt notes.");
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(TEXT_SAVE_DEBOUNCE_MS);
+    });
+    await flushMicrotasks();
+
+    expect(result.current.getStatus("q2")).toBe("saving");
+
+    rerender({
+      answers: {
+        q1: { text_value: "First prompt notes.", is_not_applicable: false },
+        q2: { text_value: null, is_not_applicable: false },
+      },
+    });
+
+    expect(result.current.getAnswer("q2").text_value).toBe(
+      "Second prompt notes.",
+    );
+    expect(result.current.getStatus("q2")).toBe("saving");
+
+    await act(async () => {
+      releaseSave({ ok: true });
+      await saveDeferred;
+      await flushMicrotasks();
+    });
+
+    expect(result.current.getStatus("q2")).toBe("saved");
+    expect(result.current.getAnswer("q2").text_value).toBe(
+      "Second prompt notes.",
+    );
+
+    rerender({
+      answers: {
+        q1: { text_value: "First prompt notes.", is_not_applicable: false },
+        q2: {
+          text_value: "Second prompt notes.",
+          is_not_applicable: false,
+        },
+      },
+    });
+
+    expect(result.current.getStatus("q2")).toBe("saved");
+    expect(result.current.getAnswer("q2").text_value).toBe(
+      "Second prompt notes.",
+    );
+  }, 15_000);
+
+  it("rehydrates saved status after navigation remount when server answers are current", () => {
+    vi.useRealTimers();
+    saveAnswer.mockResolvedValue({ ok: true });
+
+    const persisted = {
+      q1: { text_value: "First prompt notes.", is_not_applicable: false },
+      q2: {
+        text_value: "Second prompt notes.",
+        is_not_applicable: false,
+      },
+    };
+
+    const { unmount } = renderHook(() =>
+      useWalkAnswerState({
+        walkId: "walk-a",
+        answers: {
+          q1: persisted.q1,
+          q2: { text_value: null, is_not_applicable: false },
+        },
+        canEdit: true,
+        saveAnswer,
+      }),
+    );
+
+    unmount();
+
+    const { result } = renderHook(() =>
+      useWalkAnswerState({
+        walkId: "walk-a",
+        answers: persisted,
+        canEdit: true,
+        saveAnswer,
+      }),
+    );
+
+    expect(result.current.getAnswer("q2").text_value).toBe(
+      "Second prompt notes.",
+    );
+    expect(result.current.getStatus("q2")).toBe("saved");
+  });
 });

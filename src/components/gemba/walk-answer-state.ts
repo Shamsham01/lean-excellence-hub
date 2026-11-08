@@ -65,6 +65,12 @@ export function normalizeAnswer(answer: WalkAnswer | undefined): {
   };
 }
 
+function answerHasPersistedValue(answer: WalkAnswer | undefined) {
+  if (!answer) return false;
+  if (answer.is_not_applicable) return true;
+  return Boolean(answer.text_value?.trim());
+}
+
 export function answersEqual(
   left: WalkAnswer | undefined,
   right: WalkAnswer | undefined,
@@ -170,6 +176,7 @@ export function useWalkAnswerState({
   const [errors, setErrors] = useState<Record<string, string | null>>({});
 
   const confirmedRef = useRef(confirmedAnswers);
+  const localAnswersRef = useRef(localAnswers);
   const statusRef = useRef(statuses);
   const epochRef = useRef(0);
   const runtimesRef = useRef(new Map<string, QuestionRuntime>());
@@ -192,7 +199,8 @@ export function useWalkAnswerState({
   // status is still "saving" (Next/Previous stay disabled until the queue drains).
   useLayoutEffect(() => {
     confirmedRef.current = confirmedAnswers;
-  }, [confirmedAnswers]);
+    localAnswersRef.current = localAnswers;
+  }, [confirmedAnswers, localAnswers]);
 
   useEffect(() => {
     statusRef.current = statuses;
@@ -237,70 +245,81 @@ export function useWalkAnswerState({
       };
     }
 
-    setConfirmedAnswers((previous) => {
-      const next = { ...previous };
-      for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
-        const runtime = runtimes.get(questionId);
-        if (
-          questionHasUncommittedWork(
-            runtime,
-            serverAnswer,
-            questionId,
-            previous[questionId],
-          )
-        ) {
-          continue;
-        }
-        next[questionId] = { ...serverAnswer };
-      }
-      return next;
-    });
+    const previousConfirmed = confirmedRef.current;
+    const previousLocal = localAnswersRef.current;
 
-    setLocalAnswers((previous) => {
-      const next = { ...previous };
-      for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
-        const runtime = runtimes.get(questionId);
-        if (runtime?.latest?.answer) {
-          next[questionId] = { ...runtime.latest.answer };
-          continue;
-        }
-        if (
-          questionHasUncommittedWork(
-            runtime,
-            serverAnswer,
-            questionId,
-            confirmedRef.current[questionId],
-          )
-        ) {
-          continue;
-        }
-        next[questionId] = { ...serverAnswer };
-      }
-      return next;
-    });
-
+    const nextConfirmed = { ...previousConfirmed };
     for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
       const runtime = runtimes.get(questionId);
       if (
-        !runtime ||
         questionHasUncommittedWork(
           runtime,
           serverAnswer,
           questionId,
-          confirmedRef.current[questionId],
+          previousConfirmed[questionId],
         )
       ) {
         continue;
       }
-      if (
-        answersEqual(runtime.latest?.answer, serverAnswer) &&
-        !runtime.inFlight &&
-        !runtime.pending &&
-        !runtime.debounceTimer
-      ) {
-        setStatuses((current) => ({ ...current, [questionId]: "saved" }));
-        setErrors((current) => ({ ...current, [questionId]: null }));
+      nextConfirmed[questionId] = { ...serverAnswer };
+    }
+
+    const nextLocal = { ...previousLocal };
+    for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+      const runtime = runtimes.get(questionId);
+      if (runtime?.latest?.answer) {
+        nextLocal[questionId] = { ...runtime.latest.answer };
+        continue;
       }
+      if (
+        questionHasUncommittedWork(
+          runtime,
+          serverAnswer,
+          questionId,
+          previousConfirmed[questionId],
+        )
+      ) {
+        continue;
+      }
+      nextLocal[questionId] = { ...serverAnswer };
+    }
+
+    setConfirmedAnswers(nextConfirmed);
+    setLocalAnswers(nextLocal);
+    confirmedRef.current = nextConfirmed;
+    localAnswersRef.current = nextLocal;
+
+    for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+      const runtime = runtimes.get(questionId);
+      if (
+        questionHasUncommittedWork(
+          runtime,
+          serverAnswer,
+          questionId,
+          nextConfirmed[questionId],
+        )
+      ) {
+        continue;
+      }
+      if (runtime?.inFlight || runtime?.pending || runtime?.debounceTimer) {
+        continue;
+      }
+      const localAnswer = runtime?.latest?.answer ?? nextLocal[questionId];
+      const confirmed = nextConfirmed[questionId];
+      if (
+        !answersEqual(localAnswer, serverAnswer) ||
+        !answersEqual(localAnswer, confirmed) ||
+        !answerHasPersistedValue(serverAnswer)
+      ) {
+        continue;
+      }
+      setStatuses((current) => {
+        if (current[questionId] === "error") {
+          return current;
+        }
+        return { ...current, [questionId]: "saved" };
+      });
+      setErrors((current) => ({ ...current, [questionId]: null }));
     }
   }, [walkId, answersFingerprint]);
 
