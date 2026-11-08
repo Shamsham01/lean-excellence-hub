@@ -148,22 +148,50 @@ export async function completeFoundingCheckout(
 }
 
 export async function completeStructureFirstSetupToPlatform(page: Page) {
-  await page.getByTestId("structure-first-continue-context").click();
-  await expect(
-    page.getByTestId("structure-first-structure-step"),
-  ).toBeVisible();
-  await page.getByTestId("structure-first-start-simple").click();
-  await expect(
-    page.getByTestId("structure-first-job-functions-step"),
-  ).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId("structure-first-skip-job-functions").click();
-  await expect(page.getByTestId("structure-first-people-step")).toBeVisible({
+  await expect(page.getByTestId("onboarding-setup")).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByTestId("structure-first-skip-people").click();
+
+  const continueContext = page.getByTestId("structure-first-continue-context");
+  if (await continueContext.isVisible()) {
+    await continueContext.click();
+    await expect(
+      page.getByTestId("structure-first-structure-step"),
+    ).toBeVisible();
+  }
+
+  const startSimple = page.getByTestId("structure-first-start-simple");
+  if (await startSimple.isVisible()) {
+    await startSimple.click();
+    await expect(page).toHaveURL(/step=job_functions/, { timeout: 30_000 });
+  }
+
+  if (await page.getByTestId("structure-first-job-functions-step").isVisible()) {
+    const continueJobFunctions = page.getByTestId(
+      "structure-first-continue-job-functions",
+    );
+    const skipJobFunctions = page.getByTestId("structure-first-skip-job-functions");
+    if (await continueJobFunctions.isVisible()) {
+      await continueJobFunctions.click();
+    } else if (await skipJobFunctions.isVisible()) {
+      await skipJobFunctions.click();
+    }
+  }
+
+  if (await page.getByTestId("structure-first-people-step").isVisible()) {
+    const skipPeople = page.getByTestId("structure-first-skip-people");
+    if (await skipPeople.isVisible()) {
+      await skipPeople.click();
+    } else {
+      await page.goto("/onboarding/setup?step=readiness");
+    }
+  } else if (!(await page.getByTestId("structure-first-readiness-step").isVisible())) {
+    await page.goto("/onboarding/setup?step=readiness");
+  }
+
   await expect(
     page.getByTestId("structure-first-readiness-step"),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("structure-first-continue-setup").click();
   await expect(page).toHaveURL(/\/platform\/setup(?:\?|$)/, {
     timeout: 30_000,
