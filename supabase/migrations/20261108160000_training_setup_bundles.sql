@@ -432,9 +432,12 @@ begin
   delete from public.training_requirements requirement_row
   where requirement_row.organisation_id = org_id
     and requirement_row.id in (
-      select item_row.record_id from public.training_setup_bundle_items item_row
-      where item_row.organisation_id = org_id and item_row.bundle_id = bundle_row.id
-        and item_row.record_kind = 'requirement' and item_row.ownership = 'created'
+      select bundle_item_row.record_id
+      from public.training_setup_bundle_items bundle_item_row
+      where bundle_item_row.organisation_id = org_id
+        and bundle_item_row.bundle_id = bundle_row.id
+        and bundle_item_row.record_kind = 'requirement'
+        and bundle_item_row.ownership = 'created'
     );
 
   for item_row in
