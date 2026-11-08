@@ -9,6 +9,7 @@ import type { PlatformAdminInAppSnapshot } from "@/modules/platform-admin/schema
 const LINKS = [
   { href: "/org_admin", label: "Overview" },
   { href: "/org_admin/organisations", label: "Organisations" },
+  { href: "/org_admin/leanai-cost", label: "LeanAI cost" },
   { href: "/org_admin/notifications", label: "Notifications" },
 ] as const;
 

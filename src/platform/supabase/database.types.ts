@@ -14538,6 +14538,17 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_admin_leanai_cost_governance: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          period_end?: string
+          period_start?: string
+          request_path: string
+          target_organisation_id?: string
+        }
+        Returns: Json
+      }
       platform_admin_notification_history: {
         Args: {
           actor_user_id: string

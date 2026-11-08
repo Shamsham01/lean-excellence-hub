@@ -1,6 +1,6 @@
 # LeanAI internal cost governance
 
-Status: second slice, not implemented.
+Status: slice 2 implemented (issue #316). Slice 3 site attribution beyond authoritative session site remains deferred.
 Decision date: 4 November 2026.
 Customer slice: Settings → LeanAI describes included access and optional governance. It does not estimate provider cost.
 
