@@ -25,4 +25,6 @@ test("unauthenticated console paths redirect to platform sign-in", async ({
   await expect(page).toHaveURL(/\/org_admin\/login/);
   await page.goto("/org_admin/organisations");
   await expect(page).toHaveURL(/\/org_admin\/login/);
+  await page.goto("/org_admin/leanai-cost");
+  await expect(page).toHaveURL(/\/org_admin\/login/);
 });

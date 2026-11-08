@@ -8,11 +8,13 @@ import type { Database, Json } from "@/platform/supabase/database.types";
 import {
   platformDirectorySchema,
   platformAdminInAppSnapshotSchema,
+  platformLeanAiCostReportSchema,
   platformNotificationHistorySchema,
   platformOrganisationDetailSchema,
   platformOverviewSchema,
   type PlatformAdminInAppSnapshot,
   type PlatformDirectory,
+  type PlatformLeanAiCostReport,
   type PlatformNotificationHistory,
   type PlatformOrganisationDetail,
   type PlatformOverview,
@@ -229,4 +231,28 @@ export async function markAllPlatformAdminInAppNotificationsRead(input: {
     return { ok: false as const };
   }
   return { ok: data === true };
+}
+
+export async function loadPlatformLeanAiCostReport(input: {
+  periodEnd?: string | null;
+  periodStart?: string | null;
+  requestPath: string | null;
+  targetOrganisationId?: string | null;
+  userId: string;
+}): Promise<PlatformLeanAiCostReport> {
+  const { data, error } = await callPlatformRpc(
+    "platform_admin_leanai_cost_governance",
+    {
+      actor_user_id: input.userId,
+      authenticator_assurance_level: "aal2",
+      period_end: input.periodEnd ?? null,
+      period_start: input.periodStart ?? null,
+      request_path: input.requestPath,
+      target_organisation_id: input.targetOrganisationId ?? null,
+    },
+  );
+  if (error) {
+    throw new Error("LeanAI cost governance report could not be read.");
+  }
+  return platformLeanAiCostReportSchema.parse(data);
 }

@@ -243,3 +243,90 @@ export type PlatformAdminInAppNotification = z.infer<
 export type PlatformAdminInAppSnapshot = z.infer<
   typeof platformAdminInAppSnapshotSchema
 >;
+
+const numericUsd = z.union([z.number(), z.string()]).transform((value) => {
+  if (typeof value === "number") {
+    return value;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+});
+
+export const platformLeanAiCostReportSchema = z.object({
+  by_date: z.array(
+    z.object({
+      estimated_usd_complete: numericUsd,
+      failed_attempt_count: countSchema,
+      usage_date: z.string(),
+      usage_event_count: countSchema,
+    }),
+  ),
+  by_model: z.array(
+    z.object({
+      estimated_usd_complete: numericUsd,
+      incomplete_or_unpriced_event_count: countSchema,
+      model: z.string(),
+      provider: z.string(),
+      usage_event_count: countSchema,
+    }),
+  ),
+  by_organisation: z.array(
+    z.object({
+      code: z.string(),
+      estimated_usd_complete: numericUsd,
+      failed_attempt_count: countSchema,
+      incomplete_or_unpriced_event_count: countSchema,
+      monthly_subscription_revenue_gbp: z
+        .union([z.null(), numericUsd])
+        .nullable(),
+      name: z.string(),
+      organisation_id: z.string(),
+      soft_review: z.object({
+        exceeds_review_target: z.boolean(),
+        incomplete_estimate: z.boolean(),
+        ratio: z.number().nullable(),
+      }),
+      usage_event_count: countSchema,
+    }),
+  ),
+  by_workflow: z.array(
+    z.object({
+      estimated_usd_complete: numericUsd,
+      incomplete_or_unpriced_event_count: countSchema,
+      usage_event_count: countSchema,
+      workflow_key: z.string(),
+    }),
+  ),
+  disclaimer: z.string(),
+  fx_reference: z
+    .object({
+      disclaimer: z.string(),
+      effective_from: z.string(),
+      id: z.string(),
+      source_label: z.string(),
+      usd_to_gbp: z.number(),
+    })
+    .nullable(),
+  period_end: z.string(),
+  period_start: z.string(),
+  rate_card: z
+    .object({
+      currency: z.string(),
+      disclaimer: z.string(),
+      effective_from: z.string(),
+      source_label: z.string(),
+      version_id: z.string(),
+    })
+    .nullable(),
+  review_target_ratio: z.number(),
+  totals: z.object({
+    estimated_usd_complete: numericUsd,
+    failed_attempt_count: countSchema,
+    incomplete_or_unpriced_event_count: countSchema,
+    usage_event_count: countSchema,
+  }),
+});
+
+export type PlatformLeanAiCostReport = z.infer<
+  typeof platformLeanAiCostReportSchema
+>;

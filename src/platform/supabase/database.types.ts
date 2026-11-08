@@ -14577,6 +14577,17 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_admin_leanai_cost_governance: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          period_end?: string | null
+          period_start?: string | null
+          request_path: string
+          target_organisation_id?: string | null
+        }
+        Returns: Json
+      }
       preauthorize_workforce_credential_reset: {
         Args: { target_membership_id: string }
         Returns: string
