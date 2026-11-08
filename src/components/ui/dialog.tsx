@@ -92,7 +92,9 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
 
       const viewport = window.visualViewport;
       const sync = () => {
-        const scroller = node.querySelector<HTMLElement>("[data-dialog-scroll]");
+        const scroller = node.querySelector<HTMLElement>(
+          "[data-dialog-scroll]",
+        );
         const frame = dialogVisibleFrame({
           visualHeight: viewport?.height ?? window.innerHeight,
           visualOffsetTop: viewport?.offsetTop ?? 0,
@@ -119,7 +121,9 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       };
 
       const onWheel = (event: WheelEvent) => {
-        const scroller = node.querySelector<HTMLElement>("[data-dialog-scroll]");
+        const scroller = node.querySelector<HTMLElement>(
+          "[data-dialog-scroll]",
+        );
         if (!scroller || event.deltaY === 0) {
           return;
         }
@@ -130,10 +134,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
         ) {
           return;
         }
-        if (
-          target instanceof Element &&
-          isNestedScrollable(target, scroller)
-        ) {
+        if (target instanceof Element && isNestedScrollable(target, scroller)) {
           return;
         }
         const maxScroll = scroller.scrollHeight - scroller.clientHeight;

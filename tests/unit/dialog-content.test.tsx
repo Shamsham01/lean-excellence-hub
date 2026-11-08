@@ -92,8 +92,14 @@ describe("DialogContent wheel forwarding", () => {
     const nested = screen.getByTestId("nested-list");
     expect(scroller).not.toBeNull();
 
-    Object.defineProperty(nested, "scrollHeight", { value: 480, configurable: true });
-    Object.defineProperty(nested, "clientHeight", { value: 96, configurable: true });
+    Object.defineProperty(nested, "scrollHeight", {
+      value: 480,
+      configurable: true,
+    });
+    Object.defineProperty(nested, "clientHeight", {
+      value: 96,
+      configurable: true,
+    });
     Object.defineProperty(scroller!, "scrollHeight", {
       value: 600,
       configurable: true,
