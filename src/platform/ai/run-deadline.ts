@@ -19,6 +19,12 @@ export const AI_TURN_FINALIZE_BUFFER_MS = 2_500;
 export const AI_TURN_MIN_PROVIDER_TIMEOUT_MS = 1_000;
 
 /**
+ * Reserve budget so a facilitator turn can complete a tool round-trip and a
+ * second provider call before finalisation (v7 typical ~22–26s across two hops).
+ */
+export const AI_TURN_CONTINUATION_RESERVE_MS = 18_000;
+
+/**
  * One provider attempt plus finalisation must finish inside Netlify's
  * synchronous function limit. That limit is 60 seconds and is not configurable.
  * The OpenAI SDK retries connection timeouts by default, so a 45s timeout can
@@ -84,9 +90,15 @@ export function createAiRunDeadline(wallClockMs: number): AiRunDeadline {
       if (remaining <= 0) {
         throw turnWallClockExceededError(provider, model);
       }
+      const reservedForContinuation =
+        remaining >
+        AI_TURN_CONTINUATION_RESERVE_MS + AI_TURN_MIN_PROVIDER_TIMEOUT_MS
+          ? AI_TURN_CONTINUATION_RESERVE_MS
+          : 0;
+      const capAfterReserve = remaining - reservedForContinuation;
       return Math.max(
         AI_TURN_MIN_PROVIDER_TIMEOUT_MS,
-        Math.min(configuredPerCallMs, remaining),
+        Math.min(configuredPerCallMs, capAfterReserve),
       );
     },
   };
@@ -99,7 +111,7 @@ export function turnWallClockExceededError(
   return new AiProviderError(
     AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT,
     AI_TURN_WALL_CLOCK_USER_MESSAGE,
-    { provider, model },
+    { provider, model, abortedByTurnDeadline: true },
   );
 }
 

@@ -118,7 +118,9 @@ describe("LeanAI assistant platform shell integration", () => {
     );
 
     const problemSolving = read("src/platform/ai/orchestrator.ts");
-    expect(problemSolving).toContain("buildOpenAiTools()");
+    expect(problemSolving).toContain(
+      "buildProblemSolvingFacilitatorProviderTools",
+    );
     expect(problemSolving).not.toContain("workspaceAssistantTools");
     expect(problemSolving).not.toContain("web_search");
 

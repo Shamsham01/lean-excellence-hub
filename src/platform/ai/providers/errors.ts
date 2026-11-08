@@ -18,6 +18,8 @@ export type AiProviderErrorCode =
 export type AiProviderDiagnostics = {
   provider: string;
   model: string;
+  /** True when the app turn wall clock aborted the provider wait (not an SDK/network drop). */
+  abortedByTurnDeadline?: boolean;
   responseId?: string;
   responseStatus?: string;
   incompleteReason?: string;
