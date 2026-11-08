@@ -1,14 +1,13 @@
 import { Layers, Plus } from "lucide-react";
+import { Suspense } from "react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import { MATURITY_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
+import { MaturityOverviewAnalytics } from "@/components/platform/maturity-overview-analytics";
 import { PageHeader } from "@/components/platform/page-header";
 import {
   buildAnalyticsDateRange,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
-import { loadMaturityAnalytics } from "@/modules/platform-analytics/maturity";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {
@@ -87,8 +86,6 @@ export default async function MaturityOverviewPage({
     }
   }
 
-  const analytics = await loadMaturityAnalytics(supabase, analyticsRange);
-
   const { data: assessments } = await supabase
     .from("maturity_assessments")
     .select("id, status, assessment_type, updated_at")
@@ -166,11 +163,9 @@ export default async function MaturityOverviewPage({
         }
       />
 
-      <ModuleAnalyticsDashboard
-        snapshot={analytics}
-        icons={MATURITY_ANALYTICS_ICONS}
-        testId="maturity-analytics"
-      />
+      <Suspense fallback={null}>
+        <MaturityOverviewAnalytics range={analyticsRange} />
+      </Suspense>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-4">

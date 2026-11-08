@@ -350,6 +350,12 @@ body {
 }
 
 @media (min-width: 1024px) {
+  html:has([data-testid="platform-shell"]),
+  body:has([data-testid="platform-shell"]) {
+    overflow: hidden;
+    height: 100%;
+  }
+
   .platform-main-viewport:has(.pps-flagship-workspace) {
     overflow-x: clip;
     overflow-y: hidden;
