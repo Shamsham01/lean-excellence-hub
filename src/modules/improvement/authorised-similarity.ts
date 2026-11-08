@@ -1,8 +1,7 @@
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type AuthorisedSimilarityRecordType =
-  | "improvement_suggestion"
-  | "action";
+  "improvement_suggestion" | "action";
 
 export type AuthorisedSimilarityMatch = {
   recordId: string;
@@ -46,10 +45,7 @@ function parseSuggestionRow(
     status,
     href,
     excerpt: boundedText(record.body_excerpt, 240),
-    applicability: boundedText(
-      record.applicability,
-      400,
-    ),
+    applicability: boundedText(record.applicability, 400),
     contentTrust: "untrusted_record",
   };
 }
@@ -73,10 +69,7 @@ function parseActionRow(
     status,
     href,
     excerpt: boundedText(record.description_excerpt, 240),
-    applicability: boundedText(
-      record.applicability,
-      400,
-    ),
+    applicability: boundedText(record.applicability, 400),
     contentTrust: "untrusted_record",
   };
 }

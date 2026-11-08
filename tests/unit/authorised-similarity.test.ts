@@ -56,7 +56,9 @@ describe("parseAuthorisedSimilarityMatches", () => {
       },
     ]);
     expect(matches).toHaveLength(1);
-    expect(JSON.stringify(matches)).not.toMatch(/overlap_count|search_rank|0\.88/);
+    expect(JSON.stringify(matches)).not.toMatch(
+      /overlap_count|search_rank|0\.88/,
+    );
   });
 
   it("parses authorised actions and ignores cancelled rows", () => {

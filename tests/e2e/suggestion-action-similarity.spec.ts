@@ -27,12 +27,14 @@ test.describe("Suggestion and action similarity before save", () => {
     await page.goto("/platform/suggestions/new");
     await expect(page.getByTestId("new-suggestion-form")).toBeVisible();
     const form = page.getByTestId("new-suggestion-form");
-    await form.locator("textarea").nth(0).fill(
-      `We noticed ${sharedPhrase} wear during night shift`,
-    );
-    await form.locator("textarea").nth(1).fill(
-      `Replace regulator during planned ${sharedPhrase} maintenance`,
-    );
+    await form
+      .locator("textarea")
+      .nth(0)
+      .fill(`We noticed ${sharedPhrase} wear during night shift`);
+    await form
+      .locator("textarea")
+      .nth(1)
+      .fill(`Replace regulator during planned ${sharedPhrase} maintenance`);
     await expect(form.locator("textarea").nth(0)).toHaveValue(/sealing jaw/);
     const suggestionFind = page.getByTestId("find-related-records");
     await expect(suggestionFind).toBeEnabled();

@@ -58,9 +58,7 @@ describe("RelatedRecordsPanel", () => {
   });
 
   it("does not search when the query is empty", () => {
-    render(
-      <RelatedRecordsPanel recordType="action" queryText="" />,
-    );
+    render(<RelatedRecordsPanel recordType="action" queryText="" />);
     fireEvent.click(screen.getByTestId("find-related-records"));
     expect(findAuthorisedSimilarRecords).not.toHaveBeenCalled();
   });
