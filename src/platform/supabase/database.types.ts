@@ -15072,6 +15072,14 @@ export type Database = {
         }
         Returns: string
       }
+      search_authorised_actions: {
+        Args: { target_limit?: number; target_query: string }
+        Returns: Json
+      }
+      search_authorised_improvement_suggestions: {
+        Args: { target_limit?: number; target_query: string }
+        Returns: Json
+      }
       search_authorised_problem_solving_history: {
         Args: { target_limit?: number; target_query: string }
         Returns: Json
