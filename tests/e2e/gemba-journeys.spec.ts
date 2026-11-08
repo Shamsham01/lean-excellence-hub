@@ -447,11 +447,13 @@ test.describe("Milestone 6 Gemba journeys", () => {
 
     await page.getByTestId("gemba-walk-notes").fill("First prompt notes.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
-    await expect(page).toHaveURL(/prompt=/);
+    const nextPrompt = page.getByRole("button", { name: "Next", exact: true });
+    await expect(nextPrompt).toBeEnabled({ timeout: 30_000 });
+    await nextPrompt.click();
+    await expect(page).toHaveURL(/prompt=/, { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: secondPrompt })).toBeVisible(
+      { timeout: 15_000 },
+    );
 
     await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");

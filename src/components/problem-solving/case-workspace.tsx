@@ -245,9 +245,6 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       '[data-testid="pps-stage-rail-mobile"]',
     ) as HTMLElement | null;
     mobileRail?.scrollTo({ left: 0 });
-    if (typeof window !== "undefined") {
-      window.scrollTo(0, 0);
-    }
   }, [detail.id]);
 
   const syncChatPendingProposals = useCallback(

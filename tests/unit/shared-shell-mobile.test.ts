@@ -46,7 +46,7 @@ describe("shared platform shell mobile layout", () => {
     const globals = readComponent("src/app/globals.css");
 
     expect(globals).toContain(".platform-main-viewport");
-    expect(globals).toContain("touch-action: pan-y");
+    expect(globals).not.toContain("touch-action: pan-y");
     expect(globals).toContain("-webkit-overflow-scrolling: touch");
   });
 

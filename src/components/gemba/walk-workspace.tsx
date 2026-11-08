@@ -269,6 +269,15 @@ export function GembaWalkWorkspace({
     }
   }, [flatQuestions, safeIndex, status, walkId, completing]);
 
+  useEffect(() => {
+    const viewport = document.querySelector(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = 0;
+    }
+  }, [safeIndex]);
+
   async function moveTo(nextIndex: number) {
     if (!current) return;
     if (nextIndex === safeIndex) return;
