@@ -58,16 +58,13 @@ import {
 } from "@/platform/ai/source-allowlist";
 import { sanitizeEnvelopeProposals } from "@/platform/ai/proposals/contracts";
 import { executeOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-executors";
-import {
-  buildOperationalRetrievalOpenAiTools,
-  isOperationalRetrievalTool,
-} from "@/platform/ai/tools/operational-retrieval-schemas";
+import { isOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-schemas";
+import { buildProblemSolvingFacilitatorProviderTools } from "@/platform/ai/problem-solving-facilitator-request";
 import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-executors";
 import { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import {
   PROBLEM_SOLVING_TOOLS,
   PROBLEM_SOLVING_WRITE_TOOLS,
-  buildOpenAiTools,
   type ProblemSolvingToolName,
 } from "@/platform/ai/tools/problem-solving-schemas";
 import { reconcileProblemSolvingAiTurnByIdempotencyKey } from "@/platform/ai/problem-solving-turn-reconcile";
@@ -301,6 +298,7 @@ export async function runAiTurn(
       const response = await invokeProblemSolvingProviderResponse({
         supabase: input.supabase,
         runId,
+        mode: input.mode,
         deadline,
         provider,
         model,
@@ -600,6 +598,7 @@ export async function runAiTurn(
 async function invokeProblemSolvingProviderResponse(input: {
   supabase: RunAiTurnInput["supabase"];
   runId: string;
+  mode: AiSessionMode;
   deadline: ReturnType<typeof createAiRunDeadline>;
   provider: ReturnType<typeof resolveAIProvider>;
   model: string;
@@ -610,10 +609,11 @@ async function invokeProblemSolvingProviderResponse(input: {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   stageDraftTools?: Array<Record<string, unknown>>;
 }) {
-  const tools = input.stageDraftTools ?? [
-    ...buildOpenAiTools(),
-    ...buildOperationalRetrievalOpenAiTools(),
-  ];
+  const tools = buildProblemSolvingFacilitatorProviderTools(
+    input.stageDraftTools
+      ? { mode: input.mode, stageDraftTools: input.stageDraftTools }
+      : { mode: input.mode },
+  );
   const callProvider = () =>
     input.provider.createResponse({
       model: input.model,

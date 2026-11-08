@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
+  AI_TURN_CONTINUATION_RESERVE_MS,
   AI_TURN_WALL_CLOCK_USER_MESSAGE,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
@@ -23,6 +24,13 @@ describe("ai run wall-clock deadline", () => {
       1_500,
     );
     vi.useRealTimers();
+  });
+
+  it("reserves continuation budget on full production wall clock", () => {
+    const deadline = createAiRunDeadline(45_000);
+    expect(deadline.providerTimeoutMs(45_000, "openai", "gpt-test")).toBe(
+      45_000 - 2_500 - AI_TURN_CONTINUATION_RESERVE_MS,
+    );
   });
 
   it("throws a typed timeout when the budget is exhausted", () => {

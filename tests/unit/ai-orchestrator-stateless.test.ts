@@ -227,6 +227,11 @@ describe("runAiTurn stateless tool continuation", () => {
     expect(createResponseCalls[0]?.model).toBe("gpt-test");
     expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]?.timeoutMs).toBeLessThanOrEqual(45_000);
+    const toolNames = (createResponseCalls[0]?.tools ?? []).map(
+      (tool) => (tool as { name?: string }).name,
+    );
+    expect(toolNames).not.toContain("search_operational_knowledge");
+    expect(toolNames).not.toContain("get_operational_record_context");
     expect(createResponseCalls[1]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]).not.toHaveProperty("previousResponseId");
     expect(createResponseCalls[1]).not.toHaveProperty("previousResponseId");

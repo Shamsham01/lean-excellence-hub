@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { AI_TURN_WALL_CLOCK_USER_MESSAGE } from "@/platform/ai/ai-turn-messages";
 import { staleAiRunSettlement } from "@/platform/ai/ai-run-stale-settlement";
 import {
   aiRunFailureCategory,
@@ -37,9 +38,18 @@ export async function failAiRunBestEffort(
         provider_dispatched_at: runRow.provider_dispatched_at ?? null,
         provider_request_id: runRow.provider_request_id ?? null,
       });
-      if (settlement.target_error_category === "interrupted_unknown_billing") {
+      const abortedByTurnDeadline =
+        error instanceof AiProviderError &&
+        error.diagnostics.abortedByTurnDeadline === true;
+      if (
+        settlement.target_error_category === "interrupted_unknown_billing" &&
+        !abortedByTurnDeadline
+      ) {
         category = settlement.target_error_category;
         finalOutput = settlement.target_final_output;
+      } else if (abortedByTurnDeadline) {
+        category = "timeout";
+        finalOutput = AI_TURN_WALL_CLOCK_USER_MESSAGE;
       }
     }
   }
