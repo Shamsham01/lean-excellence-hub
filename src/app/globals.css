@@ -363,7 +363,7 @@ body {
 .leh-recharts .recharts-default-tooltip,
 .leh-recharts .recharts-tooltip-label,
 .leh-recharts .recharts-tooltip-item-value {
-  color: var(--card-foreground);
+  color: var(--card-foreground) !important;
 }
 
 @media (min-width: 1024px) {
