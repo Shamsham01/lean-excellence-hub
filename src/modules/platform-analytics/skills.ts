@@ -1,15 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { resolveAnalyticsOrganisationId } from "./org-scope";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
 export async function loadSkillsAnalytics(
   supabase: SupabaseClient,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const organisationId = await resolveAnalyticsOrganisationId(supabase);
   const [{ data: dashboard }, { count: skillCount }] = await Promise.all([
     supabase.rpc("get_capability_dashboard"),
     supabase
       .from("skills")
       .select("id", { count: "exact", head: true })
+      .eq("organisation_id", organisationId)
       .eq("status", "active"),
   ]);
 

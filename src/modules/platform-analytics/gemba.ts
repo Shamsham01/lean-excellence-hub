@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AnalyticsDateRange } from "./date-range";
+import { resolveAnalyticsOrganisationId } from "./org-scope";
 import { bucketDailyCounts, comparePeriods } from "./trend";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
@@ -8,9 +9,11 @@ export async function loadGembaAnalytics(
   supabase: SupabaseClient,
   range: AnalyticsDateRange,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const organisationId = await resolveAnalyticsOrganisationId(supabase);
   const { data: walks } = await supabase
     .from("gemba_walks")
     .select("id, status, started_at, completed_at, title")
+    .eq("organisation_id", organisationId)
     .gte("started_at", range.previousStart)
     .order("started_at", { ascending: false })
     .limit(500);

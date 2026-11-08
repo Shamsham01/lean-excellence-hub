@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AnalyticsDateRange } from "./date-range";
+import { resolveAnalyticsOrganisationId } from "./org-scope";
 import { bucketDailyCounts, comparePeriods } from "./trend";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
@@ -8,11 +9,13 @@ export async function loadTrainingAnalytics(
   supabase: SupabaseClient,
   range: AnalyticsDateRange,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const organisationId = await resolveAnalyticsOrganisationId(supabase);
   const [{ data: summary }, { data: sessions }] = await Promise.all([
     supabase.rpc("get_training_compliance_summary", {}),
     supabase
       .from("training_sessions")
       .select("id, status, scheduled_at, title")
+      .eq("organisation_id", organisationId)
       .gte("scheduled_at", range.previousStart)
       .order("scheduled_at", { ascending: false })
       .limit(300),

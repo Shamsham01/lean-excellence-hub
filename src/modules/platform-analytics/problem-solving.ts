@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AnalyticsDateRange } from "./date-range";
+import { resolveAnalyticsOrganisationId } from "./org-scope";
 import { bucketDailyCounts, comparePeriods } from "./trend";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
@@ -19,11 +20,13 @@ export async function loadProblemSolvingAnalytics(
   supabase: SupabaseClient,
   range: AnalyticsDateRange,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const organisationId = await resolveAnalyticsOrganisationId(supabase);
   const { data: rows } = await supabase
     .from("problem_solving_cases")
     .select(
       "id, title, status, severity, created_at, target_due_at, case_number, organisation_unit_id",
     )
+    .eq("organisation_id", organisationId)
     .gte("created_at", range.previousStart)
     .order("created_at", { ascending: false })
     .limit(1500);

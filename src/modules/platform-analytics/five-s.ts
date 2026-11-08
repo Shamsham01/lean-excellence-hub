@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AnalyticsDateRange } from "./date-range";
+import { resolveAnalyticsOrganisationId } from "./org-scope";
 import { bucketDailyCounts, comparePeriods } from "./trend";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
@@ -17,11 +18,13 @@ export async function loadFiveSAnalytics(
   supabase: SupabaseClient,
   range: AnalyticsDateRange,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const organisationId = await resolveAnalyticsOrganisationId(supabase);
   const { data: rows } = await supabase
     .from("five_s_audits")
     .select(
       "id, status, created_at, completed_at, overall_score_percent, organisation_unit_id",
     )
+    .eq("organisation_id", organisationId)
     .gte("created_at", range.previousStart)
     .order("created_at", { ascending: false })
     .limit(1000);
@@ -70,6 +73,7 @@ export async function loadFiveSAnalytics(
     ? await supabase
         .from("organisation_units")
         .select("id, name")
+        .eq("organisation_id", organisationId)
         .in("id", [...unitScores.keys()])
     : { data: [] as Array<{ id: string; name: string }> };
   const unitName = new Map((units ?? []).map((u) => [u.id, u.name]));

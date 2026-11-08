@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AnalyticsDateRange } from "./date-range";
+import { resolveAnalyticsOrganisationId } from "./org-scope";
 import { bucketDailyCounts, comparePeriods } from "./trend";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
@@ -8,16 +9,19 @@ export async function loadMaturityAnalytics(
   supabase: SupabaseClient,
   range: AnalyticsDateRange,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const organisationId = await resolveAnalyticsOrganisationId(supabase);
   const [{ data: assessments }, { data: latestResult }] = await Promise.all([
     supabase
       .from("maturity_assessments")
       .select("id, status, assessment_type, updated_at, created_at")
+      .eq("organisation_id", organisationId)
       .gte("updated_at", range.previousStart)
       .order("updated_at", { ascending: false })
       .limit(500),
     supabase
       .from("maturity_official_results")
       .select("overall_score, published_at")
+      .eq("organisation_id", organisationId)
       .order("published_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
