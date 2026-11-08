@@ -41,6 +41,8 @@ export const chartTooltipStyle = {
 /** Props spread onto Recharts `<Tooltip />` for bar charts. */
 export const chartBarTooltipProps = {
   ...chartTooltipStyle,
+  /** Single-series bars: theme item copy (multi-series charts omit this). */
+  itemStyle: { color: "var(--card-foreground)" },
   cursor: chartTooltipCursor,
 } as const;
 

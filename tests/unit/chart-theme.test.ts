@@ -13,6 +13,7 @@ describe("chart-theme tooltips", () => {
       "var(--card-foreground)",
     );
     expect(chartTooltipStyle).not.toHaveProperty("itemStyle");
+    expect(chartBarTooltipProps.itemStyle?.color).toBe("var(--card-foreground)");
   });
 
   it("uses a subtle theme-aware bar hover band", () => {
