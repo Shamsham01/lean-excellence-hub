@@ -16,7 +16,7 @@ import {
 
 import { ChartCard } from "@/components/charts/chart-card";
 import {
-  chartBarTooltipProps,
+  chartMultiSeriesTooltipProps,
   LEH_CHART_COLORS,
   chartTickStyle,
 } from "@/components/charts/chart-theme";
@@ -220,7 +220,7 @@ export function BenefitRealisationPanel({
                 />
                 <YAxis tick={chartTickStyle} />
                 <Tooltip
-                  {...chartBarTooltipProps}
+                  {...chartMultiSeriesTooltipProps}
                   formatter={(value, name) => {
                     const numeric =
                       typeof value === "number" ? value : Number(value ?? 0);

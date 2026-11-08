@@ -46,6 +46,12 @@ export const chartBarTooltipProps = {
   cursor: chartTooltipCursor,
 } as const;
 
+/** Bar/line composed charts with multiple series — keep per-series name colours. */
+export const chartMultiSeriesTooltipProps = {
+  ...chartTooltipStyle,
+  cursor: chartTooltipCursor,
+} as const;
+
 /** Props spread onto Recharts `<Tooltip />` for line/area charts. */
 export const chartLineTooltipProps = {
   ...chartTooltipStyle,
