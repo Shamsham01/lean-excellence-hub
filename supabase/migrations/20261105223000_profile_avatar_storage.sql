@@ -15,11 +15,14 @@ set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
-create policy "Profile avatars are publicly readable"
+create policy "Users can read their own profile avatar objects"
 on storage.objects
 for select
-to public
-using (bucket_id = 'profile-avatars');
+to authenticated
+using (
+  bucket_id = 'profile-avatars'
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+);
 
 create policy "Users can upload their profile avatar"
 on storage.objects

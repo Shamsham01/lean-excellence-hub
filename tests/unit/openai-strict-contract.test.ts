@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { assertStrictJsonSchemaCompatible } from "@/platform/ai/providers/openai-transport";
+import {
+  assertNoUnsupportedOpenAiStrictKeywords,
+  assertStrictJsonSchemaCompatible,
+} from "@/platform/ai/providers/openai-transport";
+import {
+  OPERATIONAL_RETRIEVAL_READ_TOOLS,
+  buildOperationalRetrievalOpenAiTools,
+  parseOperationalRetrievalToolArgs,
+} from "@/platform/ai/tools/operational-retrieval-schemas";
+import { workspaceAssistantTools } from "@/platform/ai/web-search";
 import { facilitatorEnvelopeJsonSchema } from "@/platform/ai/providers/openai-transport";
 import {
   PROBLEM_SOLVING_READ_TOOLS,
@@ -10,6 +19,15 @@ import {
   parseToolArgs,
   searchRelatedCasesParametersSchema,
 } from "@/platform/ai/tools/problem-solving-schemas";
+
+function collectStrictFunctionTools(): Array<Record<string, unknown>> {
+  return [
+    ...buildOpenAiTools(),
+    ...buildOperationalRetrievalOpenAiTools(),
+    ...workspaceAssistantTools(false),
+    ...workspaceAssistantTools(true).filter((tool) => tool.strict === true),
+  ];
+}
 
 describe("OpenAI strict request contract", () => {
   const tools = buildOpenAiTools();
@@ -38,6 +56,61 @@ describe("OpenAI strict request contract", () => {
     const toolNames = tools.map((tool) => tool.name);
     expect(toolNames).toEqual([...PROBLEM_SOLVING_TOOLS]);
     expect(tools.some((tool) => tool.type === "web_search")).toBe(false);
+  });
+
+  it("validates every LeanAI strict function tool for provider compatibility", () => {
+    const strictTools = collectStrictFunctionTools();
+    expect(strictTools.length).toBeGreaterThan(PROBLEM_SOLVING_TOOLS.length);
+
+    for (const tool of strictTools) {
+      expect(tool.strict).toBe(true);
+      expect(tool.type).toBe("function");
+      expect(() =>
+        assertStrictJsonSchemaCompatible(
+          tool.parameters,
+          `tool:${String(tool.name)}`,
+        ),
+      ).not.toThrow();
+      expect(() =>
+        assertNoUnsupportedOpenAiStrictKeywords(
+          tool.parameters,
+          `tool:${String(tool.name)}`,
+        ),
+      ).not.toThrow();
+    }
+  });
+});
+
+describe("operational retrieval strict tool schema", () => {
+  it("requires nullable limit and domains for search transport", () => {
+    const tool = buildOperationalRetrievalOpenAiTools().find(
+      (entry) => entry.name === "search_operational_knowledge",
+    );
+    expect(tool?.parameters).toMatchObject({
+      required: ["query", "limit", "domains"],
+      additionalProperties: false,
+    });
+    expect(
+      parseOperationalRetrievalToolArgs("search_operational_knowledge", {
+        query: "packaging defect",
+        limit: null,
+        domains: null,
+      }),
+    ).toEqual({ query: "packaging defect" });
+  });
+
+  it("keeps record_id as plain string transport without format", () => {
+    const tool = buildOperationalRetrievalOpenAiTools().find(
+      (entry) => entry.name === "get_operational_record_context",
+    );
+    expect(
+      (tool?.parameters as { properties: Record<string, unknown> }).properties
+        .record_id,
+    ).toEqual({
+      type: "string",
+      description: "UUID of the operational record.",
+    });
+    expect(OPERATIONAL_RETRIEVAL_READ_TOOLS).toHaveLength(2);
   });
 });
 

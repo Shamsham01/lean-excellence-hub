@@ -27,17 +27,98 @@ export const getOperationalRecordContextSchema = z
   })
   .strict();
 
+export const searchOperationalKnowledgeParametersSchema = {
+  type: "object",
+  properties: {
+    query: {
+      type: "string",
+      description:
+        "English keywords describing the operational topic to search for.",
+    },
+    limit: {
+      type: ["integer", "null"],
+      minimum: 1,
+      maximum: 12,
+      description: "Maximum number of records to return (default 8).",
+    },
+    domains: {
+      type: ["array", "null"],
+      items: { type: "string", enum: [...OPERATIONAL_KNOWLEDGE_DOMAINS] },
+      description:
+        "Optional allowlisted domains. Omit to search all operational modules.",
+    },
+  },
+  required: ["query", "limit", "domains"],
+  additionalProperties: false,
+} as const;
+
+export const getOperationalRecordContextParametersSchema = {
+  type: "object",
+  properties: {
+    record_type: {
+      type: "string",
+      enum: [...OPERATIONAL_KNOWLEDGE_DOMAINS],
+    },
+    record_id: {
+      type: "string",
+      description: "UUID of the operational record.",
+    },
+  },
+  required: ["record_type", "record_id"],
+  additionalProperties: false,
+} as const;
+
+function normalizeOperationalRetrievalTransportArgs(
+  toolName: OperationalRetrievalToolName,
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  switch (toolName) {
+    case "search_operational_knowledge": {
+      const next = { ...raw };
+      if (next.limit === null || next.limit === undefined) {
+        delete next.limit;
+      }
+      if (next.domains === null || next.domains === undefined) {
+        delete next.domains;
+      }
+      return next;
+    }
+    default:
+      return raw;
+  }
+}
+
 export function parseOperationalRetrievalToolArgs(
   toolName: OperationalRetrievalToolName,
   raw: Record<string, unknown>,
 ) {
+  const args = normalizeOperationalRetrievalTransportArgs(toolName, raw);
+
   switch (toolName) {
     case "search_operational_knowledge":
-      return searchOperationalKnowledgeSchema.parse(raw);
+      return searchOperationalKnowledgeSchema.parse(args);
     case "get_operational_record_context":
-      return getOperationalRecordContextSchema.parse(raw);
+      return getOperationalRecordContextSchema.parse(args);
     default:
       throw new Error(`Unknown operational retrieval tool: ${toolName}`);
+  }
+}
+
+function getOpenAiToolParametersSchema(
+  name: OperationalRetrievalToolName,
+): Record<string, unknown> {
+  switch (name) {
+    case "search_operational_knowledge":
+      return searchOperationalKnowledgeParametersSchema;
+    case "get_operational_record_context":
+      return getOperationalRecordContextParametersSchema;
+    default:
+      return {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      };
   }
 }
 
@@ -48,59 +129,9 @@ export function buildOperationalRetrievalOpenAiTools(): Array<
     type: "function",
     name,
     description: toolDescription(name),
-    parameters: toolParameters(name),
+    parameters: getOpenAiToolParametersSchema(name),
     strict: true,
   }));
-}
-
-function toolParameters(
-  name: OperationalRetrievalToolName,
-): Record<string, unknown> {
-  switch (name) {
-    case "search_operational_knowledge":
-      return {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          query: {
-            type: "string",
-            description:
-              "English keywords describing the operational topic to search for.",
-          },
-          limit: {
-            type: "integer",
-            minimum: 1,
-            maximum: 12,
-            description: "Maximum number of records to return (default 8).",
-          },
-          domains: {
-            type: "array",
-            items: { type: "string", enum: [...OPERATIONAL_KNOWLEDGE_DOMAINS] },
-            description:
-              "Optional allowlisted domains. Omit to search all operational modules.",
-          },
-        },
-        required: ["query"],
-      };
-    case "get_operational_record_context":
-      return {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          record_type: {
-            type: "string",
-            enum: [...OPERATIONAL_KNOWLEDGE_DOMAINS],
-          },
-          record_id: {
-            type: "string",
-            format: "uuid",
-          },
-        },
-        required: ["record_type", "record_id"],
-      };
-    default:
-      return { type: "object", additionalProperties: false, properties: {} };
-  }
 }
 
 function toolDescription(name: OperationalRetrievalToolName): string {

@@ -83,8 +83,43 @@
 
 /* Official horizontal PNG lockups in a fixed slot: object-fit contain, no crop math. */
 .leh-brand-auth-shell .leh-brand[data-variant="full"] {
-  --leh-brand-lockup: 14rem;
-  --leh-brand-lockup-height: 3.35rem;
+  --leh-brand-lockup: min(100%, 24.375rem);
+  --leh-brand-lockup-height: auto;
+  --leh-brand-lockup-max-width: 100%;
+  aspect-ratio: 2172 / 724;
+  max-height: 8.5rem;
+}
+
+@media (min-width: 64rem) {
+  .leh-brand-auth-shell .leh-brand[data-variant="full"] {
+    --leh-brand-lockup: min(26.25rem, 100%);
+    min-width: 20rem;
+    max-height: 9.25rem;
+  }
+}
+
+.leh-brand.leh-brand--on-dark-surface
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-light {
+  display: none !important;
+}
+
+.leh-brand.leh-brand--on-dark-surface
+  .leh-brand-lockup
+  > :is(span, picture).leh-brand-lockup-dark {
+  display: block !important;
+}
+
+.leh-brand.leh-brand--on-dark-surface
+  .leh-brand-fallback
+  > :is(span, picture).leh-brand-mark-light {
+  display: none !important;
+}
+
+.leh-brand.leh-brand--on-dark-surface
+  .leh-brand-fallback
+  > :is(span, picture).leh-brand-mark-dark {
+  display: block !important;
 }
 
 .marketing-header .leh-brand[data-variant="full"] {
