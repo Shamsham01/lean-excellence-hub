@@ -163,6 +163,10 @@ export default async function MaturityOverviewPage({
         }
       />
 
+      {!latestResult ? (
+        <p className="text-sm text-muted-foreground">No official result yet</p>
+      ) : null}
+
       <Suspense fallback={null}>
         <MaturityOverviewAnalytics range={analyticsRange} />
       </Suspense>

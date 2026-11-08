@@ -58,7 +58,7 @@ export async function PlatformShell({
         organisationId={organisationId}
         notifications={notifications}
       >
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background max-lg:min-h-dvh lg:overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background max-lg:min-h-dvh lg:ml-[290px] lg:overflow-hidden">
           <MobilePlatformNavigation
             items={navWithSetup}
             organisationName={organisationName}

@@ -33,7 +33,7 @@ function DesktopSidebar({
   return (
     <aside
       data-testid="platform-desktop-sidebar"
-      className="hidden h-dvh min-h-0 w-[290px] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar lg:sticky lg:top-0 lg:flex lg:h-dvh lg:max-h-dvh lg:self-start"
+      className="hidden h-dvh min-h-0 w-[290px] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:h-dvh lg:max-h-dvh"
     >
       <PlatformSidebarHeader
         organisationName={organisationName}
