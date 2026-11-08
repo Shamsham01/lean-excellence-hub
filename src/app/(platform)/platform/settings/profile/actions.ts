@@ -11,6 +11,38 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
+function mapProfileAvatarStorageError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("bucket")) {
+    return "Profile photo storage is not available yet. Ask your administrator to apply the profile-avatars migration.";
+  }
+  if (
+    lower.includes("row-level security") ||
+    lower.includes("policy") ||
+    lower.includes("not authorized")
+  ) {
+    return "You are not allowed to upload this profile photo.";
+  }
+  if (
+    lower.includes("file size") ||
+    lower.includes("payload too large") ||
+    lower.includes("too large")
+  ) {
+    return "Photos must be between 1 byte and 2 MB.";
+  }
+  if (
+    lower.includes("mime") ||
+    lower.includes("content type") ||
+    lower.includes("invalid file type")
+  ) {
+    return "Use a JPEG, PNG, or WebP photo.";
+  }
+  if (lower.includes("network") || lower.includes("fetch")) {
+    return "Unable to reach profile photo storage. Try again.";
+  }
+  return "Unable to upload your profile photo.";
+}
+
 function revalidateProfileSurfaces() {
   revalidatePath("/platform/settings/profile");
   revalidatePath("/platform");
@@ -70,13 +102,7 @@ export async function uploadProfileAvatar(formData: FormData) {
     .upload(objectPath, file, { upsert: true, contentType: file.type });
 
   if (uploadError) {
-    if (uploadError.message.toLowerCase().includes("bucket")) {
-      return {
-        error:
-          "Profile photo storage is not available yet. Ask your administrator to apply the profile-avatars migration.",
-      };
-    }
-    return { error: "Unable to upload your profile photo." };
+    return { error: mapProfileAvatarStorageError(uploadError.message) };
   }
 
   const { data: publicUrlData } = supabase.storage

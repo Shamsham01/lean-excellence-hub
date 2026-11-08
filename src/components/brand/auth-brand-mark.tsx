@@ -5,9 +5,12 @@ import { cn } from "@/lib/utils";
 export function AuthBrandMark({
   className,
   showStrapline = false,
+  lockupOnDarkSurface = false,
 }: {
   className?: string;
   showStrapline?: boolean;
+  /** Use the dark-background horizontal lockup (login brand panel). */
+  lockupOnDarkSurface?: boolean;
 }) {
   return (
     <div
@@ -16,7 +19,7 @@ export function AuthBrandMark({
         className,
       )}
     >
-      <LehBrandHomeLink />
+      <LehBrandHomeLink lockupOnDarkSurface={lockupOnDarkSurface} />
       {showStrapline ? (
         <p className="max-w-sm text-sm text-muted-foreground">
           Operational excellence for manufacturing organisations

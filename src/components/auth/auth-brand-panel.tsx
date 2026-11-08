@@ -9,8 +9,11 @@ export function AuthBrandPanel() {
       data-testid="auth-brand-panel"
     >
       <AuthGridPattern />
-      <div className="relative z-10 flex max-w-sm flex-col items-center gap-4">
-        <AuthBrandMark className="w-full" />
+      <div
+        className="relative z-10 flex w-full max-w-[26.25rem] flex-col items-center gap-4 px-1"
+        data-testid="auth-brand-panel-lockup-slot"
+      >
+        <AuthBrandMark className="w-full" lockupOnDarkSurface />
         <p className="text-sm text-white/70">
           One connected system for continuous improvement — evidence, action,
           and measurable value.

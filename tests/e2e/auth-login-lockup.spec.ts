@@ -15,15 +15,15 @@ async function applyTheme(page: Page, theme: "light" | "dark") {
     .toMatch(theme === "dark" ? /\bdark\b/ : /\blight\b/);
 }
 
-async function visibleLockupImg(page: Page, theme: "light" | "dark") {
-  const shell = page.locator(".leh-brand-auth-shell");
-  await expect(shell).toBeVisible();
-  const selector =
-    theme === "dark"
-      ? ".leh-brand-lockup-dark .leh-brand-lockup-img"
-      : ".leh-brand-lockup-light .leh-brand-lockup-img";
-  const img = shell.locator(selector);
+async function visibleAuthLockupImg(page: Page) {
+  const panel = page.getByTestId("auth-brand-panel");
+  await expect(panel).toBeVisible();
+  const shell = panel.locator(".leh-brand-auth-shell");
+  const img = shell.locator(".leh-brand-lockup-dark .leh-brand-lockup-img");
   await expect(img).toBeVisible();
+  await expect(
+    shell.locator(".leh-brand-lockup-light .leh-brand-lockup-img"),
+  ).toBeHidden();
   return img;
 }
 
@@ -51,15 +51,15 @@ async function assertLockupNaturalAndUncropped(img: Locator) {
     };
   });
 
-  expect(metrics.src).toMatch(/leh-horizontal-(light|dark)\.png/);
+  expect(metrics.src).toMatch(/leh-horizontal-dark\.png/);
   expect(metrics.naturalWidth).toBeGreaterThan(0);
   expect(metrics.clientWidth).toBeGreaterThan(0);
-  expect(metrics.visibleInkWidth).toBeGreaterThan(120);
+  expect(metrics.visibleInkWidth).toBeGreaterThan(200);
   expect(metrics.fitsInLockup).toBe(true);
 }
 
 test.describe("auth login horizontal lockup", () => {
-  test("login lockup is visible and uncropped in light and dark", async ({
+  test("login lockup uses the dark master in light and dark themes", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -68,8 +68,26 @@ test.describe("auth login horizontal lockup", () => {
 
     for (const theme of ["light", "dark"] as const) {
       await applyTheme(page, theme);
-      const img = await visibleLockupImg(page, theme);
+      const img = await visibleAuthLockupImg(page);
       await assertLockupNaturalAndUncropped(img);
     }
+
+    const lockupWidth = await page
+      .getByTestId("auth-brand-panel-lockup-slot")
+      .evaluate((node) => node.getBoundingClientRect().width);
+    expect(lockupWidth).toBeGreaterThanOrEqual(300);
+    expect(lockupWidth).toBeLessThanOrEqual(430);
+  });
+
+  test("login lockup fits a 390px mobile viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 720 });
+    await page.goto("/login");
+    const img = await visibleAuthLockupImg(page);
+    const bounds = await img.evaluate((el: HTMLImageElement) => {
+      const rect = el.getBoundingClientRect();
+      return { right: rect.right, width: rect.width };
+    });
+    expect(bounds.right).toBeLessThanOrEqual(390);
+    expect(bounds.width).toBeGreaterThan(160);
   });
 });

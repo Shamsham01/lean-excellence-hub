@@ -351,6 +351,19 @@ describe("LehBrand", () => {
     expect(brand).toHaveAttribute("aria-hidden", "true");
     expect(brand.querySelector(".leh-brand-lockup picture source")).toBeNull();
   });
+
+  it("forces the dark horizontal lockup on dark auth surfaces", () => {
+    render(<LehBrand decorative lockupOnDarkSurface variant="full" />);
+
+    const brand = screen.getByTestId("leh-brand");
+    expect(brand).toHaveAttribute("data-lockup-surface", "dark");
+    expect(brand.querySelector(".leh-brand-lockup-dark")).toBeVisible();
+    expect(brand.querySelector(".leh-brand-lockup-light")).not.toBeVisible();
+    const darkImg = brand.querySelector(
+      ".leh-brand-lockup-dark .leh-brand-lockup-img",
+    );
+    expect(darkImg?.getAttribute("src")).toContain("leh-horizontal-dark.png");
+  });
 });
 
 describe("site identity metadata", () => {
