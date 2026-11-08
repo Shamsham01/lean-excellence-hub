@@ -42,7 +42,9 @@ Includes:
 - Standard support
 - Unlimited/generous users (no per-user fee)
 
-Does **not** include Professional modules: Projects, Problem Solving, Training, Skills, Recognition, Benefits / savings portfolio, People HR product surfaces.
+Does **not** include Professional modules: Projects, Problem Solving, Training, Skills, Recognition, Benefits / savings portfolio, **paid People HR** (workforce provisioning, job-function HR admin, bulk workforce import).
+
+**Does include (all plans):** colleague invitations, membership/access administration at `/platform/settings/people`, and unlimited users per site.
 
 ### Professional — Run an Operational Excellence system
 

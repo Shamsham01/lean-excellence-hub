@@ -24,6 +24,13 @@ Prior BILLING-02 work gated finance validation and cross-module analytics by pla
 
 ## Implementation status (overnight slice — not complete)
 
+**Batch 2 (overnight) additions:**
+
+- **People foundation fix:** removed `/settings/people` layout HR gate; paid HR gated on create/import/job-functions/admin layouts only; Essentials invitation RPC privilege test.
+- **Postgres:** `billing_06` lifecycle gates (projects/benefits/training/skills/recognition/workforce/setup publishers); `billing_07`/`08` LeanAI credit settle/release on finish/fail + customer summary RPC + RLS for ledger.
+- **App:** module assert on major module `actions.ts` call paths; people settings workforce upsell card.
+- **Tests:** tier matrix, people foundation unit, mutation gate, leanai credit lifecycle (enforced reserve path), **65** pgTAP billing/credit assertions locally.
+
 **Done in repo (review-only migrations):**
 
 - `public.current_organisation_plan_module_entitled` SECURITY DEFINER wrapper + pgTAP under `authenticated`

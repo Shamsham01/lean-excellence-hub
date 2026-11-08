@@ -10,6 +10,10 @@ type RpcArgs = Record<string, unknown>;
 type ActionResult = { error?: string; ok?: true; id?: string };
 
 async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
+  const moduleGate = await assertPlanModuleWrite("projects");
+  if (!moduleGate.ok) {
+    throw new Error(moduleGate.error);
+  }
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc(
     fn as "create_improvement_project",
@@ -53,11 +57,6 @@ export async function createImprovementProject(input: {
   }>;
 }) {
   try {
-    const moduleGate = await assertPlanModuleWrite("projects");
-    if (!moduleGate.ok) {
-      return { error: moduleGate.error };
-    }
-
     const projectId = await callRpc<string>("create_improvement_project", {
       target_title: input.title,
       target_unit_id: input.unitId,

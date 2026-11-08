@@ -20,6 +20,7 @@ import {
   proficiencyScalePublishIssues,
   publishVersionSchema,
 } from "@/modules/skills/validation";
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const SKILLS_PATHS = [
@@ -37,6 +38,10 @@ function revalidateSkills(paths: string[] = []) {
 }
 
 async function requireCatalogManage() {
+  const moduleGate = await assertPlanModuleWrite("skills");
+  if (!moduleGate.ok) {
+    return { error: moduleGate.error };
+  }
   const allowed = await currentMemberHasPermission(
     SKILLS_PERMISSIONS.catalogManage,
   );
@@ -49,6 +54,10 @@ async function requireCatalogManage() {
 }
 
 async function requireRequirementsManage() {
+  const moduleGate = await assertPlanModuleWrite("skills");
+  if (!moduleGate.ok) {
+    return { error: moduleGate.error };
+  }
   const allowed = await currentMemberHasPermission(
     SKILLS_PERMISSIONS.requirementsManage,
   );

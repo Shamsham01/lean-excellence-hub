@@ -56,6 +56,8 @@ revoke all on public.organisation_ai_credit_periods from public, anon;
 revoke all on public.organisation_ai_credit_reservations from public, anon;
 grant select on public.organisation_ai_credit_periods to authenticated;
 grant select on public.organisation_ai_credit_reservations to authenticated;
+grant select, insert, update on public.organisation_ai_credit_periods to lean_hub_private_owner;
+grant select, insert, update on public.organisation_ai_credit_reservations to lean_hub_private_owner;
 
 create or replace function private.leanai_credit_policy_enforced(
   target_organisation_id uuid

@@ -23,6 +23,9 @@ import {
   currentMemberHasPermission,
   loadDelegatableAccessOffers,
 } from "@/modules/platform-shell/permissions";
+import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
+import { organisationHasModuleEntitlement } from "@/modules/billing/module-entitlements";
+import { PlanModuleUpgradePlaceholder } from "@/components/billing/plan-module-upgrade-placeholder";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 import {
@@ -42,6 +45,11 @@ export default async function PeopleSettingsPage() {
   const canDelegateRoles = await currentMemberCanDelegateRoles();
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
+  );
+  const entitlements = await loadCurrentOrganisationEntitlements();
+  const hasPeopleHr = organisationHasModuleEntitlement(
+    entitlements,
+    "people_hr",
   );
 
   if (
@@ -188,38 +196,43 @@ export default async function PeopleSettingsPage() {
       />
 
       {canProvisionWorkforce && canDelegateRoles ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Create workforce user</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
-            <p className="text-muted-foreground">
-              Add an employee with a username and system-generated temporary
-              password for workforce sign-in. This is the primary onboarding
-              path for frontline teams.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild className="w-fit">
-                <AppLink
-                  href="/platform/settings/people/create"
-                  data-testid="people-settings-create-link"
-                >
-                  Add employee
-                </AppLink>
-              </Button>
-              {canImportWorkforce ? (
-                <Button variant="outline" asChild className="w-fit">
+        hasPeopleHr ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Create workforce user</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-sm">
+              <p className="text-muted-foreground">
+                Add an employee with a username and system-generated temporary
+                password for workforce sign-in. Invitations above remain
+                available on every plan; this HR provisioning path requires
+                Professional.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button asChild className="w-fit">
                   <AppLink
-                    href="/platform/settings/people/import"
-                    data-testid="import-workforce-link"
+                    href="/platform/settings/people/create"
+                    data-testid="people-settings-create-link"
                   >
-                    Import workforce
+                    Add employee
                   </AppLink>
                 </Button>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+                {canImportWorkforce ? (
+                  <Button variant="outline" asChild className="w-fit">
+                    <AppLink
+                      href="/platform/settings/people/import"
+                      data-testid="import-workforce-link"
+                    >
+                      Import workforce
+                    </AppLink>
+                  </Button>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <PlanModuleUpgradePlaceholder module="people_hr" />
+        )
       ) : null}
 
       {canManageInvitations && canDelegateRoles ? (

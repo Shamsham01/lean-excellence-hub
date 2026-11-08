@@ -27,6 +27,24 @@ Legacy tenants with **no** subscription row (for example CookieWorks) keep Profe
 
 Suspended organisations land on `/billing` with recovery copy keyed to billing state.
 
+## People: foundation vs paid HR
+
+| Surface | Plan gate | RBAC |
+| --- | --- | --- |
+| `/platform/settings/people` invitations | **None** (all plans) | `invitations.manage`, `roles.delegate` |
+| Colleague CSV import (invitations) | **None** | import permissions |
+| Workforce create / import | `people_hr` module | `workforce.provision` / `workforce.import` |
+| Job functions settings | `people_hr` | `job_functions.*` |
+| `/platform/people/[id]/admin` | `people_hr` | membership admin |
+
+## Security checklist (billing slice)
+
+- [ ] `public.current_organisation_plan_module_entitled` remains SECURITY DEFINER; authenticated has no `EXECUTE` on `private.*_plan_capability`
+- [ ] Professional mutations call `private.assert_current_organisation_module_entitled` (Postgres) and module assert in server actions for UX
+- [ ] `api_access` / `integrations` return false until product ships
+- [ ] LeanAI credits: `credit_policy_enforced` default false; reserve/settle/release wired when enabled
+- [ ] Unlimited memberships per site unchanged (no seat metadata)
+
 ## Test and rehearsal
 
 - Unit: `tests/unit/billing-entitlements.test.ts`, `billing-plan-capabilities.test.ts`, `billing-operational-notices.test.ts`

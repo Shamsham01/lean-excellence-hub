@@ -14336,6 +14336,18 @@ export type Database = {
           text_body: string
         }[]
       }
+      get_organisation_ai_credit_period_summary: {
+        Args: never
+        Returns: {
+          allowance_credits: number
+          consumed_credits: number
+          enforcement_enabled: boolean
+          period_end: string
+          period_start: string
+          remaining_credits: number
+          reserved_credits: number
+        }[]
+      }
       get_organisation_ownership: { Args: never; Returns: Json }
       get_organisation_setup_readiness: { Args: never; Returns: Json }
       get_own_membership_profile: { Args: never; Returns: Json }
