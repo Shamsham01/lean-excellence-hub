@@ -164,7 +164,9 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
   const startSimple = page.getByTestId("structure-first-start-simple");
   if (await startSimple.isVisible()) {
     await startSimple.click();
-    await expect(page).toHaveURL(/step=job_functions/, { timeout: 30_000 });
+    await expect(
+      page.getByTestId("structure-first-job-functions-step"),
+    ).toBeVisible({ timeout: 30_000 });
   }
 
   if (
