@@ -26,6 +26,8 @@ export const chartTooltipLineCursor = {
 };
 
 export const chartTooltipStyle = {
+  /** Recharts portals tooltips outside the chart; class hooks theme CSS. */
+  wrapperClassName: "leh-recharts-tooltip",
   contentStyle: {
     background: "var(--card)",
     border: "1px solid var(--border)",

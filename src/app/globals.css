@@ -360,10 +360,10 @@ body {
   fill: color-mix(in oklch, var(--foreground) 8%, transparent);
 }
 
-.leh-recharts .recharts-default-tooltip,
-.leh-recharts .recharts-tooltip-label,
-.leh-recharts .recharts-tooltip-item-value {
-  color: var(--card-foreground) !important;
+.leh-recharts-tooltip .recharts-default-tooltip,
+.leh-recharts-tooltip .recharts-tooltip-label,
+.leh-recharts-tooltip .recharts-tooltip-item-value {
+  color: var(--card-foreground);
 }
 
 @media (min-width: 1024px) {
