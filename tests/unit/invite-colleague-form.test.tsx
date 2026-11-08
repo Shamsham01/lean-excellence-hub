@@ -41,6 +41,7 @@ describe("InviteColleagueForm invitation link UX", () => {
     const onInvite = vi.fn().mockResolvedValue({
       ok: true,
       invitationUrl,
+      emailDispatched: true,
     });
 
     render(
@@ -76,7 +77,7 @@ describe("InviteColleagueForm invitation link UX", () => {
     });
 
     expect(
-      screen.getByText(/Invitation created\. Copy the secure link below/i),
+      screen.getByText(/Invitation email sent to/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Send invitation" }),
@@ -112,6 +113,7 @@ describe("InviteColleagueForm invitation link UX", () => {
     const onInvite = vi.fn().mockResolvedValue({
       ok: true,
       invitationUrl,
+      emailDispatched: true,
     });
     const roleOffers = [
       {

@@ -15,10 +15,12 @@ import { createInvitationAccount } from "@/app/invitations/[token]/activate/acti
 
 export function InvitationActivateForm({
   token,
+  inboxProof,
   lifecycle,
   loginPath,
 }: {
   token: string;
+  inboxProof: string;
   lifecycle: InvitationLifecycleView;
   loginPath: string;
 }) {
@@ -29,8 +31,6 @@ export function InvitationActivateForm({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -38,6 +38,7 @@ export function InvitationActivateForm({
 
     const formData = new FormData();
     formData.set("token", token);
+    formData.set("inboxProof", inboxProof);
     formData.set("displayName", displayName);
     formData.set("password", password);
     formData.set("confirmPassword", confirmPassword);
@@ -49,26 +50,12 @@ export function InvitationActivateForm({
       return;
     }
 
-    setSent(true);
-    setLoading(false);
-  }
+    if (result.ok && result.continuePath) {
+      window.location.assign(result.continuePath);
+      return;
+    }
 
-  if (sent) {
-    return (
-      <AuthCard
-        title="Confirm your email"
-        description="We sent a confirmation email to finish creating your account."
-      >
-        <p className="text-sm text-muted-foreground">
-          Open the confirmation link and confirm on the next page. You will then
-          return to this invitation to accept it. Opening the email does not
-          join the organisation.
-        </p>
-        <Button variant="outline" asChild className="w-full">
-          <Link href={`/invitations/${token}`}>Back to invitation</Link>
-        </Button>
-      </AuthCard>
-    );
+    setLoading(false);
   }
 
   return (
@@ -98,6 +85,13 @@ export function InvitationActivateForm({
       </dl>
 
       {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+
+      {!inboxProof ? (
+        <InlineAlert tone="warning">
+          Open the invitation email and use the Create account button on this
+          device before setting your password.
+        </InlineAlert>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">

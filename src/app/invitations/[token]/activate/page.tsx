@@ -12,11 +12,16 @@ export const metadata: Metadata = {
 
 export default async function InvitationActivatePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ inbox_proof?: string }>;
 }) {
-  const { token } = await params;
-  const lifecycle = await ensureActivationAllowed(token);
+  const [{ token }, { inbox_proof: inboxProof }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const lifecycle = await ensureActivationAllowed(token, inboxProof ?? null);
 
   return (
     <main
@@ -26,6 +31,7 @@ export default async function InvitationActivatePage({
       <div className="w-full max-w-md">
         <InvitationActivateForm
           token={token}
+          inboxProof={inboxProof ?? ""}
           lifecycle={lifecycle}
           loginPath={invitationLoginPath(token)}
         />

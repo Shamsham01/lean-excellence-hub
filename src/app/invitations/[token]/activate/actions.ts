@@ -8,16 +8,22 @@ import {
   invitationContinuePath,
   INVITATION_TOKEN_PATTERN,
 } from "@/modules/identity/invitation-constants";
+import { attestOrganisationInvitationInbox } from "@/modules/identity/attest-invitation-inbox";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
 import { invitationTokenDigest } from "@/modules/identity/invitations";
 import { passwordUpdateSchema } from "@/modules/identity/auth-input";
 import { resolveApplicationOrigin } from "@/platform/application-origin";
-import { recordInvitationSignupDisplayName } from "@/platform/supabase/secret";
+import {
+  assertInvitationInboxVerifiedForBinding,
+  createConfirmedInvitationAuthUser,
+  recordInvitationSignupDisplayName,
+} from "@/platform/supabase/secret";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const activationSchema = z
   .object({
     token: z.string().regex(INVITATION_TOKEN_PATTERN),
+    inboxProof: z.string().min(16).max(64).optional().or(z.literal("")),
     displayName: z.string().trim().max(120).optional().or(z.literal("")),
     password: passwordUpdateSchema.shape.password,
     confirmPassword: z.string(),
@@ -64,6 +70,7 @@ function mapSignupError(message: string) {
 export async function createInvitationAccount(formData: FormData) {
   const parsed = activationSchema.safeParse({
     token: formData.get("token"),
+    inboxProof: formData.get("inboxProof") ?? "",
     displayName: formData.get("displayName") ?? "",
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
@@ -85,13 +92,6 @@ export async function createInvitationAccount(formData: FormData) {
   const lifecycle = await loadInvitationLifecycle(parsed.data.token);
   if (lifecycle.state !== "valid" || !lifecycle.recipientEmail) {
     return { error: "This invitation is no longer available." };
-  }
-
-  const originResult = resolveApplicationOrigin({
-    requestHeaders: await headers(),
-  });
-  if (!originResult.ok) {
-    return { error: originResult.error };
   }
 
   const supabase = await createServerSupabaseClient();
@@ -117,19 +117,38 @@ export async function createInvitationAccount(formData: FormData) {
     }
   }
 
-  const { error } = await supabase.auth.signUp({
+  const inboxProof = parsed.data.inboxProof?.trim();
+  if (inboxProof) {
+    await attestOrganisationInvitationInbox(parsed.data.token, inboxProof);
+  }
+
+  const inboxVerified = await assertInvitationInboxVerifiedForBinding(bindingId);
+  if (inboxVerified.error || inboxVerified.data !== true) {
+    return {
+      error:
+        "Open the invitation email and use the Create account button before setting your password.",
+    };
+  }
+
+  const created = await createConfirmedInvitationAuthUser({
     email: lifecycle.recipientEmail,
     password: parsed.data.password,
-    options: {
-      emailRedirectTo: `${originResult.origin}/auth/confirm`,
-      data: {
-        invitation_signup_binding: bindingId,
-      },
-    },
+    invitationSignupBindingId: bindingId,
   });
 
-  if (error) {
-    return { error: mapSignupError(error.message) };
+  if (created.error) {
+    return {
+      error: mapSignupError(created.error.message ?? "Unable to create account."),
+    };
+  }
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: lifecycle.recipientEmail,
+    password: parsed.data.password,
+  });
+
+  if (signInError) {
+    return { error: "Account created. Sign in to continue." };
   }
 
   return {
@@ -138,7 +157,10 @@ export async function createInvitationAccount(formData: FormData) {
   };
 }
 
-export async function ensureActivationAllowed(token: string) {
+export async function ensureActivationAllowed(
+  token: string,
+  inboxProof?: string | null,
+) {
   if (!INVITATION_TOKEN_PATTERN.test(token)) {
     redirect("/login");
   }
@@ -152,6 +174,10 @@ export async function ensureActivationAllowed(token: string) {
   const lifecycle = await loadInvitationLifecycle(token);
   if (lifecycle.state !== "valid" || !lifecycle.recipientEmail) {
     redirect(`/invitations/${token}`);
+  }
+
+  if (inboxProof?.trim()) {
+    await attestOrganisationInvitationInbox(token, inboxProof.trim());
   }
 
   return lifecycle;

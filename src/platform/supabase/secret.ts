@@ -182,6 +182,42 @@ export async function recordInvitationSignupDisplayName(
   });
 }
 
+export async function assertInvitationInboxVerifiedForBinding(bindingId: string) {
+  return createSecretClient().rpc(
+    "assert_invitation_inbox_verified_for_binding",
+    {
+      target_binding_id: bindingId,
+    },
+  );
+}
+
+export async function createConfirmedInvitationAuthUser(input: {
+  email: string;
+  password: string;
+  invitationSignupBindingId: string;
+}) {
+  const client = createSecretClient();
+  const created = await client.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: {
+      invitation_signup_binding: input.invitationSignupBindingId,
+    },
+  });
+
+  if (created.error || !created.data.user?.id) {
+    return { error: created.error };
+  }
+
+  const enrolment = await finaliseIdentityEnrolment(created.data.user.id);
+  if (enrolment.error) {
+    return { error: enrolment.error };
+  }
+
+  return { userId: created.data.user.id };
+}
+
 export async function restoreOrganisation(
   organisationId: string,
   changeReason: string,
