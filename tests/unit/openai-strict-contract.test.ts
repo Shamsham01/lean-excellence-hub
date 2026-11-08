@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { assertStrictJsonSchemaCompatible } from "@/platform/ai/providers/openai-transport";
 import { facilitatorEnvelopeJsonSchema } from "@/platform/ai/providers/openai-transport";
+import { TRAINING_SETUP_BUILDER_JSON_SCHEMA } from "@/platform/ai/prompts/training-setup-builder";
+import { SKILLS_SETUP_BUILDER_JSON_SCHEMA } from "@/platform/ai/prompts/skills-setup-builder";
 import {
   PROBLEM_SOLVING_READ_TOOLS,
   PROBLEM_SOLVING_TOOLS,
@@ -17,6 +19,21 @@ describe("OpenAI strict request contract", () => {
   it("validates the facilitator_envelope response schema", () => {
     expect(() =>
       assertStrictJsonSchemaCompatible(facilitatorEnvelopeJsonSchema),
+    ).not.toThrow();
+  });
+
+  it("validates module setup builder envelopes (skills, training)", () => {
+    expect(() =>
+      assertStrictJsonSchemaCompatible(
+        SKILLS_SETUP_BUILDER_JSON_SCHEMA,
+        "skills_setup_builder",
+      ),
+    ).not.toThrow();
+    expect(() =>
+      assertStrictJsonSchemaCompatible(
+        TRAINING_SETUP_BUILDER_JSON_SCHEMA,
+        "training_setup_builder",
+      ),
     ).not.toThrow();
   });
 

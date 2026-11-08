@@ -74,6 +74,8 @@ Templates are source-controlled. They are not hosted mutable content.
 | --- | --- | --- |
 | 5S | `leh-workplace-5s-standard` | LEH Workplace 5S Standard |
 | Gemba | `leh-operational-gemba-walk` | LEH Operational Gemba Walk |
+| Skills | `leh-general-manufacturing-skills`, `leh-food-production-skills` | LEH starter capability packs |
+| Training | `leh-manufacturing-training-starter` | LEH manufacturing training starter |
 
 Deployment copies the catalogue into an organisation-owned **draft** through a
 narrow database function. The browser does not insert sections one request at
