@@ -114,6 +114,13 @@ function periodWindow(now = Date.now()) {
   };
 }
 
+/** E2E-only: `trialing` simulates Stripe trial checkout without live keys. */
+function fakeCheckoutSubscriptionStatus() {
+  const configured =
+    process.env.BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS?.toLowerCase();
+  return configured === "trialing" ? "trialing" : "active";
+}
+
 function toProviderSubscription(
   subscription: FakeSubscription,
 ): ProviderSubscription {
@@ -518,7 +525,7 @@ export function createFakeBillingProvider(
         billingInterval: checkout.interval,
         siteQuantity: checkout.siteQuantity,
         priceId: `price_fake_${checkout.planCode}_${checkout.interval}`,
-        status: "active",
+        status: fakeCheckoutSubscriptionStatus(),
         cancelAtPeriodEnd: false,
         ...periods,
       };

@@ -119,6 +119,7 @@ export async function completeFoundingCheckout(
   user: FoundingE2eUser,
   siteQuantity = 1,
   multiSiteIntent: "yes" | "no" | "not_sure" = "not_sure",
+  plan: "Essentials" | "Professional" = "Professional",
 ) {
   await expect(page.getByTestId("create-organisation-page")).toBeVisible();
   await page.getByLabel("Organisation name").fill(user.organisationName);
@@ -135,7 +136,7 @@ export async function completeFoundingCheckout(
 
   await expect(page).toHaveURL(/\/onboarding(?:\?|$)/);
   await expect(page.getByTestId("onboarding-plan")).toBeVisible();
-  await page.getByRole("radio", { name: /Professional/ }).check();
+  await page.getByRole("radio", { name: new RegExp(plan, "i") }).check();
   await page.getByRole("button", { name: "Continue to Checkout" }).click();
 
   await expect(page.getByTestId("onboarding-wait")).toBeVisible({
@@ -202,4 +203,95 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
   await expect(page).toHaveURL(/\/platform\/setup(?:\?|$)/, {
     timeout: 30_000,
   });
+}
+
+type E2eSubscriptionRow = {
+  organisation_id: string;
+  provider: string;
+  provider_customer_id: string | null;
+  provider_subscription_id: string | null;
+  plan_code: string | null;
+  billing_interval: string | null;
+  site_quantity: number | null;
+  provider_price_id: string | null;
+};
+
+function loadLatestSubscriptionForOrganisationName(
+  organisationName: string,
+): E2eSubscriptionRow | null {
+  const escaped = organisationName.replace(/'/g, "''");
+  const sql = `select subscription.organisation_id, subscription.provider, account.provider_customer_id, subscription.provider_subscription_id, subscription.plan_code, subscription.billing_interval, subscription.site_quantity, subscription.provider_price_id from public.organisation_subscriptions subscription join public.organisations organisation on organisation.id = subscription.organisation_id join public.organisation_billing_accounts account on account.id = subscription.billing_account_id where organisation.name = '${escaped}' order by subscription.updated_at desc nulls last limit 1`;
+
+  try {
+    const output = execSync(
+      `docker exec supabase_db_lean-excellence-hub psql -U postgres -d postgres -At -F '|' -c ${JSON.stringify(sql)}`,
+      { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
+    ).trim();
+    if (!output) {
+      return null;
+    }
+    const [
+      organisation_id,
+      provider,
+      provider_customer_id,
+      provider_subscription_id,
+      plan_code,
+      billing_interval,
+      site_quantity,
+      provider_price_id,
+    ] = output.split("|");
+    return {
+      organisation_id,
+      provider,
+      provider_customer_id: provider_customer_id || null,
+      provider_subscription_id: provider_subscription_id || null,
+      plan_code: plan_code || null,
+      billing_interval: billing_interval || null,
+      site_quantity: site_quantity ? Number(site_quantity) : null,
+      provider_price_id: provider_price_id || null,
+    };
+  } catch (cause) {
+    throw cause;
+  }
+}
+
+export async function setOrganisationSubscriptionTrialing(user: FoundingE2eUser) {
+  const { url, serviceRoleKey } = resolveSupabaseEnv();
+  if (!url || !serviceRoleKey) {
+    throw new Error("Supabase service role is required to adjust billing state");
+  }
+
+  const subscription = loadLatestSubscriptionForOrganisationName(
+    user.organisationName,
+  );
+  if (!subscription) {
+    throw new Error("Subscription row was not found for the founding user");
+  }
+
+  const admin = createClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const periodEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const applied = await admin.rpc("apply_organisation_subscription_snapshot", {
+    target_organisation_id: subscription.organisation_id,
+    target_provider: subscription.provider,
+    target_customer_id: subscription.provider_customer_id ?? "",
+    target_subscription_id: subscription.provider_subscription_id ?? "",
+    target_plan_code: subscription.plan_code ?? "essentials",
+    target_billing_interval: subscription.billing_interval ?? "monthly",
+    target_site_quantity: subscription.site_quantity ?? 1,
+    target_price_id:
+      subscription.provider_price_id ?? "price_fake_essentials_monthly",
+    target_provider_status: "trialing",
+    target_billing_state: "trialing",
+    target_current_period_start: new Date().toISOString(),
+    target_current_period_end: periodEnd,
+    target_cancel_at_period_end: false,
+    target_event_at: new Date().toISOString(),
+  });
+
+  if (applied.error) {
+    throw applied.error;
+  }
 }

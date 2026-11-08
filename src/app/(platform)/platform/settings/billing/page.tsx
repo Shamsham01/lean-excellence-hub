@@ -6,7 +6,9 @@ import {
   formatBillingStateLabel,
   formatPlanDisplayLabel,
 } from "@/modules/billing/display-labels";
+import { BillingOperationalNoticesPanel } from "@/components/billing/billing-operational-notices-panel";
 import { BillingSiteCapacityPanel } from "@/components/billing/billing-site-capacity-panel";
+import { buildBillingOperationalNotices } from "@/modules/billing/billing-operational-notices";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,7 @@ export default async function OrganisationBillingSettingsPage({
   const pendingDesired = await loadProviderPendingSiteQuantity();
   const canCreateSite =
     await currentMemberHasOrganisationScopedPermission("hierarchy.manage");
+  const operationalNotices = buildBillingOperationalNotices(snapshot);
 
   return (
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
@@ -67,6 +70,8 @@ export default async function OrganisationBillingSettingsPage({
           </Button>
         }
       />
+
+      <BillingOperationalNoticesPanel notices={operationalNotices} />
 
       <Card>
         <CardHeader>

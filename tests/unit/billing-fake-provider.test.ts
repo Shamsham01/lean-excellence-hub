@@ -53,6 +53,31 @@ describe("fake billing provider", () => {
     ).rejects.toMatchObject({ code: "conflict" });
   });
 
+  it("can start fake Checkout in trialing state for E2E", async () => {
+    const previous = process.env.BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS;
+    process.env.BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS = "trialing";
+    try {
+      const provider = createFakeBillingProvider(createFakeBillingStore());
+      const checkout = await provider.createCheckoutSession({
+        organisationId: "11111111-1111-4111-8111-111111111111",
+        organisationName: "Northwind",
+        planCode: "essentials",
+        interval: "monthly",
+        siteQuantity: 1,
+        successUrl: "http://127.0.0.1:3000/onboarding/confirm",
+        cancelUrl: "http://127.0.0.1:3000/onboarding/plan",
+      });
+      const completed = provider.simulateCheckoutCompletion(checkout.sessionId);
+      expect(completed.snapshot?.billingState).toBe("trialing");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS;
+      } else {
+        process.env.BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS = previous;
+      }
+    }
+  });
+
   it("simulates Checkout completion without calling Stripe", async () => {
     const provider = createFakeBillingProvider(createFakeBillingStore());
     const checkout = await provider.createCheckoutSession({
