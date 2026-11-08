@@ -166,11 +166,15 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
     await expect(page).toHaveURL(/step=job_functions/, { timeout: 30_000 });
   }
 
-  if (await page.getByTestId("structure-first-job-functions-step").isVisible()) {
+  if (
+    await page.getByTestId("structure-first-job-functions-step").isVisible()
+  ) {
     const continueJobFunctions = page.getByTestId(
       "structure-first-continue-job-functions",
     );
-    const skipJobFunctions = page.getByTestId("structure-first-skip-job-functions");
+    const skipJobFunctions = page.getByTestId(
+      "structure-first-skip-job-functions",
+    );
     if (await continueJobFunctions.isVisible()) {
       await continueJobFunctions.click();
     } else if (await skipJobFunctions.isVisible()) {
@@ -185,13 +189,15 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
     } else {
       await page.goto("/onboarding/setup?step=readiness");
     }
-  } else if (!(await page.getByTestId("structure-first-readiness-step").isVisible())) {
+  } else if (
+    !(await page.getByTestId("structure-first-readiness-step").isVisible())
+  ) {
     await page.goto("/onboarding/setup?step=readiness");
   }
 
-  await expect(
-    page.getByTestId("structure-first-readiness-step"),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("structure-first-readiness-step")).toBeVisible({
+    timeout: 30_000,
+  });
   await page.getByTestId("structure-first-continue-setup").click();
   await expect(page).toHaveURL(/\/platform\/setup(?:\?|$)/, {
     timeout: 30_000,

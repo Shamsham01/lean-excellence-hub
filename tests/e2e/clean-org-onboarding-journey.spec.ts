@@ -80,7 +80,9 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
         {
           path: "/platform/settings/structure",
           check: async (p) => {
-            await expect(p.getByTestId("structure-settings-page")).toBeVisible();
+            await expect(
+              p.getByTestId("structure-settings-page"),
+            ).toBeVisible();
           },
         },
         {
@@ -106,7 +108,9 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
           path: "/platform/maturity/models",
           check: async (p) => {
             await expect(p.getByTestId("maturity-models-page")).toBeVisible();
-            await expect(p.getByTestId("maturity-quick-start-section")).toBeVisible();
+            await expect(
+              p.getByTestId("maturity-quick-start-section"),
+            ).toBeVisible();
           },
         },
         {
@@ -156,7 +160,9 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
         {
           path: "/platform/benefits",
           check: async (p) => {
-            await expect(p.getByTestId("benefits-portfolio-page")).toBeVisible();
+            await expect(
+              p.getByTestId("benefits-portfolio-page"),
+            ).toBeVisible();
           },
         },
         {
@@ -165,13 +171,17 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
             await expect(
               p.getByTestId("problem-solving-portfolio-page"),
             ).toBeVisible();
-            await expect(p.getByTestId("problem-solving-new-link")).toBeVisible();
+            await expect(
+              p.getByTestId("problem-solving-new-link"),
+            ).toBeVisible();
           },
         },
         {
           path: "/platform/training",
           check: async (p) => {
-            await expect(p.getByTestId("training-hub-empty-courses")).toBeVisible();
+            await expect(
+              p.getByTestId("training-hub-empty-courses"),
+            ).toBeVisible();
           },
         },
         {
@@ -202,9 +212,7 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
       ];
 
     for (const moduleRoute of modules) {
-      await visitModule(page, moduleRoute.path, () =>
-        moduleRoute.check(page),
-      );
+      await visitModule(page, moduleRoute.path, () => moduleRoute.check(page));
     }
 
     assertClean();
@@ -232,7 +240,10 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     const suggestionTitle = `Clean org idea ${Date.now().toString(36)}`;
     await page.goto("/platform/suggestions/new");
     await expect(page.getByTestId("new-suggestion-form")).toBeVisible();
-    await page.locator("textarea").first().fill("Spotted during clean-org journey");
+    await page
+      .locator("textarea")
+      .first()
+      .fill("Spotted during clean-org journey");
     await page.locator("textarea").nth(1).fill("Automated first suggestion");
     await page.locator("form input").first().fill(suggestionTitle);
     await page.getByRole("button", { name: "Submit idea" }).click();
@@ -246,7 +257,10 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     const wizard = page.getByTestId("create-problem-solving-wizard");
     await wizard.getByLabel("Title").fill(caseTitle);
     await wizard.getByRole("button", { name: "Next" }).click();
-    await wizard.locator("textarea").first().fill("Problem statement for smoke");
+    await wizard
+      .locator("textarea")
+      .first()
+      .fill("Problem statement for smoke");
     for (let step = 0; step < 4; step += 1) {
       await wizard.getByRole("button", { name: "Next" }).click();
     }
@@ -277,9 +291,9 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     await page.getByLabel("Password").fill(user.password);
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.goto("/platform/settings/people");
-    await expect(
-      page.getByText(colleagueEmail, { exact: false }),
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(colleagueEmail, { exact: false })).toBeVisible({
+      timeout: 30_000,
+    });
 
     await acceptInvitationAsNewColleague(browser, {
       invitationPath,

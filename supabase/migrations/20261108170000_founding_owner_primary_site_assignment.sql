@@ -164,6 +164,38 @@ begin
 end;
 $$;
 
+revoke all on function private.create_founding_organisation(
+  text, text, text, text, text, text, integer, text, text
+)
+  from public, anon, authenticated, service_role;
+revoke all on function public.create_founding_organisation(
+  text, text, text, text, text, text, integer, text, text
+)
+  from public, anon, authenticated, service_role;
+
+revoke all on function private.create_job_function(text, text, text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.assign_membership_job_function(
+  uuid, uuid, boolean, uuid, timestamptz, timestamptz, text
+)
+  from public, anon, authenticated, service_role;
+
 alter function private.create_founding_organisation(
   text, text, text, text, text, text, integer, text, text
-) owner to postgres;
+) owner to lean_hub_private_owner;
+
+grant execute on function public.create_founding_organisation(
+  text, text, text, text, text, text, integer, text, text
+)
+  to authenticated;
+grant execute on function private.create_founding_organisation(
+  text, text, text, text, text, text, integer, text, text
+)
+  to authenticated;
+
+grant execute on function private.create_job_function(text, text, text)
+  to lean_hub_private_owner;
+grant execute on function private.assign_membership_job_function(
+  uuid, uuid, boolean, uuid, timestamptz, timestamptz, text
+)
+  to lean_hub_private_owner;

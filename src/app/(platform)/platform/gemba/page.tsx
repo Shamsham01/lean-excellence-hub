@@ -89,10 +89,7 @@ export default async function GembaOverviewPage({
 
   if (catalog === "empty") {
     return (
-      <div
-        className="flex flex-col gap-8"
-        data-testid="gemba-empty-state"
-      >
+      <div className="flex flex-col gap-8" data-testid="gemba-empty-state">
         <PageHeader
           title="Gemba walks"
           description="Structured walks with observations and follow-up."

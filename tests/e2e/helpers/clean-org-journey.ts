@@ -148,7 +148,9 @@ export async function issueInvitationForFoundingOwner(
   ownerClient: SupabaseClient,
   input: { email: string; tokenSeed: string; displayName?: string },
 ) {
-  const token = createHash("sha256").update(input.tokenSeed).digest("base64url");
+  const token = createHash("sha256")
+    .update(input.tokenSeed)
+    .digest("base64url");
   const { data: offers, error: offersError } = await ownerClient.rpc(
     "get_delegatable_access_offers",
   );
@@ -158,9 +160,9 @@ export async function issueInvitationForFoundingOwner(
 
   const offerList = (offers as { offers?: Array<Record<string, string>> })
     ?.offers;
-  const offer = offerList?.find(
-    (entry) => entry.role_key === "team_member",
-  ) ?? offerList?.[0];
+  const offer =
+    offerList?.find((entry) => entry.role_key === "team_member") ??
+    offerList?.[0];
 
   if (!offer?.role_version_id) {
     throw new Error("No delegatable offer for colleague invitation");
@@ -173,20 +175,23 @@ export async function issueInvitationForFoundingOwner(
     }>
   )[0];
 
-  const { error } = await ownerClient.rpc("issue_organisation_member_invitation", {
-    invitation_recipient_type: "email",
-    invitation_canonical_recipient: input.email,
-    invitation_token_digest: invitationTokenDigest(token),
-    invitation_expires_at: invitationExpiresAt(),
-    offered_role_version_id: offer.role_version_id,
-    offered_scope_type: scope?.scope_type ?? "organisation",
-    ...((scope?.scope_unit_id
-      ? { offered_scope_unit_id: scope.scope_unit_id }
-      : {}) as Record<string, string>),
-    ...(input.displayName
-      ? { intended_display_name: input.displayName }
-      : {}),
-  });
+  const { error } = await ownerClient.rpc(
+    "issue_organisation_member_invitation",
+    {
+      invitation_recipient_type: "email",
+      invitation_canonical_recipient: input.email,
+      invitation_token_digest: invitationTokenDigest(token),
+      invitation_expires_at: invitationExpiresAt(),
+      offered_role_version_id: offer.role_version_id,
+      offered_scope_type: scope?.scope_type ?? "organisation",
+      ...((scope?.scope_unit_id
+        ? { offered_scope_unit_id: scope.scope_unit_id }
+        : {}) as Record<string, string>),
+      ...(input.displayName
+        ? { intended_display_name: input.displayName }
+        : {}),
+    },
+  );
 
   if (error) {
     throw error;
@@ -248,9 +253,7 @@ export async function acceptInvitationAsNewColleague(
     /\/invitations\/continue\/[0-9a-f-]{36}$/i,
     { timeout: 30_000 },
   );
-  await inviteePage
-    .getByRole("button", { name: "Accept invitation" })
-    .click();
+  await inviteePage.getByRole("button", { name: "Accept invitation" }).click();
   await expect(inviteePage).toHaveURL(/\/platform/, { timeout: 30_000 });
   await inviteeContext.close();
 }
