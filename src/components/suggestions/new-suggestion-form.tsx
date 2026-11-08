@@ -18,6 +18,7 @@ import {
   type SuggestionDraftFields,
   type SuggestionEvidenceFile,
 } from "@/lib/suggestions/submit-suggestion-with-evidence";
+import { RelatedRecordsPanel } from "@/components/improvement/related-records-panel";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
@@ -502,6 +503,29 @@ export function NewSuggestionForm({
             {loading ? "Submitting…" : "Submit idea"}
           </Button>
         </form>
+
+        <RelatedRecordsPanel
+          recordType="improvement_suggestion"
+          queryText={`${title} ${noticed} ${proposed}`.trim()}
+          resolveQuery={() => {
+            if (typeof document !== "undefined") {
+              const draftForm = document.querySelector(
+                '[data-testid="new-suggestion-form"] form',
+              );
+              if (draftForm) {
+                const fields = draftForm.querySelectorAll("textarea");
+                const titleInput = draftForm.querySelector(
+                  "input:not([type='file'])",
+                ) as HTMLInputElement | null;
+                const fromDom =
+                  `${titleInput?.value ?? ""} ${fields[0]?.value ?? ""} ${fields[1]?.value ?? ""}`.trim();
+                if (fromDom) return fromDom;
+              }
+            }
+            return `${title} ${noticed} ${proposed}`.trim();
+          }}
+          disabled={!canSubmit || loading}
+        />
       </CardContent>
     </Card>
   );
