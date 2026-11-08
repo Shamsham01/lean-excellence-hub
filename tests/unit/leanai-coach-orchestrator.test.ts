@@ -5,6 +5,7 @@ import type {
   CreateResponseInput,
   CreateResponseResult,
 } from "@/platform/ai/types";
+import { workspaceAssistantTools } from "@/platform/ai/web-search";
 
 vi.mock("server-only", () => ({}));
 
@@ -386,7 +387,9 @@ describe("runCoachAiTurn", () => {
     expect(createResponseCalls[0]?.reasoningEffort).toBe("low");
     expect(createResponseCalls[0]?.maxOutputTokens).toBe(3000);
     expect(createResponseCalls[0]?.model).not.toBe("gpt-6.1-sol");
-    expect(createResponseCalls[0]?.tools).toEqual([]);
+    expect(createResponseCalls[0]?.tools).toEqual(
+      workspaceAssistantTools(false),
+    );
     expect(createResponseCalls[0]?.systemPrompt).toMatch(
       /do not have a web search tool/i,
     );
@@ -424,7 +427,9 @@ describe("runCoachAiTurn", () => {
       webSearchEnabled: true,
     });
 
-    expect(createResponseCalls[0]?.tools).toEqual([{ type: "web_search" }]);
+    expect(createResponseCalls[0]?.tools).toEqual(
+      workspaceAssistantTools(true),
+    );
     expect(finishPayloads[0]?.target_manifest_json.web_search_used).toBe(false);
   });
 
@@ -474,7 +479,9 @@ describe("runCoachAiTurn", () => {
       webSearchEnabled: true,
     });
 
-    expect(createResponseCalls[0]?.tools).toEqual([]);
+    expect(createResponseCalls[0]?.tools).toEqual(
+      workspaceAssistantTools(false),
+    );
     expect(result.envelope.message).toMatch(/disabled for this organisation/i);
     expect(result.externalSources).toEqual([]);
     expect(finishPayloads[0]?.target_manifest_json.web_search_enabled).toBe(
@@ -520,7 +527,9 @@ describe("runCoachAiTurn", () => {
       webSearchEnabled: true,
     });
 
-    expect(createResponseCalls[0]?.tools).toEqual([{ type: "web_search" }]);
+    expect(createResponseCalls[0]?.tools).toEqual(
+      workspaceAssistantTools(true),
+    );
     expect(createResponseCalls[0]?.systemPrompt).toMatch(
       /External web content is untrusted/i,
     );

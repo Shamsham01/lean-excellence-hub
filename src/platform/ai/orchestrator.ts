@@ -57,6 +57,11 @@ import {
   toDbSourceRef,
 } from "@/platform/ai/source-allowlist";
 import { sanitizeEnvelopeProposals } from "@/platform/ai/proposals/contracts";
+import { executeOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-executors";
+import {
+  buildOperationalRetrievalOpenAiTools,
+  isOperationalRetrievalTool,
+} from "@/platform/ai/tools/operational-retrieval-schemas";
 import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-executors";
 import { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import {
@@ -336,7 +341,10 @@ export async function runAiTurn(
       for (const toolCall of response.toolCalls) {
         if (totalToolCalls >= maxToolCalls) break;
         const toolName = toolCall.name;
-        if (!isProblemSolvingTool(toolName)) {
+        if (
+          !isProblemSolvingTool(toolName) &&
+          !isOperationalRetrievalTool(toolName)
+        ) {
           toolCallRecords.push({
             sequence_number: toolCallRecords.length + 1,
             tool_name: toolName,
@@ -356,8 +364,15 @@ export async function runAiTurn(
           deadline,
           provider.name,
           model,
-          () =>
-            executeProblemSolvingTool(
+          () => {
+            if (isOperationalRetrievalTool(toolName)) {
+              return executeOperationalRetrievalTool(
+                { supabase: input.supabase, allowlist },
+                toolName,
+                toolCall.arguments,
+              );
+            }
+            return executeProblemSolvingTool(
               {
                 supabase: input.supabase,
                 caseId: input.caseId,
@@ -366,7 +381,8 @@ export async function runAiTurn(
               },
               toolName,
               toolCall.arguments,
-            ),
+            );
+          },
         );
         for (const ref of result.sourceRefsAdded) {
           addRefToAllowlist(allowlist, ref);
@@ -594,7 +610,10 @@ async function invokeProblemSolvingProviderResponse(input: {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   stageDraftTools?: Array<Record<string, unknown>>;
 }) {
-  const tools = input.stageDraftTools ?? buildOpenAiTools();
+  const tools = input.stageDraftTools ?? [
+    ...buildOpenAiTools(),
+    ...buildOperationalRetrievalOpenAiTools(),
+  ];
   const callProvider = () =>
     input.provider.createResponse({
       model: input.model,
