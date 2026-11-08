@@ -2,39 +2,223 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { ComponentPropsWithoutRef, HTMLAttributes } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+  type HTMLAttributes,
+} from "react";
 
+import { dialogVisibleFrame } from "@/components/ui/dialog-viewport";
 import { cn } from "@/lib/utils";
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 
-export function DialogContent({
-  className,
-  children,
-  ...props
-}: ComponentPropsWithoutRef<typeof DialogPrimitive.Content>) {
-  return (
-    <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/40" />
-      <DialogPrimitive.Content
-        className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-card p-6 shadow-lg",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        <DialogPrimitive.Close
-          className="absolute top-3 right-3 rounded-md p-2 opacity-70 hover:bg-muted hover:opacity-100"
-          aria-label="Close"
+const DIALOG_SHELL_CLASS =
+  "fixed z-50 mx-auto flex w-auto max-w-lg flex-col overflow-hidden rounded-lg border border-border bg-card shadow-lg top-[max(1rem,env(safe-area-inset-top,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem)]";
+
+const DIALOG_BODY_SCROLL_CLASS =
+  "min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain grid min-w-0";
+
+const DIALOG_BODY_DEFAULT_CLASS = "gap-4 py-6 pr-14 pl-6";
+
+function readSafeAreaInset(edge: "top" | "bottom"): number {
+  const probe = document.createElement("div");
+  probe.style.position = "fixed";
+  probe.style.visibility = "hidden";
+  probe.style.pointerEvents = "none";
+  probe.style.paddingTop = `env(safe-area-inset-${edge}, 0px)`;
+  document.documentElement.appendChild(probe);
+  const value = Number.parseFloat(getComputedStyle(probe).paddingTop) || 0;
+  probe.remove();
+  return value;
+}
+
+function isNestedScrollable(
+  target: Element,
+  dialogScroller: HTMLElement,
+): boolean {
+  let el: Element | null = target;
+  while (el && el !== dialogScroller) {
+    if (el instanceof HTMLElement) {
+      const { overflowY } = getComputedStyle(el);
+      const scrollable =
+        overflowY === "auto" ||
+        overflowY === "scroll" ||
+        overflowY === "overlay";
+      if (scrollable && el.scrollHeight > el.clientHeight + 1) {
+        return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
+export type DialogContentProps = ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+> & {
+  /** Merged onto the scrollable body region (padding, gap, layout). */
+  bodyClassName?: string;
+  /** Omit default body padding and gap so content can run edge-to-edge. */
+  flush?: boolean;
+};
+
+export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
+  function DialogContent(
+    { className, bodyClassName, flush, children, style, ...props },
+    forwardedRef,
+  ) {
+    const frameKey = useRef("");
+    const cleanupRef = useRef<(() => void) | null>(null);
+    const [frameStyle, setFrameStyle] = useState<CSSProperties | null>(null);
+
+    // Radix mounts the dialog node only while it is open, so a mount effect on
+    // this component runs before the node exists. The callback ref binds when
+    // the open dialog is actually in the document.
+    const bindContentNode = useCallback((node: HTMLDivElement | null) => {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      if (!node) {
+        frameKey.current = "";
+        return;
+      }
+
+      const viewport = window.visualViewport;
+      const sync = () => {
+        const scroller = node.querySelector<HTMLElement>(
+          "[data-dialog-scroll]",
+        );
+        const frame = dialogVisibleFrame({
+          visualHeight: viewport?.height ?? window.innerHeight,
+          visualOffsetTop: viewport?.offsetTop ?? 0,
+          safeAreaTop: readSafeAreaInset("top"),
+          safeAreaBottom: readSafeAreaInset("bottom"),
+        });
+        const maxHeight = `${frame.maxHeight}px`;
+        // A definite height lets the inner region scroll. Short dialogs stay
+        // at height:auto so they remain content-sized. Position is set without
+        // a transform: a translated dialog does not receive wheel scrolling.
+        const tooTall =
+          scroller != null && scroller.scrollHeight > frame.maxHeight + 1;
+        const height = tooTall ? maxHeight : "auto";
+        node.style.maxHeight = maxHeight;
+        node.style.height = height;
+        const usedHeight = node.offsetHeight;
+        const top = `${Math.max(0, frame.top - usedHeight / 2)}px`;
+        const key = `${maxHeight}|${top}|${height}`;
+        if (key === frameKey.current) {
+          return;
+        }
+        frameKey.current = key;
+        setFrameStyle({ maxHeight, top, height });
+      };
+
+      const onWheel = (event: WheelEvent) => {
+        const scroller = node.querySelector<HTMLElement>(
+          "[data-dialog-scroll]",
+        );
+        if (!scroller || event.deltaY === 0) {
+          return;
+        }
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          target.closest("textarea, select, [contenteditable='true']")
+        ) {
+          return;
+        }
+        if (target instanceof Element && isNestedScrollable(target, scroller)) {
+          return;
+        }
+        const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+        if (maxScroll <= 0) {
+          return;
+        }
+        const next = Math.min(
+          maxScroll,
+          Math.max(0, scroller.scrollTop + event.deltaY),
+        );
+        if (next === scroller.scrollTop) {
+          return;
+        }
+        scroller.scrollTop = next;
+        event.preventDefault();
+      };
+
+      sync();
+      viewport?.addEventListener("resize", sync);
+      viewport?.addEventListener("scroll", sync);
+      node.addEventListener("wheel", onWheel, { passive: false });
+      const measured = scrollerFirstChild(node);
+      const observer =
+        measured && typeof ResizeObserver !== "undefined"
+          ? new ResizeObserver(sync)
+          : null;
+      if (measured && observer) {
+        observer.observe(measured);
+      }
+      cleanupRef.current = () => {
+        viewport?.removeEventListener("resize", sync);
+        viewport?.removeEventListener("scroll", sync);
+        node.removeEventListener("wheel", onWheel);
+        observer?.disconnect();
+      };
+    }, []);
+
+    const setContentNode = useCallback(
+      (node: HTMLDivElement | null) => {
+        bindContentNode(node);
+        if (typeof forwardedRef === "function") {
+          forwardedRef(node);
+        } else if (forwardedRef) {
+          forwardedRef.current = node;
+        }
+      },
+      [bindContentNode, forwardedRef],
+    );
+
+    useEffect(() => () => cleanupRef.current?.(), []);
+
+    return (
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 overflow-hidden overscroll-contain bg-foreground/40" />
+        <DialogPrimitive.Content
+          {...props}
+          ref={setContentNode}
+          className={cn(DIALOG_SHELL_CLASS, className)}
+          style={{ ...frameStyle, ...style }}
         >
-          <X className="size-4" />
-        </DialogPrimitive.Close>
-      </DialogPrimitive.Content>
-    </DialogPrimitive.Portal>
-  );
+          <div
+            data-dialog-scroll=""
+            className={cn(
+              DIALOG_BODY_SCROLL_CLASS,
+              !flush && DIALOG_BODY_DEFAULT_CLASS,
+              bodyClassName,
+            )}
+          >
+            {children}
+          </div>
+          <DialogPrimitive.Close
+            className="absolute top-3 right-3 z-10 rounded-md bg-card p-2 opacity-70 hover:bg-muted hover:opacity-100"
+            aria-label="Close"
+          >
+            <X className="size-4" />
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    );
+  },
+);
+
+function scrollerFirstChild(node: HTMLDivElement): Element | null {
+  return node.querySelector("[data-dialog-scroll]")?.firstElementChild ?? null;
 }
 
 export function DialogHeader({
