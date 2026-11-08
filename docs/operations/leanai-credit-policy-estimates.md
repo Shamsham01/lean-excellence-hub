@@ -30,10 +30,12 @@ Uncapped high adoption on Essentials (£499/site) can exceed subscription revenu
 
 ## Candidate configurable budgets (pending activation)
 
-| Plan | Illustrative internal provider budget / site / month | Candidate credits / site / month (1 credit = £0.001) |
+| Plan | Illustrative internal provider budget / site / month | Candidate **cost-credit** budget / site / month (ledger micro-units; not tokens) |
 | --- | ---: | ---: |
-| Essentials | £30 | 30,000 |
-| Professional / Founder | £120 | 120,000 |
+| Essentials | £30 | 30,000 cost credits |
+| Professional / Founder | £120 | 120,000 cost credits |
+
+`30,000` / `120,000` are **monthly cost-credit pool sizes** aligned to the illustrative £ budgets above (`LEANAI_CREDIT_MICRO_GBP_PER_CREDIT` mapping). They are **not** token allowances and are **not** used as token governance metadata.
 
 Pooled organisation allowance scales by **subscribed site quantity**. `LEH_AI_CREDIT_POLICY_ENFORCED` remains **false** in application code until usage review and verified rate cards.
 

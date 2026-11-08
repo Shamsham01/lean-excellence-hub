@@ -76,7 +76,6 @@ SQL_DELEGATE_GATES: dict[str, str] = {
     "remove_training_session_participant": "training",
 }
 
-PROVISIONAL_RUN_CREDIT_ESTIMATE = 1
 MODULE_BY_FUNCTION: dict[str, str] = {}
 PUBLIC_ONLY = frozenset(
     {
@@ -111,15 +110,19 @@ def parse_inventory() -> None:
         mod = parts[2].strip()
         if mod == "ai" and fn not in AI_RUN_MUTATIONS and fn not in AI_SESSION_CREATES:
             continue
-        if mod == "people_hr" and fn.startswith(
-            (
-                "create_people_invitation",
-                "claim_people_invitation",
-                "finalize_people_invitation",
-                "start_people_invitation",
-                "submit_people_invitation",
-                "validate_people_invitation",
+        if mod == "people_hr" and (
+            fn.startswith(
+                (
+                    "create_people_invitation",
+                    "claim_people_invitation",
+                    "finalize_people_invitation",
+                    "start_people_invitation",
+                    "submit_people_invitation",
+                    "validate_people_invitation",
+                )
             )
+            or fn.endswith("_people_invitation_import_batch")
+            or fn.endswith("_people_invitation_import_job")
         ):
             continue
         if fn in PUBLIC_ONLY:
@@ -207,14 +210,17 @@ def after_auth_insert(body: str, insert: str) -> str:
 
 
 def inject_start_ai_run_credit_reserve(body: str) -> str:
-    if "ai_credit_try_reserve" in body:
+    if "leanai_ai_run_reserve_upper_bound" in body:
         return body
-    hook = f"""
+    hook = """
   if not coalesce(
-    private.ai_credit_try_reserve(
+    private.leanai_ai_run_try_reserve(
+      org_id,
       new_run_id,
       btrim(target_idempotency_key),
-      greatest(1::bigint, {PROVISIONAL_RUN_CREDIT_ESTIMATE}::bigint)
+      btrim(target_provider),
+      btrim(target_model),
+      btrim(target_user_message)
     ),
     true
   ) then
@@ -224,9 +230,30 @@ def inject_start_ai_run_credit_reserve(body: str) -> str:
 
 """
     needle = "  return new_run_id;\nend;\n$$;"
+    needle = "  return new_run_id;\nend;\n$$;"
     if needle in body:
         return body.replace(needle, hook + needle, 1)
     return body
+
+
+def patch_finish_ai_run_cost_settle(body: str) -> str:
+    token_settle = """perform private.ai_credit_settle(
+    target_ai_run_id,
+    greatest(
+      1::bigint,
+      (coalesce(target_input_tokens, 0) + coalesce(target_output_tokens, 0))::bigint
+    )
+  );"""
+    cost_settle = """perform private.ai_credit_settle_from_run_usage(
+    target_ai_run_id,
+    coalesce(target_input_tokens, 0),
+    coalesce(target_output_tokens, 0),
+    coalesce(target_cached_input_tokens, 0),
+    coalesce(target_reasoning_tokens, 0)
+  );"""
+    if cost_settle in body:
+        return body
+    return body.replace(token_settle, cost_settle)
 
 
 def sql_delegate_to_plpgsql(fn: str, body: str, module: str) -> str:
@@ -273,6 +300,9 @@ def patch_function(fn: str, body: str) -> str:
 
     if fn in SQL_DELEGATE_GATES:
         return sql_delegate_to_plpgsql(fn, body, SQL_DELEGATE_GATES[fn])
+
+    if fn == "finish_ai_run":
+        body = patch_finish_ai_run_cost_settle(body)
 
     if fn != "start_ai_run" and (
         "assert_current_organisation_module_entitled" in body

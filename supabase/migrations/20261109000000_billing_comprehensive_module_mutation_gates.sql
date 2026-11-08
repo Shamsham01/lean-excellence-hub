@@ -7477,12 +7477,12 @@ begin
     )
   );
 
-  perform private.ai_credit_settle(
+  perform private.ai_credit_settle_from_run_usage(
     target_ai_run_id,
-    greatest(
-      1::bigint,
-      (coalesce(target_input_tokens, 0) + coalesce(target_output_tokens, 0))::bigint
-    )
+    coalesce(target_input_tokens, 0),
+    coalesce(target_output_tokens, 0),
+    coalesce(target_cached_input_tokens, 0),
+    coalesce(target_reasoning_tokens, 0)
   );
 
   return assistant_message_id;
@@ -11550,10 +11550,13 @@ begin
 
 
   if not coalesce(
-    private.ai_credit_try_reserve(
+    private.leanai_ai_run_try_reserve(
+      org_id,
       new_run_id,
       btrim(target_idempotency_key),
-      greatest(1::bigint, 1::bigint)
+      btrim(target_provider),
+      btrim(target_model),
+      btrim(target_user_message)
     ),
     true
   ) then

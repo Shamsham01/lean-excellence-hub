@@ -23,8 +23,8 @@ STRUCTURAL_REWRITES = frozenset(
 REQUIRED_ASSERT_SNIPPETS: dict[str, list[str]] = {
     "record_ai_proposal_accepted": ["assert_ai_session_module_entitled"],
     "reject_ai_proposal": ["assert_ai_session_module_entitled"],
-    "start_ai_run": ["assert_ai_session_module_entitled", "ai_credit_try_reserve"],
-    "finish_ai_run": ["ai_credit_settle"],
+    "start_ai_run": ["assert_ai_session_module_entitled", "leanai_ai_run_try_reserve"],
+    "finish_ai_run": ["ai_credit_settle_from_run_usage"],
     "fail_ai_run": ["ai_credit_release"],
     "remove_training_session_participant": [
         "assert_current_organisation_module_entitled('training')"
@@ -47,9 +47,10 @@ ASSERT_PATTERNS = [
         re.I | re.S,
     ),
     re.compile(
-        r"if not coalesce\(\s*private\.ai_credit_try_reserve\([^;]+;\s*end if;",
+        r"if not coalesce\(\s*private\.leanai_ai_run_try_reserve\([^;]+;\s*end if;",
         re.I | re.S,
     ),
+    re.compile(r"perform private\.ai_credit_settle_from_run_usage\([^;]+;", re.I),
     re.compile(r"perform private\.ai_credit_settle\([^;]+;", re.I),
     re.compile(r"perform private\.ai_credit_release\([^;]+;", re.I),
     re.compile(r"perform private\.assert_current_organisation_module_entitled\([^)]+\);", re.I),

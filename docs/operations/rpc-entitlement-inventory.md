@@ -93,7 +93,7 @@ Inventory: **160** authenticated write RPCs across Professional-only modules; **
 | `mark_workforce_import_credentials_exported` | people_hr | no |  |
 | `move_problem_solving_stage` | problem_solving | yes | 20261108235000_billing_09_extended_module_gates.sql |
 | `preauthorize_workforce_credential_reset` | people_hr | no |  |
-| `preauthorize_workforce_provision` | people_hr | yes | 20261108232000_billing_06_module_mutation_gates.sql |
+| `preauthorize_workforce_provision` | foundation | no | cross-plan workforce create/invite preauth |
 | `publish_ci_project_methodology_version` | projects | no |  |
 | `publish_problem_solving_method_version` | problem_solving | no |  |
 | `publish_skill_capability_set_version` | skills | no |  |
