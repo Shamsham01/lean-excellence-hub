@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -289,11 +291,7 @@ export function PeopleInvitationImportWizard({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {message ? (
-          <p className="text-sm text-destructive" role="alert">
-            {message}
-          </p>
-        ) : null}
+        {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
 
         {step === 0 ? (
           <div className="flex flex-col gap-4">

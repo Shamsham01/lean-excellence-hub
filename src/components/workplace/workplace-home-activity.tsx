@@ -1,3 +1,4 @@
+import { InlineAlert } from "@/components/ui/alert";
 import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { WorkplaceModuleKey } from "@/modules/workplace/access";
@@ -21,9 +22,7 @@ function ActivityList({
     <div>
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
       {result.status === "error" ? (
-        <p className="text-sm text-destructive" role="alert">
-          {result.message}
-        </p>
+        <InlineAlert tone="error">{result.message}</InlineAlert>
       ) : result.records.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No shared {title.toLowerCase()} records are in your scope yet.

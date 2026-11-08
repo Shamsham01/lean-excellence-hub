@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   createRolloutSite,
   grantRolloutSiteAccess,
@@ -206,11 +208,7 @@ export function RolloutWorkspace({
               </Button>
             </div>
           </form>
-          {message ? (
-            <p className="text-sm text-destructive" role="alert">
-              {message}
-            </p>
-          ) : null}
+          {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
         </section>
       ) : null}
 

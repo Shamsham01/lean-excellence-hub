@@ -1,10 +1,10 @@
 import Link from "next/link";
 
-import { AuthCard } from "@/components/auth/auth-card";
+import { AuthBackLink } from "@/components/auth/auth-back-link";
+import { AuthPageFrame } from "@/components/auth/auth-page-frame";
+import { AuthPageHeader } from "@/components/auth/auth-page-header";
 import { AuthStatus } from "@/components/auth/auth-status";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { LoginForm } from "@/components/auth/login-form";
 import { loginErrorCopy } from "@/modules/identity/auth-copy";
 import { isInvitationPath } from "@/modules/identity/invitation-constants";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
@@ -24,15 +24,40 @@ export default async function LoginPage({
   const errorCopy = error ? loginErrorCopy(error) : null;
 
   return (
-    <AuthCard
-      title="Sign in"
-      description={
-        invitationPreview?.organisationName
-          ? `Sign in to accept your invitation to ${invitationPreview.organisationName}.`
-          : "Choose how you want to access your organisation."
-      }
-      footer={
-        <div className="flex flex-col gap-2 text-center text-sm">
+    <AuthPageFrame>
+      <AuthBackLink href="/">Back to home</AuthBackLink>
+      <AuthPageHeader
+        title="Sign in"
+        description={
+          invitationPreview?.organisationName
+            ? `Sign in to accept your invitation to ${invitationPreview.organisationName}.`
+            : "Choose how you want to access your organisation."
+        }
+      />
+      {errorCopy ? (
+        <AuthStatus testId="login-error" tone="danger" className="mb-4">
+          <p>{errorCopy}</p>
+          <p className="mt-2">
+            <Link
+              href="/recover"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Reset password
+            </Link>
+          </p>
+        </AuthStatus>
+      ) : null}
+      <div className="mt-6 flex flex-col gap-6">
+        <LoginForm
+          next={next ?? null}
+          {...(invitationPreview?.recipientEmail
+            ? {
+                defaultEmail: invitationPreview.recipientEmail,
+                emailReadOnly: true,
+              }
+            : {})}
+        />
+        <footer className="flex flex-col gap-2 text-center text-sm">
           {invitationToken ? (
             <Link
               href={`/invitations/${invitationToken}/activate`}
@@ -50,60 +75,8 @@ export default async function LoginPage({
           >
             Workforce sign in
           </Link>
-          <Link
-            href="/recover"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Forgot password?
-          </Link>
-        </div>
-      }
-    >
-      {errorCopy ? (
-        <AuthStatus testId="login-error" tone="danger">
-          <p>{errorCopy}</p>
-          <p className="mt-2">
-            <Link
-              href="/recover"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Reset password
-            </Link>
-          </p>
-        </AuthStatus>
-      ) : null}
-      <form
-        action="/api/auth/login"
-        method="post"
-        className="flex flex-col gap-4"
-      >
-        {next ? <input type="hidden" name="next" value={next} /> : null}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            defaultValue={invitationPreview?.recipientEmail ?? undefined}
-            readOnly={Boolean(invitationPreview?.recipientEmail)}
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-        </div>
-        <Button type="submit" className="w-full">
-          Email sign in
-        </Button>
-      </form>
-    </AuthCard>
+        </footer>
+      </div>
+    </AuthPageFrame>
   );
 }

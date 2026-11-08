@@ -1,6 +1,13 @@
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { PPS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadProblemSolvingAnalytics } from "@/modules/platform-analytics/problem-solving";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
@@ -19,6 +26,7 @@ export default async function ProblemSolvingPortfolioPage({
     status?: string;
     search?: string;
     severity?: string;
+    range?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -31,7 +39,11 @@ export default async function ProblemSolvingPortfolioPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const canCreate = await currentMemberHasPermission("problem_solving.create");
+  const analytics = await loadProblemSolvingAnalytics(supabase, analyticsRange);
   const { data: overviewData } =
     await callProblemSolvingRpc<ProblemSolvingOverview>(
       supabase,
@@ -78,6 +90,11 @@ export default async function ProblemSolvingPortfolioPage({
             </Button>
           ) : null
         }
+      />
+      <ModuleAnalyticsDashboard
+        snapshot={analytics}
+        icons={PPS_ANALYTICS_ICONS}
+        testId="pps-analytics"
       />
       <CasePortfolio
         items={portfolio.items}

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -176,9 +178,9 @@ export function FiveSScoringScaleFields({
           {formatFiveSScalePreview(parsed)}
         </p>
       ) : (
-        <p className="text-sm text-destructive" role="alert">
+        <InlineAlert tone="error">
           Enter a minimum, maximum and step that land on exact increments.
-        </p>
+        </InlineAlert>
       )}
     </fieldset>
   );

@@ -1,3 +1,4 @@
+import { InlineAlert } from "@/components/ui/alert";
 import type { Metadata } from "next";
 
 import { LehBrand } from "@/components/brand/leh-brand";
@@ -32,11 +33,7 @@ export default async function PlatformLoginPage({
         <LehBrand lockupRasterOnly variant="full" />
         <h1 className="text-2xl font-semibold">Sign in</h1>
       </div>
-      {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
       <form
         action="/api/org-admin/login"
         className="flex flex-col gap-4"

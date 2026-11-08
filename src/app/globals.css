@@ -32,11 +32,11 @@
   --sidebar-border: #e2e8f0;
   --sidebar-accent: oklch(0.94 0.01 250);
   --copilot-surface: #eef2ff;
-  --chart-1: oklch(0.55 0.12 250);
-  --chart-2: oklch(0.6 0.14 180);
-  --chart-3: oklch(0.65 0.12 145);
-  --chart-4: oklch(0.7 0.14 75);
-  --chart-5: oklch(0.6 0.16 25);
+  --chart-1: #465fff;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #6366f1;
+  --chart-5: #ef4444;
   --maturity-1: oklch(0.65 0.16 25);
   --maturity-2: oklch(0.7 0.14 75);
   --maturity-3: oklch(0.72 0.1 145);
@@ -76,11 +76,11 @@
   --sidebar-border: oklch(0.28 0.018 255);
   --sidebar-accent: oklch(0.22 0.02 255);
   --copilot-surface: #151d33;
-  --chart-1: oklch(0.68 0.12 245);
-  --chart-2: oklch(0.7 0.12 180);
-  --chart-3: oklch(0.72 0.1 145);
-  --chart-4: oklch(0.78 0.12 75);
-  --chart-5: oklch(0.68 0.14 25);
+  --chart-1: #465fff;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #818cf8;
+  --chart-5: #ef4444;
   --maturity-1: oklch(0.68 0.14 25);
   --maturity-2: oklch(0.76 0.12 75);
   --maturity-3: oklch(0.74 0.09 145);
@@ -350,6 +350,12 @@ body {
 }
 
 @media (min-width: 1024px) {
+  html:has([data-testid="platform-shell"]),
+  body:has([data-testid="platform-shell"]) {
+    overflow: hidden;
+    height: 100%;
+  }
+
   .platform-main-viewport:has(.pps-flagship-workspace) {
     overflow-x: clip;
     overflow-y: hidden;

@@ -10,6 +10,8 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   completeGembaWalk,
   saveGembaWalkAnswer,
@@ -121,9 +123,9 @@ function AnswerSaveFeedback({
       ) : null}
       {status === "error" ? (
         <>
-          <p className="text-sm text-destructive" role="alert">
+          <InlineAlert tone="error">
             {error ?? ANSWER_SAVE_ERROR_MESSAGE}
-          </p>
+          </InlineAlert>
           {canRetry ? (
             <Button
               type="button"

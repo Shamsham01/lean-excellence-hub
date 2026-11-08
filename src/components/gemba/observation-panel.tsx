@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   createGembaObservation,
   deleteGembaObservation,
@@ -457,9 +459,9 @@ export function GembaObservationPanel({
                       <p className="text-sm text-success">Saved</p>
                     ) : null}
                     {saveStatus === "error" ? (
-                      <p className="text-sm text-destructive" role="alert">
+                      <InlineAlert tone="error">
                         {saveError ?? CREATE_ERROR_MESSAGE}
-                      </p>
+                      </InlineAlert>
                     ) : null}
                   </div>
                 </>

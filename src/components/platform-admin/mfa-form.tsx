@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+
+import { InlineAlert } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 
 import { LehBrand } from "@/components/brand/leh-brand";
@@ -126,22 +128,14 @@ export function PlatformMfaForm({
               onChange={(event) => setCode(event.target.value)}
             />
           </div>
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
           <Button type="submit" disabled={pending}>
             Confirm authenticator
           </Button>
         </form>
       ) : (
         <div className="flex flex-col gap-3">
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
+          {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
           <Button type="button" onClick={enroll} disabled={pending}>
             Set up authenticator
           </Button>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { startAssessment } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -134,11 +136,7 @@ export function StartAssessmentForm({
       className="flex max-w-lg flex-col gap-4"
       data-testid="start-assessment-form"
     >
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="modelVersionId">Framework version</Label>

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,9 +39,9 @@ export function FoundingOrganisationForm({
       data-testid="create-organisation-form"
     >
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <InlineAlert tone="error">
           Check the organisation details and try again.
-        </p>
+        </InlineAlert>
       ) : null}
 
       <fieldset className="flex flex-col gap-3">

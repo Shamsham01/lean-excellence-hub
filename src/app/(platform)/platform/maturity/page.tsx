@@ -1,8 +1,13 @@
 import { Layers, Plus } from "lucide-react";
+import { Suspense } from "react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { MaturityOverviewAnalytics } from "@/components/platform/maturity-overview-analytics";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {
@@ -22,7 +27,15 @@ import {
 } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function MaturityOverviewPage() {
+export default async function MaturityOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: MATURITY_PERMISSIONS.read,
     module: "maturity",
@@ -72,11 +85,6 @@ export default async function MaturityOverviewPage() {
       pillarScores.push({ name: p.pillar_name, score: Number(p.score) });
     }
   }
-
-  const { count: openActions } = await supabase
-    .from("actions")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["open", "in_progress"]);
 
   const { data: assessments } = await supabase
     .from("maturity_assessments")
@@ -155,61 +163,36 @@ export default async function MaturityOverviewPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Current maturity"
-          value={
-            latestResult ? (
-              <ScoreBadge score={Number(latestResult.overall_score)} />
-            ) : (
-              "—"
-            )
-          }
-          hint={
-            latestResult?.published_at
-              ? `Last formal: ${new Date(latestResult.published_at).toLocaleDateString("en-GB")}`
-              : "No official result yet"
-          }
-        />
-        <MetricCard label="Open actions" value={openActions ?? 0} />
-        <MetricCard
-          label="Draft assessments"
-          value={
-            assessments?.filter(
-              (a) => a.status === "draft" || a.status === "in_progress",
-            ).length ?? 0
-          }
-        />
-        <MetricCard
-          label="In review"
-          value={
-            assessments?.filter(
-              (a) => a.status === "submitted" || a.status === "assessor_review",
-            ).length ?? 0
-          }
-        />
-      </div>
+      {!latestResult ? (
+        <p className="text-sm text-muted-foreground">No official result yet</p>
+      ) : null}
+
+      <Suspense fallback={null}>
+        <MaturityOverviewAnalytics range={analyticsRange} />
+      </Suspense>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pillar maturity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pillarScores.length > 0 ? (
-              <>
-                <MaturityRadarChart data={pillarScores} />
-                <div className="mt-4 hidden sm:block">
-                  <PillarScoreList data={pillarScores} />
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Complete a formal assessment to see pillar scores.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4">
+          {pillarScores.length > 0 ? (
+            <>
+              <MaturityRadarChart data={pillarScores} />
+              <div className="hidden sm:block">
+                <PillarScoreList data={pillarScores} />
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pillar maturity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Complete a formal assessment to see pillar scores.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card>
           <CardHeader>

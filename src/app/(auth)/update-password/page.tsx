@@ -1,11 +1,13 @@
 import Link from "next/link";
 
-import { updatePassword } from "./actions";
-import { AuthCard } from "@/components/auth/auth-card";
+import { AuthBackLink } from "@/components/auth/auth-back-link";
+import { AuthFieldLabel } from "@/components/auth/auth-field-label";
+import { AuthPageFrame } from "@/components/auth/auth-page-frame";
+import { AuthPageHeader } from "@/components/auth/auth-page-header";
+import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { AuthStatus } from "@/components/auth/auth-status";
+import { updatePassword } from "./actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { AUTH_COPY } from "@/modules/identity/auth-copy";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -33,44 +35,47 @@ export default async function UpdatePasswordPage({
 
   if (!hasSession) {
     return (
-      <AuthCard
-        title="Set a new password"
-        description="A signed-in recovery or password-change session is required."
-        footer={
-          <div className="flex flex-col gap-2 text-center text-sm">
-            <Link href="/recover" className="text-primary hover:underline">
-              Request another recovery email
-            </Link>
-            <Link href="/login" className="text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </div>
-        }
-      >
+      <AuthPageFrame>
+        <AuthBackLink href="/login">Back to sign in</AuthBackLink>
+        <AuthPageHeader
+          title="Set a new password"
+          description="A signed-in recovery or password-change session is required."
+        />
         <AuthStatus testId="update-password-session" tone="danger">
           {AUTH_COPY.updatePasswordSession}
         </AuthStatus>
-      </AuthCard>
+        <footer className="mt-6 flex flex-col gap-2 text-center text-sm">
+          <Link href="/recover" className="text-primary hover:underline">
+            Request another recovery email
+          </Link>
+          <Link href="/login" className="text-primary hover:underline">
+            Back to sign in
+          </Link>
+        </footer>
+      </AuthPageFrame>
     );
   }
 
   return (
-    <AuthCard
-      title="Set a new password"
-      description="Choose a strong password for your account."
-    >
+    <AuthPageFrame>
+      <AuthBackLink href="/login">Back to sign in</AuthBackLink>
+      <AuthPageHeader
+        title="Set a new password"
+        description="Choose a strong password for your account."
+      />
       {formError ? (
         <AuthStatus testId="update-password-error" tone="danger">
           {formError}
         </AuthStatus>
       ) : null}
-      <form action={updatePassword} className="flex flex-col gap-4">
+      <form action={updatePassword} className="mt-6 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="password">New password</Label>
-          <Input
+          <AuthFieldLabel htmlFor="password" required>
+            New password
+          </AuthFieldLabel>
+          <AuthPasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
             minLength={12}
             required
@@ -80,6 +85,6 @@ export default async function UpdatePasswordPage({
           Update password
         </Button>
       </form>
-    </AuthCard>
+    </AuthPageFrame>
   );
 }

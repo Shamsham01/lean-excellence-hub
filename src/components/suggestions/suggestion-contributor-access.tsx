@@ -1,3 +1,4 @@
+import { InlineAlert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/platform/page-header";
 import { WorkplaceRecordList } from "@/components/workplace/workplace-record-list";
 import { AppLink } from "@/components/ui/app-link";
@@ -64,11 +65,11 @@ export async function SuggestionContributorAccess({
             Your suggestions
           </h2>
           {own?.status === "error" || own?.status === "unavailable" ? (
-            <p className="text-sm text-destructive" role="alert">
+            <InlineAlert tone="error">
               {own.status === "error"
                 ? own.message
                 : "Your suggestions could not be loaded."}
-            </p>
+            </InlineAlert>
           ) : own?.suggestions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               You have not created a suggestion yet.

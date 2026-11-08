@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AuthCard } from "@/components/auth/auth-card";
+import { AuthBackLink } from "@/components/auth/auth-back-link";
+import { AuthPageFrame } from "@/components/auth/auth-page-frame";
+import { AuthPageHeader } from "@/components/auth/auth-page-header";
 import { AuthStatus } from "@/components/auth/auth-status";
 import { Button } from "@/components/ui/button";
 
@@ -19,17 +21,14 @@ export default async function ConfirmEmailPage({
   const staged = continueConfirmation === "true";
 
   return (
-    <AuthCard
-      title="Confirm email address"
-      description="Confirm this email address to continue. Confirmation does not join an organisation or grant access."
-      footer={
-        <Link href="/login" className="text-sm text-primary hover:underline">
-          Back to sign in
-        </Link>
-      }
-    >
+    <AuthPageFrame>
+      <AuthBackLink href="/login">Back to sign in</AuthBackLink>
+      <AuthPageHeader
+        title="Confirm email address"
+        description="Confirm this email address to continue. Confirmation does not join an organisation or grant access."
+      />
       {staged ? (
-        <div className="flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-4">
           <AuthStatus testId="confirm-staged" tone="info">
             Your confirmation link is ready. Confirm below to continue. This
             does not accept an organisation invitation.
@@ -41,7 +40,7 @@ export default async function ConfirmEmailPage({
           </form>
         </div>
       ) : (
-        <div className="flex flex-col gap-4" data-testid="confirm-missing">
+        <div className="mt-6 flex flex-col gap-4" data-testid="confirm-missing">
           <p className="text-sm text-muted-foreground">
             Open the confirmation link from your email, then confirm it on this
             page.
@@ -51,6 +50,6 @@ export default async function ConfirmEmailPage({
           </Button>
         </div>
       )}
-    </AuthCard>
+    </AuthPageFrame>
   );
 }

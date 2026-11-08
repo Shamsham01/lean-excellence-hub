@@ -1,11 +1,13 @@
 import Link from "next/link";
 
-import { requestRecovery } from "./actions";
-import { AuthCard } from "@/components/auth/auth-card";
+import { AuthBackLink } from "@/components/auth/auth-back-link";
+import { AuthFieldLabel } from "@/components/auth/auth-field-label";
+import { AuthPageFrame } from "@/components/auth/auth-page-frame";
+import { AuthPageHeader } from "@/components/auth/auth-page-header";
 import { AuthStatus } from "@/components/auth/auth-status";
+import { requestRecovery } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { AUTH_COPY } from "@/modules/identity/auth-copy";
 
 export default async function RecoverPage({
@@ -23,21 +25,18 @@ export default async function RecoverPage({
   const staged = continueRecovery === "true";
 
   return (
-    <AuthCard
-      title="Recover access"
-      description={AUTH_COPY.recoverDescription}
-      footer={
-        <Link href="/login" className="text-sm text-primary hover:underline">
-          Back to sign in
-        </Link>
-      }
-    >
+    <AuthPageFrame>
+      <AuthBackLink href="/login">Back to sign in</AuthBackLink>
+      <AuthPageHeader
+        title="Recover access"
+        description={AUTH_COPY.recoverDescription}
+      />
       {requested ? (
         <AuthStatus testId="recover-sent" tone="info">
           {AUTH_COPY.recoverSent}
         </AuthStatus>
       ) : staged ? (
-        <div className="flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-4">
           <AuthStatus testId="recover-staged" tone="info">
             Your recovery link is ready. Continue below to verify it and choose
             a new password.
@@ -55,14 +54,16 @@ export default async function RecoverPage({
           </Link>
         </div>
       ) : (
-        <form action={requestRecovery} className="flex flex-col gap-4">
+        <form action={requestRecovery} className="mt-6 flex flex-col gap-4">
           {expired ? (
             <AuthStatus testId="recover-expired" tone="danger">
               {AUTH_COPY.recoverExpired}
             </AuthStatus>
           ) : null}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
+            <AuthFieldLabel htmlFor="email" required>
+              Email
+            </AuthFieldLabel>
             <Input id="email" name="email" type="email" required />
           </div>
           <Button type="submit" className="w-full">
@@ -70,6 +71,6 @@ export default async function RecoverPage({
           </Button>
         </form>
       )}
-    </AuthCard>
+    </AuthPageFrame>
   );
 }

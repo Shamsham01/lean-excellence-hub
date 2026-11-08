@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { skipStructureFirstStep } from "@/app/onboarding/setup/actions";
 import {
   inviteColleague,
@@ -148,11 +150,7 @@ export function PeopleSetupStep({
         />
       </div>
 
-      {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button

@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -86,11 +88,7 @@ export function AssessmentActionForm({
         </div>
       ) : null}
       <Textarea name="description" rows={2} placeholder="Finding context" />
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
       {createdActionId ? (
         <p
           className="text-sm text-muted-foreground"

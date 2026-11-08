@@ -4,9 +4,15 @@ import { ActionCreateForm } from "@/components/actions/action-create-form";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
+import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  buildAnalyticsDateRange,
+  parseAnalyticsRangeDays,
+} from "@/modules/platform-analytics/date-range";
+import { loadActionsAnalytics } from "@/modules/platform-analytics/actions";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
@@ -32,6 +38,9 @@ export default async function ActionsPage({
     ACTIONS_PERMISSIONS.create,
   );
   const rawParams = await searchParams;
+  const analyticsRange = buildAnalyticsDateRange(
+    parseAnalyticsRangeDays(rawParams.range),
+  );
   const filters = parseActionListFilters(rawParams);
   const selectorOptions = await loadSiteScopedSelectorOptions();
   const supabase = await createServerSupabaseClient();
@@ -86,9 +95,7 @@ export default async function ActionsPage({
     .select("id, name")
     .order("name");
 
-  const openCount = actions.filter(
-    (a) => a.status === "open" || a.status === "in_progress",
-  ).length;
+  const analytics = await loadActionsAnalytics(supabase, analyticsRange);
 
   const plannerActions = await loadActionPlannerSummaries(actions);
   const openActionParam =
@@ -114,20 +121,12 @@ export default async function ActionsPage({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="bg-surface">
-          <CardContent className="p-4">
-            <p className="typography-metric-label">Open</p>
-            <p className="typography-metric-value">{openCount}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-surface">
-          <CardContent className="p-4">
-            <p className="typography-metric-label">Total</p>
-            <p className="typography-metric-value">{actions.length}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <ModuleAnalyticsDashboard
+        snapshot={analytics}
+        icons={ACTION_ANALYTICS_ICONS}
+        testId="actions-analytics"
+        showAgeingTable={false}
+      />
 
       <ActionFilters
         filters={filters}

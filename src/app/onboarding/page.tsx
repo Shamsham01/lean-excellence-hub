@@ -1,3 +1,4 @@
+import { InlineAlert } from "@/components/ui/alert";
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -149,9 +150,9 @@ export default async function OnboardingPage({
           description={`${current.organisation_name} · ${snapshot?.intended_site_quantity ?? 1} site(s). Enterprise is Contact Sales only. Founder Pilot is not public.`}
         >
           {error ? (
-            <p className="text-sm text-destructive" role="alert">
+            <InlineAlert tone="error">
               Select Essentials or Professional to continue.
-            </p>
+            </InlineAlert>
           ) : null}
           <form
             action={startCheckout}
