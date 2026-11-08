@@ -24,7 +24,10 @@ export function PlanUpgradePrompt({
         <p>{copy.description}</p>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" asChild>
-            <AppLink href="/platform/settings/billing" data-testid={`${testId}-billing`}>
+            <AppLink
+              href="/platform/settings/billing"
+              data-testid={`${testId}-billing`}
+            >
               View billing
             </AppLink>
           </Button>

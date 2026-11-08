@@ -86,13 +86,23 @@ begin
 end;
 $$;
 
-revoke all on function private.plan_code_grants_capability(text, text) from public, anon;
-revoke all on function private.organisation_plan_capability(uuid, text) from public, anon;
-revoke all on function private.current_organisation_plan_capability(text) from public, anon;
+revoke all on function private.plan_code_grants_capability(text, text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.organisation_plan_capability(uuid, text)
+  from public, anon, authenticated, service_role;
+revoke all on function private.current_organisation_plan_capability(text)
+  from public, anon, authenticated, service_role;
 
 alter function private.plan_code_grants_capability(text, text) owner to lean_hub_private_owner;
 alter function private.organisation_plan_capability(uuid, text) owner to lean_hub_private_owner;
 alter function private.current_organisation_plan_capability(text) owner to lean_hub_private_owner;
+
+grant execute on function private.plan_code_grants_capability(text, text)
+  to lean_hub_private_owner;
+grant execute on function private.organisation_plan_capability(uuid, text)
+  to lean_hub_private_owner;
+grant execute on function private.current_organisation_plan_capability(text)
+  to lean_hub_private_owner;
 
 
 create or replace function private.record_benefit_validation(
@@ -315,4 +325,9 @@ begin
   return new_validation_id;
 end;
 $$;
+
+revoke all on function private.record_benefit_validation(uuid, text, text, text)
+  from public, anon, authenticated, service_role;
+grant execute on function private.record_benefit_validation(uuid, text, text, text)
+  to lean_hub_private_owner;
 

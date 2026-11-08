@@ -19,7 +19,10 @@ export function BillingOperationalNoticesPanel({
   }
 
   return (
-    <div className="flex flex-col gap-3" data-testid="billing-operational-notices">
+    <div
+      className="flex flex-col gap-3"
+      data-testid="billing-operational-notices"
+    >
       {notices.map((notice) => (
         <p
           key={notice.testId}

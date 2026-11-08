@@ -240,6 +240,9 @@ function loadLatestSubscriptionForOrganisationName(
       site_quantity,
       provider_price_id,
     ] = output.split("|");
+    if (!organisation_id || !provider) {
+      return null;
+    }
     return {
       organisation_id,
       provider,
@@ -255,10 +258,14 @@ function loadLatestSubscriptionForOrganisationName(
   }
 }
 
-export async function setOrganisationSubscriptionTrialing(user: FoundingE2eUser) {
+export async function setOrganisationSubscriptionTrialing(
+  user: FoundingE2eUser,
+) {
   const { url, serviceRoleKey } = resolveSupabaseEnv();
   if (!url || !serviceRoleKey) {
-    throw new Error("Supabase service role is required to adjust billing state");
+    throw new Error(
+      "Supabase service role is required to adjust billing state",
+    );
   }
 
   const subscription = loadLatestSubscriptionForOrganisationName(
@@ -272,7 +279,9 @@ export async function setOrganisationSubscriptionTrialing(user: FoundingE2eUser)
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const periodEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const periodEnd = new Date(
+    Date.now() + 14 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const applied = await admin.rpc("apply_organisation_subscription_snapshot", {
     target_organisation_id: subscription.organisation_id,
     target_provider: subscription.provider,

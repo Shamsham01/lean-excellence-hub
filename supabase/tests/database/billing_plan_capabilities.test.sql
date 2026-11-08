@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(14);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -132,6 +132,69 @@ select is(
   ),
   false,
   'tenant a remains essentials after tenant b subscribes'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.plan_code_grants_capability(text,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private.plan_code_grants_capability'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'private.plan_code_grants_capability(text,text)',
+    'EXECUTE'
+  ),
+  'anon cannot execute private.plan_code_grants_capability'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.organisation_plan_capability(uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private.organisation_plan_capability'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'private.organisation_plan_capability(uuid,text)',
+    'EXECUTE'
+  ),
+  'anon cannot execute private.organisation_plan_capability'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.current_organisation_plan_capability(text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private.current_organisation_plan_capability'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'private.current_organisation_plan_capability(text)',
+    'EXECUTE'
+  ),
+  'anon cannot execute private.current_organisation_plan_capability'
+);
+
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.record_benefit_validation(uuid,text,text,text)',
+    'EXECUTE'
+  ),
+  'authenticated retains public.record_benefit_validation wrapper'
 );
 
 select * from finish();

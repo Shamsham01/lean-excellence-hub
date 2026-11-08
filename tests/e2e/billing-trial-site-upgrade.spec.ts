@@ -11,7 +11,10 @@ import {
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
-async function addCustomSite(page: import("@playwright/test").Page, name: string) {
+async function addCustomSite(
+  page: import("@playwright/test").Page,
+  name: string,
+) {
   await page.getByTestId("add-unit-button").click();
   await expect(page.getByTestId("add-unit-drawer")).toBeVisible();
   await page.locator("#unit-name").fill(name);
