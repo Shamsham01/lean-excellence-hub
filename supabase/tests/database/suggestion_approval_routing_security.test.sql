@@ -1,8 +1,10 @@
 begin;
 
-select plan(24);
+select plan(44);
 
--- Every private helper introduced in security hardening must not execute as anon/authenticated.
+-- ---------------------------------------------------------------------------
+-- Complete private helper inventory: no PUBLIC/anon/authenticated/service_role
+-- ---------------------------------------------------------------------------
 
 select ok(
   not pg_catalog.has_function_privilege(
@@ -79,6 +81,15 @@ select ok(
 select ok(
   not pg_catalog.has_function_privilege(
     'authenticated',
+    'private.membership_can_act_on_suggestion_approval_jurisdiction(uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute membership_can_act_on_suggestion_approval_jurisdiction'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
     'private.can_delegate_suggestion_approval(uuid,uuid,uuid)',
     'EXECUTE'
   ),
@@ -86,12 +97,147 @@ select ok(
 );
 
 select ok(
-  pg_catalog.has_function_privilege(
-    'postgres',
-    'private.resolve_suggestion_actionable_approver(uuid,uuid,uuid)',
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.submit_suggestion(uuid)',
     'EXECUTE'
   ),
-  'postgres can execute resolve_suggestion_actionable_approver'
+  'authenticated cannot execute private.submit_suggestion'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.claim_suggestion_for_review(uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private.claim_suggestion_for_review'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.delegate_suggestion_approval(uuid,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private.delegate_suggestion_approval'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assign_suggestion_reviewer(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private.assign_suggestion_reviewer'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.end_active_suggestion_review_assignment(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute end_active_suggestion_review_assignment'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.insert_suggestion_review_assignment(uuid,uuid,uuid,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute insert_suggestion_review_assignment'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.suggestion_has_active_reviewer(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute suggestion_has_active_reviewer'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.is_active_suggestion_reviewer(uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute is_active_suggestion_reviewer'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assert_eligible_suggestion_reviewer_membership(uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute assert_eligible_suggestion_reviewer_membership'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.membership_can_review_suggestion_jurisdiction(uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute membership_can_review_suggestion_jurisdiction'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_claim_suggestion_for_review(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute can_claim_suggestion_for_review'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_assign_suggestion_reviewer(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute can_assign_suggestion_reviewer'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_act_as_active_suggestion_reviewer(uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute can_act_as_active_suggestion_reviewer'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'postgres',
+    'private.end_active_suggestion_review_assignment(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'postgres can execute end_active_suggestion_review_assignment'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.delegate_suggestion_approval(uuid,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated can execute public delegate wrapper'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.submit_suggestion(uuid)',
+    'EXECUTE'
+  ),
+  'authenticated can execute public submit wrapper'
 );
 
 select ok(
@@ -113,7 +259,7 @@ select ok(
 );
 
 -- ---------------------------------------------------------------------------
--- Cross-tenant: worker lookup must not return another organisation's routing
+-- Cross-tenant arbitrary-org helpers denied to authenticated
 -- ---------------------------------------------------------------------------
 
 insert into auth.users (
@@ -257,6 +403,39 @@ select ok(
   'org B suggestion submits for cross-tenant lookup'
 );
 
+select throws_ok(
+  format(
+    'select private.end_active_suggestion_review_assignment(%L::uuid, %L::uuid)',
+    (select id from sec_ids where key = 'org_a'),
+    (select id from sec_ids where key = 'suggestion_b')
+  ),
+  'permission denied for function end_active_suggestion_review_assignment',
+  'authenticated cannot end assignment cross-org'
+);
+
+select throws_ok(
+  format(
+    'select private.insert_suggestion_review_assignment(%L::uuid, %L::uuid, %L::uuid, %L::uuid, %L)',
+    (select id from sec_ids where key = 'org_a'),
+    (select id from sec_ids where key = 'suggestion_b'),
+    (select id from sec_ids where key = 'membership_b'),
+    (select id from sec_ids where key = 'membership_b'),
+    'delegated'
+  ),
+  'permission denied for function insert_suggestion_review_assignment',
+  'authenticated cannot insert assignment cross-org'
+);
+
+select throws_ok(
+  format(
+    'select private.suggestion_has_active_reviewer(%L::uuid, %L::uuid)',
+    (select id from sec_ids where key = 'org_a'),
+    (select id from sec_ids where key = 'suggestion_b')
+  ),
+  'permission denied for function suggestion_has_active_reviewer',
+  'authenticated cannot probe active reviewer cross-org'
+);
+
 reset role;
 set local role service_role;
 
@@ -276,16 +455,6 @@ select is(
 
 set local role lean_hub_private_owner;
 
-select isnt_empty(
-  $$
-    select 1
-    from public.suggestion_approval_routing routing_row
-    where routing_row.organisation_id = (select id from sec_ids where key = 'org_b')
-      and routing_row.suggestion_id = (select id from sec_ids where key = 'suggestion_b')
-  $$,
-  'org B routing snapshot exists after submit'
-);
-
 insert into sec_ids (key, id)
 select
   'worker_recipient_expected',
@@ -298,6 +467,16 @@ select
     where routing_row.organisation_id = (select id from sec_ids where key = 'org_b')
       and routing_row.suggestion_id = (select id from sec_ids where key = 'suggestion_b')
   );
+
+select isnt_empty(
+  $$
+    select 1
+    from public.suggestion_approval_routing routing_row
+    where routing_row.organisation_id = (select id from sec_ids where key = 'org_b')
+      and routing_row.suggestion_id = (select id from sec_ids where key = 'suggestion_b')
+  $$,
+  'org B routing snapshot exists after submit'
+);
 
 set local role service_role;
 
@@ -355,6 +534,17 @@ select throws_ok(
   ),
   'permission denied for function revoke_all_suggestion_approval_in_app_notifications',
   'authenticated cannot revoke notifications via private helper'
+);
+
+select throws_ok(
+  format(
+    'select private.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from sec_ids where key = 'suggestion_b'),
+    (select id from sec_ids where key = 'membership_b'),
+    'direct private call'
+  ),
+  'permission denied for function delegate_suggestion_approval',
+  'authenticated cannot call private delegate with arbitrary suggestion id'
 );
 
 select * from finish();

@@ -17,8 +17,10 @@
 
 ## Security
 
-- New `SECURITY DEFINER` helpers in `private` are owned by `lean_hub_private_owner`, `search_path = ''`, and **`EXECUTE` is revoked** from `PUBLIC`, `anon`, `authenticated`, and `service_role` unless explicitly granted.
+- All suggestion-approval `private` helpers (routing, submit/claim/assign/delegate, `insert_suggestion_review_assignment`, `end_active_suggestion_review_assignment`, workflow eligibility probes, in-app revoke/snapshot) are owned by `lean_hub_private_owner`, `search_path = ''`, and **`EXECUTE` is revoked** from `PUBLIC`, `anon`, `authenticated`, and `service_role` (see migration `20261108220000` inventory — not a partial list).
+- Public entrypoints (`submit_suggestion`, `claim_suggestion_for_review`, `assign_suggestion_reviewer`, `delegate_suggestion_approval`) remain **`authenticated` only**; they call private helpers with session org context.
 - Worker-only public RPC: `lookup_suggestion_approval_notification_recipients_for_worker` — **`service_role` + `postgres` only**; reads snapshotted `email_recipient_membership_id` for `submitted` suggestions and enforces organisation id match on the suggestion row.
+- Delegation authority requires **current** scoped `suggestions.review` or `suggestions.manage` for the suggestion jurisdiction on every path (active reviewer, primary-without-active-reviewer, or explicit manager override) — primary snapshotted row alone is insufficient.
 
 ## Mail configuration prerequisites
 

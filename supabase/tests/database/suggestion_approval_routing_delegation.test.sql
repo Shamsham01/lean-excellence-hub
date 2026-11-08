@@ -1,6 +1,6 @@
 begin;
 
-select plan(33);
+select plan(40);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -381,13 +381,128 @@ select ok(
   'site manager selects organisation'
 );
 
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000003","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000003","email":"t119-other-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
 select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'wrong-site manager selects organisation'
+);
+
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership'),
+    'cross-site delegate'
+  ),
+  'approval delegation is not authorised',
+  'wrong-site manager cannot delegate approval'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'site manager returns for delegation'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+update public.organisation_memberships membership_row
+set
+  status = 'inactive',
+  inactivated_at = statement_timestamp(),
+  status_reason = 't119 inactive delegate fixture'
+where membership_row.id = (select id from t119_ids where key = 'delegate_membership')
+  and membership_row.organisation_id = (select id from t119_ids where key = 'organisation');
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'site manager for inactive delegate attempt'
+);
+
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership'),
+    'inactive target'
+  ),
+  'inactive membership cannot be assigned as reviewer',
+  'inactive delegate target is rejected'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+update public.organisation_memberships membership_row
+set
+  status = 'active',
+  inactivated_at = null,
+  status_reason = null
+where membership_row.id = (select id from t119_ids where key = 'delegate_membership')
+  and membership_row.organisation_id = (select id from t119_ids where key = 'organisation');
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'site manager for delegation'
+);
+
+insert into t119_ids (key, id)
+select
+  'first_delegation_assignment',
   public.delegate_suggestion_approval(
     (select id from t119_ids where key = 'suggestion'),
     (select id from t119_ids where key = 'delegate_membership'),
     'On leave'
-  ) is not null,
+  );
+
+select ok(
+  (select id from t119_ids where key = 'first_delegation_assignment') is not null,
   'pending approver delegates to eligible colleague'
+);
+
+select is(
+  public.delegate_suggestion_approval(
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership'),
+    'On leave retry'
+  ),
+  (select id from t119_ids where key = 'first_delegation_assignment'),
+  'idempotent delegate to same target returns stable assignment id'
 );
 
 reset role;
