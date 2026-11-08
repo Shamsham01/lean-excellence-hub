@@ -17,7 +17,7 @@ import {
   prepareWorkflowModelCall,
   reasoningManifestFields,
 } from "@/platform/ai/model-compatibility";
-import { problemSolvingModelId } from "@/platform/ai/model-routing";
+import { selectProblemSolvingModelId } from "@/platform/ai/model-routing";
 import {
   AI_PROVIDER_ERROR_CODES,
   AiProviderError,
@@ -40,9 +40,11 @@ import {
   AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
   AI_STALE_RUN_AFTER_MS,
   AI_TURN_FINALIZE_BUFFER_MS,
+  AI_TURN_PARTIAL_CONTINUATION_MESSAGE,
   createAiRunDeadline,
   resolveAiTurnWallClockMs,
   runWithinAiTurnBudget,
+  shouldFinalizePartialContinuation,
 } from "@/platform/ai/run-deadline";
 import { recordAiRunProviderDispatch } from "@/platform/ai/record-ai-run-provider-dispatch";
 import { shouldRetryProviderOnce } from "@/platform/ai/provider-turn-retry";
@@ -150,7 +152,7 @@ export async function runAiTurn(
 
   const env = getAiEnvironment();
   const provider = resolveAIProvider();
-  const model = problemSolvingModelId(env);
+  const model = selectProblemSolvingModelId(input.mode, env);
   const prepared = prepareWorkflowModelCall({
     workflow: resolveProblemSolvingWorkflow(input.mode),
     model,
@@ -278,6 +280,7 @@ export async function runAiTurn(
   ];
 
   const toolCallRecords: Array<Record<string, unknown>> = [];
+  const providerHopRecords: Array<Record<string, unknown>> = [];
   let totalToolCalls = 0;
   const totalUsage = {
     inputTokens: 0,
@@ -295,6 +298,13 @@ export async function runAiTurn(
   try {
     for (let iteration = 0; iteration <= maxToolCalls; iteration += 1) {
       deadline.assertWithinBudget(provider.name, model);
+      const hopStartedAt = Date.now();
+      const hopTimeoutMs = deadline.providerTimeoutMs(
+        configuredPerCallTimeoutMs,
+        provider.name,
+        model,
+        { hopIndex: iteration },
+      );
       const response = await invokeProblemSolvingProviderResponse({
         supabase: input.supabase,
         runId,
@@ -307,11 +317,19 @@ export async function runAiTurn(
         expectsStructuredOutput,
         systemPrompt,
         messages,
+        hopIndex: iteration,
         ...(isStageDraft
           ? {
               stageDraftTools: buildOpenAiToolsForStage(facilitationStageKey),
             }
           : {}),
+      });
+      providerHopRecords.push({
+        hop_index: iteration,
+        duration_ms: Date.now() - hopStartedAt,
+        timeout_ms: hopTimeoutMs,
+        model,
+        reasoning_effort: prepared.reasoningEffort,
       });
 
       providerRequestId = response.responseId ?? providerRequestId;
@@ -414,6 +432,12 @@ export async function runAiTurn(
         content: `Authorised tool results:\n${toolResults.join("\n")}`,
       });
 
+      if (shouldFinalizePartialContinuation(deadline)) {
+        outputText = AI_TURN_PARTIAL_CONTINUATION_MESSAGE;
+        envelope = fallbackEnvelope(outputText);
+        break;
+      }
+
       if (totalToolCalls >= maxToolCalls) {
         outputText =
           "I reached the tool limit for this turn. Please ask a narrower follow-up.";
@@ -462,6 +486,7 @@ export async function runAiTurn(
       wall_clock_ms: wallClockMs,
       elapsed_ms: Date.now() - startedAt,
       tool_iterations: toolCallRecords.length,
+      provider_hops: providerHopRecords,
       ...reasoningManifestFields(prepared),
     };
 
@@ -608,6 +633,7 @@ async function invokeProblemSolvingProviderResponse(input: {
   systemPrompt: string;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   stageDraftTools?: Array<Record<string, unknown>>;
+  hopIndex: number;
 }) {
   const tools = buildProblemSolvingFacilitatorProviderTools(
     input.stageDraftTools
@@ -625,6 +651,7 @@ async function invokeProblemSolvingProviderResponse(input: {
         input.configuredPerCallTimeoutMs,
         input.provider.name,
         input.model,
+        { hopIndex: input.hopIndex },
       ),
       maxRetries: 0,
       reasoningEffort: input.prepared.reasoningEffort,

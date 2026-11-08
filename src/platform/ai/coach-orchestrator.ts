@@ -23,10 +23,12 @@ import {
   selectCoachTaskModelClass,
   type CoachAiTask,
 } from "@/platform/ai/model-routing";
+import { failAiRunBestEffort } from "@/platform/ai/fail-ai-run-best-effort";
 import {
-  AiProviderError,
-  aiRunFailureCategory,
-} from "@/platform/ai/providers/errors";
+  createAiRunDeadline,
+  resolveAiTurnWallClockMs,
+  runWithinAiTurnBudget,
+} from "@/platform/ai/run-deadline";
 import {
   COACH_ENVELOPE_JSON_SCHEMA,
   COACH_EXPLAIN_PROMPT_KEY,
@@ -117,7 +119,12 @@ export async function runCoachAiTurn(
     model,
     environment: env,
   });
-  const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const configuredPerCallTimeoutMs =
+    env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const wallClockMs = resolveAiTurnWallClockMs(
+    env.AI_TURN_WALL_CLOCK_MS ?? AI_DEFAULTS.turnWallClockMs,
+  );
+  const deadline = createAiRunDeadline(wallClockMs);
   const isAssistantTurn = input.task === "setup_conversation";
   const webSearchEnabled =
     isAssistantTurn &&
@@ -159,6 +166,7 @@ export async function runCoachAiTurn(
 
   const startedAt = Date.now();
   const toolCallRecords: Array<Record<string, unknown>> = [];
+  const providerHopRecords: Array<Record<string, unknown>> = [];
   let envelope: CoachEnvelope | undefined;
   let providerRequestId: string | undefined;
   const totalUsage = {
@@ -175,22 +183,43 @@ export async function runCoachAiTurn(
   }> = [...input.conversationHistory, { role: "user", content: userMessage }];
 
   try {
-    let response = await provider.createResponse({
+    const firstHopStartedAt = Date.now();
+    const firstHopTimeoutMs = deadline.providerTimeoutMs(
+      configuredPerCallTimeoutMs,
+      provider.name,
       model,
-      systemPrompt,
-      messages: conversationMessages,
-      tools,
-      maxOutputTokens: prepared.maxOutputTokens,
-      timeoutMs,
-      reasoningEffort: prepared.reasoningEffort,
-      expectsStructuredOutput: true,
-      structuredOutputFormat: {
-        name: "coach_envelope",
-        schema: COACH_ENVELOPE_JSON_SCHEMA as unknown as Record<
-          string,
-          unknown
-        >,
-      },
+      { hopIndex: 0 },
+    );
+    let response = await runWithinAiTurnBudget(
+      deadline,
+      provider.name,
+      model,
+      () =>
+        provider.createResponse({
+          model,
+          systemPrompt,
+          messages: conversationMessages,
+          tools,
+          maxOutputTokens: prepared.maxOutputTokens,
+          timeoutMs: firstHopTimeoutMs,
+          maxRetries: 0,
+          reasoningEffort: prepared.reasoningEffort,
+          expectsStructuredOutput: true,
+          structuredOutputFormat: {
+            name: "coach_envelope",
+            schema: COACH_ENVELOPE_JSON_SCHEMA as unknown as Record<
+              string,
+              unknown
+            >,
+          },
+        }),
+    );
+    providerHopRecords.push({
+      hop_index: 0,
+      duration_ms: Date.now() - firstHopStartedAt,
+      timeout_ms: firstHopTimeoutMs,
+      model,
+      reasoning_effort: prepared.reasoningEffort,
     });
 
     providerRequestId = response.responseId;
@@ -254,22 +283,43 @@ export async function runCoachAiTurn(
           role: "user",
           content: `Authorised operational retrieval results:\n${toolResults.join("\n")}`,
         });
-        response = await provider.createResponse({
+        const secondHopStartedAt = Date.now();
+        const secondHopTimeoutMs = deadline.providerTimeoutMs(
+          configuredPerCallTimeoutMs,
+          provider.name,
           model,
-          systemPrompt,
-          messages: conversationMessages,
-          tools,
-          maxOutputTokens: prepared.maxOutputTokens,
-          timeoutMs,
-          reasoningEffort: prepared.reasoningEffort,
-          expectsStructuredOutput: true,
-          structuredOutputFormat: {
-            name: "coach_envelope",
-            schema: COACH_ENVELOPE_JSON_SCHEMA as unknown as Record<
-              string,
-              unknown
-            >,
-          },
+          { hopIndex: 1 },
+        );
+        response = await runWithinAiTurnBudget(
+          deadline,
+          provider.name,
+          model,
+          () =>
+            provider.createResponse({
+              model,
+              systemPrompt,
+              messages: conversationMessages,
+              tools,
+              maxOutputTokens: prepared.maxOutputTokens,
+              timeoutMs: secondHopTimeoutMs,
+              maxRetries: 0,
+              reasoningEffort: prepared.reasoningEffort,
+              expectsStructuredOutput: true,
+              structuredOutputFormat: {
+                name: "coach_envelope",
+                schema: COACH_ENVELOPE_JSON_SCHEMA as unknown as Record<
+                  string,
+                  unknown
+                >,
+              },
+            }),
+        );
+        providerHopRecords.push({
+          hop_index: 1,
+          duration_ms: Date.now() - secondHopStartedAt,
+          timeout_ms: secondHopTimeoutMs,
+          model,
+          reasoning_effort: prepared.reasoningEffort,
         });
         providerRequestId = response.responseId ?? providerRequestId;
         totalUsage.inputTokens += response.usage.inputTokens;
@@ -339,6 +389,8 @@ export async function runCoachAiTurn(
         ? (response.webSearch?.invocationCount ?? 0)
         : 0,
       external_source_count: externalSources.length,
+      wall_clock_ms: wallClockMs,
+      provider_hops: providerHopRecords,
     };
 
     const { data: assistantMessageId, error: finishError } =
@@ -374,16 +426,7 @@ export async function runCoachAiTurn(
       externalSources,
     };
   } catch (error) {
-    await input.supabase.rpc("fail_ai_run", {
-      target_ai_run_id: runId,
-      target_error_category: aiRunFailureCategory(error),
-      target_final_output:
-        error instanceof AiProviderError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "LeanAI encountered an error.",
-    });
+    await failAiRunBestEffort(input.supabase, runId, error);
     throw error;
   }
 }
