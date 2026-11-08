@@ -28,6 +28,8 @@ type LehBrandProps = {
   strapline?: boolean;
   /** Use official horizontal PNG masters (skip Canva SVG source in picture). */
   lockupRasterOnly?: boolean;
+  /** Always show the dark-background horizontal lockup (e.g. auth brand panel). */
+  lockupOnDarkSurface?: boolean;
 };
 
 type LehBrandPictureProps = {
@@ -82,6 +84,7 @@ export function LehBrand({
   responsive = false,
   strapline = variant !== "icon",
   lockupRasterOnly = false,
+  lockupOnDarkSurface = false,
 }: LehBrandProps) {
   const showCopy = variant !== "icon";
   const showLockup = variant === "full";
@@ -91,7 +94,12 @@ export function LehBrand({
 
   return (
     <span
-      className={cn("leh-brand", className)}
+      className={cn(
+        "leh-brand",
+        lockupOnDarkSurface && "leh-brand--on-dark-surface",
+        className,
+      )}
+      data-lockup-surface={lockupOnDarkSurface ? "dark" : undefined}
       data-responsive={responsive ? "true" : "false"}
       data-testid="leh-brand"
       data-variant={variant}
@@ -154,10 +162,12 @@ export function LehBrandHomeLink({
   className,
   variant = "full",
   lockupRasterOnly = variant === "full",
+  lockupOnDarkSurface = false,
 }: {
   className?: string;
   variant?: LehBrandVariant;
   lockupRasterOnly?: boolean;
+  lockupOnDarkSurface?: boolean;
 }) {
   return (
     <Link
@@ -167,6 +177,7 @@ export function LehBrandHomeLink({
     >
       <LehBrand
         decorative
+        lockupOnDarkSurface={lockupOnDarkSurface}
         lockupRasterOnly={lockupRasterOnly}
         variant={variant}
       />

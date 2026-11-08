@@ -20,7 +20,10 @@ export function ProfileAvatarForm({
 }: ProfileAvatarFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl);
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    tone: "error" | "success";
+    text: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -29,33 +32,33 @@ export function ProfileAvatarForm({
     if (!file) return;
 
     setBusy(true);
-    setMessage(null);
+    setFeedback(null);
     const formData = new FormData();
     formData.set("file", file);
     const result = await uploadProfileAvatar(formData);
     setBusy(false);
 
-    if (result.error) {
-      setMessage(result.error);
+    if ("error" in result && result.error) {
+      setFeedback({ tone: "error", text: result.error });
       return;
     }
-    if (result.avatarUrl) {
+    if ("avatarUrl" in result && result.avatarUrl) {
       setAvatarUrl(result.avatarUrl);
-      setMessage("Profile photo updated.");
+      setFeedback({ tone: "success", text: "Profile photo updated." });
     }
   }
 
   async function handleRemove() {
     setBusy(true);
-    setMessage(null);
+    setFeedback(null);
     const result = await removeProfileAvatar();
     setBusy(false);
     if (result.error) {
-      setMessage(result.error);
+      setFeedback({ tone: "error", text: result.error });
       return;
     }
     setAvatarUrl(null);
-    setMessage("Profile photo removed.");
+    setFeedback({ tone: "success", text: "Profile photo removed." });
   }
 
   return (
@@ -101,9 +104,17 @@ export function ProfileAvatarForm({
         JPEG, PNG, or WebP up to 2&nbsp;MB. Shown in the platform header and
         sidebar when set.
       </p>
-      {message ? (
-        <p className="text-xs text-muted-foreground" role="status">
-          {message}
+      {feedback ? (
+        <p
+          className={
+            feedback.tone === "error"
+              ? "text-sm text-destructive"
+              : "text-xs text-muted-foreground"
+          }
+          data-testid="profile-avatar-feedback"
+          role={feedback.tone === "error" ? "alert" : "status"}
+        >
+          {feedback.text}
         </p>
       ) : null}
     </div>

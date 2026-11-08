@@ -155,3 +155,47 @@ export function assertStrictJsonSchemaCompatible(
     assertStrictJsonSchemaCompatible(node.items, `${path}.items`);
   }
 }
+
+const OPENAI_STRICT_UNSUPPORTED_SCHEMA_KEYWORDS = new Set([
+  "format",
+  "pattern",
+  "minLength",
+  "maxLength",
+]);
+
+export function assertNoUnsupportedOpenAiStrictKeywords(
+  schema: unknown,
+  path = "root",
+): void {
+  if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
+    return;
+  }
+
+  const node = schema as JsonSchemaNode;
+
+  for (const key of Object.keys(node)) {
+    if (OPENAI_STRICT_UNSUPPORTED_SCHEMA_KEYWORDS.has(key)) {
+      throw new Error(
+        `${path}: OpenAI strict schemas must not use "${key}" keyword`,
+      );
+    }
+  }
+
+  const properties = node.properties;
+  if (
+    properties &&
+    typeof properties === "object" &&
+    !Array.isArray(properties)
+  ) {
+    for (const [key, childSchema] of Object.entries(properties)) {
+      assertNoUnsupportedOpenAiStrictKeywords(
+        childSchema,
+        `${path}.properties.${key}`,
+      );
+    }
+  }
+
+  if (node.type === "array" && node.items) {
+    assertNoUnsupportedOpenAiStrictKeywords(node.items, `${path}.items`);
+  }
+}
