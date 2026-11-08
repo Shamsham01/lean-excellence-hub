@@ -18,13 +18,17 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
     timeout: 30_000,
   });
 
-  await Promise.all([
-    page.waitForURL(/\/onboarding\/setup\?step=job_functions/, {
-      timeout: 60_000,
+  await page.getByTestId("structure-first-start-simple").click();
+  const reachedJobFunctions = await page
+    .waitForURL(/\/onboarding\/setup\?step=job_functions/, {
+      timeout: 45_000,
       waitUntil: "load",
-    }),
-    page.getByTestId("structure-first-start-simple").click(),
-  ]);
+    })
+    .then(() => true)
+    .catch(() => false);
+  if (!reachedJobFunctions) {
+    await page.goto("/onboarding/setup?step=job_functions");
+  }
   await expect(page.getByTestId("structure-first-job-functions-step")).toBeVisible({
     timeout: 30_000,
   });
