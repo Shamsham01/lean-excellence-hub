@@ -16,6 +16,7 @@ import {
 
 import { ChartCard } from "@/components/charts/chart-card";
 import {
+  chartBarTooltipProps,
   LEH_CHART_COLORS,
   chartTickStyle,
 } from "@/components/charts/chart-theme";
@@ -199,7 +200,7 @@ export function BenefitRealisationPanel({
           description="Bars show forecast; line shows validated actual by period."
         >
           <div
-            className="h-72 w-full min-w-0"
+            className="leh-recharts h-72 w-full min-w-0"
             role="img"
             aria-label="Forecast versus validated actual chart"
           >
@@ -219,6 +220,7 @@ export function BenefitRealisationPanel({
                 />
                 <YAxis tick={chartTickStyle} />
                 <Tooltip
+                  {...chartBarTooltipProps}
                   formatter={(value, name) => {
                     const numeric =
                       typeof value === "number" ? value : Number(value ?? 0);

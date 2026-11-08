@@ -12,6 +12,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 
+import { ActionCreateDialog } from "@/components/actions/action-create-form";
 import { ActionDetailSheet } from "@/components/actions/action-detail-sheet";
 import { ActionPlannerBoard } from "@/components/actions/action-planner-board";
 import { ActionPlannerListView } from "@/components/actions/action-planner-list-view";
@@ -68,6 +69,7 @@ export function ActionPlannerShell({
     initialOpenActionId ?? null,
   );
   const [listSort, setListSort] = useState<ListSort>("due");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const openAction = useCallback(
     (actionId: string) => {
@@ -106,10 +108,13 @@ export function ActionPlannerShell({
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function scrollToCreate() {
-    document
-      .getElementById("actions-create-form")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  function openCreateDialog() {
+    setCreateOpen(true);
+  }
+
+  function handleCreated(actionId: string) {
+    router.refresh();
+    openAction(actionId);
   }
 
   const boardActions = useMemo(
@@ -176,7 +181,7 @@ export function ActionPlannerShell({
                 type="button"
                 size="sm"
                 className="gap-1.5"
-                onClick={scrollToCreate}
+                onClick={openCreateDialog}
                 data-testid="actions-add-new"
               >
                 <Plus className="size-3.5" aria-hidden />
@@ -225,7 +230,7 @@ export function ActionPlannerShell({
           {...(canCreate
             ? {
                 actionLabel: "Add new action",
-                onAction: scrollToCreate,
+                onAction: openCreateDialog,
               }
             : {})}
           icon={<ListTodo className="size-5" aria-hidden />}
@@ -248,6 +253,14 @@ export function ActionPlannerShell({
             <ActionPlannerTiles actions={actions} onOpen={openAction} />
           ) : null}
         </>
+      ) : null}
+
+      {canCreate ? (
+        <ActionCreateDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={handleCreated}
+        />
       ) : null}
 
       <ActionDetailSheet
