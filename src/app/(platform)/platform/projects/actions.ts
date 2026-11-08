@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { mapProjectMutationError } from "@/lib/projects/errors";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -52,6 +53,11 @@ export async function createImprovementProject(input: {
   }>;
 }) {
   try {
+    const moduleGate = await assertPlanModuleWrite("projects");
+    if (!moduleGate.ok) {
+      return { error: moduleGate.error };
+    }
+
     const projectId = await callRpc<string>("create_improvement_project", {
       target_title: input.title,
       target_unit_id: input.unitId,

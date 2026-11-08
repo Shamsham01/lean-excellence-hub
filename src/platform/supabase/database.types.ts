@@ -6243,9 +6243,106 @@ export type Database = {
           },
         ]
       }
+      organisation_ai_credit_periods: {
+        Row: {
+          allowance_credits: number
+          consumed_credits: number
+          created_at: string
+          id: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+          reserved_credits: number
+        }
+        Insert: {
+          allowance_credits: number
+          consumed_credits?: number
+          created_at?: string
+          id?: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+          reserved_credits?: number
+        }
+        Update: {
+          allowance_credits?: number
+          consumed_credits?: number
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          period_end?: string
+          period_start?: string
+          reserved_credits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_ai_credit_periods_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisation_ai_credit_reservations: {
+        Row: {
+          ai_run_id: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          period_id: string
+          reserved_credits: number
+          settled_at: string | null
+          settled_credits: number | null
+          status: string
+        }
+        Insert: {
+          ai_run_id: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          period_id: string
+          reserved_credits: number
+          settled_at?: string | null
+          settled_credits?: number | null
+          status?: string
+        }
+        Update: {
+          ai_run_id?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          period_id?: string
+          reserved_credits?: number
+          settled_at?: string | null
+          settled_credits?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_ai_credit_reservations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_ai_credit_reservations_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_ai_credit_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_ai_settings: {
         Row: {
           ai_enabled: boolean
+          credit_period_anchor_day: number
+          credit_policy_enforced: boolean
           journey_event_retention_days: number
           monthly_token_ceiling: number | null
           organisation_id: string
@@ -6256,6 +6353,8 @@ export type Database = {
         }
         Insert: {
           ai_enabled?: boolean
+          credit_period_anchor_day?: number
+          credit_policy_enforced?: boolean
           journey_event_retention_days?: number
           monthly_token_ceiling?: number | null
           organisation_id: string
@@ -6266,6 +6365,8 @@ export type Database = {
         }
         Update: {
           ai_enabled?: boolean
+          credit_period_anchor_day?: number
+          credit_policy_enforced?: boolean
           journey_event_retention_days?: number
           monthly_token_ceiling?: number | null
           organisation_id?: string
@@ -13795,6 +13896,10 @@ export type Database = {
         }[]
       }
       current_organisation_id: { Args: never; Returns: string }
+      current_organisation_plan_module_entitled: {
+        Args: { target_module: string }
+        Returns: boolean
+      }
       current_workforce_login_identifier: { Args: never; Returns: string }
       deactivate_job_function: {
         Args: { target_job_function_id: string }

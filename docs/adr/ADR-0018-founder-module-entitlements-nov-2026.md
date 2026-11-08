@@ -22,9 +22,22 @@ Prior BILLING-02 work gated finance validation and cross-module analytics by pla
 - Finance validation is gated by `module_benefits`, not a separate finance SKU flag.
 - API/integrations remain unadvertised until implemented.
 
-## Known gaps (same PR, documented)
+## Implementation status (overnight slice — not complete)
 
-- Downgrade write-deny at Postgres RPC layer for every Professional module.
-- LeanAI admission reservation / credit settlement in `start_ai_run`.
-- People HR settings surface split (directory vs HR product fields).
-- Suggestion→project conversion and module-setup AI builders: entitlement hooks beyond nav/route.
+**Done in repo (review-only migrations):**
+
+- `public.current_organisation_plan_module_entitled` SECURITY DEFINER wrapper + pgTAP under `authenticated`
+- `private.assert_current_organisation_module_entitled` + initial mutation gates (projects, benefits draft, problem-solving draft, suggestion→project, LeanAI `start_ai_run` module map)
+- SQL `api_access` / `integrations` denied for all plans (matches TS catalogue `false`)
+- LeanAI credit period/reservation/settle/release schema (`billing_05`); enforcement gated by `organisation_ai_settings.credit_policy_enforced` default **false**
+- Route segment layouts with upgrade placeholder (not billing redirect) for Professional module trees + People HR settings
+- Sample server-action write gate (`projects/actions` create)
+
+**Still unfinished (explicit):**
+
+- Remaining Professional RPC lifecycle mutations (update/submit/approve per module, training/skills/recognition/people HR workforce RPCs, module setup bundle publishers)
+- Historical read-only + export vs write-deny matrix on downgrade (RLS + mutation RPC coverage)
+- Cross-module upgrade affordances on dashboards and deep links
+- LeanAI: wire settle/release on run completion/failure; customer-facing usage surfaces; verified rate card (not illustration); concurrent/idempotent paths beyond reserve stub
+- Marketing/sales copy audit vs Essentials module matrix and LeanAI policy
+- Automated plan-matrix tests (four tiers + legacy) for every bypass class

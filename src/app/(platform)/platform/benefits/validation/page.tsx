@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BenefitValidationActions } from "@/components/benefits/benefit-validation-queue-actions";
-import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import {
   classificationSummary,
@@ -26,8 +25,6 @@ import { currentMemberHasPermission } from "@/modules/platform-shell/permissions
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitValidationQueuePage() {
-  await requirePlanModuleEntitlement("benefits");
-
   const [canValidateCi, canValidateFinance, canValidateRealisation] =
     await Promise.all([
       currentMemberHasPermission("benefits.validate.ci"),

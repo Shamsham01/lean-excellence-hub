@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(19);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -159,6 +159,24 @@ select is(
   ),
   false,
   'tenant a remains essentials after tenant b subscribes'
+);
+
+select is(
+  private.organisation_plan_capability(
+    (select id from plan_cap_ids where key = 'organisation_b'),
+    'api_access'
+  ),
+  false,
+  'professional plan keeps api_access off until product ships'
+);
+
+select is(
+  private.organisation_plan_capability(
+    (select id from plan_cap_ids where key = 'organisation_b'),
+    'integrations'
+  ),
+  false,
+  'professional plan keeps integrations off until product ships'
 );
 
 select ok(

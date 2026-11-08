@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/platform/page-header";
 import { loadSkillsAnalytics } from "@/modules/platform-analytics/skills";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
@@ -32,7 +31,6 @@ function latestDraftParentId(
 }
 
 export default async function SkillsOverviewPage() {
-  await requirePlanModuleEntitlement("skills");
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: SKILLS_PERMISSIONS.read,
     module: "skills",

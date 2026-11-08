@@ -15,7 +15,6 @@ import type {
   ProblemSolvingListResponse,
   ProblemSolvingOverview,
 } from "@/lib/problem-solving/types";
-import { requirePlanModuleEntitlement } from "@/modules/billing/require-module-entitlement";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -30,7 +29,6 @@ export default async function ProblemSolvingPortfolioPage({
     range?: string;
   }>;
 }) {
-  await requirePlanModuleEntitlement("problem_solving");
   const params = await searchParams;
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: "problem_solving.view",
