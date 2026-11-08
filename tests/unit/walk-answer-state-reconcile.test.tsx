@@ -157,7 +157,10 @@ describe("useWalkAnswerState same-walk answers reconciliation", () => {
 
     rerender({
       answers: {
-        q1: { text_value: "server-copy", is_not_applicable: false },
+        q1: {
+          text_value: "draft-after-failure",
+          is_not_applicable: false,
+        },
       },
     });
 

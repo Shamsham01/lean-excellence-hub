@@ -304,6 +304,9 @@ export function useWalkAnswerState({
       if (runtime?.inFlight || runtime?.pending || runtime?.debounceTimer) {
         continue;
       }
+      if (statusRef.current[questionId] === "error") {
+        continue;
+      }
       const localAnswer = runtime?.latest?.answer ?? nextLocal[questionId];
       const confirmed = nextConfirmed[questionId];
       if (
@@ -313,12 +316,7 @@ export function useWalkAnswerState({
       ) {
         continue;
       }
-      setStatuses((current) => {
-        if (current[questionId] === "error") {
-          return current;
-        }
-        return { ...current, [questionId]: "saved" };
-      });
+      setStatuses((current) => ({ ...current, [questionId]: "saved" }));
       setErrors((current) => ({ ...current, [questionId]: null }));
     }
   }, [walkId, answersFingerprint]);

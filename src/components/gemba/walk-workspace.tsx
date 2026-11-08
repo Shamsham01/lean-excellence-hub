@@ -6,7 +6,14 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { InlineAlert } from "@/components/ui/alert";
 
@@ -55,10 +62,18 @@ import {
   clearStoredGembaWalkPromptId,
   GEMBA_WALK_PROMPT_PARAM,
   gembaWalkPath,
+  readGembaWalkPromptIdFromSearch,
   readStoredGembaWalkPromptId,
-  resolveGembaWalkPromptIndex,
+  resolveActiveGembaWalkPromptIndex,
+  resolveGembaWalkPromptId,
+  subscribeGembaWalkPromptLocation,
   writeStoredGembaWalkPromptId,
 } from "@/modules/operational/gemba-walk-prompt";
+
+function readPromptIdFromWindowLocation() {
+  if (typeof window === "undefined") return null;
+  return readGembaWalkPromptIdFromSearch(window.location.search);
+}
 
 type Section = {
   id: string;
@@ -183,8 +198,17 @@ export function GembaWalkWorkspace({
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
-  const promptFromUrl =
+  const promptFromRouter =
     searchParams.get(GEMBA_WALK_PROMPT_PARAM)?.trim() ?? null;
+  const promptFromWindow = useSyncExternalStore(
+    subscribeGembaWalkPromptLocation,
+    readPromptIdFromWindowLocation,
+    () => null,
+  );
+  const urlPromptId = resolveGembaWalkPromptId({
+    windowPromptId: promptFromWindow,
+    routerPromptId: promptFromRouter,
+  });
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
@@ -193,11 +217,13 @@ export function GembaWalkWorkspace({
     [sections],
   );
   const storedPromptId = readStoredGembaWalkPromptId(walkId);
-  const restoredIndex = resolveGembaWalkPromptIndex({
+  const promptIndex = resolveActiveGembaWalkPromptIndex({
     questionIds,
-    preferredQuestionId: promptFromUrl ?? initialPromptId,
-    storedQuestionId: promptFromUrl ?? storedPromptId,
+    urlPromptId,
+    initialPromptId,
+    storedPromptId,
   });
+  const urlCanonicalizedWalkIdRef = useRef<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -218,19 +244,10 @@ export function GembaWalkWorkspace({
   const handleObservationsChange = useCallback((next: WalkObservation[]) => {
     setLiveObservations(next);
   }, []);
-  const urlPromptIndex =
-    promptFromUrl != null && promptFromUrl !== ""
-      ? resolveGembaWalkPromptIndex({
-          questionIds,
-          preferredQuestionId: promptFromUrl,
-          storedQuestionId: promptFromUrl,
-        })
-      : null;
-  const index = urlPromptIndex ?? restoredIndex;
   const safeIndex =
     flatQuestions.length === 0
       ? 0
-      : Math.min(Math.max(index, 0), flatQuestions.length - 1);
+      : Math.min(Math.max(promptIndex, 0), flatQuestions.length - 1);
   const current = flatQuestions[safeIndex];
   const progress = flatQuestions.length
     ? Math.round(((safeIndex + 1) / flatQuestions.length) * 100)
@@ -266,18 +283,35 @@ export function GembaWalkWorkspace({
 
   useEffect(() => {
     if (status !== "in_progress" || completing) return;
-    if (promptFromUrl) {
-      writeStoredGembaWalkPromptId(walkId, promptFromUrl);
+
+    const windowPrompt = readPromptIdFromWindowLocation();
+    if (windowPrompt) {
+      writeStoredGembaWalkPromptId(walkId, windowPrompt);
+      if (urlCanonicalizedWalkIdRef.current !== walkId) {
+        urlCanonicalizedWalkIdRef.current = walkId;
+      }
       return;
     }
-    const questionId = flatQuestions[safeIndex]?.question.id;
+
+    if (urlCanonicalizedWalkIdRef.current === walkId) {
+      return;
+    }
+
+    const bootstrapIndex = resolveActiveGembaWalkPromptIndex({
+      questionIds,
+      urlPromptId: null,
+      initialPromptId,
+      storedPromptId: null,
+    });
+    const questionId = flatQuestions[bootstrapIndex]?.question.id;
     if (!questionId) return;
     syncPromptLocation(questionId, "replace");
+    urlCanonicalizedWalkIdRef.current = walkId;
   }, [
     completing,
     flatQuestions,
-    promptFromUrl,
-    safeIndex,
+    initialPromptId,
+    questionIds,
     status,
     syncPromptLocation,
     walkId,
