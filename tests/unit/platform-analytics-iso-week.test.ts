@@ -138,13 +138,14 @@ describe("analytics date range windows", () => {
     },
   ])(
     "keeps equal-length windows across London clock change ($label)",
-  ({ now }) => {
-    const range = buildAnalyticsDateRange(7, new Date(now), LONDON);
-    const series = bucketDailyCounts([], { ...range, days: 7 });
-    expect(series.length).toBe(7);
-    const { current, previous } = windowDurationMs(range);
-    expect(previous).toBe(current);
-  });
+    ({ now }) => {
+      const range = buildAnalyticsDateRange(7, new Date(now), LONDON);
+      const series = bucketDailyCounts([], { ...range, days: 7 });
+      expect(series.length).toBe(7);
+      const { current, previous } = windowDurationMs(range);
+      expect(previous).toBe(current);
+    },
+  );
 });
 
 describe("daily analytics buckets", () => {
