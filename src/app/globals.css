@@ -408,7 +408,8 @@ body {
   overflow: hidden;
 }
 
-.platform-main-viewport:has(.pps-flagship-workspace) [data-module="problem_solving"] {
+.platform-main-viewport:has(.pps-flagship-workspace)
+  [data-module="problem_solving"] {
   gap: 0;
 }
 

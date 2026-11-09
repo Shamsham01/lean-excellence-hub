@@ -125,9 +125,11 @@ test.describe("M2 workforce bulk import", () => {
       filename: "invalid.csv",
       csvContent: invalidCsv,
     });
-    await page.getByTestId("validate-import").evaluate((button: HTMLButtonElement) => {
-      button.click();
-    });
+    await page
+      .getByTestId("validate-import")
+      .evaluate((button: HTMLButtonElement) => {
+        button.click();
+      });
     await expect(page.getByText(/duplicated/i)).toBeVisible();
     await expect(page.getByTestId("start-import-provisioning")).toHaveCount(0);
 
