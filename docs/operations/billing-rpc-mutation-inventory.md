@@ -1,6 +1,6 @@
 # Public write RPCs — Professional module entitlement gates
 
-Inventory baseline: **160** authenticated Professional write RPCs (see table). **Enforcement:** `20261109015000_billing_comprehensive_module_mutation_gates.sql` redefines **153** `private.*` bodies from latest canonical migration + single `assert_*` line. Regenerate: `python3 scripts/generate-billing-module-gates.py`.
+Inventory baseline: **160** authenticated Professional write RPCs (see table). **Enforcement:** `20261109030000_billing_comprehensive_module_mutation_gates.sql` redefines **153** `private.*` bodies from latest canonical migration + single `assert_*` line. Regenerate: `python3 scripts/generate-billing-module-gates.py`.
 
 | Function | Module | Gated | Migration (if gated) |
 | --- | --- | --- | --- |

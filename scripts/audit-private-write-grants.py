@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "docs/operations/rpc-entitlement-inventory.md"
-OUT = ROOT / "supabase/migrations/20261109018000_billing_09_private_write_grant_hardening.sql"
+OUT = ROOT / "supabase/migrations/20261109033000_billing_09_private_write_grant_hardening.sql"
 
 EXEMPT_AUTHENTICATED_PRIVATE_EXECUTE = frozenset(
     {

@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "supabase/migrations"
-OUT_NAME = "20261109015000_billing_comprehensive_module_mutation_gates.sql"
+OUT_NAME = "20261109030000_billing_comprehensive_module_mutation_gates.sql"
 
 DEPRIORITISE = frozenset(
     {
