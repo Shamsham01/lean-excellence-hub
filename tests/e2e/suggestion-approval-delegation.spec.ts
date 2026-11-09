@@ -90,9 +90,9 @@ test.describe("Suggestion approval delegation (UI acceptance)", () => {
   test("operator submits idea", async ({ page }) => {
     await signInAsDemoUser(page, "operator");
     await fillAndSubmitSuggestion(page, title);
-    const detailMatch = page.url().match(
-      /\/platform\/suggestions\/([0-9a-f-]{36})/i,
-    );
+    const detailMatch = page
+      .url()
+      .match(/\/platform\/suggestions\/([0-9a-f-]{36})/i);
     submittedSuggestionId = detailMatch?.[1] ?? null;
     expect(submittedSuggestionId).toMatch(/^[0-9a-f-]{36}$/i);
   });
@@ -154,8 +154,8 @@ test.describe("Suggestion approval delegation (UI acceptance)", () => {
     expect(delegatedSuggestionId).toBeTruthy();
     await notificationBell(page).click();
     await expect(page.getByTestId("platform-notification-list")).toBeVisible({
-    timeout: 30_000,
-  });
+      timeout: 30_000,
+    });
     const staleForSuggestion = page.locator(
       `[data-notification-unread="true"][data-notification-href*="suggestionId=${delegatedSuggestionId}"]`,
     );

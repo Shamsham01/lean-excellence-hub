@@ -9,16 +9,19 @@ import { join } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
 
-function dockerDbExecArgs(sqlFile?: string, sqlCommand?: string): [string, string[]] {
-  const container = execFileSync(
-    "docker",
-    ["ps", "--format", "{{.Names}}"],
-    { encoding: "utf-8" },
-  )
+function dockerDbExecArgs(
+  sqlFile?: string,
+  sqlCommand?: string,
+): [string, string[]] {
+  const container = execFileSync("docker", ["ps", "--format", "{{.Names}}"], {
+    encoding: "utf-8",
+  })
     .split("\n")
     .find((name) => name.startsWith("supabase_db_"));
   if (!container) {
-    throw new Error("suggestion-delegation-concurrency: no supabase_db container");
+    throw new Error(
+      "suggestion-delegation-concurrency: no supabase_db container",
+    );
   }
   const base = [
     "exec",
@@ -114,16 +117,20 @@ async function main(): Promise<void> {
   `);
 
   if (activeCount !== "1") {
-    console.error("suggestion-delegation-concurrency: expected 1 active assignment, got", activeCount);
+    console.error(
+      "suggestion-delegation-concurrency: expected 1 active assignment, got",
+      activeCount,
+    );
     console.error("race-a:\n", raceA.stderr || raceA.stdout);
     console.error("race-b:\n", raceB.stderr || raceB.stdout);
     process.exit(1);
   }
 
-  const oneSucceeded =
-    raceA.status === 0 || raceB.status === 0;
+  const oneSucceeded = raceA.status === 0 || raceB.status === 0;
   if (!oneSucceeded) {
-    console.error("suggestion-delegation-concurrency: expected at least one race session to commit");
+    console.error(
+      "suggestion-delegation-concurrency: expected at least one race session to commit",
+    );
     process.exit(1);
   }
 
