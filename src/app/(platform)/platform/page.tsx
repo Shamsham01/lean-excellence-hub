@@ -7,10 +7,8 @@ import { TimeGreeting } from "@/components/platform/time-greeting";
 import { formatBenefitCurrencyAmount } from "@/lib/benefits/forecast";
 import type { BenefitsOverview } from "@/lib/benefits/types";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
-import {
-  buildAnalyticsDateRangeForOrganisation,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadPlatformHomeAnalytics } from "@/modules/platform-analytics/home";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { AppLink } from "@/components/ui/app-link";

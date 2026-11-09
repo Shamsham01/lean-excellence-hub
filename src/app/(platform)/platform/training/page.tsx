@@ -5,10 +5,8 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRangeForOrganisation,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";

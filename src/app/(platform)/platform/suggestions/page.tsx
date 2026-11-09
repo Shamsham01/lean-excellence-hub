@@ -3,10 +3,8 @@ import { notFound } from "next/navigation";
 import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
 import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRangeForOrganisation,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestions";
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";

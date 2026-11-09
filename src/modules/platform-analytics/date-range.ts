@@ -1,5 +1,3 @@
-import { loadCurrentOrganisationTimeZone } from "./org-time-zone";
-
 export const ANALYTICS_RANGE_OPTIONS = [7, 30, 90] as const;
 export type AnalyticsRangeDays = (typeof ANALYTICS_RANGE_OPTIONS)[number];
 
@@ -54,12 +52,4 @@ export function buildAnalyticsDateRange(
     previousEnd,
     timeZone,
   };
-}
-
-export async function buildAnalyticsDateRangeForOrganisation(
-  days: AnalyticsRangeDays,
-  now = new Date(),
-): Promise<AnalyticsDateRange> {
-  const timeZone = await loadCurrentOrganisationTimeZone();
-  return buildAnalyticsDateRange(days, now, timeZone);
 }

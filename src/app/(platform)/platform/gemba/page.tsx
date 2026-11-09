@@ -3,10 +3,8 @@ import { EmptyState } from "@/components/platform/empty-state";
 import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
 import { GEMBA_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRangeForOrganisation,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadGembaAnalytics } from "@/modules/platform-analytics/gemba";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";

@@ -4,10 +4,8 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/platform/empty-state";
 import { MaturityOverviewAnalytics } from "@/components/platform/maturity-overview-analytics";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRangeForOrganisation,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {

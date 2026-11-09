@@ -7,10 +7,8 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import {
-  buildAnalyticsDateRangeForOrganisation,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadActionsAnalytics } from "@/modules/platform-analytics/actions";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
