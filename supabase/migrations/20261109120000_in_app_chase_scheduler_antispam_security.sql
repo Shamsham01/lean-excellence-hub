@@ -7,7 +7,7 @@
 
 create table if not exists private.in_app_operational_chase_scheduler_settings (
   singleton_id boolean primary key default true check (singleton_id),
-  scheduler_enabled boolean not null default true,
+  scheduler_enabled boolean not null default false,
   membership_batch_size integer not null default 120
     check (membership_batch_size between 1 and 500),
   daily_new_chase_cap integer not null default 12
@@ -528,7 +528,7 @@ begin
   from private.in_app_operational_chase_scheduler_settings scheduler_settings
   where scheduler_settings.singleton_id = true;
 
-  if not coalesce(settings_row.scheduler_enabled, true) then
+  if not coalesce(settings_row.scheduler_enabled, false) then
     return 0;
   end if;
 

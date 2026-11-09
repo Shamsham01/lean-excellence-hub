@@ -153,7 +153,9 @@ export function PlatformNotificationBell({
         </div>
         <DropdownMenuSeparator className="m-0" />
         <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-          High-signal updates only — email delivery is separate.
+          High-signal updates only — email delivery is separate. When several
+          operational chases stack up, unread items collapse into one summary
+          row until you open it.
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
