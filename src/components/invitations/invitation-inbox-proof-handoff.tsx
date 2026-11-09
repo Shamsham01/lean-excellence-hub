@@ -70,8 +70,10 @@ export function InvitationInboxProofHandoff({
     }
 
     startedRef.current = true;
-    setStaging(true);
-    setStagingError(false);
+    queueMicrotask(() => {
+      setStaging(true);
+      setStagingError(false);
+    });
 
     void (async () => {
       try {
