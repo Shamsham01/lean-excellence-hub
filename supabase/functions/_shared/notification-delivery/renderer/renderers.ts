@@ -228,12 +228,42 @@ export function renderSuggestionReviewerReassignedEmail(
   context: NotificationDeliveryContext,
   appOrigin: string,
 ): RenderedOperationalEmail {
-  return renderSuggestionReviewerEmail(
-    context,
-    appOrigin,
-    "Suggestion reassigned to you",
-    "A suggestion has been reassigned to you for review",
-  );
+  const delegationReason = context.contextEmployeeMessage?.trim();
+  const suggestionTitle = context.contextTitle ?? "Suggestion";
+  const ctaUrl = buildOperationalCtaUrl(appOrigin, context.contextLinkPath);
+  const subject = `Suggestion reassigned to you: ${suggestionTitle}`;
+  const intro =
+    `${formatRecipientGreeting(context.recipientDisplayName)},\n\n` +
+    `A suggestion has been reassigned to you for review in ${context.organisationName}.`;
+  const reasonBlock = delegationReason
+    ? `\n\nDelegation note\n${delegationReason}`
+    : "";
+
+  return {
+    subject,
+    text: `${intro}${reasonBlock}\n\nReview suggestion: ${ctaUrl}`,
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "Suggestion reassigned to you",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, a suggestion has been reassigned to you for review ` +
+          `in ${context.organisationName}.`,
+        ...(delegationReason
+          ? {
+              sections: [
+                { heading: "Delegation note", body: delegationReason },
+              ],
+            }
+          : {}),
+        ctaLabel: "Review suggestion",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
+  };
 }
 
 function renderSuggestionAuthorDecisionEmail(
