@@ -111,6 +111,11 @@ select is(
   'get_organisation_ai_credit_period_summary keeps empty search_path'
 );
 
+delete from public.organisation_ai_credit_periods period_row
+where period_row.organisation_id = (
+  select id from credit_summary_ids where key = 'organisation'
+);
+
 select is(
   (
     select count(*)::bigint
