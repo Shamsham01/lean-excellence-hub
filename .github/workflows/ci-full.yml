@@ -277,6 +277,8 @@ jobs:
               tests/e2e/action-lifecycle.spec.ts
               tests/e2e/actions-planner.spec.ts
               tests/e2e/actions-planner-screenshots.spec.ts
+              tests/e2e/chart-tooltip-theme.spec.ts
+              tests/e2e/benefit-chart-tooltip.spec.ts
               tests/e2e/project-charter-benefits-lineage.spec.ts
               tests/e2e/milestone10-closure.spec.ts
               tests/e2e/milestone11-closure.spec.ts

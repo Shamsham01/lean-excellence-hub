@@ -5,6 +5,10 @@ import {
   type FoundingE2eUser,
 } from "./helpers/founding-onboarding";
 import {
+  createActionViaPlannerDialog,
+  openActionDetailPageFromPlanner,
+} from "./helpers/actions-create";
+import {
   acceptInvitationAsNewColleague,
   bootstrapSuggestionProgramme,
   createFoundingOwnerClient,
@@ -231,10 +235,16 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
 
     const actionTitle = `Clean org action ${Date.now().toString(36)}`;
     await page.goto("/platform/actions");
-    await page.getByLabel("Title").fill(actionTitle);
-    await page.getByLabel("Description").fill("First value from empty state");
-    await page.getByRole("button", { name: "Create action" }).click();
-    await expect(page.getByTestId("action-detail-page")).toBeVisible();
+    await expect(page.getByTestId("actions-page")).toBeVisible();
+    await createActionViaPlannerDialog(
+      page,
+      actionTitle,
+      "First value from empty state",
+    );
+    await openActionDetailPageFromPlanner(page);
+    await expect(
+      page.getByRole("heading", { name: actionTitle }),
+    ).toBeVisible();
 
     await bootstrapSuggestionProgramme(page);
     const suggestionTitle = `Clean org idea ${Date.now().toString(36)}`;

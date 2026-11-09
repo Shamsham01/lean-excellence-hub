@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 
-import { ActionCreateForm } from "@/components/actions/action-create-form";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
@@ -148,8 +147,6 @@ export default async function ActionsPage({
           label: criterion.name,
         }))}
       />
-
-      {canCreate ? <ActionCreateForm /> : null}
 
       <Suspense fallback={null}>
         <ActionPlannerShell
