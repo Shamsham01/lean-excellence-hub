@@ -14,6 +14,8 @@ import {
   exhaustLeanAiCreditAllowance,
   waitForSuggestionApprovalRouting,
   waitForUnreadSuggestionNotification,
+  queryMembershipIdForEmail,
+  querySuggestionPrimaryApproverMembershipId,
   queryJobFunctionIdByCode,
   queryOrganisationUnitIdByName,
   queryPublishedRoleVersionId,
@@ -376,10 +378,21 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     expect(suggestionId).toMatch(/^[0-9a-f-]{36}$/i);
     const routedSuggestionId = suggestionId as string;
     await waitForSuggestionApprovalRouting(organisationId, routedSuggestionId);
+    const productionManagerMembershipId = queryMembershipIdForEmail(
+      organisationId,
+      productionManager.email,
+    );
+    expect(
+      querySuggestionPrimaryApproverMembershipId(
+        organisationId,
+        routedSuggestionId,
+      ),
+    ).toBe(productionManagerMembershipId);
     await waitForUnreadSuggestionNotification(
       organisationId,
       routedSuggestionId,
       "Idea submitted",
+      productionManagerMembershipId,
     );
 
     // Operational suggestion email is drained by notification-delivery (Resend), not Mailpit;
@@ -392,6 +405,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       () => notificationBell(page),
       /Idea submitted for review/i,
       routedSuggestionId,
+      120_000,
     );
     await expect(reviewWorkspace(page)).toContainText(suggestionTitle);
     if (
@@ -416,10 +430,15 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await page.getByTestId("review-delegate-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
 
+    const delegateManagerMembershipId = queryMembershipIdForEmail(
+      organisationId,
+      delegateManager.email,
+    );
     await waitForUnreadSuggestionNotification(
       organisationId,
       routedSuggestionId,
       "delegated",
+      delegateManagerMembershipId,
     );
 
     await loginColleague(page, delegateManager);
@@ -429,6 +448,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       () => notificationBell(page),
       /delegated to you/i,
       routedSuggestionId,
+      120_000,
     );
     await beginCurrentReview(page);
     await approveCurrentReview(

@@ -134,8 +134,9 @@ export async function openUnreadSuggestionNotificationReview(
   notificationBell: () => ReturnType<Page["getByTestId"]>,
   pattern: RegExp,
   suggestionId?: string,
+  timeoutMs = 60_000,
 ) {
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + timeoutMs;
   let lastError: unknown;
 
   while (Date.now() < deadline) {

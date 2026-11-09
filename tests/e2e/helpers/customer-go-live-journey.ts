@@ -74,17 +74,45 @@ export function exhaustLeanAiCreditAllowance(organisationId: string) {
   );
 }
 
+export function queryMembershipIdForEmail(
+  organisationId: string,
+  email: string,
+) {
+  const escapedEmail = email.replace(/'/g, "''");
+  const row = runPsql(
+    `select membership_row.id::text from public.organisation_memberships membership_row join auth.users user_row on user_row.id = membership_row.user_id where membership_row.organisation_id = '${organisationId}'::uuid and lower(user_row.email) = lower('${escapedEmail}') and membership_row.status = 'active' limit 1;`,
+  );
+  if (!row) {
+    throw new Error(`Active membership for ${email} was not found`);
+  }
+  return row;
+}
+
+export function querySuggestionPrimaryApproverMembershipId(
+  organisationId: string,
+  suggestionId: string,
+) {
+  const row = runPsql(
+    `select coalesce(routing_row.primary_approver_membership_id::text, '') from public.suggestion_approval_routing routing_row where routing_row.organisation_id = '${organisationId}'::uuid and routing_row.suggestion_id = '${suggestionId}'::uuid limit 1;`,
+  );
+  if (!row) {
+    throw new Error(`Suggestion approval routing was not found for ${suggestionId}`);
+  }
+  return row;
+}
+
 export async function waitForUnreadSuggestionNotification(
   organisationId: string,
   suggestionId: string,
   titleContains: string,
+  membershipId: string,
   timeoutMs = 120_000,
 ) {
   const escapedTitle = titleContains.replace(/'/g, "''");
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const count = runPsql(
-      `select count(*)::text from public.in_app_notifications notification_row where notification_row.organisation_id = '${organisationId}'::uuid and notification_row.read_at is null and notification_row.href like '%suggestionId=${suggestionId}%' and notification_row.title ilike '%${escapedTitle}%';`,
+      `select count(*)::text from public.in_app_notifications notification_row where notification_row.organisation_id = '${organisationId}'::uuid and notification_row.membership_id = '${membershipId}'::uuid and notification_row.read_at is null and notification_row.href like '%suggestionId=${suggestionId}%' and notification_row.title ilike '%${escapedTitle}%';`,
     );
     if (Number(count) > 0) {
       return;
