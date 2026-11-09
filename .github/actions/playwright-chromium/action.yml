@@ -25,12 +25,13 @@ runs:
         set -euo pipefail
         browsers="${{ inputs.browsers }}"
         start_epoch="$(date +%s)"
+        # System libraries are required even when browser binaries are cached (WebKit).
+        # shellcheck disable=SC2086
+        npx playwright install-deps ${browsers}
         if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
           # shellcheck disable=SC2086
           npx playwright install --no-shell ${browsers}
         else
-          # shellcheck disable=SC2086
-          npx playwright install-deps ${browsers}
           # shellcheck disable=SC2086
           npx playwright install ${browsers}
         fi
