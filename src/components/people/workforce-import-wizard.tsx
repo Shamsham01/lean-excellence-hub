@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { navigateTo } from "@/lib/navigation/navigate";
@@ -53,6 +53,19 @@ type WorkforceImportWizardProps = {
     jobId: string,
   ) => Promise<
     { ok: true; data: WorkforceImportValidationSummary } | { error: string }
+  >;
+  onCompleteValidationStep: (
+    jobId: string,
+  ) => Promise<
+    | {
+        ok: true;
+        data: {
+          summary: WorkforceImportValidationSummary;
+          validationRows: ValidationRow[];
+          previewRows: ImportPreviewRow[] | null;
+        };
+      }
+    | { error: string }
   >;
   onLoadValidationRows: (
     jobId: string,
@@ -129,6 +142,7 @@ export function WorkforceImportWizard({
   onCreateJob,
   onSubmitRows,
   onValidate,
+  onCompleteValidationStep,
   onLoadValidationRows,
   onLoadPreviewRows,
   onStartProvisioning,
@@ -299,28 +313,28 @@ export function WorkforceImportWizard({
     setMessage(null);
 
     try {
-      const validated = await onValidate(jobId);
-      if ("error" in validated) {
-        setMessage(validated.error);
+      const result = await onCompleteValidationStep(jobId);
+      if ("error" in result) {
+        setMessage(result.error);
         return;
       }
 
-      const rows = await onLoadValidationRows(jobId);
-      if ("error" in rows) {
-        setMessage(rows.error);
-        return;
-      }
+      setSummary(result.data.summary);
+      setValidationRows(result.data.validationRows);
 
-      setSummary(validated.data);
-      setValidationRows(rows.data);
-
-      if (validated.data.canProvision) {
-        const preview = await onLoadPreviewRows(jobId);
-        if ("ok" in preview) {
-          setPreviewRows(preview.data);
+      if (result.data.summary.canProvision) {
+        if (result.data.previewRows) {
+          setPreviewRows(result.data.previewRows);
         }
         setStep(2);
       }
+    } catch (error) {
+      unstable_rethrow(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to validate import file.",
+      );
     } finally {
       setLoading(false);
     }

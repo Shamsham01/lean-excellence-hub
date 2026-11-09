@@ -49,11 +49,22 @@ test.describe("M2 workforce bulk import", () => {
     await page.getByTestId("import-workforce-link").click();
     await expect(page.getByTestId("workforce-import-wizard")).toBeVisible();
 
-    await uploadWorkforceImportCsv(page, {
-      filename: "bulk-import.csv",
-      csvContent,
+    await page.getByTestId("workforce-import-file").setInputFiles({
+      name: "bulk-import.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(csvContent),
     });
-    await validateWorkforceImportAndStartProvisioning(page);
+    await expect(page.getByText(/rows detected/i)).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(page.getByTestId("validate-import")).toBeEnabled({
+      timeout: 30_000,
+    });
+    await page.getByTestId("validate-import").click();
+    await expect(page.getByTestId("start-import-provisioning")).toBeVisible({
+      timeout: 120_000,
+    });
+    await page.getByTestId("start-import-provisioning").click();
     const jobId = await readWorkforceImportJobId(page);
     await awaitImportCredentialsDownloadReady(page, jobId);
 
