@@ -102,22 +102,25 @@ async function probeSingleMemberPermission(
 }
 
 async function throwMalformedBatchPermissionPayload(
+  operation: "member_has_permissions" | "member_has_grant_permissions",
   permissionKeys: string[],
   detail: string,
 ): Promise<never> {
   return throwPermissionProbeFailure(
-    "member_has_permissions",
+    operation,
     permissionKeys.join(","),
-    new Error(`Malformed member_has_permissions payload: ${detail}`),
+    new Error(`Malformed ${operation} payload: ${detail}`),
   );
 }
 
 async function parseBatchMemberPermissionPayload(
+  operation: "member_has_permissions" | "member_has_grant_permissions",
   permissionKeys: string[],
   data: unknown,
 ): Promise<Record<string, boolean>> {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
     return throwMalformedBatchPermissionPayload(
+      operation,
       permissionKeys,
       "expected jsonb object",
     );
@@ -129,6 +132,7 @@ async function parseBatchMemberPermissionPayload(
   for (const permissionKey of permissionKeys) {
     if (!(permissionKey in payload)) {
       return throwMalformedBatchPermissionPayload(
+        operation,
         permissionKeys,
         `missing key "${permissionKey}"`,
       );
@@ -146,6 +150,7 @@ async function parseBatchMemberPermissionPayload(
     }
 
     return throwMalformedBatchPermissionPayload(
+      operation,
       permissionKeys,
       `non-boolean value for "${permissionKey}"`,
     );
@@ -177,7 +182,11 @@ async function probeBatchMemberGrantPermissions(
     );
   }
 
-  return parseBatchMemberPermissionPayload(permissionKeys, classified.data);
+  return parseBatchMemberPermissionPayload(
+    "member_has_grant_permissions",
+    permissionKeys,
+    classified.data,
+  );
 }
 
 async function probeBatchMemberPermissions(
@@ -200,7 +209,11 @@ async function probeBatchMemberPermissions(
     );
   }
 
-  return parseBatchMemberPermissionPayload(permissionKeys, classified.data);
+  return parseBatchMemberPermissionPayload(
+    "member_has_permissions",
+    permissionKeys,
+    classified.data,
+  );
 }
 
 function writeResolvedPermissions(

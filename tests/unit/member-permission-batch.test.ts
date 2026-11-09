@@ -128,6 +128,23 @@ describe("member permission batch resolution", () => {
     vi.resetModules();
   });
 
+  it("throws a platform boundary error when a grant batch entry is null", async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        "suggestions.read": null,
+        "suggestions.manage": false,
+      },
+      error: null,
+    });
+
+    await expect(
+      prefetchMemberGrantPermissions([
+        "suggestions.read",
+        "suggestions.manage",
+      ]),
+    ).rejects.toBeInstanceOf(PlatformBoundaryError);
+  });
+
   it("throws a platform boundary error when a batch entry is null", async () => {
     rpc.mockResolvedValueOnce({
       data: {

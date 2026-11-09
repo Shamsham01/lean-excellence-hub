@@ -29,6 +29,7 @@ import { visibleHomeSections } from "@/modules/platform-shell/home-sections";
 import {
   currentMemberHasGrantPermission,
   currentMemberHasPermission,
+  currentMemberHasScopedPermission,
 } from "@/modules/platform-shell/permissions";
 
 export default async function PlatformHomePage({
@@ -43,7 +44,8 @@ export default async function PlatformHomePage({
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentOrg = organisations.find((o) => o.selected);
-  const [setupSnapshot, setupPermissions, homePermissions] = await Promise.all([
+  const [setupSnapshot, setupPermissions, homePermissions, canReadCapabilityDashboard] =
+    await Promise.all([
     loadOrganisationSetupSnapshot(),
     loadSetupPermissions(),
     Promise.all([
@@ -62,6 +64,7 @@ export default async function PlatformHomePage({
       currentMemberHasGrantPermission("benefits.read"),
       currentMemberHasPermission("workplace.view"),
     ]),
+    currentMemberHasScopedPermission("people.capability.read"),
   ]);
   const [
     canReadMaturity,
@@ -160,7 +163,7 @@ export default async function PlatformHomePage({
     : { count: null };
 
   const { data: capabilityDashboard } =
-    home.capability && canReadPeopleCapability
+    home.capability && canReadCapabilityDashboard
       ? await supabase.rpc("get_capability_dashboard")
       : { data: null };
   const capabilityObj = capabilityDashboard as {
