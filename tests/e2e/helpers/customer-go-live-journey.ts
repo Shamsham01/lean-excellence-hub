@@ -74,6 +74,28 @@ export function exhaustLeanAiCreditAllowance(organisationId: string) {
   );
 }
 
+export async function waitForUnreadSuggestionNotification(
+  organisationId: string,
+  suggestionId: string,
+  titleContains: string,
+  timeoutMs = 120_000,
+) {
+  const escapedTitle = titleContains.replace(/'/g, "''");
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const count = runPsql(
+      `select count(*)::text from public.in_app_notifications notification_row where notification_row.organisation_id = '${organisationId}'::uuid and notification_row.read_at is null and notification_row.href like '%suggestionId=${suggestionId}%' and notification_row.title ilike '%${escapedTitle}%';`,
+    );
+    if (Number(count) > 0) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(
+    `Unread in-app notification for suggestion ${suggestionId} (title ~ ${titleContains}) did not appear within ${timeoutMs}ms`,
+  );
+}
+
 export async function waitForSuggestionApprovalRouting(
   organisationId: string,
   suggestionId: string,

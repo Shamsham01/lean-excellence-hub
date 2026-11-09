@@ -13,6 +13,7 @@ import {
   enableLeanAiCreditEnforcement,
   exhaustLeanAiCreditAllowance,
   waitForSuggestionApprovalRouting,
+  waitForUnreadSuggestionNotification,
   queryJobFunctionIdByCode,
   queryOrganisationUnitIdByName,
   queryPublishedRoleVersionId,
@@ -375,6 +376,11 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     expect(suggestionId).toMatch(/^[0-9a-f-]{36}$/i);
     const routedSuggestionId = suggestionId as string;
     await waitForSuggestionApprovalRouting(organisationId, routedSuggestionId);
+    await waitForUnreadSuggestionNotification(
+      organisationId,
+      routedSuggestionId,
+      "Idea submitted",
+    );
 
     // Operational suggestion email is drained by notification-delivery (Resend), not Mailpit;
     // ledger + fake-provider coverage lives in test:db:integration:suggestion-approval-delegation.
@@ -409,6 +415,12 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       .fill("Coverage while I am on the floor");
     await page.getByTestId("review-delegate-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
+
+    await waitForUnreadSuggestionNotification(
+      organisationId,
+      routedSuggestionId,
+      "delegated",
+    );
 
     await loginColleague(page, delegateManager);
     await page.goto("/platform");
