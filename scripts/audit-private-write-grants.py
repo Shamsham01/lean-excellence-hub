@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Emit SQL to revoke PUBLIC/anon/authenticated execute on inventoried private writers."""
+"""Emit SQL to revoke PUBLIC/anon/authenticated execute on inventoried private writers.
+
+Matches each private overload by pg_proc.oid identity args (not by proname alone)
+so overloaded helpers cannot keep a stray PUBLIC EXECUTE grant.
+"""
 from __future__ import annotations
 
 from pathlib import Path
