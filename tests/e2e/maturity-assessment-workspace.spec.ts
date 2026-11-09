@@ -334,9 +334,8 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       await answerVisibleScore(page, 2);
       await expect(
         page
-          .locator(
-            '[data-testid^="criterion-nav-"][data-completion-state="complete"]',
-          )
+          .getByTestId("desktop-criterion-nav")
+          .locator('[data-completion-state="complete"]')
           .first(),
       ).toBeVisible();
       await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -344,9 +343,8 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     await answerVisibleScore(page, 2);
     await expect(
       page
-        .locator(
-          '[data-testid^="criterion-nav-"][data-completion-state="complete"]',
-        )
+        .getByTestId("desktop-criterion-nav")
+        .locator('[data-completion-state="complete"]')
         .first(),
     ).toBeVisible();
     await expect(page.getByTestId("complete-self-assessment")).toBeVisible({
