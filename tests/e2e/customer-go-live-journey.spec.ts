@@ -381,19 +381,12 @@ test.describe("Customer go-live journey (clean organisation)", () => {
 
     await loginColleague(page, productionManager);
     await page.goto("/platform");
-    try {
-      await openUnreadSuggestionNotificationReview(
-        page,
-        () => notificationBell(page),
-        /Idea submitted for review/i,
-        routedSuggestionId,
-      );
-    } catch {
-      await page.goto(
-        `/platform/suggestions/review?suggestionId=${routedSuggestionId}`,
-      );
-      await expect(reviewWorkspace(page)).toBeVisible({ timeout: 60_000 });
-    }
+    await openUnreadSuggestionNotificationReview(
+      page,
+      () => notificationBell(page),
+      /Idea submitted for review/i,
+      routedSuggestionId,
+    );
     await expect(reviewWorkspace(page)).toContainText(suggestionTitle);
     if (
       await page
@@ -434,19 +427,18 @@ test.describe("Customer go-live journey (clean organisation)", () => {
 
     await loginColleague(page, productionManager);
     await page.goto("/platform");
-    if (await notificationBell(page).isVisible()) {
-      await notificationBell(page).click();
-      await expect(page.getByTestId("platform-notification-list")).toBeVisible({
-        timeout: 30_000,
-      });
-      await expect(
-        page
-          .locator(
-            `[data-notification-unread="true"][data-notification-href*="suggestionId=${suggestionId}"]`,
-          )
-          .filter({ hasText: /Idea submitted for review|delegated/i }),
-      ).toHaveCount(0, { timeout: 30_000 });
-    }
+    await expect(notificationBell(page)).toBeVisible();
+    await notificationBell(page).click();
+    await expect(page.getByTestId("platform-notification-list")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(
+      page
+        .locator(
+          `[data-notification-unread="true"][data-notification-href*="suggestionId=${suggestionId}"]`,
+        )
+        .filter({ hasText: /Idea submitted for review|delegated/i }),
+    ).toHaveCount(0, { timeout: 30_000 });
   });
 
   test("step 4 — actions planner views and Android viewport scroll", async ({
@@ -462,10 +454,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       "Captured during customer go-live journey",
     );
     const detailSheet = page.getByTestId("action-detail-sheet");
-    if (await detailSheet.isVisible()) {
-      await page.keyboard.press("Escape");
-      await expect(detailSheet).not.toBeVisible({ timeout: 15_000 });
-    }
+    await expect(detailSheet).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(detailSheet).not.toBeVisible({ timeout: 15_000 });
 
     await page.getByTestId("actions-view-board").click();
     await expect(page.getByTestId("actions-board")).toBeVisible();
@@ -515,10 +506,15 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       .getByLabel("Ask LeanAI")
       .fill("Summarise one lean habit for go-live.");
     await page.getByTestId("leanai-assistant-send").click();
-    const sending = page.getByTestId("leanai-assistant-sending");
-    if (await sending.isVisible().catch(() => false)) {
-      await expect(sending).toBeHidden({ timeout: 60_000 });
-    }
+    await expect(page.getByTestId("leanai-assistant-sending")).toBeHidden({
+      timeout: 60_000,
+    });
+    await expect(
+      page.getByTestId("leanai-assistant-assistant-message").first(),
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(
+      page.getByTestId("leanai-assistant-assistant-message").first(),
+    ).not.toBeEmpty();
 
     exhaustLeanAiCreditAllowance(organisationId);
     await page.goto("/platform/settings/ai");

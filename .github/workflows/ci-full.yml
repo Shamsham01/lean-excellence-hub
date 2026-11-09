@@ -151,7 +151,9 @@ jobs:
     name: Full Regression / E2E smoke
     needs:
       - playwright-browsers
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -241,7 +243,9 @@ jobs:
     name: Full Regression / E2E ${{ matrix.label }}
     needs:
       - playwright-browsers
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 32
     strategy:
