@@ -264,9 +264,8 @@ async function resolveMemberGrantPermissionsIntoStore(
     const resolved =
       uncachedKeys.length === 1 && singlePermissionKey
         ? {
-            [singlePermissionKey]: (
-              await probeSingleMemberGrantPermission(singlePermissionKey)
-            ),
+            [singlePermissionKey]:
+              await probeSingleMemberGrantPermission(singlePermissionKey),
           }
         : await probeBatchMemberGrantPermissions(uncachedKeys);
 
@@ -361,27 +360,29 @@ export const currentMemberHasGrantPermission = cache(
   },
 );
 
-export const readCurrentOrganisationId = cache(async (): Promise<string | null> => {
-  const supabase = await createServerSupabaseClient();
-  const orgId = await supabase.rpc("current_organisation_id");
-  const orgClassified = classifyPermissionProbeResult(orgId);
-  if (!orgClassified.ok) {
-    if (
-      orgClassified.outcome === "denied" ||
-      orgClassified.outcome === "not_found"
-    ) {
-      return null;
+export const readCurrentOrganisationId = cache(
+  async (): Promise<string | null> => {
+    const supabase = await createServerSupabaseClient();
+    const orgId = await supabase.rpc("current_organisation_id");
+    const orgClassified = classifyPermissionProbeResult(orgId);
+    if (!orgClassified.ok) {
+      if (
+        orgClassified.outcome === "denied" ||
+        orgClassified.outcome === "not_found"
+      ) {
+        return null;
+      }
+
+      return throwClassifiedProbeFailure(
+        orgClassified,
+        "current_organisation_id",
+        "organisation_context",
+      );
     }
 
-    return throwClassifiedProbeFailure(
-      orgClassified,
-      "current_organisation_id",
-      "organisation_context",
-    );
-  }
-
-  return orgClassified.data ?? null;
-});
+    return orgClassified.data ?? null;
+  },
+);
 
 export const currentMemberHasScopedPermission = cache(
   async (

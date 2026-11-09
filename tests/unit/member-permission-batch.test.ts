@@ -216,9 +216,9 @@ describe("member permission batch resolution", () => {
 
     await prefetchMemberGrantPermissions(grantKeys);
 
-    await expect(currentMemberHasGrantPermission("suggestions.read")).resolves.toBe(
-      true,
-    );
+    await expect(
+      currentMemberHasGrantPermission("suggestions.read"),
+    ).resolves.toBe(true);
     await expect(currentMemberHasGrantPermission("five_s.read")).resolves.toBe(
       true,
     );

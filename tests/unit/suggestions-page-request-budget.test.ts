@@ -57,29 +57,31 @@ function mockQueryChain(result: { data: unknown; error: null }) {
 }
 
 async function simulateSuggestionsOverviewPermissionPhase() {
-  rpc.mockImplementation(async (fn: string, args?: { target_permission_keys?: string[] }) => {
-    if (fn === "member_has_permissions") {
-      const keys = args?.target_permission_keys ?? shellMemberKeys;
-      return {
-        data: Object.fromEntries(keys.map((key) => [key, true])),
-        error: null,
-      };
-    }
-    if (fn === "member_has_grant_permissions") {
-      const keys = args?.target_permission_keys ?? shellGrantKeys;
-      return {
-        data: Object.fromEntries(keys.map((key) => [key, true])),
-        error: null,
-      };
-    }
-    if (fn === "member_has_grant_permission") {
-      return { data: true, error: null };
-    }
-    if (fn === "member_has_permission") {
-      return { data: true, error: null };
-    }
-    return { data: null, error: null };
-  });
+  rpc.mockImplementation(
+    async (fn: string, args?: { target_permission_keys?: string[] }) => {
+      if (fn === "member_has_permissions") {
+        const keys = args?.target_permission_keys ?? shellMemberKeys;
+        return {
+          data: Object.fromEntries(keys.map((key) => [key, true])),
+          error: null,
+        };
+      }
+      if (fn === "member_has_grant_permissions") {
+        const keys = args?.target_permission_keys ?? shellGrantKeys;
+        return {
+          data: Object.fromEntries(keys.map((key) => [key, true])),
+          error: null,
+        };
+      }
+      if (fn === "member_has_grant_permission") {
+        return { data: true, error: null };
+      }
+      if (fn === "member_has_permission") {
+        return { data: true, error: null };
+      }
+      return { data: null, error: null };
+    },
+  );
 
   await prefetchPlatformShellPermissionProbes();
   await Promise.all([
@@ -111,7 +113,7 @@ async function simulateSuggestionsOverviewDataPhase() {
         error: null,
       };
     }
-  if (fn === "current_organisation_id") {
+    if (fn === "current_organisation_id") {
       return { data: "org-1", error: null };
     }
     return { data: null, error: null };

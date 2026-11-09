@@ -13,7 +13,9 @@ export const setupNavigationPermissions = [
 function collectNavigationPermissionKeys(
   selector: (item: PlatformNavItem) => readonly string[],
 ): string[] {
-  return Array.from(new Set(platformNavigation.flatMap((item) => selector(item))));
+  return Array.from(
+    new Set(platformNavigation.flatMap((item) => selector(item))),
+  );
 }
 
 export function collectPlatformShellPermissionKeys(): string[] {
