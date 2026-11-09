@@ -91,16 +91,68 @@ describe("iso week helpers", () => {
   });
 });
 
-describe("daily analytics buckets", () => {
-  it("counts events on the last civil day of a 7-day range", () => {
+function windowDurationMs(range: {
+  start: string;
+  end: string;
+  previousStart: string;
+  previousEnd: string;
+}) {
+  const current =
+    new Date(range.end).getTime() - new Date(range.start).getTime();
+  const previous =
+    new Date(range.previousEnd).getTime() -
+    new Date(range.previousStart).getTime();
+  return { current, previous };
+}
+
+describe("analytics date range windows", () => {
+  it("uses exactly N civil days for an N-day preset", () => {
     const now = new Date("2026-11-09T15:00:00.000Z");
     const range = buildAnalyticsDateRange(7, now, LONDON);
     const series = bucketDailyCounts(["2026-11-09T14:00:00.000Z"], {
       ...range,
       days: 7,
     });
-    expect(series.length).toBe(8);
-    expect(series.reduce((sum, point) => sum + point.value, 0)).toBe(1);
+    expect(series.length).toBe(7);
+    expect(series.at(-1)?.value).toBe(1);
+  });
+
+  it("gives current and previous windows equal duration", () => {
+    const range = buildAnalyticsDateRange(
+      7,
+      new Date("2026-11-09T15:00:00.000Z"),
+      LONDON,
+    );
+    const { current, previous } = windowDurationMs(range);
+    expect(previous).toBe(current);
+  });
+
+  it.each([
+    {
+      label: "spring forward",
+      now: "2026-03-29T12:00:00.000Z",
+    },
+    {
+      label: "autumn fallback",
+      now: "2026-10-25T14:00:00.000Z",
+    },
+  ])(
+    "keeps equal-length windows across London clock change ($label)",
+  ({ now }) => {
+    const range = buildAnalyticsDateRange(7, new Date(now), LONDON);
+    const series = bucketDailyCounts([], { ...range, days: 7 });
+    expect(series.length).toBe(7);
+    const { current, previous } = windowDurationMs(range);
+    expect(previous).toBe(current);
+  });
+});
+
+describe("daily analytics buckets", () => {
+  it("exposes civil-day tooltips on daily bars", () => {
+    const now = new Date("2026-11-09T15:00:00.000Z");
+    const range = buildAnalyticsDateRange(7, now, LONDON);
+    const series = bucketDailyCounts([], { ...range, days: 7 });
+    expect(series.at(-1)?.tooltipLabel).toMatch(/9 Nov/);
   });
 });
 

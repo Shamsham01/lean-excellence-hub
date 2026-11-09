@@ -34,6 +34,27 @@ export type ZonedDateTimeParts = CivilDate & {
 
 type PartMap = Record<string, string>;
 
+const zonedPartsFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function zonedPartsFormatter(timeZone: string): Intl.DateTimeFormat {
+  const zone = normalizeAnalyticsTimeZone(timeZone);
+  let formatter = zonedPartsFormatters.get(zone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: zone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    });
+    zonedPartsFormatters.set(zone, formatter);
+  }
+  return formatter;
+}
+
 function partsMap(formatter: Intl.DateTimeFormat, date: Date): PartMap {
   const map: PartMap = {};
   for (const part of formatter.formatToParts(date)) {
@@ -48,17 +69,7 @@ export function zonedDateTimeParts(
   date: Date,
   timeZone: string,
 ): ZonedDateTimeParts {
-  const formatter = new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  });
-  const parts = partsMap(formatter, date);
+  const parts = partsMap(zonedPartsFormatter(timeZone), date);
   return {
     year: Number(parts.year),
     month: Number(parts.month),
@@ -185,6 +196,18 @@ export function mondayOfIsoWeek(weekYear: number, week: number): CivilDate {
     month: monday.getUTCMonth() + 1,
     day: monday.getUTCDate(),
   };
+}
+
+export function formatCivilDayLabel(
+  date: CivilDate,
+  timeZone = DEFAULT_ANALYTICS_TIME_ZONE,
+): string {
+  const instant = zonedStartOfDay(date, timeZone);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone,
+  }).format(instant);
 }
 
 export function formatWeekCommencing(

@@ -35,14 +35,15 @@ export function buildAnalyticsDateRange(
 ): AnalyticsDateRange {
   const end = now.toISOString();
   const today = zonedCivilDate(end, timeZone);
-  const rangeStartDay = addCalendarDays(today, -days);
-  const previousEndDay = rangeStartDay;
-  const previousStartDay = addCalendarDays(rangeStartDay, -days);
-  const start = zonedStartOfDay(rangeStartDay, timeZone).toISOString();
-  const previousEnd = zonedStartOfDay(previousEndDay, timeZone).toISOString();
-  const previousStart = zonedStartOfDay(
-    previousStartDay,
-    timeZone,
+  const rangeStartDay = addCalendarDays(today, -(days - 1));
+  const startInstant = zonedStartOfDay(rangeStartDay, timeZone);
+  const start = startInstant.toISOString();
+  const windowMs = now.getTime() - startInstant.getTime();
+  const previousStartDay = addCalendarDays(today, -(2 * days - 1));
+  const previousStartInstant = zonedStartOfDay(previousStartDay, timeZone);
+  const previousStart = previousStartInstant.toISOString();
+  const previousEnd = new Date(
+    previousStartInstant.getTime() + windowMs,
   ).toISOString();
   return {
     days,

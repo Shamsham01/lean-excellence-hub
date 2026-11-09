@@ -17,16 +17,19 @@ describe("platform analytics date range", () => {
     expect(parseAnalyticsRangeDays("14")).toBe(30);
   });
 
-  it("builds bounded previous period", () => {
+  it("builds bounded previous period with equal window length", () => {
     const range = buildAnalyticsDateRange(
       7,
       new Date("2026-01-08T12:00:00.000Z"),
     );
     expect(range.days).toBe(7);
     expect(range.timeZone).toBe("Europe/London");
-    expect(new Date(range.start).getTime()).toBeLessThan(
-      new Date(range.end).getTime(),
-    );
+    const current =
+      new Date(range.end).getTime() - new Date(range.start).getTime();
+    const previous =
+      new Date(range.previousEnd).getTime() -
+      new Date(range.previousStart).getTime();
+    expect(previous).toBe(current);
     expect(new Date(range.previousStart).getTime()).toBeLessThan(
       new Date(range.start).getTime(),
     );

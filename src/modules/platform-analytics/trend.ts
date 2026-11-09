@@ -1,5 +1,6 @@
 import {
   DEFAULT_ANALYTICS_TIME_ZONE,
+  formatCivilDayLabel,
   formatIsoWeekAxisLabel,
   formatWeekCommencing,
   isoWeekFromCivilDate,
@@ -52,6 +53,7 @@ function bucketDailyInTimeZone(
   const dayList = listCivilDaysInclusive(startLocal, endLocal);
   const buckets = dayList.map((day, index) => ({
     label: `Day ${index + 1}`,
+    tooltipLabel: formatCivilDayLabel(day, timeZone),
     value: 0,
     dayKey: `${day.year}-${day.month}-${day.day}`,
   }));
@@ -67,7 +69,11 @@ function bucketDailyInTimeZone(
     }
   }
 
-  return buckets.map(({ label, value }) => ({ label, value }));
+  return buckets.map(({ label, value, tooltipLabel }) => ({
+    label,
+    value,
+    ...(tooltipLabel ? { tooltipLabel } : {}),
+  }));
 }
 
 function buildWeeklyBuckets(
