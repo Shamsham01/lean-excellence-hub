@@ -6,7 +6,11 @@ import { redirect, RedirectType } from "next/navigation";
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { findResumableGembaWalkId } from "@/modules/operational/gemba-active-walks";
 import { readApplicableUnitIds } from "@/modules/operational/gemba-applicability";
-import { gembaWalkPath } from "@/modules/operational/gemba-walk-prompt";
+import {
+  buildGembaWalkPromptSearch,
+  gembaWalkPath,
+} from "@/modules/operational/gemba-walk-prompt";
+import { resolveFirstGembaWalkPromptId } from "@/modules/operational/resolve-first-gemba-walk-prompt";
 import {
   loadTemplateAuthoringChildren,
   nextQuestionPosition,
@@ -185,7 +189,17 @@ export async function startGembaWalkFromForm(formData: FormData) {
   const definitionId = String(formData.get("definitionId"));
   const unitId = String(formData.get("unitId"));
   const result = await startGembaWalk(definitionId, unitId);
-  if (result.walkId) redirect(`/platform/gemba/walks/${result.walkId}`);
+  if (result.walkId) {
+    const supabase = await createServerSupabaseClient();
+    const firstPromptId = await resolveFirstGembaWalkPromptId(
+      supabase,
+      result.walkId,
+    );
+    const query = firstPromptId
+      ? buildGembaWalkPromptSearch(firstPromptId)
+      : "";
+    redirect(`/platform/gemba/walks/${result.walkId}${query}`);
+  }
 }
 
 export async function saveGembaWalkAnswer(

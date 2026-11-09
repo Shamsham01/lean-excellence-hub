@@ -3,8 +3,9 @@ import { expect, type Page } from "@playwright/test";
 export async function expectGembaPromptHeading(page: Page, prompt: string) {
   const workspace = page.getByTestId("gemba-walk-workspace");
   await expect(workspace).toBeVisible({ timeout: 30_000 });
-  const heading = workspace.getByTestId("gemba-walk-prompt-heading");
-  await expect(heading).toHaveText(prompt, { timeout: 30_000 });
+  await expect(workspace.getByRole("heading", { name: prompt })).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
 /** Wait until debounced walk-answer persist shows Saved (matches main E2E pattern; no extra blur). */
