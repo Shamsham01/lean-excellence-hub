@@ -26,7 +26,7 @@ runs:
         export APP_ORIGIN=http://127.0.0.1:3000
         export AUTH_EMAIL_FROM=onboarding@test.test
         export AUTH_EMAIL_FROM_NAME="Lean Excellence Hub"
-        export INVITATION_DELIVERY_MAILPIT_URL=http://127.0.0.1:54324
+        export INVITATION_DELIVERY_MAILPIT_URL=http://172.17.0.1:54324
         export AUTH_RATE_LIMIT_PEPPER=ci-only-pepper-that-is-at-least-32-characters
         export AI_ENABLED=1
         export AI_PROVIDER=fake
