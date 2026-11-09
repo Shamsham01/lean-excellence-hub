@@ -1,3 +1,5 @@
+"use client";
+
 import { Check } from "lucide-react";
 
 import { setupStatusLabel } from "@/modules/organisation-setup/readiness";
