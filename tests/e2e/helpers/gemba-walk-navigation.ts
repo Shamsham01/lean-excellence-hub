@@ -7,10 +7,7 @@ export async function expectGembaPromptHeading(page: Page, prompt: string) {
 }
 
 /** Flush debounced notes, wait for persist, and fail with inline error if save does not commit. */
-export async function fillGembaWalkNotesExpectSaved(
-  page: Page,
-  text: string,
-) {
+export async function fillGembaWalkNotesExpectSaved(page: Page, text: string) {
   const notes = page.getByTestId("gemba-walk-notes");
   await notes.fill(text);
   await notes.blur();
