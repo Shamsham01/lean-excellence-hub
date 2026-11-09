@@ -1,5 +1,5 @@
 name: Install Playwright Chromium (cached)
-description: Cache browser binaries keyed by package-lock and install Chromium (and optional browsers) with system dependencies.
+description: Cache browser binaries keyed by package-lock and install requested browsers with system dependencies.
 
 inputs:
   browsers:
@@ -15,7 +15,9 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ inputs.browsers }}
+        key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
 
     - name: Install Playwright Chromium
       shell: bash
@@ -23,12 +25,12 @@ runs:
         set -euo pipefail
         browsers="${{ inputs.browsers }}"
         start_epoch="$(date +%s)"
-        # shellcheck disable=SC2086
-        npx playwright install-deps ${browsers}
         if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
           # shellcheck disable=SC2086
           npx playwright install --no-shell ${browsers}
         else
+          # shellcheck disable=SC2086
+          npx playwright install-deps ${browsers}
           # shellcheck disable=SC2086
           npx playwright install ${browsers}
         fi
