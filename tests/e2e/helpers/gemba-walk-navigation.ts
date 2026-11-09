@@ -23,6 +23,9 @@ export async function navigateGembaPrompt(
   direction: "Next" | "Previous",
   expectedPrompt: string,
 ) {
+  await expect(page.getByTestId("answer-save-status")).not.toContainText(
+    "Saving",
+  );
   const control = page.getByRole("button", { name: direction, exact: true });
   await expect(control).toBeEnabled({ timeout: 30_000 });
   await control.click();
