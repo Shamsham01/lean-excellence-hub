@@ -35,6 +35,15 @@ alter table private.in_app_chase_worker_cursor
 comment on column private.in_app_chase_worker_cursor.chase_eligibility_watermark is
   'When set, operational chase sync only targets work that became due after this instant (no historical backfill).';
 
+grant select, update on private.in_app_operational_chase_scheduler_settings
+  to lean_hub_private_owner;
+
+drop policy if exists private_owner_all_in_app_operational_chase_scheduler_settings
+  on private.in_app_operational_chase_scheduler_settings;
+create policy private_owner_all_in_app_operational_chase_scheduler_settings
+on private.in_app_operational_chase_scheduler_settings for all to lean_hub_private_owner
+using (true) with check (true);
+
 grant select, update on private.in_app_chase_worker_cursor to lean_hub_private_owner;
 
 drop policy if exists private_owner_all_in_app_chase_worker_cursor
@@ -115,8 +124,6 @@ alter table private.in_app_chase_recipient_daily_quota force row level security;
 revoke all on private.in_app_chase_recipient_daily_quota
   from public, anon, authenticated, service_role;
 grant select, insert, update, delete on private.in_app_chase_recipient_daily_quota to postgres;
-grant select on private.in_app_chase_recipient_daily_quota to lean_hub_private_owner;
-
 create policy postgres_all_in_app_chase_recipient_daily_quota
 on private.in_app_chase_recipient_daily_quota for all to postgres
 using (true) with check (true);
@@ -160,7 +167,7 @@ declare
   consumed integer := 0;
   remaining integer;
 begin
-  select coalesce(settings_row.daily_new_chase_cap, 12)
+  select coalesce(max(settings_row.daily_new_chase_cap), 12)
   into daily_cap
   from private.in_app_operational_chase_scheduler_settings settings_row
   where settings_row.singleton_id = true;
@@ -187,7 +194,7 @@ begin
   for update;
 
   remaining := greatest(coalesce(daily_cap, 12) - coalesce(consumed, 0), 0);
-  return least(greatest(coalesce(per_run_limit, 0), 0), remaining);
+  return least(greatest(coalesce(per_run_limit, 12), 0), remaining);
 end;
 $$;
 
@@ -358,16 +365,19 @@ declare
   stale_after interval := interval '72 hours';
   schedule_grace interval := interval '1 day';
   v_eligibility_watermark timestamptz;
-  sync_started_at timestamptz := clock_timestamp();
   action_limit integer := 0;
+  v_schedule_entitled boolean := false;
+  v_gemba_entitled boolean := false;
+  v_five_s_entitled boolean := false;
 begin
 
   if not private.organisation_in_app_operational_chases_enabled(target_organisation_id) then
     return 0;
   end if;
 
-  select coalesce(settings_row.daily_new_chase_cap, 12),
-         coalesce(settings_row.per_member_chase_limit, 8)
+  select
+    coalesce(max(settings_row.daily_new_chase_cap), 12),
+    coalesce(max(settings_row.per_member_chase_limit), 8)
   into daily_cap, per_member_limit
   from private.in_app_operational_chase_scheduler_settings settings_row
   where settings_row.singleton_id = true;
@@ -377,25 +387,24 @@ begin
   from private.in_app_chase_worker_cursor worker_cursor
   where worker_cursor.singleton_id = true;
 
+  v_schedule_entitled := private.organisation_plan_capability(
+    target_organisation_id,
+    'module_schedule'
+  );
+  v_gemba_entitled := private.organisation_plan_capability(
+    target_organisation_id,
+    'module_gemba'
+  );
+  v_five_s_entitled := private.organisation_plan_capability(
+    target_organisation_id,
+    'module_five_s'
+  );
+
   slots_remaining := private.lock_in_app_chase_daily_budget(
     target_organisation_id,
     target_membership_id,
     per_member_limit
   );
-  if coalesce(slots_remaining, 0) <= 0 then
-    slots_remaining := greatest(
-      coalesce(daily_cap, 12)
-        - coalesce(
-            private.in_app_chase_new_rows_created_today(
-              target_organisation_id,
-              target_membership_id
-            ),
-            0
-          ),
-      0
-    );
-    slots_remaining := least(coalesce(slots_remaining, 0), coalesce(per_member_limit, 8));
-  end if;
   v_allow_new_inserts := coalesce(slots_remaining, 0) > 0;
 
   if not v_allow_new_inserts then
@@ -406,7 +415,7 @@ begin
   end if;
 
   action_limit := case
-    when v_allow_new_inserts then greatest((slots_remaining + 3) / 4, 1)
+    when v_allow_new_inserts and slots_remaining > 0 then slots_remaining
     else 0
   end;
 
@@ -421,6 +430,11 @@ begin
     join public.action_assignees assignee_row
       on assignee_row.organisation_id = action_row.organisation_id
      and assignee_row.action_id = action_row.id
+    left join public.in_app_notifications existing_chase_row
+      on existing_chase_row.organisation_id = action_row.organisation_id
+     and existing_chase_row.membership_id = assignee_row.membership_id
+     and existing_chase_row.dedupe_key =
+       'overdue_action:' || action_row.id::text || ':' || assignee_row.membership_id::text
     where action_row.organisation_id = target_organisation_id
       and assignee_row.membership_id = target_membership_id
       and action_row.status in ('open', 'in_progress')
@@ -431,7 +445,7 @@ begin
         or action_row.due_at >= v_eligibility_watermark
       )
       and v_allow_new_inserts
-    order by action_row.due_at
+    order by (existing_chase_row.id is not null)::int, action_row.due_at
     limit action_limit
   ),
   upserted_actions as (
@@ -462,28 +476,30 @@ begin
       body = excluded.body,
       href = excluded.href,
       notification_type = excluded.notification_type
-    returning 1
+    returning (xmax = 0) as inserted
   )
-  select count(*) into upsert_count from upserted_actions;
+  select count(*)::integer,
+         count(*) filter (where inserted)::integer
+  into upsert_count, new_insert_count
+  from upserted_actions;
   affected := affected + coalesce(upsert_count, 0);
-  select count(*)::integer into new_insert_count
-  from public.in_app_notifications notification_row
-  where notification_row.organisation_id = target_organisation_id
-    and notification_row.membership_id = target_membership_id
-    and notification_row.notification_type = 'leanai.chase_overdue_action'
-    and notification_row.created_at >= sync_started_at;
   perform private.record_in_app_chase_new_inserts(
     target_organisation_id,
     target_membership_id,
     coalesce(new_insert_count, 0)
   );
   slots_remaining := greatest(slots_remaining - coalesce(new_insert_count, 0), 0);
+  v_allow_new_inserts := coalesce(slots_remaining, 0) > 0;
 
   delete from public.in_app_notifications notification_row
   where notification_row.organisation_id = target_organisation_id
     and notification_row.membership_id = target_membership_id
     and notification_row.notification_type = 'leanai.chase_overdue_action'
     and notification_row.dedupe_key like 'overdue_action:%'
+    and (
+      v_eligibility_watermark is null
+      or notification_row.created_at >= v_eligibility_watermark
+    )
     and not exists (
       select 1
       from public.actions action_row
@@ -516,6 +532,11 @@ begin
     join public.organisation_units unit_row
       on unit_row.organisation_id = occurrence_row.organisation_id
      and unit_row.id = occurrence_row.unit_id
+    left join public.in_app_notifications existing_chase_row
+      on existing_chase_row.organisation_id = occurrence_row.organisation_id
+     and existing_chase_row.membership_id = occurrence_row.owner_membership_id
+     and existing_chase_row.dedupe_key =
+       'overdue_schedule:' || occurrence_row.id::text || ':' || occurrence_row.owner_membership_id::text
     where occurrence_row.organisation_id = target_organisation_id
       and occurrence_row.owner_membership_id = target_membership_id
       and occurrence_row.lifecycle_status = 'open'
@@ -525,8 +546,13 @@ begin
         or (occurrence_row.planned_at + schedule_grace) >= v_eligibility_watermark
       )
       and v_allow_new_inserts
-    order by occurrence_row.planned_at
-    limit case when v_allow_new_inserts then greatest((slots_remaining + 2) / 3, 1) else 0 end
+      and v_schedule_entitled
+    order by (existing_chase_row.id is not null)::int, occurrence_row.planned_at
+    limit case
+      when v_allow_new_inserts and slots_remaining > 0 and v_schedule_entitled
+        then greatest(slots_remaining, 0)
+      else 0
+    end
   ),
   upserted_schedules as (
     insert into public.in_app_notifications (
@@ -557,28 +583,30 @@ begin
       body = excluded.body,
       href = excluded.href,
       notification_type = excluded.notification_type
-    returning 1
+    returning (xmax = 0) as inserted
   )
-  select count(*) into upsert_count from upserted_schedules;
+  select count(*)::integer,
+         count(*) filter (where inserted)::integer
+  into upsert_count, new_insert_count
+  from upserted_schedules;
   affected := affected + coalesce(upsert_count, 0);
-  select count(*)::integer into new_insert_count
-  from public.in_app_notifications notification_row
-  where notification_row.organisation_id = target_organisation_id
-    and notification_row.membership_id = target_membership_id
-    and notification_row.notification_type = 'leanai.chase_overdue_schedule'
-    and notification_row.created_at >= sync_started_at;
   perform private.record_in_app_chase_new_inserts(
     target_organisation_id,
     target_membership_id,
     coalesce(new_insert_count, 0)
   );
   slots_remaining := greatest(slots_remaining - coalesce(new_insert_count, 0), 0);
+  v_allow_new_inserts := coalesce(slots_remaining, 0) > 0;
 
   delete from public.in_app_notifications notification_row
   where notification_row.organisation_id = target_organisation_id
     and notification_row.membership_id = target_membership_id
     and notification_row.notification_type = 'leanai.chase_overdue_schedule'
     and notification_row.dedupe_key like 'overdue_schedule:%'
+    and (
+      v_eligibility_watermark is null
+      or notification_row.created_at >= v_eligibility_watermark
+    )
     and not exists (
       select 1
       from public.schedule_occurrences occurrence_row
@@ -602,6 +630,11 @@ begin
       walk_row.id as walk_id,
       coalesce(walk_row.unit_name_snapshot, 'Gemba walk') as label
     from public.gemba_walks walk_row
+    left join public.in_app_notifications existing_chase_row
+      on existing_chase_row.organisation_id = walk_row.organisation_id
+     and existing_chase_row.membership_id = walk_row.leader_membership_id
+     and existing_chase_row.dedupe_key =
+       'stale_walk:' || walk_row.id::text || ':' || walk_row.leader_membership_id::text
     where walk_row.organisation_id = target_organisation_id
       and walk_row.leader_membership_id = target_membership_id
       and walk_row.status = 'in_progress'
@@ -611,8 +644,14 @@ begin
         or (coalesce(walk_row.started_at, walk_row.created_at) + stale_after) >= v_eligibility_watermark
       )
       and v_allow_new_inserts
-    order by coalesce(walk_row.started_at, walk_row.created_at)
-    limit case when v_allow_new_inserts then greatest(slots_remaining, 0) else 0 end
+      and v_gemba_entitled
+    order by (existing_chase_row.id is not null)::int,
+      coalesce(walk_row.started_at, walk_row.created_at)
+    limit case
+      when v_allow_new_inserts and slots_remaining > 0 and v_gemba_entitled
+        then greatest(slots_remaining, 0)
+      else 0
+    end
   ),
   upserted_walks as (
     insert into public.in_app_notifications (
@@ -638,28 +677,30 @@ begin
       body = excluded.body,
       href = excluded.href,
       notification_type = excluded.notification_type
-    returning 1
+    returning (xmax = 0) as inserted
   )
-  select count(*) into upsert_count from upserted_walks;
+  select count(*)::integer,
+         count(*) filter (where inserted)::integer
+  into upsert_count, new_insert_count
+  from upserted_walks;
   affected := affected + coalesce(upsert_count, 0);
-  select count(*)::integer into new_insert_count
-  from public.in_app_notifications notification_row
-  where notification_row.organisation_id = target_organisation_id
-    and notification_row.membership_id = target_membership_id
-    and notification_row.notification_type = 'leanai.chase_stale_walk'
-    and notification_row.created_at >= sync_started_at;
   perform private.record_in_app_chase_new_inserts(
     target_organisation_id,
     target_membership_id,
     coalesce(new_insert_count, 0)
   );
   slots_remaining := greatest(slots_remaining - coalesce(new_insert_count, 0), 0);
+  v_allow_new_inserts := coalesce(slots_remaining, 0) > 0;
 
   delete from public.in_app_notifications notification_row
   where notification_row.organisation_id = target_organisation_id
     and notification_row.membership_id = target_membership_id
     and notification_row.notification_type = 'leanai.chase_stale_walk'
     and notification_row.dedupe_key like 'stale_walk:%'
+    and (
+      v_eligibility_watermark is null
+      or notification_row.created_at >= v_eligibility_watermark
+    )
     and not exists (
       select 1
       from public.gemba_walks walk_row
@@ -683,6 +724,11 @@ begin
       audit_row.id as audit_id,
       coalesce(audit_row.unit_name_snapshot, '5S audit') as label
     from public.five_s_audits audit_row
+    left join public.in_app_notifications existing_chase_row
+      on existing_chase_row.organisation_id = audit_row.organisation_id
+     and existing_chase_row.membership_id = audit_row.auditor_membership_id
+     and existing_chase_row.dedupe_key =
+       'stale_audit:' || audit_row.id::text || ':' || audit_row.auditor_membership_id::text
     where audit_row.organisation_id = target_organisation_id
       and audit_row.auditor_membership_id = target_membership_id
       and audit_row.status = 'in_progress'
@@ -692,8 +738,14 @@ begin
         or (coalesce(audit_row.started_at, audit_row.created_at) + stale_after) >= v_eligibility_watermark
       )
       and v_allow_new_inserts
-    order by coalesce(audit_row.started_at, audit_row.created_at)
-    limit case when v_allow_new_inserts then greatest(slots_remaining, 0) else 0 end
+      and v_five_s_entitled
+    order by (existing_chase_row.id is not null)::int,
+      coalesce(audit_row.started_at, audit_row.created_at)
+    limit case
+      when v_allow_new_inserts and slots_remaining > 0 and v_five_s_entitled
+        then greatest(slots_remaining, 0)
+      else 0
+    end
   ),
   upserted_audits as (
     insert into public.in_app_notifications (
@@ -719,27 +771,30 @@ begin
       body = excluded.body,
       href = excluded.href,
       notification_type = excluded.notification_type
-    returning 1
+    returning (xmax = 0) as inserted
   )
-  select count(*) into upsert_count from upserted_audits;
+  select count(*)::integer,
+         count(*) filter (where inserted)::integer
+  into upsert_count, new_insert_count
+  from upserted_audits;
   affected := affected + coalesce(upsert_count, 0);
-  select count(*)::integer into new_insert_count
-  from public.in_app_notifications notification_row
-  where notification_row.organisation_id = target_organisation_id
-    and notification_row.membership_id = target_membership_id
-    and notification_row.notification_type = 'leanai.chase_stale_audit'
-    and notification_row.created_at >= sync_started_at;
   perform private.record_in_app_chase_new_inserts(
     target_organisation_id,
     target_membership_id,
     coalesce(new_insert_count, 0)
   );
+  slots_remaining := greatest(slots_remaining - coalesce(new_insert_count, 0), 0);
+  v_allow_new_inserts := coalesce(slots_remaining, 0) > 0;
 
   delete from public.in_app_notifications notification_row
   where notification_row.organisation_id = target_organisation_id
     and notification_row.membership_id = target_membership_id
     and notification_row.notification_type = 'leanai.chase_stale_audit'
     and notification_row.dedupe_key like 'stale_audit:%'
+    and (
+      v_eligibility_watermark is null
+      or notification_row.created_at >= v_eligibility_watermark
+    )
     and not exists (
       select 1
       from public.five_s_audits audit_row
