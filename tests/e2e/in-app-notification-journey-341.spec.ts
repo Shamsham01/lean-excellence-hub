@@ -16,7 +16,9 @@ function notificationBell(page: import("@playwright/test").Page) {
 async function expectSingleNotificationBell(
   page: import("@playwright/test").Page,
 ) {
-  await expect(page.getByTestId("platform-notification-bell")).toHaveCount(1);
+  await expect(
+    page.locator('[data-testid="platform-notification-bell"]:visible'),
+  ).toHaveCount(1);
 }
 
 test.describe("In-app notification journey (#341)", () => {

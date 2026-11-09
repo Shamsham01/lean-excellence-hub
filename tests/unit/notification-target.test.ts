@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolvePlatformInAppNotificationHref } from "@/modules/platform-shell/notification-target";
+import {
+  normalizePlatformInAppNotificationHref,
+  resolvePlatformInAppNotificationHref,
+} from "@/modules/platform-shell/notification-target";
 
 const suggestionId = "11111111-1111-4111-8111-111111111111";
 const actionId = "22222222-2222-4222-8222-222222222222";
@@ -70,7 +73,30 @@ describe("resolvePlatformInAppNotificationHref", () => {
         notification_type: "leanai.chase_overdue_schedule",
         dedupe_key: `overdue_schedule:${walkId}:${membershipId}`,
       }),
-    ).toBe("/platform/scheduling");
+    ).toBe("/platform/schedule");
+  });
+
+  it("rejects open redirects and off-site stored hrefs", () => {
+    expect(
+      resolvePlatformInAppNotificationHref({
+        href: "//evil.example/phish",
+        notification_type: "test",
+        dedupe_key: "",
+      }),
+    ).toBeNull();
+    expect(
+      resolvePlatformInAppNotificationHref({
+        href: "https://evil.example/phish",
+        notification_type: "test",
+        dedupe_key: "",
+      }),
+    ).toBeNull();
+  });
+
+  it("rewrites legacy scheduling paths", () => {
+    expect(normalizePlatformInAppNotificationHref("/platform/scheduling")).toBe(
+      "/platform/schedule",
+    );
   });
 
   it("resolves stale gemba walk chase rows", () => {

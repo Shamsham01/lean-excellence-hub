@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/platform/supabase/database.types";
+import { normalizePlatformInAppNotificationHref } from "@/modules/platform-shell/notification-target";
 
 type AccessResult = { ok: true } | { ok: false; message: string };
 
@@ -23,11 +24,16 @@ export async function assertPlatformNotificationTargetAccessible(
   supabase: SupabaseClient<Database>,
   href: string,
 ): Promise<AccessResult> {
+  const normalized = normalizePlatformInAppNotificationHref(href);
+  if (!normalized) {
+    return { ok: false, message: UNAVAILABLE_MESSAGE };
+  }
+
   let pathname: string;
   let searchParams: URLSearchParams;
 
   try {
-    const url = new URL(href, "http://placeholder.local");
+    const url = new URL(normalized, "http://placeholder.local");
     pathname = url.pathname;
     searchParams = url.searchParams;
   } catch {
@@ -38,7 +44,11 @@ export async function assertPlatformNotificationTargetAccessible(
     return { ok: true };
   }
 
-  if (pathname === "/platform/actions" || pathname === "/platform/scheduling") {
+  if (
+    pathname === "/platform/actions" ||
+    pathname === "/platform/schedule" ||
+    pathname === "/platform/scheduling"
+  ) {
     return { ok: true };
   }
 

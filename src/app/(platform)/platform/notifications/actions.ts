@@ -50,12 +50,13 @@ export async function openInAppNotification(
         target_notification_id: notificationId,
       },
     );
-    if (markError) {
-      return { ok: false, message: markError.message };
+    if (!markError) {
+      revalidatePath("/platform", "layout");
     }
+  } else {
+    revalidatePath("/platform", "layout");
   }
 
-  revalidatePath("/platform");
   return { ok: true, href };
 }
 
@@ -67,7 +68,7 @@ export async function markInAppNotificationRead(notificationId: string) {
   if (error) {
     return { ok: false as const, error: error.message };
   }
-  revalidatePath("/platform");
+  revalidatePath("/platform", "layout");
   return { ok: true as const };
 }
 
@@ -77,6 +78,6 @@ export async function markAllInAppNotificationsRead() {
   if (error) {
     return { ok: false as const, error: error.message };
   }
-  revalidatePath("/platform");
+  revalidatePath("/platform", "layout");
   return { ok: true as const };
 }

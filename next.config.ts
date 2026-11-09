@@ -2,6 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  async redirects() {
+    return [
+      {
+        source: "/platform/scheduling",
+        destination: "/platform/schedule",
+        permanent: true,
+      },
+      {
+        source: "/platform/scheduling/:path*",
+        destination: "/platform/schedule/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

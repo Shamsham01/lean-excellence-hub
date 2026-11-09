@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { cn } from "@/lib/utils";
 import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 import { resolvePlatformInAppNotificationHref } from "@/modules/platform-shell/notification-target";
@@ -35,7 +36,7 @@ export function PlatformNotificationBell({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const feedbackId = useId();
 
   const unread = initialUnreadCount;
@@ -43,136 +44,138 @@ export function PlatformNotificationBell({
     unread > 0 ? `Notifications, ${unread} unread` : "Notifications";
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className={cn(
-            "relative size-9 shrink-0 border-border text-foreground hover:bg-muted",
-            className,
-          )}
-          aria-label={menuLabel}
-          data-testid="platform-notification-bell"
-        >
-          <Bell className="size-4" aria-hidden />
-          {unread > 0 ? (
-            <span
-              className="absolute top-1 right-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold text-white dark:bg-emerald-500"
-              data-testid="platform-notification-count"
-              aria-hidden
-            >
-              {unread > 99 ? "99+" : unread}
-            </span>
-          ) : null}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-[min(24rem,calc(100vw-2rem))] border-border bg-card p-0"
-        aria-label="Notification centre"
-      >
-        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-          <DropdownMenuLabel className="p-0 text-sm font-semibold">
-            Notifications
-          </DropdownMenuLabel>
-          {unread > 0 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1 text-xs text-muted-foreground"
-              disabled={pending}
-              onClick={() => {
-                startTransition(async () => {
-                  await markAllInAppNotificationsRead();
-                  setFeedback(null);
-                  router.refresh();
-                });
-              }}
-            >
-              <CheckCheck className="size-3.5" aria-hidden />
-              Mark all read
-            </Button>
-          ) : null}
-        </div>
-        {feedback ? (
-          <p
-            id={feedbackId}
-            role="status"
-            className="border-b border-border px-3 py-2 text-xs text-destructive"
-            data-testid="platform-notification-feedback"
+    <>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className={cn(
+              "relative size-9 shrink-0 border-border text-foreground hover:bg-muted",
+              className,
+            )}
+            aria-label={menuLabel}
+            data-testid="platform-notification-bell"
           >
-            {feedback}
-          </p>
-        ) : null}
-        <div
-          className="max-h-[min(24rem,50dvh)] overflow-y-auto overscroll-contain py-1"
-          data-testid="platform-notification-list"
+            <Bell className="size-4" aria-hidden />
+            {unread > 0 ? (
+              <span
+                className="absolute top-1 right-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold text-white dark:bg-emerald-500"
+                data-testid="platform-notification-count"
+                aria-hidden
+              >
+                {unread > 99 ? "99+" : unread}
+              </span>
+            ) : null}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-[min(24rem,calc(100vw-2rem))] border-border bg-card p-0"
+          aria-label="Notification centre"
         >
-          {initialItems.length === 0 ? (
-            <p
-              className="px-3 py-6 text-center text-sm text-muted-foreground"
-              data-testid="platform-notification-empty"
-            >
-              You are all caught up.
-            </p>
-          ) : (
-            initialItems.map((item) => {
-              const isUnread = item.read_at == null;
-              const resolvedHref = resolvePlatformInAppNotificationHref(item);
-              return (
-                <DropdownMenuItem
-                  key={item.id}
-                  className="cursor-pointer rounded-none p-0 focus:bg-muted"
-                  data-testid={`platform-notification-item-${item.id}`}
-                  data-notification-unread={isUnread ? "true" : "false"}
-                  data-notification-href={resolvedHref ?? ""}
-                  onClick={() => {
-                    setFeedback(null);
-                    startTransition(async () => {
-                      const result = await openInAppNotification(item.id);
-                      if (!result.ok) {
-                        setFeedback(result.message);
-                        return;
-                      }
-                      setOpen(false);
-                      router.push(result.href);
-                    });
-                  }}
-                >
-                  <div
-                    className={cn(
-                      "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm",
-                      isUnread && "bg-emerald-500/5",
-                    )}
+          <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+            <DropdownMenuLabel className="p-0 text-sm font-semibold">
+              Notifications
+            </DropdownMenuLabel>
+            {unread > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1 text-xs text-muted-foreground"
+                disabled={pending}
+                onClick={() => {
+                  startTransition(async () => {
+                    await markAllInAppNotificationsRead();
+                    setToastMessage(null);
+                    router.refresh();
+                  });
+                }}
+              >
+                <CheckCheck className="size-3.5" aria-hidden />
+                Mark all read
+              </Button>
+            ) : null}
+          </div>
+          <p id={feedbackId} className="sr-only" aria-live="polite" />
+          <div
+            className="max-h-[min(24rem,50dvh)] overflow-y-auto overscroll-contain py-1"
+            data-testid="platform-notification-list"
+          >
+            {initialItems.length === 0 ? (
+              <p
+                className="px-3 py-6 text-center text-sm text-muted-foreground"
+                data-testid="platform-notification-empty"
+              >
+                You are all caught up.
+              </p>
+            ) : (
+              initialItems.map((item) => {
+                const isUnread = item.read_at == null;
+                const resolvedHref = resolvePlatformInAppNotificationHref(item);
+                return (
+                  <DropdownMenuItem
+                    key={item.id}
+                    className="cursor-pointer rounded-none p-0 focus:bg-muted"
+                    data-testid={`platform-notification-item-${item.id}`}
+                    data-notification-unread={isUnread ? "true" : "false"}
+                    data-notification-href={resolvedHref ?? ""}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={() => {
+                      setToastMessage(null);
+                      startTransition(async () => {
+                        const result = await openInAppNotification(item.id);
+                        if (!result.ok) {
+                          setToastMessage(result.message);
+                          setOpen(true);
+                          return;
+                        }
+                        setOpen(false);
+                        router.push(result.href);
+                      });
+                    }}
                   >
-                    <span className="leading-snug font-medium text-foreground">
-                      {item.title}
-                    </span>
-                    {item.body ? (
-                      <span className="line-clamp-2 text-xs text-muted-foreground">
-                        {item.body}
+                    <div
+                      className={cn(
+                        "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm",
+                        isUnread && "bg-emerald-500/5",
+                      )}
+                    >
+                      <span className="leading-snug font-medium text-foreground">
+                        {item.title}
                       </span>
-                    ) : null}
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatRelativeTime(item.created_at)}
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              );
-            })
-          )}
-        </div>
-        <DropdownMenuSeparator className="m-0" />
-        <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-          High-signal updates only — email delivery is separate. When several
-          operational chases stack up, unread items collapse into one summary
-          row until you open it.
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+                      {item.body ? (
+                        <span className="line-clamp-2 text-xs text-muted-foreground">
+                          {item.body}
+                        </span>
+                      ) : null}
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatRelativeTime(item.created_at)}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })
+            )}
+          </div>
+          <DropdownMenuSeparator className="m-0" />
+          <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+            High-signal updates only — email delivery is separate. When several
+            operational chases stack up, unread items collapse into one summary
+            row until you open it.
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <EphemeralToast
+        message={toastMessage}
+        tone="warning"
+        onDismiss={() => setToastMessage(null)}
+      />
+    </>
   );
 }
 
