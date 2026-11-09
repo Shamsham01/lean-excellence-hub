@@ -11,8 +11,6 @@ import {
 import {
   awaitImportCredentialsDownloadReady,
   readWorkforceImportJobId,
-  uploadWorkforceImportCsv,
-  validateWorkforceImportAndStartProvisioning,
   waitForImportProvisioningCheckpoint,
   waitForWorkforceImportTerminalState,
 } from "./helpers/workforce-import";
@@ -184,11 +182,19 @@ test.describe("M2 workforce bulk import", () => {
     await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     await page.goto("/platform/settings/people/import");
 
-    await uploadWorkforceImportCsv(page, {
-      filename: `resume-import-${resumeSuffix}.csv`,
-      csvContent: resumeCsv,
+    await page.getByTestId("workforce-import-file").setInputFiles({
+      name: `resume-import-${resumeSuffix}.csv`,
+      mimeType: "text/csv",
+      buffer: Buffer.from(resumeCsv),
     });
-    await validateWorkforceImportAndStartProvisioning(page);
+    await expect(page.getByText(/rows detected/i)).toBeVisible({
+      timeout: 60_000,
+    });
+    await page.getByTestId("validate-import").click();
+    await expect(page.getByTestId("start-import-provisioning")).toBeVisible({
+      timeout: 120_000,
+    });
+    await page.getByTestId("start-import-provisioning").click();
     const jobId = await readWorkforceImportJobId(page);
     await waitForImportProvisioningCheckpoint(jobId, 1);
 
