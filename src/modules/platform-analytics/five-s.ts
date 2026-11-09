@@ -11,7 +11,7 @@ type AuditRow = {
   created_at: string;
   completed_at: string | null;
   overall_score_percent: number | null;
-  organisation_unit_id: string | null;
+  unit_id: string | null;
 };
 
 export async function loadFiveSAnalytics(
@@ -22,7 +22,7 @@ export async function loadFiveSAnalytics(
   const { data: rows } = await supabase
     .from("five_s_audits")
     .select(
-      "id, status, created_at, completed_at, overall_score_percent, organisation_unit_id",
+      "id, status, created_at, completed_at, overall_score_percent, unit_id",
     )
     .eq("organisation_id", organisationId)
     .gte("created_at", range.previousStart)
@@ -61,12 +61,12 @@ export async function loadFiveSAnalytics(
 
   const unitScores = new Map<string, number[]>();
   for (const audit of completedCurrent) {
-    if (!audit.organisation_unit_id || audit.overall_score_percent == null) {
+    if (!audit.unit_id || audit.overall_score_percent == null) {
       continue;
     }
-    const list = unitScores.get(audit.organisation_unit_id) ?? [];
+    const list = unitScores.get(audit.unit_id) ?? [];
     list.push(audit.overall_score_percent);
-    unitScores.set(audit.organisation_unit_id, list);
+    unitScores.set(audit.unit_id, list);
   }
 
   const { data: units } = unitScores.size

@@ -34,24 +34,33 @@ export default async function SuggestionReviewQueuePage({
   const queueState = parseSuggestionReviewQueueSearchParams(params);
   const supabase = await createServerSupabaseClient();
 
-  const portfolio = await fetchSuggestionPortfolio(supabase, {
+  const portfolioFilters = {
     q: null,
     status: null,
     programme: null,
     category: null,
     originUnit: null,
     reviewer: queueState.queue,
-    sort: "newest",
+    sort: "newest" as const,
     page: queueState.page,
     pageSize: 25,
-  });
+  };
+
+  const portfolioPromise = fetchSuggestionPortfolio(supabase, portfolioFilters);
+  const reviewFromUrlPromise = queueState.suggestionId
+    ? fetchSuggestionReviewContext(supabase, queueState.suggestionId)
+    : null;
+
+  const portfolio = await portfolioPromise;
 
   const selectedSuggestionId =
     queueState.suggestionId ?? portfolio.items[0]?.id ?? null;
 
-  const reviewContext = selectedSuggestionId
-    ? await fetchSuggestionReviewContext(supabase, selectedSuggestionId)
-    : null;
+  const reviewContext =
+    (await reviewFromUrlPromise) ??
+    (selectedSuggestionId && !queueState.suggestionId
+      ? await fetchSuggestionReviewContext(supabase, selectedSuggestionId)
+      : null);
 
   return (
     <div className="flex flex-col gap-6" data-testid="suggestion-review-queue">

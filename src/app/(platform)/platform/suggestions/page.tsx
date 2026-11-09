@@ -26,6 +26,7 @@ import {
 import {
   currentMemberHasGrantPermission,
   currentMemberHasPermission,
+  prefetchMemberGrantPermissions,
   prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
 import { WORKPLACE_VIEW_PERMISSION } from "@/modules/workplace/access";
@@ -37,9 +38,12 @@ export default async function SuggestionsOverviewPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await prefetchMemberPermissions([
-    ...suggestionsOverviewPermissionKeys,
-    WORKPLACE_VIEW_PERMISSION,
+  await Promise.all([
+    prefetchMemberPermissions([
+      ...suggestionsOverviewPermissionKeys,
+      WORKPLACE_VIEW_PERMISSION,
+    ]),
+    prefetchMemberGrantPermissions(["suggestions.read"]),
   ]);
   const [canReadPortfolio, canSubmit, canViewWorkplace] = await Promise.all([
     currentMemberHasGrantPermission("suggestions.read"),

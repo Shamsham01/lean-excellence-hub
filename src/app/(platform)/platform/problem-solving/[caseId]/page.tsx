@@ -71,7 +71,7 @@ export default async function ProblemSolvingCaseDetailPage({
 
   return (
     <div
-      className="mx-auto flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden lg:max-w-none"
+      className="mx-auto flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden lg:max-w-none"
       data-testid="problem-solving-detail-page"
     >
       <CaseWorkspace
