@@ -208,7 +208,7 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
 
     await page.getByTestId("go-to-first-missing").click();
     await expect(
-      page.getByText("Clear Roles & Responsibilities").first(),
+      page.getByRole("heading", { name: "Clear Roles & Responsibilities" }),
     ).toBeVisible();
     await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
     await expect(
