@@ -7,7 +7,8 @@ import {
 import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 
 function row(
-  partial: Partial<PlatformInAppNotification> & Pick<PlatformInAppNotification, "id" | "notification_type">,
+  partial: Partial<PlatformInAppNotification> &
+    Pick<PlatformInAppNotification, "id" | "notification_type">,
 ): PlatformInAppNotification {
   return {
     title: "t",
@@ -27,10 +28,9 @@ describe("collapseChaseDigestNotifications", () => {
       row({ id: "3", notification_type: "suggestion.status_accepted" }),
     ];
 
-    expect(collapseChaseDigestNotifications(items).map((item) => item.id)).toEqual([
-      "2",
-      "3",
-    ]);
+    expect(
+      collapseChaseDigestNotifications(items).map((item) => item.id),
+    ).toEqual(["2", "3"]);
   });
 
   it("keeps chase rows when digest is read", () => {

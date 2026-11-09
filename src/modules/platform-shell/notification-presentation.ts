@@ -17,9 +17,9 @@ export function collapseChaseDigestNotifications(
 
   return items.filter(
     (item) =>
-      item.notification_type === CHASE_DIGEST_TYPE
-      || !item.notification_type.startsWith(CHASE_TYPE_PREFIX)
-      || item.read_at != null,
+      item.notification_type === CHASE_DIGEST_TYPE ||
+      !item.notification_type.startsWith(CHASE_TYPE_PREFIX) ||
+      item.read_at != null,
   );
 }
 
@@ -38,9 +38,9 @@ export function collapseChaseDigestUnreadCount(
 
   const hiddenUnreadChases = items.filter(
     (item) =>
-      item.notification_type.startsWith(CHASE_TYPE_PREFIX)
-      && item.notification_type !== CHASE_DIGEST_TYPE
-      && item.read_at == null,
+      item.notification_type.startsWith(CHASE_TYPE_PREFIX) &&
+      item.notification_type !== CHASE_DIGEST_TYPE &&
+      item.read_at == null,
   ).length;
 
   return Math.max(unreadCount - hiddenUnreadChases, 0);
