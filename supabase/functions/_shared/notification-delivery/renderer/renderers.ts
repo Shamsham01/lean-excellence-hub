@@ -51,17 +51,20 @@ export function renderJobFunctionAssignedEmail(
   return {
     subject,
     text: `${intro}\n\nView details: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: "Job function assignment updated",
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, ${detail.toLowerCase()} for ` +
-        `${jobFunctionName} in ${context.organisationName}.`,
-      ctaLabel: "View workforce profile",
-      ctaUrl,
-      footer:
-        "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "Job function assignment updated",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, ${detail.toLowerCase()} for ` +
+          `${jobFunctionName} in ${context.organisationName}.`,
+        ctaLabel: "View workforce profile",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -80,17 +83,20 @@ export function renderTrainingCompletedEmail(
   return {
     subject,
     text: `${intro}\n\nView training: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: "Training completion recorded",
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, your completion of ${courseName} ` +
-        `has been recorded in ${context.organisationName}.`,
-      ctaLabel: "View training",
-      ctaUrl,
-      footer:
-        "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "Training completion recorded",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, your completion of ${courseName} ` +
+          `has been recorded in ${context.organisationName}.`,
+        ctaLabel: "View training",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -109,17 +115,20 @@ export function renderSkillProficiencyValidatedEmail(
   return {
     subject,
     text: `${intro}\n\nView skills: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: "Skill proficiency validated",
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, your proficiency in ${skillName} ` +
-        `has been validated in ${context.organisationName}.`,
-      ctaLabel: "View skills",
-      ctaUrl,
-      footer:
-        "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "Skill proficiency validated",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, your proficiency in ${skillName} ` +
+          `has been validated in ${context.organisationName}.`,
+        ctaLabel: "View skills",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -140,17 +149,20 @@ export function renderRecognitionAwardedEmail(
   return {
     subject,
     text: `${intro}\n\nView recognition: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: "You received recognition",
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, you have been recognised in ` +
-        `${context.organisationName}. ${awardTitle}: ${awardMessage}`,
-      ctaLabel: "View recognition",
-      ctaUrl,
-      footer:
-        "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "You received recognition",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, you have been recognised in ` +
+          `${context.organisationName}. ${awardTitle}: ${awardMessage}`,
+        ctaLabel: "View recognition",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -171,17 +183,20 @@ function renderSuggestionReviewerEmail(
   return {
     subject,
     text: `${intro}\n\nReview suggestion: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: subjectPrefix,
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, ${bodyIntro.toLowerCase()} ` +
-        `in ${context.organisationName}.`,
-      ctaLabel: "Review suggestion",
-      ctaUrl,
-      footer:
-        "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: subjectPrefix,
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, ${bodyIntro.toLowerCase()} ` +
+          `in ${context.organisationName}.`,
+        ctaLabel: "Review suggestion",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -248,25 +263,28 @@ function renderSuggestionAuthorDecisionEmail(
   return {
     subject,
     text: `${intro}${feedbackBlock}${nextStepBlock}\n\nView suggestion: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: options.heading,
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, ${options.bodyDetail.toLowerCase()} ` +
-        `in ${context.organisationName}.`,
-      ...(employeeMessage
-        ? {
-            sections: [
-              { heading: options.feedbackHeading, body: employeeMessage },
-            ],
-          }
-        : {}),
-      ctaLabel: "View suggestion",
-      ctaUrl,
-      footer: options.nextStep
-        ? `${options.nextStep} You received this operational notification from Lean Excellence Hub.`
-        : "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: options.heading,
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, ${options.bodyDetail.toLowerCase()} ` +
+          `in ${context.organisationName}.`,
+        ...(employeeMessage
+          ? {
+              sections: [
+                { heading: options.feedbackHeading, body: employeeMessage },
+              ],
+            }
+          : {}),
+        ctaLabel: "View suggestion",
+        ctaUrl,
+        footer: options.nextStep
+          ? `${options.nextStep} You received this operational notification from Lean Excellence Hub.`
+          : "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -336,17 +354,20 @@ export function renderScheduleOccurrenceReminderEmail(
   return {
     subject,
     text: `${intro}\n\nView schedule: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: "Scheduled activity is due",
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, ${detail.toLowerCase()} ` +
-        `in ${context.organisationName}.`,
-      ctaLabel: "View schedule",
-      ctaUrl,
-      footer:
-        "You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "Scheduled activity is due",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, ${detail.toLowerCase()} ` +
+          `in ${context.organisationName}.`,
+        ctaLabel: "View schedule",
+        ctaUrl,
+        footer:
+          "You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }
 
@@ -368,19 +389,22 @@ export function renderSuggestionImplementedEmail(
   return {
     subject,
     text: `${intro}${outcomeBlock}${closing}\n\nView suggestion: ${ctaUrl}`,
-    html: renderBrandedOperationalEmail({
-      eyebrow: context.organisationName,
-      title: "Your suggestion has been implemented",
-      intro:
-        `${formatRecipientGreeting(context.recipientDisplayName)}, your suggestion has been implemented ` +
-        `in ${context.organisationName}.`,
-      ...(employeeOutcome
-        ? { sections: [{ heading: "Outcome", body: employeeOutcome }] }
-        : {}),
-      ctaLabel: "View suggestion",
-      ctaUrl,
-      footer:
-        "Thank you for contributing to continuous improvement. You received this operational notification from Lean Excellence Hub.",
-    }),
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title: "Your suggestion has been implemented",
+        intro:
+          `${formatRecipientGreeting(context.recipientDisplayName)}, your suggestion has been implemented ` +
+          `in ${context.organisationName}.`,
+        ...(employeeOutcome
+          ? { sections: [{ heading: "Outcome", body: employeeOutcome }] }
+          : {}),
+        ctaLabel: "View suggestion",
+        ctaUrl,
+        footer:
+          "Thank you for contributing to continuous improvement. You received this operational notification from Lean Excellence Hub.",
+      },
+      appOrigin,
+    ),
   };
 }

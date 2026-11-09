@@ -30,6 +30,15 @@ describe("supabase error classification", () => {
     expect(isSupabaseInfrastructureError({ code: "PGRST301" })).toBe(false);
   });
 
+  it("treats refresh token not found errors as auth session failure", () => {
+    expect(
+      classifySupabaseError({
+        code: "refresh_token_not_found",
+        message: "Invalid Refresh Token: Refresh Token Not Found",
+      }),
+    ).toBe("auth_session_failure");
+  });
+
   it("treats P0002 as not-found", () => {
     expect(classifySupabaseError({ code: "P0002" })).toBe("not_found");
     expect(isSupabaseNotFound({ code: "P0002" })).toBe(true);

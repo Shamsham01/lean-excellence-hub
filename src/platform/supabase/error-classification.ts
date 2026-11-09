@@ -1,6 +1,7 @@
 type SupabaseLikeError = {
   code?: string | null;
   message?: string | null;
+  status?: number | null;
 };
 
 export type SupabaseErrorKind =
@@ -12,11 +13,13 @@ export type SupabaseErrorKind =
 export function readSupabaseErrorFields(error: unknown): {
   code: string | null;
   message: string | null;
+  status: number | null;
 } {
   if (!error || typeof error !== "object") {
     return {
       code: null,
       message: error instanceof Error ? error.message : null,
+      status: null,
     };
   }
 
@@ -24,11 +27,18 @@ export function readSupabaseErrorFields(error: unknown): {
   return {
     code: typeof record.code === "string" ? record.code : null,
     message: typeof record.message === "string" ? record.message : null,
+    status:
+      typeof record.status === "number" && Number.isFinite(record.status)
+        ? record.status
+        : null,
   };
 }
 
 const AUTHORIZATION_DENIAL_CODES = new Set(["42501"]);
-const AUTH_SESSION_FAILURE_CODES = new Set(["PGRST301"]);
+const AUTH_SESSION_FAILURE_CODES = new Set([
+  "PGRST301",
+  "refresh_token_not_found",
+]);
 const NOT_FOUND_CODES = new Set(["P0002"]);
 
 function isTransportFailure(error: unknown, message: string | null): boolean {
@@ -54,13 +64,30 @@ export function classifySupabaseError(
     return null;
   }
 
-  const { code, message } = readSupabaseErrorFields(error);
+  const { code, message, status } = readSupabaseErrorFields(error);
 
   if (code && AUTHORIZATION_DENIAL_CODES.has(code)) {
     return "authorization_denial";
   }
 
   if (code && AUTH_SESSION_FAILURE_CODES.has(code)) {
+    return "auth_session_failure";
+  }
+
+  const normalizedMessage = message?.toLowerCase() ?? "";
+  if (
+    normalizedMessage.includes("refresh token not found") ||
+    normalizedMessage.includes("invalid refresh token")
+  ) {
+    return "auth_session_failure";
+  }
+
+  if (
+    status === 401 &&
+    (normalizedMessage.includes("jwt") ||
+      normalizedMessage.includes("session") ||
+      normalizedMessage.includes("token"))
+  ) {
     return "auth_session_failure";
   }
 
