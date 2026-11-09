@@ -205,19 +205,31 @@ export async function createConfirmedInvitationAuthUser(input: {
 
   return createConfirmedInvitationAuthUserWithDeps(input, {
     authorizeInvitationSignup: async (args) => {
-      const result = await client.rpc("authorize_invitation_identity_signup", args);
+      const result = await client.rpc(
+        "authorize_invitation_identity_signup",
+        args,
+      );
       return { data: result.data, error: result.error };
     },
     finaliseInvitationSignup: async (args) => {
-      const result = await client.rpc("finalise_invitation_identity_signup", args);
+      const result = await client.rpc(
+        "finalise_invitation_identity_signup",
+        args,
+      );
       return { data: result.data, error: result.error };
     },
     redeemInvitationInboxProof: async (args) => {
-      const result = await client.rpc("redeem_organisation_invitation_inbox_proof", args);
+      const result = await client.rpc(
+        "redeem_organisation_invitation_inbox_proof",
+        args,
+      );
       return { data: result.data, error: result.error };
     },
     clearInvitationSignupBindingAuthUser: async (args) => {
-      const result = await client.rpc("clear_invitation_signup_binding_auth_user", args);
+      const result = await client.rpc(
+        "clear_invitation_signup_binding_auth_user",
+        args,
+      );
       return { data: result.data, error: result.error };
     },
     createAuthUser: async ({ email, password, invitationSignupBindingId }) => {
