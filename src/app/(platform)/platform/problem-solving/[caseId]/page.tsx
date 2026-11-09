@@ -71,7 +71,7 @@ export default async function ProblemSolvingCaseDetailPage({
 
   return (
     <div
-      className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-1 flex-col lg:max-w-none"
+      className="mx-auto flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden lg:max-w-none"
       data-testid="problem-solving-detail-page"
     >
       <CaseWorkspace
@@ -114,7 +114,7 @@ export default async function ProblemSolvingCaseDetailPage({
       />
       <AppLink
         href="/platform/problem-solving"
-        className="mt-4 inline-block px-4 text-sm text-muted-foreground hover:underline sm:px-6 lg:hidden"
+        className="mt-2 inline-block shrink-0 px-4 pb-2 text-sm text-muted-foreground hover:underline sm:px-6 lg:hidden"
         data-testid="problem-solving-back-link"
       >
         ← Problem solving portfolio

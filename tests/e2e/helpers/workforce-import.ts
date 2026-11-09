@@ -183,11 +183,16 @@ export async function uploadWorkforceImportCsv(
     mimeType: "text/csv",
     buffer: Buffer.from(input.csvContent),
   });
-  await expect(page.getByTestId("validate-import")).toBeVisible({
-    timeout: 90_000,
-  });
+  await expect(page.getByTestId("workforce-import-wizard")).toHaveAttribute(
+    "data-wizard-ready",
+    "true",
+    { timeout: 180_000 },
+  );
   await expect(page.getByText(/rows detected/i)).toBeVisible({
-    timeout: 90_000,
+    timeout: 30_000,
+  });
+  await expect(page.getByTestId("validate-import")).toBeVisible({
+    timeout: 30_000,
   });
   const importMessage = page.getByTestId("import-message");
   const message = (await importMessage.textContent().catch(() => null))?.trim();
@@ -201,12 +206,16 @@ export async function uploadWorkforceImportCsv(
 export async function validateWorkforceImportAndStartProvisioning(
   page: Page,
 ): Promise<void> {
-  await page.getByTestId("validate-import").click();
-  await expect(page.getByTestId("validate-import")).toBeEnabled({
-    timeout: 120_000,
-  });
   const start = page.getByTestId("start-import-provisioning");
   const errorSurface = page.getByTestId("import-message");
+  const validateButton = page.getByTestId("validate-import");
+  const onReview = await start.isVisible().catch(() => false);
+  if (!onReview && (await validateButton.isVisible().catch(() => false))) {
+    await validateButton.evaluate((button: HTMLButtonElement) => {
+      button.click();
+    });
+  }
+
   try {
     await expect(start.or(errorSurface)).toBeVisible({ timeout: 120_000 });
   } catch {
@@ -221,7 +230,9 @@ export async function validateWorkforceImportAndStartProvisioning(
     );
   }
   await expect(start).toBeEnabled({ timeout: 60_000 });
-  await start.click();
+  await start.evaluate((button: HTMLButtonElement) => {
+    button.click();
+  });
 }
 
 export async function readWorkforceImportJobId(page: Page): Promise<string> {

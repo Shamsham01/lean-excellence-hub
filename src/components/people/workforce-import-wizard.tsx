@@ -167,13 +167,6 @@ export function WorkforceImportWizard({
   }, [progress]);
 
   useEffect(() => {
-    if (!jobId) {
-      return;
-    }
-    router.refresh();
-  }, [jobId, router]);
-
-  useEffect(() => {
     if (progress?.remainingRows === 0 && (progress?.provisionedRows ?? 0) > 0) {
       router.refresh();
     }
@@ -272,32 +265,32 @@ export function WorkforceImportWizard({
     }
 
     setLoading(true);
-    const parsed = await parseWorkforceImportFile(file);
-    if ("error" in parsed) {
-      setMessage(parsed.error);
-      setLoading(false);
-      return;
-    }
+    try {
+      const parsed = await parseWorkforceImportFile(file);
+      if ("error" in parsed) {
+        setMessage(parsed.error);
+        return;
+      }
 
-    const created = await onCreateJob(file.name);
-    if ("error" in created) {
-      setMessage(created.error);
-      setLoading(false);
-      return;
-    }
+      const created = await onCreateJob(file.name);
+      if ("error" in created) {
+        setMessage(created.error);
+        return;
+      }
 
-    const submitted = await onSubmitRows(created.data.jobId, parsed.rows);
-    if ("error" in submitted) {
-      setMessage(submitted.error);
-      setLoading(false);
-      return;
-    }
+      const submitted = await onSubmitRows(created.data.jobId, parsed.rows);
+      if ("error" in submitted) {
+        setMessage(submitted.error);
+        return;
+      }
 
-    setJobId(created.data.jobId);
-    setFilename(file.name);
-    setRowCount(parsed.rows.length);
-    setStep(1);
-    setLoading(false);
+      setJobId(created.data.jobId);
+      setFilename(file.name);
+      setRowCount(parsed.rows.length);
+      setStep(1);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleValidate() {
@@ -305,30 +298,31 @@ export function WorkforceImportWizard({
     setLoading(true);
     setMessage(null);
 
-    const validated = await onValidate(jobId);
-    if ("error" in validated) {
-      setMessage(validated.error);
-      setLoading(false);
-      return;
-    }
-
-    const rows = await onLoadValidationRows(jobId);
-    if ("error" in rows) {
-      setMessage(rows.error);
-      setLoading(false);
-      return;
-    }
-
-    setSummary(validated.data);
-    setValidationRows(rows.data);
-    setLoading(false);
-
-    if (validated.data.canProvision) {
-      const preview = await onLoadPreviewRows(jobId);
-      if ("ok" in preview) {
-        setPreviewRows(preview.data);
+    try {
+      const validated = await onValidate(jobId);
+      if ("error" in validated) {
+        setMessage(validated.error);
+        return;
       }
-      setStep(2);
+
+      const rows = await onLoadValidationRows(jobId);
+      if ("error" in rows) {
+        setMessage(rows.error);
+        return;
+      }
+
+      setSummary(validated.data);
+      setValidationRows(rows.data);
+
+      if (validated.data.canProvision) {
+        const preview = await onLoadPreviewRows(jobId);
+        if ("ok" in preview) {
+          setPreviewRows(preview.data);
+        }
+        setStep(2);
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -501,7 +495,11 @@ export function WorkforceImportWizard({
   }
 
   return (
-    <div className="flex flex-col gap-6" data-testid="workforce-import-wizard">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="workforce-import-wizard"
+      data-wizard-ready={step >= 1 && !loading ? "true" : "false"}
+    >
       {jobId ? (
         <span className="sr-only" data-testid="workforce-import-job-id">
           {jobId}

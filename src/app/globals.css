@@ -394,7 +394,22 @@ body {
   min-height: 0;
   flex: 1 1 0%;
   flex-direction: column;
+  overflow: hidden;
   padding: 0;
+}
+
+/* Module route shell (e.g. billing entitlement wrapper) must participate in the PPS height chain. */
+.platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner > * {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) [data-module="problem_solving"] {
+  gap: 0;
 }
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */

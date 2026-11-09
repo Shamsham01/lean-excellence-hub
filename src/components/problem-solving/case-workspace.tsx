@@ -532,7 +532,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   return (
     <div
       ref={workspaceRootRef}
-      className="pps-flagship-workspace flex min-h-0 min-w-0 flex-1 flex-col"
+      className="pps-flagship-workspace flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       data-testid="problem-solving-workspace"
     >
       <div className="sticky top-0 z-10 min-w-0 shrink-0 border-b border-border/70 bg-card px-4 sm:px-6 lg:px-6">
@@ -572,10 +572,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         ) : null}
 
         <section
-          className="@container/canvas flex h-0 min-h-0 min-w-0 flex-1 flex-col bg-background"
+          className="@container/canvas flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background"
           data-testid="pps-stage-canvas"
         >
-          <div className="h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 lg:px-5">
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 lg:px-5">
             <StageCanvasHeader
               config={stageConfig}
               isViewingCurrentStage={isViewingCurrentStage}
