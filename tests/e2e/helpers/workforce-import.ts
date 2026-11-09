@@ -230,11 +230,33 @@ export async function validateWorkforceImportAndStartProvisioning(
     });
   }
 
+  const wizard = page.getByTestId("workforce-import-wizard");
   try {
-    await expect(start.or(errorSurface)).toBeVisible({ timeout: 120_000 });
+    await expect
+      .poll(
+        async () => {
+          const step = await wizard.getAttribute("data-wizard-step");
+          const stepNum = step ? Number(step) : -1;
+          const startVisible = await start.isVisible().catch(() => false);
+          const messageVisible = await errorSurface
+            .isVisible()
+            .catch(() => false);
+          if (stepNum >= 2 || startVisible) return "ready";
+          if (messageVisible) {
+            const text = (await errorSurface.textContent())?.trim() ?? "";
+            if (text) return "error";
+          }
+          return "pending";
+        },
+        { timeout: 120_000 },
+      )
+      .toMatch(/^(ready|error)$/);
   } catch {
+    const step = await wizard
+      .getAttribute("data-wizard-step")
+      .catch(() => "unknown");
     throw new Error(
-      `Workforce import validation did not advance. ${await readImportWizardDiagnostics(page)}`,
+      `Workforce import validation did not advance (wizardStep=${step}). ${await readImportWizardDiagnostics(page)}`,
     );
   }
   const errorText = (await errorSurface.textContent())?.trim();

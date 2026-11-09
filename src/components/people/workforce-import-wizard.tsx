@@ -498,6 +498,7 @@ export function WorkforceImportWizard({
     <div
       className="flex flex-col gap-6"
       data-testid="workforce-import-wizard"
+      data-wizard-step={String(step)}
       data-wizard-ready={step >= 1 && !loading ? "true" : "false"}
     >
       {jobId ? (
