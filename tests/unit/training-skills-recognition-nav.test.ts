@@ -169,7 +169,8 @@ describe("NAV-CLICK-001 Recognition navigation primitives", () => {
     );
 
     expect(source).toContain('from "@/components/ui/app-link"');
-    expect(source).toContain('data-testid="recognition-award-link"');
+    expect(source).toContain('testId="recognition-award-link"');
+    expect(source).toContain("ModuleWriteAppLink");
     expect(source).toContain('data-testid="recognition-types-link"');
     expect(source).toContain('href="/platform/recognition/new"');
     expect(source).toContain('href="/platform/recognition/types"');

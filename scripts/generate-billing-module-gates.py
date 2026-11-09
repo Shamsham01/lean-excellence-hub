@@ -381,13 +381,13 @@ def patch_function(fn: str, body: str) -> str:
             ins = """
   perform private.assert_ai_session_module_entitled(
     (select s.context_type from public.ai_proposals p
-       join public.ai_runs r on r.id = p.run_id
-       join public.ai_sessions s on s.id = r.ai_session_id
-     where p.organisation_id = org_id and p.id = target_proposal_id),
+       join public.ai_sessions s
+         on s.organisation_id = p.organisation_id and s.id = p.ai_session_id
+     where p.organisation_id = org_id and p.id = target_ai_proposal_id),
     (select s.module_key from public.ai_proposals p
-       join public.ai_runs r on r.id = p.run_id
-       join public.ai_sessions s on s.id = r.ai_session_id
-     where p.organisation_id = org_id and p.id = target_proposal_id)
+       join public.ai_sessions s
+         on s.organisation_id = p.organisation_id and s.id = p.ai_session_id
+     where p.organisation_id = org_id and p.id = target_ai_proposal_id)
   );
 
 """

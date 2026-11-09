@@ -1,5 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+
+vi.mock("@/app/(platform)/platform/benefits/actions", () => ({
+  createBenefitWizardDraft: vi.fn(),
+}));
 
 import { CreateBenefitWizard } from "@/components/benefits/create-benefit-wizard";
 
