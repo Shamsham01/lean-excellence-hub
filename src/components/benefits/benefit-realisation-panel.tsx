@@ -245,6 +245,7 @@ export function BenefitRealisationPanel({
                   fill={LEH_CHART_COLORS.warning}
                   fillOpacity={0.35}
                   radius={[6, 6, 0, 0]}
+                  isAnimationActive={false}
                 />
                 <Line
                   type="monotone"
@@ -253,6 +254,7 @@ export function BenefitRealisationPanel({
                   stroke={LEH_CHART_COLORS.accent}
                   strokeWidth={2}
                   dot={{ r: 3 }}
+                  isAnimationActive={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>
