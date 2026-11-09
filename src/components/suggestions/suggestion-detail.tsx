@@ -42,6 +42,8 @@ import {
 } from "@/lib/projects/status";
 import type { LinkedSuggestionProject } from "@/lib/projects/types";
 import { navigateTo } from "@/lib/navigation/navigate";
+import { SuggestionDelegationNotice } from "@/components/suggestions/suggestion-delegation-notice";
+import type { SuggestionDetailApprovalDelegation } from "@/lib/suggestions/types";
 import { suggestionStatusLabel } from "@/lib/suggestions/status";
 
 type StatusHistoryRow = {
@@ -73,6 +75,9 @@ export function SuggestionDetail({
   canUploadEvidence,
 }: SuggestionDetailProps) {
   const router = useRouter();
+  const approvalDelegations = Array.isArray(detail.approval_delegations)
+    ? (detail.approval_delegations as SuggestionDetailApprovalDelegation[])
+    : [];
   const [message, setMessage] = useState<string | null>(null);
   const [createdAction, setCreatedAction] = useState<{
     id: string;
@@ -479,6 +484,42 @@ export function SuggestionDetail({
                       key={action.id}
                       action={action}
                     />
+                  ))
+                )}
+              </div>
+              <div
+                className="flex flex-col gap-2"
+                data-testid="suggestion-approval-delegations"
+              >
+                <p className="font-medium">Approval delegations</p>
+                {approvalDelegations.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    No approval delegations recorded.
+                  </p>
+                ) : (
+                  approvalDelegations.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="rounded-lg border border-border px-3 py-3"
+                    >
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          {entry.delegated_by_display_name ?? "Reviewer"}
+                        </span>
+                        {" → "}
+                        <span className="font-medium">
+                          {entry.to_display_name ?? "Delegate"}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {new Date(entry.delegated_at).toLocaleString("en-GB")}
+                      </p>
+                      {entry.reason?.trim() ? (
+                        <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
+                          {entry.reason.trim()}
+                        </p>
+                      ) : null}
+                    </div>
                   ))
                 )}
               </div>

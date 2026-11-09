@@ -4,8 +4,10 @@ import { Search } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { PlatformCommandMenu } from "@/components/platform/platform-command-menu";
+import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 import { PlatformUserMenu } from "@/components/platform/platform-user-menu";
 import { ThemeToggleIcon } from "@/components/platform/theme-toggle";
+import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 import { Badge } from "@/components/ui/badge";
 import {
   InputGroup,
@@ -18,12 +20,17 @@ type PlatformTopbarProps = {
   member: PlatformShellMember;
   organisationName: string;
   showSettings?: boolean;
+  notifications: {
+    unreadCount: number;
+    items: PlatformInAppNotification[];
+  } | null;
 };
 
 export function PlatformTopbar({
   member,
   organisationName,
   showSettings = true,
+  notifications,
 }: PlatformTopbarProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -62,6 +69,12 @@ export function PlatformTopbar({
         </div>
         <div className="ml-auto flex items-center gap-1.5 ps-2">
           <ThemeToggleIcon />
+          {notifications ? (
+            <PlatformNotificationBell
+              initialUnreadCount={notifications.unreadCount}
+              initialItems={notifications.items}
+            />
+          ) : null}
           <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </header>

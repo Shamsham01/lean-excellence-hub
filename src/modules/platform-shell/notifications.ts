@@ -4,6 +4,7 @@ import {
   collapseChaseDigestNotifications,
   collapseChaseDigestUnreadCount,
 } from "@/modules/platform-shell/notification-presentation";
+import { resolvePlatformInAppNotificationHref } from "@/modules/platform-shell/notification-target";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export type PlatformInAppNotification = {
@@ -14,6 +15,7 @@ export type PlatformInAppNotification = {
   read_at: string | null;
   created_at: string;
   notification_type: string;
+  dedupe_key: string;
 };
 
 export type PlatformNotificationSnapshot = {
@@ -47,7 +49,9 @@ export async function loadPlatformNotificationSnapshot(
         .is("read_at", null),
       supabase
         .from("in_app_notifications")
-        .select("id, title, body, href, read_at, created_at, notification_type")
+        .select(
+          "id, title, body, href, read_at, created_at, notification_type, dedupe_key",
+        )
         .eq("membership_id", membershipId)
         .order("created_at", { ascending: false })
         .limit(20),
@@ -57,7 +61,10 @@ export async function loadPlatformNotificationSnapshot(
     return null;
   }
 
-  const items = (rows ?? []) as PlatformInAppNotification[];
+  const items = ((rows ?? []) as PlatformInAppNotification[]).map((row) => ({
+    ...row,
+    href: resolvePlatformInAppNotificationHref(row),
+  }));
 
   return {
     unreadCount: collapseChaseDigestUnreadCount(items, count ?? 0),

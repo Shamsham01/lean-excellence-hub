@@ -45,9 +45,7 @@ async function openReviewForTitle(
 }
 
 function notificationBell(page: import("@playwright/test").Page) {
-  return page
-    .getByTestId("platform-desktop-sidebar")
-    .getByTestId("platform-notification-bell");
+  return page.locator('[data-testid="platform-notification-bell"]:visible');
 }
 
 async function openUnreadNotificationReview(
@@ -55,6 +53,7 @@ async function openUnreadNotificationReview(
   pattern: RegExp,
   suggestionId?: string,
 ) {
+  await page.goto("/platform");
   await expect(notificationBell(page)).toBeVisible();
   await notificationBell(page).click();
   await expect(page.getByTestId("platform-notification-list")).toBeVisible({
@@ -138,6 +137,12 @@ test.describe("Suggestion approval delegation (UI acceptance)", () => {
       page,
       /delegated to you/i,
       submittedSuggestionId!,
+    );
+    await expect(
+      page.getByTestId("review-workspace-delegation-notice"),
+    ).toBeVisible();
+    await expect(page.getByTestId("suggestion-delegation-reason")).toHaveText(
+      /Manager on walkabout/i,
     );
     await beginCurrentReview(page);
     await approveCurrentReview(

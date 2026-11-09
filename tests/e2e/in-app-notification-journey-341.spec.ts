@@ -10,9 +10,15 @@ import {
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 function notificationBell(page: import("@playwright/test").Page) {
-  return page
-    .getByTestId("platform-desktop-sidebar")
-    .getByTestId("platform-notification-bell");
+  return page.locator('[data-testid="platform-notification-bell"]:visible');
+}
+
+async function expectSingleNotificationBell(
+  page: import("@playwright/test").Page,
+) {
+  await expect(
+    page.locator('[data-testid="platform-notification-bell"]:visible'),
+  ).toHaveCount(1);
 }
 
 test.describe("In-app notification journey (#341)", () => {
@@ -50,6 +56,7 @@ test.describe("In-app notification journey (#341)", () => {
     expect(suggestionId).toBeTruthy();
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform");
+    await expectSingleNotificationBell(page);
     await expect(notificationBell(page)).toBeVisible();
     await notificationBell(page).click();
     const item = page
@@ -69,12 +76,25 @@ test.describe("In-app notification journey (#341)", () => {
     );
   });
 
+  test("mobile chrome exposes a single notification bell", async ({ page }) => {
+    await signInAsDemoUser(page, "manager");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/platform");
+    await expectSingleNotificationBell(page);
+    await expect(
+      page
+        .getByTestId("platform-mobile-chrome")
+        .getByTestId("platform-notification-bell"),
+    ).toBeVisible();
+  });
+
   test("operator sees accepted status in notification bell", async ({
     page,
   }) => {
     expect(suggestionId).toBeTruthy();
     await signInAsDemoUser(page, "operator");
     await page.goto("/platform");
+    await expectSingleNotificationBell(page);
     await expect(notificationBell(page)).toBeVisible();
     await notificationBell(page).click();
     const acceptedItem = page

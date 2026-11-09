@@ -11,7 +11,7 @@ test.describe("Notification bell artifacts (#341)", () => {
     await signInAsDemoUser(page, "manager");
     await page.setViewportSize({ width: 1280, height: 800 });
     const desktopBell = page
-      .getByTestId("platform-desktop-sidebar")
+      .getByTestId("platform-topbar")
       .getByTestId("platform-notification-bell");
     await desktopBell.click();
     await expect(page.getByTestId("platform-notification-list")).toBeVisible();
@@ -27,9 +27,9 @@ test.describe("Notification bell artifacts (#341)", () => {
   test("captures mobile drawer bell panel", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole("button", { name: "Open navigation menu" }).click();
-    const drawer = page.getByRole("dialog", { name: "Platform navigation" });
-    const mobileBell = drawer.getByTestId("platform-notification-bell");
+    const mobileBell = page
+      .getByTestId("platform-mobile-chrome")
+      .getByTestId("platform-notification-bell");
     await mobileBell.focus();
     await page.keyboard.press("Enter");
     await expect(mobileBell).toHaveAttribute("aria-expanded", "true");
