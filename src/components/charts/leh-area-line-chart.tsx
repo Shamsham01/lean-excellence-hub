@@ -13,8 +13,8 @@ import {
 
 import {
   chartGridStroke,
+  chartLineTooltipProps,
   chartTickStyle,
-  chartTooltipStyle,
   LEH_CHART_COLORS,
 } from "./chart-theme";
 
@@ -35,7 +35,7 @@ export function LehAreaLineChart({
 
   return (
     <div
-      className="w-full min-w-0"
+      className="leh-recharts w-full min-w-0"
       style={{ height }}
       role="img"
       aria-label={ariaLabel}
@@ -76,7 +76,7 @@ export function LehAreaLineChart({
             tickLine={false}
             width={36}
           />
-          <Tooltip {...chartTooltipStyle} />
+          <Tooltip {...chartLineTooltipProps} />
           <Area
             type="monotone"
             dataKey="value"

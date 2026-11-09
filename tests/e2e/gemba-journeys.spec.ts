@@ -14,6 +14,11 @@ import {
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
+import {
+  expectGembaBrowserHistoryPrompt,
+  expectGembaPromptHeading,
+  navigateGembaPrompt,
+} from "./helpers/gemba-walk-navigation";
 import { DEMO_GEMBA_DEFINITION } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -104,9 +109,8 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.getByRole("button", { name: "Start walk" }).click();
     await expect(page).toHaveURL(/\/platform\/gemba\/walks\//);
     await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: firstPrompt }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/prompt=/, { timeout: 15_000 });
+    await expectGembaPromptHeading(page, firstPrompt);
 
     const notes = page.getByTestId("gemba-walk-notes");
     await expect(notes).toBeVisible();
@@ -160,10 +164,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-confirm-complete")).toBeDisabled();
     await page.getByRole("button", { name: "Cancel" }).click();
 
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
+    await navigateGembaPrompt(page, "Next", secondPrompt);
     await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
 
@@ -229,22 +230,36 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-walk-status")).toHaveText(
       "In progress",
     );
+    await expect(page).toHaveURL(/prompt=/, { timeout: 15_000 });
+    await expectGembaPromptHeading(page, firstPrompt);
 
     await page.getByTestId("gemba-walk-notes").fill(firstNotes);
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    const firstPromptUrl = page.url();
 
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
+    await navigateGembaPrompt(page, "Next", secondPrompt);
+    const secondPromptUrl = page.url();
     await expect(
       page.getByRole("button", { name: "Next", exact: true }),
     ).toBeDisabled();
 
+    await expectGembaBrowserHistoryPrompt(
+      page,
+      "back",
+      firstPrompt,
+      firstPromptUrl,
+    );
+    await expectGembaBrowserHistoryPrompt(
+      page,
+      "forward",
+      secondPrompt,
+      secondPromptUrl,
+    );
+
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: secondPrompt })).toBeVisible(
+      { timeout: 15_000 },
+    );
 
     await page.getByTestId("gemba-capture-observation").click();
     await page
@@ -447,11 +462,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
 
     await page.getByTestId("gemba-walk-notes").fill("First prompt notes.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
-    await expect(page).toHaveURL(/prompt=/);
+    await navigateGembaPrompt(page, "Next", secondPrompt);
 
     await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");

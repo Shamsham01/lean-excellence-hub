@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { platformMainViewportScrollTop } from "./helpers/platform-main-viewport";
 import {
   answerVisibleScore,
   selectAssessmentScopeAndWaitForEntities,
@@ -372,7 +373,7 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       "maturity-mobile-sticky-header-scrolled.png",
     );
 
-    const previousScrollY = await page.evaluate(() => window.scrollY);
+    const previousScrollY = await platformMainViewportScrollTop(page);
     expect(previousScrollY).toBeGreaterThan(200);
 
     await page.getByTestId("next-criterion").click();
@@ -393,7 +394,7 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     expect(questionBox, "first question should be on screen").toBeTruthy();
     expect(questionBox!.y).toBeGreaterThan(0);
     expect(questionBox!.y).toBeLessThan(700);
-    const nextScrollY = await page.evaluate(() => window.scrollY);
+    const nextScrollY = await platformMainViewportScrollTop(page);
     expect(nextScrollY).toBeLessThan(previousScrollY - 50);
     await screenshotViewport(page, "maturity-mobile-after-next.png");
 

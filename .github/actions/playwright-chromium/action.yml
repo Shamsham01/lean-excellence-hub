@@ -16,8 +16,8 @@ runs:
       run: |
         set -euo pipefail
         start_epoch="$(date +%s)"
-        npx playwright install-deps chromium
-        npx playwright install chromium
+        npx playwright install-deps chromium webkit
+        npx playwright install chromium webkit
         end_epoch="$(date +%s)"
         duration="$((end_epoch - start_epoch))"
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then

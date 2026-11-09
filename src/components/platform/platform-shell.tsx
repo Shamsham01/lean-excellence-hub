@@ -42,7 +42,7 @@ export async function PlatformShell({
   return (
     <div
       data-testid="platform-shell"
-      className="flex min-h-dvh min-w-0 flex-col bg-background lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden"
+      className="flex h-dvh max-h-dvh min-w-0 flex-col overflow-hidden bg-background lg:flex-row"
     >
       <PlatformSidebar
         items={navWithSetup}
@@ -57,7 +57,7 @@ export async function PlatformShell({
         organisationId={organisationId}
         notifications={notifications}
       >
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background max-lg:min-h-dvh lg:ml-[290px] lg:overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background lg:ml-[290px]">
           <MobilePlatformNavigation
             items={navWithSetup}
             organisationName={organisationName}

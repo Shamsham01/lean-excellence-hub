@@ -105,6 +105,19 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /platform-android-scroll\.spec\.ts$/,
+    },
+    {
+      name: "chromium-pixel7",
+      testMatch: /platform-android-scroll\.spec\.ts$/,
+      grep: /Pixel 7 platform scrolling/,
+      use: { ...devices["Pixel 7"], hasTouch: true },
+    },
+    {
+      name: "webkit-iphone",
+      testMatch: /platform-android-scroll\.spec\.ts$/,
+      grep: /iPhone 13 platform scrolling/,
+      use: { ...devices["iPhone 13"], hasTouch: true },
     },
   ],
 });

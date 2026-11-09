@@ -2,7 +2,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
-import { chartTooltipStyle, LEH_CHART_COLORS } from "./chart-theme";
+import { chartPieTooltipProps, LEH_CHART_COLORS } from "./chart-theme";
 
 export type DonutSegment = { name: string; value: number; fill?: string };
 
@@ -25,14 +25,14 @@ export function LehDonutChart({
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
       <div
-        className="relative w-full min-w-0 sm:w-1/2"
+        className="leh-recharts relative w-full min-w-0 sm:w-1/2"
         style={{ height }}
         role="img"
         aria-label={ariaLabel}
       >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Tooltip {...chartTooltipStyle} />
+            <Tooltip {...chartPieTooltipProps} />
             <Pie
               data={segments}
               dataKey="value"

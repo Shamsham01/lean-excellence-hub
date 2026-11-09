@@ -65,6 +65,12 @@ export function normalizeAnswer(answer: WalkAnswer | undefined): {
   };
 }
 
+function answerHasPersistedValue(answer: WalkAnswer | undefined) {
+  if (!answer) return false;
+  if (answer.is_not_applicable) return true;
+  return Boolean(answer.text_value?.trim());
+}
+
 export function answersEqual(
   left: WalkAnswer | undefined,
   right: WalkAnswer | undefined,
@@ -80,6 +86,39 @@ function isSaveSuccess(result: unknown) {
   if (!result || typeof result !== "object") return false;
   const record = result as { ok?: unknown; error?: unknown };
   return record.ok === true && record.error == null;
+}
+
+export function questionHasUncommittedWork(
+  runtime: QuestionRuntime | undefined,
+  serverAnswer: WalkAnswer | undefined,
+  questionId: string,
+  confirmed: WalkAnswer | undefined,
+) {
+  if (!runtime) {
+    return false;
+  }
+  if (
+    runtime.debounceTimer ||
+    runtime.inFlight ||
+    runtime.pending ||
+    runtime.current
+  ) {
+    return true;
+  }
+  const local = runtime.latest?.answer;
+  if (local && !answersEqual(local, serverAnswer)) {
+    return true;
+  }
+  if (local && !answersEqual(local, confirmed)) {
+    return true;
+  }
+  if (
+    runtime.lastFailed &&
+    !answersEqual(runtime.lastFailed.answer, serverAnswer)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -137,6 +176,7 @@ export function useWalkAnswerState({
   const [errors, setErrors] = useState<Record<string, string | null>>({});
 
   const confirmedRef = useRef(confirmedAnswers);
+  const localAnswersRef = useRef(localAnswers);
   const statusRef = useRef(statuses);
   const epochRef = useRef(0);
   const runtimesRef = useRef(new Map<string, QuestionRuntime>());
@@ -152,13 +192,15 @@ export function useWalkAnswerState({
   >(() => undefined);
 
   const answersFingerprint = JSON.stringify(answers);
+  const resetWalkIdRef = useRef(walkId);
 
   // Keep confirmedRef in lockstep with committed answers so flushQuestion / moveTo
   // never read a stale fingerprint and spuriously re-enqueue the same payload while
   // status is still "saving" (Next/Previous stay disabled until the queue drains).
   useLayoutEffect(() => {
     confirmedRef.current = confirmedAnswers;
-  }, [confirmedAnswers]);
+    localAnswersRef.current = localAnswers;
+  }, [confirmedAnswers, localAnswers]);
 
   useEffect(() => {
     statusRef.current = statuses;
@@ -171,31 +213,112 @@ export function useWalkAnswerState({
   useEffect(() => {
     const snapshot = answersSnapshotRef.current;
     const runtimes = runtimesRef.current;
-    epochRef.current += 1;
-    for (const runtime of runtimes.values()) {
-      if (runtime.debounceTimer) {
-        clearTimeout(runtime.debounceTimer);
-        runtime.debounceTimer = null;
-      }
-      runtime.current = null;
-      runtime.pending = null;
-      runtime.latest = null;
-      runtime.lastFailed = null;
-      const waiters = runtime.waiters.splice(0);
-      for (const waiter of waiters) waiter(false);
-    }
-    setLocalAnswers(cloneAnswers(snapshot));
-    setConfirmedAnswers(cloneAnswers(snapshot));
-    setStatuses({});
-    setErrors({});
-    return () => {
+    const walkChanged = resetWalkIdRef.current !== walkId;
+    resetWalkIdRef.current = walkId;
+
+    if (walkChanged) {
+      epochRef.current += 1;
       for (const runtime of runtimes.values()) {
         if (runtime.debounceTimer) {
           clearTimeout(runtime.debounceTimer);
           runtime.debounceTimer = null;
         }
+        runtime.current = null;
+        runtime.pending = null;
+        runtime.latest = null;
+        runtime.lastFailed = null;
+        const waiters = runtime.waiters.splice(0);
+        for (const waiter of waiters) waiter(false);
       }
-    };
+      runtimes.clear();
+      setLocalAnswers(cloneAnswers(snapshot));
+      setConfirmedAnswers(cloneAnswers(snapshot));
+      setStatuses({});
+      setErrors({});
+      return () => {
+        for (const runtime of runtimes.values()) {
+          if (runtime.debounceTimer) {
+            clearTimeout(runtime.debounceTimer);
+            runtime.debounceTimer = null;
+          }
+        }
+      };
+    }
+
+    const previousConfirmed = confirmedRef.current;
+    const previousLocal = localAnswersRef.current;
+
+    const nextConfirmed = { ...previousConfirmed };
+    for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+      const runtime = runtimes.get(questionId);
+      if (
+        questionHasUncommittedWork(
+          runtime,
+          serverAnswer,
+          questionId,
+          previousConfirmed[questionId],
+        )
+      ) {
+        continue;
+      }
+      nextConfirmed[questionId] = { ...serverAnswer };
+    }
+
+    const nextLocal = { ...previousLocal };
+    for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+      const runtime = runtimes.get(questionId);
+      if (runtime?.latest?.answer) {
+        nextLocal[questionId] = { ...runtime.latest.answer };
+        continue;
+      }
+      if (
+        questionHasUncommittedWork(
+          runtime,
+          serverAnswer,
+          questionId,
+          previousConfirmed[questionId],
+        )
+      ) {
+        continue;
+      }
+      nextLocal[questionId] = { ...serverAnswer };
+    }
+
+    setConfirmedAnswers(nextConfirmed);
+    setLocalAnswers(nextLocal);
+    confirmedRef.current = nextConfirmed;
+    localAnswersRef.current = nextLocal;
+
+    for (const [questionId, serverAnswer] of Object.entries(snapshot)) {
+      const runtime = runtimes.get(questionId);
+      if (
+        questionHasUncommittedWork(
+          runtime,
+          serverAnswer,
+          questionId,
+          nextConfirmed[questionId],
+        )
+      ) {
+        continue;
+      }
+      if (runtime?.inFlight || runtime?.pending || runtime?.debounceTimer) {
+        continue;
+      }
+      if (statusRef.current[questionId] === "error") {
+        continue;
+      }
+      const localAnswer = runtime?.latest?.answer ?? nextLocal[questionId];
+      const confirmed = nextConfirmed[questionId];
+      if (
+        !answersEqual(localAnswer, serverAnswer) ||
+        !answersEqual(localAnswer, confirmed) ||
+        !answerHasPersistedValue(serverAnswer)
+      ) {
+        continue;
+      }
+      setStatuses((current) => ({ ...current, [questionId]: "saved" }));
+      setErrors((current) => ({ ...current, [questionId]: null }));
+    }
   }, [walkId, answersFingerprint]);
 
   function ensureRuntime(questionId: string) {

@@ -101,6 +101,7 @@ export async function ModuleAnalyticsDashboard({
             title="Comparison"
             description="By site or owning unit"
             className="lg:col-span-2"
+            testId="analytics-comparison-chart"
           >
             <LehBarChart
               data={snapshot.comparisonBars}

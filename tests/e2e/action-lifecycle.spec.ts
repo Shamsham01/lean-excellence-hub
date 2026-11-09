@@ -2,6 +2,10 @@ import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  createActionViaPlannerDialog,
+  openActionDetailPageFromPlanner,
+} from "./helpers/actions-create";
+import {
   approveCurrentReview,
   beginCurrentReview,
   claimCurrentReview,
@@ -35,13 +39,13 @@ test.describe("Action lifecycle and suggestion traceability", () => {
     await page.goto("/platform/actions");
     await expect(page.getByTestId("actions-page")).toBeVisible();
 
-    await page.getByLabel("Title").fill(actionTitle);
-    await page.getByLabel("Description").fill("Initial description");
-    await page.getByRole("button", { name: "Create action" }).click();
-
-    await expect(page.getByTestId("action-detail-page")).toBeVisible();
+    await createActionViaPlannerDialog(
+      page,
+      actionTitle,
+      "Initial description",
+    );
+    actionPath = await openActionDetailPageFromPlanner(page);
     await expect(page).toHaveURL(/\/platform\/actions\/[0-9a-f-]{36}/);
-    actionPath = new URL(page.url()).pathname;
     await expect(page.getByTestId("action-reference")).not.toHaveText(
       /[0-9a-f]{8}-[0-9a-f]{4}-/,
     );
