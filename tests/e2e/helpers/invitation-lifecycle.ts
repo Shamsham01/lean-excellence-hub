@@ -378,7 +378,7 @@ function invitationInboxProofDigest(inboxProof: string) {
   return `\\x${createHash("sha256").update(inboxProof).digest("hex")}`;
 }
 
-async function dispatchOrganisationInvitationDeliveryForE2e(input: {
+export async function dispatchOrganisationInvitationDeliveryForE2e(input: {
   supabaseUrl: string;
   serviceRoleKey: string;
   deliveryId: string;
