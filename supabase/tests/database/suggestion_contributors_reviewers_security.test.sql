@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(15);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -156,20 +156,70 @@ select set_config(
 set local role authenticated;
 
 select ok(
+  public.switch_organisation((select id from contributor_ids where key = 'organisation')),
+  'owner selects organisation for reviewer role setup'
+);
+
+insert into contributor_ids (key, id)
+select 'reviewer_role', public.create_role_draft(
+  (select id from contributor_ids where key = 'organisation'),
+  'contributor-reviewer',
+  'Contributor Reviewer',
+  'Review for contributor security fixture'
+);
+
+select ok(
+  public.add_role_permission(
+    (select id from contributor_ids where key = 'organisation'),
+    (select id from contributor_ids where key = 'reviewer_role'),
+    'suggestions.review'
+  ),
+  'reviewer role receives suggestions.review'
+);
+
+select ok(
+  public.publish_role_version(
+    (select id from contributor_ids where key = 'organisation'),
+    (select id from contributor_ids where key = 'reviewer_role')
+  ),
+  'reviewer role publishes for contributor fixture'
+);
+
+select ok(
+  public.grant_role_version(
+    (select id from contributor_ids where key = 'organisation'),
+    (select id from contributor_ids where key = 'outsider_membership'),
+    (select id from contributor_ids where key = 'reviewer_role'),
+    'unit_subtree',
+    (select id from contributor_ids where key = 'unit_root')
+  ) is not null,
+  'outsider receives scoped review for reviewer assignment'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from contributor_ids where key = 'outsider_membership'),
+    (select id from contributor_ids where key = 'job_function'),
+    true,
+    (select id from contributor_ids where key = 'unit_root')
+  ) is not null,
+  'outsider primary job assignment for reviewer fixture'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"c1300000-0000-0000-0000-000000000001","role":"authenticated","session_id":"c1400000-0000-0000-0000-000000000001","email":"contributor-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
   public.add_suggestion_contributor(
     (select id from contributor_ids where key = 'suggestion'),
     (select id from contributor_ids where key = 'outsider_membership'),
     'co_contributor'
   ) is not null,
   'contributor assignment is created'
-);
-
-select ok(
-  public.assign_suggestion_reviewer(
-    (select id from contributor_ids where key = 'suggestion'),
-    (select id from contributor_ids where key = 'owner_membership')
-  ) is not null,
-  'reviewer assignment is created'
 );
 
 select set_config(
@@ -190,6 +240,31 @@ select ok(
     where suggestion_row.id = (select id from contributor_ids where key = 'suggestion')
   ),
   'contributor assignment alone does not grant suggestion read without RBAC'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"c1300000-0000-0000-0000-000000000001","role":"authenticated","session_id":"c1400000-0000-0000-0000-000000000001","email":"contributor-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.assign_suggestion_reviewer(
+    (select id from contributor_ids where key = 'suggestion'),
+    (select id from contributor_ids where key = 'outsider_membership')
+  ) is not null,
+  'reviewer assignment is created for non-author reviewer'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"c1300000-0000-0000-0000-000000000003","role":"authenticated","session_id":"c1400000-0000-0000-0000-000000000003","email":"contributor-outsider@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from contributor_ids where key = 'organisation')),
+  'outsider selects organisation for reviewer denial probe'
 );
 
 select throws_ok(

@@ -1,6 +1,6 @@
 begin;
 
-select plan(49);
+select plan(53);
 
 -- ---------------------------------------------------------------------------
 -- Complete private helper inventory: no PUBLIC/anon/authenticated/service_role
@@ -598,6 +598,40 @@ select throws_ok(
   ),
   'permission denied for function can_view_suggestion_reviewer_metadata',
   'authenticated cannot probe reviewer metadata cross-org'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_read_improvement_suggestion(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated retains can_read_improvement_suggestion for session-bound portfolio probes'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_submit_suggestion_to_unit(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute can_submit_suggestion_to_unit (DEFINER lifecycle only)'
+);
+
+select ok(
+  not private.can_read_improvement_suggestion(
+    (select id from sec_ids where key = 'org_a'),
+    (select id from sec_ids where key = 'suggestion_b')
+  ),
+  'can_read_improvement_suggestion is false for foreign organisation while session is org_b'
+);
+
+select ok(
+  private.can_read_improvement_suggestion(
+    (select id from sec_ids where key = 'org_b'),
+    (select id from sec_ids where key = 'suggestion_b')
+  ),
+  'can_read_improvement_suggestion succeeds for current organisation session'
 );
 
 select * from finish();

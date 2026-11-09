@@ -34,6 +34,7 @@ describe("notification projector registry", () => {
       "TrainingCompleted",
       "SkillProficiencyValidated",
       "RecognitionAwarded",
+      "SuggestionSubmitted",
       "SuggestionReviewerAssigned",
       "SuggestionReviewerReassigned",
       "SuggestionReviewStarted",

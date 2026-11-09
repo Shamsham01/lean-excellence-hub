@@ -1,6 +1,6 @@
 begin;
 
-select plan(49);
+select plan(59);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -28,6 +28,12 @@ values
 (
   'f1190000-0000-4000-8000-000000000004',
   't119-delegate@example.test',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'f1190000-0000-4000-8000-000000000005',
+  't119-alternate-delegate@example.test',
   statement_timestamp(), statement_timestamp(), statement_timestamp(),
   '{"provider":"email","providers":["email"]}', '{}', false, false
 );
@@ -70,6 +76,11 @@ values
   'f1190100-0000-4000-8000-000000000004',
   'f1190000-0000-4000-8000-000000000004',
   statement_timestamp(), statement_timestamp()
+),
+(
+  'f1190100-0000-4000-8000-000000000005',
+  'f1190000-0000-4000-8000-000000000005',
+  statement_timestamp(), statement_timestamp()
 );
 
 insert into t119_ids (key, id)
@@ -83,7 +94,8 @@ select (select id from t119_ids where key = 'organisation'), user_row.id, 'activ
 from (values
   ('f1190000-0000-4000-8000-000000000002'::uuid),
   ('f1190000-0000-4000-8000-000000000003'::uuid),
-  ('f1190000-0000-4000-8000-000000000004'::uuid)
+  ('f1190000-0000-4000-8000-000000000004'::uuid),
+  ('f1190000-0000-4000-8000-000000000005'::uuid)
 ) as user_row(id);
 
 insert into t119_ids (key, id)
@@ -92,7 +104,8 @@ from (
   values
     ('site_manager_membership', 'f1190000-0000-4000-8000-000000000002'::uuid),
     ('other_site_manager_membership', 'f1190000-0000-4000-8000-000000000003'::uuid),
-    ('delegate_membership', 'f1190000-0000-4000-8000-000000000004'::uuid)
+    ('delegate_membership', 'f1190000-0000-4000-8000-000000000004'::uuid),
+    ('alternate_delegate_membership', 'f1190000-0000-4000-8000-000000000005'::uuid)
 ) seed(key, user_id)
 join public.organisation_memberships membership_row
   on membership_row.organisation_id = (select id from t119_ids where key = 'organisation')
@@ -105,7 +118,8 @@ set status = 'active',
 where identity_row.user_id in (
   'f1190000-0000-4000-8000-000000000002',
   'f1190000-0000-4000-8000-000000000003',
-  'f1190000-0000-4000-8000-000000000004'
+  'f1190000-0000-4000-8000-000000000004',
+  'f1190000-0000-4000-8000-000000000005'
 );
 
 select set_config(
@@ -370,15 +384,31 @@ select ok(
   'operator selects organisation for delegate grant'
 );
 
-select ok(
+insert into t119_ids (key, id)
+select
+  'delegate_grant',
   public.grant_role_version(
     (select id from t119_ids where key = 'organisation'),
     (select id from t119_ids where key = 'delegate_membership'),
     (select id from t119_ids where key = 'manager_role'),
     'unit_subtree',
     (select id from t119_ids where key = 'unit_site')
-  ) is not null,
+  );
+
+select ok(
+  (select id from t119_ids where key = 'delegate_grant') is not null,
   'delegate reviewer scoped to production site subtree'
+);
+
+select ok(
+  public.grant_role_version(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'alternate_delegate_membership'),
+    (select id from t119_ids where key = 'manager_role'),
+    'unit_subtree',
+    (select id from t119_ids where key = 'unit_site')
+  ) is not null,
+  'alternate delegate scoped to production site subtree'
 );
 
 reset role;
@@ -567,6 +597,17 @@ select is(
   'idempotent delegate to same target returns stable assignment id while actor retains authority'
 );
 
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'alternate_delegate_membership'),
+    'parallel while delegate active'
+  ),
+  'approval delegation is not authorised',
+  'manager cannot open parallel delegation while active reviewer holds claim'
+);
+
 reset role;
 
 select set_config(
@@ -575,6 +616,70 @@ select set_config(
   true
 );
 set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'operator selects organisation to revoke active reviewer grant'
+);
+
+select ok(
+  public.revoke_access_grant(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'delegate_grant'),
+    't119 revokes delegate review grant while assignment remains'
+  ),
+  'operator revokes active reviewer suggestions.review grant'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000004","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000004","email":"t119-delegate@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'active reviewer after grant revocation'
+);
+
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'alternate_delegate_membership'),
+    'revoked active reviewer hand-off'
+  ),
+  'approval delegation is not authorised',
+  'active reviewer without review grant cannot delegate after role revocation'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000001","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000001","email":"t119-operator@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'operator restores delegate review grant after revocation probe'
+);
+
+select ok(
+  public.grant_role_version(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'delegate_membership'),
+    (select id from t119_ids where key = 'manager_role'),
+    'unit_subtree',
+    (select id from t119_ids where key = 'unit_site')
+  ) is not null,
+  'delegate review grant re-issued for approval path'
+);
 
 select ok(
   public.switch_organisation((select id from t119_ids where key = 'organisation')),
@@ -745,6 +850,23 @@ select ok(
   'primary approver unchanged while delegate holds active assignment'
 );
 
+select ok(
+  private.suggestion_has_active_reviewer(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion')
+  ),
+  'another membership holds the sole active reviewer assignment'
+);
+
+select ok(
+  not private.can_delegate_suggestion_approval(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'site_manager_membership')
+  ),
+  'primary approver cannot delegate while a different active reviewer holds the claim'
+);
+
 reset role;
 
 select set_config(
@@ -763,7 +885,7 @@ select throws_ok(
   format(
     'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
     (select id from t119_ids where key = 'suggestion'),
-    (select id from t119_ids where key = 'site_manager_membership'),
+    (select id from t119_ids where key = 'alternate_delegate_membership'),
     'primary tries to pull back'
   ),
   'approval delegation is not authorised',
