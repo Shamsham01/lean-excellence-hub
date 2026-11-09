@@ -47,7 +47,7 @@ describe("invitation delivery mailpit capture policy", () => {
     ).toThrow(/allowlist/i);
   });
 
-  it("detects local Supabase runtime", () => {
+  it("detects local Supabase runtime by hostname", () => {
     expect(
       isLocalSupabaseInvitationDeliveryRuntime((name) =>
         name === "SUPABASE_URL" ? "http://127.0.0.1:54321" : undefined,
@@ -55,7 +55,19 @@ describe("invitation delivery mailpit capture policy", () => {
     ).toBe(true);
     expect(
       isLocalSupabaseInvitationDeliveryRuntime((name) =>
+        name === "SUPABASE_URL" ? "http://kong:8000" : undefined,
+      ),
+    ).toBe(true);
+    expect(
+      isLocalSupabaseInvitationDeliveryRuntime((name) =>
         name === "SUPABASE_URL" ? "https://prod-ref.supabase.co" : undefined,
+      ),
+    ).toBe(false);
+    expect(
+      isLocalSupabaseInvitationDeliveryRuntime((name) =>
+        name === "SUPABASE_URL"
+          ? "https://not-local-127.0.0.1.evil.test"
+          : undefined,
       ),
     ).toBe(false);
   });

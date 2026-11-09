@@ -76,9 +76,7 @@ describe("InviteColleagueForm invitation link UX", () => {
       ).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText(/Invitation email sent to/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Invitation email sent to/i)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Send invitation" }),
     ).not.toBeInTheDocument();

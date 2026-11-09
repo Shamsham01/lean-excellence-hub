@@ -2,8 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-import { invitationInboxProofDigest } from "@/modules/identity/invitation-inbox-proof";
-import { invitationTokenDigest } from "@/modules/identity/invitations";
+import { createConfirmedInvitationAuthUserWithDeps } from "@/platform/supabase/invitation-signup-auth-pipeline";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
 import type { Database } from "@/platform/supabase/database.types";
 
@@ -204,78 +203,43 @@ export async function createConfirmedInvitationAuthUser(input: {
 }) {
   const client = createSecretClient();
 
-  const tokenDigest = invitationTokenDigest(input.invitationToken);
-  const proofDigest = invitationInboxProofDigest(input.inboxProof);
-
-  const authorized = await client.rpc("authorize_invitation_identity_signup", {
-    target_binding_id: input.invitationSignupBindingId,
-    target_user_email: input.email,
-    invitation_token_digest: tokenDigest,
-    target_inbox_proof_digest: proofDigest,
-  });
-
-  if (authorized.error || authorized.data !== true) {
-    return {
-      error: new Error(
-        "Account creation requires a valid organisation invitation.",
-      ),
-    };
-  }
-
-  const created = await client.auth.admin.createUser({
-    email: input.email,
-    password: input.password,
-    email_confirm: true,
-    user_metadata: {
-      invitation_signup_binding: input.invitationSignupBindingId,
+  return createConfirmedInvitationAuthUserWithDeps(input, {
+    authorizeInvitationSignup: async (args) => {
+      const result = await client.rpc("authorize_invitation_identity_signup", args);
+      return { data: result.data, error: result.error };
+    },
+    finaliseInvitationSignup: async (args) => {
+      const result = await client.rpc("finalise_invitation_identity_signup", args);
+      return { data: result.data, error: result.error };
+    },
+    redeemInvitationInboxProof: async (args) => {
+      const result = await client.rpc("redeem_organisation_invitation_inbox_proof", args);
+      return { data: result.data, error: result.error };
+    },
+    clearInvitationSignupBindingAuthUser: async (args) => {
+      const result = await client.rpc("clear_invitation_signup_binding_auth_user", args);
+      return { data: result.data, error: result.error };
+    },
+    createAuthUser: async ({ email, password, invitationSignupBindingId }) => {
+      const created = await client.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          invitation_signup_binding: invitationSignupBindingId,
+        },
+      });
+      if (created.error || !created.data.user?.id) {
+        return {
+          error: created.error ?? new Error("Unable to create account."),
+        };
+      }
+      return { userId: created.data.user.id };
+    },
+    deleteAuthUser: async (userId) => {
+      await client.auth.admin.deleteUser(userId);
     },
   });
-
-  if (created.error || !created.data.user?.id) {
-    return { error: created.error ?? new Error("Unable to create account.") };
-  }
-
-  const userId = created.data.user.id;
-
-  const finalised = await client.rpc("finalise_invitation_identity_signup", {
-    target_binding_id: input.invitationSignupBindingId,
-    target_user_id: userId,
-    invitation_token_digest: tokenDigest,
-    target_inbox_proof_digest: proofDigest,
-  });
-
-  if (finalised.error || finalised.data !== true) {
-    await client.auth.admin.deleteUser(userId);
-    await client.rpc("clear_invitation_signup_binding_auth_user", {
-      target_binding_id: input.invitationSignupBindingId,
-    });
-    return {
-      error: new Error("This invitation is no longer available."),
-    };
-  }
-
-  const redeemed = await client.rpc(
-    "redeem_organisation_invitation_inbox_proof",
-    {
-      invitation_token_digest: tokenDigest,
-      target_inbox_proof_digest: proofDigest,
-      target_binding_id: input.invitationSignupBindingId,
-    },
-  );
-
-  if (redeemed.error || redeemed.data !== true) {
-    await client.rpc("clear_invitation_signup_binding_auth_user", {
-      target_binding_id: input.invitationSignupBindingId,
-    });
-    await client.auth.admin.deleteUser(userId);
-    return {
-      error: new Error(
-        "This invitation email link has already been used or is no longer valid.",
-      ),
-    };
-  }
-
-  return { userId };
 }
 
 export async function restoreOrganisation(

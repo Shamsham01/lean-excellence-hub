@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(16);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -206,6 +206,16 @@ select ok(
     (select id from race_ids where key = 'binding')
   ),
   'redeem follows successful finalise'
+);
+
+select ok(
+  not public.finalise_invitation_identity_signup(
+    (select id from race_ids where key = 'binding'),
+    '98000000-0000-0000-0000-000000000088',
+    decode(repeat('11', 32), 'hex'),
+    decode(repeat('bb', 32), 'hex')
+  ),
+  'parallel finalise attempt fails after enrolment completes'
 );
 
 set local role authenticated;

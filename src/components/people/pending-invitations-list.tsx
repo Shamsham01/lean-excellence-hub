@@ -24,9 +24,7 @@ export function PendingInvitationsList({
   invitations: PendingInvitation[];
   namesUnavailable?: boolean;
   onRevoke: (invitationId: string) => Promise<{ error?: string; ok?: true }>;
-  onReissue: (
-    invitationId: string,
-  ) => Promise<{
+  onReissue: (invitationId: string) => Promise<{
     error?: string;
     ok?: true;
     invitationUrl?: string;

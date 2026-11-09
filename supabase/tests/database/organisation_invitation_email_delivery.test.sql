@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(20);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -189,6 +189,26 @@ select 'binding',
 set local role service_role;
 
 select ok(
+  public.authorize_invitation_identity_signup(
+    (select id from delivery_security_ids where key = 'binding'),
+    'delivery-invitee@example.test',
+    decode(repeat('aa', 32), 'hex'),
+    decode(repeat('cc', 32), 'hex')
+  ),
+  'authorize requires inbox-ready digests before redeem'
+);
+
+select ok(
+  not public.authorize_invitation_identity_signup(
+    (select id from delivery_security_ids where key = 'binding'),
+    'delivery-invitee@example.test',
+    null,
+    null
+  ),
+  'authorize rejects null digests'
+);
+
+select ok(
   public.redeem_organisation_invitation_inbox_proof(
     decode(repeat('aa', 32), 'hex'),
     decode(repeat('cc', 32), 'hex'),
@@ -214,11 +234,13 @@ select ok(
 );
 
 select ok(
-  public.authorize_invitation_identity_signup(
+  not public.authorize_invitation_identity_signup(
     (select id from delivery_security_ids where key = 'binding'),
-    'delivery-invitee@example.test'
+    'delivery-invitee@example.test',
+    decode(repeat('aa', 32), 'hex'),
+    decode(repeat('cc', 32), 'hex')
   ),
-  'authorize allows confirmed signup for redeemed binding'
+  'authorize rejects inbox-ready path after proof redeemed'
 );
 
 select set_config(

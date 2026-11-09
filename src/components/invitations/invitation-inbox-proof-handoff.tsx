@@ -43,9 +43,7 @@ function readInboxProofFromLocationSearch(): string | null {
 }
 
 function readInboxProofFromLocation(): string | null {
-  return (
-    readInboxProofFromLocationHash() ?? readInboxProofFromLocationSearch()
-  );
+  return readInboxProofFromLocationHash() ?? readInboxProofFromLocationSearch();
 }
 
 export function InvitationInboxProofHandoff({

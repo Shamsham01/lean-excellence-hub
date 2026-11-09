@@ -440,6 +440,147 @@ test.describe("Invitation lifecycle", () => {
     await context.close();
   });
 
+  test("scenario 5C: revoke races signup submit — no confirmed orphan auth user", async ({
+    browser,
+  }) => {
+    const { publishableKey, url } = getInvitationLifecycleClients();
+    const adminClient = await createOnboardingOrgAdminClient(
+      url,
+      publishableKey,
+    );
+    const organisations = await adminClient.rpc(
+      "list_my_eligible_organisations",
+    );
+    const organisation = organisations.data?.find(
+      (entry: { organisation_code: string; organisation_id: string }) =>
+        entry.organisation_code === onboardingE2eCredentials.organisationCode,
+    );
+    if (!organisation?.organisation_id) {
+      throw new Error("Onboarding organisation id was not available.");
+    }
+
+    const uniqueEmail = `invitation-revoke-race-${Date.now()}@example.test`;
+    const issued = await issueInvitationWithDeliveredInboxProof(adminClient, {
+      email: uniqueEmail,
+      tokenSeed: `revoke-race-${Date.now()}`,
+    });
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(toE2eOriginUrl(issued.activateEmailPath));
+    await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/, {
+      timeout: 30_000,
+    });
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).some(
+            (cookie) => cookie.name === "leh_invitation_inbox_proof",
+          ),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+
+    await page.locator("#password").fill("InvitationRevokeRaceSubmit123!");
+    await page
+      .locator("#confirm-password")
+      .fill("InvitationRevokeRaceSubmit123!");
+
+    await Promise.all([
+      page.getByRole("button", { name: "Create account and continue" }).click(),
+      revokeOrganisationInvitationForE2e(adminClient, {
+        organisationId: organisation.organisation_id,
+        invitationId: issued.invitationId,
+      }),
+    ]);
+
+    await expect(
+      page.getByText(/no longer available|valid organisation invitation/i),
+    ).toBeVisible({ timeout: 30_000 });
+    const { admin } = getInvitationLifecycleClients();
+    expect(await findAuthUserByEmail(admin, uniqueEmail)).toBeNull();
+    expect(invitationInboxProofRedeemedForDelivery(issued.invitationId)).toBe(
+      false,
+    );
+    await context.close();
+  });
+
+  test("scenario 1P: parallel activation attempts yield one auth user and one redeem", async ({
+    browser,
+  }) => {
+    const { publishableKey, url } = getInvitationLifecycleClients();
+    const adminClient = await createOnboardingOrgAdminClient(
+      url,
+      publishableKey,
+    );
+    const uniqueEmail = `invitation-parallel-${Date.now()}@example.test`;
+    const issued = await issueInvitationWithDeliveredInboxProof(adminClient, {
+      email: uniqueEmail,
+      tokenSeed: `parallel-${Date.now()}`,
+    });
+    const password = "InvitationParallelActivate123!";
+    const activateUrl = toE2eOriginUrl(issued.activateEmailPath);
+
+    async function stageCookie(page: import("@playwright/test").Page) {
+      await page.goto(activateUrl);
+      await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/, {
+        timeout: 30_000,
+      });
+      await expect
+        .poll(
+          async () =>
+            (await page.context().cookies()).some(
+              (cookie) => cookie.name === "leh_invitation_inbox_proof",
+            ),
+          { timeout: 30_000 },
+        )
+        .toBe(true);
+      await page.locator("#password").fill(password);
+      await page.locator("#confirm-password").fill(password);
+    }
+
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+    await Promise.all([stageCookie(pageA), stageCookie(pageB)]);
+
+    await Promise.all([
+      pageA
+        .getByRole("button", { name: "Create account and continue" })
+        .click(),
+      pageB
+        .getByRole("button", { name: "Create account and continue" })
+        .click(),
+    ]);
+
+    await Promise.race([
+      pageA.waitForURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
+        timeout: 60_000,
+      }),
+      pageB.waitForURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
+        timeout: 60_000,
+      }),
+    ]);
+
+    const { admin } = getInvitationLifecycleClients();
+    const authUser = await findAuthUserByEmail(admin, uniqueEmail);
+    expect(authUser).not.toBeNull();
+    expect(authUser?.email_confirmed_at).toBeTruthy();
+    expect(invitationInboxProofRedeemedForDelivery(issued.invitationId)).toBe(
+      true,
+    );
+
+    const listed = await admin.auth.admin.listUsers({ perPage: 200 });
+    const matches = (listed.data?.users ?? []).filter(
+      (entry) => entry.email === uniqueEmail,
+    );
+    expect(matches).toHaveLength(1);
+
+    await contextA.close();
+    await contextB.close();
+  });
+
   test("scenario 1E: mail-scanner style GET prefetch does not consume inbox proof", async ({
     browser,
   }) => {

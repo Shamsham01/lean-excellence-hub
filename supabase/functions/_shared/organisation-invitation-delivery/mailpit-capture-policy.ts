@@ -5,19 +5,33 @@ const ALLOWED_MAILPIT_CAPTURE_ORIGINS = new Set([
   "http://172.17.0.1:54324",
 ]);
 
+const LOCAL_SUPABASE_HOSTNAMES = new Set(["127.0.0.1", "localhost", "kong"]);
+
 export function isLocalSupabaseInvitationDeliveryRuntime(
   readEnv: (name: string) => string | undefined,
 ): boolean {
-  const supabaseUrl = readEnv("SUPABASE_URL")?.trim().toLowerCase() ?? "";
-  if (!supabaseUrl) {
+  const raw = readEnv("SUPABASE_URL")?.trim();
+  if (!raw) {
     return false;
   }
 
-  return (
-    supabaseUrl.includes("127.0.0.1") ||
-    supabaseUrl.includes("localhost") ||
-    supabaseUrl.includes("kong:8000")
-  );
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (!LOCAL_SUPABASE_HOSTNAMES.has(hostname)) {
+    return false;
+  }
+
+  if (hostname === "kong") {
+    return parsed.port === "8000" || parsed.port === "";
+  }
+
+  return true;
 }
 
 export function resolveInvitationDeliveryMailpitCaptureUrl(

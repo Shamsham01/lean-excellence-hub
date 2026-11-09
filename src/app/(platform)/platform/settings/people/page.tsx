@@ -240,8 +240,8 @@ export default async function PeopleSettingsPage() {
             </div>
             <p className="mb-4 text-sm text-muted-foreground">
               Lean Excellence Hub emails a branded invitation with a Create
-              account button. Add each application role with its
-              own scope. A job function does not grant permissions.
+              account button. Add each application role with its own scope. A
+              job function does not grant permissions.
               {context.mode === "site" && context.activeSiteId
                 ? " Scope options are filtered to your active site."
                 : null}
