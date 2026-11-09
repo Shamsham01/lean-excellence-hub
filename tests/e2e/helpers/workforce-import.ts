@@ -184,10 +184,10 @@ export async function uploadWorkforceImportCsv(
     buffer: Buffer.from(input.csvContent),
   });
   await expect(page.getByTestId("validate-import")).toBeVisible({
-    timeout: 120_000,
+    timeout: 90_000,
   });
   await expect(page.getByText(/rows detected/i)).toBeVisible({
-    timeout: 120_000,
+    timeout: 90_000,
   });
   const importMessage = page.getByTestId("import-message");
   const message = (await importMessage.textContent().catch(() => null))?.trim();
@@ -202,9 +202,18 @@ export async function validateWorkforceImportAndStartProvisioning(
   page: Page,
 ): Promise<void> {
   await page.getByTestId("validate-import").click();
+  await expect(page.getByTestId("validate-import")).toBeEnabled({
+    timeout: 120_000,
+  });
   const start = page.getByTestId("start-import-provisioning");
   const errorSurface = page.getByTestId("import-message");
-  await expect(start.or(errorSurface)).toBeVisible({ timeout: 180_000 });
+  try {
+    await expect(start.or(errorSurface)).toBeVisible({ timeout: 120_000 });
+  } catch {
+    throw new Error(
+      `Workforce import validation did not advance. ${await readImportWizardDiagnostics(page)}`,
+    );
+  }
   const errorText = (await errorSurface.textContent())?.trim();
   if (errorText) {
     throw new Error(

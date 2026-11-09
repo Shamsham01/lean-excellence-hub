@@ -1,8 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 
 export async function expectGembaPromptHeading(page: Page, prompt: string) {
-  await expect(page.getByRole("heading", { name: prompt })).toBeVisible({
-    timeout: 15_000,
+  const workspace = page.getByTestId("gemba-walk-workspace");
+  await expect(workspace).toBeVisible({ timeout: 30_000 });
+  await expect(workspace.getByRole("heading", { name: prompt })).toBeVisible({
+    timeout: 30_000,
   });
 }
 

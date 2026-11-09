@@ -572,10 +572,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         ) : null}
 
         <section
-          className="@container/canvas flex min-h-0 min-w-0 flex-1 flex-col bg-background"
+          className="@container/canvas flex h-0 min-h-0 min-w-0 flex-1 flex-col bg-background"
           data-testid="pps-stage-canvas"
         >
-          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 lg:px-5">
+          <div className="h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 lg:px-5">
             <StageCanvasHeader
               config={stageConfig}
               isViewingCurrentStage={isViewingCurrentStage}
