@@ -192,10 +192,11 @@ async function renderSuggestionsOverviewLikePage() {
   const { loadSuggestionsAnalytics } =
     await import("@/modules/platform-analytics/suggestions");
   await loadSuggestionsAnalytics(client, {
-    start: "2026-01-01",
-    end: "2026-01-31",
-    previousStart: "2025-12-01",
-    previousEnd: "2025-12-31",
+    days: 30,
+    start: "2026-01-01T00:00:00.000Z",
+    end: "2026-01-31T00:00:00.000Z",
+    previousStart: "2025-12-01T00:00:00.000Z",
+    previousEnd: "2025-12-31T00:00:00.000Z",
   });
 }
 
