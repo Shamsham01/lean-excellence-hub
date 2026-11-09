@@ -11,6 +11,7 @@ import {
   scrollPlatformMainViewportForProject,
   touchSwipeScrollOnLocator,
   usesChromiumCdpTouch,
+  waitForNestedScrollContainer,
   WEBKIT_OVERFLOW_WIRING_ANNOTATION,
 } from "./helpers/touch-scroll";
 
@@ -138,6 +139,8 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
         spacer.style.height = "200vh";
         element.appendChild(spacer);
       });
+
+      await waitForNestedScrollContainer(canvasScroller);
 
       const before = await canvasScroller.evaluate((element) => ({
         scrollTop: element.scrollTop,
