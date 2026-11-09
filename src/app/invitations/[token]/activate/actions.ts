@@ -157,19 +157,12 @@ export async function createInvitationAccount(formData: FormData) {
     path: `/invitations/${parsed.data.token}/activate`,
   });
 
-  const { error: signInError } = await supabase.auth.signInWithPassword({
+  await supabase.auth.signInWithPassword({
     email: lifecycle.recipientEmail,
     password: parsed.data.password,
   });
 
-  if (signInError) {
-    return { error: "Account created. Sign in to continue." };
-  }
-
-  return {
-    ok: true as const,
-    continuePath: invitationContinuePath(bindingId),
-  };
+  redirect(invitationContinuePath(bindingId));
 }
 
 function hashRateLimitKey(token: string) {

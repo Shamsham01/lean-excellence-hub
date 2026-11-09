@@ -554,29 +554,49 @@ test.describe("Invitation lifecycle", () => {
         .click(),
     ]);
 
+    const { admin } = getInvitationLifecycleClients();
     const continuePattern = /\/invitations\/continue\/[0-9a-f-]{36}$/i;
+    const loserError =
+      /account already exists|no longer available|already been used|valid organisation invitation|unable to create your account/i;
+
     await expect
       .poll(
-        () =>
-          continuePattern.test(pageA.url()) ||
-          continuePattern.test(pageB.url()),
-        { timeout: 120_000 },
+        async () => {
+          const authUser = await findAuthUserByEmail(admin, uniqueEmail);
+          if (!authUser?.email_confirmed_at) {
+            return null;
+          }
+          if (!invitationInboxProofRedeemedForDelivery(issued.invitationId)) {
+            return null;
+          }
+          const listed = await admin.auth.admin.listUsers({ perPage: 200 });
+          const matches = (listed.data?.users ?? []).filter(
+            (entry) => entry.email === uniqueEmail,
+          );
+          if (matches.length !== 1) {
+            return null;
+          }
+          return true;
+        },
+        { timeout: 60_000 },
       )
-      .toBe(true);
+      .toBeTruthy();
 
-    const { admin } = getInvitationLifecycleClients();
-    const authUser = await findAuthUserByEmail(admin, uniqueEmail);
-    expect(authUser).not.toBeNull();
-    expect(authUser?.email_confirmed_at).toBeTruthy();
-    expect(invitationInboxProofRedeemedForDelivery(issued.invitationId)).toBe(
-      true,
-    );
+    const aWon = continuePattern.test(pageA.url());
+    const bWon = continuePattern.test(pageB.url());
+    expect(aWon || bWon).toBe(true);
+    expect(aWon && bWon).toBe(false);
 
-    const listed = await admin.auth.admin.listUsers({ perPage: 200 });
-    const matches = (listed.data?.users ?? []).filter(
-      (entry) => entry.email === uniqueEmail,
-    );
-    expect(matches).toHaveLength(1);
+    const winnerPage = aWon ? pageA : pageB;
+    const loserPage = aWon ? pageB : pageA;
+
+    await expect(winnerPage).toHaveURL(continuePattern);
+    await expect(
+      winnerPage.getByTestId("invitation-continue-page"),
+    ).toBeVisible();
+    await expect(loserPage.getByText(loserError)).toBeVisible({
+      timeout: 15_000,
+    });
 
     await contextA.close();
     await contextB.close();

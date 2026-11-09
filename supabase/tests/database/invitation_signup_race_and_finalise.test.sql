@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -145,6 +145,14 @@ select 'binding',
   public.prepare_organisation_invitation_signup_binding(
     decode(repeat('11', 32), 'hex')
   );
+
+select is(
+  public.prepare_organisation_invitation_signup_binding(
+    decode(repeat('11', 32), 'hex')
+  ),
+  (select id from race_ids where key = 'binding'),
+  'parallel prepare calls reuse the active signup binding'
+);
 
 set local role service_role;
 
