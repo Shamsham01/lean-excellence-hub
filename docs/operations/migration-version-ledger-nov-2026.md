@@ -6,13 +6,13 @@ Coordination only — not applied on `main` until branches merge.
 
 | Version | File |
 | --- | --- |
-| `20261108210500` | `billing_02_plan_capabilities.sql` (renamed from `08210000` — #375 owns `08210000`) |
-| `20261108220500` | `billing_03_module_entitlements.sql` (renamed from `08220000` — #375 owns `08220000`) |
-| `20261108230000` | `billing_05_leanai_credit_ledger.sql` |
-| `20261108231000` | `billing_04_module_gates_and_wrapper_fix.sql` |
-| `20261108233000` | `billing_07_leanai_credit_lifecycle.sql` |
-| `20261108234000` | `billing_08_leanai_credit_table_grants.sql` |
-| `20261109030000` | `billing_comprehensive_module_mutation_gates.sql` (after #376 `09014000` + #375 suggestion `09020000`–`09021100`) |
+| `20261109022000` | `billing_02_plan_capabilities.sql` (after #375 `09021100`; was `08210500`) |
+| `20261109022500` | `billing_03_module_entitlements.sql` (was `08220500`) |
+| `20261109023000` | `billing_05_leanai_credit_ledger.sql` (was `08230000`) |
+| `20261109023500` | `billing_04_module_gates_and_wrapper_fix.sql` (was `08231000`) |
+| `20261109024000` | `billing_07_leanai_credit_lifecycle.sql` (was `08233000`) |
+| `20261109024500` | `billing_08_leanai_credit_table_grants.sql` (was `08234000`) |
+| `20261109030000` | `billing_comprehensive_module_mutation_gates.sql` (after #376 `09014000` + #375 suggestion `09020000`–`09021100` + billing `09022000`–`09024500`) |
 | `20261109031000` | `billing_audit_remediation.sql` |
 | `20261109032000` | `billing_08_cost_credit_accounting.sql` |
 | `20261109033000` | `billing_09_private_write_grant_hardening.sql` |
@@ -40,4 +40,4 @@ Coordination only — not applied on `main` until branches merge.
 
 ## Merge-order sketch (shared `20261108*` spine)
 
-`181700` (founding) → `181800` (#376) → `181900`–`182100` (#375) → `182105` (#374 billing_02) → `182200` (#375) → `182205`+ (#374 billing) → `182350`+ (#376) → `20261109*` (#374 only).
+`181700` (founding) → `181800` (#376) → `181900`–`182100` (#375) → `182200` (#375) → `182350`+ (#376) → `090100`–`090211` (#375/#376 on main) → `090220`–`090245` (#374 billing spine) → `090300`+ (#374 billing gates/accounting).

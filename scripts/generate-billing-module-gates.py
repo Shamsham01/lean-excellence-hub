@@ -79,8 +79,8 @@ FOUNDATION_RPC_EXCLUDE = FOUNDATION_RPC_UNGATED | WORKFORCE_IDENTITY_IMPORT_FOUN
 )
 
 CANONICAL_SOURCE_FILE = {
-    "finish_ai_run": "20261108233000_billing_07_leanai_credit_lifecycle.sql",
-    "fail_ai_run": "20261108233000_billing_07_leanai_credit_lifecycle.sql",
+    "finish_ai_run": "20261109024000_billing_07_leanai_credit_lifecycle.sql",
+    "fail_ai_run": "20261109024000_billing_07_leanai_credit_lifecycle.sql",
 }
 
 SQL_DELEGATE_GATES: dict[str, str] = {

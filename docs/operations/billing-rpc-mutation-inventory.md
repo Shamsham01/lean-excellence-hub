@@ -40,7 +40,7 @@ Inventory baseline: **160** authenticated Professional write RPCs (see table). *
 | `create_ai_session` | ai | yes | 20261108236000_billing_10_ai_session_module_gates.sql |
 | `create_analysis` | problem_solving | no |  |
 | `create_benefit_category` | benefits | no |  |
-| `create_benefit_draft` | benefits | yes | 20261108231000_billing_04_module_gates_and_wrapper_fix.sql |
+| `create_benefit_draft` | benefits | yes | 20261109023500_billing_04_module_gates_and_wrapper_fix.sql |
 | `create_benefit_forecast_draft` | benefits | no |  |
 | `create_benefit_forecast_successor_version` | benefits | no |  |
 | `create_benefit_from_ci_project` | benefits | no |  |
@@ -58,11 +58,11 @@ Inventory baseline: **160** authenticated Professional write RPCs (see table). *
 | `create_effectiveness_check` | problem_solving | no |  |
 | `create_hypothesis` | problem_solving | no |  |
 | `create_hypothesis_test` | problem_solving | no |  |
-| `create_improvement_project` | projects | yes | 20261108231000_billing_04_module_gates_and_wrapper_fix.sql |
-| `create_improvement_project_from_suggestion` | projects | yes | 20261108231000_billing_04_module_gates_and_wrapper_fix.sql |
+| `create_improvement_project` | projects | yes | 20261109023500_billing_04_module_gates_and_wrapper_fix.sql |
+| `create_improvement_project_from_suggestion` | projects | yes | 20261109023500_billing_04_module_gates_and_wrapper_fix.sql |
 | `create_people_invitation_import_job` | people_hr | no |  |
 | `create_problem_solving_action` | problem_solving | no |  |
-| `create_problem_solving_case_draft` | problem_solving | yes | 20261108231000_billing_04_module_gates_and_wrapper_fix.sql |
+| `create_problem_solving_case_draft` | problem_solving | yes | 20261109023500_billing_04_module_gates_and_wrapper_fix.sql |
 | `create_problem_solving_lessons_learned` | problem_solving | no |  |
 | `create_project_action` | projects | no |  |
 | `create_recognition_type` | recognition | yes | 20261108237000_billing_11_recognition_module_gates.sql |
@@ -132,7 +132,7 @@ Inventory baseline: **160** authenticated Professional write RPCs (see table). *
 | `save_skill_setup_preparation` | skills | no |  |
 | `save_training_setup_preparation` | training | no |  |
 | `select_countermeasure` | problem_solving | no |  |
-| `start_ai_run` | ai | yes | 20261108231000_billing_04_module_gates_and_wrapper_fix.sql |
+| `start_ai_run` | ai | yes | 20261109023500_billing_04_module_gates_and_wrapper_fix.sql |
 | `start_benefit_realisation` | benefits | yes | 20261108235000_billing_09_extended_module_gates.sql |
 | `start_people_invitation_import` | people_hr | no |  |
 | `start_problem_solving_session` | problem_solving | no |  |
