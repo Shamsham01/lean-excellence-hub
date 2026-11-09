@@ -1,6 +1,6 @@
 begin;
 
-select plan(35);
+select plan(37);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -28,6 +28,12 @@ values
 (
   'e2000000-0000-0000-0000-000000000004',
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@workforce.invalid',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'e2000000-0000-0000-0000-000000000005',
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@workforce.invalid',
   statement_timestamp(), statement_timestamp(), statement_timestamp(),
   '{"provider":"email","providers":["email"]}', '{}', false, false
 );
@@ -207,6 +213,58 @@ select ok(
     (select id from s2c_ids where key = 'unit_root')
   ) is not null,
   'reviewer primary job assignment'
+);
+
+reset role;
+
+with inserted_membership as (
+  insert into public.organisation_memberships (
+    organisation_id, user_id, status, activated_at
+  )
+  values (
+    (select id from s2c_ids where key = 'organisation'),
+    'e2000000-0000-0000-0000-000000000003',
+    'active',
+    statement_timestamp()
+  )
+  returning id
+)
+insert into s2c_ids (key, id)
+select 'outsider_membership', inserted_membership.id
+from inserted_membership;
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = 'e2000000-0000-0000-0000-000000000003';
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e2000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e2100000-0000-0000-0000-000000000001","email":"s2c-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.grant_role_version(
+    (select id from s2c_ids where key = 'organisation'),
+    (select id from s2c_ids where key = 'outsider_membership'),
+    (select id from s2c_ids where key = 'reviewer_role'),
+    'unit_subtree',
+    (select id from s2c_ids where key = 'unit_root')
+  ) is not null,
+  'outsider receives scoped review for reassignment fixture'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from s2c_ids where key = 'outsider_membership'),
+    (select id from s2c_ids where key = 'job_function'),
+    true,
+    (select id from s2c_ids where key = 'unit_root')
+  ) is not null,
+  'outsider primary job assignment for reassignment'
 );
 
 select set_config(
@@ -407,7 +465,7 @@ set local role authenticated;
 select ok(
   public.assign_suggestion_reviewer(
     (select id from s2c_ids where key = 'suggestion'),
-    (select id from s2c_ids where key = 'owner_membership')
+    (select id from s2c_ids where key = 'outsider_membership')
   ) is not null,
   'reviewer reassigned away from original reviewer'
 );
@@ -608,7 +666,7 @@ insert into public.organisation_memberships (
 )
 values (
   (select id from s2c_ids where key = 'organisation'),
-  'e2000000-0000-0000-0000-000000000003',
+  'e2000000-0000-0000-0000-000000000004',
   'Disabled Workforce',
   'active',
   statement_timestamp()
@@ -620,7 +678,7 @@ insert into private.workforce_accounts (
   status
 )
 values (
-  'e2000000-0000-0000-0000-000000000003',
+  'e2000000-0000-0000-0000-000000000004',
   'disabled-workforce@workforce.invalid',
   'disabled'
 );
@@ -628,7 +686,7 @@ values (
 insert into s2c_ids (key, id)
 select 'disabled_membership', membership_row.id
 from public.organisation_memberships membership_row
-where membership_row.user_id = 'e2000000-0000-0000-0000-000000000003'
+where membership_row.user_id = 'e2000000-0000-0000-0000-000000000004'
   and membership_row.organisation_id = (select id from s2c_ids where key = 'organisation');
 
 insert into s2c_ids (key, id)
@@ -679,7 +737,7 @@ insert into public.organisation_memberships (
 )
 values (
   (select id from s2c_ids where key = 'organisation'),
-  'e2000000-0000-0000-0000-000000000004',
+  'e2000000-0000-0000-0000-000000000005',
   'Synthetic Workforce',
   'active',
   statement_timestamp()
@@ -691,15 +749,15 @@ insert into private.workforce_accounts (
   status
 )
 values (
-  'e2000000-0000-0000-0000-000000000004',
-  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@workforce.invalid',
+  'e2000000-0000-0000-0000-000000000005',
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@workforce.invalid',
   'active'
 );
 
 insert into s2c_ids (key, id)
 select 'synthetic_membership', membership_row.id
 from public.organisation_memberships membership_row
-where membership_row.user_id = 'e2000000-0000-0000-0000-000000000004'
+where membership_row.user_id = 'e2000000-0000-0000-0000-000000000005'
   and membership_row.organisation_id = (select id from s2c_ids where key = 'organisation');
 
 insert into s2c_ids (key, id)

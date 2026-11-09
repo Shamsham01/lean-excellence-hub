@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   approveSuggestion,
   assignSuggestionReviewer,
+  delegateSuggestionApproval,
   beginSuggestionReview,
   claimSuggestionForReview,
   declineSuggestion,
@@ -43,7 +44,20 @@ function actionErrorMessage(error: unknown): string {
 
 export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const router = useRouter();
-  const { suggestion, reviewer, permissions, eligible_reviewers } = context;
+  const {
+    suggestion,
+    reviewer,
+    pending_approver,
+    task_owner,
+    permissions,
+    eligible_reviewers,
+    eligible_assign_reviewers,
+    eligible_delegate_reviewers,
+  } = context;
+
+  const assignEligibleReviewers =
+    eligible_assign_reviewers ?? eligible_reviewers;
+  const delegateEligibleReviewers = eligible_delegate_reviewers ?? [];
   const parkedPresentation = deriveParkedPresentation({
     status: suggestion.status,
     parkedAt: suggestion.parked_at,
@@ -56,8 +70,12 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const [employeeFeedback, setEmployeeFeedback] = useState("");
   const [implementationRecommendation, setImplementationRecommendation] =
     useState("");
-  const [selectedReviewerId, setSelectedReviewerId] = useState(
-    eligible_reviewers[0]?.member_id ?? "",
+  const [delegationReason, setDelegationReason] = useState("");
+  const [selectedDelegateId, setSelectedDelegateId] = useState(
+    delegateEligibleReviewers[0]?.member_id ?? "",
+  );
+  const [selectedAssignId, setSelectedAssignId] = useState(
+    assignEligibleReviewers[0]?.member_id ?? "",
   );
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -153,6 +171,28 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
           </p>
         ) : null}
 
+        {pending_approver ? (
+          <p
+            className="mt-2 text-sm text-muted-foreground"
+            data-testid="review-workspace-pending-approver"
+          >
+            <span className="font-medium text-foreground">
+              Primary approver:{" "}
+            </span>
+            {pending_approver.display_name ?? "Reviewer"}
+          </p>
+        ) : null}
+
+        {task_owner && pending_approver?.member_id !== task_owner.member_id ? (
+          <p
+            className="mt-2 text-sm text-muted-foreground"
+            data-testid="review-workspace-task-owner"
+          >
+            <span className="font-medium text-foreground">Task owner: </span>
+            {task_owner.display_name ?? "Reviewer"}
+          </p>
+        ) : null}
+
         {managerOverrideVisible ? (
           <p className="mt-2 text-sm text-muted-foreground">
             Manager override available for this suggestion.
@@ -234,6 +274,80 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
           </div>
         ) : null}
 
+        {permissions.can_delegate ? (
+          <div
+            className="flex flex-col gap-3 border-t border-border pt-5"
+            data-testid="review-delegate-controls"
+          >
+            <p className="font-medium">Delegate approval</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {permissions.delegation_authority === "manager_override"
+                ? "Manager override: reassign the approval task to another eligible reviewer."
+                : "Transfer this approval task to another eligible reviewer. Superseded pending tasks are cleared."}
+            </p>
+            <label className="flex flex-col gap-1">
+              <Label htmlFor="review-delegate-reviewer">
+                Eligible reviewer
+              </Label>
+              <select
+                id="review-delegate-reviewer"
+                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                value={selectedDelegateId}
+                onChange={(event) => setSelectedDelegateId(event.target.value)}
+                data-testid="review-delegate-select"
+              >
+                {delegateEligibleReviewers.length === 0 ? (
+                  <option value="">No eligible reviewers</option>
+                ) : (
+                  delegateEligibleReviewers.map((candidate) => (
+                    <option
+                      key={candidate.member_id}
+                      value={candidate.member_id}
+                    >
+                      {candidate.display_name ?? "Reviewer"}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <Label htmlFor="review-delegate-reason">Reason (optional)</Label>
+              <Textarea
+                id="review-delegate-reason"
+                className="min-h-20"
+                value={delegationReason}
+                onChange={(event) => setDelegationReason(event.target.value)}
+                placeholder="For example: on leave next week"
+                data-testid="review-delegate-reason"
+              />
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={
+                loadingAction !== null ||
+                !selectedDelegateId ||
+                delegateEligibleReviewers.length === 0
+              }
+              data-testid="review-delegate-button"
+              onClick={() =>
+                runAction("delegate", () =>
+                  delegateSuggestionApproval(
+                    suggestion.id,
+                    selectedDelegateId,
+                    delegationReason,
+                  ),
+                )
+              }
+            >
+              {loadingAction === "delegate"
+                ? "Delegating…"
+                : "Delegate approval"}
+            </Button>
+          </div>
+        ) : null}
+
         {permissions.can_assign ? (
           <div
             className="flex flex-col gap-3 border-t border-border pt-5"
@@ -247,14 +361,14 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               <select
                 id="review-assign-reviewer"
                 className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                value={selectedReviewerId}
-                onChange={(event) => setSelectedReviewerId(event.target.value)}
+                value={selectedAssignId}
+                onChange={(event) => setSelectedAssignId(event.target.value)}
                 data-testid="review-assign-select"
               >
-                {eligible_reviewers.length === 0 ? (
+                {assignEligibleReviewers.length === 0 ? (
                   <option value="">No eligible reviewers</option>
                 ) : (
-                  eligible_reviewers.map((candidate) => (
+                  assignEligibleReviewers.map((candidate) => (
                     <option
                       key={candidate.member_id}
                       value={candidate.member_id}
@@ -271,13 +385,13 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               className="min-h-11 w-full sm:w-auto"
               disabled={
                 loadingAction !== null ||
-                !selectedReviewerId ||
-                eligible_reviewers.length === 0
+                !selectedAssignId ||
+                assignEligibleReviewers.length === 0
               }
               data-testid="review-assign-button"
               onClick={() =>
                 runAction("assign", () =>
-                  assignSuggestionReviewer(suggestion.id, selectedReviewerId),
+                  assignSuggestionReviewer(suggestion.id, selectedAssignId),
                 )
               }
             >

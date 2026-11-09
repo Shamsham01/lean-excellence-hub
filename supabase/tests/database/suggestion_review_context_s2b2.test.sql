@@ -1,6 +1,6 @@
 begin;
 
-select plan(89);
+select plan(97);
 
 -- ---------------------------------------------------------------------------
 -- Users and organisations
@@ -44,6 +44,12 @@ values
 (
   'd4000000-0000-0000-0000-000000000006',
   's2b2-inactive@example.test',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'd4000000-0000-0000-0000-000000000007',
+  's2b2-bootstrap-reviewer@example.test',
   statement_timestamp(), statement_timestamp(), statement_timestamp(),
   '{"provider":"email","providers":["email"]}', '{}', false, false
 );
@@ -369,6 +375,27 @@ set status = 'active',
     enrolment_completed_at = statement_timestamp()
 where user_id = 'd4000000-0000-0000-0000-000000000006';
 
+with inserted_membership as (
+  insert into public.organisation_memberships (
+    organisation_id, user_id, status, activated_at
+  )
+  values (
+    (select id from s2b2_ids where key = 'organisation'),
+    'd4000000-0000-0000-0000-000000000007',
+    'active',
+    statement_timestamp()
+  )
+  returning id
+)
+insert into s2b2_ids (key, id)
+select 'bootstrap_reviewer_membership', id from inserted_membership;
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = 'd4000000-0000-0000-0000-000000000007';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"d4000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"d4100000-0000-0000-0000-000000000001","email":"s2b2-owner@example.test"}',
@@ -525,12 +552,38 @@ select ok(
   'manager assigns reviewer to under review suggestion'
 );
 
+insert into s2b2_ids (key, id)
+select
+  'bootstrap_reviewer_grant',
+  public.grant_role_version(
+    (select id from s2b2_ids where key = 'organisation'),
+    (select id from s2b2_ids where key = 'bootstrap_reviewer_membership'),
+    (select id from s2b2_ids where key = 'reviewer_role'),
+    'unit_subtree',
+    (select id from s2b2_ids where key = 'unit_root')
+  );
+
+select ok(
+  (select id from s2b2_ids where key = 'bootstrap_reviewer_grant') is not null,
+  'bootstrap reviewer receives scoped review capability'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from s2b2_ids where key = 'bootstrap_reviewer_membership'),
+    (select id from s2b2_ids where key = 'job_function'),
+    true,
+    (select id from s2b2_ids where key = 'unit_root')
+  ) is not null,
+  'bootstrap reviewer primary job assignment'
+);
+
 select ok(
   public.assign_suggestion_reviewer(
     (select id from s2b2_ids where key = 'reassign_suggestion'),
-    (select id from s2b2_ids where key = 'owner_membership')
+    (select id from s2b2_ids where key = 'bootstrap_reviewer_membership')
   ) is not null,
-  'owner initially assigned as reviewer for reassignment probe'
+  'manager initially assigns non-author reviewer for reassignment probe'
 );
 
 select ok(
@@ -539,6 +592,15 @@ select ok(
     (select id from s2b2_ids where key = 'reviewer_membership')
   ) is not null,
   'manager reassigns reviewer for reassignment probe'
+);
+
+select ok(
+  public.revoke_access_grant(
+    (select id from s2b2_ids where key = 'organisation'),
+    (select id from s2b2_ids where key = 'bootstrap_reviewer_grant'),
+    's2b2 revokes bootstrap reviewer grant after reassignment probe'
+  ),
+  'bootstrap reviewer grant revoked after reassignment probe'
 );
 
 select set_config(
@@ -893,6 +955,60 @@ select is(
     -> 'reviewer' ->> 'display_name',
   'S2b2 Reviewer',
   'F manager with valid jurisdiction receives correct reviewer display_name'
+);
+
+select ok(
+  (public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+    -> 'permissions' ->> 'can_assign')::boolean,
+  'F manager with active reviewer still receives can_assign for reassignment'
+);
+
+select cmp_ok(
+  jsonb_array_length(
+    public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+      -> 'eligible_assign_reviewers'
+  ),
+  '>',
+  0,
+  'F manager receives non-empty eligible_assign_reviewers for reassignment with active reviewer'
+);
+
+select cmp_ok(
+  jsonb_array_length(
+    public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+      -> 'eligible_delegate_reviewers'
+  ),
+  '>',
+  0,
+  'F manager receives non-empty eligible_delegate_reviewers while another reviewer is active'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+        -> 'eligible_delegate_reviewers'
+    ) eligible_row
+    where eligible_row ->> 'member_id' = (select id::text from s2b2_ids where key = 'owner_membership')
+  ),
+  'F eligible_delegate_reviewers excludes current actor'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+        -> 'eligible_delegate_reviewers'
+    ) eligible_row
+    where eligible_row ->> 'member_id' = (
+      select author_membership_id::text
+      from public.improvement_suggestions
+      where id = (select id from s2b2_ids where key = 'assigned_suggestion')
+    )
+  ),
+  'F eligible_delegate_reviewers excludes suggestion author'
 );
 
 select set_config(

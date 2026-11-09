@@ -108,6 +108,9 @@ export function PlatformNotificationBell({
                 <DropdownMenuItem
                   key={item.id}
                   className="cursor-pointer rounded-none p-0 focus:bg-muted"
+                  data-testid={`platform-notification-item-${item.id}`}
+                  data-notification-unread={isUnread ? "true" : "false"}
+                  data-notification-href={item.href ?? ""}
                   onSelect={(event) => {
                     event.preventDefault();
                     startTransition(async () => {

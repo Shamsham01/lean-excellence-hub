@@ -26,6 +26,10 @@ export type ProjectorContext = {
     organisationId: string,
     suggestionId: string,
   ) => Promise<string | null>;
+  lookupSuggestionApprovalRecipients: (
+    organisationId: string,
+    suggestionId: string,
+  ) => Promise<string[]>;
 };
 
 export type ProcessedEventSummary = {

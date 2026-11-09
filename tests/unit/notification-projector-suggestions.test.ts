@@ -16,6 +16,11 @@ import {
   projectSuggestionReviewerAssigned,
   SUGGESTION_REVIEWER_ASSIGNED_KIND,
 } from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-reviewer-assigned.ts";
+import {
+  projectSuggestionSubmitted,
+  SUGGESTION_AWAITING_REVIEW_KIND,
+  SUGGESTION_SUBMITTED_EVENT,
+} from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-submitted.ts";
 import { projectSuggestionReviewStarted } from "../../supabase/functions/_shared/notification-projector/projectors/suggestion-review-started.ts";
 import {
   findNotificationProjector,
@@ -53,7 +58,10 @@ function buildEvent(
   };
 }
 
-function buildContext(authorMembershipId: string | null): ProjectorContext {
+function buildContext(
+  authorMembershipId: string | null,
+  approvalRecipients: string[] = [],
+): ProjectorContext {
   return {
     lookupRecognitionRecipients: async () => [],
     lookupSuggestionAuthorMembershipId: async (
@@ -66,10 +74,38 @@ function buildContext(authorMembershipId: string | null): ProjectorContext {
 
       return authorMembershipId;
     },
+    lookupSuggestionApprovalRecipients: async () => approvalRecipients,
   };
 }
 
 describe("suggestion notification projectors", () => {
+  it("projects SuggestionSubmitted to jurisdiction approvers", async () => {
+    const outcome = await projectSuggestionSubmitted(
+      buildEvent(SUGGESTION_SUBMITTED_EVENT),
+      buildContext(null, [REVIEWER_ID]),
+    );
+
+    expect(outcome.kind).toBe("project");
+    if (outcome.kind !== "project") {
+      throw new Error("expected project outcome");
+    }
+
+    expect(outcome.intents).toHaveLength(1);
+    expect(outcome.intents[0]?.notificationKind).toBe(
+      SUGGESTION_AWAITING_REVIEW_KIND,
+    );
+    expect(outcome.intents[0]?.recipientMembershipId).toBe(REVIEWER_ID);
+  });
+
+  it("no-ops SuggestionSubmitted when no approvers are resolved", async () => {
+    const outcome = await projectSuggestionSubmitted(
+      buildEvent(SUGGESTION_SUBMITTED_EVENT),
+      buildContext(null, []),
+    );
+
+    expect(outcome).toEqual({ kind: "noop" });
+  });
+
   it("projects SuggestionReviewerAssigned to the reviewer membership", () => {
     const outcome = projectSuggestionReviewerAssigned(
       buildEvent("SuggestionReviewerAssigned"),
