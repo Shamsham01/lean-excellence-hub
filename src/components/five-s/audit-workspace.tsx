@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { InlineAlert } from "@/components/ui/alert";
 
@@ -22,7 +22,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
+import { hasUsableFiveSAuditAnswer } from "@/modules/5s/audit-answer-usability";
+import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
   LEGACY_FIVE_S_SCORING_SCALE,
   scoreIsOnFiveSScale,
@@ -135,9 +138,6 @@ export function FiveSAuditWorkspace({
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
   const current = flatQuestions[index];
-  const progress = flatQuestions.length
-    ? Math.round(((index + 1) / flatQuestions.length) * 100)
-    : 0;
   const {
     getAnswer,
     getStatus,
@@ -160,6 +160,29 @@ export function FiveSAuditWorkspace({
     scoringScale,
     saveAnswer: saveFiveSAuditAnswer,
   });
+
+  const answeredCount = flatQuestions.filter((item) =>
+    hasUsableFiveSAuditAnswer(item.question, getAnswer(item.question.id)),
+  ).length;
+  const progress = flatQuestions.length
+    ? Math.round((answeredCount / flatQuestions.length) * 100)
+    : 0;
+  const sectionNavItems = useMemo(
+    () =>
+      sections.map((section) => {
+        const questions = section.questions;
+        const answered = questions.filter((question) =>
+          hasUsableFiveSAuditAnswer(question, getAnswer(question.id)),
+        ).length;
+        return {
+          id: section.id,
+          label: section.title,
+          completion: deriveSectionCompletionState(answered, questions.length),
+          detail: `${answered}/${questions.length}`,
+        };
+      }),
+    [getAnswer, sections],
+  );
 
   async function moveTo(nextIndex: number) {
     if (!current) return;
@@ -260,30 +283,21 @@ export function FiveSAuditWorkspace({
       className="flex flex-col gap-6 lg:grid lg:grid-cols-[200px_1fr] lg:gap-8"
       data-testid="five-s-audit-workspace"
     >
-      <nav
-        className="flex flex-wrap gap-2 lg:sticky lg:top-4 lg:flex-col lg:gap-1 lg:self-start"
-        aria-label="Categories"
-      >
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            className="min-h-11 rounded-md px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-surface lg:w-full"
-            disabled={questionBusy}
-            onClick={() => {
-              const idx = flatQuestions.findIndex(
-                (f) => f.section.id === section.id,
-              );
-              if (idx >= 0) {
-                return moveTo(idx);
-              }
-              return undefined;
-            }}
-          >
-            {section.title}
-          </button>
-        ))}
-      </nav>
+      <SectionProgressNav
+        ariaLabel="Audit categories"
+        items={sectionNavItems}
+        activeId={current.section.id}
+        disabled={questionBusy}
+        onSelect={(sectionId) => {
+          const idx = flatQuestions.findIndex((f) => f.section.id === sectionId);
+          if (idx >= 0) {
+            void moveTo(idx);
+          }
+        }}
+        testId="five-s-category-nav"
+        testIdPrefix="five-s-category"
+        className="lg:sticky lg:top-4 lg:self-start"
+      />
 
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center gap-3">
@@ -295,8 +309,14 @@ export function FiveSAuditWorkspace({
             value={progress}
             className="h-2 w-full max-w-xs"
             aria-label="Audit progress"
+            data-testid="five-s-answer-progress"
           />
-          <span className="text-sm text-muted-foreground">{progress}%</span>
+          <span
+            className="text-sm text-muted-foreground"
+            data-testid="five-s-answer-progress-label"
+          >
+            {answeredCount}/{flatQuestions.length} answered
+          </span>
           {canComplete ? (
             <Button
               type="button"

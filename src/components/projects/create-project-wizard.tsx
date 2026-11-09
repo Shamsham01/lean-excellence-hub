@@ -15,7 +15,7 @@ import {
   type UnitSelectOption,
 } from "@/modules/organisation/site-context";
 import { navigateTo } from "@/lib/navigation/navigate";
-import { cn } from "@/lib/utils";
+import { WizardStepProgressNav } from "@/components/ui/wizard-step-progress-nav";
 
 const WIZARD_STEPS = [
   "Basics",
@@ -85,6 +85,13 @@ export function CreateProjectWizard({
     setStep((current) => Math.max(current - 1, 0));
   }
 
+  function isStepComplete(stepIndex: number) {
+    if (stepIndex === 0) {
+      return Boolean(title.trim() && unitId && ownerId);
+    }
+    return stepIndex < step;
+  }
+
   async function handleCreate() {
     if (!title.trim() || !unitId || !ownerId) {
       setError("Title, unit, and owner are required");
@@ -136,23 +143,14 @@ export function CreateProjectWizard({
 
   return (
     <div className="flex flex-col gap-6" data-testid="create-project-wizard">
-      <nav className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
-        {WIZARD_STEPS.map((label, index) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => setStep(index)}
-            className={cn(
-              "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
-              index === step
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground",
-            )}
-          >
-            {index + 1}. {label}
-          </button>
-        ))}
-      </nav>
+      <WizardStepProgressNav
+        ariaLabel="Create project steps"
+        steps={WIZARD_STEPS}
+        activeStep={step}
+        isStepComplete={isStepComplete}
+        onSelectStep={setStep}
+        testId="create-project-step-nav"
+      />
 
       <Card>
         <CardHeader>

@@ -332,9 +332,23 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       await page.getByRole("button", { name: "Next", exact: true }).isEnabled()
     ) {
       await answerVisibleScore(page, 2);
+      await expect(
+        page
+          .locator(
+            '[data-testid^="criterion-nav-"][data-completion-state="complete"]',
+          )
+          .first(),
+      ).toBeVisible();
       await page.getByRole("button", { name: "Next", exact: true }).click();
     }
     await answerVisibleScore(page, 2);
+    await expect(
+      page
+        .locator(
+          '[data-testid^="criterion-nav-"][data-completion-state="complete"]',
+        )
+        .first(),
+    ).toBeVisible();
     await expect(page.getByTestId("complete-self-assessment")).toBeVisible({
       timeout: 10_000,
     });

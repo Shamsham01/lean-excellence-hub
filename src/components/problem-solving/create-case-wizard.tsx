@@ -27,7 +27,7 @@ import {
 } from "@/lib/problem-solving/status";
 import type { ProblemSolvingMethod } from "@/lib/problem-solving/types";
 import { navigateTo } from "@/lib/navigation/navigate";
-import { cn } from "@/lib/utils";
+import { WizardStepProgressNav } from "@/components/ui/wizard-step-progress-nav";
 
 const WIZARD_STEPS = [
   "Basics",
@@ -82,6 +82,13 @@ export function CreateCaseWizard({
 
   function prevStep() {
     setStep((current) => Math.max(current - 1, 0));
+  }
+
+  function isStepComplete(stepIndex: number) {
+    if (stepIndex === 0) {
+      return Boolean(title.trim() && unitId && ownerId);
+    }
+    return stepIndex < step;
   }
 
   async function handleCreate() {
@@ -171,23 +178,14 @@ export function CreateCaseWizard({
       className="flex flex-col gap-6"
       data-testid="create-problem-solving-wizard"
     >
-      <nav className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
-        {WIZARD_STEPS.map((label, index) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => setStep(index)}
-            className={cn(
-              "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
-              index === step
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground",
-            )}
-          >
-            {index + 1}. {label}
-          </button>
-        ))}
-      </nav>
+      <WizardStepProgressNav
+        ariaLabel="Create problem solving case steps"
+        steps={WIZARD_STEPS}
+        activeStep={step}
+        isStepComplete={isStepComplete}
+        onSelectStep={setStep}
+        testId="create-case-step-nav"
+      />
 
       <Card>
         <CardHeader>

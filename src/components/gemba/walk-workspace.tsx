@@ -47,7 +47,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
+import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
   countGembaObservationsByType,
   formatGembaObservationType,
@@ -249,9 +251,6 @@ export function GembaWalkWorkspace({
       ? 0
       : Math.min(Math.max(promptIndex, 0), flatQuestions.length - 1);
   const current = flatQuestions[safeIndex];
-  const progress = flatQuestions.length
-    ? Math.round(((safeIndex + 1) / flatQuestions.length) * 100)
-    : 0;
   const {
     getAnswer,
     getStatus,
@@ -268,6 +267,37 @@ export function GembaWalkWorkspace({
     canEdit,
     saveAnswer: saveGembaWalkAnswer,
   });
+
+  const answeredCount = flatQuestions.filter((item) =>
+    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
+  ).length;
+  const requiredQuestions = flatQuestions.filter(
+    (item) => item.question.is_required,
+  );
+  const answeredRequiredCount = requiredQuestions.filter((item) =>
+    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
+  ).length;
+  const progress = requiredQuestions.length
+    ? Math.round((answeredRequiredCount / requiredQuestions.length) * 100)
+    : flatQuestions.length
+      ? Math.round((answeredCount / flatQuestions.length) * 100)
+      : 0;
+  const sectionNavItems = useMemo(
+    () =>
+      sections.map((section) => {
+        const questions = section.questions;
+        const answered = questions.filter((question) =>
+          hasUsableGembaPromptAnswer(question, getAnswer(question.id)),
+        ).length;
+        return {
+          id: section.id,
+          label: section.title,
+          completion: deriveSectionCompletionState(answered, questions.length),
+          detail: `${answered}/${questions.length}`,
+        };
+      }),
+    [getAnswer, sections],
+  );
 
   const syncPromptLocation = useCallback(
     (questionId: string, mode: "push" | "replace" = "replace") => {
@@ -466,9 +496,6 @@ export function GembaWalkWorkspace({
   const saveStatus = getStatus(current.question.id);
   const saveError = getError(current.question.id);
   const questionBusy = navigating || isQuestionBusy(current.question.id);
-  const answeredCount = flatQuestions.filter((item) =>
-    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
-  ).length;
   const unansweredRequiredCount = countUnansweredRequiredGembaPrompts(
     flatQuestions.map((item) => item.question),
     getAnswer,
@@ -476,7 +503,27 @@ export function GembaWalkWorkspace({
   const observationCounts = countGembaObservationsByType(liveObservations);
 
   return (
-    <div className="flex flex-col gap-6" data-testid="gemba-walk-workspace">
+    <div
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8"
+      data-testid="gemba-walk-workspace"
+    >
+      <SectionProgressNav
+        ariaLabel="Walk sections"
+        items={sectionNavItems}
+        activeId={current.section.id}
+        disabled={questionBusy}
+        onSelect={(sectionId) => {
+          const idx = flatQuestions.findIndex((f) => f.section.id === sectionId);
+          if (idx >= 0) {
+            void moveTo(idx);
+          }
+        }}
+        testId="gemba-section-nav"
+        testIdPrefix="gemba-section"
+        className="lg:sticky lg:top-4 lg:self-start"
+      />
+
+      <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
         <Badge variant="outline" data-testid="gemba-walk-status">
           {formatGembaWalkStatus(status)}
@@ -485,7 +532,15 @@ export function GembaWalkWorkspace({
           value={progress}
           className="h-2 w-full max-w-xs"
           aria-label="Walk progress"
+          data-testid="gemba-answer-progress"
         />
+        <span
+          className="text-sm text-muted-foreground"
+          data-testid="gemba-answer-progress-label"
+        >
+          {answeredRequiredCount}/{requiredQuestions.length || flatQuestions.length}{" "}
+          required · {answeredCount}/{flatQuestions.length} answered
+        </span>
         {canComplete ? (
           <Button
             type="button"
@@ -676,6 +731,7 @@ export function GembaWalkWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
