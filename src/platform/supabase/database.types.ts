@@ -12870,9 +12870,9 @@ export type Database = {
       }
       authorize_invitation_identity_signup: {
         Args: {
-          invitation_token_digest?: string
+          invitation_token_digest: string
           target_binding_id: string
-          target_inbox_proof_digest?: string
+          target_inbox_proof_digest: string
           target_user_email: string
         }
         Returns: boolean
