@@ -154,6 +154,32 @@ async function parseBatchMemberPermissionPayload(
   return resolved;
 }
 
+const grantPermissionCacheKey = (permissionKey: string) =>
+  `grant:${permissionKey}`;
+
+async function probeBatchMemberGrantPermissions(
+  permissionKeys: string[],
+): Promise<Record<string, boolean>> {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_grant_permissions", {
+    target_permission_keys: permissionKeys,
+  });
+  const classified = classifyPermissionProbeResult(result);
+  if (!classified.ok) {
+    if (classified.outcome === "denied" || classified.outcome === "not_found") {
+      return Object.fromEntries(permissionKeys.map((key) => [key, false]));
+    }
+
+    return throwClassifiedProbeFailure(
+      classified,
+      "member_has_grant_permissions",
+      permissionKeys.join(","),
+    );
+  }
+
+  return parseBatchMemberPermissionPayload(permissionKeys, classified.data);
+}
+
 async function probeBatchMemberPermissions(
   permissionKeys: string[],
 ): Promise<Record<string, boolean>> {
@@ -221,11 +247,91 @@ async function resolveMemberPermissionsIntoStore(
   }
 }
 
+async function resolveMemberGrantPermissionsIntoStore(
+  store: PermissionResolutionStore,
+  permissionKeys: string[],
+): Promise<void> {
+  const uncachedKeys = permissionKeys.filter(
+    (permissionKey) => !store.has(grantPermissionCacheKey(permissionKey)),
+  );
+
+  if (uncachedKeys.length === 0) {
+    return;
+  }
+
+  try {
+    const [singlePermissionKey] = uncachedKeys;
+    const resolved =
+      uncachedKeys.length === 1 && singlePermissionKey
+        ? {
+            [singlePermissionKey]: (
+              await probeSingleMemberGrantPermission(singlePermissionKey)
+            ),
+          }
+        : await probeBatchMemberGrantPermissions(uncachedKeys);
+
+    for (const [permissionKey, granted] of Object.entries(resolved)) {
+      store.set(grantPermissionCacheKey(permissionKey), granted === true);
+    }
+  } catch (error) {
+    rethrowProbeControlErrors(error);
+    return throwPermissionProbeFailure(
+      uncachedKeys.length === 1
+        ? "member_has_grant_permission"
+        : "member_has_grant_permissions",
+      uncachedKeys.join(","),
+      error,
+    );
+  }
+}
+
+async function probeSingleMemberGrantPermission(
+  permissionKey: string,
+): Promise<boolean> {
+  const supabase = await createServerSupabaseClient();
+  const result = await supabase.rpc("member_has_grant_permission", {
+    target_permission_key: permissionKey,
+  });
+  const classified = classifyPermissionProbeResult(result);
+  if (!classified.ok) {
+    if (classified.outcome === "denied" || classified.outcome === "not_found") {
+      return false;
+    }
+
+    return throwClassifiedProbeFailure(
+      classified,
+      "member_has_grant_permission",
+      permissionKey,
+    );
+  }
+
+  return classified.data === true;
+}
+
 export async function prefetchMemberPermissions(
   permissionKeys: string[],
 ): Promise<void> {
   const store = await getPermissionResolutionStore();
   await resolveMemberPermissionsIntoStore(store, permissionKeys);
+}
+
+export async function prefetchMemberGrantPermissions(
+  permissionKeys: string[],
+): Promise<void> {
+  const store = await getPermissionResolutionStore();
+  await resolveMemberGrantPermissionsIntoStore(store, permissionKeys);
+}
+
+export async function prefetchPlatformShellPermissionProbes(): Promise<void> {
+  const {
+    collectPlatformShellGrantPermissionKeys,
+    collectPlatformShellPermissionKeys,
+  } = await import("@/modules/platform-shell/shell-permission-keys");
+
+  await Promise.all([
+    prefetchMemberPermissions(collectPlatformShellPermissionKeys()),
+    prefetchMemberGrantPermissions(collectPlatformShellGrantPermissionKeys()),
+  ]);
 }
 
 export const currentMemberHasPermission = cache(
@@ -243,38 +349,39 @@ export const currentMemberHasPermission = cache(
 
 export const currentMemberHasGrantPermission = cache(
   async (permissionKey: string) => {
-    try {
-      const supabase = await createServerSupabaseClient();
-      const result = await supabase.rpc("member_has_grant_permission", {
-        target_permission_key: permissionKey,
-      });
-      const classified = classifyPermissionProbeResult(result);
-      if (!classified.ok) {
-        if (
-          classified.outcome === "denied" ||
-          classified.outcome === "not_found"
-        ) {
-          return false;
-        }
-
-        return throwClassifiedProbeFailure(
-          classified,
-          "member_has_grant_permission",
-          permissionKey,
-        );
-      }
-
-      return classified.data === true;
-    } catch (error) {
-      rethrowProbeControlErrors(error);
-      return throwPermissionProbeFailure(
-        "member_has_grant_permission",
-        permissionKey,
-        error,
-      );
+    const store = await getPermissionResolutionStore();
+    const cacheKey = grantPermissionCacheKey(permissionKey);
+    const cached = store.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
     }
+
+    await resolveMemberGrantPermissionsIntoStore(store, [permissionKey]);
+    return store.get(cacheKey) ?? false;
   },
 );
+
+export const readCurrentOrganisationId = cache(async (): Promise<string | null> => {
+  const supabase = await createServerSupabaseClient();
+  const orgId = await supabase.rpc("current_organisation_id");
+  const orgClassified = classifyPermissionProbeResult(orgId);
+  if (!orgClassified.ok) {
+    if (
+      orgClassified.outcome === "denied" ||
+      orgClassified.outcome === "not_found"
+    ) {
+      return null;
+    }
+
+    return throwClassifiedProbeFailure(
+      orgClassified,
+      "current_organisation_id",
+      "organisation_context",
+    );
+  }
+
+  return orgClassified.data ?? null;
+});
 
 export const currentMemberHasScopedPermission = cache(
   async (
@@ -284,27 +391,12 @@ export const currentMemberHasScopedPermission = cache(
   ) => {
     try {
       const supabase = await createServerSupabaseClient();
-      const orgId = await supabase.rpc("current_organisation_id");
-      const orgClassified = classifyPermissionProbeResult(orgId);
-      if (!orgClassified.ok) {
-        if (
-          orgClassified.outcome === "denied" ||
-          orgClassified.outcome === "not_found"
-        ) {
-          return false;
-        }
-
-        return throwClassifiedProbeFailure(
-          orgClassified,
-          "current_organisation_id",
-          permissionKey,
-        );
-      }
-
-      if (!orgClassified.data) {
+      const organisationId = await readCurrentOrganisationId();
+      if (!organisationId) {
         return false;
       }
 
+      const orgClassified = { ok: true as const, data: organisationId };
       const args: {
         target_organisation_id: string;
         target_permission_key: string;

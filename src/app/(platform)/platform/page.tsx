@@ -159,9 +159,10 @@ export default async function PlatformHomePage({
         .eq("status", "completed")
     : { count: null };
 
-  const { data: capabilityDashboard } = home.capability
-    ? await supabase.rpc("get_capability_dashboard")
-    : { data: null };
+  const { data: capabilityDashboard } =
+    home.capability && canReadPeopleCapability
+      ? await supabase.rpc("get_capability_dashboard")
+      : { data: null };
   const capabilityObj = capabilityDashboard as {
     training_compliance_percent?: number | null;
     skill_coverage_percent?: number | null;

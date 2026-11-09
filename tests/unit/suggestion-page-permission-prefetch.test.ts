@@ -37,6 +37,7 @@ describe("Suggestions listing permission prefetch", () => {
     );
 
     expect(source).toContain("prefetchMemberPermissions");
+    expect(source).toContain("prefetchMemberGrantPermissions");
     expect(source).toContain("suggestionsOverviewPermissionKeys");
     expect(source.indexOf("prefetchMemberPermissions")).toBeLessThan(
       source.indexOf('currentMemberHasGrantPermission("suggestions.read")'),

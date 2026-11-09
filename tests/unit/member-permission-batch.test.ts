@@ -31,7 +31,9 @@ vi.mock("@/platform/supabase/server", () => ({
 
 import { resetPermissionResolutionStoreForTests } from "@/modules/platform-shell/permission-resolution-store";
 import {
+  currentMemberHasGrantPermission,
   currentMemberHasPermission,
+  prefetchMemberGrantPermissions,
   prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
 import { collectPlatformShellPermissionKeys } from "@/modules/platform-shell/shell-permission-keys";
@@ -203,6 +205,28 @@ describe("member permission batch resolution", () => {
     await expect(currentMemberHasPermission("benefits.read")).resolves.toBe(
       true,
     );
+  });
+
+  it("prefetches grant permissions with one batch RPC and serves cached lookups", async () => {
+    const grantKeys = ["suggestions.read", "actions.read", "five_s.read"];
+    rpc.mockResolvedValueOnce({
+      data: Object.fromEntries(grantKeys.map((key) => [key, true])),
+      error: null,
+    });
+
+    await prefetchMemberGrantPermissions(grantKeys);
+
+    await expect(currentMemberHasGrantPermission("suggestions.read")).resolves.toBe(
+      true,
+    );
+    await expect(currentMemberHasGrantPermission("five_s.read")).resolves.toBe(
+      true,
+    );
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("member_has_grant_permissions", {
+      target_permission_keys: grantKeys,
+    });
   });
 
   it("merges a second batch request with only uncached keys", async () => {
