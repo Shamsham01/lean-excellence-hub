@@ -75,6 +75,11 @@ const webServerEnvOverrides: Record<string, string> = {
   BILLING_PROVIDER: process.env.BILLING_PROVIDER ?? "fake",
   // Lets /demo read x-leh-e2e-demo-booking-url. Never set this in production.
   DEMO_BOOKING_E2E: "1",
+  INVITATION_DELIVERY_MAILPIT_URL:
+    process.env.INVITATION_DELIVERY_MAILPIT_URL ??
+    (process.env.E2E_WITH_SUPABASE === "1"
+      ? "http://172.17.0.1:54324"
+      : ""),
 };
 
 /** Playwright replaces child env; merge parent env so exports (e.g. E2E_WITH_SUPABASE) reach next start. */

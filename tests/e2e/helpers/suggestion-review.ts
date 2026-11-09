@@ -129,6 +129,50 @@ export async function parkCurrentReview(
   await expectReviewTestId(page, "review-workspace-parked-current");
 }
 
+export async function openUnreadSuggestionNotificationReview(
+  page: Page,
+  notificationBell: () => ReturnType<Page["getByTestId"]>,
+  pattern: RegExp,
+  suggestionId?: string,
+) {
+  const deadline = Date.now() + 60_000;
+  let lastError: unknown;
+
+  while (Date.now() < deadline) {
+    try {
+      await expect(notificationBell()).toBeVisible({ timeout: 5_000 });
+      await notificationBell().click();
+      await expect(page.getByTestId("platform-notification-list")).toBeVisible({
+        timeout: 10_000,
+      });
+      let item = page.locator('[data-notification-unread="true"]');
+      if (suggestionId) {
+        item = page
+          .locator(
+            `[data-notification-unread="true"][data-notification-href*="suggestionId=${suggestionId}"]`,
+          )
+          .filter({ hasText: pattern });
+      } else {
+        item = item.filter({ hasText: pattern });
+      }
+      const target = item.first();
+      await expect(target).toBeVisible({ timeout: 5_000 });
+      await target.click();
+      await expect(reviewWorkspace(page)).toBeVisible({ timeout: 30_000 });
+      return;
+    } catch (error) {
+      lastError = error;
+      await page.keyboard.press("Escape").catch(() => undefined);
+      await page.goto("/platform");
+      await page.waitForTimeout(500);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Timed out opening suggestion notification review");
+}
+
 export async function approveCurrentReview(
   page: Page,
   rationale: string,
