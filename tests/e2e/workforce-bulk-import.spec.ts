@@ -11,6 +11,8 @@ import {
 import {
   awaitImportCredentialsDownloadReady,
   readWorkforceImportJobId,
+  uploadWorkforceImportCsv,
+  validateWorkforceImportAndStartProvisioning,
   waitForImportProvisioningCheckpoint,
   waitForWorkforceImportTerminalState,
 } from "./helpers/workforce-import";
@@ -47,15 +49,11 @@ test.describe("M2 workforce bulk import", () => {
     await page.getByTestId("import-workforce-link").click();
     await expect(page.getByTestId("workforce-import-wizard")).toBeVisible();
 
-    await page.setInputFiles("input[type='file']", {
-      name: "bulk-import.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(csvContent),
+    await uploadWorkforceImportCsv(page, {
+      filename: "bulk-import.csv",
+      csvContent,
     });
-
-    await page.getByTestId("validate-import").click();
-    await expect(page.getByTestId("start-import-provisioning")).toBeVisible();
-    await page.getByTestId("start-import-provisioning").click();
+    await validateWorkforceImportAndStartProvisioning(page);
     const jobId = await readWorkforceImportJobId(page);
     await awaitImportCredentialsDownloadReady(page, jobId);
 
@@ -123,10 +121,9 @@ test.describe("M2 workforce bulk import", () => {
       `Dup,Again,dup.${uniqueSuffix},,Operator,Operator,Cornwall Plant > Operations,Team Member,Cornwall Plant > Operations`,
     ].join("\n");
 
-    await page.setInputFiles("input[type='file']", {
-      name: "invalid.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(invalidCsv),
+    await uploadWorkforceImportCsv(page, {
+      filename: "invalid.csv",
+      csvContent: invalidCsv,
     });
     await page.getByTestId("validate-import").click();
     await expect(page.getByText(/duplicated/i)).toBeVisible();
@@ -170,13 +167,11 @@ test.describe("M2 workforce bulk import", () => {
     await signInAsDemoUser(page, "admin", { assertOrganisation: false });
     await page.goto("/platform/settings/people/import");
 
-    await page.setInputFiles("input[type='file']", {
-      name: `resume-import-${resumeSuffix}.csv`,
-      mimeType: "text/csv",
-      buffer: Buffer.from(resumeCsv),
+    await uploadWorkforceImportCsv(page, {
+      filename: `resume-import-${resumeSuffix}.csv`,
+      csvContent: resumeCsv,
     });
-    await page.getByTestId("validate-import").click();
-    await page.getByTestId("start-import-provisioning").click();
+    await validateWorkforceImportAndStartProvisioning(page);
     const jobId = await readWorkforceImportJobId(page);
     await waitForImportProvisioningCheckpoint(jobId, 1);
 

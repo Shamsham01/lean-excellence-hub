@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { mapWorkforceImportProgressFromDatabase } from "@/modules/workforce-import/constants";
 
@@ -172,6 +172,40 @@ export async function waitForImportProvisioningCheckpoint(
   throw new Error(
     `Import job did not reach provisioning checkpoint within ${timeoutMs}ms. ${formatImportProgressDiagnostics(latest)}`,
   );
+}
+
+export async function uploadWorkforceImportCsv(
+  page: Page,
+  input: { filename: string; csvContent: string },
+): Promise<void> {
+  await page.getByTestId("workforce-import-file").setInputFiles({
+    name: input.filename,
+    mimeType: "text/csv",
+    buffer: Buffer.from(input.csvContent),
+  });
+  await expect(page.getByTestId("validate-import")).toBeVisible({
+    timeout: 120_000,
+  });
+  await expect(page.getByText(/rows detected/i)).toBeVisible({
+    timeout: 120_000,
+  });
+}
+
+export async function validateWorkforceImportAndStartProvisioning(
+  page: Page,
+): Promise<void> {
+  await page.getByTestId("validate-import").click();
+  const start = page.getByTestId("start-import-provisioning");
+  const errorSurface = page.getByTestId("import-message");
+  await expect(start.or(errorSurface)).toBeVisible({ timeout: 180_000 });
+  const errorText = (await errorSurface.textContent())?.trim();
+  if (errorText) {
+    throw new Error(
+      `Workforce import validation blocked provisioning: ${errorText}. ${await readImportWizardDiagnostics(page)}`,
+    );
+  }
+  await expect(start).toBeEnabled({ timeout: 60_000 });
+  await start.click();
 }
 
 export async function readWorkforceImportJobId(page: Page): Promise<string> {
