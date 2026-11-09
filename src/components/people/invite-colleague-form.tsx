@@ -62,7 +62,14 @@ type InviteColleagueFormProps = {
     }>;
     jobFunctionId?: string;
     organisationalUnitId?: string;
-  }) => Promise<{ error?: string; ok?: true; invitationUrl?: string }>;
+  }) => Promise<{
+    error?: string;
+    ok?: true;
+    invitationUrl?: string;
+    emailDispatched?: boolean;
+    deliveryError?: string;
+    deliveryRetryable?: boolean;
+  }>;
 };
 
 const MAXIMUM_INVITATION_GRANTS = 10;
@@ -246,9 +253,19 @@ export function InviteColleagueForm({
       setJobFunctionId("");
       setOrganisationalUnitId("");
       setSuccessUrl(result.invitationUrl ?? null);
-      setMessage(
-        "Invitation created. Copy the secure link below — email delivery is not sent from this screen.",
-      );
+      if (result.emailDispatched) {
+        setMessage(
+          `Invitation email sent to ${email.trim().toLowerCase()}. They can create an account from that message.`,
+        );
+      } else if (result.deliveryError) {
+        setMessage(
+          `Invitation created, but the email could not be sent (${result.deliveryError}). Copy the secure link below if you need to share it manually.`,
+        );
+      } else {
+        setMessage(
+          "Invitation created. Copy the secure link below if email delivery is unavailable.",
+        );
+      }
     }
 
     setLoading(false);

@@ -355,6 +355,17 @@ body {
   background: transparent;
 }
 
+/* LEH Recharts analytics — theme-aware tooltip copy and hover band */
+.leh-recharts .recharts-tooltip-cursor {
+  fill: color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+.leh-recharts-tooltip .recharts-default-tooltip,
+.leh-recharts-tooltip .recharts-tooltip-label,
+.leh-recharts-tooltip .recharts-tooltip-item-value {
+  color: var(--card-foreground);
+}
+
 @media (min-width: 1024px) {
   html:has([data-testid="platform-shell"]),
   body:has([data-testid="platform-shell"]) {

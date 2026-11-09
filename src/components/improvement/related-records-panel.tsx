@@ -15,7 +15,12 @@ type RelatedRecordsPanelProps = {
   queryText: string;
   resolveQuery?: () => string;
   disabled?: boolean;
+  /** Shorter help copy for compact surfaces (e.g. create dialog). */
+  compactHelp?: boolean;
 };
+
+const ACTION_COMPACT_HELP =
+  "Optional check for similar actions in your scope. You can still create this one.";
 
 const COPY: Record<
   AuthorisedSimilarityRecordType,
@@ -40,8 +45,11 @@ export function RelatedRecordsPanel({
   queryText,
   resolveQuery,
   disabled = false,
+  compactHelp = false,
 }: RelatedRecordsPanelProps) {
   const copy = COPY[recordType];
+  const helpText =
+    compactHelp && recordType === "action" ? ACTION_COMPACT_HELP : copy.help;
 
   function readQuery(): string {
     return (resolveQuery?.() ?? queryText).trim();
@@ -86,7 +94,7 @@ export function RelatedRecordsPanel({
       <fieldset className="flex flex-col gap-3 border-0 p-0">
         <legend className="text-sm font-medium">{copy.legend}</legend>
         <p className="text-sm text-muted-foreground" id="related-records-help">
-          {copy.help}
+          {helpText}
         </p>
         <Button
           type="button"

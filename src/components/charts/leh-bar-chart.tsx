@@ -13,9 +13,9 @@ import {
 } from "recharts";
 
 import {
+  chartBarTooltipProps,
   chartGridStroke,
   chartTickStyle,
-  chartTooltipStyle,
   LEH_CHART_COLORS,
 } from "./chart-theme";
 
@@ -34,7 +34,7 @@ export function LehBarChart({
 
   return (
     <div
-      className="w-full min-w-0"
+      className="leh-recharts w-full min-w-0"
       style={{ height }}
       role="img"
       aria-label={ariaLabel}
@@ -61,7 +61,7 @@ export function LehBarChart({
             tickLine={false}
             width={36}
           />
-          <Tooltip {...chartTooltipStyle} />
+          <Tooltip {...chartBarTooltipProps} />
           <Bar
             dataKey="value"
             radius={[6, 6, 0, 0]}

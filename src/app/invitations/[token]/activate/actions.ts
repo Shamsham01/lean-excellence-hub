@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -8,12 +8,22 @@ import {
   invitationContinuePath,
   INVITATION_TOKEN_PATTERN,
 } from "@/modules/identity/invitation-constants";
+import {
+  INVITATION_INBOX_PROOF_COOKIE,
+  isInvitationInboxProofValue,
+} from "@/modules/identity/invitation-inbox-cookie";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
 import { invitationTokenDigest } from "@/modules/identity/invitations";
 import { passwordUpdateSchema } from "@/modules/identity/auth-input";
-import { resolveApplicationOrigin } from "@/platform/application-origin";
-import { recordInvitationSignupDisplayName } from "@/platform/supabase/secret";
+import { recordAuthenticationRateLimitFailure } from "@/platform/supabase/secret";
+import {
+  createConfirmedInvitationAuthUser,
+  recordInvitationSignupDisplayName,
+} from "@/platform/supabase/secret";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { getServerEnvironment } from "@/platform/env";
+import { createHmac } from "node:crypto";
+import { headers } from "next/headers";
 
 const activationSchema = z
   .object({
@@ -87,13 +97,6 @@ export async function createInvitationAccount(formData: FormData) {
     return { error: "This invitation is no longer available." };
   }
 
-  const originResult = resolveApplicationOrigin({
-    requestHeaders: await headers(),
-  });
-  if (!originResult.ok) {
-    return { error: originResult.error };
-  }
-
   const supabase = await createServerSupabaseClient();
   const { data: bindingId, error: bindingError } = await supabase.rpc(
     "prepare_organisation_invitation_signup_binding",
@@ -117,25 +120,68 @@ export async function createInvitationAccount(formData: FormData) {
     }
   }
 
-  const { error } = await supabase.auth.signUp({
+  const cookieStore = await cookies();
+  const inboxProof = cookieStore.get(INVITATION_INBOX_PROOF_COOKIE)?.value;
+
+  if (!isInvitationInboxProofValue(inboxProof)) {
+    await recordInvitationActivationFailure(parsed.data.token);
+    return {
+      error:
+        "Open the invitation email and use the Create account button before setting your password.",
+    };
+  }
+
+  const created = await createConfirmedInvitationAuthUser({
     email: lifecycle.recipientEmail,
     password: parsed.data.password,
-    options: {
-      emailRedirectTo: `${originResult.origin}/auth/confirm`,
-      data: {
-        invitation_signup_binding: bindingId,
-      },
-    },
+    invitationSignupBindingId: bindingId,
+    invitationToken: parsed.data.token,
+    inboxProof: inboxProof!,
   });
 
-  if (error) {
-    return { error: mapSignupError(error.message) };
+  if (created.error) {
+    const message = created.error.message ?? "Unable to create account.";
+    if (
+      !message.toLowerCase().includes("already been used") &&
+      !message.toLowerCase().includes("no longer valid")
+    ) {
+      await recordInvitationActivationFailure(parsed.data.token);
+    }
+    return {
+      error: mapSignupError(message),
+    };
   }
+
+  cookieStore.delete({
+    name: INVITATION_INBOX_PROOF_COOKIE,
+    path: `/invitations/${parsed.data.token}/activate`,
+  });
+
+  await supabase.auth.signInWithPassword({
+    email: lifecycle.recipientEmail,
+    password: parsed.data.password,
+  });
 
   return {
     ok: true as const,
     continuePath: invitationContinuePath(bindingId),
   };
+}
+
+function hashRateLimitKey(token: string) {
+  const pepper = getServerEnvironment().AUTH_RATE_LIMIT_PEPPER;
+  return `\\x${createHmac("sha256", pepper)
+    .update(`invitation-activate:${token}`)
+    .digest("hex")}`;
+}
+
+async function recordInvitationActivationFailure(token: string) {
+  await recordAuthenticationRateLimitFailure(
+    "invitation",
+    "recipient",
+    hashRateLimitKey(token),
+    30,
+  );
 }
 
 export async function ensureActivationAllowed(token: string) {

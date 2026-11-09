@@ -326,6 +326,25 @@ export function GembaWalkWorkspace({
     }
   }, [safeIndex]);
 
+  useEffect(() => {
+    if (status !== "in_progress" || completing) return;
+
+    const syncRouterToHistory = () => {
+      const windowPrompt = readPromptIdFromWindowLocation();
+      if (!windowPrompt) return;
+      const routerPrompt =
+        searchParams.get(GEMBA_WALK_PROMPT_PARAM)?.trim() ?? null;
+      if (windowPrompt === routerPrompt) return;
+      writeStoredGembaWalkPromptId(walkId, windowPrompt);
+      router.replace(`${pathname}${buildGembaWalkPromptSearch(windowPrompt)}`, {
+        scroll: false,
+      });
+    };
+
+    window.addEventListener("popstate", syncRouterToHistory);
+    return () => window.removeEventListener("popstate", syncRouterToHistory);
+  }, [completing, pathname, router, searchParams, status, walkId]);
+
   async function moveTo(nextIndex: number) {
     if (!current) return;
     if (nextIndex === safeIndex) return;

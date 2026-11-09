@@ -12,13 +12,16 @@ import { Label } from "@/components/ui/label";
 import type { InvitationLifecycleView } from "@/modules/identity/invitation-lifecycle";
 
 import { createInvitationAccount } from "@/app/invitations/[token]/activate/actions";
+import { InvitationInboxProofHandoff } from "@/components/invitations/invitation-inbox-proof-handoff";
 
 export function InvitationActivateForm({
   token,
+  hasInboxProofCookie,
   lifecycle,
   loginPath,
 }: {
   token: string;
+  hasInboxProofCookie: boolean;
   lifecycle: InvitationLifecycleView;
   loginPath: string;
 }) {
@@ -29,8 +32,8 @@ export function InvitationActivateForm({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-
+  const [inboxProofReady, setInboxProofReady] = useState(hasInboxProofCookie);
+  const inboxProofStaged = inboxProofReady || hasInboxProofCookie;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -49,26 +52,9 @@ export function InvitationActivateForm({
       return;
     }
 
-    setSent(true);
-    setLoading(false);
-  }
-
-  if (sent) {
-    return (
-      <AuthCard
-        title="Confirm your email"
-        description="We sent a confirmation email to finish creating your account."
-      >
-        <p className="text-sm text-muted-foreground">
-          Open the confirmation link and confirm on the next page. You will then
-          return to this invitation to accept it. Opening the email does not
-          join the organisation.
-        </p>
-        <Button variant="outline" asChild className="w-full">
-          <Link href={`/invitations/${token}`}>Back to invitation</Link>
-        </Button>
-      </AuthCard>
-    );
+    if (result.ok && result.continuePath) {
+      window.location.assign(result.continuePath);
+    }
   }
 
   return (
@@ -97,7 +83,20 @@ export function InvitationActivateForm({
         </div>
       </dl>
 
+      <InvitationInboxProofHandoff
+        token={token}
+        hasInboxProofCookie={inboxProofStaged}
+        onStaged={() => setInboxProofReady(true)}
+      />
+
       {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
+
+      {!inboxProofStaged ? (
+        <InlineAlert tone="warning">
+          Open the invitation email and use the Create account button on this
+          device before setting your password.
+        </InlineAlert>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
