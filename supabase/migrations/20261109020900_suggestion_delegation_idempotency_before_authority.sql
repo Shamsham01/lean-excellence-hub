@@ -76,6 +76,13 @@ begin
         and delegation_row.to_membership_id = target_delegate_membership_id
         and delegation_row.delegated_by_membership_id = actor_membership_id
     )
+    and exists (
+      select 1
+      from public.organisation_memberships membership_row
+      where membership_row.id = actor_membership_id
+        and membership_row.organisation_id = org_id
+        and membership_row.status = 'active'
+    )
     and private.membership_can_act_on_suggestion_approval_jurisdiction(
       org_id,
       actor_membership_id,

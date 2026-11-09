@@ -1,4 +1,5 @@
--- Manager override cannot open a competing delegation while another membership holds the active reviewer claim.
+-- Restore approved delegation authority semantics (20400): manager override is not blocked
+-- by another active reviewer; competing attempts are serialized in delegate_suggestion_approval.
 
 create or replace function private.can_delegate_suggestion_approval(
   target_organisation_id uuid,
@@ -18,23 +19,10 @@ as $$
       and suggestion_row.id = target_suggestion_id
       and suggestion_row.status in ('submitted', 'under_review', 'parked')
       and (
-        (
-          private.actor_has_suggestion_manager_override(
-            target_organisation_id,
-            target_suggestion_id,
-            target_actor_membership_id
-          )
-          and (
-            not private.suggestion_has_active_reviewer(
-              target_organisation_id,
-              target_suggestion_id
-            )
-            or private.is_active_suggestion_reviewer(
-              target_organisation_id,
-              target_suggestion_id,
-              target_actor_membership_id
-            )
-          )
+        private.actor_has_suggestion_manager_override(
+          target_organisation_id,
+          target_suggestion_id,
+          target_actor_membership_id
         )
         or (
           private.is_active_suggestion_reviewer(

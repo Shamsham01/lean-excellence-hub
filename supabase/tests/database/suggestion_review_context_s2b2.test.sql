@@ -1,6 +1,6 @@
 begin;
 
-select plan(92);
+select plan(94);
 
 -- ---------------------------------------------------------------------------
 -- Users and organisations
@@ -955,6 +955,22 @@ select is(
     -> 'reviewer' ->> 'display_name',
   'S2b2 Reviewer',
   'F manager with valid jurisdiction receives correct reviewer display_name'
+);
+
+select ok(
+  (public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+    -> 'permissions' ->> 'can_assign')::boolean,
+  'F manager with active reviewer still receives can_assign for reassignment'
+);
+
+select cmp_ok(
+  jsonb_array_length(
+    public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+      -> 'eligible_reviewers'
+  ),
+  '>',
+  0,
+  'F manager receives non-empty eligible_reviewers for reassignment with active reviewer'
 );
 
 select set_config(

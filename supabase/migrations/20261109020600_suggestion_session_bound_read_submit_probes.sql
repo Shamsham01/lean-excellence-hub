@@ -23,5 +23,5 @@ $$;
 
 alter function private.can_read_improvement_suggestion(uuid, uuid) owner to lean_hub_private_owner;
 
-revoke all on function private.can_read_improvement_suggestion(uuid, uuid) from anon;
+revoke all on function private.can_read_improvement_suggestion(uuid, uuid) from public;
 grant execute on function private.can_read_improvement_suggestion(uuid, uuid) to authenticated;
