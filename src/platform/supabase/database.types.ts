@@ -15044,6 +15044,10 @@ export type Database = {
         Args: { target_permission_key: string }
         Returns: boolean
       }
+      member_has_grant_permissions: {
+        Args: { target_permission_keys: string[] }
+        Returns: Json
+      }
       member_has_permission: {
         Args: { target_permission_key: string }
         Returns: boolean

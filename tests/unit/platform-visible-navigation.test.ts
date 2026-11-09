@@ -8,7 +8,7 @@ vi.mock("server-only", () => ({}));
 const currentMemberHasPermission = vi.fn();
 const currentMemberHasGrantPermission = vi.fn();
 const currentMemberHasScopedPermission = vi.fn();
-const prefetchMemberPermissions = vi.fn();
+const prefetchPlatformShellPermissionProbes = vi.fn();
 
 vi.mock("@/modules/platform-shell/permissions", () => ({
   currentMemberHasPermission: (...args: unknown[]) =>
@@ -17,8 +17,8 @@ vi.mock("@/modules/platform-shell/permissions", () => ({
     currentMemberHasGrantPermission(...args),
   currentMemberHasScopedPermission: (...args: unknown[]) =>
     currentMemberHasScopedPermission(...args),
-  prefetchMemberPermissions: (...args: unknown[]) =>
-    prefetchMemberPermissions(...args),
+  prefetchPlatformShellPermissionProbes: (...args: unknown[]) =>
+    prefetchPlatformShellPermissionProbes(...args),
 }));
 
 const loadCurrentOrganisationEntitlements = vi.fn();
@@ -31,7 +31,6 @@ vi.mock("@/modules/billing/load-current-entitlements", () => ({
 import { resolveOrganisationEntitlements } from "@/modules/billing/entitlements";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import { platformNavigation } from "@/modules/platform-shell/navigation";
-import { collectPlatformShellPermissionKeys } from "@/modules/platform-shell/shell-permission-keys";
 
 describe("buildVisibleNavigation", () => {
   beforeEach(() => {
@@ -39,7 +38,7 @@ describe("buildVisibleNavigation", () => {
     currentMemberHasPermission.mockResolvedValue(true);
     currentMemberHasGrantPermission.mockResolvedValue(true);
     currentMemberHasScopedPermission.mockResolvedValue(true);
-    prefetchMemberPermissions.mockResolvedValue(undefined);
+    prefetchPlatformShellPermissionProbes.mockResolvedValue(undefined);
     loadCurrentOrganisationEntitlements.mockResolvedValue(
       resolveOrganisationEntitlements({
         planCode: "professional",
@@ -49,13 +48,10 @@ describe("buildVisibleNavigation", () => {
     );
   });
 
-  it("prefetches shell permission keys before nav probes", async () => {
+  it("prefetches shell permission probes before nav gates", async () => {
     await buildVisibleNavigation();
 
-    expect(prefetchMemberPermissions).toHaveBeenCalledTimes(1);
-    expect(prefetchMemberPermissions).toHaveBeenCalledWith(
-      collectPlatformShellPermissionKeys(),
-    );
+    expect(prefetchPlatformShellPermissionProbes).toHaveBeenCalledTimes(1);
   });
 
   it("keeps navigation available across repeated permission-check cycles", async () => {
