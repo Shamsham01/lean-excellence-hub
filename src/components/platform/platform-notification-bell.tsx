@@ -69,6 +69,7 @@ export function PlatformNotificationBell({
       <DropdownMenuContent
         align="end"
         className="w-[min(24rem,calc(100vw-2rem))] border-border bg-card p-0"
+        aria-label="Notification centre"
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
           <DropdownMenuLabel className="p-0 text-sm font-semibold">
@@ -98,7 +99,10 @@ export function PlatformNotificationBell({
           data-testid="platform-notification-list"
         >
           {initialItems.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+            <p
+              className="px-3 py-6 text-center text-sm text-muted-foreground"
+              data-testid="platform-notification-empty"
+            >
               You are all caught up.
             </p>
           ) : (
@@ -149,7 +153,9 @@ export function PlatformNotificationBell({
         </div>
         <DropdownMenuSeparator className="m-0" />
         <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-          High-signal updates only — email delivery is separate.
+          High-signal updates only — email delivery is separate. When several
+          operational chases stack up, unread items collapse into one summary
+          row until you open it.
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

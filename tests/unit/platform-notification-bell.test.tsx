@@ -1,8 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 
@@ -16,6 +16,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("PlatformNotificationBell", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it("renders a labelled control with unread badge", () => {
     render(
       <PlatformNotificationBell
@@ -41,5 +45,19 @@ describe("PlatformNotificationBell", () => {
     expect(screen.getByTestId("platform-notification-count")).toHaveTextContent(
       "3",
     );
+  });
+
+  it("labels the control when there is nothing unread", () => {
+    render(
+      <PlatformNotificationBell
+        variant="header"
+        initialUnreadCount={0}
+        initialItems={[]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /^notifications$/i }),
+    ).toBeInTheDocument();
   });
 });

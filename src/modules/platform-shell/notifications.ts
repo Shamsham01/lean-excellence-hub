@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  collapseChaseDigestNotifications,
+  collapseChaseDigestUnreadCount,
+} from "@/modules/platform-shell/notification-presentation";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export type PlatformInAppNotification = {
@@ -53,8 +57,10 @@ export async function loadPlatformNotificationSnapshot(
     return null;
   }
 
+  const items = (rows ?? []) as PlatformInAppNotification[];
+
   return {
-    unreadCount: count ?? 0,
-    items: (rows ?? []) as PlatformInAppNotification[],
+    unreadCount: collapseChaseDigestUnreadCount(items, count ?? 0),
+    items: collapseChaseDigestNotifications(items),
   };
 }
