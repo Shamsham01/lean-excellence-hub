@@ -1,6 +1,6 @@
 begin;
 
-select plan(71);
+select plan(70);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -588,6 +588,31 @@ select ok(
 );
 
 reset role;
+set local role lean_hub_private_owner;
+
+select ok(
+  private.can_view_suggestion_delegation_reason(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'site_manager_membership')
+  ),
+  'delegating manager may view delegation reason'
+);
+
+select ok(
+  (
+    select notification_row.body
+    from public.in_app_notifications notification_row
+    where notification_row.organisation_id = (select id from t119_ids where key = 'organisation')
+      and notification_row.membership_id = (select id from t119_ids where key = 'delegate_membership')
+      and notification_row.notification_type = 'suggestions.awaiting_review'
+    order by notification_row.created_at desc
+    limit 1
+  ) like '%Reason: On leave%',
+  'delegation in-app notification includes reason suffix'
+);
+
+reset role;
 
 select set_config(
   'request.jwt.claims',
@@ -678,27 +703,6 @@ set local role authenticated;
 select ok(
   public.switch_organisation((select id from t119_ids where key = 'organisation')),
   'delegating manager re-selects organisation'
-);
-
-select is(
-  public.get_suggestion_review_context(
-    (select id from t119_ids where key = 'suggestion')
-  )->'latest_delegation'->>'reason',
-  'On leave',
-  'delegating manager sees delegation reason in review context'
-);
-
-select ok(
-  (
-    select notification_row.body
-    from public.in_app_notifications notification_row
-    where notification_row.organisation_id = (select id from t119_ids where key = 'organisation')
-      and notification_row.membership_id = (select id from t119_ids where key = 'delegate_membership')
-      and notification_row.notification_type = 'suggestions.awaiting_review'
-    order by notification_row.created_at desc
-    limit 1
-  ) like '%Reason: On leave%',
-  'delegation in-app notification includes reason suffix'
 );
 
 select is(

@@ -2,7 +2,7 @@
 
 begin;
 
-select plan(6);
+select plan(5);
 
 select isnt_empty(
   $$
@@ -32,6 +32,7 @@ set local role authenticated;
 select throws_ok(
   $$select public.get_suggestion_detail('00000000-0000-4000-8000-000000000099'::uuid)$$,
   '42501',
+  'suggestion detail is not authorised',
   'unauthorised reader receives 42501 on suggestion detail'
 );
 
