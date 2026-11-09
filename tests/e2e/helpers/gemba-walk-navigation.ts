@@ -17,3 +17,19 @@ export async function navigateGembaPrompt(
   await expect(page).toHaveURL(/prompt=/, { timeout: 15_000 });
   await expectGembaPromptHeading(page, expectedPrompt);
 }
+
+/** Browser back/forward must restore prompt-scoped URLs before UI catches up. */
+export async function expectGembaBrowserHistoryPrompt(
+  page: Page,
+  action: "back" | "forward",
+  expectedPrompt: string,
+  expectedUrl: string,
+) {
+  if (action === "back") {
+    await page.goBack();
+  } else {
+    await page.goForward();
+  }
+  await expect(page).toHaveURL(expectedUrl, { timeout: 15_000 });
+  await expectGembaPromptHeading(page, expectedPrompt);
+}
