@@ -31,14 +31,20 @@ function mockQueryChain(result: { data: unknown; error: null }) {
 function buildSupabaseMock() {
   const rpc = vi.fn(async (fn: string, args?: Record<string, unknown>) => {
     recordCall("rpc", fn);
-    if (fn === "member_has_permissions" || fn === "member_has_grant_permissions") {
+    if (
+      fn === "member_has_permissions" ||
+      fn === "member_has_grant_permissions"
+    ) {
       const keys = (args?.target_permission_keys as string[]) ?? [];
       return {
         data: Object.fromEntries(keys.map((key) => [key, true])),
         error: null,
       };
     }
-    if (fn === "member_has_permission" || fn === "member_has_grant_permission") {
+    if (
+      fn === "member_has_permission" ||
+      fn === "member_has_grant_permission"
+    ) {
       return { data: true, error: null };
     }
     if (fn === "get_suggestions_overview") {
@@ -115,7 +121,8 @@ vi.mock("@/modules/platform-analytics/suggestions", () => ({
 }));
 
 vi.mock("@/modules/workplace/access", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/modules/workplace/access")>();
+  const actual =
+    await importOriginal<typeof import("@/modules/workplace/access")>();
   return {
     ...actual,
     WORKPLACE_VIEW_PERMISSION: "workplace.view",
@@ -205,7 +212,9 @@ describe("Suggestions overview Supabase request budget", () => {
 
     const totalCalls = supabaseCalls.length;
     const rpcCalls = supabaseCalls.filter((call) => call.kind === "rpc").length;
-    const fromCalls = supabaseCalls.filter((call) => call.kind === "from").length;
+    const fromCalls = supabaseCalls.filter(
+      (call) => call.kind === "from",
+    ).length;
 
     expect(totalCalls).toBeLessThanOrEqual(15);
     expect(rpcCalls).toBeGreaterThan(0);

@@ -44,8 +44,12 @@ export default async function PlatformHomePage({
   const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentOrg = organisations.find((o) => o.selected);
-  const [setupSnapshot, setupPermissions, homePermissions, canReadCapabilityDashboard] =
-    await Promise.all([
+  const [
+    setupSnapshot,
+    setupPermissions,
+    homePermissions,
+    canReadCapabilityDashboard,
+  ] = await Promise.all([
     loadOrganisationSetupSnapshot(),
     loadSetupPermissions(),
     Promise.all([
