@@ -255,8 +255,14 @@ export async function validateWorkforceImportAndStartProvisioning(
     const step = await wizard
       .getAttribute("data-wizard-step")
       .catch(() => "unknown");
+    let diagnostics = "diagnostics_unavailable";
+    try {
+      diagnostics = await readImportWizardDiagnostics(page);
+    } catch {
+      // page may already be closed at suite timeout
+    }
     throw new Error(
-      `Workforce import validation did not advance (wizardStep=${step}). ${await readImportWizardDiagnostics(page)}`,
+      `Workforce import validation did not advance (wizardStep=${step}). ${diagnostics}`,
     );
   }
   const errorText = (await errorSurface.textContent())?.trim();

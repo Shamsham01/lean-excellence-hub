@@ -16,6 +16,11 @@ import {
   buildCsvTemplate,
   parseWorkforceImportFile,
 } from "@/modules/workforce-import/parse-file";
+import {
+  loadWorkforceImportPreviewRowsInBrowser,
+  loadWorkforceImportValidationRowsInBrowser,
+  validateWorkforceImportJobInBrowser,
+} from "@/modules/workforce-import/browser-import";
 import { resolveImportWizardHydration } from "@/modules/workforce-import/resume";
 
 type ImportPreviewRow = {
@@ -299,13 +304,13 @@ export function WorkforceImportWizard({
     setMessage(null);
 
     try {
-      const validated = await onValidate(jobId);
+      const validated = await validateWorkforceImportJobInBrowser(jobId);
       if ("error" in validated) {
         setMessage(validated.error);
         return;
       }
 
-      const rows = await onLoadValidationRows(jobId);
+      const rows = await loadWorkforceImportValidationRowsInBrowser(jobId);
       if ("error" in rows) {
         setMessage(rows.error);
         return;
@@ -315,8 +320,8 @@ export function WorkforceImportWizard({
       setValidationRows(rows.data);
 
       if (validated.data.canProvision) {
-        const preview = await onLoadPreviewRows(jobId);
-        if ("ok" in preview) {
+        const preview = await loadWorkforceImportPreviewRowsInBrowser(jobId);
+        if ("ok" in preview && preview.data) {
           setPreviewRows(preview.data);
         }
         setStep(2);

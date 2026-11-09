@@ -519,7 +519,10 @@ export function GembaWalkWorkspace({
 
       <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
         <p className="text-sm text-muted-foreground">{current.section.title}</p>
-        <h2 className="typography-section-title mt-2">
+        <h2
+          className="typography-section-title mt-2"
+          data-testid="gemba-walk-prompt-heading"
+        >
           {current.question.prompt}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
