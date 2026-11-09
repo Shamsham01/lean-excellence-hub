@@ -90,8 +90,7 @@ function sidebarIconClasses(visual: SectionNavVisualState) {
       "border-primary bg-card text-primary shadow-[0_0_12px_rgb(70_95_255/0.45)]",
     visual === "partial" &&
       "border-warning/60 bg-warning/15 text-warning-foreground",
-    visual === "not_started" &&
-      "border-border bg-card text-muted-foreground",
+    visual === "not_started" && "border-border bg-card text-muted-foreground",
   );
 }
 
@@ -106,11 +105,7 @@ function chipButtonClasses(visual: SectionNavVisualState) {
   );
 }
 
-function GroupHeader({
-  group,
-}: {
-  group: SectionProgressNavGroup;
-}) {
+function GroupHeader({ group }: { group: SectionProgressNavGroup }) {
   const visual = group.completion;
   return (
     <p
@@ -150,8 +145,7 @@ function SectionProgressButton({
   variant: "sidebar" | "chip";
   index?: number;
 }) {
-  const completionState =
-    visual === "current" ? item.completion : visual;
+  const completionState = visual === "current" ? item.completion : visual;
 
   return (
     <button
@@ -164,7 +158,9 @@ function SectionProgressButton({
       disabled={disabled}
       onClick={() => onSelect(item.id)}
       className={cn(
-        variant === "sidebar" ? sidebarButtonClasses(visual) : chipButtonClasses(visual),
+        variant === "sidebar"
+          ? sidebarButtonClasses(visual)
+          : chipButtonClasses(visual),
         disabled && "opacity-70",
       )}
     >
@@ -186,7 +182,9 @@ function SectionProgressButton({
               {item.label}
             </span>
             {item.detail ? (
-              <span className="text-xs text-muted-foreground">{item.detail}</span>
+              <span className="text-xs text-muted-foreground">
+                {item.detail}
+              </span>
             ) : null}
           </span>
         </>
@@ -209,7 +207,9 @@ function SectionProgressButton({
               {...(typeof index === "number" ? { index } : {})}
             />
           </span>
-          <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {item.label}
+          </span>
         </>
       )}
     </button>
@@ -230,7 +230,10 @@ export function SectionProgressNav({
 }: SectionProgressNavProps) {
   const itemById = new Map(items.map((item) => [item.id, item] as const));
 
-  const renderItems = (subset: SectionProgressNavItem[], variant: "sidebar" | "chip") =>
+  const renderItems = (
+    subset: SectionProgressNavItem[],
+    variant: "sidebar" | "chip",
+  ) =>
     subset.map((item, index) => {
       const visual = sectionNavVisualState(
         item.completion,
@@ -262,7 +265,9 @@ export function SectionProgressNav({
           ? groups.map((group) => {
               const groupItems = group.itemIds
                 .map((id) => itemById.get(id))
-                .filter((item): item is SectionProgressNavItem => Boolean(item));
+                .filter((item): item is SectionProgressNavItem =>
+                  Boolean(item),
+                );
               return (
                 <div key={group.id} className="min-w-0">
                   <GroupHeader group={group} />
@@ -366,7 +371,9 @@ export function SectionProgressNav({
           ? groups.map((group) => {
               const groupItems = group.itemIds
                 .map((id) => itemById.get(id))
-                .filter((item): item is SectionProgressNavItem => Boolean(item));
+                .filter((item): item is SectionProgressNavItem =>
+                  Boolean(item),
+                );
               return (
                 <div key={group.id} className="mb-2 min-w-0">
                   <GroupHeader group={group} />

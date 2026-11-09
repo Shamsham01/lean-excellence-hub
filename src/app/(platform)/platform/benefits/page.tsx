@@ -3,7 +3,7 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { BENEFITS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadBenefitsAnalytics } from "@/modules/platform-analytics/benefits";
@@ -32,9 +32,6 @@ export default async function BenefitsPortfolioPage({
   }>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(params.range),
-  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: BENEFITS_PERMISSIONS.read,
     module: "benefits",
@@ -45,6 +42,10 @@ export default async function BenefitsPortfolioPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
+    parseAnalyticsRangeDays(params.range),
+  );
   const canCreate = await currentMemberHasPermission("benefits.create");
   const benefitsAnalytics = await loadBenefitsAnalytics(
     supabase,

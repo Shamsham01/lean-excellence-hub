@@ -4,7 +4,7 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestions";
@@ -65,10 +65,11 @@ export default async function SuggestionsOverviewPage({
 
   const params = await searchParams;
   const filters = parseSuggestionPortfolioSearchParams(params);
-  const analyticsRange = buildAnalyticsDateRange(
+  const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
     parseAnalyticsRangeDays(params.range),
   );
-  const supabase = await createServerSupabaseClient();
   const canReview = await currentMemberHasPermission("suggestions.review");
   const canManageProgrammes = await currentMemberHasPermission(
     "suggestions.programmes.manage",

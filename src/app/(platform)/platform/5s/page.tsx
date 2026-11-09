@@ -3,7 +3,7 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { FIVE_S_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadFiveSAnalytics } from "@/modules/platform-analytics/five-s";
@@ -25,9 +25,6 @@ export default async function FiveSOverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(params.range),
-  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: FIVE_S_PERMISSIONS.read,
     module: "five_s",
@@ -37,6 +34,10 @@ export default async function FiveSOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
+    parseAnalyticsRangeDays(params.range),
+  );
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
   );

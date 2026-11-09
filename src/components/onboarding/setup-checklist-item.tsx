@@ -40,7 +40,9 @@ export function SetupChecklistItem({ item }: { item: SetupItem }) {
           <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
             {item.title}
           </span>
-          <span className={cn("text-xs font-medium", statusVariant(item.status))}>
+          <span
+            className={cn("text-xs font-medium", statusVariant(item.status))}
+          >
             {statusText}
           </span>
           {item.href && item.canPerform ? (

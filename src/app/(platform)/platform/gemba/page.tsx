@@ -4,7 +4,7 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { GEMBA_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadGembaAnalytics } from "@/modules/platform-analytics/gemba";
@@ -30,9 +30,6 @@ export default async function GembaOverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(params.range),
-  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: GEMBA_PERMISSIONS.read,
     module: "gemba",
@@ -42,6 +39,10 @@ export default async function GembaOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
+    parseAnalyticsRangeDays(params.range),
+  );
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
   );

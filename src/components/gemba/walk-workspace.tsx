@@ -513,7 +513,9 @@ export function GembaWalkWorkspace({
         activeId={current.section.id}
         disabled={questionBusy}
         onSelect={(sectionId) => {
-          const idx = flatQuestions.findIndex((f) => f.section.id === sectionId);
+          const idx = flatQuestions.findIndex(
+            (f) => f.section.id === sectionId,
+          );
           if (idx >= 0) {
             void moveTo(idx);
           }
@@ -524,213 +526,218 @@ export function GembaWalkWorkspace({
       />
 
       <div className="flex min-w-0 flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Badge variant="outline" data-testid="gemba-walk-status">
-          {formatGembaWalkStatus(status)}
-        </Badge>
-        <Progress
-          value={progress}
-          className="h-2 w-full max-w-xs"
-          aria-label="Walk progress"
-          data-testid="gemba-answer-progress"
-        />
-        <span
-          className="text-sm text-muted-foreground"
-          data-testid="gemba-answer-progress-label"
-        >
-          {answeredRequiredCount}/{requiredQuestions.length || flatQuestions.length}{" "}
-          required · {answeredCount}/{flatQuestions.length} answered
-        </span>
-        {canComplete ? (
-          <Button
-            type="button"
-            className="hidden min-h-11 sm:ml-auto sm:inline-flex"
-            disabled={completing}
-            onClick={openCompletePanel}
-            data-testid="gemba-complete-walk"
-          >
-            Complete walk
-          </Button>
-        ) : null}
-      </div>
-      {completeError ? (
-        <p
-          className="text-sm text-destructive"
-          role="alert"
-          data-testid="gemba-complete-error"
-        >
-          {completeError}
-        </p>
-      ) : null}
-
-      <GembaObservationPanel
-        walkId={walkId}
-        observations={observations}
-        evidence={evidence}
-        canEdit={canEdit}
-        onIntegrityChange={handleObservationIntegrity}
-        onObservationsChange={handleObservationsChange}
-      />
-
-      <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
-        <p className="text-sm text-muted-foreground">{current.section.title}</p>
-        <h2
-          className="typography-section-title mt-2"
-          data-testid="gemba-walk-prompt-heading"
-        >
-          {current.question.prompt}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {current.question.is_required ? "Required prompt" : "Optional prompt"}
-        </p>
-        <div className="mt-6">
-          <Label htmlFor="walk-notes">Notes</Label>
-          <Textarea
-            id="walk-notes"
-            className="mt-2 min-h-24"
-            value={answer.is_not_applicable ? "" : (answer.text_value ?? "")}
-            disabled={!canEdit}
-            data-testid="gemba-walk-notes"
-            onChange={(e) => changeText(current.question.id, e.target.value)}
-            onBlur={() => {
-              void flushQuestion(current.question.id);
-            }}
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant="outline" data-testid="gemba-walk-status">
+            {formatGembaWalkStatus(status)}
+          </Badge>
+          <Progress
+            value={progress}
+            className="h-2 w-full max-w-xs"
+            aria-label="Walk progress"
+            data-testid="gemba-answer-progress"
           />
-        </div>
-        {current.question.allows_not_applicable ? (
-          <Button
-            type="button"
-            variant={answer.is_not_applicable ? "secondary" : "outline"}
-            className="mt-3 min-h-11"
-            disabled={!canEdit}
-            aria-pressed={Boolean(answer.is_not_applicable)}
-            onClick={() => selectNotApplicable(current.question.id)}
-            data-testid="gemba-answer-na"
+          <span
+            className="text-sm text-muted-foreground"
+            data-testid="gemba-answer-progress-label"
           >
-            N/A
-          </Button>
-        ) : null}
-        <div className="mt-4">
-          <AnswerSaveFeedback
-            status={saveStatus}
-            error={saveError}
-            canRetry={canEdit}
-            onRetry={() => retryQuestion(current.question.id)}
-          />
+            {answeredRequiredCount}/
+            {requiredQuestions.length || flatQuestions.length} required ·{" "}
+            {answeredCount}/{flatQuestions.length} answered
+          </span>
+          {canComplete ? (
+            <Button
+              type="button"
+              className="hidden min-h-11 sm:ml-auto sm:inline-flex"
+              disabled={completing}
+              onClick={openCompletePanel}
+              data-testid="gemba-complete-walk"
+            >
+              Complete walk
+            </Button>
+          ) : null}
         </div>
+        {completeError ? (
+          <p
+            className="text-sm text-destructive"
+            role="alert"
+            data-testid="gemba-complete-error"
+          >
+            {completeError}
+          </p>
+        ) : null}
 
-        <GembaEvidenceBlock
+        <GembaObservationPanel
           walkId={walkId}
-          sectionId={current.section.id}
-          questionId={current.question.id}
+          observations={observations}
           evidence={evidence}
           canEdit={canEdit}
+          onIntegrityChange={handleObservationIntegrity}
+          onObservationsChange={handleObservationsChange}
         />
-      </div>
 
-      <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border bg-background pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        {canComplete ? (
-          <Button
-            type="button"
-            className="min-h-11 w-full sm:hidden"
-            disabled={completing}
-            onClick={openCompletePanel}
-            data-testid="gemba-complete-walk-mobile"
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">
+            {current.section.title}
+          </p>
+          <h2
+            className="typography-section-title mt-2"
+            data-testid="gemba-walk-prompt-heading"
           >
-            Complete walk
-          </Button>
-        ) : null}
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            className="min-h-11 flex-1"
-            disabled={safeIndex === 0 || questionBusy}
-            onClick={() => moveTo(Math.max(0, safeIndex - 1))}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            size="default"
-            className="min-h-11 flex-1"
-            disabled={safeIndex >= flatQuestions.length - 1 || questionBusy}
-            onClick={() =>
-              moveTo(Math.min(flatQuestions.length - 1, safeIndex + 1))
-            }
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-
-      <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete this walk?</DialogTitle>
-            <DialogDescription>
-              Review the walk, add an optional summary, then confirm. Completed
-              walks cannot be edited.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 text-sm">
-            <p data-testid="gemba-completion-answered-count">
-              Answered prompts: {answeredCount} of {questionIds.length}
-            </p>
-            <p
-              className={
-                unansweredRequiredCount > 0 ? "text-destructive" : undefined
-              }
-              data-testid="gemba-completion-required-unanswered"
-            >
-              Required prompts unanswered: {unansweredRequiredCount}
-            </p>
-            <p data-testid="gemba-completion-observation-count">
-              Observations: {liveObservations.length} (
-              {formatGembaObservationType("positive_practice")}{" "}
-              {observationCounts.positive_practice},{" "}
-              {formatGembaObservationType("improvement_opportunity")}{" "}
-              {observationCounts.improvement_opportunity},{" "}
-              {formatGembaObservationType("issue")} {observationCounts.issue})
-            </p>
-            <div>
-              <Label htmlFor="gemba-summary-notes">
-                Summary / overall conclusion
-              </Label>
-              <Textarea
-                id="gemba-summary-notes"
-                className="mt-2 min-h-24"
-                value={summary}
-                onChange={(event) => setSummary(event.target.value)}
-                data-testid="gemba-summary-notes"
-              />
-            </div>
+            {current.question.prompt}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {current.question.is_required
+              ? "Required prompt"
+              : "Optional prompt"}
+          </p>
+          <div className="mt-6">
+            <Label htmlFor="walk-notes">Notes</Label>
+            <Textarea
+              id="walk-notes"
+              className="mt-2 min-h-24"
+              value={answer.is_not_applicable ? "" : (answer.text_value ?? "")}
+              disabled={!canEdit}
+              data-testid="gemba-walk-notes"
+              onChange={(e) => changeText(current.question.id, e.target.value)}
+              onBlur={() => {
+                void flushQuestion(current.question.id);
+              }}
+            />
           </div>
-          <DialogFooter>
+          {current.question.allows_not_applicable ? (
+            <Button
+              type="button"
+              variant={answer.is_not_applicable ? "secondary" : "outline"}
+              className="mt-3 min-h-11"
+              disabled={!canEdit}
+              aria-pressed={Boolean(answer.is_not_applicable)}
+              onClick={() => selectNotApplicable(current.question.id)}
+              data-testid="gemba-answer-na"
+            >
+              N/A
+            </Button>
+          ) : null}
+          <div className="mt-4">
+            <AnswerSaveFeedback
+              status={saveStatus}
+              error={saveError}
+              canRetry={canEdit}
+              onRetry={() => retryQuestion(current.question.id)}
+            />
+          </div>
+
+          <GembaEvidenceBlock
+            walkId={walkId}
+            sectionId={current.section.id}
+            questionId={current.question.id}
+            evidence={evidence}
+            canEdit={canEdit}
+          />
+        </div>
+
+        <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border bg-background pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {canComplete ? (
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:hidden"
+              disabled={completing}
+              onClick={openCompletePanel}
+              data-testid="gemba-complete-walk-mobile"
+            >
+              Complete walk
+            </Button>
+          ) : null}
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
-              disabled={completing}
-              onClick={() => setCompleteOpen(false)}
+              size="default"
+              className="min-h-11 flex-1"
+              disabled={safeIndex === 0 || questionBusy}
+              onClick={() => moveTo(Math.max(0, safeIndex - 1))}
             >
-              Cancel
+              Previous
             </Button>
             <Button
               type="button"
-              className="min-h-11"
-              disabled={completing || unansweredRequiredCount > 0}
-              onClick={() => {
-                void handleConfirmComplete();
-              }}
-              data-testid="gemba-confirm-complete"
+              size="default"
+              className="min-h-11 flex-1"
+              disabled={safeIndex >= flatQuestions.length - 1 || questionBusy}
+              onClick={() =>
+                moveTo(Math.min(flatQuestions.length - 1, safeIndex + 1))
+              }
             >
-              {completing ? "Completing…" : "Confirm completion"}
+              Next
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+
+        <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Complete this walk?</DialogTitle>
+              <DialogDescription>
+                Review the walk, add an optional summary, then confirm.
+                Completed walks cannot be edited.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 text-sm">
+              <p data-testid="gemba-completion-answered-count">
+                Answered prompts: {answeredCount} of {questionIds.length}
+              </p>
+              <p
+                className={
+                  unansweredRequiredCount > 0 ? "text-destructive" : undefined
+                }
+                data-testid="gemba-completion-required-unanswered"
+              >
+                Required prompts unanswered: {unansweredRequiredCount}
+              </p>
+              <p data-testid="gemba-completion-observation-count">
+                Observations: {liveObservations.length} (
+                {formatGembaObservationType("positive_practice")}{" "}
+                {observationCounts.positive_practice},{" "}
+                {formatGembaObservationType("improvement_opportunity")}{" "}
+                {observationCounts.improvement_opportunity},{" "}
+                {formatGembaObservationType("issue")} {observationCounts.issue})
+              </p>
+              <div>
+                <Label htmlFor="gemba-summary-notes">
+                  Summary / overall conclusion
+                </Label>
+                <Textarea
+                  id="gemba-summary-notes"
+                  className="mt-2 min-h-24"
+                  value={summary}
+                  onChange={(event) => setSummary(event.target.value)}
+                  data-testid="gemba-summary-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                disabled={completing}
+                onClick={() => setCompleteOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="min-h-11"
+                disabled={completing || unansweredRequiredCount > 0}
+                onClick={() => {
+                  void handleConfirmComplete();
+                }}
+                data-testid="gemba-confirm-complete"
+              >
+                {completing ? "Completing…" : "Confirm completion"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

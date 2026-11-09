@@ -1,5 +1,16 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { resolveAnalyticsTimeZone } from "./org-scope";
+
 export const ANALYTICS_RANGE_OPTIONS = [7, 30, 90] as const;
 export type AnalyticsRangeDays = (typeof ANALYTICS_RANGE_OPTIONS)[number];
+
+import {
+  DEFAULT_ANALYTICS_TIME_ZONE,
+  addCalendarDays,
+  zonedCivilDate,
+  zonedStartOfDay,
+} from "./iso-week";
 
 export type AnalyticsDateRange = {
   days: AnalyticsRangeDays;
@@ -7,6 +18,7 @@ export type AnalyticsDateRange = {
   end: string;
   previousStart: string;
   previousEnd: string;
+  timeZone: string;
 };
 
 export function parseAnalyticsRangeDays(
@@ -23,18 +35,34 @@ export function parseAnalyticsRangeDays(
 export function buildAnalyticsDateRange(
   days: AnalyticsRangeDays,
   now = new Date(),
+  timeZone = DEFAULT_ANALYTICS_TIME_ZONE,
 ): AnalyticsDateRange {
-  const end = new Date(now);
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - days);
-  const previousEnd = new Date(start);
-  const previousStart = new Date(previousEnd);
-  previousStart.setUTCDate(previousStart.getUTCDate() - days);
+  const end = now.toISOString();
+  const today = zonedCivilDate(end, timeZone);
+  const rangeStartDay = addCalendarDays(today, -days);
+  const previousEndDay = rangeStartDay;
+  const previousStartDay = addCalendarDays(rangeStartDay, -days);
+  const start = zonedStartOfDay(rangeStartDay, timeZone).toISOString();
+  const previousEnd = zonedStartOfDay(previousEndDay, timeZone).toISOString();
+  const previousStart = zonedStartOfDay(
+    previousStartDay,
+    timeZone,
+  ).toISOString();
   return {
     days,
-    start: start.toISOString(),
-    end: end.toISOString(),
-    previousStart: previousStart.toISOString(),
-    previousEnd: previousEnd.toISOString(),
+    start,
+    end,
+    previousStart,
+    previousEnd,
+    timeZone,
   };
+}
+
+export async function buildAnalyticsDateRangeForOrganisation(
+  supabase: SupabaseClient,
+  days: AnalyticsRangeDays,
+  now = new Date(),
+): Promise<AnalyticsDateRange> {
+  const timeZone = await resolveAnalyticsTimeZone(supabase);
+  return buildAnalyticsDateRange(days, now, timeZone);
 }

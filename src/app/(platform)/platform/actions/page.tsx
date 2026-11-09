@@ -8,7 +8,7 @@ import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-i
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadActionsAnalytics } from "@/modules/platform-analytics/actions";
@@ -37,12 +37,13 @@ export default async function ActionsPage({
     ACTIONS_PERMISSIONS.create,
   );
   const rawParams = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(rawParams.range),
-  );
   const filters = parseActionListFilters(rawParams);
   const selectorOptions = await loadSiteScopedSelectorOptions();
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
+    parseAnalyticsRangeDays(rawParams.range),
+  );
 
   const sourceActionIds = await loadSourceActionIds(supabase, filters);
 

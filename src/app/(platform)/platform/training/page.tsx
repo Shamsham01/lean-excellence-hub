@@ -6,7 +6,7 @@ import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
@@ -28,9 +28,6 @@ export default async function TrainingOverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(params.range),
-  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: TRAINING_PERMISSIONS.read,
     module: "training",
@@ -40,6 +37,10 @@ export default async function TrainingOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
+    parseAnalyticsRangeDays(params.range),
+  );
   const [canManageCatalog, { context }] = await Promise.all([
     currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),
     loadActiveSiteContext(),

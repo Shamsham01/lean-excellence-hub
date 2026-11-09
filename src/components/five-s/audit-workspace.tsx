@@ -289,7 +289,9 @@ export function FiveSAuditWorkspace({
         activeId={current.section.id}
         disabled={questionBusy}
         onSelect={(sectionId) => {
-          const idx = flatQuestions.findIndex((f) => f.section.id === sectionId);
+          const idx = flatQuestions.findIndex(
+            (f) => f.section.id === sectionId,
+          );
           if (idx >= 0) {
             void moveTo(idx);
           }

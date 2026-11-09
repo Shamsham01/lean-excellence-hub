@@ -4,7 +4,7 @@ import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadProblemSolvingAnalytics } from "@/modules/platform-analytics/problem-solving";
@@ -39,7 +39,8 @@ export default async function ProblemSolvingPortfolioPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const analyticsRange = buildAnalyticsDateRange(
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const canCreate = await currentMemberHasPermission("problem_solving.create");

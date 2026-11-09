@@ -1,8 +1,27 @@
+import {
+  DEFAULT_ANALYTICS_TIME_ZONE,
+  addCalendarDays,
+  formatIsoWeekAxisLabel,
+  formatWeekCommencing,
+  isoWeekFromCivilDate,
+  isoWeekKey,
+  listIsoWeeksBetween,
+  rangeCrossesCalendarYear,
+  zonedCivilDate,
+  type IsoWeek,
+} from "./iso-week";
+
 export type TrendDelta = {
   current: number;
   previous: number;
   percent: number | null;
   direction: "up" | "down" | "flat";
+};
+
+export type TrendSeriesPoint = {
+  label: string;
+  value: number;
+  tooltipLabel?: string;
 };
 
 export function comparePeriods(current: number, previous: number): TrendDelta {
@@ -21,25 +40,102 @@ export function comparePeriods(current: number, previous: number): TrendDelta {
   };
 }
 
-export function bucketDailyCounts(
+function bucketDailyInTimeZone(
   timestamps: string[],
   range: { start: string; end: string; days: number },
-): Array<{ label: string; value: number }> {
-  const bucketCount = Math.min(range.days, 14);
-  const startMs = new Date(range.start).getTime();
+  timeZone: string,
+): TrendSeriesPoint[] {
   const endMs = new Date(range.end).getTime();
-  const step = (endMs - startMs) / bucketCount;
-  const buckets = Array.from({ length: bucketCount }, (_, index) => ({
-    label: bucketCount <= 7 ? `Day ${index + 1}` : `Wk ${index + 1}`,
-    value: 0,
-  }));
+  const startMs = new Date(range.start).getTime();
+  const startLocal = zonedCivilDate(range.start, timeZone);
+  const dayCount = Math.min(range.days, 7);
+  const buckets = Array.from({ length: dayCount }, (_, index) => {
+    const day = addCalendarDays(startLocal, index);
+    return {
+      label: `Day ${index + 1}`,
+      value: 0,
+      dayKey: `${day.year}-${day.month}-${day.day}`,
+    };
+  });
 
   for (const ts of timestamps) {
     const ms = new Date(ts).getTime();
     if (ms < startMs || ms > endMs) continue;
-    const index = Math.min(bucketCount - 1, Math.floor((ms - startMs) / step));
-    buckets[index]!.value += 1;
+    const key = zonedCivilDate(ts, timeZone);
+    const dayKey = `${key.year}-${key.month}-${key.day}`;
+    const index = buckets.findIndex((bucket) => bucket.dayKey === dayKey);
+    if (index >= 0) {
+      buckets[index]!.value += 1;
+    }
   }
 
-  return buckets;
+  return buckets.map(({ label, value }) => ({ label, value }));
+}
+
+function buildWeeklyBuckets(
+  range: { start: string; end: string },
+  timeZone: string,
+): Map<string, { meta: IsoWeek; value: number }> {
+  const startLocal = zonedCivilDate(range.start, timeZone);
+  const endLocal = zonedCivilDate(range.end, timeZone);
+  let weeks = listIsoWeeksBetween(startLocal, endLocal);
+  const maxBuckets = 14;
+  if (weeks.length > maxBuckets) {
+    weeks = weeks.slice(-maxBuckets);
+  }
+  const map = new Map<string, { meta: IsoWeek; value: number }>();
+  for (const week of weeks) {
+    map.set(isoWeekKey(week), { meta: week, value: 0 });
+  }
+  return map;
+}
+
+function bucketWeeklyInTimeZone(
+  timestamps: string[],
+  range: { start: string; end: string; days: number },
+  timeZone: string,
+): TrendSeriesPoint[] {
+  const startMs = new Date(range.start).getTime();
+  const endMs = new Date(range.end).getTime();
+  const startLocal = zonedCivilDate(range.start, timeZone);
+  const endLocal = zonedCivilDate(range.end, timeZone);
+  const crossesYear = rangeCrossesCalendarYear(startLocal, endLocal);
+  const buckets = buildWeeklyBuckets(range, timeZone);
+
+  for (const ts of timestamps) {
+    const ms = new Date(ts).getTime();
+    if (ms < startMs || ms > endMs) continue;
+    const week = isoWeekFromCivilDate(zonedCivilDate(ts, timeZone));
+    const key = isoWeekKey(week);
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.value += 1;
+    }
+  }
+
+  return [...buckets.values()].map(({ meta, value }) => ({
+    label: formatIsoWeekAxisLabel(meta, crossesYear),
+    tooltipLabel: `${formatWeekCommencing(meta.weekYear, meta.week, timeZone)} · ${formatIsoWeekAxisLabel(
+      meta,
+      crossesYear,
+    )}`,
+    value,
+  }));
+}
+
+export function bucketDailyCounts(
+  timestamps: string[],
+  range: {
+    start: string;
+    end: string;
+    days: number;
+    timeZone?: string;
+  },
+  timeZone?: string,
+): TrendSeriesPoint[] {
+  const zone = timeZone ?? range.timeZone ?? DEFAULT_ANALYTICS_TIME_ZONE;
+  if (range.days <= 7) {
+    return bucketDailyInTimeZone(timestamps, range, zone);
+  }
+  return bucketWeeklyInTimeZone(timestamps, range, zone);
 }

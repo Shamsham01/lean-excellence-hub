@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/platform/empty-state";
 import { MaturityOverviewAnalytics } from "@/components/platform/maturity-overview-analytics";
 import { PageHeader } from "@/components/platform/page-header";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
@@ -33,9 +33,6 @@ export default async function MaturityOverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(params.range),
-  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: MATURITY_PERMISSIONS.read,
     module: "maturity",
@@ -45,6 +42,10 @@ export default async function MaturityOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
+    parseAnalyticsRangeDays(params.range),
+  );
   const canManage = await currentMemberHasPermission(
     MATURITY_PERMISSIONS.modelsManage,
   );

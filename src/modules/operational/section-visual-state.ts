@@ -1,8 +1,6 @@
 export type SectionCompletionState = "not_started" | "partial" | "complete";
 
-export type SectionNavVisualState =
-  | SectionCompletionState
-  | "current";
+export type SectionNavVisualState = SectionCompletionState | "current";
 
 export function deriveSectionCompletionState(
   answeredCount: number,
@@ -40,5 +38,7 @@ export function sectionNavAriaLabel(
         : visual === "partial"
           ? "partially answered"
           : "not started";
-  return detail ? `${label}, ${stateLabel}, ${detail}` : `${label}, ${stateLabel}`;
+  return detail
+    ? `${label}, ${stateLabel}, ${detail}`
+    : `${label}, ${stateLabel}`;
 }

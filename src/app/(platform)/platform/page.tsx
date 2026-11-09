@@ -8,7 +8,7 @@ import { formatBenefitCurrencyAmount } from "@/lib/benefits/forecast";
 import type { BenefitsOverview } from "@/lib/benefits/types";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
 import {
-  buildAnalyticsDateRange,
+  buildAnalyticsDateRangeForOrganisation,
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadPlatformHomeAnalytics } from "@/modules/platform-analytics/home";
@@ -37,10 +37,11 @@ export default async function PlatformHomePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
+  const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    supabase,
     parseAnalyticsRangeDays(params.range),
   );
-  const supabase = await createServerSupabaseClient();
   const organisations = await listEligibleOrganisations();
   const currentOrg = organisations.find((o) => o.selected);
   const [setupSnapshot, setupPermissions, homePermissions] = await Promise.all([

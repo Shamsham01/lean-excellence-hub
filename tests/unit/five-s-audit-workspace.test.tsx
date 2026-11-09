@@ -1497,9 +1497,9 @@ describe("FiveSAuditWorkspace scoring scale", () => {
       answers: { [YES_NO_ID]: { text_value: "yes" } },
     });
 
-    expect(screen.getByTestId("five-s-answer-progress-label")).toHaveTextContent(
-      "1/2 answered",
-    );
+    expect(
+      screen.getByTestId("five-s-answer-progress-label"),
+    ).toHaveTextContent("1/2 answered");
     expect(screen.getByTestId("five-s-category-sort")).toHaveAttribute(
       "data-completion-state",
       "partial",

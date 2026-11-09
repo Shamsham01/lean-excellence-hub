@@ -23,6 +23,7 @@ describe("platform analytics date range", () => {
       new Date("2026-01-08T12:00:00.000Z"),
     );
     expect(range.days).toBe(7);
+    expect(range.timeZone).toBe("Europe/London");
     expect(new Date(range.start).getTime()).toBeLessThan(
       new Date(range.end).getTime(),
     );
