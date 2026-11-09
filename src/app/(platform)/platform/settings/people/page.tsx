@@ -43,7 +43,6 @@ export default async function PeopleSettingsPage() {
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
-
   if (
     !canManageInvitations &&
     !canProvisionWorkforce &&
@@ -194,9 +193,10 @@ export default async function PeopleSettingsPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm">
             <p className="text-muted-foreground">
-              Add an employee with a username and system-generated temporary
-              password for workforce sign-in. This is the primary onboarding
-              path for frontline teams.
+              Add employees with workforce sign-in credentials or import rows
+              from a spreadsheet. Available on every plan when your role
+              includes workforce provisioning; advanced HR admin tools remain a
+              paid module.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="w-fit">

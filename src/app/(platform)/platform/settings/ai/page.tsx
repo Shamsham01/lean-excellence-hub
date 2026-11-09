@@ -2,6 +2,10 @@ import { notFound } from "next/navigation";
 
 import { updateOrganisationAiSettings } from "@/app/(platform)/platform/problem-solving/ai/actions";
 import { PageHeader } from "@/components/platform/page-header";
+import {
+  AiCreditPeriodPanel,
+  type AiCreditPeriodSummary,
+} from "@/components/settings/ai-credit-period-panel";
 import { AiSettingsForm } from "@/components/settings/ai-settings-form";
 import { formatAiUsageLoadError } from "@/lib/ai/usage-summary";
 import { describeLeanAiCustomerInclusion } from "@/modules/billing/leanai-inclusion";
@@ -18,6 +22,14 @@ export default async function AiSettingsPage() {
     .from("organisation_ai_settings")
     .select("ai_enabled, monthly_token_ceiling, web_search_enabled")
     .maybeSingle();
+
+  const { data: creditRows, error: creditError } = await supabase.rpc(
+    "get_organisation_ai_credit_period_summary",
+  );
+  const creditSummary =
+    creditError || !creditRows?.length
+      ? null
+      : (creditRows[0] as AiCreditPeriodSummary);
 
   const { data: usageSummary, error: usageSummaryError } = await supabase.rpc(
     "get_ai_usage_summary",
@@ -50,6 +62,10 @@ export default async function AiSettingsPage() {
       <PageHeader
         title="LeanAI"
         description="Included access, month-to-date use, and optional governance for this organisation."
+      />
+      <AiCreditPeriodPanel
+        summary={creditSummary}
+        loadError={creditError?.message ?? null}
       />
       <AiSettingsForm
         inclusion={inclusion}

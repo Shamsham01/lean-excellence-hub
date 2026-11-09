@@ -1,6 +1,12 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
+vi.mock("@/app/(platform)/platform/benefits/actions", () => ({
+  createBenefitWizardDraft: vi.fn(),
+}));
+
 import { CreateBenefitWizard } from "@/components/benefits/create-benefit-wizard";
 import { PersonSelect } from "@/components/people/person-select";
 import { AwardRecognitionForm } from "@/components/recognition/award-recognition-form";

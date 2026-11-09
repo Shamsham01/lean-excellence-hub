@@ -8,7 +8,7 @@ import {
   parseAnalyticsRangeDays,
 } from "@/modules/platform-analytics/date-range";
 import { loadProblemSolvingAnalytics } from "@/modules/platform-analytics/problem-solving";
-import { AppLink } from "@/components/ui/app-link";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { Button } from "@/components/ui/button";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type {
@@ -80,14 +80,12 @@ export default async function ProblemSolvingPortfolioPage({
         description="Structured root cause analysis and countermeasure tracking across the portfolio."
         actions={
           canCreate ? (
-            <Button size="sm" asChild>
-              <AppLink
-                href="/platform/problem-solving/new"
-                data-testid="problem-solving-new-link"
-              >
-                New case
-              </AppLink>
-            </Button>
+            <ModulePortfolioNewLink
+              href="/platform/problem-solving/new"
+              testId="problem-solving-new-link"
+            >
+              New case
+            </ModulePortfolioNewLink>
           ) : null
         }
       />

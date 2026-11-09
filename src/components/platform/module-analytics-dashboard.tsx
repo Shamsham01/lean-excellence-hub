@@ -11,7 +11,7 @@ import { KpiStatCard } from "@/components/platform/kpi-stat-card";
 import { KpiStatGrid } from "@/components/platform/kpi-stat-grid";
 import type { ModuleAnalyticsSnapshot } from "@/modules/platform-analytics/types";
 
-export function ModuleAnalyticsDashboard({
+export async function ModuleAnalyticsDashboard({
   snapshot,
   icons,
   testId,

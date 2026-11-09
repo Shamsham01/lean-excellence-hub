@@ -80,8 +80,12 @@ jobs:
           max-attempts: "2"
       - name: Database lint
         run: ./scripts/ci/timed.sh "db:lint" npm run db:lint
+      - name: Verify billing module gate migration
+        run: ./scripts/ci/timed.sh "verify:billing-gates" npm run verify:billing-gates
       - name: pgTAP database tests
         run: ./scripts/ci/timed.sh "test:db" npm run test:db
+      - name: LeanAI credit concurrency integration
+        run: ./scripts/ci/timed.sh "test:db:integration:leanai-credit" npm run test:db:integration:leanai-credit
       - name: Generate database types
         run: ./scripts/ci/timed.sh "db:types" npm run db:types
       - name: Confirm committed database types are current

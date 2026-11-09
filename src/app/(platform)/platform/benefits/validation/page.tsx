@@ -42,7 +42,6 @@ export default async function BenefitValidationQueuePage() {
   );
 
   const queue = queueData ?? { benefits: [], realisation_entries: [] };
-
   return (
     <div
       className="flex flex-col gap-6"

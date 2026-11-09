@@ -2,12 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type RpcArgs = Record<string, unknown>;
 type ActionResult = { error?: string; ok?: true; id?: string };
 
 async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
+  const moduleGate = await assertPlanModuleWrite("problem_solving");
+  if (!moduleGate.ok) {
+    throw new Error(moduleGate.error);
+  }
   const supabase = await createServerSupabaseClient();
   const client = supabase as typeof supabase & {
     rpc: (

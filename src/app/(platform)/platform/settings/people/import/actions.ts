@@ -180,6 +180,53 @@ export async function getImportPreviewRows(jobId: string) {
   };
 }
 
+type ImportPreviewRow = {
+  row_number: number;
+  display_name: string | null;
+  username: string | null;
+  job_function: string | null;
+  primary_unit_path: string | null;
+  application_role: string | null;
+  access_scope_unit_path: string | null;
+};
+
+/** One server-action flight for the validate wizard step (avoids RSC stream churn). */
+export async function completeImportValidationStep(jobId: string): Promise<
+  WorkforceImportActionResult<{
+    summary: WorkforceImportValidationSummary;
+    validationRows: ReturnType<typeof mapValidationRowsFromDatabase>;
+    previewRows: ImportPreviewRow[] | null;
+  }>
+> {
+  const validated = await validateImportJob(jobId);
+  if ("error" in validated) {
+    return validated;
+  }
+
+  const rows = await getImportValidationRows(jobId);
+  if ("error" in rows) {
+    return rows;
+  }
+
+  let previewRows: ImportPreviewRow[] | null = null;
+  if (validated.data.canProvision) {
+    const preview = await getImportPreviewRows(jobId);
+    if ("error" in preview) {
+      return preview;
+    }
+    previewRows = preview.data;
+  }
+
+  return {
+    ok: true,
+    data: {
+      summary: validated.data,
+      validationRows: rows.data,
+      previewRows,
+    },
+  };
+}
+
 export async function startImportProvisioning(
   jobId: string,
 ): Promise<WorkforceImportActionResult<{ jobId: string }>> {

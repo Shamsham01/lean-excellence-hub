@@ -1,3 +1,5 @@
+import type { PlanModuleEntitlements } from "./module-entitlements";
+
 export const PLAN_CODES = [
   "essentials",
   "professional",
@@ -39,12 +41,17 @@ export type SupportTier = "standard" | "priority" | "named";
 
 export type OrganisationEntitlements = {
   coreModules: boolean;
+  /** Per-module gates (AND with RBAC). Legacy orgs without plan_code grandfather all modules. */
+  modules: PlanModuleEntitlements;
   advancedBenefitsGovernance: boolean;
   advancedAnalytics: boolean;
   apiAccess: boolean;
   integrations: boolean;
   leanAiTier: LeanAiTier;
+  /** Catalogue metadata only unless a separate policy flag enables enforcement. */
   leanAiMonthlyTokenAllowance: number | null;
+  /** Policy-default credits per subscribed site/month (1 credit = £0.001). Pending activation. */
+  leanAiMonthlyCreditAllowancePerSite: number;
   enterpriseSso: boolean;
   enterpriseGovernance: boolean;
   crossSiteBenchmarking: boolean;

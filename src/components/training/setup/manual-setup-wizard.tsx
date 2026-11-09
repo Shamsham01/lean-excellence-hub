@@ -7,6 +7,7 @@ import {
   saveTrainingSetupPreparation,
 } from "@/app/(platform)/platform/training/setup/actions";
 import { useSerializedSetupSave } from "@/components/skills/setup/serialized-save";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -247,7 +248,7 @@ export function ManualTrainingSetupWizard({
             </p>
           )}
           <div className="flex gap-2">
-            <Button
+            <ModuleWriteButton
               type="button"
               disabled={pending || !preview.ok}
               data-testid="training-create-draft"
@@ -261,7 +262,7 @@ export function ManualTrainingSetupWizard({
               }}
             >
               Create draft
-            </Button>
+            </ModuleWriteButton>
             <Button
               variant="outline"
               type="button"

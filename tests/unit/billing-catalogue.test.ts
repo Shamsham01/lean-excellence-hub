@@ -49,9 +49,9 @@ describe("plan catalogue", () => {
     expect(PLAN_CATALOGUE.founder.setupFeeMinor).toBe(0);
   });
 
-  it("records setup fees without collecting them in Checkout", () => {
-    expect(PLAN_CATALOGUE.essentials.setupFeeMinor).toBe(150_000);
-    expect(PLAN_CATALOGUE.professional.setupFeeMinor).toBe(250_000);
+  it("does not mandate setup fees in Checkout", () => {
+    expect(PLAN_CATALOGUE.essentials.setupFeeMinor).toBeNull();
+    expect(PLAN_CATALOGUE.professional.setupFeeMinor).toBeNull();
     expect(PLAN_CATALOGUE.essentials.setupFeeCollectedInCheckout).toBe(false);
     expect(PLAN_CATALOGUE.professional.setupFeeCollectedInCheckout).toBe(false);
   });
