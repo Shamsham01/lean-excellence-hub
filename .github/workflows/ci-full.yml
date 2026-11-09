@@ -303,6 +303,8 @@ jobs:
           startup-timeout-minutes: "8"
           max-attempts: "2"
       - uses: ./.github/actions/playwright-chromium
+        with:
+          browsers: ${{ matrix.label == 'platform' && 'chromium webkit' || 'chromium' }}
       - uses: ./.github/actions/supabase-playwright-e2e
         with:
           shard-label: ${{ matrix.label }}
