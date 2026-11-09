@@ -1,6 +1,6 @@
 begin;
 
-select plan(40);
+select plan(49);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -165,6 +165,15 @@ select ok(
 );
 
 select ok(
+  public.add_role_permission(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'manager_role'),
+    'suggestions.manage'
+  ),
+  'manager role receives suggestions.manage for override delegation retries'
+);
+
+select ok(
   public.publish_role_version(
     (select id from t119_ids where key = 'organisation'),
     (select id from t119_ids where key = 'manager_role')
@@ -172,14 +181,19 @@ select ok(
   'manager role publishes'
 );
 
-select ok(
+insert into t119_ids (key, id)
+select
+  'site_manager_grant',
   public.grant_role_version(
     (select id from t119_ids where key = 'organisation'),
     (select id from t119_ids where key = 'site_manager_membership'),
     (select id from t119_ids where key = 'manager_role'),
     'unit_subtree',
     (select id from t119_ids where key = 'unit_site')
-  ) is not null,
+  );
+
+select ok(
+  (select id from t119_ids where key = 'site_manager_grant') is not null,
   'site manager scoped to production site subtree'
 );
 
@@ -420,6 +434,54 @@ select ok(
   'site manager returns for delegation'
 );
 
+set local role lean_hub_private_owner;
+
+update public.organisation_memberships membership_row
+set
+  status = 'inactive',
+  inactivated_at = statement_timestamp(),
+  status_reason = 't119 inactive actor fixture'
+where membership_row.id = (select id from t119_ids where key = 'site_manager_membership')
+  and membership_row.organisation_id = (select id from t119_ids where key = 'organisation');
+
+set local role authenticated;
+
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership'),
+    'inactive actor'
+  ),
+  'approval delegation is not authorised',
+  'inactive delegating actor is rejected before idempotent paths'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+update public.organisation_memberships membership_row
+set
+  status = 'active',
+  inactivated_at = null,
+  status_reason = null
+where membership_row.id = (select id from t119_ids where key = 'site_manager_membership')
+  and membership_row.organisation_id = (select id from t119_ids where key = 'organisation');
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'reactivated site manager for delegation'
+);
+
 reset role;
 set local role lean_hub_private_owner;
 
@@ -502,7 +564,79 @@ select is(
     'On leave retry'
   ),
   (select id from t119_ids where key = 'first_delegation_assignment'),
-  'idempotent delegate to same target returns stable assignment id'
+  'idempotent delegate to same target returns stable assignment id while actor retains authority'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000001","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000001","email":"t119-operator@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'operator selects organisation to revoke manager review grant'
+);
+
+select ok(
+  public.revoke_access_grant(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'site_manager_grant'),
+    't119 revokes manager suggestions.review after delegation'
+  ),
+  'operator revokes site manager review grant'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'site manager after grant revocation'
+);
+
+select throws_ok(
+  format(
+    'select public.delegate_suggestion_approval(%L::uuid, %L::uuid, %L)',
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership'),
+    'post-revocation retry'
+  ),
+  'approval delegation is not authorised',
+  'revoked delegating actor cannot use idempotent path to bypass authority'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+select is(
+  (
+    select count(*)::bigint
+    from public.suggestion_review_assignments assignment_row
+    where assignment_row.organisation_id = (select id from t119_ids where key = 'organisation')
+      and assignment_row.suggestion_id = (select id from t119_ids where key = 'suggestion')
+      and assignment_row.status = 'active'
+  ),
+  1::bigint,
+  'only one active reviewer assignment remains after delegation attempts'
+);
+
+select ok(
+  private.is_active_suggestion_reviewer(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership')
+  ),
+  'delegate remains active reviewer after parallel and revocation attempts'
 );
 
 reset role;

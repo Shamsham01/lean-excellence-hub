@@ -1,6 +1,6 @@
 begin;
 
-select plan(44);
+select plan(49);
 
 -- ---------------------------------------------------------------------------
 -- Complete private helper inventory: no PUBLIC/anon/authenticated/service_role
@@ -211,6 +211,33 @@ select ok(
     'EXECUTE'
   ),
   'authenticated cannot execute can_act_as_active_suggestion_reviewer'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.append_suggestion_status_history(uuid,uuid,text,text,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute append_suggestion_status_history'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_view_suggestion_reviewer_metadata(uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute can_view_suggestion_reviewer_metadata'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.can_review_suggestion(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute can_review_suggestion (transitive reviewer oracle)'
 );
 
 select ok(
@@ -545,6 +572,32 @@ select throws_ok(
   ),
   'permission denied for function delegate_suggestion_approval',
   'authenticated cannot call private delegate with arbitrary suggestion id'
+);
+
+select throws_ok(
+  format(
+    'select private.append_suggestion_status_history(%L::uuid, %L::uuid, %L, %L, %L::uuid, %L)',
+    (select id from sec_ids where key = 'org_a'),
+    (select id from sec_ids where key = 'suggestion_b'),
+    'submitted',
+    'under_review',
+    (select id from sec_ids where key = 'membership_b'),
+    'cross-tenant history probe'
+  ),
+  'permission denied for function append_suggestion_status_history',
+  'authenticated cannot append status history cross-org'
+);
+
+select throws_ok(
+  format(
+    'select private.can_view_suggestion_reviewer_metadata(%L::uuid, %L::uuid, %L::uuid, %L::uuid)',
+    (select id from sec_ids where key = 'org_a'),
+    (select id from sec_ids where key = 'suggestion_b'),
+    (select id from sec_ids where key = 'unit_b'),
+    (select id from sec_ids where key = 'membership_b')
+  ),
+  'permission denied for function can_view_suggestion_reviewer_metadata',
+  'authenticated cannot probe reviewer metadata cross-org'
 );
 
 select * from finish();
