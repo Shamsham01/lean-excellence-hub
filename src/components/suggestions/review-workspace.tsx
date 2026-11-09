@@ -30,6 +30,7 @@ import {
   suggestionStatusBadgeVariant,
   suggestionStatusLabel,
 } from "@/lib/suggestions/status";
+import { SuggestionDelegationNotice } from "@/components/suggestions/suggestion-delegation-notice";
 import type { SuggestionReviewContext } from "@/lib/suggestions/types";
 
 const LEVELS = ["low", "medium", "high"] as const;
@@ -53,6 +54,7 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
     eligible_reviewers,
     eligible_assign_reviewers,
     eligible_delegate_reviewers,
+    latest_delegation: latestDelegation,
   } = context;
 
   const assignEligibleReviewers =
@@ -197,6 +199,13 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
           <p className="mt-2 text-sm text-muted-foreground">
             Manager override available for this suggestion.
           </p>
+        ) : null}
+
+        {latestDelegation ? (
+          <SuggestionDelegationNotice
+            delegation={latestDelegation}
+            testId="review-workspace-delegation-notice"
+          />
         ) : null}
 
         {parkedPresentation.showCurrentParked ? (

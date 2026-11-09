@@ -121,6 +121,23 @@ describe("notification renderers", () => {
     expect(rendered.text).toContain(`${APP_ORIGIN}/platform/skills/matrix`);
   });
 
+  it("includes delegation reason in reassigned reviewer emails when provided", () => {
+    const rendered = renderOperationalNotification(
+      buildContext(SUGGESTION_REVIEWER_REASSIGNED_KIND, {
+        contextTitle: "Forklift path",
+        contextLinkPath: "/platform/suggestions/review?queue=mine&suggestionId=abc",
+        contextEmployeeMessage: "Please cover while I am on gemba.",
+      }),
+      APP_ORIGIN,
+    );
+
+    expect(rendered.text).toContain("Delegation note");
+    expect(rendered.text).toContain("Please cover while I am on gemba.");
+    expect(rendered.html).toContain("Delegation note");
+    expect(rendered.html).toContain("Please cover while I am on gemba.");
+    expect(rendered.text).toContain(`${APP_ORIGIN}/platform/suggestions/review`);
+  });
+
   it("renders reviewer assignment deep links and CTA labels", () => {
     const suggestionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     const rendered = renderOperationalNotification(

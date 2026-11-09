@@ -110,12 +110,29 @@ export type SuggestionReviewContextTaskOwner = {
   display_name: string | null;
 };
 
+export type SuggestionApprovalDelegationSummary = {
+  delegated_by_display_name: string | null;
+  delegated_at: string;
+  reason: string | null;
+  to_member_id?: string;
+  delegated_by_member_id?: string;
+};
+
+export type SuggestionDetailApprovalDelegation = {
+  id: string;
+  delegated_at: string;
+  reason: string | null;
+  delegated_by_display_name: string | null;
+  to_display_name: string | null;
+};
+
 export type SuggestionReviewContext = {
   suggestion: SuggestionReviewContextSuggestion;
   reviewer: SuggestionReviewContextReviewer | null;
   pending_approver: SuggestionReviewContextPendingApprover | null;
   task_owner: SuggestionReviewContextTaskOwner | null;
   permissions: SuggestionReviewContextPermissions;
+  latest_delegation?: SuggestionApprovalDelegationSummary | null;
   /** Assign/reassign dropdown (full jurisdiction-scoped list). */
   eligible_reviewers: SuggestionEligibleReviewer[];
   eligible_assign_reviewers?: SuggestionEligibleReviewer[];

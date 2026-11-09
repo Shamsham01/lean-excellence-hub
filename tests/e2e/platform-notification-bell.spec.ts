@@ -28,7 +28,7 @@ test.describe("Platform notification bell", () => {
 
     await page.setViewportSize({ width: 1280, height: 720 });
     const bell = page
-      .getByTestId("leanai-assistant-rail")
+      .getByTestId("platform-topbar")
       .getByTestId("platform-notification-bell");
     await expect(bell).toBeVisible();
     await bell.click();

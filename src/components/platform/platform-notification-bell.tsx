@@ -2,11 +2,11 @@
 
 import { Bell, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 
 import {
   markAllInAppNotificationsRead,
-  markInAppNotificationRead,
+  openInAppNotification,
 } from "@/app/(platform)/platform/notifications/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,38 +19,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
+import { resolvePlatformInAppNotificationHref } from "@/modules/platform-shell/notification-target";
 
 type PlatformNotificationBellProps = {
-  variant: "header" | "rail";
   initialUnreadCount: number;
   initialItems: PlatformInAppNotification[];
+  className?: string;
 };
 
 export function PlatformNotificationBell({
-  variant,
   initialUnreadCount,
   initialItems,
+  className,
 }: PlatformNotificationBellProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const feedbackId = useId();
 
   const unread = initialUnreadCount;
   const menuLabel =
     unread > 0 ? `Notifications, ${unread} unread` : "Notifications";
 
-  const buttonClass =
-    variant === "header"
-      ? "relative size-9 shrink-0 border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
-      : "relative size-11 shrink-0 rounded-none text-foreground hover:bg-muted";
-
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
-          variant={variant === "header" ? "outline" : "ghost"}
+          variant="outline"
           size="icon"
-          className={buttonClass}
+          className={cn(
+            "relative size-9 shrink-0 border-border text-foreground hover:bg-muted",
+            className,
+          )}
           aria-label={menuLabel}
           data-testid="platform-notification-bell"
         >
@@ -85,6 +87,7 @@ export function PlatformNotificationBell({
               onClick={() => {
                 startTransition(async () => {
                   await markAllInAppNotificationsRead();
+                  setFeedback(null);
                   router.refresh();
                 });
               }}
@@ -94,6 +97,16 @@ export function PlatformNotificationBell({
             </Button>
           ) : null}
         </div>
+        {feedback ? (
+          <p
+            id={feedbackId}
+            role="status"
+            className="border-b border-border px-3 py-2 text-xs text-destructive"
+            data-testid="platform-notification-feedback"
+          >
+            {feedback}
+          </p>
+        ) : null}
         <div
           className="max-h-[min(24rem,50dvh)] overflow-y-auto overscroll-contain py-1"
           data-testid="platform-notification-list"
@@ -108,23 +121,24 @@ export function PlatformNotificationBell({
           ) : (
             initialItems.map((item) => {
               const isUnread = item.read_at == null;
+              const resolvedHref = resolvePlatformInAppNotificationHref(item);
               return (
                 <DropdownMenuItem
                   key={item.id}
                   className="cursor-pointer rounded-none p-0 focus:bg-muted"
                   data-testid={`platform-notification-item-${item.id}`}
                   data-notification-unread={isUnread ? "true" : "false"}
-                  data-notification-href={item.href ?? ""}
-                  onSelect={(event) => {
-                    event.preventDefault();
+                  data-notification-href={resolvedHref ?? ""}
+                  onClick={() => {
+                    setFeedback(null);
                     startTransition(async () => {
-                      if (isUnread) {
-                        await markInAppNotificationRead(item.id);
+                      const result = await openInAppNotification(item.id);
+                      if (!result.ok) {
+                        setFeedback(result.message);
+                        return;
                       }
-                      if (item.href) {
-                        router.push(item.href);
-                      }
-                      router.refresh();
+                      setOpen(false);
+                      router.push(result.href);
                     });
                   }}
                 >

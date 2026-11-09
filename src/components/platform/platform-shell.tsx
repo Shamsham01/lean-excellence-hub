@@ -51,12 +51,8 @@ export async function PlatformShell({
         siteContext={siteContext}
         member={member}
         showSettings={showSettings}
-        notifications={notifications}
       />
-      <LeanAiAssistantShell
-        organisationId={organisationId}
-        notifications={notifications}
-      >
+      <LeanAiAssistantShell organisationId={organisationId}>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background lg:ml-[290px]">
           <MobilePlatformNavigation
             items={navWithSetup}
@@ -71,6 +67,7 @@ export async function PlatformShell({
             member={member}
             organisationName={organisationName}
             showSettings={showSettings}
+            notifications={notifications}
           />
           <main
             data-testid="platform-main"
