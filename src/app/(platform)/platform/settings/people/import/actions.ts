@@ -191,9 +191,7 @@ type ImportPreviewRow = {
 };
 
 /** One server-action flight for the validate wizard step (avoids RSC stream churn). */
-export async function completeImportValidationStep(
-  jobId: string,
-): Promise<
+export async function completeImportValidationStep(jobId: string): Promise<
   WorkforceImportActionResult<{
     summary: WorkforceImportValidationSummary;
     validationRows: ReturnType<typeof mapValidationRowsFromDatabase>;

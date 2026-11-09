@@ -54,9 +54,7 @@ type WorkforceImportWizardProps = {
   ) => Promise<
     { ok: true; data: WorkforceImportValidationSummary } | { error: string }
   >;
-  onCompleteValidationStep: (
-    jobId: string,
-  ) => Promise<
+  onCompleteValidationStep: (jobId: string) => Promise<
     | {
         ok: true;
         data: {
