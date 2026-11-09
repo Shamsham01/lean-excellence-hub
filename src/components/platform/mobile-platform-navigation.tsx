@@ -81,15 +81,6 @@ export function MobilePlatformNavigation({
               organisations={organisations}
               siteContext={siteContext}
               closeGutter
-              notificationsSlot={
-                notifications ? (
-                  <PlatformNotificationBell
-                    variant="header"
-                    initialUnreadCount={notifications.unreadCount}
-                    initialItems={notifications.items}
-                  />
-                ) : null
-              }
             />
             <div
               className="sidebar-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
@@ -131,6 +122,12 @@ export function MobilePlatformNavigation({
             <Search className="size-4" aria-hidden />
           </Button>
           <ThemeToggleIcon />
+          {notifications ? (
+            <PlatformNotificationBell
+              initialUnreadCount={notifications.unreadCount}
+              initialItems={notifications.items}
+            />
+          ) : null}
           <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </div>

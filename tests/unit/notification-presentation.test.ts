@@ -16,6 +16,7 @@ function row(
     href: null,
     read_at: null,
     created_at: "2026-11-09T12:00:00.000Z",
+    dedupe_key: "test:dedupe",
     ...partial,
   };
 }

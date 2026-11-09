@@ -74,8 +74,8 @@ test.describe("Milestone 6 5S journeys", () => {
     await selectFirstExecutionUnit(page, "five-s-unit-select");
     await page.getByRole("button", { name: "Start audit" }).click();
 
-    const yes = page.getByRole("button", { name: "Yes" });
-    const no = page.getByRole("button", { name: "No" });
+    const yes = page.getByRole("button", { name: "Yes", exact: true });
+    const no = page.getByRole("button", { name: "No", exact: true });
     await expect(yes).toBeVisible();
     await expect(yes).toHaveAttribute("aria-pressed", "false");
     await expect(no).toHaveAttribute("aria-pressed", "false");
@@ -87,10 +87,9 @@ test.describe("Milestone 6 5S journeys", () => {
     await expect(page.getByTestId("evidence-uploader")).toBeVisible();
 
     await page.reload();
-    await expect(page.getByRole("button", { name: "Yes" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await expect(
+      page.getByRole("button", { name: "Yes", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   test("admin: completed audit result shows uploaded image evidence", async ({

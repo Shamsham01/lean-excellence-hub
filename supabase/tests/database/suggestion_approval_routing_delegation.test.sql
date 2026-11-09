@@ -1,6 +1,6 @@
 begin;
 
-select plan(60);
+select plan(70);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -585,6 +585,124 @@ select
 select ok(
   (select id from t119_ids where key = 'first_delegation_assignment') is not null,
   'pending approver delegates to eligible colleague'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+select ok(
+  private.can_view_suggestion_delegation_reason(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'site_manager_membership')
+  ),
+  'delegating manager may view delegation reason'
+);
+
+select ok(
+  (
+    select notification_row.body
+    from public.in_app_notifications notification_row
+    where notification_row.organisation_id = (select id from t119_ids where key = 'organisation')
+      and notification_row.membership_id = (select id from t119_ids where key = 'delegate_membership')
+      and notification_row.notification_type = 'suggestions.awaiting_review'
+    order by notification_row.created_at desc
+    limit 1
+  ) like '%Reason: On leave%',
+  'delegation in-app notification includes reason suffix'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000001","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000001","email":"t119-operator@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'author selects organisation for delegation reason checks'
+);
+
+select is(
+  public.get_suggestion_review_context(
+    (select id from t119_ids where key = 'suggestion')
+  )->'latest_delegation'->>'reason',
+  null,
+  'suggestion author does not receive delegation reason in review context'
+);
+
+select is(
+  (
+    select entry.value->>'reason'
+    from jsonb_array_elements(
+      public.get_suggestion_detail((select id from t119_ids where key = 'suggestion'))->'approval_delegations'
+    ) as entry(value)
+    limit 1
+  ),
+  null,
+  'suggestion author does not receive delegation reason in detail timeline'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000004","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000004","email":"t119-delegate@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'delegate selects organisation for delegation reason checks'
+);
+
+select is(
+  public.get_suggestion_review_context(
+    (select id from t119_ids where key = 'suggestion')
+  )->'latest_delegation'->>'reason',
+  'On leave',
+  'delegate sees delegation reason in review context'
+);
+
+reset role;
+set local role lean_hub_private_owner;
+
+select is(
+  private.lookup_suggestion_delegation_reason_for_recipient(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'delegate_membership')
+  ),
+  'On leave',
+  'email lookup returns reason for delegate recipient'
+);
+
+select is(
+  private.lookup_suggestion_delegation_reason_for_recipient(
+    (select id from t119_ids where key = 'organisation'),
+    (select id from t119_ids where key = 'suggestion'),
+    (select id from t119_ids where key = 'site_manager_membership')
+  ),
+  null,
+  'email lookup withholds reason for non-delegate recipient'
+);
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1190000-0000-4000-8000-000000000002","role":"authenticated","session_id":"f1190100-0000-4000-8000-000000000002","email":"t119-site-manager@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from t119_ids where key = 'organisation')),
+  'delegating manager re-selects organisation'
 );
 
 select is(
