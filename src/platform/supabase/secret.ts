@@ -204,39 +204,14 @@ export async function createConfirmedInvitationAuthUser(input: {
 }) {
   const client = createSecretClient();
 
-  const redeemed = await client.rpc(
-    "redeem_organisation_invitation_inbox_proof",
-    {
-      invitation_token_digest: invitationTokenDigest(input.invitationToken),
-      target_inbox_proof_digest: invitationInboxProofDigest(input.inboxProof),
-      target_binding_id: input.invitationSignupBindingId,
-    },
-  );
-
-  if (redeemed.error || redeemed.data !== true) {
-    return {
-      error: new Error(
-        "This invitation email link has already been used or is no longer valid.",
-      ),
-    };
-  }
-
-  const inboxVerified = await client.rpc(
-    "assert_invitation_inbox_verified_for_binding",
-    { target_binding_id: input.invitationSignupBindingId },
-  );
-
-  if (inboxVerified.error || inboxVerified.data !== true) {
-    return {
-      error: new Error(
-        "Open the invitation email and use the Create account button before setting your password.",
-      ),
-    };
-  }
+  const tokenDigest = invitationTokenDigest(input.invitationToken);
+  const proofDigest = invitationInboxProofDigest(input.inboxProof);
 
   const authorized = await client.rpc("authorize_invitation_identity_signup", {
     target_binding_id: input.invitationSignupBindingId,
     target_user_email: input.email,
+    invitation_token_digest: tokenDigest,
+    target_inbox_proof_digest: proofDigest,
   });
 
   if (authorized.error || authorized.data !== true) {
@@ -257,15 +232,50 @@ export async function createConfirmedInvitationAuthUser(input: {
   });
 
   if (created.error || !created.data.user?.id) {
-    return { error: created.error };
+    return { error: created.error ?? new Error("Unable to create account.") };
   }
 
-  const enrolment = await finaliseIdentityEnrolment(created.data.user.id);
-  if (enrolment.error) {
-    return { error: enrolment.error };
+  const userId = created.data.user.id;
+
+  const finalised = await client.rpc("finalise_invitation_identity_signup", {
+    target_binding_id: input.invitationSignupBindingId,
+    target_user_id: userId,
+    invitation_token_digest: tokenDigest,
+    target_inbox_proof_digest: proofDigest,
+  });
+
+  if (finalised.error || finalised.data !== true) {
+    await client.auth.admin.deleteUser(userId);
+    await client.rpc("clear_invitation_signup_binding_auth_user", {
+      target_binding_id: input.invitationSignupBindingId,
+    });
+    return {
+      error: new Error("This invitation is no longer available."),
+    };
   }
 
-  return { userId: created.data.user.id };
+  const redeemed = await client.rpc(
+    "redeem_organisation_invitation_inbox_proof",
+    {
+      invitation_token_digest: tokenDigest,
+      target_inbox_proof_digest: proofDigest,
+      target_binding_id: input.invitationSignupBindingId,
+    },
+  );
+
+  if (redeemed.error || redeemed.data !== true) {
+    await client.rpc("clear_invitation_signup_binding_auth_user", {
+      target_binding_id: input.invitationSignupBindingId,
+    });
+    await client.auth.admin.deleteUser(userId);
+    return {
+      error: new Error(
+        "This invitation email link has already been used or is no longer valid.",
+      ),
+    };
+  }
+
+  return { userId };
 }
 
 export async function restoreOrganisation(

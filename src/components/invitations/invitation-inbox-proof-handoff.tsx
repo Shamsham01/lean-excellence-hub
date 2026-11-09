@@ -29,6 +29,25 @@ function readInboxProofFromLocationHash(): string | null {
   }
 }
 
+function readInboxProofFromLocationSearch(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const raw = new URLSearchParams(window.location.search)
+    .get("inbox_proof")
+    ?.trim();
+  if (!raw || !isInvitationInboxProofValue(raw)) {
+    return null;
+  }
+  return raw;
+}
+
+function readInboxProofFromLocation(): string | null {
+  return (
+    readInboxProofFromLocationHash() ?? readInboxProofFromLocationSearch()
+  );
+}
+
 export function InvitationInboxProofHandoff({
   token,
   hasInboxProofCookie,
@@ -47,7 +66,7 @@ export function InvitationInboxProofHandoff({
       return;
     }
 
-    const inboxProof = readInboxProofFromLocationHash();
+    const inboxProof = readInboxProofFromLocation();
     if (!inboxProof) {
       return;
     }

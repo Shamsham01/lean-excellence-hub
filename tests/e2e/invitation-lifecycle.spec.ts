@@ -17,6 +17,8 @@ import {
   invitationLifecycleCredentials,
   issueInvitationForEmail,
   issueInvitationWithDeliveredInboxProof,
+  invitationInboxProofRedeemedForDelivery,
+  revokeOrganisationInvitationForE2e,
   createAccountThroughInvitationEmail,
   prefetchInvitationActivateUrl,
   countEmailsToRecipient,
@@ -308,6 +310,133 @@ test.describe("Invitation lifecycle", () => {
     await expect(page).toHaveURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
       timeout: 30_000,
     });
+    await context.close();
+  });
+
+  test("scenario 1G: confirmed account collision does not redeem inbox proof", async ({
+    browser,
+  }) => {
+    const { publishableKey, url, admin } = getInvitationLifecycleClients();
+    const adminClient = await createOnboardingOrgAdminClient(
+      url,
+      publishableKey,
+    );
+    const uniqueEmail = `invitation-collision-${Date.now()}@example.test`;
+    const collisionPassword = "InvitationCollisionExisting123!";
+    const { error: existingUserError } = await admin.auth.admin.createUser({
+      email: uniqueEmail,
+      password: collisionPassword,
+      email_confirm: true,
+    });
+    expect(existingUserError).toBeNull();
+
+    const { invitationId, activateEmailPath } =
+      await issueInvitationWithDeliveredInboxProof(adminClient, {
+        email: uniqueEmail,
+        tokenSeed: `collision-${Date.now()}`,
+      });
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(toE2eOriginUrl(activateEmailPath));
+    await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/, {
+      timeout: 30_000,
+    });
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).some(
+            (cookie) => cookie.name === "leh_invitation_inbox_proof",
+          ),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+
+    const attemptPassword = "InvitationCollisionAttempt123!";
+    await page.locator("#password").fill(attemptPassword);
+    await page.locator("#confirm-password").fill(attemptPassword);
+    await page
+      .getByRole("button", { name: "Create account and continue" })
+      .click();
+    await expect(
+      page.getByText(/account already exists|valid organisation invitation/i),
+    ).toBeVisible();
+    expect(invitationInboxProofRedeemedForDelivery(invitationId)).toBe(false);
+
+    await page.locator("#password").fill(attemptPassword);
+    await page.locator("#confirm-password").fill(attemptPassword);
+    await page
+      .getByRole("button", { name: "Create account and continue" })
+      .click();
+    await expect(
+      page.getByText(/account already exists|valid organisation invitation/i),
+    ).toBeVisible();
+    expect(invitationInboxProofRedeemedForDelivery(invitationId)).toBe(false);
+
+    await context.close();
+  });
+
+  test("scenario 5B: revoke during activation blocks signup without orphan auth user", async ({
+    browser,
+  }) => {
+    const { publishableKey, url } = getInvitationLifecycleClients();
+    const adminClient = await createOnboardingOrgAdminClient(
+      url,
+      publishableKey,
+    );
+    const organisations = await adminClient.rpc(
+      "list_my_eligible_organisations",
+    );
+    const organisation = organisations.data?.find(
+      (entry: { organisation_code: string; organisation_id: string }) =>
+        entry.organisation_code === onboardingE2eCredentials.organisationCode,
+    );
+    if (!organisation?.organisation_id) {
+      throw new Error("Onboarding organisation id was not available.");
+    }
+
+    const uniqueEmail = `invitation-revoke-activate-${Date.now()}@example.test`;
+    const issued = await issueInvitationWithDeliveredInboxProof(adminClient, {
+      email: uniqueEmail,
+      tokenSeed: `revoke-activate-${Date.now()}`,
+    });
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(toE2eOriginUrl(issued.activateEmailPath));
+    await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/, {
+      timeout: 30_000,
+    });
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies()).some(
+            (cookie) => cookie.name === "leh_invitation_inbox_proof",
+          ),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+
+    await revokeOrganisationInvitationForE2e(adminClient, {
+      organisationId: organisation.organisation_id,
+      invitationId: issued.invitationId,
+    });
+
+    await page.locator("#password").fill("InvitationRevokeActivate123!");
+    await page
+      .locator("#confirm-password")
+      .fill("InvitationRevokeActivate123!");
+    await page
+      .getByRole("button", { name: "Create account and continue" })
+      .click();
+    await expect(
+      page.getByText(/no longer available|valid organisation invitation/i),
+    ).toBeVisible();
+    const { admin } = getInvitationLifecycleClients();
+    expect(await findAuthUserByEmail(admin, uniqueEmail)).toBeNull();
+    expect(invitationInboxProofRedeemedForDelivery(issued.invitationId)).toBe(
+      false,
+    );
     await context.close();
   });
 

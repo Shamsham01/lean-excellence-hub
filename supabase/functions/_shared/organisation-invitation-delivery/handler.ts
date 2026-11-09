@@ -5,12 +5,17 @@ import {
   authenticateNotificationWorkerRequest,
   resolvePrivilegedSupabaseKey,
 } from "../worker-auth.ts";
+import { resolveInvitationDeliveryMailpitCaptureUrl } from "./mailpit-capture-policy.ts";
 import {
   buildOrganisationInvitationActivateUrl,
   renderOrganisationInvitationEmail,
 } from "./templates.ts";
 
 export { buildOrganisationInvitationActivateUrl } from "./templates.ts";
+export {
+  isLocalSupabaseInvitationDeliveryRuntime,
+  resolveInvitationDeliveryMailpitCaptureUrl,
+} from "./mailpit-capture-policy.ts";
 
 export type InvitationDeliveryDispatchPayload = {
   delivery_id: string;
@@ -297,9 +302,9 @@ export function createDefaultInvitationDeliveryDependencies(): DispatchDependenc
         auth: { autoRefreshToken: false, persistSession: false },
       }),
     sendEmail: async (input) => {
-      const captureUrl = Deno.env
-        .get("INVITATION_DELIVERY_MAILPIT_URL")
-        ?.trim();
+      const captureUrl = resolveInvitationDeliveryMailpitCaptureUrl((name) =>
+        Deno.env.get(name),
+      );
       if (captureUrl) {
         return await sendViaMailpitCapture(captureUrl, input);
       }

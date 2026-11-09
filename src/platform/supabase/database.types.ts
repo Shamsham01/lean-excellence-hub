@@ -12808,6 +12808,14 @@ export type Database = {
         Args: { target_import_job_id: string }
         Returns: boolean
       }
+      assert_invitation_inbox_ready_for_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
       assert_invitation_inbox_verified_for_binding: {
         Args: { target_binding_id: string }
         Returns: boolean
@@ -12861,7 +12869,12 @@ export type Database = {
         Returns: boolean
       }
       authorize_invitation_identity_signup: {
-        Args: { target_binding_id: string; target_user_email: string }
+        Args: {
+          invitation_token_digest?: string
+          target_binding_id: string
+          target_inbox_proof_digest?: string
+          target_user_email: string
+        }
         Returns: boolean
       }
       award_recognition: {
@@ -13021,6 +13034,10 @@ export type Database = {
           import_row_id: string
           provisioning_intent_id: string
         }[]
+      }
+      clear_invitation_signup_binding_auth_user: {
+        Args: { target_binding_id: string }
+        Returns: boolean
       }
       close_problem_solving_case: {
         Args: {
@@ -14049,6 +14066,15 @@ export type Database = {
       }
       finalise_identity_enrolment: {
         Args: { target_user_id: string }
+        Returns: boolean
+      }
+      finalise_invitation_identity_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+          target_user_id: string
+        }
         Returns: boolean
       }
       finalize_people_invitation_import_job: {
@@ -15214,6 +15240,14 @@ export type Database = {
         Args: {
           target_containment_id: string
           target_release_rationale?: string
+        }
+        Returns: boolean
+      }
+      release_organisation_invitation_inbox_proof_redemption: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
         }
         Returns: boolean
       }

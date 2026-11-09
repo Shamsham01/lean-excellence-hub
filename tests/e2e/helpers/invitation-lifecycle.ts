@@ -531,6 +531,34 @@ export async function prefetchInvitationActivateUrl(activateEmailPath: string) {
   }
 }
 
+export async function revokeOrganisationInvitationForE2e(
+  ownerClient: SupabaseClient,
+  input: { organisationId: string; invitationId: string },
+) {
+  const { error } = await ownerClient.rpc("revoke_organisation_invitation", {
+    target_organisation_id: input.organisationId,
+    target_invitation_id: input.invitationId,
+    change_reason: "E2E activation race revocation",
+  });
+  if (error) {
+    throw error;
+  }
+}
+
+export function invitationInboxProofRedeemedForDelivery(invitationId: string) {
+  const rows = queryLocalSql(
+    `select delivery.inbox_proof_redeemed_at is not null as redeemed
+     from private.organisation_invitation_deliveries delivery
+     where delivery.invitation_id = (:'invitation_id')::uuid
+       and delivery.cancelled_at is null
+     order by delivery.created_at desc
+     limit 1;`,
+    { invitation_id: invitationId },
+    new Set(["invitation_id"]),
+  );
+  return rows[0] === "t";
+}
+
 export async function countEmailsToRecipient(email: string) {
   const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
   const response = await fetch(`${mailpitUrl}/api/v1/messages`);
