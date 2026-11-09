@@ -1,5 +1,9 @@
 import { cache } from "react";
 
+import {
+  clearSessionAndRedirectToLogin,
+  isRecoverableAuthSessionFailure,
+} from "@/modules/identity/auth-session-redirect";
 import { throwPlatformBoundaryError } from "@/platform/observability/platform-boundary";
 import { readRequestPathname } from "@/platform/http/request-path";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -19,6 +23,10 @@ export const listEligibleOrganisations = cache(async () => {
   const { data, error } = await supabase.rpc("list_my_eligible_organisations");
 
   if (error) {
+    if (isRecoverableAuthSessionFailure(error)) {
+      await clearSessionAndRedirectToLogin();
+    }
+
     throwPlatformBoundaryError({
       category: "organisation_access",
       operation: "list_my_eligible_organisations",
@@ -35,6 +43,10 @@ export const loadCurrentOrganisationId = cache(async () => {
   const { data, error } = await supabase.rpc("current_organisation_id");
 
   if (error) {
+    if (isRecoverableAuthSessionFailure(error)) {
+      await clearSessionAndRedirectToLogin();
+    }
+
     throwPlatformBoundaryError({
       category: "organisation_access",
       operation: "current_organisation_id",

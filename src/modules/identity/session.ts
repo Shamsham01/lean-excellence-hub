@@ -1,6 +1,10 @@
 import { cache } from "react";
 import { redirect, unstable_rethrow } from "next/navigation";
 
+import {
+  clearSessionAndRedirectToLogin,
+  isRecoverableAuthSessionFailure,
+} from "@/modules/identity/auth-session-redirect";
 import { resolveAuthenticatedInvitationContinuation } from "@/modules/identity/invitation-continuation";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
@@ -27,6 +31,10 @@ export const requireClaims = cache(async () => {
     const { data, error } = await supabase.auth.getClaims();
 
     if (error) {
+      if (isRecoverableAuthSessionFailure(error)) {
+        await clearSessionAndRedirectToLogin();
+      }
+
       throwPlatformBoundaryError({
         category: "auth",
         operation: "getClaims",
@@ -39,14 +47,18 @@ export const requireClaims = cache(async () => {
     }
 
     if (!data?.claims?.sub) {
-      redirect("/login");
+      await clearSessionAndRedirectToLogin();
     }
 
-    return data.claims;
+    return data!.claims;
   } catch (cause) {
     unstable_rethrow(cause);
     if (isNextNavigationError(cause)) {
       throw cause;
+    }
+
+    if (isRecoverableAuthSessionFailure(cause)) {
+      await clearSessionAndRedirectToLogin();
     }
 
     throwPlatformBoundaryError({
@@ -62,6 +74,10 @@ const readIdentityState = cache(async (): Promise<IdentityState | null> => {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("current_identity_state");
   if (error) {
+    if (isRecoverableAuthSessionFailure(error)) {
+      await clearSessionAndRedirectToLogin();
+    }
+
     throwPlatformBoundaryError({
       category: "identity",
       operation: "current_identity_state",
