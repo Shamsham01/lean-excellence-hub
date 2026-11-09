@@ -160,7 +160,7 @@ Inventory baseline: **160** authenticated Professional write RPCs (see table). *
 | `upsert_benefit_reporting_settings` | benefits | no |  |
 | `validate_benefit_realisation_entry` | benefits | no |  |
 | `validate_people_invitation_import_job` | people_hr | no |  |
-| `validate_workforce_import_job` | people_hr | no |  |
+| `validate_workforce_import_job` | foundation | no | `assert_workforce_import_authorised` only |
 | `verify_cause_hypothesis` | problem_solving | no |  |
 | `verify_current_condition_item` | problem_solving | no |  |
 | `withdraw_benefit` | benefits | yes | 20261108235000_billing_09_extended_module_gates.sql |

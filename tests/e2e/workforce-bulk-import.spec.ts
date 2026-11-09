@@ -21,7 +21,7 @@ const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 test.describe("M2 workforce bulk import", () => {
   test.describe.configure({ mode: "serial" });
-  test.setTimeout(480_000);
+  test.setTimeout(300_000);
 
   test.skip(
     !hasSupabaseE2e,
