@@ -12,9 +12,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 
-const openInAppNotification = vi.fn(async (_notificationId: string) => ({
-  ok: true as const,
-  href: "/platform/actions/abc",
+const { openInAppNotification } = vi.hoisted(() => ({
+  openInAppNotification: vi.fn(async (_notificationId: string) => ({
+    ok: true as const,
+    href: "/platform/actions/abc",
+  })),
 }));
 
 vi.mock("@/app/(platform)/platform/notifications/actions", () => ({
