@@ -86,6 +86,7 @@ function runPsqlQuery<T extends Record<string, unknown>>(
       return [{ [alias]: lines[0] } as T];
     }
     const [header, ...data] = lines;
+    if (!header) return [];
     const keys = header.split("|");
     return data.map((line) => {
       const cols = line.split("|");
@@ -158,13 +159,6 @@ values ('${userId}','${userEmail}',now(),now(),now(),'{"provider":"email"}','{}'
   const organisationId = provisioned[0]?.organisation_id;
   if (!organisationId) throw new Error("missing org");
 
-  const upperRows = runPsqlQuery<{ upper: string }>(
-    `select private.leanai_ai_run_reserve_upper_bound('${organisationId}'::uuid,'fake','fake-model','concurrent probe')::text as upper;`,
-    "upper bound",
-  );
-  const reserveUpper = upperRows[0]?.upper;
-  if (!reserveUpper) throw new Error("missing reserve upper bound");
-
   runPsqlStatements(
     [
       `select public.apply_organisation_subscription_snapshot('${organisationId}'::uuid,'fake','${stripeCustomerId}','${stripeSubscriptionId}','professional','monthly',1,'p','active','active',now(),now()+interval '30 days',false,timestamptz '2026-11-08 16:00:00+00');`,
@@ -172,6 +166,21 @@ values ('${userId}','${userEmail}',now(),now(),now(),'{"provider":"email"}','{}'
 on conflict (organisation_id) do update set credit_policy_enforced=true, ai_enabled=true;`,
       `update private.identity_controls set status='active', enrolment_status='complete', enrolment_completed_at=now() where user_id='${userId}'::uuid;`,
       `select private.ensure_organisation_ai_credit_period('${organisationId}'::uuid);`,
+    ],
+    "credit period",
+  );
+
+  const upperRows = runPsqlQuery<{ upper: string }>(
+    `select private.leanai_ai_run_reserve_upper_bound('${organisationId}'::uuid,'fake','fake-model','concurrent probe')::text as upper;`,
+    "upper bound",
+  );
+  const reserveUpper = upperRows[0]?.upper;
+  if (!reserveUpper || reserveUpper === "0") {
+    throw new Error("missing reserve upper bound under enforced policy");
+  }
+
+  runPsqlStatements(
+    [
       `update public.organisation_ai_credit_periods set allowance_credits = ${reserveUpper}::bigint where organisation_id='${organisationId}'::uuid;`,
     ],
     "tight allowance",

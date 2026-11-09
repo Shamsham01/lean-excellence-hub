@@ -28,9 +28,7 @@ export async function PlanModuleEntitlementShell({
       data-module={module}
       data-module-write-allowed={writeAllowed ? "true" : "false"}
     >
-      {!writeAllowed ? (
-        <PlanModuleUpgradePlaceholder module={module} />
-      ) : null}
+      {!writeAllowed ? <PlanModuleUpgradePlaceholder module={module} /> : null}
       <ModuleWriteEntitlementProvider writeAllowed={writeAllowed}>
         {children}
       </ModuleWriteEntitlementProvider>

@@ -12,10 +12,7 @@ import {
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 test.describe("Essentials downgrade — read portfolio, deny new writes", () => {
-  test.skip(
-    !hasSupabaseE2e,
-    "Requires E2E_WITH_SUPABASE=1 and local Supabase",
-  );
+  test.skip(!hasSupabaseE2e, "Requires E2E_WITH_SUPABASE=1 and local Supabase");
 
   let user: FoundingE2eUser;
 
@@ -35,14 +32,20 @@ test.describe("Essentials downgrade — read portfolio, deny new writes", () => 
 
     await page.goto("/platform/projects");
     await expect(page.getByTestId("projects-portfolio")).toBeVisible();
-    await expect(page.getByTestId("plan-module-upgrade-projects")).toBeVisible();
-    await expect(page.locator("[data-module-write-allowed='false']")).toBeVisible();
+    await expect(
+      page.getByTestId("plan-module-upgrade-projects"),
+    ).toBeVisible();
+    await expect(
+      page.locator("[data-module-write-allowed='false']"),
+    ).toBeVisible();
     const newProject = page.getByTestId("projects-new-link");
     await expect(newProject).toBeVisible();
     await expect(newProject).toBeDisabled();
 
     await page.getByTestId("plan-module-upgrade-billing-link").click();
     await expect(page.getByTestId("billing-settings-page")).toBeVisible();
-    await expect(page.getByTestId("billing-focused-module-upgrade")).toBeVisible();
+    await expect(
+      page.getByTestId("billing-focused-module-upgrade"),
+    ).toBeVisible();
   });
 });

@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(6);
 
 select is(
   private.leanai_micro_gbp_per_credit(),
@@ -92,13 +92,23 @@ select ok(
   'reasoning tokens inside output are not double-charged'
 );
 
-select is(
+select ok(
   (
-    select rate_card.provider_currency
+    select not rate_card.enforceable_for_billing
     from private.leanai_resolve_provider_rate_card('openai', 'gpt-4.1-mini') rate_card
   ),
-  'USD',
-  'openai mini card stores provider USD with FX to reporting currency'
+  'openai mini illustration card is never enforceable by default'
+);
+
+select ok(
+  not exists (
+    select 1
+    from private.leanai_provider_rate_cards card_table
+    where card_table.provider = 'openai'
+      and card_table.model = 'gpt-4.1-mini'
+      and card_table.enforceable_for_billing = true
+  ),
+  'enforceable resolver does not return illustration-only openai mini'
 );
 
 select finish();

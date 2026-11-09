@@ -6,6 +6,8 @@ export default async function ProjectsModuleLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PlanModuleEntitlementShell module="projects">{children}</PlanModuleEntitlementShell>
+    <PlanModuleEntitlementShell module="projects">
+      {children}
+    </PlanModuleEntitlementShell>
   );
 }

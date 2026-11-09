@@ -23,12 +23,16 @@ export async function completeStructureFirstSetupToPlatform(page: Page) {
     timeout: 45_000,
     waitUntil: "load",
   });
-  await expect(page.getByTestId("structure-first-job-functions-step")).toBeVisible({
+  await expect(
+    page.getByTestId("structure-first-job-functions-step"),
+  ).toBeVisible({
     timeout: 30_000,
   });
 
   const skipJob = page.getByTestId("structure-first-skip-job-functions");
-  const continueJob = page.getByTestId("structure-first-continue-job-functions");
+  const continueJob = page.getByTestId(
+    "structure-first-continue-job-functions",
+  );
   if (await skipJob.isVisible()) {
     await skipJob.click();
   } else {

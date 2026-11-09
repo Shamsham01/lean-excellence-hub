@@ -19,7 +19,10 @@ export function AiCreditPeriodPanel({
 }) {
   if (loadError) {
     return (
-      <p className="text-sm text-muted-foreground" data-testid="ai-credit-load-error">
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="ai-credit-load-error"
+      >
         Credit period summary is unavailable ({loadError}). Token usage below
         remains the authoritative customer control until verified rates enable
         credit enforcement.
@@ -29,11 +32,16 @@ export function AiCreditPeriodPanel({
 
   if (!summary) {
     return (
-      <p className="text-sm text-muted-foreground" data-testid="ai-credit-empty">
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="ai-credit-empty"
+      >
         No credit period has been allocated yet. Enforcement is{" "}
         {LEH_AI_CREDIT_POLICY_ENFORCED ? "configured in app" : "off"}; hosted
         billing uses{" "}
-        <code className="text-xs">organisation_ai_settings.credit_policy_enforced</code>{" "}
+        <code className="text-xs">
+          organisation_ai_settings.credit_policy_enforced
+        </code>{" "}
         when operators enable the ledger.
       </p>
     );
@@ -54,11 +62,15 @@ export function AiCreditPeriodPanel({
       <dl className="mt-3 grid gap-2 sm:grid-cols-2">
         <div>
           <dt className="text-muted-foreground">Allowance</dt>
-          <dd className="font-mono tabular-nums">{summary.allowance_credits}</dd>
+          <dd className="font-mono tabular-nums">
+            {summary.allowance_credits}
+          </dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Remaining</dt>
-          <dd className="font-mono tabular-nums">{summary.remaining_credits}</dd>
+          <dd className="font-mono tabular-nums">
+            {summary.remaining_credits}
+          </dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Reserved</dt>

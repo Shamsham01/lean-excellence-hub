@@ -74,7 +74,7 @@ select throws_ok(
     );
   $$,
   '22023',
-  'leanai provider rate card is unknown; cannot reserve cost credits',
+  'leanai provider rate card is unknown or not enforceable; cannot reserve cost credits',
   'enforced org fails closed on unknown rate at reserve'
 );
 
