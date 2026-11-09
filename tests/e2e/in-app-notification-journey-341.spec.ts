@@ -10,7 +10,7 @@ import {
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
 function notificationBell(page: import("@playwright/test").Page) {
-  return page.getByTestId("platform-notification-bell");
+  return page.locator('[data-testid="platform-notification-bell"]:visible');
 }
 
 async function expectSingleNotificationBell(
