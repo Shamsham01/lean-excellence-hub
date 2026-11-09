@@ -68,10 +68,10 @@ jobs:
     name: Full Regression / Quality
     needs:
       - quality-warmup
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
-      (needs.quality-warmup.result == 'success' || needs.quality-warmup.result == 'skipped') &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -80,6 +80,14 @@ jobs:
       checks: read
       contents: read
     steps:
+      - name: Require quality warmup prerequisite
+        shell: bash
+        run: |
+          warmup="${{ needs.quality-warmup.result }}"
+          if [ "$warmup" != "success" ] && [ "$warmup" != "skipped" ]; then
+            echo "Prepare quality gate must succeed or be skipped for non-PR runs (got: $warmup)."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - name: Confirm Fast CI / Quality passed for this pull request
         if: github.event_name == 'pull_request'
@@ -323,19 +331,48 @@ jobs:
   database:
     name: Full Regression / Database
     needs:
+      - changes
       - database-core
       - qa-recovery
       - e2e-shards
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
-      needs.database-core.result == 'success' &&
-      (needs.qa-recovery.result == 'success' || needs.qa-recovery.result == 'skipped') &&
-      needs.e2e-shards.result == 'success'
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Enforce database regression prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "$1"; exit 1; }
+
+          changes="${{ needs.changes.result }}"
+          database_core="${{ needs.database-core.result }}"
+          qa_recovery="${{ needs.qa-recovery.result }}"
+          e2e_shards="${{ needs.e2e-shards.result }}"
+
+          if [ "$changes" != "success" ]; then
+            fail "Detect specialised regression scope must succeed (got: $changes)."
+          fi
+          if [ "$database_core" != "success" ]; then
+            fail "Full Regression / Database core must succeed (got: $database_core)."
+          fi
+          if [ "$qa_recovery" = "success" ]; then
+            echo "QA hosted replacement succeeded."
+          elif [ "$qa_recovery" = "skipped" ]; then
+            if [ "$changes" != "success" ]; then
+              fail "QA hosted replacement was skipped without successful scope detection."
+            fi
+            echo "QA hosted replacement skipped for scope (expected on some pull requests)."
+          else
+            fail "Full Regression / QA hosted replacement must succeed or scope-skip (got: $qa_recovery)."
+          fi
+          if [ "$e2e_shards" != "success" ]; then
+            fail "All Full Regression / E2E shards must succeed (matrix aggregate: $e2e_shards)."
+          fi
       - name: Publish database regression gate summary
         run: |
           {
@@ -350,10 +387,23 @@ jobs:
 
   qa-harness-windows:
     name: Full Regression / Windows QA harness
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - changes
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
+      - name: Require specialised regression scope detection
+        shell: bash
+        run: |
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            echo "Detect specialised regression scope must succeed (got: ${{ needs.changes.result }})."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
