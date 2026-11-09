@@ -65,9 +65,7 @@ function toE2eOriginUrl(pathOrUrl: string) {
 }
 
 function notificationBell(page: Page) {
-  return page
-    .getByTestId("platform-desktop-sidebar")
-    .getByTestId("platform-notification-bell");
+  return page.locator('[data-testid="platform-notification-bell"]:visible');
 }
 
 async function loginColleague(page: Page, colleague: GoLiveColleague) {
