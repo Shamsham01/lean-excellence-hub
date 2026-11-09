@@ -88,8 +88,16 @@ export type SuggestionReviewContextPermissions = {
   is_active_reviewer: boolean;
   can_claim: boolean;
   can_assign: boolean;
+  can_delegate: boolean;
+  delegation_authority:
+    "primary_approver" | "active_reviewer" | "manager_override" | null;
   can_begin_review: boolean;
   can_record_review: boolean;
+};
+
+export type SuggestionReviewContextPendingApprover = {
+  member_id: string;
+  display_name: string | null;
 };
 
 export type SuggestionEligibleReviewer = {
@@ -97,9 +105,20 @@ export type SuggestionEligibleReviewer = {
   display_name: string | null;
 };
 
+export type SuggestionReviewContextTaskOwner = {
+  member_id: string;
+  display_name: string | null;
+};
+
 export type SuggestionReviewContext = {
   suggestion: SuggestionReviewContextSuggestion;
   reviewer: SuggestionReviewContextReviewer | null;
+  pending_approver: SuggestionReviewContextPendingApprover | null;
+  task_owner: SuggestionReviewContextTaskOwner | null;
   permissions: SuggestionReviewContextPermissions;
+  /** Assign/reassign dropdown (full jurisdiction-scoped list). */
   eligible_reviewers: SuggestionEligibleReviewer[];
+  eligible_assign_reviewers?: SuggestionEligibleReviewer[];
+  /** Delegate dropdown (excludes author and current actor). */
+  eligible_delegate_reviewers?: SuggestionEligibleReviewer[];
 };

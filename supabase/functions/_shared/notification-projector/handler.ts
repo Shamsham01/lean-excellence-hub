@@ -99,6 +99,8 @@ export async function processClaimedDomainEvent(
         client.lookupRecognitionRecipients(organisationId, awardId),
       lookupSuggestionAuthorMembershipId: (organisationId, suggestionId) =>
         client.lookupSuggestionAuthorMembershipId(organisationId, suggestionId),
+      lookupSuggestionApprovalRecipients: (organisationId, suggestionId) =>
+        client.lookupSuggestionApprovalRecipients(organisationId, suggestionId),
     });
 
     if (!projection) {

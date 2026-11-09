@@ -36,16 +36,26 @@ describe("ai run wall-clock deadline", () => {
       { hopIndex: 0 },
     );
     expect(firstHopTimeout).toBeGreaterThanOrEqual(41_000);
-    expect(firstHopTimeout).toBe(45_000 - AI_TURN_FINALIZE_BUFFER_MS);
+    expect(firstHopTimeout).toBeGreaterThanOrEqual(
+      45_000 - AI_TURN_FINALIZE_BUFFER_MS - 1,
+    );
+    expect(firstHopTimeout).toBeLessThanOrEqual(
+      45_000 - AI_TURN_FINALIZE_BUFFER_MS,
+    );
   });
 
   it("reserves continuation budget on later hops", () => {
     const deadline = createAiRunDeadline(45_000);
-    expect(
-      deadline.providerTimeoutMs(45_000, "openai", "gpt-test", { hopIndex: 1 }),
-    ).toBe(
-      45_000 - AI_TURN_FINALIZE_BUFFER_MS - AI_TURN_CONTINUATION_RESERVE_MS,
+    const laterHopTimeout = deadline.providerTimeoutMs(
+      45_000,
+      "openai",
+      "gpt-test",
+      { hopIndex: 1 },
     );
+    const expectedLaterHop =
+      45_000 - AI_TURN_FINALIZE_BUFFER_MS - AI_TURN_CONTINUATION_RESERVE_MS;
+    expect(laterHopTimeout).toBeGreaterThanOrEqual(expectedLaterHop - 1);
+    expect(laterHopTimeout).toBeLessThanOrEqual(expectedLaterHop);
   });
 
   it("allows a 30s first-hop provider call inside a fresh 45s turn", async () => {

@@ -10482,6 +10482,153 @@ export type Database = {
           },
         ]
       }
+      suggestion_approval_delegations: {
+        Row: {
+          created_at: string
+          delegated_by_membership_id: string
+          from_membership_id: string
+          id: string
+          idempotency_key: string | null
+          notification_generation: number | null
+          organisation_id: string
+          reason: string | null
+          suggestion_id: string
+          to_membership_id: string
+        }
+        Insert: {
+          created_at?: string
+          delegated_by_membership_id: string
+          from_membership_id: string
+          id?: string
+          idempotency_key?: string | null
+          notification_generation?: number | null
+          organisation_id: string
+          reason?: string | null
+          suggestion_id: string
+          to_membership_id: string
+        }
+        Update: {
+          created_at?: string
+          delegated_by_membership_id?: string
+          from_membership_id?: string
+          id?: string
+          idempotency_key?: string | null
+          notification_generation?: number | null
+          organisation_id?: string
+          reason?: string | null
+          suggestion_id?: string
+          to_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_approval_delegations_by_fkey"
+            columns: ["organisation_id", "delegated_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_from_fkey"
+            columns: ["organisation_id", "from_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_to_fkey"
+            columns: ["organisation_id", "to_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_approval_routing: {
+        Row: {
+          email_recipient_membership_id: string | null
+          notification_generation: number
+          organisation_id: string
+          primary_approver_membership_id: string | null
+          recipient_count: number
+          routing_basis: string
+          suggestion_id: string
+          task_owner_membership_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          email_recipient_membership_id?: string | null
+          notification_generation?: number
+          organisation_id: string
+          primary_approver_membership_id?: string | null
+          recipient_count?: number
+          routing_basis?: string
+          suggestion_id: string
+          task_owner_membership_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          email_recipient_membership_id?: string | null
+          notification_generation?: number
+          organisation_id?: string
+          primary_approver_membership_id?: string | null
+          recipient_count?: number
+          routing_basis?: string
+          suggestion_id?: string
+          task_owner_membership_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_approval_routing_email_recipient_fkey"
+            columns: ["organisation_id", "email_recipient_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_primary_approver_fkey"
+            columns: ["organisation_id", "primary_approver_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: true
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_task_owner_fkey"
+            columns: ["organisation_id", "task_owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       suggestion_categories: {
         Row: {
           code: string
@@ -13880,6 +14027,14 @@ export type Database = {
         }
         Returns: string
       }
+      delegate_suggestion_approval: {
+        Args: {
+          target_delegate_membership_id: string
+          target_reason?: string
+          target_suggestion_id: string
+        }
+        Returns: string
+      }
       delete_gemba_observation: {
         Args: { target_observation_id: string; target_walk_id: string }
         Returns: boolean
@@ -14701,6 +14856,10 @@ export type Database = {
           provider_customer_id: string
           site_quantity: number
         }[]
+      }
+      lookup_suggestion_approval_notification_recipients_for_worker: {
+        Args: { target_organisation_id: string; target_suggestion_id: string }
+        Returns: string[]
       }
       lookup_suggestion_author_membership_id_for_worker: {
         Args: { target_organisation_id: string; target_suggestion_id: string }
