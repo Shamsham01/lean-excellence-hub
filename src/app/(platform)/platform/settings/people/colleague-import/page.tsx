@@ -34,7 +34,7 @@ export default async function ColleagueImportPage() {
     >
       <PageHeader
         title="Import colleagues"
-        description="Bulk invite people with validated roles, sites, and optional work-area setup. Invitations use the same secure links as single invites."
+        description="Bulk invite people with validated roles, sites, and optional work-area setup. This import creates pending invitations in Lean Excellence Hub; it does not send invitation emails automatically. Reissue or add colleagues individually from People settings when you need a branded invitation email."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>

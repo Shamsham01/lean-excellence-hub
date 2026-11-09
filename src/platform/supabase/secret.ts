@@ -2,10 +2,11 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { createConfirmedInvitationAuthUserWithDeps } from "@/platform/supabase/invitation-signup-auth-pipeline";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
 import type { Database } from "@/platform/supabase/database.types";
 
-function createSecretClient() {
+export function createSecretClient() {
   const publicEnvironment = getPublicEnvironment();
   const serverEnvironment = getServerEnvironment();
 
@@ -179,6 +180,77 @@ export async function recordInvitationSignupDisplayName(
   return createSecretClient().rpc("record_invitation_signup_display_name", {
     target_binding_id: bindingId,
     target_display_name: displayName,
+  });
+}
+
+export async function assertInvitationInboxVerifiedForBinding(
+  bindingId: string,
+) {
+  return createSecretClient().rpc(
+    "assert_invitation_inbox_verified_for_binding",
+    {
+      target_binding_id: bindingId,
+    },
+  );
+}
+
+export async function createConfirmedInvitationAuthUser(input: {
+  email: string;
+  password: string;
+  invitationSignupBindingId: string;
+  invitationToken: string;
+  inboxProof: string;
+}) {
+  const client = createSecretClient();
+
+  return createConfirmedInvitationAuthUserWithDeps(input, {
+    authorizeInvitationSignup: async (args) => {
+      const result = await client.rpc(
+        "authorize_invitation_identity_signup",
+        args,
+      );
+      return { data: result.data, error: result.error };
+    },
+    finaliseInvitationSignup: async (args) => {
+      const result = await client.rpc(
+        "finalise_invitation_identity_signup",
+        args,
+      );
+      return { data: result.data, error: result.error };
+    },
+    redeemInvitationInboxProof: async (args) => {
+      const result = await client.rpc(
+        "redeem_organisation_invitation_inbox_proof",
+        args,
+      );
+      return { data: result.data, error: result.error };
+    },
+    clearInvitationSignupBindingAuthUser: async (args) => {
+      const result = await client.rpc(
+        "clear_invitation_signup_binding_auth_user",
+        args,
+      );
+      return { data: result.data, error: result.error };
+    },
+    createAuthUser: async ({ email, password, invitationSignupBindingId }) => {
+      const created = await client.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          invitation_signup_binding: invitationSignupBindingId,
+        },
+      });
+      if (created.error || !created.data.user?.id) {
+        return {
+          error: created.error ?? new Error("Unable to create account."),
+        };
+      }
+      return { userId: created.data.user.id };
+    },
+    deleteAuthUser: async (userId) => {
+      await client.auth.admin.deleteUser(userId);
+    },
   });
 }
 

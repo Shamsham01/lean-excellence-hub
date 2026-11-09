@@ -62,20 +62,22 @@ export async function refreshSupabaseSession(request: NextRequest) {
   );
 
   await supabase.auth.getClaims();
-  applyPlatformOwnerConsoleHeaders(response, request.nextUrl.pathname);
+  applySensitiveRouteHeaders(response, request.nextUrl.pathname);
   return response;
 }
 
-function applyPlatformOwnerConsoleHeaders(
-  response: NextResponse,
-  pathname: string,
-) {
-  if (
+function applySensitiveRouteHeaders(response: NextResponse, pathname: string) {
+  const isOrgAdmin =
     pathname === "/org_admin" ||
     pathname.startsWith("/org_admin/") ||
     pathname === "/api/org-admin" ||
-    pathname.startsWith("/api/org-admin/")
-  ) {
+    pathname.startsWith("/api/org-admin/");
+
+  const isInvitationActivate =
+    /^\/invitations\/[A-Za-z0-9_-]{43}\/activate$/.test(pathname) ||
+    /^\/api\/invitations\/[A-Za-z0-9_-]{43}\/stage-inbox-proof$/.test(pathname);
+
+  if (isOrgAdmin || isInvitationActivate) {
     response.headers.set("Cache-Control", "private, no-store");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     response.headers.set("Referrer-Policy", "no-referrer");

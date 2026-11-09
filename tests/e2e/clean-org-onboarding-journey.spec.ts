@@ -286,14 +286,11 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
   }) => {
     const ownerClient = await createFoundingOwnerClient(user);
     const tokenSeed = `clean-org-invite-${Date.now()}`;
-    const { invitationPath } = await issueInvitationForFoundingOwner(
-      ownerClient,
-      {
-        email: colleagueEmail,
-        tokenSeed,
-        displayName: "Clean Org Colleague",
-      },
-    );
+    const issued = await issueInvitationForFoundingOwner(ownerClient, {
+      email: colleagueEmail,
+      tokenSeed,
+      displayName: "Clean Org Colleague",
+    });
 
     await page.setViewportSize(desktopViewport);
     await page.goto("/login");
@@ -306,7 +303,10 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     });
 
     await acceptInvitationAsNewColleague(browser, {
-      invitationPath,
+      invitationPath: issued.invitationPath,
+      ...(issued.activateEmailPath
+        ? { activateEmailPath: issued.activateEmailPath }
+        : {}),
       email: colleagueEmail,
       password: colleaguePassword,
     });

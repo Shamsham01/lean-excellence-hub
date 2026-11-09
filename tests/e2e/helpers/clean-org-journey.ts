@@ -1,10 +1,14 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { execSync } from "node:child_process";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
 
 import { invitationExpiresAt } from "@/modules/identity/invitation-constants";
+import {
+  createAccountThroughInvitationEmail,
+  dispatchOrganisationInvitationDeliveryForE2e,
+} from "./invitation-lifecycle";
 
 import {
   completeStructureFirstSetupToPlatform,
@@ -197,13 +201,70 @@ export async function issueInvitationForFoundingOwner(
     throw error;
   }
 
-  return { token, invitationPath: `/invitations/${token}` };
+  if (process.env.E2E_WITH_SUPABASE !== "1") {
+    return { token, invitationPath: `/invitations/${token}` };
+  }
+
+  const invitationId = execSync(
+    `psql "${process.env.SUPABASE_DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres"}" -Atc "select id::text from public.organisation_invitations where canonical_recipient = lower('${input.email.replace(/'/g, "''")}') and status = 'pending' order by created_at desc limit 1;"`,
+    { encoding: "utf-8" },
+  ).trim();
+
+  if (!invitationId) {
+    throw new Error("Issued invitation row was not found for delivery.");
+  }
+
+  const inboxProof = randomBytes(32).toString("base64url");
+  const { data: deliveryId, error: registerError } = await ownerClient.rpc(
+    "register_organisation_invitation_delivery",
+    {
+      target_invitation_id: invitationId,
+      target_inbox_proof_digest: invitationInboxProofDigest(inboxProof),
+    },
+  );
+  if (registerError || !deliveryId) {
+    throw (
+      registerError ??
+      new Error("register_organisation_invitation_delivery failed")
+    );
+  }
+
+  const { url, serviceRoleKey } = resolveSupabaseEnv();
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "Supabase env is required to dispatch invitation delivery.",
+    );
+  }
+
+  await dispatchOrganisationInvitationDeliveryForE2e({
+    supabaseUrl: url,
+    serviceRoleKey,
+    deliveryId,
+    invitationToken: token,
+    inboxProof,
+  });
+
+  const { fetchLatestEmailHrefWithRetry } = await import("./mailpit");
+  const activateEmailPath = await fetchLatestEmailHrefWithRetry(
+    input.email,
+    `/invitations/${token}/activate`,
+  );
+
+  return {
+    token,
+    invitationPath: `/invitations/${token}`,
+    activateEmailPath,
+  };
+}
+
+function invitationInboxProofDigest(inboxProof: string) {
+  return `\\x${createHash("sha256").update(inboxProof).digest("hex")}`;
 }
 
 function toE2eOriginUrl(pathOrUrl: string) {
   if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
     const parsed = new URL(pathOrUrl);
-    return `${e2eOrigin}${parsed.pathname}${parsed.search}`;
+    return `${e2eOrigin}${parsed.pathname}${parsed.search}${parsed.hash}`;
   }
   return `${e2eOrigin}${pathOrUrl}`;
 }
@@ -212,12 +273,26 @@ export async function acceptInvitationAsNewColleague(
   browser: import("@playwright/test").Browser,
   input: {
     invitationPath: string;
+    activateEmailPath?: string;
     email: string;
     password: string;
   },
 ) {
   const inviteeContext = await browser.newContext();
   const inviteePage = await inviteeContext.newPage();
+
+  if (input.activateEmailPath && process.env.E2E_WITH_SUPABASE === "1") {
+    await createAccountThroughInvitationEmail(inviteePage, {
+      activateEmailPath: toE2eOriginUrl(input.activateEmailPath),
+      password: input.password,
+    });
+    await inviteePage
+      .getByRole("button", { name: "Accept invitation" })
+      .click();
+    await expect(inviteePage).toHaveURL(/\/platform/, { timeout: 30_000 });
+    await inviteeContext.close();
+    return;
+  }
 
   await inviteePage.goto(toE2eOriginUrl(input.invitationPath));
   await expect(inviteePage.getByTestId("invitation-page")).toBeVisible();

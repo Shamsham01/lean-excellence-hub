@@ -10,6 +10,7 @@ import {
 } from "@/modules/identity/invitations";
 import { toCustomerErrorMessage } from "@/modules/people/customer-errors";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { scheduleAndDispatchOrganisationInvitationEmail } from "@/modules/identity/schedule-invitation-email";
 import {
   buildInvitationUrl,
   resolveApplicationOrigin,
@@ -104,9 +105,28 @@ export async function inviteColleague(input: {
     return { error: originResult.error };
   }
 
+  const delivery = await scheduleAndDispatchOrganisationInvitationEmail({
+    invitationId,
+    invitationToken: token,
+  });
+
+  if (!delivery.ok) {
+    return { error: delivery.error };
+  }
+
+  const invitationUrl = buildInvitationUrl(originResult.origin, token);
+
   return {
     ok: true as const,
-    invitationUrl: buildInvitationUrl(originResult.origin, token),
+    invitationId,
+    invitationUrl,
+    emailDispatched: delivery.emailDispatched,
+    ...(delivery.emailDispatched
+      ? {}
+      : {
+          deliveryError: delivery.deliveryError,
+          deliveryRetryable: delivery.retryable,
+        }),
   };
 }
 
@@ -153,9 +173,26 @@ export async function reissueInvitation(invitationId: string) {
     return { error: originResult.error };
   }
 
+  const delivery = await scheduleAndDispatchOrganisationInvitationEmail({
+    invitationId: replacementId,
+    invitationToken: token,
+  });
+
+  if (!delivery.ok) {
+    return { error: delivery.error };
+  }
+
   return {
     ok: true as const,
+    invitationId: replacementId,
     invitationUrl: buildInvitationUrl(originResult.origin, token),
+    emailDispatched: delivery.emailDispatched,
+    ...(delivery.emailDispatched
+      ? {}
+      : {
+          deliveryError: delivery.deliveryError,
+          deliveryRetryable: delivery.retryable,
+        }),
   };
 }
 
