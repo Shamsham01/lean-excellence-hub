@@ -85,7 +85,9 @@ export function resolvePlatformInAppNotificationHref(
   return resolveFromNotificationTypeOnly(input.notification_type);
 }
 
-function resolveFromNotificationTypeOnly(notificationType: string): string | null {
+function resolveFromNotificationTypeOnly(
+  notificationType: string,
+): string | null {
   switch (notificationType) {
     case "leanai.chase_digest":
       return "/platform/actions";

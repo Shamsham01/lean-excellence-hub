@@ -19,8 +19,8 @@ describe("suggestion delegation reason helpers", () => {
   });
 
   it("builds the in-app notification reason suffix", () => {
-    expect(buildDelegationInAppNotificationBodySuffix("Manager on walkabout")).toBe(
-      "\n\nReason: Manager on walkabout",
-    );
+    expect(
+      buildDelegationInAppNotificationBodySuffix("Manager on walkabout"),
+    ).toBe("\n\nReason: Manager on walkabout");
   });
 });

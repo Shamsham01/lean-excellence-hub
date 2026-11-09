@@ -13,7 +13,9 @@ function notificationBell(page: import("@playwright/test").Page) {
   return page.getByTestId("platform-notification-bell");
 }
 
-async function expectSingleNotificationBell(page: import("@playwright/test").Page) {
+async function expectSingleNotificationBell(
+  page: import("@playwright/test").Page,
+) {
   await expect(page.getByTestId("platform-notification-bell")).toHaveCount(1);
 }
 
@@ -78,9 +80,9 @@ test.describe("In-app notification journey (#341)", () => {
     await page.goto("/platform");
     await expectSingleNotificationBell(page);
     await expect(
-      page.getByTestId("platform-mobile-chrome").getByTestId(
-        "platform-notification-bell",
-      ),
+      page
+        .getByTestId("platform-mobile-chrome")
+        .getByTestId("platform-notification-bell"),
     ).toBeVisible();
   });
 

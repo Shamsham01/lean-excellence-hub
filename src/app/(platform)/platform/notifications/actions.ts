@@ -7,8 +7,7 @@ import { resolvePlatformInAppNotificationHref } from "@/modules/platform-shell/n
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export type OpenInAppNotificationResult =
-  | { ok: true; href: string }
-  | { ok: false; message: string };
+  { ok: true; href: string } | { ok: false; message: string };
 
 export async function openInAppNotification(
   notificationId: string,

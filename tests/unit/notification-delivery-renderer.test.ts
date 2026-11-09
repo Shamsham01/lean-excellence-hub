@@ -125,7 +125,8 @@ describe("notification renderers", () => {
     const rendered = renderOperationalNotification(
       buildContext(SUGGESTION_REVIEWER_REASSIGNED_KIND, {
         contextTitle: "Forklift path",
-        contextLinkPath: "/platform/suggestions/review?queue=mine&suggestionId=abc",
+        contextLinkPath:
+          "/platform/suggestions/review?queue=mine&suggestionId=abc",
         contextEmployeeMessage: "Please cover while I am on gemba.",
       }),
       APP_ORIGIN,
@@ -135,7 +136,9 @@ describe("notification renderers", () => {
     expect(rendered.text).toContain("Please cover while I am on gemba.");
     expect(rendered.html).toContain("Delegation note");
     expect(rendered.html).toContain("Please cover while I am on gemba.");
-    expect(rendered.text).toContain(`${APP_ORIGIN}/platform/suggestions/review`);
+    expect(rendered.text).toContain(
+      `${APP_ORIGIN}/platform/suggestions/review`,
+    );
   });
 
   it("renders reviewer assignment deep links and CTA labels", () => {

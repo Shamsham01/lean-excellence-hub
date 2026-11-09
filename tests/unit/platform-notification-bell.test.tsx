@@ -1,7 +1,13 @@
 /**
  * @vitest-environment jsdom
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
@@ -55,7 +61,7 @@ describe("PlatformNotificationBell", () => {
 
   it("labels the control when there is nothing unread", () => {
     render(
-      <PlatformNotificationBell initialUnreadCount={0} initialItems={[]} />
+      <PlatformNotificationBell initialUnreadCount={0} initialItems={[]} />,
     );
 
     expect(
