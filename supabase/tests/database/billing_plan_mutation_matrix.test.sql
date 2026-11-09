@@ -89,8 +89,8 @@ select throws_ok(
   '42501', null, 'recognition'
 );
 select throws_ok(
-  $$ select public.create_workforce_import_job('matrix.csv') $$,
-  '42501', null, 'people_hr workforce import'
+  $$ select public.begin_workforce_import_credential_export(gen_random_uuid()) $$,
+  '42501', null, 'people_hr paid credential export'
 );
 
 select * from finish();

@@ -639,6 +639,7 @@ export type Database = {
           ai_session_id: string
           cached_input_token_count: number
           completed_at: string | null
+          credit_accounting_status: string
           error_category: string | null
           execution_claimed_at: string | null
           final_output: string | null
@@ -664,6 +665,7 @@ export type Database = {
           ai_session_id: string
           cached_input_token_count?: number
           completed_at?: string | null
+          credit_accounting_status?: string
           error_category?: string | null
           execution_claimed_at?: string | null
           final_output?: string | null
@@ -689,6 +691,7 @@ export type Database = {
           ai_session_id?: string
           cached_input_token_count?: number
           completed_at?: string | null
+          credit_accounting_status?: string
           error_category?: string | null
           execution_claimed_at?: string | null
           final_output?: string | null
@@ -6286,37 +6289,55 @@ export type Database = {
       }
       organisation_ai_credit_reservations: {
         Row: {
+          actual_provider_credits: number | null
           ai_run_id: string
           created_at: string
+          customer_settled_credits: number | null
           id: string
           idempotency_key: string
           organisation_id: string
+          overrun_credits: number
           period_id: string
+          rate_card_version: string | null
+          rate_snapshot: Json | null
           reserved_credits: number
+          settle_cost_unknown: boolean
           settled_at: string | null
           settled_credits: number | null
           status: string
         }
         Insert: {
+          actual_provider_credits?: number | null
           ai_run_id: string
           created_at?: string
+          customer_settled_credits?: number | null
           id?: string
           idempotency_key: string
           organisation_id: string
+          overrun_credits?: number
           period_id: string
+          rate_card_version?: string | null
+          rate_snapshot?: Json | null
           reserved_credits: number
+          settle_cost_unknown?: boolean
           settled_at?: string | null
           settled_credits?: number | null
           status?: string
         }
         Update: {
+          actual_provider_credits?: number | null
           ai_run_id?: string
           created_at?: string
+          customer_settled_credits?: number | null
           id?: string
           idempotency_key?: string
           organisation_id?: string
+          overrun_credits?: number
           period_id?: string
+          rate_card_version?: string | null
+          rate_snapshot?: Json | null
           reserved_credits?: number
+          settle_cost_unknown?: boolean
           settled_at?: string | null
           settled_credits?: number | null
           status?: string
@@ -13156,17 +13177,15 @@ export type Database = {
         Args: { target_session_id: string; target_summary?: string }
         Returns: boolean
       }
-      complete_project:
-        | { Args: { target_project_id: string }; Returns: boolean }
-        | {
-            Args: {
-              target_lessons_learned?: string
-              target_outcome_summary: string
-              target_project_id: string
-              target_sustainment_summary?: string
-            }
-            Returns: boolean
-          }
+      complete_project: {
+        Args: {
+          target_lessons_learned?: string
+          target_outcome_summary: string
+          target_project_id: string
+          target_sustainment_summary?: string
+        }
+        Returns: boolean
+      }
       complete_project_phase: {
         Args: {
           target_mark_skipped?: boolean
