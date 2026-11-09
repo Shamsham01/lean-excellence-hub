@@ -77,9 +77,7 @@ const webServerEnvOverrides: Record<string, string> = {
   DEMO_BOOKING_E2E: "1",
   INVITATION_DELIVERY_MAILPIT_URL:
     process.env.INVITATION_DELIVERY_MAILPIT_URL ??
-    (process.env.E2E_WITH_SUPABASE === "1"
-      ? "http://172.17.0.1:54324"
-      : ""),
+    (process.env.E2E_WITH_SUPABASE === "1" ? "http://172.17.0.1:54324" : ""),
 };
 
 /** Playwright replaces child env; merge parent env so exports (e.g. E2E_WITH_SUPABASE) reach next start. */

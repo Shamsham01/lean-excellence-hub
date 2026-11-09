@@ -47,9 +47,7 @@ import {
   openUnreadSuggestionNotificationReview,
   reviewWorkspace,
 } from "./helpers/suggestion-review";
-import {
-  completeStructureFirstFoundationSetup,
-} from "./helpers/structure-first-onboarding";
+import { completeStructureFirstFoundationSetup } from "./helpers/structure-first-onboarding";
 import { scrollPlatformMainViewportForProject } from "./helpers/touch-scroll";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -224,7 +222,10 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     });
 
     const { admin } = getInvitationLifecycleClients();
-    const confirmedColleague = await findAuthUserByEmail(admin, singleInviteEmail);
+    const confirmedColleague = await findAuthUserByEmail(
+      admin,
+      singleInviteEmail,
+    );
     expect(confirmedColleague?.email_confirmed_at).toBeTruthy();
 
     const prefetchEmail = `go-live-prefetch-${Date.now()}@example.test`;
@@ -374,7 +375,8 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       page.url().match(/\/platform\/suggestions\/([0-9a-f-]{36})/i)?.[1] ??
       null;
     expect(suggestionId).toMatch(/^[0-9a-f-]{36}$/i);
-    await waitForSuggestionApprovalRouting(organisationId, suggestionId!);
+    const routedSuggestionId = suggestionId as string;
+    await waitForSuggestionApprovalRouting(organisationId, routedSuggestionId);
 
     // Operational suggestion email is drained by notification-delivery (Resend), not Mailpit;
     // ledger + fake-provider coverage lives in test:db:integration:suggestion-approval-delegation.
@@ -386,11 +388,11 @@ test.describe("Customer go-live journey (clean organisation)", () => {
         page,
         () => notificationBell(page),
         /Idea submitted for review/i,
-        suggestionId,
+        routedSuggestionId,
       );
     } catch {
       await page.goto(
-        `/platform/suggestions/review?suggestionId=${suggestionId}`,
+        `/platform/suggestions/review?suggestionId=${routedSuggestionId}`,
       );
       await expect(reviewWorkspace(page)).toBeVisible({ timeout: 60_000 });
     }
@@ -423,7 +425,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       page,
       () => notificationBell(page),
       /delegated to you/i,
-      suggestionId,
+      routedSuggestionId,
     );
     await beginCurrentReview(page);
     await approveCurrentReview(
@@ -531,11 +533,12 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       .getByLabel("Ask LeanAI")
       .fill("This should be blocked by credits.");
     await page.getByTestId("leanai-assistant-send").click();
-    await expect(
-      page.locator("p[role=alert].text-destructive"),
-    ).toContainText(/could not complete|credit allowance|allowance exceeded/i, {
-      timeout: 30_000,
-    });
+    await expect(page.locator("p[role=alert].text-destructive")).toContainText(
+      /could not complete|credit allowance|allowance exceeded/i,
+      {
+        timeout: 30_000,
+      },
+    );
   });
 
   test("step 6 — downgrade to Essentials keeps history, blocks module writes", async ({
@@ -545,23 +548,15 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await loginAsExistingFoundingUser(page, user);
     await page.goto("/platform/suggestions");
     await expect(
-      page
-        .getByRole("link", { name: "Go-live approval delegation" })
-        .first(),
+      page.getByRole("link", { name: "Go-live approval delegation" }).first(),
     ).toBeVisible({ timeout: 30_000 });
 
     await page.goto("/platform/projects/new");
     await expect(page.getByTestId("create-project-wizard")).toBeVisible();
     await page.getByLabel("Project title").fill(projectTitle);
     await page.getByTestId("project-unit-select").selectOption({ index: 1 });
-    await page
-      .locator("textarea")
-      .first()
-      .fill("Go-live charter background");
-    await page
-      .locator("textarea")
-      .nth(1)
-      .fill("Go-live charter objective");
+    await page.locator("textarea").first().fill("Go-live charter background");
+    await page.locator("textarea").nth(1).fill("Go-live charter objective");
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByLabel(/Methodology/i).selectOption({ index: 0 });
@@ -585,7 +580,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await page.goto("/platform/projects");
     await expect(page.getByTestId("projects-portfolio")).toBeVisible();
     await expect(page.getByText(projectTitle)).toBeVisible();
-    await expect(page.getByTestId("plan-module-upgrade-projects")).toBeVisible();
+    await expect(
+      page.getByTestId("plan-module-upgrade-projects"),
+    ).toBeVisible();
     await expect(page.getByTestId("projects-new-link")).toBeDisabled();
 
     const ownerClient = await createFoundingOwnerClient(user);
@@ -599,7 +596,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await page.locator("#invite-role").selectOption({ label: "Team Member" });
     await page.locator("#invite-scope").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Create invitation" }).click();
-    await expect(page.getByText(unlimitedProbe)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(unlimitedProbe)).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   test("step 7 — stale session on /platform redirects to login", async ({

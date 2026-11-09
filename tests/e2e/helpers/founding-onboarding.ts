@@ -253,8 +253,7 @@ export async function setOrganisationSubscriptionPlan(
     target_site_quantity: subscription.site_quantity ?? 1,
     target_price_id:
       subscription.provider_price_id ?? `price_fake_${planCode}_monthly`,
-    target_provider_status:
-      billingState === "trialing" ? "trialing" : "active",
+    target_provider_status: billingState === "trialing" ? "trialing" : "active",
     target_billing_state: billingState,
     target_current_period_start: new Date().toISOString(),
     target_current_period_end: periodEnd,
@@ -267,7 +266,9 @@ export async function setOrganisationSubscriptionPlan(
   }
 }
 
-export async function setOrganisationSubscriptionTrialing(user: FoundingE2eUser) {
+export async function setOrganisationSubscriptionTrialing(
+  user: FoundingE2eUser,
+) {
   await setOrganisationSubscriptionPlan(user, "essentials", "trialing");
 }
 

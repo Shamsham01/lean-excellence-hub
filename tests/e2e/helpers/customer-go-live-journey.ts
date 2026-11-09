@@ -5,10 +5,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FoundingE2eUser } from "./founding-onboarding";
 
 function localDatabaseContainerName() {
-  const names = execSync(
-    "docker ps --format '{{.Names}}' | grep supabase_db",
-    { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
-  )
+  const names = execSync("docker ps --format '{{.Names}}' | grep supabase_db", {
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "ignore"],
+  })
     .trim()
     .split("\n")
     .filter(Boolean);
@@ -52,10 +52,7 @@ export function queryPublishedRoleVersionId(
   return row;
 }
 
-export function queryJobFunctionIdByCode(
-  organisationId: string,
-  code: string,
-) {
+export function queryJobFunctionIdByCode(organisationId: string, code: string) {
   const row = runPsql(
     `select job_function.id::text from public.job_functions job_function where job_function.organisation_id = '${organisationId}'::uuid and job_function.code = '${code.replace(/'/g, "''")}' and job_function.status = 'active' limit 1;`,
   );
@@ -106,9 +103,12 @@ export async function assertModuleWriteDenied(
   client: SupabaseClient,
   moduleKey: string,
 ) {
-  const entitled = await client.rpc("current_organisation_plan_module_entitled", {
-    target_module: moduleKey,
-  });
+  const entitled = await client.rpc(
+    "current_organisation_plan_module_entitled",
+    {
+      target_module: moduleKey,
+    },
+  );
   if (entitled.error) {
     throw entitled.error;
   }

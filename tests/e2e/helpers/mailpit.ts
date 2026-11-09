@@ -112,9 +112,11 @@ export async function fetchEmailBodiesMatchingRecipient(
   while (Date.now() < deadline) {
     try {
       const { mailpitUrl, messages } = await loadMailpitMessages();
-      const candidates = [...messages].reverse().filter((entry) =>
-        entry.To?.some((recipient) => recipient.Address === email),
-      );
+      const candidates = [...messages]
+        .reverse()
+        .filter((entry) =>
+          entry.To?.some((recipient) => recipient.Address === email),
+        );
 
       for (const entry of candidates) {
         if (!entry.ID) {
