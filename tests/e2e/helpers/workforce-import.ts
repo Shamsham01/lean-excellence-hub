@@ -189,6 +189,13 @@ export async function uploadWorkforceImportCsv(
   await expect(page.getByText(/rows detected/i)).toBeVisible({
     timeout: 120_000,
   });
+  const importMessage = page.getByTestId("import-message");
+  const message = (await importMessage.textContent().catch(() => null))?.trim();
+  if (message) {
+    throw new Error(
+      `Workforce import file upload failed: ${message}. ${await readImportWizardDiagnostics(page)}`,
+    );
+  }
 }
 
 export async function validateWorkforceImportAndStartProvisioning(

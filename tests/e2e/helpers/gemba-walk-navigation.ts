@@ -6,6 +6,36 @@ export async function expectGembaPromptHeading(page: Page, prompt: string) {
   });
 }
 
+/** Flush debounced notes, wait for persist, and fail with inline error if save does not commit. */
+export async function fillGembaWalkNotesExpectSaved(
+  page: Page,
+  text: string,
+) {
+  const notes = page.getByTestId("gemba-walk-notes");
+  await notes.fill(text);
+  await notes.blur();
+  const status = page.getByTestId("answer-save-status");
+  await expect
+    .poll(
+      async () => {
+        const body = (await status.textContent()) ?? "";
+        if (body.includes("Saved")) return "saved";
+        if (body.includes("Saving")) return "saving";
+        if (body.includes("Couldn't") || body.includes("Try again")) {
+          return "error";
+        }
+        const retryVisible = await page
+          .getByTestId("answer-save-retry")
+          .isVisible()
+          .catch(() => false);
+        if (retryVisible) return "error";
+        return "idle";
+      },
+      { timeout: 30_000 },
+    )
+    .toBe("saved");
+}
+
 export async function navigateGembaPrompt(
   page: Page,
   direction: "Next" | "Previous",

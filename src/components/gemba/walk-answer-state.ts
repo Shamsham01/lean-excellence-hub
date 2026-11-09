@@ -436,6 +436,17 @@ export function useWalkAnswerState({
         void runLoopRef.current(questionId);
         return;
       }
+      if (
+        !lastOk &&
+        statusRef.current[questionId] === "saving" &&
+        (runtime.lastFailed || runtime.latest)
+      ) {
+        setStatuses((current) => ({ ...current, [questionId]: "error" }));
+        setErrors((current) => ({
+          ...current,
+          [questionId]: current[questionId] ?? ANSWER_SAVE_ERROR_MESSAGE,
+        }));
+      }
       const waiters = runtime.waiters.splice(0);
       for (const waiter of waiters) waiter(lastOk);
     }

@@ -372,11 +372,20 @@ body {
     overflow: hidden;
     height: 100%;
   }
+}
 
-  .platform-main-viewport:has(.pps-flagship-workspace) {
-    overflow-x: clip;
-    overflow-y: hidden;
-  }
+/* Problem-solving workspace: nested stage canvas scrolls on mobile and desktop. */
+.platform-scroll:has(.pps-flagship-workspace) {
+  overflow-x: clip;
+  overflow-y: hidden;
+  min-height: 0;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) {
+  overflow-x: clip;
+  overflow-y: hidden;
+  min-height: 0;
+  flex: 1 1 0%;
 }
 
 .platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner {
@@ -386,13 +395,6 @@ body {
   flex: 1 1 0%;
   flex-direction: column;
   padding: 0;
-}
-
-@media (min-width: 1024px) {
-  .platform-scroll:has(.pps-flagship-workspace) {
-    overflow-x: clip;
-    overflow-y: hidden;
-  }
 }
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
