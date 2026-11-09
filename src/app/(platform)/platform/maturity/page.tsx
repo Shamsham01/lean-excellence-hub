@@ -43,7 +43,6 @@ export default async function MaturityOverviewPage({
 
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const canManage = await currentMemberHasPermission(

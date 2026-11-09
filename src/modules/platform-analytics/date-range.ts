@@ -1,6 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-import { resolveAnalyticsTimeZone } from "./org-scope";
+import { loadCurrentOrganisationTimeZone } from "./org-time-zone";
 
 export const ANALYTICS_RANGE_OPTIONS = [7, 30, 90] as const;
 export type AnalyticsRangeDays = (typeof ANALYTICS_RANGE_OPTIONS)[number];
@@ -59,10 +57,9 @@ export function buildAnalyticsDateRange(
 }
 
 export async function buildAnalyticsDateRangeForOrganisation(
-  supabase: SupabaseClient,
   days: AnalyticsRangeDays,
   now = new Date(),
 ): Promise<AnalyticsDateRange> {
-  const timeZone = await resolveAnalyticsTimeZone(supabase);
+  const timeZone = await loadCurrentOrganisationTimeZone();
   return buildAnalyticsDateRange(days, now, timeZone);
 }

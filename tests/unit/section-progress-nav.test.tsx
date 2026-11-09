@@ -1,7 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SectionProgressNav } from "@/components/ui/section-progress-nav";
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("SectionProgressNav", () => {
   it("exposes completion state and selects sections", () => {
@@ -41,5 +45,33 @@ describe("SectionProgressNav", () => {
 
     fireEvent.click(complete);
     expect(onSelect).toHaveBeenCalledWith("a");
+  });
+
+  it("announces current and completed together with a check icon", () => {
+    render(
+      <SectionProgressNav
+        ariaLabel="Sections"
+        layout="stack"
+        testId="section-nav"
+        testIdPrefix="section"
+        activeId="a"
+        onSelect={() => {}}
+        items={[
+          {
+            id: "a",
+            label: "Alpha",
+            completion: "complete",
+            detail: "2/2",
+          },
+        ]}
+      />,
+    );
+
+    const active = screen.getByTestId("section-a");
+    expect(active).toHaveAttribute(
+      "aria-label",
+      "Alpha, current, completed, 2/2",
+    );
+    expect(active.querySelector("svg")).toBeTruthy();
   });
 });

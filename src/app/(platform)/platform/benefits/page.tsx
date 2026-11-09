@@ -43,7 +43,6 @@ export default async function BenefitsPortfolioPage({
 
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const canCreate = await currentMemberHasPermission("benefits.create");

@@ -1,10 +1,10 @@
 import {
   DEFAULT_ANALYTICS_TIME_ZONE,
-  addCalendarDays,
   formatIsoWeekAxisLabel,
   formatWeekCommencing,
   isoWeekFromCivilDate,
   isoWeekKey,
+  listCivilDaysInclusive,
   listIsoWeeksBetween,
   rangeCrossesCalendarYear,
   zonedCivilDate,
@@ -48,15 +48,13 @@ function bucketDailyInTimeZone(
   const endMs = new Date(range.end).getTime();
   const startMs = new Date(range.start).getTime();
   const startLocal = zonedCivilDate(range.start, timeZone);
-  const dayCount = Math.min(range.days, 7);
-  const buckets = Array.from({ length: dayCount }, (_, index) => {
-    const day = addCalendarDays(startLocal, index);
-    return {
-      label: `Day ${index + 1}`,
-      value: 0,
-      dayKey: `${day.year}-${day.month}-${day.day}`,
-    };
-  });
+  const endLocal = zonedCivilDate(range.end, timeZone);
+  const dayList = listCivilDaysInclusive(startLocal, endLocal);
+  const buckets = dayList.map((day, index) => ({
+    label: `Day ${index + 1}`,
+    value: 0,
+    dayKey: `${day.year}-${day.month}-${day.day}`,
+  }));
 
   for (const ts of timestamps) {
     const ms = new Date(ts).getTime();

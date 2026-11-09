@@ -41,11 +41,13 @@ type SectionProgressNavProps = {
 function NavStatusIcon({
   visual,
   index,
+  showCompleteCheck,
 }: {
   visual: SectionNavVisualState;
   index?: number;
+  showCompleteCheck?: boolean;
 }) {
-  if (visual === "complete") {
+  if (visual === "complete" || showCompleteCheck) {
     return <Check className="size-4" strokeWidth={2.5} aria-hidden />;
   }
   if (visual === "partial") {
@@ -145,7 +147,8 @@ function SectionProgressButton({
   variant: "sidebar" | "chip";
   index?: number;
 }) {
-  const completionState = visual === "current" ? item.completion : visual;
+  const completionState = item.completion;
+  const showCompleteCheck = item.completion === "complete" && active === true;
 
   return (
     <button
@@ -154,7 +157,10 @@ function SectionProgressButton({
       data-completion-state={completionState}
       data-active={active ? "true" : "false"}
       aria-current={active ? "step" : undefined}
-      aria-label={sectionNavAriaLabel(item.label, visual, item.detail)}
+      aria-label={sectionNavAriaLabel(item.label, visual, item.detail, {
+        isActive: active,
+        completion: item.completion,
+      })}
       disabled={disabled}
       onClick={() => onSelect(item.id)}
       className={cn(
@@ -166,9 +172,16 @@ function SectionProgressButton({
     >
       {variant === "sidebar" ? (
         <>
-          <span className={sidebarIconClasses(visual)}>
+          <span
+            className={cn(
+              sidebarIconClasses(visual),
+              showCompleteCheck &&
+                "border-success bg-success text-success-foreground",
+            )}
+          >
             <NavStatusIcon
               visual={visual}
+              showCompleteCheck={showCompleteCheck}
               {...(typeof index === "number" ? { index } : {})}
             />
           </span>
@@ -196,7 +209,10 @@ function SectionProgressButton({
               visual === "complete" &&
                 "border-success/40 bg-success/15 text-success",
               visual === "current" &&
+                !showCompleteCheck &&
                 "border-primary bg-primary text-primary-foreground",
+              showCompleteCheck &&
+                "border-success/40 bg-success/15 text-success",
               visual === "partial" &&
                 "border-warning/50 bg-warning/15 text-warning-foreground",
               visual === "not_started" && "border-border bg-elevated",
@@ -204,6 +220,7 @@ function SectionProgressButton({
           >
             <NavStatusIcon
               visual={visual}
+              showCompleteCheck={showCompleteCheck}
               {...(typeof index === "number" ? { index } : {})}
             />
           </span>

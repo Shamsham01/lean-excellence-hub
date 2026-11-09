@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
 import { hasUsableFiveSAuditAnswer } from "@/modules/5s/audit-answer-usability";
+import { answerProgressPercent } from "@/modules/operational/answer-progress-percent";
 import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
   LEGACY_FIVE_S_SCORING_SCALE,
@@ -164,9 +165,7 @@ export function FiveSAuditWorkspace({
   const answeredCount = flatQuestions.filter((item) =>
     hasUsableFiveSAuditAnswer(item.question, getAnswer(item.question.id)),
   ).length;
-  const progress = flatQuestions.length
-    ? Math.round((answeredCount / flatQuestions.length) * 100)
-    : 0;
+  const progress = answerProgressPercent(answeredCount, flatQuestions.length);
   const sectionNavItems = useMemo(
     () =>
       sections.map((section) => {

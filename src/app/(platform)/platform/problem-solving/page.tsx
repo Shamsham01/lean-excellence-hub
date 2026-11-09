@@ -40,7 +40,6 @@ export default async function ProblemSolvingPortfolioPage({
 
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const canCreate = await currentMemberHasPermission("problem_solving.create");

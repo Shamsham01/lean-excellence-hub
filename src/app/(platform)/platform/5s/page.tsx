@@ -35,7 +35,6 @@ export default async function FiveSOverviewPage({
 
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const canManage = await currentMemberHasPermission(

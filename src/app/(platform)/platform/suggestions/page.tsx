@@ -67,7 +67,6 @@ export default async function SuggestionsOverviewPage({
   const filters = parseSuggestionPortfolioSearchParams(params);
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const canReview = await currentMemberHasPermission("suggestions.review");

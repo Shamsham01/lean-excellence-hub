@@ -1,5 +1,20 @@
 export const DEFAULT_ANALYTICS_TIME_ZONE = "Europe/London";
 
+export function normalizeAnalyticsTimeZone(
+  timeZone: string | null | undefined,
+): string {
+  const candidate = timeZone?.trim();
+  if (!candidate) {
+    return DEFAULT_ANALYTICS_TIME_ZONE;
+  }
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: candidate });
+    return candidate;
+  } catch {
+    return DEFAULT_ANALYTICS_TIME_ZONE;
+  }
+}
+
 export type CivilDate = {
   year: number;
   month: number;
@@ -69,34 +84,76 @@ export function addCalendarDays(date: CivilDate, offset: number): CivilDate {
   };
 }
 
-/** UTC instant for local 00:00:00 on the given civil date in `timeZone`. */
-export function zonedStartOfDay(date: CivilDate, timeZone: string): Date {
-  let anchor = Date.UTC(date.year, date.month - 1, date.day, 12, 0, 0);
-  let parts = zonedDateTimeParts(new Date(anchor), timeZone);
-  const partKey = parts.year * 10_000 + parts.month * 100 + parts.day;
-  const targetKey = date.year * 10_000 + date.month * 100 + date.day;
-  anchor += (targetKey - partKey) * 86_400_000;
-  parts = zonedDateTimeParts(new Date(anchor), timeZone);
-  anchor -=
-    parts.hour * 3_600_000 + parts.minute * 60_000 + parts.second * 1_000;
+function civilDateMatches(parts: ZonedDateTimeParts, date: CivilDate): boolean {
+  return (
+    parts.year === date.year &&
+    parts.month === date.month &&
+    parts.day === date.day
+  );
+}
 
-  for (let attempt = 0; attempt < 4; attempt++) {
-    parts = zonedDateTimeParts(new Date(anchor), timeZone);
-    if (
-      parts.year === date.year &&
-      parts.month === date.month &&
-      parts.day === date.day &&
-      parts.hour === 0
-    ) {
-      return new Date(anchor);
+/** Milliseconds that must be subtracted from UTC to obtain local civil time. */
+export function timeZoneOffsetMilliseconds(at: Date, timeZone: string): number {
+  const local = zonedDateTimeParts(at, timeZone);
+  const asUtc = Date.UTC(
+    local.year,
+    local.month - 1,
+    local.day,
+    local.hour,
+    local.minute,
+    local.second,
+  );
+  return asUtc - at.getTime();
+}
+
+function earliestInstantOnLocalCivilDay(
+  date: CivilDate,
+  timeZone: string,
+): number | null {
+  const nominal = Date.UTC(date.year, date.month - 1, date.day, 12, 0, 0);
+  let earliest: number | null = null;
+  for (let offsetHours = -18; offsetHours <= 36; offsetHours++) {
+    for (let minute = 0; minute < 60; minute++) {
+      const candidate = nominal + offsetHours * 3_600_000 + minute * 60_000;
+      const parts = zonedDateTimeParts(new Date(candidate), timeZone);
+      if (civilDateMatches(parts, date)) {
+        if (earliest === null || candidate < earliest) {
+          earliest = candidate;
+        }
+      }
     }
-    anchor -=
-      parts.hour * 3_600_000 + parts.minute * 60_000 + parts.second * 1_000;
+  }
+  return earliest;
+}
+
+/**
+ * UTC instant at local 00:00 when it exists; otherwise the first instant of
+ * that civil day (spring-forward gaps).
+ */
+export function zonedStartOfDay(date: CivilDate, timeZone: string): Date {
+  const zone = normalizeAnalyticsTimeZone(timeZone);
+  let guess = Date.UTC(date.year, date.month - 1, date.day, 0, 0, 0);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const offset = timeZoneOffsetMilliseconds(new Date(guess), zone);
+    guess = Date.UTC(date.year, date.month - 1, date.day, 0, 0, 0) - offset;
   }
 
-  throw new Error(
-    `Could not resolve start of ${date.year}-${date.month}-${date.day} in ${timeZone}`,
-  );
+  const atGuess = zonedDateTimeParts(new Date(guess), zone);
+  if (
+    civilDateMatches(atGuess, date) &&
+    atGuess.hour === 0 &&
+    atGuess.minute === 0
+  ) {
+    return new Date(guess);
+  }
+
+  const earliest = earliestInstantOnLocalCivilDay(date, zone);
+  if (earliest === null) {
+    throw new Error(
+      `Could not resolve start of ${date.year}-${date.month}-${date.day} in ${zone}`,
+    );
+  }
+  return new Date(earliest);
 }
 
 /** ISO week from a civil calendar date (proleptic Gregorian). */
@@ -154,6 +211,25 @@ export function formatIsoWeekAxisLabel(
     return `Wk ${week.week} '${yy}`;
   }
   return `Wk ${week.week}`;
+}
+
+export function compareCivilDates(left: CivilDate, right: CivilDate): number {
+  if (left.year !== right.year) return left.year - right.year;
+  if (left.month !== right.month) return left.month - right.month;
+  return left.day - right.day;
+}
+
+export function listCivilDaysInclusive(
+  start: CivilDate,
+  end: CivilDate,
+): CivilDate[] {
+  const days: CivilDate[] = [];
+  let cursor = start;
+  while (compareCivilDates(cursor, end) <= 0) {
+    days.push(cursor);
+    cursor = addCalendarDays(cursor, 1);
+  }
+  return days;
 }
 
 export function listIsoWeeksBetween(

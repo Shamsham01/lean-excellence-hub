@@ -39,7 +39,6 @@ export default async function PlatformHomePage({
   const params = await searchParams;
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const organisations = await listEligibleOrganisations();

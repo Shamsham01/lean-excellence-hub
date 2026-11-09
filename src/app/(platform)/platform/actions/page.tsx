@@ -41,7 +41,6 @@ export default async function ActionsPage({
   const selectorOptions = await loadSiteScopedSelectorOptions();
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(rawParams.range),
   );
 

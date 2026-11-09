@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   formatWeekCommencing,
   isoWeekFromCivilDate,
+  normalizeAnalyticsTimeZone,
   zonedCivilDate,
+  zonedStartOfDay,
+  zonedDateTimeParts,
 } from "@/modules/platform-analytics/iso-week";
+import { buildAnalyticsDateRange } from "@/modules/platform-analytics/date-range";
 import {
   bucketDailyCounts,
   type TrendSeriesPoint,
@@ -53,6 +57,50 @@ describe("iso week helpers", () => {
       month: 6,
       day: 2,
     });
+  });
+
+  it("rejects invalid time zones", () => {
+    expect(normalizeAnalyticsTimeZone("Not/A_TimeZone")).toBe(LONDON);
+    expect(normalizeAnalyticsTimeZone("Europe/London")).toBe(LONDON);
+  });
+
+  it.each([
+    { timeZone: "Europe/London", date: { year: 2026, month: 3, day: 29 } },
+    { timeZone: "Europe/London", date: { year: 2026, month: 10, day: 25 } },
+    { timeZone: "America/New_York", date: { year: 2026, month: 3, day: 8 } },
+    { timeZone: "America/Santiago", date: { year: 2026, month: 9, day: 6 } },
+    {
+      timeZone: "Australia/Lord_Howe",
+      date: { year: 2026, month: 10, day: 4 },
+    },
+  ])(
+    "resolves zonedStartOfDay on DST edges ($timeZone)",
+    ({ timeZone, date }) => {
+      const start = zonedStartOfDay(date, timeZone);
+      const parts = zonedDateTimeParts(start, timeZone);
+      expect(parts.year).toBe(date.year);
+      expect(parts.month).toBe(date.month);
+      expect(parts.day).toBe(date.day);
+    },
+  );
+
+  it("builds analytics date ranges across spring-forward without crashing", () => {
+    expect(() =>
+      buildAnalyticsDateRange(7, new Date("2026-03-29T12:00:00.000Z"), LONDON),
+    ).not.toThrow();
+  });
+});
+
+describe("daily analytics buckets", () => {
+  it("counts events on the last civil day of a 7-day range", () => {
+    const now = new Date("2026-11-09T15:00:00.000Z");
+    const range = buildAnalyticsDateRange(7, now, LONDON);
+    const series = bucketDailyCounts(["2026-11-09T14:00:00.000Z"], {
+      ...range,
+      days: 7,
+    });
+    expect(series.length).toBe(8);
+    expect(series.reduce((sum, point) => sum + point.value, 0)).toBe(1);
   });
 });
 

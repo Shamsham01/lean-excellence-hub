@@ -29,16 +29,26 @@ export function sectionNavAriaLabel(
   label: string,
   visual: SectionNavVisualState,
   detail?: string,
+  options?: {
+    isActive?: boolean;
+    completion?: SectionCompletionState;
+  },
 ): string {
-  const stateLabel =
-    visual === "current"
-      ? "current"
-      : visual === "complete"
-        ? "completed"
-        : visual === "partial"
-          ? "partially answered"
-          : "not started";
-  return detail
-    ? `${label}, ${stateLabel}, ${detail}`
-    : `${label}, ${stateLabel}`;
+  const tokens = [label];
+  if (options?.isActive) {
+    tokens.push("current");
+  }
+  const completion = options?.completion;
+  if (completion === "complete" || visual === "complete") {
+    tokens.push("completed");
+  } else if (completion === "partial" || visual === "partial") {
+    tokens.push("partially answered");
+  } else if (!options?.isActive && visual === "not_started") {
+    tokens.push("not started");
+  }
+  const stateText = tokens.slice(1).join(", ");
+  if (detail) {
+    return `${label}, ${stateText}, ${detail}`;
+  }
+  return stateText ? `${label}, ${stateText}` : label;
 }

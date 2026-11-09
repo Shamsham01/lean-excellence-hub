@@ -49,6 +49,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
+import { answerProgressPercent } from "@/modules/operational/answer-progress-percent";
 import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
   countGembaObservationsByType,
@@ -278,10 +279,8 @@ export function GembaWalkWorkspace({
     hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
   ).length;
   const progress = requiredQuestions.length
-    ? Math.round((answeredRequiredCount / requiredQuestions.length) * 100)
-    : flatQuestions.length
-      ? Math.round((answeredCount / flatQuestions.length) * 100)
-      : 0;
+    ? answerProgressPercent(answeredRequiredCount, requiredQuestions.length)
+    : answerProgressPercent(answeredCount, flatQuestions.length);
   const sectionNavItems = useMemo(
     () =>
       sections.map((section) => {
@@ -540,8 +539,9 @@ export function GembaWalkWorkspace({
             className="text-sm text-muted-foreground"
             data-testid="gemba-answer-progress-label"
           >
-            {answeredRequiredCount}/
-            {requiredQuestions.length || flatQuestions.length} required ·{" "}
+            {requiredQuestions.length > 0
+              ? `${answeredRequiredCount}/${requiredQuestions.length} required · `
+              : ""}
             {answeredCount}/{flatQuestions.length} answered
           </span>
           {canComplete ? (

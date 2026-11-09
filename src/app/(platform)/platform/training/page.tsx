@@ -38,7 +38,6 @@ export default async function TrainingOverviewPage({
 
   const supabase = await createServerSupabaseClient();
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    supabase,
     parseAnalyticsRangeDays(params.range),
   );
   const [canManageCatalog, { context }] = await Promise.all([
