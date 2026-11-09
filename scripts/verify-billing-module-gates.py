@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "supabase/migrations"
-GATE_FILE = MIGRATIONS / "20261109000000_billing_comprehensive_module_mutation_gates.sql"
+GATE_FILE = MIGRATIONS / "20261109015000_billing_comprehensive_module_mutation_gates.sql"
 INVENTORY = ROOT / "docs/operations/rpc-entitlement-inventory.md"
 
 STRUCTURAL_REWRITES = frozenset(
@@ -35,7 +35,7 @@ DEPRIORITISE = frozenset(
     {
         "20261108235000_billing_09_extended_module_gates.sql",
         "20261108232000_billing_06_module_mutation_gates.sql",
-        "20261109000000_billing_comprehensive_module_mutation_gates.sql",
+        "20261109015000_billing_comprehensive_module_mutation_gates.sql",
     }
 )
 

@@ -430,6 +430,9 @@ verify_jwt = false
 [functions.platform-notification-delivery]
 verify_jwt = false
 
+[functions.organisation-invitation-delivery]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
@@ -442,7 +445,11 @@ inspector_port = 8083
 deno_version = 2
 
 [edge_runtime.secrets]
+APP_ORIGIN = "env(APP_ORIGIN)"
+AUTH_EMAIL_FROM = "env(AUTH_EMAIL_FROM)"
+AUTH_EMAIL_FROM_NAME = "env(AUTH_EMAIL_FROM_NAME)"
 CREDENTIAL_ENCRYPTION_KEY = "env(CREDENTIAL_ENCRYPTION_KEY)"
+INVITATION_DELIVERY_MAILPIT_URL = "env(INVITATION_DELIVERY_MAILPIT_URL)"
 
 [analytics]
 enabled = true

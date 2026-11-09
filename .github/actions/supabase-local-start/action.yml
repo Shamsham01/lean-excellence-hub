@@ -67,6 +67,12 @@ runs:
 
         release_local_supabase_ports
 
+        # Edge functions read these via supabase/config.toml [edge_runtime.secrets]; jobs that
+        # omit them in workflow env still need safe local defaults at stack boot.
+        export APP_ORIGIN="${APP_ORIGIN:-http://127.0.0.1:3000}"
+        export AUTH_EMAIL_FROM="${AUTH_EMAIL_FROM:-onboarding@test.test}"
+        export AUTH_EMAIL_FROM_NAME="${AUTH_EMAIL_FROM_NAME:-Lean Excellence Hub}"
+
         attempt=1
         while [ "${attempt}" -le "${MAX_ATTEMPTS}" ]; do
           echo "Supabase startup attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${STARTUP_TIMEOUT_MINUTES}m)"

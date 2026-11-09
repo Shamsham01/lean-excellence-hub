@@ -211,6 +211,20 @@ export async function validateWorkforceImportAndStartProvisioning(
   const validateButton = page.getByTestId("validate-import");
   const onReview = await start.isVisible().catch(() => false);
   if (!onReview && (await validateButton.isVisible().catch(() => false))) {
+    await expect(validateButton).toBeEnabled({ timeout: 30_000 });
+    const obscured = await validateButton.evaluate((button) => {
+      const rect = button.getBoundingClientRect();
+      const center = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      );
+      return center !== button && !button.contains(center);
+    });
+    if (obscured) {
+      throw new Error(
+        `Validate import control is covered by another element. ${await readImportWizardDiagnostics(page)}`,
+      );
+    }
     await validateButton.evaluate((button: HTMLButtonElement) => {
       button.click();
     });

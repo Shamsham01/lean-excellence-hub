@@ -12930,6 +12930,18 @@ export type Database = {
         Args: { target_import_job_id: string }
         Returns: boolean
       }
+      assert_invitation_inbox_ready_for_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
+      assert_invitation_inbox_verified_for_binding: {
+        Args: { target_binding_id: string }
+        Returns: boolean
+      }
       assert_workforce_import_credential_export_access: {
         Args: { target_export_session_id: string; target_import_job_id: string }
         Returns: undefined
@@ -12961,6 +12973,13 @@ export type Database = {
         }
         Returns: string
       }
+      attest_organisation_invitation_inbox: {
+        Args: {
+          invitation_token_digest: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
       authentication_rate_limit_allows: {
         Args: {
           limiter_dimension: string
@@ -12968,6 +12987,15 @@ export type Database = {
           limiter_purpose: string
           maximum_attempts: number
           window_seconds: number
+        }
+        Returns: boolean
+      }
+      authorize_invitation_identity_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+          target_user_email: string
         }
         Returns: boolean
       }
@@ -12987,6 +13015,20 @@ export type Database = {
       begin_assessor_review: {
         Args: { target_assessment_id: string }
         Returns: boolean
+      }
+      begin_organisation_invitation_delivery_send: {
+        Args: { target_delivery_id: string }
+        Returns: {
+          delivery_id: string
+          delivery_key: string
+          inbox_proof_digest: string
+          intended_display_name: string
+          invitation_token_digest: string
+          lease_token: string
+          organisation_name: string
+          provider_idempotency_key: string
+          recipient_email: string
+        }[]
       }
       begin_suggestion_implementation: {
         Args: { target_suggestion_id: string }
@@ -13115,6 +13157,10 @@ export type Database = {
           provisioning_intent_id: string
         }[]
       }
+      clear_invitation_signup_binding_auth_user: {
+        Args: { target_binding_id: string }
+        Returns: boolean
+      }
       close_problem_solving_case: {
         Args: {
           target_case_id: string
@@ -13160,6 +13206,14 @@ export type Database = {
           expected_lease_token: string
           target_delivery_id: string
           target_organisation_id: string
+          target_provider_message_id?: string
+        }
+        Returns: boolean
+      }
+      complete_organisation_invitation_delivery_for_worker: {
+        Args: {
+          target_delivery_id: string
+          target_lease_token: string
           target_provider_message_id?: string
         }
         Returns: boolean
@@ -14100,6 +14154,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      fail_organisation_invitation_delivery_for_worker: {
+        Args: {
+          target_delivery_id: string
+          target_error_code: string
+          target_error_detail: string
+          target_lease_token: string
+          target_retryable?: boolean
+        }
+        Returns: boolean
+      }
       fail_platform_notification_retryable_for_worker: {
         Args: {
           error_code: string
@@ -14126,6 +14190,15 @@ export type Database = {
       }
       finalise_identity_enrolment: {
         Args: { target_user_id: string }
+        Returns: boolean
+      }
+      finalise_invitation_identity_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+          target_user_id: string
+        }
         Returns: boolean
       }
       finalize_people_invitation_import_job: {
@@ -14366,6 +14439,10 @@ export type Database = {
           remaining_credits: number
           reserved_credits: number
         }[]
+      }
+      get_organisation_invitation_delivery_status: {
+        Args: { target_invitation_id: string }
+        Returns: Json
       }
       get_organisation_ownership: { Args: never; Returns: Json }
       get_organisation_setup_readiness: { Args: never; Returns: Json }
@@ -15240,6 +15317,21 @@ export type Database = {
         Args: { target_problem_solving_case_id: string }
         Returns: number
       }
+      redeem_organisation_invitation_inbox_proof: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
+      register_organisation_invitation_delivery: {
+        Args: {
+          target_inbox_proof_digest: string
+          target_invitation_id: string
+        }
+        Returns: string
+      }
       reissue_organisation_member_invitation: {
         Args: {
           replacement_expires_at: string
@@ -15284,6 +15376,14 @@ export type Database = {
         Args: {
           target_containment_id: string
           target_release_rationale?: string
+        }
+        Returns: boolean
+      }
+      release_organisation_invitation_inbox_proof_redemption: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
         }
         Returns: boolean
       }
@@ -15337,6 +15437,13 @@ export type Database = {
       }
       replace_expired_invitation_signup_binding: {
         Args: { target_binding_id: string }
+        Returns: string
+      }
+      resend_organisation_invitation_email: {
+        Args: {
+          target_inbox_proof_digest: string
+          target_invitation_id: string
+        }
         Returns: string
       }
       resolve_benefit_submit_validators: {
@@ -16056,6 +16163,13 @@ export type Database = {
       }
       validate_benefit_realisation_entry: {
         Args: { target_entry_id: string }
+        Returns: boolean
+      }
+      validate_organisation_invitation_inbox_proof_staging: {
+        Args: {
+          invitation_token_digest: string
+          target_inbox_proof_digest: string
+        }
         Returns: boolean
       }
       validate_people_invitation_import_job: {

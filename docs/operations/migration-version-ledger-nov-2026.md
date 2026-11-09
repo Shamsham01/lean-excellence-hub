@@ -12,11 +12,13 @@ Coordination only — not applied on `main` until branches merge.
 | `20261108231000` | `billing_04_module_gates_and_wrapper_fix.sql` |
 | `20261108233000` | `billing_07_leanai_credit_lifecycle.sql` |
 | `20261108234000` | `billing_08_leanai_credit_table_grants.sql` |
-| `20261109000000` | `billing_comprehensive_module_mutation_gates.sql` |
-| `20261109120000` | `billing_audit_remediation.sql` |
-| `20261109140000` | `billing_08_cost_credit_accounting.sql` |
-| `20261109150000` | `billing_09_private_write_grant_hardening.sql` |
-| `20261109160000` | `billing_10_cost_credit_unit_fixes.sql` |
+| `20261109015000` | `billing_comprehensive_module_mutation_gates.sql` (after #376 invitation `09010000`–`09014000`) |
+| `20261109016000` | `billing_audit_remediation.sql` |
+| `20261109017000` | `billing_08_cost_credit_accounting.sql` |
+| `20261109018000` | `billing_09_private_write_grant_hardening.sql` |
+| `20261109019000` | `billing_10_cost_credit_unit_fixes.sql` |
+| `20261109020000` | `billing_11_credit_worker_reconcile.sql` |
+| `20261109021000` | `billing_12_settle_rate_snapshot.sql` |
 
 ## `cursor/suggestion-approval-routing-delegation-5afc` (PR #375)
 

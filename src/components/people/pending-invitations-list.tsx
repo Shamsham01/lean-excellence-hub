@@ -24,9 +24,12 @@ export function PendingInvitationsList({
   invitations: PendingInvitation[];
   namesUnavailable?: boolean;
   onRevoke: (invitationId: string) => Promise<{ error?: string; ok?: true }>;
-  onReissue: (
-    invitationId: string,
-  ) => Promise<{ error?: string; ok?: true; invitationUrl?: string }>;
+  onReissue: (invitationId: string) => Promise<{
+    error?: string;
+    ok?: true;
+    invitationUrl?: string;
+    emailDispatched?: boolean;
+  }>;
 }) {
   const [message, setMessage] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -59,7 +62,9 @@ export function PendingInvitationsList({
     } else if (result.ok) {
       setReissuedUrl(result.invitationUrl ?? null);
       setMessage(
-        "Invitation reissued. Share the new secure link with your colleague.",
+        result.emailDispatched
+          ? "Invitation reissued and a new email was sent."
+          : "Invitation reissued. Share the new secure link with your colleague.",
       );
     }
     setLoadingId(null);

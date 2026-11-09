@@ -23,6 +23,10 @@ concurrency:
 
 env:
   APP_ORIGIN: http://127.0.0.1:3000
+  AUTH_EMAIL_FROM: onboarding@test.test
+  AUTH_EMAIL_FROM_NAME: Lean Excellence Hub
+  # Edge functions run in Docker; reach host Mailpit via the default bridge gateway.
+  INVITATION_DELIVERY_MAILPIT_URL: http://172.17.0.1:54324
   AUTH_RATE_LIMIT_PEPPER: ci-only-pepper-that-is-at-least-32-characters
   BILLING_PROVIDER: fake
   LEH_SELF_SERVICE_CHECKOUT_ENABLED: "true"
