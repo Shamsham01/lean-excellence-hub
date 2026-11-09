@@ -240,6 +240,7 @@ export async function handleOrganisationInvitationDeliveryRequest(
       recipientEmail: row.recipient_email,
       intendedDisplayName: row.intended_display_name,
       activateUrl,
+      appOrigin,
     });
 
     const providerResult = await dependencies.sendEmail({

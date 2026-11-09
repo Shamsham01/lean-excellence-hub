@@ -1,3 +1,8 @@
+import {
+  renderLehEmailBrandHeader,
+  shouldRenderLehEmailEyebrow,
+} from "../email-brand-header.ts";
+
 type BrandedEmailContent = {
   eyebrow: string;
   title: string;
@@ -16,13 +21,18 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-export function renderBrandedAuthEmail(content: BrandedEmailContent): string {
+export function renderBrandedAuthEmail(
+  content: BrandedEmailContent,
+  appOrigin?: string | null,
+): string {
   const eyebrow = escapeHtml(content.eyebrow);
   const title = escapeHtml(content.title);
   const intro = escapeHtml(content.intro);
   const ctaLabel = escapeHtml(content.ctaLabel);
   const confirmUrl = escapeHtml(content.confirmUrl);
   const footer = content.footer ? escapeHtml(content.footer) : "";
+  const brandHeader = renderLehEmailBrandHeader(appOrigin);
+  const showEyebrow = shouldRenderLehEmailEyebrow(appOrigin);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -31,11 +41,16 @@ export function renderBrandedAuthEmail(content: BrandedEmailContent): string {
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e4e4e7;border-radius:12px;padding:32px;">
-            <tr>
+            ${brandHeader}
+            ${
+              showEyebrow
+                ? `<tr>
               <td style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;padding-bottom:16px;">
                 ${eyebrow}
               </td>
-            </tr>
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="font-size:24px;line-height:1.3;font-weight:700;color:#18181b;padding-bottom:16px;">
                 ${title}
@@ -72,19 +87,23 @@ export function renderBrandedAuthEmail(content: BrandedEmailContent): string {
 
 export function renderSignupConfirmationEmail(
   confirmUrl: string,
+  appOrigin?: string | null,
 ): AuthEmailHtml {
   return {
     subject: "Confirm your Lean Excellence Hub account",
-    html: renderBrandedAuthEmail({
-      eyebrow: "Lean Excellence Hub",
-      title: "Confirm your account",
-      intro:
-        "You've created an account for Lean Excellence Hub. Confirm your email address to finish setting up your account.",
-      ctaLabel: "Confirm account",
-      confirmUrl,
-      footer:
-        "Open the link and confirm on the next page. Confirmation does not join an organisation by itself. If you're joining through an organisation invitation, you'll return to your invitation after confirmation. If you did not request this, you can ignore this email.",
-    }),
+    html: renderBrandedAuthEmail(
+      {
+        eyebrow: "Lean Excellence Hub",
+        title: "Confirm your account",
+        intro:
+          "You've created an account for Lean Excellence Hub. Confirm your email address to finish setting up your account.",
+        ctaLabel: "Confirm account",
+        confirmUrl,
+        footer:
+          "Open the link and confirm on the next page. Confirmation does not join an organisation by itself. If you're joining through an organisation invitation, you'll return to your invitation after confirmation. If you did not request this, you can ignore this email.",
+      },
+      appOrigin,
+    ),
     text:
       "Confirm your Lean Excellence Hub account\n\n" +
       "You've created an account for Lean Excellence Hub.\n\n" +
@@ -95,19 +114,25 @@ export function renderSignupConfirmationEmail(
   };
 }
 
-export function renderRecoveryEmail(confirmUrl: string): AuthEmailHtml {
+export function renderRecoveryEmail(
+  confirmUrl: string,
+  appOrigin?: string | null,
+): AuthEmailHtml {
   return {
     subject: "Recover your Lean Excellence Hub account",
-    html: renderBrandedAuthEmail({
-      eyebrow: "Lean Excellence Hub",
-      title: "Recover your account",
-      intro:
-        "We received a request to recover access to your Lean Excellence Hub account. Continue below to choose a new password.",
-      ctaLabel: "Continue account recovery",
-      confirmUrl,
-      footer:
-        "If you did not request account recovery, you can ignore this email.",
-    }),
+    html: renderBrandedAuthEmail(
+      {
+        eyebrow: "Lean Excellence Hub",
+        title: "Recover your account",
+        intro:
+          "We received a request to recover access to your Lean Excellence Hub account. Continue below to choose a new password.",
+        ctaLabel: "Continue account recovery",
+        confirmUrl,
+        footer:
+          "If you did not request account recovery, you can ignore this email.",
+      },
+      appOrigin,
+    ),
     text:
       "Recover your Lean Excellence Hub account\n\n" +
       "We received a request to recover access to your Lean Excellence Hub account.\n\n" +
@@ -122,17 +147,21 @@ export function renderGenericConfirmEmail(
   intro: string,
   ctaLabel: string,
   confirmUrl: string,
+  appOrigin?: string | null,
 ): AuthEmailHtml {
   return {
     subject,
-    html: renderBrandedAuthEmail({
-      eyebrow: "Lean Excellence Hub",
-      title,
-      intro,
-      ctaLabel,
-      confirmUrl,
-      footer: "If you did not request this, you can ignore this email.",
-    }),
+    html: renderBrandedAuthEmail(
+      {
+        eyebrow: "Lean Excellence Hub",
+        title,
+        intro,
+        ctaLabel,
+        confirmUrl,
+        footer: "If you did not request this, you can ignore this email.",
+      },
+      appOrigin,
+    ),
     text: `${title}\n\n${intro}\n\n${ctaLabel}: ${confirmUrl}`,
   };
 }

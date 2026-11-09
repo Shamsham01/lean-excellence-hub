@@ -1,3 +1,4 @@
+import { wrapLehEmailCardBody } from "../email-brand-header.ts";
 import { escapeHtml } from "../notification-delivery/html-escape.ts";
 
 export type PlatformNotificationEvent = {
@@ -59,9 +60,11 @@ export function renderPlatformNotification(input: {
     ? `Review it in the platform owner console: ${input.appOrigin}/org_admin`
     : "Review it in the platform owner console.";
   const text = [...lines, "", detail, "", consoleLine].join("\n");
-  const html = [
-    ...lines.map((line) => `<p>${escapeHtml(line)}</p>`),
-    "<ul>",
+  const bodyHtml = [
+    ...lines.map(
+      (line) => `<p style="margin:0 0 12px 0;">${escapeHtml(line)}</p>`,
+    ),
+    '<ul style="margin:0 0 12px 0;padding-left:20px;">',
     ...visibleEntries.map(
       ([key, value]) =>
         `<li><strong>${escapeHtml(key)}</strong>: ${escapeHtml(
@@ -69,8 +72,9 @@ export function renderPlatformNotification(input: {
         )}</li>`,
     ),
     "</ul>",
-    `<p>${escapeHtml(consoleLine)}</p>`,
+    `<p style="margin:0;">${escapeHtml(consoleLine)}</p>`,
   ].join("");
+  const html = wrapLehEmailCardBody(input.appOrigin, bodyHtml);
 
   return {
     from: input.from,

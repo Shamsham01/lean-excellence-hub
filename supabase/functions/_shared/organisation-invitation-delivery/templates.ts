@@ -1,3 +1,8 @@
+import {
+  renderLehEmailBrandHeader,
+  shouldRenderLehEmailEyebrow,
+} from "../email-brand-header.ts";
+
 export function buildOrganisationInvitationActivateUrl(
   appOrigin: string,
   invitationToken: string,
@@ -16,6 +21,7 @@ type InvitationEmailContent = {
   recipientEmail: string;
   intendedDisplayName?: string | null;
   activateUrl: string;
+  appOrigin?: string | null;
 };
 
 function escapeHtml(value: string): string {
@@ -39,6 +45,8 @@ export function renderOrganisationInvitationEmail(
   const introHtml = greetingName
     ? `${escapeHtml(greeting)}, you have been invited to join <strong>${orgName}</strong> on Lean Excellence Hub.`
     : `You have been invited to join <strong>${orgName}</strong> on Lean Excellence Hub.`;
+  const brandHeader = renderLehEmailBrandHeader(input.appOrigin);
+  const showEyebrow = shouldRenderLehEmailEyebrow(input.appOrigin);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -47,11 +55,16 @@ export function renderOrganisationInvitationEmail(
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e4e4e7;border-radius:12px;padding:32px;">
-            <tr>
+            ${brandHeader}
+            ${
+              showEyebrow
+                ? `<tr>
               <td style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;padding-bottom:16px;">
                 Lean Excellence Hub
               </td>
-            </tr>
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="font-size:24px;line-height:1.3;font-weight:700;color:#18181b;padding-bottom:16px;">
                 You have been invited
