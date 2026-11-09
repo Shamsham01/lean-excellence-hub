@@ -6,7 +6,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { invitationExpiresAt } from "@/modules/identity/invitation-constants";
 
-import { fetchLatestEmailHref } from "./mailpit";
+import { fetchLatestEmailHref, fetchLatestEmailHrefWithRetry } from "./mailpit";
 import {
   onboardingE2eCredentials,
   onboardingOrgAdminCredentials,
@@ -378,6 +378,38 @@ function invitationInboxProofDigest(inboxProof: string) {
   return `\\x${createHash("sha256").update(inboxProof).digest("hex")}`;
 }
 
+async function dispatchOrganisationInvitationDeliveryForE2e(input: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  deliveryId: string;
+  invitationToken: string;
+  inboxProof: string;
+}) {
+  const response = await fetch(
+    `${input.supabaseUrl.replace(/\/$/, "")}/functions/v1/organisation-invitation-delivery`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: input.serviceRoleKey,
+        Authorization: `Bearer ${input.serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        delivery_id: input.deliveryId,
+        invitation_token: input.invitationToken,
+        inbox_proof: input.inboxProof,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(
+      `organisation-invitation-delivery failed (${response.status}): ${detail}`,
+    );
+  }
+}
+
 export async function issueInvitationWithDeliveredInboxProof(
   ownerClient: SupabaseClient,
   input: Parameters<typeof issueInvitationForEmail>[1],
@@ -400,32 +432,45 @@ export async function issueInvitationWithDeliveredInboxProof(
 
   assertUuid(invitationId);
   const inboxProof = randomBytes(32).toString("base64url");
-  const { error: registerError } = await ownerClient.rpc(
+  const { data: deliveryId, error: registerError } = await ownerClient.rpc(
     "register_organisation_invitation_delivery",
     {
       target_invitation_id: invitationId,
       target_inbox_proof_digest: invitationInboxProofDigest(inboxProof),
     },
   );
-  if (registerError) {
-    throw registerError;
+  if (registerError || !deliveryId) {
+    throw (
+      registerError ??
+      new Error("register_organisation_invitation_delivery failed")
+    );
   }
 
-  runLocalSql(
-    `update private.organisation_invitation_deliveries
-       set status = 'sent',
-           sent_at = statement_timestamp(),
-           next_attempt_at = statement_timestamp()
-     where invitation_id = (:'invitation_id')::uuid
-       and cancelled_at is null;`,
-    { invitation_id: invitationId },
+  const { url, serviceRoleKey } = resolveSupabaseEnv();
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "Supabase URL and service role key are required for delivery dispatch.",
+    );
+  }
+
+  await dispatchOrganisationInvitationDeliveryForE2e({
+    supabaseUrl: url,
+    serviceRoleKey,
+    deliveryId,
+    invitationToken: issued.token,
+    inboxProof,
+  });
+
+  const activateEmailPath = await fetchLatestEmailHrefWithRetry(
+    input.email,
+    `/invitations/${issued.token}/activate`,
   );
 
   return {
     ...issued,
     invitationId,
     inboxProof,
-    activateEmailPath: `/api/invitations/${issued.token}/stage-inbox-proof?inbox_proof=${encodeURIComponent(inboxProof)}`,
+    activateEmailPath,
   };
 }
 
@@ -442,14 +487,16 @@ export async function createAccountThroughInvitationEmail(
       ? input.activateEmailPath
       : `${origin}${input.activateEmailPath}`,
   );
-  await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate$/, {
+  await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/, {
     timeout: 30_000,
   });
   await expect
-    .poll(async () =>
-      (await page.context().cookies()).some(
-        (cookie) => cookie.name === "leh_invitation_inbox_proof",
-      ),
+    .poll(
+      async () =>
+        (await page.context().cookies()).some(
+          (cookie) => cookie.name === "leh_invitation_inbox_proof",
+        ),
+      { timeout: 30_000 },
     )
     .toBe(true);
   await page.locator("#password").fill(input.password);

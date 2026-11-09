@@ -446,6 +446,7 @@ deno_version = 2
 
 [edge_runtime.secrets]
 CREDENTIAL_ENCRYPTION_KEY = "env(CREDENTIAL_ENCRYPTION_KEY)"
+INVITATION_DELIVERY_MAILPIT_URL = "env(INVITATION_DELIVERY_MAILPIT_URL)"
 
 [analytics]
 enabled = true

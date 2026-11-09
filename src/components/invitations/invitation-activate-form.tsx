@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import type { InvitationLifecycleView } from "@/modules/identity/invitation-lifecycle";
 
 import { createInvitationAccount } from "@/app/invitations/[token]/activate/actions";
+import { InvitationInboxProofHandoff } from "@/components/invitations/invitation-inbox-proof-handoff";
 
 export function InvitationActivateForm({
   token,
@@ -31,6 +32,8 @@ export function InvitationActivateForm({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [inboxProofReady, setInboxProofReady] = useState(hasInboxProofCookie);
+  const inboxProofStaged = inboxProofReady || hasInboxProofCookie;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -83,9 +86,15 @@ export function InvitationActivateForm({
         </div>
       </dl>
 
+      <InvitationInboxProofHandoff
+        token={token}
+        hasInboxProofCookie={inboxProofStaged}
+        onStaged={() => setInboxProofReady(true)}
+      />
+
       {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
-      {!hasInboxProofCookie ? (
+      {!inboxProofStaged ? (
         <InlineAlert tone="warning">
           Open the invitation email and use the Create account button on this
           device before setting your password.

@@ -2,6 +2,8 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { invitationInboxProofDigest } from "@/modules/identity/invitation-inbox-proof";
+import { invitationTokenDigest } from "@/modules/identity/invitations";
 import { getPublicEnvironment, getServerEnvironment } from "@/platform/env";
 import type { Database } from "@/platform/supabase/database.types";
 
@@ -197,8 +199,41 @@ export async function createConfirmedInvitationAuthUser(input: {
   email: string;
   password: string;
   invitationSignupBindingId: string;
+  invitationToken: string;
+  inboxProof: string;
 }) {
   const client = createSecretClient();
+
+  const redeemed = await client.rpc(
+    "redeem_organisation_invitation_inbox_proof",
+    {
+      invitation_token_digest: invitationTokenDigest(input.invitationToken),
+      target_inbox_proof_digest: invitationInboxProofDigest(input.inboxProof),
+      target_binding_id: input.invitationSignupBindingId,
+    },
+  );
+
+  if (redeemed.error || redeemed.data !== true) {
+    return {
+      error: new Error(
+        "This invitation email link has already been used or is no longer valid.",
+      ),
+    };
+  }
+
+  const inboxVerified = await client.rpc(
+    "assert_invitation_inbox_verified_for_binding",
+    { target_binding_id: input.invitationSignupBindingId },
+  );
+
+  if (inboxVerified.error || inboxVerified.data !== true) {
+    return {
+      error: new Error(
+        "Open the invitation email and use the Create account button before setting your password.",
+      ),
+    };
+  }
+
   const authorized = await client.rpc("authorize_invitation_identity_signup", {
     target_binding_id: input.invitationSignupBindingId,
     target_user_email: input.email,

@@ -13,12 +13,10 @@ import {
   isInvitationInboxProofValue,
 } from "@/modules/identity/invitation-inbox-cookie";
 import { loadInvitationLifecycle } from "@/modules/identity/invitation-lifecycle";
-import { redeemOrganisationInvitationInboxProof } from "@/modules/identity/redeem-invitation-inbox";
 import { invitationTokenDigest } from "@/modules/identity/invitations";
 import { passwordUpdateSchema } from "@/modules/identity/auth-input";
 import { recordAuthenticationRateLimitFailure } from "@/platform/supabase/secret";
 import {
-  assertInvitationInboxVerifiedForBinding,
   createConfirmedInvitationAuthUser,
   recordInvitationSignupDisplayName,
 } from "@/platform/supabase/secret";
@@ -133,17 +131,24 @@ export async function createInvitationAccount(formData: FormData) {
     };
   }
 
-  const redeemed = await redeemOrganisationInvitationInboxProof({
+  const created = await createConfirmedInvitationAuthUser({
+    email: lifecycle.recipientEmail,
+    password: parsed.data.password,
+    invitationSignupBindingId: bindingId,
     invitationToken: parsed.data.token,
     inboxProof: inboxProof!,
-    bindingId,
   });
 
-  if (!redeemed) {
-    await recordInvitationActivationFailure(parsed.data.token);
+  if (created.error) {
+    const message = created.error.message ?? "Unable to create account.";
+    if (
+      !message.toLowerCase().includes("already been used") &&
+      !message.toLowerCase().includes("no longer valid")
+    ) {
+      await recordInvitationActivationFailure(parsed.data.token);
+    }
     return {
-      error:
-        "This invitation email link has already been used or is no longer valid. Ask your administrator to resend the invitation.",
+      error: mapSignupError(message),
     };
   }
 
@@ -151,26 +156,6 @@ export async function createInvitationAccount(formData: FormData) {
     name: INVITATION_INBOX_PROOF_COOKIE,
     path: `/invitations/${parsed.data.token}/activate`,
   });
-
-  const inboxVerified = await assertInvitationInboxVerifiedForBinding(bindingId);
-  if (inboxVerified.error || inboxVerified.data !== true) {
-    return {
-      error:
-        "Open the invitation email and use the Create account button before setting your password.",
-    };
-  }
-
-  const created = await createConfirmedInvitationAuthUser({
-    email: lifecycle.recipientEmail,
-    password: parsed.data.password,
-    invitationSignupBindingId: bindingId,
-  });
-
-  if (created.error) {
-    return {
-      error: mapSignupError(created.error.message ?? "Unable to create account."),
-    };
-  }
 
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: lifecycle.recipientEmail,

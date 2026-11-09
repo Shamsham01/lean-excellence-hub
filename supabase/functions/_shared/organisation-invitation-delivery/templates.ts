@@ -1,3 +1,16 @@
+export function buildOrganisationInvitationActivateUrl(
+  appOrigin: string,
+  invitationToken: string,
+  inboxProof: string,
+): string {
+  const url = new URL(
+    `/invitations/${encodeURIComponent(invitationToken)}/activate`,
+    appOrigin,
+  );
+  url.hash = `inbox_proof=${encodeURIComponent(inboxProof)}`;
+  return url.toString();
+}
+
 type InvitationEmailContent = {
   organisationName: string;
   recipientEmail: string;
@@ -18,9 +31,7 @@ export function renderOrganisationInvitationEmail(
   input: InvitationEmailContent,
 ): { subject: string; html: string; text: string } {
   const greetingName = input.intendedDisplayName?.trim();
-  const greeting = greetingName
-    ? `Hello ${greetingName}`
-    : "Hello";
+  const greeting = greetingName ? `Hello ${greetingName}` : "Hello";
   const orgName = escapeHtml(input.organisationName);
   const subject = `You have been invited to ${input.organisationName}`;
   const activateUrl = escapeHtml(input.activateUrl);

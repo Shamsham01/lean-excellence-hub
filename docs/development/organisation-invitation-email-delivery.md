@@ -17,8 +17,8 @@ Admin invite (Next.js server action)
   -> organisation-invitation-delivery Edge Function (service apikey)
   -> Resend (AUTH_EMAIL_* sender)
   -> Invite email with inbox proof link
-  -> /invitations/{token}/activate?inbox_proof=...
-  -> attest_organisation_invitation_inbox (GET-safe, no membership grant)
+  -> /invitations/{token}/activate#inbox_proof=... (fragment keeps proof out of server access logs)
+  -> POST /api/invitations/{token}/stage-inbox-proof (HttpOnly cookie, rate limited)
   -> Password setup + service-role createUser (email_confirm) + sign-in
   -> Invitation continue / accept (unchanged)
 ```

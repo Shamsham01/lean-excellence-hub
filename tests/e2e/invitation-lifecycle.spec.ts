@@ -33,7 +33,7 @@ const e2eOrigin = "http://127.0.0.1:3000";
 function toE2eOriginUrl(pathOrUrl: string) {
   if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
     const parsed = new URL(pathOrUrl);
-    return `${e2eOrigin}${parsed.pathname}${parsed.search}`;
+    return `${e2eOrigin}${parsed.pathname}${parsed.search}${parsed.hash}`;
   }
 
   return `${e2eOrigin}${pathOrUrl}`;
@@ -200,7 +200,7 @@ test.describe("Invitation lifecycle", () => {
     await expect(inviteePage).toHaveURL(
       /\/invitations\/continue\/[0-9a-f-]{36}$/i,
     );
-    expect(await countEmailsToRecipient(uniqueEmail)).toBe(mailCountBefore);
+    expect(await countEmailsToRecipient(uniqueEmail)).toBe(mailCountBefore + 1);
     await expect(
       inviteePage.getByTestId("invitation-continue-page"),
     ).toBeVisible();
@@ -257,6 +257,58 @@ test.describe("Invitation lifecycle", () => {
     await expect(activationPage).toHaveURL(/\/platform/);
 
     await activationContext.close();
+  });
+
+  test("scenario 1A: weak password does not consume inbox proof before signup", async ({
+    browser,
+  }) => {
+    const { publishableKey, url } = getInvitationLifecycleClients();
+    const adminClient = await createOnboardingOrgAdminClient(
+      url,
+      publishableKey,
+    );
+    const uniqueEmail = `invitation-weak-password-${Date.now()}@example.test`;
+    const strongPassword = "InvitationWeakRetry123!";
+    const { activateEmailPath } = await issueInvitationWithDeliveredInboxProof(
+      adminClient,
+      {
+        email: uniqueEmail,
+        tokenSeed: `weak-password-${Date.now()}`,
+      },
+    );
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(toE2eOriginUrl(activateEmailPath));
+    await page.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/, {
+      timeout: 30_000,
+    });
+    await expect
+      .poll(async () =>
+        (await page.context().cookies()).some(
+          (cookie) => cookie.name === "leh_invitation_inbox_proof",
+        ),
+      )
+      .toBe(true);
+
+    await page.locator("#password").fill("alllowercase12");
+    await page.locator("#confirm-password").fill("alllowercase12");
+    await page
+      .getByRole("button", { name: "Create account and continue" })
+      .click();
+    await expect(
+      page.getByText(/Check your password meets the requirements/i),
+    ).toBeVisible();
+
+    await page.locator("#password").fill(strongPassword);
+    await page.locator("#confirm-password").fill(strongPassword);
+    await page
+      .getByRole("button", { name: "Create account and continue" })
+      .click();
+    await expect(page).toHaveURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
+      timeout: 30_000,
+    });
+    await context.close();
   });
 
   test("scenario 1E: mail-scanner style GET prefetch does not consume inbox proof", async ({
@@ -320,9 +372,11 @@ test.describe("Invitation lifecycle", () => {
     const secondContext = await browser.newContext();
     const secondPage = await secondContext.newPage();
     await secondPage.goto(toE2eOriginUrl(activateEmailPath));
-    await secondPage.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate$/);
+    await secondPage.waitForURL(/\/invitations\/[A-Za-z0-9_-]+\/activate/);
     await expect(
-      secondPage.getByText(/Open the invitation email and use the Create account button/i),
+      secondPage.getByText(
+        /Open the invitation email and use the Create account button/i,
+      ),
     ).toBeVisible();
     await secondContext.close();
   });
@@ -407,11 +461,11 @@ test.describe("Invitation lifecycle", () => {
       .getByRole("button", { name: "Email sign in" })
       .click();
 
-  await expect(
-    confirmationPage.getByRole("heading", {
-      name: /Invitation unavailable|Invitation no longer active/i,
-    }),
-  ).toBeVisible();
+    await expect(
+      confirmationPage.getByRole("heading", {
+        name: /Invitation unavailable|Invitation no longer active/i,
+      }),
+    ).toBeVisible();
     await expect(
       confirmationPage.getByRole("button", { name: "Accept invitation" }),
     ).toHaveCount(0);
@@ -892,7 +946,7 @@ test.describe("Invitation lifecycle", () => {
     const replayPage = await replayContext.newPage();
     await replayPage.goto(toE2eOriginUrl(signup.activateEmailPath));
     await expect(replayPage).toHaveURL(
-      /\/invitations\/[A-Za-z0-9_-]+(\/activate)?$/,
+      /\/invitations\/[A-Za-z0-9_-]+(\/activate)?/,
     );
     await expect(
       replayPage.getByRole("heading", {

@@ -5,7 +5,12 @@ import {
   authenticateNotificationWorkerRequest,
   resolvePrivilegedSupabaseKey,
 } from "../worker-auth.ts";
-import { renderOrganisationInvitationEmail } from "./templates.ts";
+import {
+  buildOrganisationInvitationActivateUrl,
+  renderOrganisationInvitationEmail,
+} from "./templates.ts";
+
+export { buildOrganisationInvitationActivateUrl } from "./templates.ts";
 
 export type InvitationDeliveryDispatchPayload = {
   delivery_id: string;
@@ -78,17 +83,41 @@ function normalisePgByteaHex(value: string | null | undefined): string | null {
   return trimmed;
 }
 
-function buildActivateUrl(
-  appOrigin: string,
-  invitationToken: string,
-  inboxProof: string,
-): string {
-  const url = new URL(
-    `/api/invitations/${encodeURIComponent(invitationToken)}/stage-inbox-proof`,
-    appOrigin,
+async function sendViaMailpitCapture(
+  captureBaseUrl: string,
+  input: {
+    from: string;
+    to: string;
+    subject: string;
+    html: string;
+    text: string;
+  },
+): Promise<{ providerMessageId: string | null }> {
+  const match = input.from.match(/^(.*)<([^>]+)>$/);
+  const fromEmail = match?.[2]?.trim() ?? input.from;
+  const fromName = match?.[1]?.trim().replace(/^"|"$/g, "") ?? "";
+  const response = await fetch(
+    `${captureBaseUrl.replace(/\/$/, "")}/api/v1/send`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        From: { Email: fromEmail, Name: fromName },
+        To: [{ Email: input.to }],
+        Subject: input.subject,
+        HTML: input.html,
+        Text: input.text,
+      }),
+    },
   );
-  url.searchParams.set("inbox_proof", inboxProof);
-  return url.toString();
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(
+      `INVITATION_DELIVERY_MAILPIT_URL capture failed (${response.status}): ${detail}`,
+    );
+  }
+  const payload = (await response.json()) as { ID?: string };
+  return { providerMessageId: payload.ID ?? null };
 }
 
 export async function handleOrganisationInvitationDeliveryRequest(
@@ -122,6 +151,11 @@ export async function handleOrganisationInvitationDeliveryRequest(
     return jsonResponse({ error: "Invalid JSON." }, 400);
   }
 
+  let lease: { deliveryId: string; leaseToken: string } | null = null;
+  let workerClient: ReturnType<
+    DispatchDependencies["createServiceClient"]
+  > | null = null;
+
   try {
     const supabaseUrl = readRequiredEnv(dependencies.readEnv, "SUPABASE_URL");
     const serviceKey = resolvePrivilegedSupabaseKey(dependencies.readEnv);
@@ -135,6 +169,7 @@ export async function handleOrganisationInvitationDeliveryRequest(
       "Lean Excellence Hub";
 
     const client = dependencies.createServiceClient(supabaseUrl, serviceKey);
+    workerClient = client;
 
     const begin = await client.rpc(
       "begin_organisation_invitation_delivery_send",
@@ -160,6 +195,11 @@ export async function handleOrganisationInvitationDeliveryRequest(
       return jsonResponse({ error: "Delivery is not available to send." }, 409);
     }
 
+    lease = {
+      deliveryId: row.delivery_id,
+      leaseToken: row.lease_token,
+    };
+
     const submittedTokenDigest = await sha256ByteaHex(payload.invitation_token);
     const submittedProofDigest = await sha256ByteaHex(payload.inbox_proof);
     const expectedTokenDigest = normalisePgByteaHex(
@@ -184,7 +224,7 @@ export async function handleOrganisationInvitationDeliveryRequest(
       return jsonResponse({ error: "Delivery payload mismatch." }, 400);
     }
 
-    const activateUrl = buildActivateUrl(
+    const activateUrl = buildOrganisationInvitationActivateUrl(
       appOrigin,
       payload.invitation_token,
       payload.inbox_proof,
@@ -229,6 +269,22 @@ export async function handleOrganisationInvitationDeliveryRequest(
     return jsonResponse({ ok: true, delivery_id: row.delivery_id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "send_failed";
+    if (lease && workerClient) {
+      try {
+        await workerClient.rpc(
+          "fail_organisation_invitation_delivery_for_worker",
+          {
+            target_delivery_id: lease.deliveryId,
+            target_lease_token: lease.leaseToken,
+            target_error_code: "send_failed",
+            target_error_detail: message.slice(0, 500),
+            target_retryable: true,
+          },
+        );
+      } catch {
+        // Surface the original send failure.
+      }
+    }
     return jsonResponse({ error: message }, 500);
   }
 }
@@ -241,6 +297,13 @@ export function createDefaultInvitationDeliveryDependencies(): DispatchDependenc
         auth: { autoRefreshToken: false, persistSession: false },
       }),
     sendEmail: async (input) => {
+      const captureUrl = Deno.env
+        .get("INVITATION_DELIVERY_MAILPIT_URL")
+        ?.trim();
+      if (captureUrl) {
+        return await sendViaMailpitCapture(captureUrl, input);
+      }
+
       const apiKey = Deno.env.get("RESEND_API_KEY")?.trim();
       if (!apiKey) {
         throw new Error("RESEND_API_KEY is not configured.");

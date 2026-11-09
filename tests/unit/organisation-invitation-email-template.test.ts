@@ -8,12 +8,13 @@ describe("organisation invitation email template", () => {
       organisationName: "CookieWorks",
       recipientEmail: "colleague@example.test",
       intendedDisplayName: "Alex",
-      activateUrl: "https://app.example.test/invitations/token/activate?inbox_proof=abc",
+      activateUrl:
+        "https://app.example.test/invitations/token/activate#inbox_proof=abc",
     });
 
     expect(rendered.subject).toContain("CookieWorks");
     expect(rendered.html).toContain("Create account");
-    expect(rendered.html).toContain("inbox_proof=abc");
+    expect(rendered.html).toContain("#inbox_proof=abc");
     expect(rendered.text).toContain("colleague@example.test");
   });
 });
