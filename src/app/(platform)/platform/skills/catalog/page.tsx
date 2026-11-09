@@ -1,3 +1,4 @@
+import { ModuleWriteAppLink } from "@/components/billing/module-write-app-link";
 import { SkillCreateForm } from "@/components/skills/skill-create-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -59,14 +60,12 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog && !showCreateForm ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/skills/catalog?new=1"
-                  data-testid="skills-catalog-new-link"
-                >
-                  New skill
-                </AppLink>
-              </Button>
+              <ModuleWriteAppLink
+                href="/platform/skills/catalog?new=1"
+                testId="skills-catalog-new-link"
+              >
+                New skill
+              </ModuleWriteAppLink>
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink

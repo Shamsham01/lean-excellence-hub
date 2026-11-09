@@ -13,6 +13,7 @@ import {
   archiveImportJob,
   beginImportCredentialExport,
   buildImportErrorReport,
+  completeImportValidationStep,
   createImportJob,
   exportImportCredentials,
   getImportJobSnapshot,
@@ -95,6 +96,7 @@ export default async function WorkforceImportJobPage({
         onCreateJob={createImportJob}
         onSubmitRows={submitImportRows}
         onValidate={validateImportJob}
+        onCompleteValidationStep={completeImportValidationStep}
         onLoadValidationRows={getImportValidationRows}
         onLoadPreviewRows={getImportPreviewRows}
         onStartProvisioning={startImportProvisioning}

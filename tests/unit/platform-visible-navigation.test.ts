@@ -21,6 +21,14 @@ vi.mock("@/modules/platform-shell/permissions", () => ({
     prefetchMemberPermissions(...args),
 }));
 
+const loadCurrentOrganisationEntitlements = vi.fn();
+
+vi.mock("@/modules/billing/load-current-entitlements", () => ({
+  loadCurrentOrganisationEntitlements: (...args: unknown[]) =>
+    loadCurrentOrganisationEntitlements(...args),
+}));
+
+import { resolveOrganisationEntitlements } from "@/modules/billing/entitlements";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import { platformNavigation } from "@/modules/platform-shell/navigation";
 import { collectPlatformShellPermissionKeys } from "@/modules/platform-shell/shell-permission-keys";
@@ -32,6 +40,13 @@ describe("buildVisibleNavigation", () => {
     currentMemberHasGrantPermission.mockResolvedValue(true);
     currentMemberHasScopedPermission.mockResolvedValue(true);
     prefetchMemberPermissions.mockResolvedValue(undefined);
+    loadCurrentOrganisationEntitlements.mockResolvedValue(
+      resolveOrganisationEntitlements({
+        planCode: "professional",
+        billingState: "active",
+        hasLegacyUnmeteredAccess: false,
+      }),
+    );
   });
 
   it("prefetches shell permission keys before nav probes", async () => {

@@ -28,6 +28,7 @@ import type {
 } from "@/modules/skills/setup/preparation";
 import { requireSkillsStarterPack } from "@/modules/skills/templates/catalogue";
 import type { Json } from "@/platform/supabase/database.types";
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const UUID_PATTERN =
@@ -55,11 +56,19 @@ async function organisationAllowLists() {
   };
 }
 
+async function requireSkillsModuleWrite(): Promise<{ error: string } | null> {
+  const gate = await assertPlanModuleWrite("skills");
+  if (!gate.ok) return { error: gate.error };
+  return null;
+}
+
 export async function saveSkillsSetupPreparation(input: {
   source: "manual" | "quick_start" | "leanai";
   templateKey?: string;
   state: unknown;
 }) {
+  const planDenied = await requireSkillsModuleWrite();
+  if (planDenied) return planDenied;
   const templateKey = input.templateKey ?? "";
   const state =
     input.source === "manual"

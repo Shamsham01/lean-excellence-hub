@@ -19,6 +19,7 @@ import {
   countPendingProposalsForViewStage,
   resolveCanonicalStageKey,
 } from "@/lib/problem-solving/stage-draft";
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type ActionResult<T = undefined> = { error?: string; ok?: true; data?: T };
@@ -42,6 +43,8 @@ export async function createProblemSolvingAiSession(input: {
   mode: AiSessionMode;
   problemSolvingSessionId?: string;
 }): Promise<ActionResult<{ sessionId: string }>> {
+  const moduleGate = await assertPlanModuleWrite("problem_solving");
+  if (!moduleGate.ok) return { error: moduleGate.error };
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.rpc("create_ai_session", {
@@ -431,6 +434,8 @@ export async function acceptProblemSolvingAiProposal(input: {
   proposalId: string;
   payload: Record<string, unknown>;
 }): Promise<ActionResult<{ resultId: string }>> {
+  const moduleGate = await assertPlanModuleWrite("problem_solving");
+  if (!moduleGate.ok) return { error: moduleGate.error };
   try {
     const supabase = await createServerSupabaseClient();
     const result = await acceptAiProposal(
@@ -452,6 +457,8 @@ export async function rejectProblemSolvingAiProposal(input: {
   proposalId: string;
   reason?: string;
 }): Promise<ActionResult> {
+  const moduleGate = await assertPlanModuleWrite("problem_solving");
+  if (!moduleGate.ok) return { error: moduleGate.error };
   try {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.rpc("reject_ai_proposal", {

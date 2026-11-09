@@ -8,6 +8,7 @@ import {
 } from "@/modules/platform-analytics/date-range";
 import { loadBenefitsAnalytics } from "@/modules/platform-analytics/benefits";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
@@ -82,14 +83,12 @@ export default async function BenefitsPortfolioPage({
         actions={
           <div className="flex gap-2">
             {canCreate ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/benefits/new"
-                  data-testid="benefits-new-link"
-                >
-                  New benefit
-                </AppLink>
-              </Button>
+              <ModulePortfolioNewLink
+                href="/platform/benefits/new"
+                testId="benefits-new-link"
+              >
+                New benefit
+              </ModulePortfolioNewLink>
             ) : null}
             <Button size="sm" variant="outline" asChild>
               <AppLink

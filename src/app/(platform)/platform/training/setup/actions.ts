@@ -28,6 +28,7 @@ import type {
 } from "@/modules/training/setup/preparation";
 import { requireTrainingStarterPack } from "@/modules/training/templates/catalogue";
 import type { Json } from "@/platform/supabase/database.types";
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const UUID_PATTERN =
@@ -67,11 +68,19 @@ async function readPreparation(source: string, templateKey: string) {
   return data?.state;
 }
 
+async function requireTrainingModuleWrite(): Promise<{ error: string } | null> {
+  const gate = await assertPlanModuleWrite("training");
+  if (!gate.ok) return { error: gate.error };
+  return null;
+}
+
 export async function saveTrainingSetupPreparation(input: {
   source: "manual" | "quick_start" | "leanai";
   templateKey?: string;
   state: unknown;
 }) {
+  const planDenied = await requireTrainingModuleWrite();
+  if (planDenied) return planDenied;
   const templateKey = input.templateKey ?? "";
   const state =
     input.source === "manual"

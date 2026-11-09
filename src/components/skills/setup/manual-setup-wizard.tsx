@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { useSerializedSetupSave } from "@/components/skills/setup/serialized-save";
 
 import {
@@ -608,7 +609,7 @@ export function ManualSkillsSetupWizard({
             Back
           </Button>
         ) : null}
-        <Button
+        <ModuleWriteButton
           type="button"
           variant="outline"
           className="w-full max-w-full whitespace-normal sm:w-auto"
@@ -617,8 +618,8 @@ export function ManualSkillsSetupWizard({
           onClick={() => persist(state)}
         >
           Save and resume later
-        </Button>
-        <Button
+        </ModuleWriteButton>
+        <ModuleWriteButton
           type="button"
           variant="outline"
           className="w-full max-w-full whitespace-normal sm:w-auto"
@@ -643,7 +644,7 @@ export function ManualSkillsSetupWizard({
           }}
         >
           Start a new setup
-        </Button>
+        </ModuleWriteButton>
         {state.step !== "preview" ? (
           <Button
             type="button"
@@ -658,7 +659,7 @@ export function ManualSkillsSetupWizard({
           </Button>
         ) : (
           <>
-            <Button
+            <ModuleWriteButton
               type="submit"
               variant="outline"
               className="w-full max-w-full whitespace-normal sm:w-auto"
@@ -667,8 +668,8 @@ export function ManualSkillsSetupWizard({
               value="draft"
             >
               Create setup draft
-            </Button>
-            <Button
+            </ModuleWriteButton>
+            <ModuleWriteButton
               type="submit"
               className="w-full max-w-full whitespace-normal sm:w-auto"
               data-testid="skills-publish-setup"
@@ -676,7 +677,7 @@ export function ManualSkillsSetupWizard({
               value="publish"
             >
               Publish requirements
-            </Button>
+            </ModuleWriteButton>
           </>
         )}
         <Button

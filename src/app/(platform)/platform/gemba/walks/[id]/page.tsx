@@ -63,15 +63,17 @@ export default async function GembaWalkPage({
 
   const { data: sectionsRaw } = await supabase
     .from("template_sections")
-    .select("id, title")
-    .eq("template_version_id", version?.template_version_id ?? "");
+    .select("id, title, position")
+    .eq("template_version_id", version?.template_version_id ?? "")
+    .order("position", { ascending: true });
 
   const { data: questionsRaw } = await supabase
     .from("template_questions")
     .select(
-      "id, section_id, prompt, question_type, help_text, is_required, allows_not_applicable",
+      "id, section_id, position, prompt, question_type, help_text, is_required, allows_not_applicable",
     )
-    .eq("template_version_id", version?.template_version_id ?? "");
+    .eq("template_version_id", version?.template_version_id ?? "")
+    .order("position", { ascending: true });
 
   const sections =
     sectionsRaw?.map((s) => ({
@@ -80,6 +82,7 @@ export default async function GembaWalkPage({
       questions:
         questionsRaw
           ?.filter((q) => q.section_id === s.id)
+          .sort((left, right) => left.position - right.position)
           .map((q) => ({
             id: q.id,
             prompt: q.prompt,

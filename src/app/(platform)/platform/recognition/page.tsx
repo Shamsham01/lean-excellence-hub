@@ -1,6 +1,7 @@
 import { Sparkles } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
+import { ModuleWriteAppLink } from "@/components/billing/module-write-app-link";
 import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
@@ -68,14 +69,12 @@ export default async function RecognitionPage() {
         actions={
           <div className="flex gap-2">
             {canAward ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/recognition/new"
-                  data-testid="recognition-award-link"
-                >
-                  Award recognition
-                </AppLink>
-              </Button>
+              <ModuleWriteAppLink
+                href="/platform/recognition/new"
+                testId="recognition-award-link"
+              >
+                Award recognition
+              </ModuleWriteAppLink>
             ) : null}
             {canManage ? (
               <Button size="sm" variant="outline" asChild>

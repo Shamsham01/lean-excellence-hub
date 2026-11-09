@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { mapWorkforceImportProgressFromDatabase } from "@/modules/workforce-import/constants";
 
@@ -172,6 +172,109 @@ export async function waitForImportProvisioningCheckpoint(
   throw new Error(
     `Import job did not reach provisioning checkpoint within ${timeoutMs}ms. ${formatImportProgressDiagnostics(latest)}`,
   );
+}
+
+export async function uploadWorkforceImportCsv(
+  page: Page,
+  input: { filename: string; csvContent: string },
+): Promise<void> {
+  await page.getByTestId("workforce-import-file").setInputFiles({
+    name: input.filename,
+    mimeType: "text/csv",
+    buffer: Buffer.from(input.csvContent),
+  });
+  await expect(page.getByTestId("workforce-import-wizard")).toHaveAttribute(
+    "data-wizard-ready",
+    "true",
+    { timeout: 180_000 },
+  );
+  await expect(page.getByText(/rows detected/i)).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByTestId("validate-import")).toBeVisible({
+    timeout: 30_000,
+  });
+  const importMessage = page.getByTestId("import-message");
+  const message = (await importMessage.textContent().catch(() => null))?.trim();
+  if (message) {
+    throw new Error(
+      `Workforce import file upload failed: ${message}. ${await readImportWizardDiagnostics(page)}`,
+    );
+  }
+}
+
+export async function validateWorkforceImportAndStartProvisioning(
+  page: Page,
+): Promise<void> {
+  const start = page.getByTestId("start-import-provisioning");
+  const errorSurface = page.getByTestId("import-message");
+  const validateButton = page.getByTestId("validate-import");
+  const onReview = await start.isVisible().catch(() => false);
+  if (!onReview && (await validateButton.isVisible().catch(() => false))) {
+    await expect(validateButton).toBeEnabled({ timeout: 30_000 });
+    const obscured = await validateButton.evaluate((button) => {
+      const rect = button.getBoundingClientRect();
+      const center = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      );
+      return center !== button && !button.contains(center);
+    });
+    if (obscured) {
+      throw new Error(
+        `Validate import control is covered by another element. ${await readImportWizardDiagnostics(page)}`,
+      );
+    }
+    await validateButton.evaluate((button: HTMLButtonElement) => {
+      button.click();
+    });
+  }
+
+  const wizard = page.getByTestId("workforce-import-wizard");
+  try {
+    await expect
+      .poll(
+        async () => {
+          const step = await wizard.getAttribute("data-wizard-step");
+          const stepNum = step ? Number(step) : -1;
+          const startVisible = await start.isVisible().catch(() => false);
+          const messageVisible = await errorSurface
+            .isVisible()
+            .catch(() => false);
+          if (stepNum >= 2 || startVisible) return "ready";
+          if (messageVisible) {
+            const text = (await errorSurface.textContent())?.trim() ?? "";
+            if (text) return "error";
+          }
+          return "pending";
+        },
+        { timeout: 120_000 },
+      )
+      .toMatch(/^(ready|error)$/);
+  } catch {
+    const step = await wizard
+      .getAttribute("data-wizard-step")
+      .catch(() => "unknown");
+    let diagnostics = "diagnostics_unavailable";
+    try {
+      diagnostics = await readImportWizardDiagnostics(page);
+    } catch {
+      // page may already be closed at suite timeout
+    }
+    throw new Error(
+      `Workforce import validation did not advance (wizardStep=${step}). ${diagnostics}`,
+    );
+  }
+  const errorText = (await errorSurface.textContent())?.trim();
+  if (errorText) {
+    throw new Error(
+      `Workforce import validation blocked provisioning: ${errorText}. ${await readImportWizardDiagnostics(page)}`,
+    );
+  }
+  await expect(start).toBeEnabled({ timeout: 60_000 });
+  await start.evaluate((button: HTMLButtonElement) => {
+    button.click();
+  });
 }
 
 export async function readWorkforceImportJobId(page: Page): Promise<string> {

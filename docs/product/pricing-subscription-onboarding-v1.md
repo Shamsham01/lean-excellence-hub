@@ -9,12 +9,13 @@ This document is the commercial and product baseline for Lean Excellence Hub (LE
 ## 1. Commercial principles
 
 1. **Organisation = customer / tenant.**
-2. **Site = primary billable unit.**
-3. **Do not charge per user.** LEH should encourage broad frontline participation in Continuous Improvement rather than penalise adoption.
-4. Core Operational Excellence functionality should remain coherent across plans. Higher tiers primarily add **analytics, financial governance, integration, AI capacity, security/governance and service level**, not arbitrary removal of essential Lean workflows.
-5. Pricing and feature access must be represented through a **plan + entitlement layer**, not hard-coded plan names throughout application code.
-6. Stripe is the billing provider; LEH remains the source of truth for tenant access and entitlements.
-7. Enterprise is **sales-managed / Contact Sales**, not a requirement to build every future enterprise feature before launch.
+2. **Site = primary billable unit** (number of subscribed sites/locations). Price is **per site**, not per person.
+3. **Unlimited employees (memberships) per site on every plan.** No seat caps, headcount bands, or per-user fees. Invitations and onboarding must not be gated by employee count.
+4. **Do not charge per user.** LEH should encourage broad frontline participation in Continuous Improvement rather than penalise adoption.
+5. Core Operational Excellence functionality should remain coherent across plans. Higher tiers primarily add **analytics, financial governance, integration, AI capacity, security/governance and service level**, not arbitrary removal of essential Lean workflows.
+6. Pricing and feature access must be represented through a **plan + entitlement layer**, not hard-coded plan names throughout application code.
+7. Stripe is the billing provider; LEH remains the source of truth for tenant access and entitlements.
+8. Enterprise is **sales-managed / Contact Sales**, not a requirement to build every future enterprise feature before launch.
 
 All prices below are working commercial prices and should be treated as market hypotheses until validated with paying customers. Prices exclude VAT where applicable.
 
@@ -35,18 +36,15 @@ Includes:
 - Gemba
 - Suggestions
 - Actions
-- Projects
-- Problem Solving
-- Training
-- Skills
-- Recognition
-- basic Benefits / Savings tracking
-- standard dashboards and exports
-- LeanAI included at no extra charge, subject to reasonable fair use
-- standard support
-- unlimited/generous users
+- Schedule and Templates utilities for entitled modules
+- Standard dashboards and exports **within included modules**
+- LeanAI included at no extra charge, subject to reasonable fair use (lower pooled allowance than Professional — see `leanai-credit-policy-estimates.md`)
+- Standard support
+- Unlimited/generous users (no per-user fee)
 
-Essentials must still allow an organisation to **Assess → Improve → Develop → Prove**. Benefits are therefore not removed from this tier; advanced financial governance is the differentiator.
+Does **not** include Professional modules: Projects, Problem Solving, Training, Skills, Recognition, Benefits / savings portfolio, **paid People HR** (workforce provisioning, job-function HR admin, bulk workforce import).
+
+**Does include (all plans):** colleague invitations, membership/access administration at `/platform/settings/people`, and unlimited users per site.
 
 ### Professional — Run an Operational Excellence system
 
@@ -110,14 +108,13 @@ Do not introduce complicated volume tiers in v1. Site quantity can initially be 
 
 ### Onboarding / implementation fee
 
-Working baseline:
+**No mandatory setup or deployment fee** in self-service Checkout. Optional bespoke onboarding consultancy may be quoted separately and is never auto-charged.
 
-| Plan | Implementation / onboarding |
-| --- | ---: |
-| Essentials | £1,500 |
-| Professional | £2,500 |
-| Enterprise | Custom |
-| Founder Pilot | Waived or reduced |
+| Plan | Optional consultancy |
+| --- | --- |
+| Essentials / Professional | Quoted separately |
+| Enterprise | Custom programme |
+| Founder Pilot | As agreed in founder offer |
 
 Implementation can include organisation setup, initial hierarchy, framework configuration, training, imports and launch support.
 

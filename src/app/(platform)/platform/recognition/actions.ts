@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type ActionResult = { error?: string; ok?: true; id?: string };
@@ -21,6 +22,10 @@ export async function awardRecognition(input: {
 
   sourceResourceId?: string;
 }): Promise<ActionResult> {
+  const moduleGate = await assertPlanModuleWrite("recognition");
+  if (!moduleGate.ok) {
+    return { error: moduleGate.error };
+  }
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase.rpc("award_recognition", {
