@@ -116,5 +116,9 @@ export type SuggestionReviewContext = {
   pending_approver: SuggestionReviewContextPendingApprover | null;
   task_owner: SuggestionReviewContextTaskOwner | null;
   permissions: SuggestionReviewContextPermissions;
+  /** Assign/reassign dropdown (full jurisdiction-scoped list). */
   eligible_reviewers: SuggestionEligibleReviewer[];
+  eligible_assign_reviewers?: SuggestionEligibleReviewer[];
+  /** Delegate dropdown (excludes author and current actor). */
+  eligible_delegate_reviewers?: SuggestionEligibleReviewer[];
 };

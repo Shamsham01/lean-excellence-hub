@@ -51,7 +51,13 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
     task_owner,
     permissions,
     eligible_reviewers,
+    eligible_assign_reviewers,
+    eligible_delegate_reviewers,
   } = context;
+
+  const assignEligibleReviewers =
+    eligible_assign_reviewers ?? eligible_reviewers;
+  const delegateEligibleReviewers = eligible_delegate_reviewers ?? [];
   const parkedPresentation = deriveParkedPresentation({
     status: suggestion.status,
     parkedAt: suggestion.parked_at,
@@ -65,8 +71,11 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
   const [implementationRecommendation, setImplementationRecommendation] =
     useState("");
   const [delegationReason, setDelegationReason] = useState("");
-  const [selectedReviewerId, setSelectedReviewerId] = useState(
-    eligible_reviewers[0]?.member_id ?? "",
+  const [selectedDelegateId, setSelectedDelegateId] = useState(
+    delegateEligibleReviewers[0]?.member_id ?? "",
+  );
+  const [selectedAssignId, setSelectedAssignId] = useState(
+    assignEligibleReviewers[0]?.member_id ?? "",
   );
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -283,14 +292,14 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               <select
                 id="review-delegate-reviewer"
                 className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                value={selectedReviewerId}
-                onChange={(event) => setSelectedReviewerId(event.target.value)}
+                value={selectedDelegateId}
+                onChange={(event) => setSelectedDelegateId(event.target.value)}
                 data-testid="review-delegate-select"
               >
-                {eligible_reviewers.length === 0 ? (
+                {delegateEligibleReviewers.length === 0 ? (
                   <option value="">No eligible reviewers</option>
                 ) : (
-                  eligible_reviewers.map((candidate) => (
+                  delegateEligibleReviewers.map((candidate) => (
                     <option
                       key={candidate.member_id}
                       value={candidate.member_id}
@@ -318,15 +327,15 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               className="min-h-11 w-full sm:w-auto"
               disabled={
                 loadingAction !== null ||
-                !selectedReviewerId ||
-                eligible_reviewers.length === 0
+                !selectedDelegateId ||
+                delegateEligibleReviewers.length === 0
               }
               data-testid="review-delegate-button"
               onClick={() =>
                 runAction("delegate", () =>
                   delegateSuggestionApproval(
                     suggestion.id,
-                    selectedReviewerId,
+                    selectedDelegateId,
                     delegationReason,
                   ),
                 )
@@ -352,14 +361,14 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               <select
                 id="review-assign-reviewer"
                 className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                value={selectedReviewerId}
-                onChange={(event) => setSelectedReviewerId(event.target.value)}
+                value={selectedAssignId}
+                onChange={(event) => setSelectedAssignId(event.target.value)}
                 data-testid="review-assign-select"
               >
-                {eligible_reviewers.length === 0 ? (
+                {assignEligibleReviewers.length === 0 ? (
                   <option value="">No eligible reviewers</option>
                 ) : (
-                  eligible_reviewers.map((candidate) => (
+                  assignEligibleReviewers.map((candidate) => (
                     <option
                       key={candidate.member_id}
                       value={candidate.member_id}
@@ -376,13 +385,13 @@ export function ReviewWorkspace({ context }: ReviewWorkspaceProps) {
               className="min-h-11 w-full sm:w-auto"
               disabled={
                 loadingAction !== null ||
-                !selectedReviewerId ||
-                eligible_reviewers.length === 0
+                !selectedAssignId ||
+                assignEligibleReviewers.length === 0
               }
               data-testid="review-assign-button"
               onClick={() =>
                 runAction("assign", () =>
-                  assignSuggestionReviewer(suggestion.id, selectedReviewerId),
+                  assignSuggestionReviewer(suggestion.id, selectedAssignId),
                 )
               }
             >

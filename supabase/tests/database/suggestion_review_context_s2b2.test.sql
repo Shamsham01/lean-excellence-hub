@@ -1,6 +1,6 @@
 begin;
 
-select plan(94);
+select plan(97);
 
 -- ---------------------------------------------------------------------------
 -- Users and organisations
@@ -966,11 +966,49 @@ select ok(
 select cmp_ok(
   jsonb_array_length(
     public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
-      -> 'eligible_reviewers'
+      -> 'eligible_assign_reviewers'
   ),
   '>',
   0,
-  'F manager receives non-empty eligible_reviewers for reassignment with active reviewer'
+  'F manager receives non-empty eligible_assign_reviewers for reassignment with active reviewer'
+);
+
+select cmp_ok(
+  jsonb_array_length(
+    public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+      -> 'eligible_delegate_reviewers'
+  ),
+  '>',
+  0,
+  'F manager receives non-empty eligible_delegate_reviewers while another reviewer is active'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+        -> 'eligible_delegate_reviewers'
+    ) eligible_row
+    where eligible_row ->> 'member_id' = (select id::text from s2b2_ids where key = 'owner_membership')
+  ),
+  'F eligible_delegate_reviewers excludes current actor'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_suggestion_review_context((select id from s2b2_ids where key = 'assigned_suggestion'))
+        -> 'eligible_delegate_reviewers'
+    ) eligible_row
+    where eligible_row ->> 'member_id' = (
+      select author_membership_id::text
+      from public.improvement_suggestions
+      where id = (select id from s2b2_ids where key = 'assigned_suggestion')
+    )
+  ),
+  'F eligible_delegate_reviewers excludes suggestion author'
 );
 
 select set_config(
