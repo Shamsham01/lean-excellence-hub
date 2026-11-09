@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
+const assertPlanModuleWrite = vi.fn();
+
+vi.mock("@/modules/billing/assert-module-write", () => ({
+  assertPlanModuleWrite: (...args: unknown[]) => assertPlanModuleWrite(...args),
+}));
+
 const currentMemberHasPermission = vi.fn();
 const rpc = vi.fn();
 const maybeSingle = vi.fn();
@@ -38,6 +46,8 @@ import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 
 describe("training course catalogue server actions", () => {
   beforeEach(() => {
+    assertPlanModuleWrite.mockReset();
+    assertPlanModuleWrite.mockResolvedValue({ ok: true });
     currentMemberHasPermission.mockReset();
     rpc.mockReset();
     maybeSingle.mockReset();
