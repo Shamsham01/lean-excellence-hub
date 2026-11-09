@@ -619,7 +619,10 @@ export function WorkforceImportWizard({
                 >
                   Download error report
                 </Button>
-                <div className="overflow-x-auto">
+                <div
+                  className="overflow-x-auto"
+                  data-testid="workforce-import-validation-errors"
+                >
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr>

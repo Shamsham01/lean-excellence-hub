@@ -39,6 +39,46 @@ test.describe("M2 workforce bulk import", () => {
   let organisationId = "";
   let exportedPassword = "";
 
+  test("manager cannot access bulk import", async ({ page }) => {
+    await signInAsDemoUser(page, "manager", { assertOrganisation: false });
+    await page.goto("/platform/settings/people/import");
+    await expect(page).toHaveURL(/\/platform\/settings\/people$/);
+  });
+
+  test("validation rejects invalid file before provisioning", async ({
+    page,
+  }) => {
+    await signInAsDemoUser(page, "admin", { assertOrganisation: false });
+    await page.goto("/platform/settings/people/import");
+
+    const invalidCsv = [
+      "first_name,last_name,username,notification_email,job_title,job_function,primary_unit_path,application_role,access_scope_unit_path",
+      `Dup,User,dup.${uniqueSuffix},,Operator,Operator,Cornwall Plant > Operations,Team Member,Cornwall Plant > Operations`,
+      `Dup,Again,dup.${uniqueSuffix},,Operator,Operator,Cornwall Plant > Operations,Team Member,Cornwall Plant > Operations`,
+    ].join("\n");
+
+    await page.getByTestId("workforce-import-file").setInputFiles({
+      name: "invalid.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(invalidCsv),
+    });
+    await expect(page.getByText(/rows detected/i)).toBeVisible({
+      timeout: 60_000,
+    });
+    await page.getByTestId("validate-import").click();
+    await expect(
+      page.getByTestId("workforce-import-validation-errors"),
+    ).toContainText(/duplicated/i, { timeout: 120_000 });
+    await expect(page.getByTestId("start-import-provisioning")).toHaveCount(0);
+
+    const serviceClient = createServiceRoleClient();
+    const { count } = await serviceClient
+      .from("workforce_provision_intents")
+      .select("id", { count: "exact", head: true })
+      .like("target_canonical_alias", `dup.${uniqueSuffix}`);
+    expect(count ?? 0).toBe(0);
+  });
+
   test("admin can access import workflow and provision employees", async ({
     page,
   }) => {
@@ -118,44 +158,6 @@ test.describe("M2 workforce bulk import", () => {
       page.getByRole("button", { name: "Update password" }).click(),
     ]);
     await context.close();
-  });
-
-  test("validation rejects invalid file before provisioning", async ({
-    page,
-  }) => {
-    await signInAsDemoUser(page, "admin", { assertOrganisation: false });
-    await page.goto("/platform/settings/people/import");
-
-    const invalidCsv = [
-      "first_name,last_name,username,notification_email,job_title,job_function,primary_unit_path,application_role,access_scope_unit_path",
-      `Dup,User,dup.${uniqueSuffix},,Operator,Operator,Cornwall Plant > Operations,Team Member,Cornwall Plant > Operations`,
-      `Dup,Again,dup.${uniqueSuffix},,Operator,Operator,Cornwall Plant > Operations,Team Member,Cornwall Plant > Operations`,
-    ].join("\n");
-
-    await uploadWorkforceImportCsv(page, {
-      filename: "invalid.csv",
-      csvContent: invalidCsv,
-    });
-    await page
-      .getByTestId("validate-import")
-      .evaluate((button: HTMLButtonElement) => {
-        button.click();
-      });
-    await expect(page.getByText(/duplicated/i)).toBeVisible();
-    await expect(page.getByTestId("start-import-provisioning")).toHaveCount(0);
-
-    const serviceClient = createServiceRoleClient();
-    const { count } = await serviceClient
-      .from("workforce_provision_intents")
-      .select("id", { count: "exact", head: true })
-      .like("target_canonical_alias", `dup.${uniqueSuffix}`);
-    expect(count ?? 0).toBe(0);
-  });
-
-  test("manager cannot access bulk import", async ({ page }) => {
-    await signInAsDemoUser(page, "manager", { assertOrganisation: false });
-    await page.goto("/platform/settings/people/import");
-    await expect(page).toHaveURL(/\/platform\/settings\/people$/);
   });
 
   test("interrupted import resumes without duplicating employees", async ({
