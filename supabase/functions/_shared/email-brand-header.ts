@@ -1,6 +1,8 @@
 import { escapeHtml } from "./notification-delivery/html-escape.ts";
 
-const EMAIL_LOGO_WIDTH = 160;
+/** Display width/height for the trimmed 1x lockup (`public/email/leh-logo.png`). */
+export const EMAIL_LOGO_WIDTH = 200;
+export const EMAIL_LOGO_HEIGHT = 40;
 
 export function normalizeEmailAppOrigin(
   origin: string | null | undefined,
@@ -52,7 +54,7 @@ const WORDMARK = "LEAN EXCELLENCE HUB";
 
 export function renderLehEmailBrandHeader(
   appOrigin: string | null | undefined,
-  logoHeight = 53,
+  logoHeight: number = EMAIL_LOGO_HEIGHT,
 ): string {
   const logoUrl = buildLehEmailLogoUrl(appOrigin);
   const logoUrl2x = buildLehEmailLogoRetinaUrl(appOrigin);
@@ -69,13 +71,8 @@ export function renderLehEmailBrandHeader(
   const escapedLogo2x = escapeHtml(logoUrl2x);
 
   return `<tr>
-              <td style="padding-bottom:8px;">
+              <td style="padding-bottom:16px;">
                 <img src="${escapedLogo}" srcset="${escapedLogo2x} 2x" width="${EMAIL_LOGO_WIDTH}" height="${logoHeight}" alt="Lean Excellence Hub" border="0" style="display:block;width:${EMAIL_LOGO_WIDTH}px;height:${logoHeight}px;max-width:100%;border:0;outline:none;text-decoration:none;" />
-              </td>
-            </tr>
-            <tr>
-              <td style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#a1a1aa;padding-bottom:16px;">
-                ${WORDMARK}
               </td>
             </tr>`;
 }

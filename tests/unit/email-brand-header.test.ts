@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildLehEmailLogoRetinaUrl,
   buildLehEmailLogoUrl,
+  EMAIL_LOGO_HEIGHT,
+  EMAIL_LOGO_WIDTH,
   renderLehEmailBrandHeader,
   wrapLehEmailCardBody,
 } from "../../supabase/functions/_shared/email-brand-header.ts";
@@ -19,15 +21,16 @@ describe("LEH email brand header", () => {
     );
   });
 
-  it("renders a logo img with alt and text fallback wordmark", () => {
+  it("renders a trimmed logo img with absolute URL and no redundant text wordmark", () => {
     const header = renderLehEmailBrandHeader(APP_ORIGIN);
 
     expect(header).toContain('alt="Lean Excellence Hub"');
     expect(header).toContain(
       "https://leanexcellencehub.com/email/leh-logo.png",
     );
-    expect(header).toContain("LEAN EXCELLENCE HUB");
-    expect(header).toContain('width="160"');
+    expect(header).not.toContain("LEAN EXCELLENCE HUB");
+    expect(header).toContain(`width="${EMAIL_LOGO_WIDTH}"`);
+    expect(header).toContain(`height="${EMAIL_LOGO_HEIGHT}"`);
     expect(header).toContain("display:block");
   });
 

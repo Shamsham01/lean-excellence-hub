@@ -19,7 +19,7 @@ describe("organisation invitation email template", () => {
       'src="https://leanexcellencehub.com/email/leh-logo.png"',
     );
     expect(rendered.html).toContain('alt="Lean Excellence Hub"');
-    expect(rendered.html).toContain("LEAN EXCELLENCE HUB");
+    expect(rendered.html).not.toContain("LEAN EXCELLENCE HUB");
     expect(rendered.html).toContain("#inbox_proof=abc");
     expect(rendered.text).toContain("colleague@example.test");
   });
