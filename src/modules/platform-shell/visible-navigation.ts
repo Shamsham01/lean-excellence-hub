@@ -10,12 +10,9 @@ import {
   currentMemberHasGrantPermission,
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
-  prefetchMemberPermissions,
+  prefetchPlatformShellPermissionProbes,
 } from "@/modules/platform-shell/permissions";
-import {
-  collectPlatformShellPermissionKeys,
-  setupNavigationPermissions,
-} from "@/modules/platform-shell/shell-permission-keys";
+import { setupNavigationPermissions } from "@/modules/platform-shell/shell-permission-keys";
 
 const setupPermissions = setupNavigationPermissions;
 
@@ -29,7 +26,7 @@ export async function canAccessSetupNavigation() {
 }
 
 export async function buildVisibleNavigation() {
-  await prefetchMemberPermissions(collectPlatformShellPermissionKeys());
+  await prefetchPlatformShellPermissionProbes();
   const entitlements = await loadCurrentOrganisationEntitlements();
 
   const access = await Promise.all(
