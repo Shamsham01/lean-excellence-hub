@@ -65,6 +65,18 @@ export async function programmaticScrollLocator(
   }, deltaY);
 }
 
+/** Wait until a nested overflow scroller has a real layout box (WebKit flex can lag). */
+export async function waitForNestedScrollContainer(
+  locator: Locator,
+  timeoutMs = 20_000,
+) {
+  await expect
+    .poll(async () => locator.evaluate((element) => element.clientHeight), {
+      timeout: timeoutMs,
+    })
+    .toBeGreaterThan(0);
+}
+
 export async function touchSwipePlatformMainViewport(
   page: Page,
   deltaY: number,

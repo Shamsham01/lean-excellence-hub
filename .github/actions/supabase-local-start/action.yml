@@ -41,12 +41,28 @@ runs:
 
         release_local_supabase_ports() {
           local ports=(54321 54322 54320 54323 54324 54327 54329)
+          docker ps -aq --filter "name=supabase" | xargs -r docker stop 2>/dev/null || true
+          docker ps -aq --filter "name=supabase" | xargs -r docker rm -f 2>/dev/null || true
           if command -v fuser >/dev/null 2>&1; then
             for port in "${ports[@]}"; do
               fuser -k "${port}/tcp" 2>/dev/null || true
             done
           fi
-          docker ps -aq --filter "name=supabase" | xargs -r docker rm -f 2>/dev/null || true
+          if command -v ss >/dev/null 2>&1; then
+            for port in "${ports[@]}"; do
+              local waited=0
+              while ss -ltn | grep -q ":${port} "; do
+                if [ "${waited}" -ge 30 ]; then
+                  echo "Port ${port} still listening after cleanup; forcing release." >&2
+                  ss -ltnp | grep ":${port} " || true
+                  fuser -k "${port}/tcp" 2>/dev/null || true
+                  break
+                fi
+                sleep 1
+                waited=$((waited + 1))
+              done
+            done
+          fi
         }
 
         stop_partial_stack() {
