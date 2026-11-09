@@ -77,44 +77,8 @@ create policy private_owner_all_organisation_in_app_notification_prefs
 on private.organisation_in_app_notification_prefs for all to lean_hub_private_owner
 using (true) with check (true);
 
--- ---------------------------------------------------------------------------
--- Plan gating hook (no-op until billing plan capability helpers ship)
--- ---------------------------------------------------------------------------
-
-create or replace function private.in_app_chase_module_entitled(
-  target_organisation_id uuid,
-  target_module_slug text
-)
-returns boolean
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-begin
-  if target_organisation_id is null
-    or target_module_slug is null
-    or btrim(target_module_slug) = '' then
-    return false;
-  end if;
-
-  if to_regprocedure('private.organisation_plan_capability(uuid,text)') is null then
-    return true;
-  end if;
-
-  return private.organisation_plan_capability(
-    target_organisation_id,
-    'module_' || btrim(target_module_slug)
-  );
-end;
-$$;
-
-revoke all on function private.in_app_chase_module_entitled(uuid, text)
-  from public, anon, authenticated, service_role;
-grant execute on function private.in_app_chase_module_entitled(uuid, text)
-  to postgres, lean_hub_private_owner;
-alter function private.in_app_chase_module_entitled(uuid, text)
-  owner to lean_hub_private_owner;
+-- Plan/module gating for chases: wire to `private.organisation_plan_capability`
+-- when billing entitlements land (#374). Notifications remain read-only deep links.
 
 create or replace function private.organisation_in_app_operational_chases_enabled(
   target_organisation_id uuid
@@ -252,7 +216,7 @@ begin
     target_organisation_id,
     target_membership_id
   );
-  allow_new_inserts := created_today < daily_cap;
+  allow_new_inserts := coalesce(created_today, 0) < coalesce(daily_cap, 12);
 
   if not allow_new_inserts then
     perform private.upsert_in_app_chase_digest(
@@ -277,6 +241,7 @@ begin
       and action_row.status in ('open', 'in_progress')
       and action_row.due_at is not null
       and action_row.due_at < clock_timestamp()
+      and allow_new_inserts
   ),
   upserted_actions as (
     insert into public.in_app_notifications (
@@ -348,6 +313,7 @@ begin
       and occurrence_row.owner_membership_id = target_membership_id
       and occurrence_row.lifecycle_status = 'open'
       and occurrence_row.planned_at < clock_timestamp() - schedule_grace
+      and allow_new_inserts
   ),
   upserted_schedules as (
     insert into public.in_app_notifications (
@@ -411,6 +377,7 @@ begin
       and walk_row.leader_membership_id = target_membership_id
       and walk_row.status = 'in_progress'
       and coalesce(walk_row.started_at, walk_row.created_at) < clock_timestamp() - stale_after
+      and allow_new_inserts
   ),
   upserted_walks as (
     insert into public.in_app_notifications (
@@ -469,6 +436,7 @@ begin
       and audit_row.auditor_membership_id = target_membership_id
       and audit_row.status = 'in_progress'
       and coalesce(audit_row.started_at, audit_row.created_at) < clock_timestamp() - stale_after
+      and allow_new_inserts
   ),
   upserted_audits as (
     insert into public.in_app_notifications (
