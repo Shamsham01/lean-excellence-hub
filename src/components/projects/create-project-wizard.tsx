@@ -261,6 +261,7 @@ export function CreateProjectWizard({
               <span>Methodology</span>
               <select
                 className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+                data-testid="project-methodology-select"
                 value={methodologyVersionId}
                 onChange={(e) => setMethodologyVersionId(e.target.value)}
               >
