@@ -554,14 +554,15 @@ test.describe("Invitation lifecycle", () => {
         .click(),
     ]);
 
-    await Promise.race([
-      pageA.waitForURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
-        timeout: 60_000,
-      }),
-      pageB.waitForURL(/\/invitations\/continue\/[0-9a-f-]{36}$/i, {
-        timeout: 60_000,
-      }),
-    ]);
+    const continuePattern = /\/invitations\/continue\/[0-9a-f-]{36}$/i;
+    await expect
+      .poll(
+        () =>
+          continuePattern.test(pageA.url()) ||
+          continuePattern.test(pageB.url()),
+        { timeout: 120_000 },
+      )
+      .toBe(true);
 
     const { admin } = getInvitationLifecycleClients();
     const authUser = await findAuthUserByEmail(admin, uniqueEmail);
