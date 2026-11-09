@@ -68,9 +68,10 @@ jobs:
     name: Full Regression / Quality
     needs:
       - quality-warmup
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -331,9 +332,10 @@ jobs:
       - database-core
       - qa-recovery
       - e2e-shards
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -384,9 +386,10 @@ jobs:
     name: Full Regression / Windows QA harness
     needs:
       - changes
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: windows-latest
     timeout-minutes: 20
