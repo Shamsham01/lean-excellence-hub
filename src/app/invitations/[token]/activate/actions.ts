@@ -162,7 +162,10 @@ export async function createInvitationAccount(formData: FormData) {
     password: parsed.data.password,
   });
 
-  redirect(invitationContinuePath(bindingId));
+  return {
+    ok: true as const,
+    continuePath: invitationContinuePath(bindingId),
+  };
 }
 
 function hashRateLimitKey(token: string) {

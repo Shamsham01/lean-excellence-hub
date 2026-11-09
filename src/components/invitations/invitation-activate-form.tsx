@@ -46,9 +46,14 @@ export function InvitationActivateForm({
     formData.set("confirmPassword", confirmPassword);
 
     const result = await createInvitationAccount(formData);
-    if (result?.error) {
+    if (result.error) {
       setError(result.error);
       setLoading(false);
+      return;
+    }
+
+    if (result.ok && result.continuePath) {
+      window.location.assign(result.continuePath);
     }
   }
 

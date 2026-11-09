@@ -582,9 +582,17 @@ test.describe("Invitation lifecycle", () => {
       )
       .toBeTruthy();
 
+    await expect
+      .poll(
+        () =>
+          continuePattern.test(pageA.url()) ||
+          continuePattern.test(pageB.url()),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+
     const aWon = continuePattern.test(pageA.url());
     const bWon = continuePattern.test(pageB.url());
-    expect(aWon || bWon).toBe(true);
     expect(aWon && bWon).toBe(false);
 
     const winnerPage = aWon ? pageA : pageB;
