@@ -472,12 +472,18 @@ test.describe("Milestone 5 maturity journeys", () => {
       0,
     );
 
-    await page.locator("#criterionId").selectOption({
-      label: "Leadership → Gemba walks",
-    });
     await openFrameworkAddQuestion(page);
-    await page.locator("#questionPrompt").fill("Rate remaining Gemba");
-    await page.getByRole("button", { name: "Add scored question" }).click();
+    await page
+      .getByTestId("framework-add-question-dialog")
+      .locator("#criterionId")
+      .selectOption({
+        label: "Leadership → Gemba walks",
+      });
+    const questionDialog = page.getByTestId("framework-add-question-dialog");
+    await questionDialog.locator("#questionPrompt").fill("Rate remaining Gemba");
+    await questionDialog
+      .getByRole("button", { name: "Add scored question" })
+      .click();
     await expect(leadershipQuestions.getByLabel("Question prompt")).toHaveValue(
       "Rate remaining Gemba",
       { timeout: 15_000 },

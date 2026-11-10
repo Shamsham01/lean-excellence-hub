@@ -97,12 +97,8 @@ export async function setGembaDefinitionApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/gemba/definitions/${definitionId}`,
-      "applicability",
-    ),
-  );
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function addGembaSection(
@@ -361,12 +357,8 @@ export async function addGembaSectionFromForm(formData: FormData) {
     authoring.nextSectionPosition,
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/gemba/definitions/${definitionId}`,
-      "section",
-    ),
-  );
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function addGembaQuestionFromForm(formData: FormData) {
@@ -399,12 +391,8 @@ export async function addGembaQuestionFromForm(formData: FormData) {
     nextQuestionPosition(section),
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/gemba/definitions/${definitionId}`,
-      "question",
-    ),
-  );
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function completeGembaWalkFromForm(formData: FormData) {

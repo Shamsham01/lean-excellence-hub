@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
+
 import {
   addFiveSQuestionFromForm,
   addFiveSSectionFromForm,
@@ -23,30 +25,6 @@ type AuthoringSection = {
   title: string;
   questions: Array<{ id: string; prompt: string; questionType: string }>;
 };
-
-function ServerActionForm({
-  action,
-  children,
-  className,
-  onSuccess,
-}: {
-  action: (formData: FormData) => void | Promise<void>;
-  children: React.ReactNode;
-  className?: string;
-  onSuccess?: () => void;
-}) {
-  return (
-    <form
-      action={async (formData) => {
-        await action(formData);
-        onSuccess?.();
-      }}
-      className={className}
-    >
-      {children}
-    </form>
-  );
-}
 
 export function FiveSApplicabilityEditor({
   standardId,
@@ -86,7 +64,7 @@ export function FiveSApplicabilityEditor({
 
         enableGuard
       >
-        <ServerActionForm
+        <DialogServerActionForm
           action={setFiveSStandardApplicableUnitsFromForm}
           className="flex flex-col gap-4"
           onSuccess={() => setOpen(false)}
@@ -110,7 +88,7 @@ export function FiveSApplicabilityEditor({
           >
             Save applicable areas
           </Button>
-        </ServerActionForm>
+        </DialogServerActionForm>
       </ResponsiveFormDialog>
     </>
   );
@@ -149,7 +127,7 @@ export function FiveSScoringScaleEditor({
 
         enableGuard
       >
-        <ServerActionForm
+        <DialogServerActionForm
           action={setFiveSStandardScoringScaleFromForm}
           className="flex flex-col gap-4"
           onSuccess={() => setOpen(false)}
@@ -168,7 +146,7 @@ export function FiveSScoringScaleEditor({
           >
             Save scoring scale
           </Button>
-        </ServerActionForm>
+        </DialogServerActionForm>
       </ResponsiveFormDialog>
     </>
   );
@@ -209,7 +187,7 @@ export function FiveSDraftAuthoringPanels({
 
         enableGuard
       >
-        <ServerActionForm
+        <DialogServerActionForm
           action={addFiveSSectionFromForm}
           className="flex flex-col gap-4"
           onSuccess={() => setCategoryOpen(false)}
@@ -228,7 +206,7 @@ export function FiveSDraftAuthoringPanels({
           <Button type="submit" className="min-h-11">
             Add category
           </Button>
-        </ServerActionForm>
+        </DialogServerActionForm>
       </ResponsiveFormDialog>
 
       <ResponsiveFormDialog
@@ -242,7 +220,7 @@ export function FiveSDraftAuthoringPanels({
         enableGuard
       >
         {questionSectionId ? (
-          <ServerActionForm
+          <DialogServerActionForm
             action={addFiveSQuestionFromForm}
             className="flex flex-col gap-4"
             onSuccess={() => setQuestionSectionId(null)}
@@ -275,7 +253,7 @@ export function FiveSDraftAuthoringPanels({
             <Button type="submit" className="min-h-11">
               Add question
             </Button>
-          </ServerActionForm>
+          </DialogServerActionForm>
         ) : null}
       </ResponsiveFormDialog>
 

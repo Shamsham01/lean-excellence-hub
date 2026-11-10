@@ -135,16 +135,20 @@ async function createReadinessFramework(page: Page) {
     "Decision-Making & Accountability",
     "Strategy & Priorities",
   ]) {
+    await openFrameworkAddQuestion(page);
+    const questionDialog = page.getByTestId("framework-add-question-dialog");
     await expect
       .poll(async () =>
-        page.locator("#criterionId option").filter({ hasText: name }).count(),
+        questionDialog
+          .locator("#criterionId option")
+          .filter({ hasText: name })
+          .count(),
       )
       .toBeGreaterThan(0);
-    await page.locator("#criterionId").selectOption({
+    await questionDialog.locator("#criterionId").selectOption({
       label: `Leadership & Governance → ${name}`,
     });
-    await openFrameworkAddQuestion(page);
-    await page.locator("#questionPrompt").fill(`Rate: ${name}`);
+    await questionDialog.locator("#questionPrompt").fill(`Rate: ${name}`);
     const before = await page
       .locator('[data-testid^="edit-question-"]')
       .count();

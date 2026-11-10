@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
+
 import {
   addGembaQuestionFromForm,
   addGembaSectionFromForm,
@@ -16,30 +18,6 @@ import type { UnitSelectOption } from "@/modules/organisation/site-context";
 
 const APPLICABILITY_DESCRIPTION =
   "Choose which organisational units can run walks from this definition.";
-
-function ServerActionForm({
-  action,
-  children,
-  className,
-  onSuccess,
-}: {
-  action: (formData: FormData) => void | Promise<void>;
-  children: React.ReactNode;
-  className?: string;
-  onSuccess?: () => void;
-}) {
-  return (
-    <form
-      action={async (formData) => {
-        await action(formData);
-        onSuccess?.();
-      }}
-      className={className}
-    >
-      {children}
-    </form>
-  );
-}
 
 export function GembaApplicabilityEditor({
   definitionId,
@@ -79,7 +57,7 @@ export function GembaApplicabilityEditor({
 
         enableGuard
       >
-        <ServerActionForm
+        <DialogServerActionForm
           action={setGembaDefinitionApplicableUnitsFromForm}
           className="flex flex-col gap-4"
           onSuccess={() => setOpen(false)}
@@ -105,7 +83,7 @@ export function GembaApplicabilityEditor({
           >
             Save applicable areas
           </Button>
-        </ServerActionForm>
+        </DialogServerActionForm>
       </ResponsiveFormDialog>
     </>
   );
@@ -146,7 +124,7 @@ export function GembaDraftAuthoringPanels({
 
         enableGuard
       >
-        <ServerActionForm
+        <DialogServerActionForm
           action={addGembaSectionFromForm}
           className="flex flex-col gap-4"
           onSuccess={() => setSectionOpen(false)}
@@ -166,7 +144,7 @@ export function GembaDraftAuthoringPanels({
           <Button type="submit" className="min-h-11">
             Add section
           </Button>
-        </ServerActionForm>
+        </DialogServerActionForm>
       </ResponsiveFormDialog>
 
       <ResponsiveFormDialog
@@ -180,7 +158,7 @@ export function GembaDraftAuthoringPanels({
         enableGuard
       >
         {promptSectionId ? (
-          <ServerActionForm
+          <DialogServerActionForm
             action={addGembaQuestionFromForm}
             className="flex flex-col gap-4"
             onSuccess={() => setPromptSectionId(null)}
@@ -201,7 +179,7 @@ export function GembaDraftAuthoringPanels({
             <Button type="submit" className="min-h-11">
               Add prompt
             </Button>
-          </ServerActionForm>
+          </DialogServerActionForm>
         ) : null}
       </ResponsiveFormDialog>
 
