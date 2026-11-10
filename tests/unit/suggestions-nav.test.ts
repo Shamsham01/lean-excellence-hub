@@ -15,8 +15,8 @@ describe("NAV-CLICK-001 Suggestions navigation primitives", () => {
     expect(source).toContain('data-testid="suggestions-new-link"');
     expect(source).toContain('data-testid="suggestions-programmes-link"');
     expect(source).toContain('data-testid="suggestions-open-queue-link"');
-    expect(source).toContain('href="/platform/suggestions/new"');
     expect(source).toContain('href="/platform/suggestions/programmes"');
+    expect(source).toContain("NewSuggestionDialog");
     expect(source).toContain('href="/platform/suggestions/review?queue=mine"');
     expect(source).not.toMatch(/from ["']next\/link["']/);
   });

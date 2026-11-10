@@ -25,6 +25,12 @@ export function useMobileFormSheet(): boolean {
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
     const media = window.matchMedia(MOBILE_SHEET_QUERY);
     const sync = () => setMobile(media.matches);
     sync();
