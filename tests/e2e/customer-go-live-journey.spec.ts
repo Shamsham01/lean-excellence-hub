@@ -7,6 +7,8 @@ import {
   createFoundingOwnerClient,
 } from "./helpers/clean-org-journey";
 import {
+  alignManagerSuggestionReviewScope,
+  assertMembershipCanReviewSuggestionJurisdiction,
   assertModuleWriteDenied,
   BASELINE_ROLE_LABELS_ON_ANY_PLAN,
   colleaguePath,
@@ -339,6 +341,14 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       password: operator.password,
     });
 
+    const productionLineUnitId =
+      await tightenSuggestionApproverToProductionManager(
+        ownerClient,
+        organisationId,
+        operationsUnitId,
+        operator.email,
+      );
+
     const managerIssued = await issueInvitationWithDeliveredInboxProof(
       ownerClient,
       {
@@ -346,10 +356,10 @@ test.describe("Customer go-live journey (clean organisation)", () => {
         tokenSeed: `prod-mgr-${Date.now()}`,
         displayName: productionManager.displayName,
         jobFunctionId: operatorJobId,
-        organisationalUnitId: operationsUnitId,
+        organisationalUnitId: productionLineUnitId,
         roleVersionId: managerRole,
         scopeType: "unit_subtree",
-        scopeUnitId: operationsUnitId,
+        scopeUnitId: productionLineUnitId,
       },
     );
     await acceptInvitationAsNewColleague(browser, {
@@ -366,10 +376,10 @@ test.describe("Customer go-live journey (clean organisation)", () => {
         tokenSeed: `delegate-${Date.now()}`,
         displayName: delegateManager.displayName,
         jobFunctionId: operatorJobId,
-        organisationalUnitId: operationsUnitId,
+        organisationalUnitId: productionLineUnitId,
         roleVersionId: managerRole,
         scopeType: "unit_subtree",
-        scopeUnitId: operationsUnitId,
+        scopeUnitId: productionLineUnitId,
       },
     );
     await acceptInvitationAsNewColleague(browser, {
@@ -379,11 +389,10 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       password: delegateManager.password,
     });
 
-    await tightenSuggestionApproverToProductionManager(
-      ownerClient,
+    alignManagerSuggestionReviewScope(
       organisationId,
-      operationsUnitId,
-      operator.email,
+      [productionManager.email, delegateManager.email],
+      productionLineUnitId,
     );
   });
 
@@ -409,6 +418,15 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     expect(suggestionId).toMatch(/^[0-9a-f-]{36}$/i);
     const routedSuggestionId = suggestionId as string;
     await waitForSuggestionApprovalRouting(organisationId, routedSuggestionId);
+    const delegateManagerMembershipId = queryMembershipIdForEmail(
+      organisationId,
+      delegateManager.email,
+    );
+    assertMembershipCanReviewSuggestionJurisdiction(
+      organisationId,
+      routedSuggestionId,
+      delegateManagerMembershipId,
+    );
     const primaryApproverMembershipId =
       querySuggestionPrimaryApproverMembershipId(
         organisationId,
@@ -447,10 +465,6 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await expect(page.getByTestId("review-delegate-controls")).toBeVisible({
       timeout: 30_000,
     });
-    const delegateManagerMembershipId = queryMembershipIdForEmail(
-      organisationId,
-      delegateManager.email,
-    );
     const delegateSelect = page.getByTestId("review-delegate-select");
     await expect(
       delegateSelect.locator(`option[value="${delegateManagerMembershipId}"]`),
