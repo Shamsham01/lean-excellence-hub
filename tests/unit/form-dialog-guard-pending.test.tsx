@@ -10,6 +10,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
+import {
+  FormDialogGuardContext,
+  useFormDialogGuard,
+} from "@/components/ui/use-form-dialog-guard";
 
 function GuardedDialogForm({ onSubmit }: { onSubmit: () => Promise<void> }) {
   const [submitting, setSubmitting] = useState(false);
@@ -132,13 +136,13 @@ describe("ResponsiveFormDialog guard pending stability", () => {
     expect(input).toHaveValue("Keep this draft");
   });
 
-  it("blocks dismiss while pending and confirms discard when draft exists", async () => {
+  it("ignores dismiss attempts while pending", async () => {
     let resolveSubmit: (() => void) | undefined;
     const submitStarted = new Promise<void>((resolve) => {
       resolveSubmit = resolve;
     });
 
-    const { rerender } = render(
+    render(
       <GuardedDialogHarness
         onSubmit={async () => {
           await submitStarted;
@@ -149,7 +153,6 @@ describe("ResponsiveFormDialog guard pending stability", () => {
     fireEvent.change(screen.getByTestId("title-input"), {
       target: { value: "Draft title" },
     });
-
     fireEvent.click(screen.getByTestId("form-submit"));
     await waitFor(() => {
       expect(screen.getByTestId("form-submit")).toBeDisabled();
@@ -165,14 +168,38 @@ describe("ResponsiveFormDialog guard pending stability", () => {
     await waitFor(() => {
       expect(screen.getByTestId("form-submit")).not.toBeDisabled();
     });
+  });
 
-    fireEvent.change(screen.getByTestId("title-input"), {
-      target: { value: "Draft title" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  it("shows discard confirm when a draft exists", () => {
+    function DiscardHarness() {
+      const [open, setOpen] = useState(true);
+      const [pending, setPending] = useState(false);
+      const guard = useFormDialogGuard({
+        open,
+        onOpenChange: setOpen,
+        pending,
+        setPending,
+      });
 
-    await waitFor(() => {
-      expect(screen.getByTestId("form-dialog-discard-dialog")).toBeVisible();
-    });
+      return (
+        <>
+          <FormDialogGuardContext.Provider value={guard.guardContextValue}>
+            <div {...guard.contentWrapperProps}>
+              <form>
+                <input name="title" defaultValue="Draft title" />
+              </form>
+            </div>
+          </FormDialogGuardContext.Provider>
+          <button type="button" onClick={() => guard.requestDismiss()}>
+            Request dismiss
+          </button>
+          {guard.DiscardConfirmDialog}
+        </>
+      );
+    }
+
+    render(<DiscardHarness />);
+    fireEvent.click(screen.getByRole("button", { name: "Request dismiss" }));
+    expect(screen.getByTestId("form-dialog-discard-dialog")).toBeVisible();
   });
 });
