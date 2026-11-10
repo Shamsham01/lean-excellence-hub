@@ -118,20 +118,13 @@ export async function tightenSuggestionApproverToProductionManager(
     operatorEmail,
   );
   const jobFunctionId = queryJobFunctionIdByCode(organisationId, "operator");
-  runPsql(
-    `update public.membership_job_function_assignments assignment_row set organisational_unit_id = '${childUnitId}'::uuid where assignment_row.organisation_id = '${organisationId}'::uuid and assignment_row.membership_id = '${operatorMembershipId}'::uuid and assignment_row.job_function_id = '${jobFunctionId}'::uuid and assignment_row.is_primary = true;`,
+  const updated = runPsql(
+    `update public.membership_job_function_assignments assignment_row set organisational_unit_id = '${childUnitId}'::uuid where assignment_row.organisation_id = '${organisationId}'::uuid and assignment_row.membership_id = '${operatorMembershipId}'::uuid and assignment_row.job_function_id = '${jobFunctionId}'::uuid and assignment_row.is_primary = true returning assignment_row.id::text;`,
   );
-  const managerRoleVersionId = queryPublishedRoleVersionId(
-    organisationId,
-    "manager",
-  );
-  const permissionAdded = await ownerClient.rpc("add_role_permission", {
-    target_organisation_id: organisationId,
-    target_role_version_id: managerRoleVersionId,
-    target_permission_key: "suggestions.manage",
-  });
-  if (permissionAdded.error) {
-    throw permissionAdded.error;
+  if (!updated) {
+    throw new Error(
+      "Operator primary job assignment was not moved to the production line unit",
+    );
   }
 }
 
