@@ -26,20 +26,20 @@ export async function fetchModulePageInsightsSnapshot(
   moduleInput: unknown,
   daysInput: unknown,
 ): Promise<ModuleAnalyticsSnapshot> {
-  const module = parseModuleInsightsKey(moduleInput);
+  const insightsModule = parseModuleInsightsKey(moduleInput);
   const days = parseTrustedModuleInsightsDays(daysInput);
-  if (!module || days === null) {
+  if (!insightsModule || days === null) {
     return emptyModuleAnalyticsSnapshot();
   }
 
-  if (!(await canFetchModulePageInsights(module))) {
+  if (!(await canFetchModulePageInsights(insightsModule))) {
     return emptyModuleAnalyticsSnapshot();
   }
 
   const range = await buildAnalyticsDateRangeForOrganisation(days);
   const supabase = await createServerSupabaseClient();
 
-  switch (module) {
+  switch (insightsModule) {
     case "actions":
       return loadActionsAnalytics(supabase, range);
     case "benefits":

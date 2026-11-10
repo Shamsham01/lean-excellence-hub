@@ -16,9 +16,9 @@ import {
 import type { ModuleInsightsKey } from "./module-insights-request";
 
 export async function canFetchModulePageInsights(
-  module: ModuleInsightsKey,
+  insightsModule: ModuleInsightsKey,
 ): Promise<boolean> {
-  switch (module) {
+  switch (insightsModule) {
     case "actions":
       return currentMemberHasPermission(ACTIONS_PERMISSIONS.read);
     case "benefits":
@@ -41,7 +41,7 @@ export async function canFetchModulePageInsights(
     case "training":
       return currentMemberHasPermission(TRAINING_PERMISSIONS.read);
     default: {
-      const exhaustive: never = module;
+      const exhaustive: never = insightsModule;
       return exhaustive;
     }
   }
