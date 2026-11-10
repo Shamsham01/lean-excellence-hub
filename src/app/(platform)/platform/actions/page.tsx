@@ -143,7 +143,7 @@ export default async function ActionsPage({
       </Suspense>
       <ModulePageInsightsDeferred
         module="actions"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="actions-analytics"
         showAgeingTable={false}
       />

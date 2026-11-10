@@ -25,11 +25,17 @@ export type OperationalCatalogStartActionConfig = {
 
 export function OperationalCatalogStartAction({
   start,
+  unavailableNote,
 }: {
   start: OperationalCatalogStartActionConfig | null;
+  unavailableNote?: string;
 }) {
   if (!start) {
-    return <span className="text-xs text-muted-foreground">—</span>;
+    return (
+      <span className="text-xs text-muted-foreground">
+        {unavailableNote ?? "—"}
+      </span>
+    );
   }
 
   const dialogProps = {

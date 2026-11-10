@@ -199,7 +199,7 @@ export default async function TrainingOverviewPage({
       </div>
       <ModulePageInsightsDeferred
         module="training"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="training-analytics"
       />
       <WorkplaceSharedRecords module="training" />

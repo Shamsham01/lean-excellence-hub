@@ -5,16 +5,14 @@ import { useCallback, useState } from "react";
 import { MODULE_INSIGHTS_ICON_MAP } from "@/components/platform/module-analytics-icons-client";
 import { AnalyticsInsightsCollapsible } from "@/components/platform/analytics-insights-collapsible";
 import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import type { AnalyticsDateRange } from "@/modules/platform-analytics/date-range";
-import {
-  fetchModulePageInsightsSnapshot,
-  type ModuleInsightsKey,
-} from "@/modules/platform-analytics/fetch-module-snapshot";
+import type { AnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { fetchModulePageInsightsSnapshot } from "@/modules/platform-analytics/fetch-module-snapshot";
+import type { ModuleInsightsKey } from "@/modules/platform-analytics/module-insights-request";
 import type { ModuleAnalyticsSnapshot } from "@/modules/platform-analytics/types";
 
 type ModulePageInsightsDeferredProps = {
   module: ModuleInsightsKey;
-  analyticsRange: AnalyticsDateRange;
+  rangeDays: AnalyticsRangeDays;
   testId: string;
   showDateRange?: boolean;
   showAgeingTable?: boolean;
@@ -23,7 +21,7 @@ type ModulePageInsightsDeferredProps = {
 
 export function ModulePageInsightsDeferred({
   module,
-  analyticsRange,
+  rangeDays,
   testId,
   showDateRange = true,
   showAgeingTable = true,
@@ -42,17 +40,14 @@ export function ModulePageInsightsDeferred({
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchModulePageInsightsSnapshot(
-        module,
-        analyticsRange,
-      );
+      const data = await fetchModulePageInsightsSnapshot(module, rangeDays);
       setSnapshot(data);
     } catch {
       setError("Performance data could not be loaded. Try again.");
     } finally {
       setLoading(false);
     }
-  }, [analyticsRange, loading, module, snapshot]);
+  }, [loading, module, rangeDays, snapshot]);
 
   return (
     <AnalyticsInsightsCollapsible

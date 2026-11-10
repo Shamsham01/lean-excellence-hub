@@ -145,7 +145,7 @@ export default async function SuggestionsOverviewPage({
 
       <ModulePageInsightsDeferred
         module="suggestions"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="suggestions-analytics"
       />
       {canViewWorkplace ? (

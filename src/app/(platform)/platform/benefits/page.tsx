@@ -110,7 +110,7 @@ export default async function BenefitsPortfolioPage({
       />
       <ModulePageInsightsDeferred
         module="benefits"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="benefits-analytics"
         donutCenterLabel="Benefits"
         showAgeingTable={false}

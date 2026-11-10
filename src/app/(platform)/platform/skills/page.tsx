@@ -183,7 +183,7 @@ export default async function SkillsOverviewPage({
       />
       <ModulePageInsightsDeferred
         module="skills"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="skills-analytics"
         showDateRange={false}
       />

@@ -12,7 +12,7 @@ import {
   SUGGESTION_ANALYTICS_ICONS,
   TRAINING_ANALYTICS_ICONS,
 } from "@/components/platform/module-analytics-icons";
-import type { ModuleInsightsKey } from "@/modules/platform-analytics/fetch-module-snapshot";
+import type { ModuleInsightsKey } from "@/modules/platform-analytics/module-insights-request";
 
 export const MODULE_INSIGHTS_ICON_MAP: Record<
   ModuleInsightsKey,

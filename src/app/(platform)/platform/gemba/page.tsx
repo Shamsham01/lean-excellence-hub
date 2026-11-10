@@ -176,7 +176,7 @@ export default async function GembaOverviewPage({
       </Card>
       <ModulePageInsightsDeferred
         module="gemba"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="gemba-analytics"
       />
       <WorkplaceSharedRecords module="gemba" />

@@ -2,32 +2,43 @@
 
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-import type { AnalyticsDateRange } from "./date-range";
 import { loadActionsAnalytics } from "./actions";
 import { loadBenefitsAnalytics } from "./benefits";
+import { buildAnalyticsDateRangeForOrganisation } from "./date-range.server";
 import { loadFiveSAnalytics } from "./five-s";
 import { loadGembaAnalytics } from "./gemba";
+import { canFetchModulePageInsights } from "./module-insights-access";
+import {
+  emptyModuleAnalyticsSnapshot,
+  parseModuleInsightsKey,
+  parseTrustedModuleInsightsDays,
+  type ModuleInsightsKey,
+} from "./module-insights-request";
 import { loadProblemSolvingAnalytics } from "./problem-solving";
 import { loadSkillsAnalytics } from "./skills";
 import { loadSuggestionsAnalytics } from "./suggestions";
 import { loadTrainingAnalytics } from "./training";
 import type { ModuleAnalyticsSnapshot } from "./types";
 
-export type ModuleInsightsKey =
-  | "actions"
-  | "benefits"
-  | "five-s"
-  | "gemba"
-  | "problem-solving"
-  | "skills"
-  | "suggestions"
-  | "training";
+export type { ModuleInsightsKey } from "./module-insights-request";
 
 export async function fetchModulePageInsightsSnapshot(
-  module: ModuleInsightsKey,
-  range: AnalyticsDateRange,
+  moduleInput: unknown,
+  daysInput: unknown,
 ): Promise<ModuleAnalyticsSnapshot> {
+  const module = parseModuleInsightsKey(moduleInput);
+  const days = parseTrustedModuleInsightsDays(daysInput);
+  if (!module || days === null) {
+    return emptyModuleAnalyticsSnapshot();
+  }
+
+  if (!(await canFetchModulePageInsights(module))) {
+    return emptyModuleAnalyticsSnapshot();
+  }
+
+  const range = await buildAnalyticsDateRangeForOrganisation(days);
   const supabase = await createServerSupabaseClient();
+
   switch (module) {
     case "actions":
       return loadActionsAnalytics(supabase, range);
@@ -46,8 +57,7 @@ export async function fetchModulePageInsightsSnapshot(
     case "training":
       return loadTrainingAnalytics(supabase, range);
     default: {
-      const exhaustive: never = module;
-      throw new Error(`Unsupported module insights key: ${exhaustive}`);
+      return emptyModuleAnalyticsSnapshot();
     }
   }
 }

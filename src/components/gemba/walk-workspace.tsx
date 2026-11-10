@@ -594,10 +594,10 @@ export function GembaWalkWorkspace({
                 *
               </span>
             ) : null}
+            <span className="sr-only">
+              {current.question.is_required ? " (required)" : " (optional)"}
+            </span>
           </h2>
-          <span className="sr-only">
-            {current.question.is_required ? "(required)" : "(optional)"}
-          </span>
           <div className="mt-6">
             <Label htmlFor="walk-notes">Notes</Label>
             <Textarea

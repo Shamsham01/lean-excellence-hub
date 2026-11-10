@@ -67,7 +67,7 @@ test.describe("first-customer onboarding and rollout governance", () => {
       "Plymouth Factory",
     );
     await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
-      /multi-site|wider organisation/i,
+      "Yes, part of a wider multi-site organisation",
     );
     await screenshotIfPossible(page, "01c-first-site-setup.png");
 

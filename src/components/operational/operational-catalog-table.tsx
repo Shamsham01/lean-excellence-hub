@@ -9,6 +9,7 @@ export type OperationalCatalogRow = {
   name: string;
   href: string;
   start: OperationalCatalogStartActionConfig | null;
+  startUnavailableNote?: string;
 };
 
 export function OperationalCatalogTable({
@@ -57,7 +58,10 @@ export function OperationalCatalogTable({
                 </AppLink>
               </td>
               <td className="px-3 py-2 text-right">
-                <OperationalCatalogStartAction start={row.start} />
+                <OperationalCatalogStartAction
+                  start={row.start}
+                  unavailableNote={row.startUnavailableNote}
+                />
               </td>
             </tr>
           ))}

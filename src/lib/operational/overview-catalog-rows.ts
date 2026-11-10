@@ -14,8 +14,23 @@ import {
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+const START_UNAVAILABLE_NOTE =
+  "Start is temporarily unavailable. Refresh the page or try again.";
+
 function logCatalogRowSkip(module: "5s" | "gemba", id: string, error: unknown) {
   console.error(`[overview-catalog] skipped ${module} row ${id}`, error);
+}
+
+function catalogRowsWithUnavailableStart<
+  T extends { id: string; display_name: string },
+>(items: T[], hrefPrefix: string): OperationalCatalogRow[] {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.display_name,
+    href: `${hrefPrefix}${item.id}`,
+    start: null,
+    startUnavailableNote: START_UNAVAILABLE_NOTE,
+  }));
 }
 
 async function buildFiveSStartConfigFromContext(
@@ -132,7 +147,7 @@ export async function buildFiveSOverviewCatalogRows(
   const standardIds = standards.map((standard) => standard.id);
   const { units, context } = await loadActiveSiteContext();
 
-  const [{ data: versions }, { data: applicabilityRows }] = await Promise.all([
+  const [versionsResult, applicabilityResult] = await Promise.all([
     supabase
       .from("five_s_standard_versions")
       .select("standard_id, status")
@@ -143,6 +158,20 @@ export async function buildFiveSOverviewCatalogRows(
       .select("standard_id, unit_id")
       .in("standard_id", standardIds),
   ]);
+
+  if (versionsResult.error || applicabilityResult.error) {
+    console.error("[overview-catalog] five_s batch load failed", {
+      versions: versionsResult.error,
+      applicability: applicabilityResult.error,
+    });
+    return catalogRowsWithUnavailableStart(
+      standards,
+      "/platform/5s/standards/",
+    );
+  }
+
+  const versions = versionsResult.data;
+  const applicabilityRows = applicabilityResult.data;
 
   const publishedVersionIds = new Set(
     (versions ?? []).map((row) => row.standard_id as string),
@@ -198,6 +227,7 @@ export async function buildFiveSOverviewCatalogRows(
         name: standard.display_name,
         href: `/platform/5s/standards/${standard.id}`,
         start: null,
+        startUnavailableNote: START_UNAVAILABLE_NOTE,
       });
     }
   }
@@ -216,7 +246,7 @@ export async function buildGembaOverviewCatalogRows(
   const definitionIds = definitions.map((definition) => definition.id);
   const { units, context } = await loadActiveSiteContext();
 
-  const [{ data: versions }, { data: applicabilityRows }] = await Promise.all([
+  const [versionsResult, applicabilityResult] = await Promise.all([
     supabase
       .from("gemba_definition_versions")
       .select("definition_id, status")
@@ -227,6 +257,20 @@ export async function buildGembaOverviewCatalogRows(
       .select("definition_id, unit_id")
       .in("definition_id", definitionIds),
   ]);
+
+  if (versionsResult.error || applicabilityResult.error) {
+    console.error("[overview-catalog] gemba batch load failed", {
+      versions: versionsResult.error,
+      applicability: applicabilityResult.error,
+    });
+    return catalogRowsWithUnavailableStart(
+      definitions,
+      "/platform/gemba/definitions/",
+    );
+  }
+
+  const versions = versionsResult.data;
+  const applicabilityRows = applicabilityResult.data;
 
   const publishedVersionIds = new Set(
     (versions ?? []).map((row) => row.definition_id as string),
@@ -282,6 +326,7 @@ export async function buildGembaOverviewCatalogRows(
         name: definition.display_name,
         href: `/platform/gemba/definitions/${definition.id}`,
         start: null,
+        startUnavailableNote: START_UNAVAILABLE_NOTE,
       });
     }
   }

@@ -94,7 +94,7 @@ export default async function ProblemSolvingPortfolioPage({
       />
       <ModulePageInsightsDeferred
         module="problem-solving"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="pps-analytics"
       />
       <WorkplaceSharedRecords module="problem_solving" />

@@ -164,7 +164,7 @@ export default async function FiveSOverviewPage({
 
       <ModulePageInsightsDeferred
         module="five-s"
-        analyticsRange={analyticsRange}
+        rangeDays={analyticsRange.days}
         testId="five-s-analytics"
       />
       <WorkplaceSharedRecords module="five_s" />

@@ -283,7 +283,9 @@ describe("GembaWalkWorkspace answer state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
     });
     expect(saveAnswer).toHaveBeenCalledWith("walk-1", FIRST_ID, {
@@ -296,7 +298,7 @@ describe("GembaWalkWorkspace answer state", () => {
     });
     expect(
       screen.getByRole("heading", {
-        name: "What did you observe on the operations floor?",
+        name: /^What did you observe on the operations floor\?/,
       }),
     ).toBeVisible();
   });
@@ -322,7 +324,7 @@ describe("GembaWalkWorkspace answer state", () => {
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(
       screen.getByRole("heading", {
-        name: "What did you observe on the operations floor?",
+        name: /^What did you observe on the operations floor\?/,
       }),
     ).toBeVisible();
 
@@ -338,7 +340,9 @@ describe("GembaWalkWorkspace answer state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
     });
   });
@@ -348,7 +352,9 @@ describe("GembaWalkWorkspace answer state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
     });
 
@@ -370,7 +376,9 @@ describe("GembaWalkWorkspace answer state", () => {
     });
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
     expect(
-      screen.getByRole("heading", { name: "What help does the team need?" }),
+      screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
     ).toBeVisible();
 
     resolveSave({ ok: true });
@@ -385,7 +393,7 @@ describe("GembaWalkWorkspace answer state", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("heading", {
-          name: "What did you observe on the operations floor?",
+          name: /^What did you observe on the operations floor\?/,
         }),
       ).toBeVisible();
     });
@@ -411,7 +419,7 @@ describe("GembaWalkWorkspace answer state", () => {
     expect(screen.getByLabelText("Notes")).toHaveValue("unsaved notes");
     expect(
       screen.getByRole("heading", {
-        name: "What did you observe on the operations floor?",
+        name: /^What did you observe on the operations floor\?/,
       }),
     ).toBeVisible();
 
@@ -423,7 +431,7 @@ describe("GembaWalkWorkspace answer state", () => {
     });
     expect(
       screen.getByRole("heading", {
-        name: "What did you observe on the operations floor?",
+        name: /^What did you observe on the operations floor\?/,
       }),
     ).toBeVisible();
     expect(
@@ -753,18 +761,20 @@ describe("GembaWalkWorkspace answer state", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Prompt two" })).toBeVisible();
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Prompt three" }),
+        screen.getByRole("heading", { name: /^Prompt two/ }),
       ).toBeVisible();
     });
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Prompt four" }),
+        screen.getByRole("heading", { name: /^Prompt three/ }),
+      ).toBeVisible();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: /^Prompt four/ }),
       ).toBeVisible();
     });
 
@@ -778,7 +788,9 @@ describe("GembaWalkWorkspace answer state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
       expect(sessionStorage.getItem(gembaWalkPromptStorageKey("walk-1"))).toBe(
         SECOND_ID,
@@ -789,7 +801,9 @@ describe("GembaWalkWorkspace answer state", () => {
     renderWorkspace();
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
     });
   });
@@ -800,7 +814,7 @@ describe("GembaWalkWorkspace answer state", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("heading", {
-          name: "What did you observe on the operations floor?",
+          name: /^What did you observe on the operations floor\?/,
         }),
       ).toBeVisible();
     });
@@ -817,7 +831,9 @@ describe("GembaWalkWorkspace answer state", () => {
     renderWorkspace();
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
     });
 
@@ -832,7 +848,7 @@ describe("GembaWalkWorkspace answer state", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("heading", {
-          name: "What did you observe on the operations floor?",
+          name: /^What did you observe on the operations floor\?/,
         }),
       ).toBeVisible();
     });
@@ -951,7 +967,9 @@ describe("GembaWalkWorkspace answer state", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "What help does the team need?" }),
+        screen.getByRole("heading", {
+          name: /^What help does the team need\?/,
+        }),
       ).toBeVisible();
     });
 
