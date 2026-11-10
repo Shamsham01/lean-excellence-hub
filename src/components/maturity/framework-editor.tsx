@@ -589,19 +589,28 @@ export function FrameworkEditor({
                   const levelName = form.levelName.value.trim();
                   const color = form.levelColor.value.trim() || "maturity-1";
                   if (!levelName) return;
-                  const ok = await run(() =>
-                    addMaturityLevel(
-                      versionId,
-                      levelNumber,
-                      levelName,
-                      color,
-                      modelId,
-                    ),
+                  setBusy(true);
+                  setError(null);
+                  const result = await addMaturityLevel(
+                    versionId,
+                    levelNumber,
+                    levelName,
+                    color,
+                    modelId,
                   );
-                  if (ok) {
-                    form.reset();
-                    setAddLevelOpen(false);
+                  setBusy(false);
+                  if (
+                    result &&
+                    typeof result === "object" &&
+                    "error" in result &&
+                    result.error
+                  ) {
+                    setError(result.error);
+                    return;
                   }
+                  form.reset();
+                  setAddLevelOpen(false);
+                  router.refresh();
                 }}
               >
                 <div className="flex flex-col gap-2">
