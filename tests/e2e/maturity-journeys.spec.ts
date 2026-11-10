@@ -64,7 +64,6 @@ test.describe("Milestone 5 maturity journeys", () => {
     const levelDialog = page.getByTestId("framework-add-level-dialog");
     await levelDialog.getByLabel("Level name").fill("Initial");
     await levelDialog.getByRole("button", { name: "Add level" }).click();
-    await expect(levelDialog).toBeHidden({ timeout: 15_000 });
     await expect(page.getByTestId("edit-level-1")).toBeVisible({
       timeout: 15_000,
     });

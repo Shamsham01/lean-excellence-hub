@@ -578,7 +578,6 @@ export function FrameworkEditor({
               onOpenChange={setAddLevelOpen}
               title="Add maturity level"
               testId="framework-add-level-dialog"
-              enableGuard
             >
               <form
                 className="flex flex-col gap-3"
@@ -722,7 +721,6 @@ export function FrameworkEditor({
               onOpenChange={setAddPillarOpen}
               title="Add pillar"
               testId="framework-add-pillar-dialog"
-              enableGuard
             >
               <form
                 className="flex flex-col gap-3"
@@ -857,7 +855,6 @@ export function FrameworkEditor({
               onOpenChange={setAddCriterionOpen}
               title="Add criterion"
               testId="framework-add-criterion-dialog"
-              enableGuard
             >
               <form
                 className="flex flex-col gap-3"
