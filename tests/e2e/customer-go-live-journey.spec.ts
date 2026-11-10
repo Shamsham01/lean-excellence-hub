@@ -7,7 +7,6 @@ import {
   createFoundingOwnerClient,
 } from "./helpers/clean-org-journey";
 import {
-  alignManagerSuggestionReviewScope,
   assertMembershipCanReviewSuggestionJurisdiction,
   assertModuleWriteDenied,
   BASELINE_ROLE_LABELS_ON_ANY_PLAN,
@@ -388,12 +387,6 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       email: delegateManager.email,
       password: delegateManager.password,
     });
-
-    alignManagerSuggestionReviewScope(
-      organisationId,
-      [productionManager.email, delegateManager.email],
-      productionLineUnitId,
-    );
   });
 
   test("step 3 — suggestion submission, manager notification, delegation, approval", async ({

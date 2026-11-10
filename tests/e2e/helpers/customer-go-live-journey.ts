@@ -88,37 +88,6 @@ export function queryMembershipIdForEmail(
   return row;
 }
 
-export function alignManagerSuggestionReviewScope(
-  organisationId: string,
-  managerEmails: string[],
-  reviewUnitId: string,
-) {
-  for (const email of managerEmails) {
-    const membershipId = queryMembershipIdForEmail(organisationId, email);
-    const updated = runPsql(
-      `update public.access_grants grant_row
-         set scope_unit_id = '${reviewUnitId}'::uuid
-        from public.organisation_memberships membership_row
-        join public.role_versions role_version
-          on role_version.id = grant_row.role_version_id
-        join public.roles role_row
-          on role_row.id = role_version.role_id
-         and role_row.canonical_name = 'manager'
-       where grant_row.organisation_id = '${organisationId}'::uuid
-         and grant_row.grantee_membership_id = membership_row.id
-         and grant_row.status = 'active'
-         and grant_row.scope_type = 'unit_subtree'
-         and membership_row.id = '${membershipId}'::uuid
-       returning grant_row.id::text;`,
-    );
-    if (!updated) {
-      throw new Error(
-        `Manager access grant for ${email} was not aligned to review unit ${reviewUnitId}`,
-      );
-    }
-  }
-}
-
 export function assertMembershipCanReviewSuggestionJurisdiction(
   organisationId: string,
   suggestionId: string,
