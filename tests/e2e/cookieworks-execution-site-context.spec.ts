@@ -71,6 +71,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await ensureExecutionStartDialogOpen(page, "five-s-start-audit-form");
     const form = page.getByTestId("five-s-start-audit-form");
     await expect(form.getByTestId("site-context-required")).toHaveCount(0);
+    await expect(form.getByTestId("applicable-units-empty")).toHaveCount(0);
     await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
       "Packing",
     );
@@ -82,6 +83,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await ensureExecutionStartDialogOpen(page, "gemba-start-walk-form");
     const form = page.getByTestId("gemba-start-walk-form");
     await expect(form.getByTestId("site-context-required")).toHaveCount(0);
+    await expect(form.getByTestId("applicable-units-empty")).toHaveCount(0);
     await expect(page.getByTestId("gemba-unit-select-locked")).toContainText(
       "Packing",
     );
