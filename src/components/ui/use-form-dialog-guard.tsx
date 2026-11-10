@@ -4,11 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
-  useLayoutEffect,
   useRef,
   useState,
-  type FormEvent,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -96,13 +93,15 @@ export function useFormDialogGuard({
   discardTestId = "form-dialog-discard-confirm",
 }: UseFormDialogGuardOptions) {
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
-  const [registeredForm, setRegisteredForm] = useState<HTMLFormElement | null>(
-    null,
-  );
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const resolveForm = useCallback(() => {
-    return formRef?.current ?? registeredForm;
-  }, [formRef, registeredForm]);
+    return (
+      formRef?.current ??
+      contentRef.current?.querySelector("form") ??
+      null
+    );
+  }, [formRef]);
 
   const hasDraft = useCallback(() => {
     return formHasUserDraft(resolveForm(), draftFieldNames);
@@ -115,6 +114,7 @@ export function useFormDialogGuard({
   }, [onReset, resolveForm]);
 
   const closeAndReset = useCallback(() => {
+    setDiscardConfirmOpen(false);
     onOpenChange(false);
     resetForm();
   }, [onOpenChange, resetForm]);
@@ -153,29 +153,12 @@ export function useFormDialogGuard({
     [onOpenChange, requestDismiss],
   );
 
-  useEffect(() => {
-    if (!open) {
-      setDiscardConfirmOpen(false);
-    }
-  }, [open]);
-
-  const registerForm = useCallback((form: HTMLFormElement | null) => {
-    setRegisteredForm((current) => (current === form ? current : form));
-  }, []);
-
   const reportPending = useCallback(
     (value: boolean) => {
       setPending?.(value);
     },
     [setPending],
   );
-
-  const captureFormSubmit = useCallback((event: FormEvent) => {
-    const target = event.target;
-    if (target instanceof HTMLFormElement) {
-      setRegisteredForm(target);
-    }
-  }, []);
 
   const confirmDiscard = useCallback(() => {
     setDiscardConfirmOpen(false);
@@ -218,23 +201,11 @@ export function useFormDialogGuard({
 
   const guardContextValue: FormDialogGuardContextValue = {
     setPending: reportPending,
-    registerForm,
+    registerForm: () => {},
   };
-
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!open) {
-      registerForm(null);
-      return;
-    }
-    const form = contentRef.current?.querySelector("form");
-    registerForm(form instanceof HTMLFormElement ? form : null);
-  }, [open, registerForm]);
 
   const contentWrapperProps = {
     ref: contentRef,
-    onSubmitCapture: captureFormSubmit,
   };
 
   const closeButtonClassName = cn(

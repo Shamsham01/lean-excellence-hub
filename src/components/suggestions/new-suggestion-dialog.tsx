@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { NewSuggestionForm } from "@/components/suggestions/new-suggestion-form";
@@ -103,11 +103,29 @@ export function NewSuggestionDialog({
     }
   }, [canManageJobFunctions]);
 
+  const defaultLoadStarted = useRef(false);
+
   useEffect(() => {
-    if (open && !configuration && !loading) {
-      void loadConfig();
+    if (!defaultOpen || defaultLoadStarted.current) {
+      return;
     }
-  }, [configuration, loadConfig, loading, open]);
+    defaultLoadStarted.current = true;
+    void loadConfig();
+  }, [defaultOpen, loadConfig]);
+
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      setOpen(next);
+      if (!next) {
+        setConfiguration(null);
+        return;
+      }
+      if (!configuration && !loading) {
+        void loadConfig();
+      }
+    },
+    [configuration, loadConfig, loading],
+  );
 
   function handleSuccess() {
     setOpen(false);
@@ -123,19 +141,14 @@ export function NewSuggestionDialog({
           size="sm"
           className="min-h-11"
           data-testid="suggestions-new-link"
-          onClick={() => setOpen(true)}
+          onClick={() => handleOpenChange(true)}
         >
           {triggerLabel}
         </ModuleWriteButton>
       ) : null}
       <ResponsiveFormDialog
         open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) {
-            setConfiguration(null);
-          }
-        }}
+        onOpenChange={handleOpenChange}
         title="New suggestion"
         description="Share what you've noticed and what you'd change — takes about a minute."
         testId="suggestions-new-dialog"
