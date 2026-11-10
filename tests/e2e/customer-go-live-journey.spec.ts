@@ -447,25 +447,21 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await expect(page.getByTestId("review-delegate-controls")).toBeVisible({
       timeout: 30_000,
     });
+    const delegateManagerMembershipId = queryMembershipIdForEmail(
+      organisationId,
+      delegateManager.email,
+    );
     const delegateSelect = page.getByTestId("review-delegate-select");
     await expect(
-      delegateSelect.locator(`option`, {
-        hasText: delegateManager.displayName,
-      }),
+      delegateSelect.locator(`option[value="${delegateManagerMembershipId}"]`),
     ).toHaveCount(1, { timeout: 60_000 });
-    await delegateSelect.selectOption({
-      label: delegateManager.displayName,
-    });
+    await delegateSelect.selectOption(delegateManagerMembershipId);
     await page
       .getByTestId("review-delegate-reason")
       .fill("Coverage while I am on the floor");
     await page.getByTestId("review-delegate-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
 
-    const delegateManagerMembershipId = queryMembershipIdForEmail(
-      organisationId,
-      delegateManager.email,
-    );
     await waitForUnreadSuggestionNotification(
       organisationId,
       routedSuggestionId,
