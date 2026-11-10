@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(10);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -134,31 +134,24 @@ select ok(
   'owner seeds standards'
 );
 
-insert into public.access_grants (
-  organisation_id,
-  membership_id,
-  permission_key,
-  scope_type,
-  scope_unit_id,
-  granted_by_membership_id
-)
-values
-  (
+insert into site_scope_ids (key, id)
+select 'five_s_role_version', role_version.id
+from public.role_versions role_version
+join public.roles role_row on role_row.id = role_version.role_id
+where role_version.organisation_id = (select id from site_scope_ids where key = 'organisation')
+  and role_row.module_responsibility_key = 'five_s'
+  and role_version.status = 'published';
+
+select ok(
+  public.grant_role_version(
     (select id from site_scope_ids where key = 'organisation'),
     (select id from site_scope_ids where key = 'manager_membership'),
-    'five_s.read',
-    'organisation',
-    null,
-    (select id from site_scope_ids where key = 'owner_membership')
-  ),
-  (
-    (select id from site_scope_ids where key = 'organisation'),
-    (select id from site_scope_ids where key = 'manager_membership'),
-    'five_s.standards.manage',
-    'organisation',
-    null,
-    (select id from site_scope_ids where key = 'owner_membership')
-  );
+    (select id from site_scope_ids where key = 'five_s_role_version'),
+    'unit_subtree',
+    (select id from site_scope_ids where key = 'site_a')
+  ) is not null,
+  'site manager receives unit-scoped 5S responsibility'
+);
 
 insert into site_scope_ids (key, id)
 select 'job_function', job_function.id
