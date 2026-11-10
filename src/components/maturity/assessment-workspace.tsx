@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { saveCriterionNote } from "@/app/(platform)/platform/maturity/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
+import { MaturityAssessmentActionDialog } from "@/components/maturity/maturity-assessment-action-dialog";
 import { AssessmentLifecycleActions } from "@/components/maturity/assessment-lifecycle-actions";
 import { QuestionCard } from "@/components/maturity/assessment-question-card";
 import { FormalLifecycleIndicator } from "@/components/maturity/formal-lifecycle-indicator";
@@ -116,7 +116,6 @@ export function AssessmentWorkspace({
   const [localQuestionNotes, setLocalQuestionNotes] = useState<
     Record<string, string>
   >({});
-  const [actionFormOpen, setActionFormOpen] = useState(false);
   const [criteriaOpen, setCriteriaOpen] = useState(false);
   const [highlightQuestionId, setHighlightQuestionId] = useState<string | null>(
     null,
@@ -420,37 +419,15 @@ export function AssessmentWorkspace({
         />
 
         {canEdit ? (
-          actionFormOpen ? (
-            <div className="max-w-lg rounded-lg border border-border bg-card p-4">
-              <AssessmentActionForm
-                assessmentId={assessmentId}
-                pillarId={pillar.id}
-                criterionId={criterion.id}
-                questions={criterion.questions.map((question) => ({
-                  id: question.id,
-                  prompt: question.prompt,
-                }))}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mt-2"
-                onClick={() => setActionFormOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              data-testid="create-improvement-action"
-              onClick={() => setActionFormOpen(true)}
-            >
-              + Create improvement action
-            </Button>
-          )
+          <MaturityAssessmentActionDialog
+            assessmentId={assessmentId}
+            pillarId={pillar.id}
+            criterionId={criterion.id}
+            questions={criterion.questions.map((question) => ({
+              id: question.id,
+              prompt: question.prompt,
+            }))}
+          />
         ) : null}
 
         <LinkedActionsList

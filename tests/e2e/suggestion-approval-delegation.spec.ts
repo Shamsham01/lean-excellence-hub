@@ -1,9 +1,18 @@
 import { expect, test } from "@playwright/test";
 
-import { DEMO_USERS } from "../../scripts/demo-seed/constants";
+import {
+  DEMO_ORGANISATION,
+  DEMO_USERS,
+} from "../../scripts/demo-seed/constants";
+import {
+  queryMembershipIdForEmail,
+  queryOrganisationIdByCode,
+  waitForUnreadSuggestionNotification,
+} from "./helpers/customer-go-live-journey";
 import {
   approveCurrentReview,
   beginCurrentReview,
+  openUnreadSuggestionNotificationReview,
   reviewWorkspace,
 } from "./helpers/suggestion-review";
 import { signInAsDemoUser } from "./helpers/demo-auth";
@@ -48,32 +57,8 @@ function notificationBell(page: import("@playwright/test").Page) {
   return page.locator('[data-testid="platform-notification-bell"]:visible');
 }
 
-async function openUnreadNotificationReview(
-  page: import("@playwright/test").Page,
-  pattern: RegExp,
-  suggestionId?: string,
-) {
-  await page.goto("/platform");
-  await expect(notificationBell(page)).toBeVisible();
-  await notificationBell(page).click();
-  await expect(page.getByTestId("platform-notification-list")).toBeVisible({
-    timeout: 30_000,
-  });
-  let item = page.locator('[data-notification-unread="true"]');
-  if (suggestionId) {
-    item = page
-      .locator(
-        `[data-notification-unread="true"][data-notification-href*="suggestionId=${suggestionId}"]`,
-      )
-      .filter({ hasText: pattern });
-  } else {
-    item = item.filter({ hasText: pattern });
-  }
-  const target = item.first();
-  await expect(target).toBeVisible({ timeout: 30_000 });
-  await target.click();
-  await expect(reviewWorkspace(page)).toBeVisible({ timeout: 30_000 });
-}
+const demoOrganisationId = () =>
+  queryOrganisationIdByCode(DEMO_ORGANISATION.code);
 
 test.describe("Suggestion approval delegation (UI acceptance)", () => {
   test.describe.configure({ mode: "serial" });
@@ -100,11 +85,29 @@ test.describe("Suggestion approval delegation (UI acceptance)", () => {
     page,
   }) => {
     expect(submittedSuggestionId).toBeTruthy();
+    const organisationId = demoOrganisationId();
+    const managerMembershipId = queryMembershipIdForEmail(
+      organisationId,
+      DEMO_USERS.manager.email,
+    );
+    await waitForUnreadSuggestionNotification(
+      organisationId,
+      submittedSuggestionId!,
+      "Idea submitted",
+      managerMembershipId,
+    );
+    const financeMembershipId = queryMembershipIdForEmail(
+      organisationId,
+      DEMO_USERS.finance.email,
+    );
     await signInAsDemoUser(page, "manager");
-    await openUnreadNotificationReview(
+    await page.goto("/platform");
+    await openUnreadSuggestionNotificationReview(
       page,
+      () => notificationBell(page),
       /Idea submitted for review/i,
       submittedSuggestionId!,
+      120_000,
     );
     delegatedSuggestionId = new URL(page.url()).searchParams.get(
       "suggestionId",
@@ -126,17 +129,27 @@ test.describe("Suggestion approval delegation (UI acceptance)", () => {
       .fill("Manager on walkabout");
     await page.getByTestId("review-delegate-button").click();
     await expect(page.getByTestId("review-workspace-error")).toHaveCount(0);
+    await waitForUnreadSuggestionNotification(
+      organisationId,
+      submittedSuggestionId!,
+      "delegated",
+      financeMembershipId,
+    );
   });
 
   test("delegated finance reviewer sees unread pending and approves", async ({
     page,
   }) => {
+    test.setTimeout(180_000);
     await signInAsDemoUser(page, "finance");
     expect(submittedSuggestionId).toBeTruthy();
-    await openUnreadNotificationReview(
+    await page.goto("/platform");
+    await openUnreadSuggestionNotificationReview(
       page,
+      () => notificationBell(page),
       /delegated to you/i,
       submittedSuggestionId!,
+      120_000,
     );
     await expect(
       page.getByTestId("review-workspace-delegation-notice"),

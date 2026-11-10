@@ -10,6 +10,11 @@ import {
   resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import {
+  openFiveSAddQuestion,
+  openGembaAddPrompt,
+  openGembaAddSection,
+} from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -340,11 +345,11 @@ test.describe("mobile location dialog scrolling", () => {
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("gemba-draft-boundary")).toBeVisible();
     await expect(page.getByText(/v1 · published/i)).toHaveCount(0);
+    await openGembaAddPrompt(page);
     await page
       .getByTestId("gemba-question-prompt")
-      .first()
       .fill("What else is visible?");
-    await page.getByRole("button", { name: "Add prompt" }).first().click();
+    await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByText("What else is visible?")).toBeVisible();
     await screenshot(page, "gemba_draft_created_after_dialog_390x844.png");
   });
@@ -440,11 +445,11 @@ test.describe("mobile location dialog scrolling", () => {
       page.getByRole("heading", { name: "LEH Workplace 5S Standard" }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible();
+    await openFiveSAddQuestion(page);
     await page
       .getByTestId("five-s-question-prompt")
-      .first()
       .fill("Extra packing check");
-    await page.getByRole("button", { name: "Add question" }).first().click();
+    await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByText("Extra packing check")).toBeVisible();
     await page.getByTestId("publish-five-s-standard").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible({
@@ -470,9 +475,11 @@ test.describe("mobile location dialog scrolling", () => {
       page.getByRole("heading", { name: "Manual location walk" }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("gemba-draft-boundary")).toBeVisible();
+    await openGembaAddSection(page);
     await page.getByTestId("gemba-section-title").fill("Flow");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toBeVisible();
+    await openGembaAddPrompt(page);
     await page
       .getByTestId("gemba-question-prompt")
       .fill("Which location needs attention?");

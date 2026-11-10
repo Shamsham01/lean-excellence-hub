@@ -108,7 +108,8 @@ export function InviteColleagueForm({
   units,
   jobFunctions,
   onInvite,
-}: InviteColleagueFormProps) {
+  onSuccess,
+}: InviteColleagueFormProps & { onSuccess?: () => void }) {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [grants, setGrants] = useState<GrantDraft[]>(() => [
@@ -266,6 +267,7 @@ export function InviteColleagueForm({
           "Invitation created. Copy the secure link below if email delivery is unavailable.",
         );
       }
+      onSuccess?.();
     }
 
     setLoading(false);

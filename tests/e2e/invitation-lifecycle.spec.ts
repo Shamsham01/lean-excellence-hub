@@ -29,6 +29,7 @@ import {
   readMembershipProvisioning,
   readSuggestionsInvitationFixture,
 } from "./helpers/invitation-lifecycle";
+import { openPeoplePendingInvitationsTab } from "./helpers/form-dialogs";
 
 const e2eOrigin = "http://127.0.0.1:3000";
 
@@ -737,6 +738,7 @@ test.describe("Invitation lifecycle", () => {
 
     await loginAsOrgAdmin(page);
     await page.goto("/platform/settings/people");
+    await openPeoplePendingInvitationsTab(page);
     const listItem = page
       .getByTestId("pending-invitations-list")
       .getByText(targetEmail)
@@ -869,6 +871,8 @@ test.describe("Invitation lifecycle", () => {
     await loginAsOrgAdmin(page);
     const targetEmail = `invitation-revoked-${Date.now()}@example.test`;
     await page.goto("/platform/settings/people");
+    await page.getByTestId("people-invite-open").click();
+    await expect(page.getByTestId("people-invite-dialog")).toBeVisible();
     await page.getByLabel("Colleague email").fill(targetEmail);
     await page.locator("#invite-role").selectOption({ index: 2 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
@@ -881,6 +885,7 @@ test.describe("Invitation lifecycle", () => {
       invitationUrl?.replace("Invitation link: ", "").trim() ?? "",
     ).pathname;
 
+    await openPeoplePendingInvitationsTab(page);
     await page
       .getByTestId("pending-invitations-list")
       .getByText(targetEmail)
@@ -902,6 +907,8 @@ test.describe("Invitation lifecycle", () => {
     await loginAsOrgAdmin(page);
     const targetEmail = `invitation-reissue-${Date.now()}@example.test`;
     await page.goto("/platform/settings/people");
+    await page.getByTestId("people-invite-open").click();
+    await expect(page.getByTestId("people-invite-dialog")).toBeVisible();
     await page.getByLabel("Colleague email").fill(targetEmail);
     await page.locator("#invite-role").selectOption({ index: 2 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
@@ -913,6 +920,7 @@ test.describe("Invitation lifecycle", () => {
       oldInvitationUrl?.replace("Invitation link: ", "").trim() ?? "",
     ).pathname;
 
+    await openPeoplePendingInvitationsTab(page);
     const listItem = page
       .getByTestId("pending-invitations-list")
       .getByText(targetEmail)

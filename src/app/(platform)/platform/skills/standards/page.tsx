@@ -1,12 +1,20 @@
 import { VersionStatusBadge } from "@/components/skills/version-status-badge";
 import { PageHeader } from "@/components/platform/page-header";
+import { StandardCreateDialog } from "@/components/skills/standard-create-dialog";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function SkillsStandardsPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SkillsStandardsPage({ searchParams }: PageProps) {
+  const query = await searchParams;
+  const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
+  const openCreateDialog = newRequested === "1";
   const supabase = await createServerSupabaseClient();
   const canManageRequirements = await currentMemberHasPermission(
     SKILLS_PERMISSIONS.requirementsManage,
@@ -39,15 +47,13 @@ export default async function SkillsStandardsPage() {
         description="Capability requirements that connect a job function, a skill, and the level that job function needs."
         actions={
           <div className="flex flex-wrap gap-2">
-            {canManageRequirements ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/skills/standards/new"
-                  data-testid="skills-standard-new-link"
-                >
-                  New skills standard
-                </AppLink>
-              </Button>
+            {canManageRequirements && (standards?.length ?? 0) > 0 ? (
+              <StandardCreateDialog
+                existingCodes={(standards ?? []).map(
+                  (standard) => standard.code,
+                )}
+                defaultOpen={openCreateDialog}
+              />
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink href="/platform/skills">Back to skills</AppLink>
@@ -67,11 +73,10 @@ export default async function SkillsStandardsPage() {
             not already.
           </p>
           {canManageRequirements ? (
-            <Button className="self-start" asChild>
-              <AppLink href="/platform/skills/standards/new">
-                New skills standard
-              </AppLink>
-            </Button>
+            <StandardCreateDialog
+              existingCodes={[]}
+              defaultOpen={openCreateDialog}
+            />
           ) : null}
         </section>
       ) : (

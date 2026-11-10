@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { openPeoplePendingInvitationsTab } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -75,6 +76,7 @@ test.describe("People colleague CSV import", () => {
     await expect(page.getByText(/Invitations created: 1/)).toBeVisible();
 
     await page.goto("/platform/settings/people");
+    await openPeoplePendingInvitationsTab(page);
     await expect(page.getByText(email, { exact: true })).toBeVisible();
   });
 

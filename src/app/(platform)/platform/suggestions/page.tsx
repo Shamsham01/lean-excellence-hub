@@ -9,6 +9,7 @@ import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestio
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
+import { NewSuggestionDialog } from "@/components/suggestions/new-suggestion-dialog";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +91,11 @@ export default async function SuggestionsOverviewPage({
 
   const pipeline = overview.pipeline;
   const analytics = await loadSuggestionsAnalytics(supabase, analyticsRange);
+  const canManageJobFunctions = await currentMemberHasPermission(
+    "job_functions.manage",
+  );
+  const newDialogRequested =
+    (Array.isArray(params.new) ? params.new[0] : params.new) === "1";
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
@@ -99,14 +105,11 @@ export default async function SuggestionsOverviewPage({
         actions={
           <div className="flex gap-2">
             {canSubmit ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/suggestions/new"
-                  data-testid="suggestions-new-link"
-                >
-                  New suggestion
-                </AppLink>
-              </Button>
+              <NewSuggestionDialog
+                canManageProgrammes={canManageProgrammes}
+                canManageJobFunctions={canManageJobFunctions}
+                defaultOpen={newDialogRequested}
+              />
             ) : null}
             {canManageProgrammes ? (
               <Button size="sm" variant="outline" asChild>

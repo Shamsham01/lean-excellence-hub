@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 
 import { InlineAlert } from "@/components/ui/alert";
+import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
 
 import { startAssessment } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
@@ -37,12 +38,14 @@ type StartAssessmentFormProps = {
   versions: FrameworkVersion[];
   people: LeadAssessorOption[];
   defaultVersionId?: string;
+  onStarted?: () => void;
 };
 
 export function StartAssessmentForm({
   versions,
   people,
   defaultVersionId,
+  onStarted,
 }: StartAssessmentFormProps) {
   const [versionId, setVersionId] = useState(defaultVersionId ?? "");
   const [scopeType, setScopeType] = useState<MaturityAssessmentScopeType | "">(
@@ -58,6 +61,7 @@ export function StartAssessmentForm({
   const [entities, setEntities] = useState<ScopeEntity[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  useReportFormDialogPending(pending);
 
   const selectedVersion = versions.find((v) => v.id === versionId);
   const allowedScopes = selectedVersion?.scope_types ?? [];
@@ -125,6 +129,7 @@ export function StartAssessmentForm({
         return;
       }
       if (result.assessmentId) {
+        onStarted?.();
         navigateTo(`/platform/maturity/assessments/${result.assessmentId}`);
       }
     });

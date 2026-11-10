@@ -7,6 +7,12 @@ import {
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./maturity-assessment";
+import {
+  openFrameworkAddCriterion,
+  openFrameworkAddLevel,
+  openFrameworkAddPillar,
+  openFrameworkAddQuestion,
+} from "./form-dialogs";
 
 export const COOKIEWORKS_FRAMEWORK = {
   name: "CookieWorks Lean Excellence Framework",
@@ -79,6 +85,7 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
 
   await page.getByTestId("framework-step-levels").click();
   for (const [index, levelName] of COOKIEWORKS_LEVELS.entries()) {
+    await openFrameworkAddLevel(page);
     await page.locator("#levelNumber").fill(String(index + 1));
     await page.locator("#levelName").fill(levelName);
     await page.getByRole("button", { name: "Add level" }).click();
@@ -87,6 +94,7 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
 
   await page.getByTestId("framework-step-pillars").click();
   for (const [index, pillar] of COOKIEWORKS_PILLARS.entries()) {
+    await openFrameworkAddPillar(page);
     await page.locator("#pillarName").fill(pillar.name);
     await page.getByRole("button", { name: "Add pillar" }).click();
     await expect(page.getByTestId(`edit-pillar-${index + 1}`)).toBeVisible();
@@ -96,6 +104,7 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
   for (const pillar of COOKIEWORKS_PILLARS) {
     for (const criterionName of pillar.criteria) {
       await page.locator("#pillarId").selectOption({ label: pillar.name });
+      await openFrameworkAddCriterion(page);
       await page.locator("#criterionName").fill(criterionName);
       await page.getByRole("button", { name: "Add criterion" }).click();
       await expect(
@@ -126,6 +135,7 @@ export async function createAndPublishCookieWorksFramework(page: Page) {
       await page.locator("#criterionId").selectOption({
         label: `${pillar.name} → ${criterionName}`,
       });
+      await openFrameworkAddQuestion(page);
       await page.locator("#questionPrompt").fill(`Rate: ${criterionName}`);
       await page.getByRole("button", { name: "Add scored question" }).click();
       linkedQuestionCount += 1;

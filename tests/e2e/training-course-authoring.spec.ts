@@ -6,6 +6,7 @@ import {
   ensureOnboardingE2eOrganisation,
   loginAsOnboardingOwner,
 } from "./helpers/onboarding-auth";
+import { openTrainingCourseCreateDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -69,12 +70,10 @@ test.describe("Training course catalogue bootstrap", () => {
     await page.goto("/platform/training/courses");
     await expect(page.getByTestId("training-courses-page")).toBeVisible();
 
-    if ((await page.getByTestId("training-course-create-form").count()) === 0) {
-      await page.getByTestId("training-course-new-button").click();
-    } else {
+    if (await page.getByTestId("training-courses-empty").isVisible()) {
       await expect(page.getByTestId("training-courses-empty")).toBeVisible();
     }
-    await expect(page.getByTestId("training-course-create-form")).toBeVisible();
+    await openTrainingCourseCreateDialog(page);
 
     const courseNameInput = page.getByTestId("training-course-name-input");
     await courseNameInput.click();
@@ -161,8 +160,7 @@ test.describe("Training course catalogue bootstrap", () => {
     await page.goto("/platform/training/courses");
     await expect(page.getByTestId("training-courses-page")).toBeVisible();
 
-    await page.getByTestId("training-course-new-button").click();
-    await expect(page.getByTestId("training-course-create-form")).toBeVisible();
+    await openTrainingCourseCreateDialog(page);
     await page
       .getByTestId("training-course-name-input")
       .fill(DEMO_TRAINING_COURSES[0].name);
@@ -208,6 +206,9 @@ test.describe("Training course catalogue bootstrap", () => {
     const courseName = `Confined Space ${Date.now()}`;
 
     await page.goto("/platform/training/courses?new=1");
+    await expect(
+      page.getByTestId("training-course-create-dialog"),
+    ).toBeVisible();
     await page.getByTestId("training-course-name-input").fill(courseName);
     await page.getByTestId("training-course-create-submit").click();
     await expect(
@@ -285,8 +286,7 @@ test.describe("Training course catalogue bootstrap", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByTestId("training-courses-page")).toBeVisible();
     await expect(page.getByTestId("training-course-new-button")).toBeVisible();
-    await page.getByTestId("training-course-new-button").click();
-    await expect(page.getByTestId("training-course-create-form")).toBeVisible();
+    await openTrainingCourseCreateDialog(page);
     await expect(
       page.getByTestId("training-course-create-submit"),
     ).toBeVisible();

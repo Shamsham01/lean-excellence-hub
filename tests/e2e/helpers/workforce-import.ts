@@ -277,6 +277,38 @@ export async function validateWorkforceImportAndStartProvisioning(
   });
 }
 
+export function readTemporaryPasswordFromCredentialExport(
+  csv: string,
+  username: string,
+): string {
+  const lines = csv.trim().split(/\r?\n/);
+  if (lines.length < 2) {
+    throw new Error("Credential export CSV is empty.");
+  }
+
+  const header = lines[0]!.split(",");
+  const usernameIndex = header.indexOf("username");
+  const passwordIndex = header.indexOf("temporary_password");
+  if (usernameIndex < 0 || passwordIndex < 0) {
+    throw new Error(
+      `Credential export CSV is missing required columns: ${header.join(",")}`,
+    );
+  }
+
+  for (const line of lines.slice(1)) {
+    const columns = line.split(",");
+    if (columns[usernameIndex]?.trim() !== username) {
+      continue;
+    }
+    const password = columns[passwordIndex]?.trim() ?? "";
+    if (password.length > 0) {
+      return password.replace(/^'/, "");
+    }
+  }
+
+  throw new Error(`No credential row found for username ${username}.`);
+}
+
 export async function readWorkforceImportJobId(page: Page): Promise<string> {
   const jobId = (
     await page.getByTestId("workforce-import-job-id").textContent()

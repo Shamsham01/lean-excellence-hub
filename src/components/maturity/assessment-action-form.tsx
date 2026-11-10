@@ -21,11 +21,15 @@ export function AssessmentActionForm({
   pillarId,
   criterionId,
   questions,
+  layout = "inline",
+  onCreated,
 }: {
   assessmentId: string;
   pillarId: string;
   criterionId: string;
   questions: QuestionOption[];
+  layout?: "inline" | "dialog";
+  onCreated?: (actionId: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +48,7 @@ export function AssessmentActionForm({
       }
       if (result.actionId) {
         setCreatedActionId(result.actionId);
+        onCreated?.(result.actionId);
         form.reset();
       }
     });
@@ -59,7 +64,9 @@ export function AssessmentActionForm({
       <input type="hidden" name="pillarId" value={pillarId} />
       <input type="hidden" name="criterionId" value={criterionId} />
       <div className="flex flex-col gap-2">
-        <Label htmlFor={`action-title-${criterionId}`}>Create action</Label>
+        <Label htmlFor={`action-title-${criterionId}`}>
+          {layout === "dialog" ? "Title" : "Create action"}
+        </Label>
         <Input
           id={`action-title-${criterionId}`}
           name="title"
@@ -89,7 +96,7 @@ export function AssessmentActionForm({
       ) : null}
       <Textarea name="description" rows={2} placeholder="Finding context" />
       {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
-      {createdActionId ? (
+      {createdActionId && layout === "inline" ? (
         <p
           className="text-sm text-muted-foreground"
           data-testid="action-created"
@@ -103,7 +110,14 @@ export function AssessmentActionForm({
           </AppLink>
         </p>
       ) : null}
-      <Button type="submit" size="sm" variant="outline" disabled={pending}>
+      <Button
+        type="submit"
+        size="sm"
+        variant={layout === "dialog" ? "default" : "outline"}
+        className="min-h-11"
+        disabled={pending}
+        data-testid="assessment-action-submit"
+      >
         {pending ? "Creating…" : "Create action"}
       </Button>
     </form>

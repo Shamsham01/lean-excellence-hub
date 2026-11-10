@@ -74,6 +74,17 @@ export function exhaustLeanAiCreditAllowance(organisationId: string) {
   );
 }
 
+export function queryOrganisationIdByCode(code: string) {
+  const escapedCode = code.replace(/'/g, "''");
+  const row = runPsql(
+    `select organisation_row.id::text from public.organisations organisation_row where organisation_row.code = '${escapedCode}' limit 1;`,
+  );
+  if (!row) {
+    throw new Error(`Organisation with code ${code} was not found`);
+  }
+  return row;
+}
+
 export function queryMembershipIdForEmail(
   organisationId: string,
   email: string,

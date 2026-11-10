@@ -11,6 +11,7 @@ import {
   loginAsSiteBoundaryHierarchyDelegate,
   loginAsSiteBoundaryPeopleDelegate,
 } from "./helpers/cookieworks-auth";
+import { openPeopleInviteDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const BODMIN_FACTORY_LABEL = "Bodmin Cookie Factory";
@@ -395,6 +396,7 @@ test.describe("Organisation Structure V2", () => {
     }) => {
       await loginAsSiteBoundaryPeopleDelegate(page);
       await page.goto("/platform/settings/people");
+      await openPeopleInviteDialog(page);
       await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
 
       const scopeSelect = page.locator("#invite-scope");

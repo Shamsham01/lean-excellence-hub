@@ -10,6 +10,7 @@ import {
 } from "./helpers/workforce-provisioning";
 import {
   awaitImportCredentialsDownloadReady,
+  readTemporaryPasswordFromCredentialExport,
   readWorkforceImportJobId,
   waitForImportProvisioningCheckpoint,
   waitForWorkforceImportTerminalState,
@@ -36,6 +37,7 @@ test.describe("M2 workforce bulk import", () => {
 
   let organisationId = "";
   let exportedPassword = "";
+  let provisionedImportJobId = "";
 
   test("manager cannot access bulk import", async ({ page }) => {
     await signInAsDemoUser(page, "manager", { assertOrganisation: false });
@@ -104,6 +106,7 @@ test.describe("M2 workforce bulk import", () => {
     });
     await page.getByTestId("start-import-provisioning").click();
     const jobId = await readWorkforceImportJobId(page);
+    provisionedImportJobId = jobId;
     await awaitImportCredentialsDownloadReady(page, jobId);
 
     const downloadPromise = page.waitForEvent("download");
@@ -118,8 +121,10 @@ test.describe("M2 workforce bulk import", () => {
     }
     const csv = Buffer.concat(chunks).toString("utf8");
     expect(csv).toContain(`bulk.one.${uniqueSuffix}`);
-    const passwordMatch = csv.match(/bulk\.one\.[^,]+,[^,]+,([^,\n]+)/);
-    exportedPassword = passwordMatch?.[1] ?? "";
+    exportedPassword = readTemporaryPasswordFromCredentialExport(
+      csv,
+      `bulk.one.${uniqueSuffix}`,
+    );
     expect(exportedPassword.length).toBeGreaterThan(8);
 
     assertTemporaryPasswordNotPersisted(
@@ -133,6 +138,10 @@ test.describe("M2 workforce bulk import", () => {
     browser,
   }) => {
     expect(exportedPassword.length).toBeGreaterThan(8);
+    expect(provisionedImportJobId.length).toBeGreaterThan(0);
+    await waitForWorkforceImportTerminalState(provisionedImportJobId, {
+      timeoutMs: 180_000,
+    });
 
     const context = await browser.newContext();
     const page = await context.newPage();

@@ -2,6 +2,10 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { createActionViaPlannerDialog } from "./helpers/actions-create";
 import {
+  openPeopleInviteDialog,
+  openPeoplePendingInvitationsTab,
+} from "./helpers/form-dialogs";
+import {
   acceptInvitationAsNewColleague,
   bootstrapSuggestionProgramme,
   createFoundingOwnerClient,
@@ -176,7 +180,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await completeStructureFirstFoundationSetup(page, user.firstSiteName);
     await page.goto("/platform/settings/people");
     await expect(page.getByTestId("people-settings-page")).toBeVisible();
-    const roleSelect = page.locator("#invite-role");
+    await openPeopleInviteDialog(page);
+    const inviteForm = page.getByTestId("invite-colleague-form");
+    const roleSelect = inviteForm.locator("#invite-role");
     const optionLabels = await roleSelect
       .locator("option")
       .evaluateAll((options) =>
@@ -674,12 +680,16 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     expect(await assertModuleWriteDenied(ownerClient, "maturity")).toBe(false);
 
     await page.goto("/platform/settings/people");
-    await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
+    await openPeopleInviteDialog(page);
+    const inviteForm = page.getByTestId("invite-colleague-form");
     const unlimitedProbe = `go-live-unlimited-${Date.now()}@example.test`;
-    await page.locator("#invite-email").fill(unlimitedProbe);
-    await page.locator("#invite-role").selectOption({ label: "Team Member" });
-    await page.locator("#invite-scope").selectOption({ index: 1 });
-    await page.getByRole("button", { name: "Create invitation" }).click();
+    await inviteForm.locator("#invite-email").fill(unlimitedProbe);
+    await inviteForm
+      .locator("#invite-role")
+      .selectOption({ label: "Team Member" });
+    await inviteForm.locator("#invite-scope").selectOption({ index: 1 });
+    await inviteForm.getByRole("button", { name: "Create invitation" }).click();
+    await openPeoplePendingInvitationsTab(page);
     await expect(page.getByText(unlimitedProbe)).toBeVisible({
       timeout: 30_000,
     });

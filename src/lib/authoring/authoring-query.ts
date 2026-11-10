@@ -6,6 +6,7 @@ export type AuthoringSavedKey =
   | "applicability"
   | "scale"
   | "section"
+  | "gemba_section"
   | "question"
   | "publish"
   | "framework"
@@ -18,6 +19,7 @@ const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "applicability",
   "scale",
   "section",
+  "gemba_section",
   "question",
   "publish",
   "framework",
@@ -74,6 +76,8 @@ export function authoringSaveMessage(key: AuthoringSavedKey): string {
       return "Scoring scale saved.";
     case "section":
       return "Category saved.";
+    case "gemba_section":
+      return "Section saved.";
     case "question":
       return "Question saved.";
     case "publish":

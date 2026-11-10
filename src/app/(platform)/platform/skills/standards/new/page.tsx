@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { StandardCreateForm } from "@/components/skills/standard-create-form";
+import { StandardNameCreateForm } from "@/components/skills/standard-name-create-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -30,7 +30,7 @@ export default async function NewSkillsStandardPage() {
         description="Name the standard, then assign the skills each job function needs."
       />
       <div className="max-w-xl">
-        <StandardCreateForm
+        <StandardNameCreateForm
           existingCodes={(standards ?? []).map((standard) => standard.code)}
         />
       </div>

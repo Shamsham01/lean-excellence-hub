@@ -12,6 +12,7 @@ import {
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { loginAsSiteBoundaryPeopleDelegate } from "./helpers/cookieworks-auth";
 import { platformMain } from "./helpers/platform-main";
+import { openPeopleInviteDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const PEOPLE_SETTINGS_PATH = "/platform/settings/people";
@@ -20,9 +21,10 @@ async function assertAuthorisedPeopleControls(page: Page) {
   const main = platformMain(page);
   const peoplePage = main.getByTestId("people-settings-page");
   await expect(peoplePage).toBeVisible();
-  await expect(main.getByTestId("invite-colleague-form")).toBeVisible();
+  await openPeopleInviteDialog(page);
+  await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
   await expect(main.getByTestId("people-settings-create-link")).toBeVisible();
-  await expect(main.locator("#invite-role")).toBeVisible();
+  await expect(page.locator("#invite-role")).toBeVisible();
   await expect(
     page.getByText("Ask an Organisation Administrator to invite colleagues"),
   ).toHaveCount(0);
@@ -94,7 +96,7 @@ test.describe("People settings delegation gate stability", () => {
     await page.goto(PEOPLE_SETTINGS_PATH);
     const main = platformMain(page);
     await expect(main.getByTestId("people-settings-page")).not.toBeVisible();
-    await expect(main.getByTestId("invite-colleague-form")).not.toBeVisible();
+    await expect(page.getByTestId("invite-colleague-form")).not.toBeVisible();
     await expect(
       main.getByTestId("people-settings-create-link"),
     ).not.toBeVisible();
@@ -116,12 +118,13 @@ test.describe("People settings delegation gate stability", () => {
     await loginAsSiteBoundaryPeopleDelegate(page);
     await page.goto(PEOPLE_SETTINGS_PATH);
     const main = platformMain(page);
-    await expect(main.getByTestId("invite-colleague-form")).toBeVisible({
+    await openPeopleInviteDialog(page);
+    await expect(page.getByTestId("invite-colleague-form")).toBeVisible({
       timeout: 30_000,
     });
 
-    const scopeSelect = main.locator("#invite-scope");
-    await main.locator("#invite-role").selectOption({ index: 1 });
+    const scopeSelect = page.locator("#invite-scope");
+    await page.locator("#invite-role").selectOption({ index: 1 });
     const scopeLabels = await scopeSelect
       .locator("option")
       .evaluateAll((options) =>

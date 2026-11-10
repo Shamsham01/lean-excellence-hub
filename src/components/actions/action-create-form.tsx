@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { createAction } from "@/app/(platform)/platform/actions/actions";
+import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
 import { RelatedRecordsPanel } from "@/components/improvement/related-records-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,10 +19,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+type MaturityActionContext = {
+  assessmentId: string;
+  pillarId: string;
+  criterionId: string;
+  questions: Array<{ id: string; prompt: string }>;
+};
+
 type ActionCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (actionId: string) => void;
+  maturityContext?: MaturityActionContext;
 };
 
 function readDraftFromForm(form: HTMLFormElement | null) {
@@ -37,6 +46,7 @@ export function ActionCreateDialog({
   open,
   onOpenChange,
   onCreated,
+  maturityContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [queryText, setQueryText] = useState("");
@@ -99,16 +109,24 @@ export function ActionCreateDialog({
     setPending(true);
     setError(null);
     const formData = new FormData(event.currentTarget);
-    const result = await createAction(formData);
+    const result = maturityContext
+      ? await createMaturityAction(formData)
+      : await createAction(formData);
     setPending(false);
-    if (result.error) {
+    if ("error" in result && result.error) {
       setError(result.error);
       return;
     }
-    if (result.id) {
+    const createdId =
+      "id" in result && result.id
+        ? result.id
+        : "actionId" in result && result.actionId
+          ? result.actionId
+          : null;
+    if (createdId) {
       onOpenChange(false);
       resetForm();
-      onCreated?.(result.id);
+      onCreated?.(createdId);
     }
   }
 
@@ -149,6 +167,25 @@ export function ActionCreateDialog({
             onInput={syncQueryFromForm}
             className="flex min-w-0 flex-col gap-4"
           >
+            {maturityContext ? (
+              <>
+                <input
+                  type="hidden"
+                  name="assessmentId"
+                  value={maturityContext.assessmentId}
+                />
+                <input
+                  type="hidden"
+                  name="pillarId"
+                  value={maturityContext.pillarId}
+                />
+                <input
+                  type="hidden"
+                  name="criterionId"
+                  value={maturityContext.criterionId}
+                />
+              </>
+            ) : null}
             <div className="flex flex-col gap-2">
               <Label htmlFor="action-create-title">Title</Label>
               <Input
@@ -168,27 +205,52 @@ export function ActionCreateDialog({
                 disabled={pending}
               />
             </div>
+            {maturityContext && maturityContext.questions.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor={`action-question-${maturityContext.criterionId}`}
+                >
+                  Related question
+                </Label>
+                <select
+                  id={`action-question-${maturityContext.criterionId}`}
+                  name="questionId"
+                  className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
+                  defaultValue=""
+                  disabled={pending}
+                >
+                  <option value="">This criterion</option>
+                  {maturityContext.questions.map((question) => (
+                    <option key={question.id} value={question.id}>
+                      {question.prompt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             {error ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
 
-            <RelatedRecordsPanel
-              recordType="action"
-              compactHelp
-              queryText={queryText}
-              resolveQuery={() => {
-                const { title, description } = readDraftFromForm(
-                  formRef.current,
-                );
-                if (title || description) {
-                  return `${title} ${description}`.trim();
-                }
-                return queryText;
-              }}
-              disabled={pending}
-            />
+            {maturityContext ? null : (
+              <RelatedRecordsPanel
+                recordType="action"
+                compactHelp
+                queryText={queryText}
+                resolveQuery={() => {
+                  const { title, description } = readDraftFromForm(
+                    formRef.current,
+                  );
+                  if (title || description) {
+                    return `${title} ${description}`.trim();
+                  }
+                  return queryText;
+                }}
+                disabled={pending}
+              />
+            )}
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button
@@ -202,7 +264,11 @@ export function ActionCreateDialog({
               <Button
                 type="submit"
                 disabled={pending}
-                data-testid="actions-create-submit"
+                data-testid={
+                  maturityContext
+                    ? "assessment-action-submit"
+                    : "actions-create-submit"
+                }
               >
                 {pending ? "Creating…" : "Create action"}
               </Button>

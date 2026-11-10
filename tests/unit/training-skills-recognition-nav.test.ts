@@ -43,8 +43,11 @@ describe("NAV-CLICK-001 Training navigation primitives", () => {
 
     expect(courses).toContain('from "@/components/ui/app-link"');
     expect(courses).toContain('data-testid="training-courses-back-link"');
-    expect(courses).toContain('data-testid="training-course-new-button"');
-    expect(courses).toContain('href="/platform/training/courses?new=1"');
+    expect(courses).toContain("CourseCreateDialog");
+    expect(
+      readSource("src/components/training/course-create-dialog.tsx"),
+    ).toContain('data-testid="training-course-new-button"');
+    expect(courses).toContain("newRequested");
     expect(courseDetail).toContain('data-testid="training-course-back-link"');
     expect(sessions).toContain('data-testid="training-sessions-back-link"');
     expect(sessionDetail).toContain('data-testid="training-session-back-link"');
@@ -169,10 +172,11 @@ describe("NAV-CLICK-001 Recognition navigation primitives", () => {
     );
 
     expect(source).toContain('from "@/components/ui/app-link"');
-    expect(source).toContain('testId="recognition-award-link"');
-    expect(source).toContain("ModuleWriteAppLink");
+    expect(
+      readSource("src/components/recognition/award-recognition-dialog.tsx"),
+    ).toContain('data-testid="recognition-award-link"');
+    expect(source).toContain("AwardRecognitionDialog");
     expect(source).toContain('data-testid="recognition-types-link"');
-    expect(source).toContain('href="/platform/recognition/new"');
     expect(source).toContain('href="/platform/recognition/types"');
     expect(source).toContain("href={`/platform/recognition/${item.id}`}");
     expect(source).not.toMatch(/from ["']next\/link["']/);

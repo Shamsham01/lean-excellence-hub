@@ -1,0 +1,205 @@
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { useState, type FormEvent } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
+import {
+  FormDialogGuardContext,
+  useFormDialogGuard,
+} from "@/components/ui/use-form-dialog-guard";
+
+function GuardedDialogForm({ onSubmit }: { onSubmit: () => Promise<void> }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useReportFormDialogPending(submitting);
+
+  return (
+    <form
+      onSubmit={async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setError(null);
+        setSubmitting(true);
+        try {
+          await onSubmit();
+        } catch (submitError) {
+          setError(
+            submitError instanceof Error
+              ? submitError.message
+              : String(submitError),
+          );
+        } finally {
+          setSubmitting(false);
+        }
+      }}
+    >
+      <label htmlFor="title">Title</label>
+      <input id="title" name="title" data-testid="title-input" />
+      {error ? (
+        <p role="alert" data-testid="form-error">
+          {error}
+        </p>
+      ) : null}
+      <button type="submit" disabled={submitting} data-testid="form-submit">
+        Save
+      </button>
+    </form>
+  );
+}
+
+function GuardedDialogHarness({ onSubmit }: { onSubmit: () => Promise<void> }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <ResponsiveFormDialog
+      open={open}
+      onOpenChange={setOpen}
+      title="Test dialog"
+      testId="guarded-dialog"
+      enableGuard
+    >
+      <GuardedDialogForm onSubmit={onSubmit} />
+    </ResponsiveFormDialog>
+  );
+}
+
+describe("ResponsiveFormDialog guard pending stability", () => {
+  beforeEach(() => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes("max-width: 639px") ? false : false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("keeps typed draft and submit disabled while pending", async () => {
+    let resolveSubmit: (() => void) | undefined;
+    const submitStarted = new Promise<void>((resolve) => {
+      resolveSubmit = resolve;
+    });
+
+    render(
+      <GuardedDialogHarness
+        onSubmit={async () => {
+          await submitStarted;
+        }}
+      />,
+    );
+
+    const input = screen.getByTestId("title-input");
+    fireEvent.change(input, { target: { value: "Draft title" } });
+    expect(input).toHaveValue("Draft title");
+
+    fireEvent.click(screen.getByTestId("form-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("form-submit")).toBeDisabled();
+    });
+    expect(input).toHaveValue("Draft title");
+
+    resolveSubmit?.();
+    await waitFor(() => {
+      expect(screen.getByTestId("form-submit")).not.toBeDisabled();
+    });
+  });
+
+  it("shows action errors and keeps draft when submit rejects", async () => {
+    render(
+      <GuardedDialogHarness
+        onSubmit={async () => {
+          throw new Error("Save failed");
+        }}
+      />,
+    );
+
+    const input = screen.getByTestId("title-input");
+    fireEvent.change(input, { target: { value: "Keep this draft" } });
+    fireEvent.click(screen.getByTestId("form-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("form-error")).toHaveTextContent("Save failed");
+    });
+    expect(input).toHaveValue("Keep this draft");
+  });
+
+  it("ignores dismiss attempts while pending", async () => {
+    let resolveSubmit: (() => void) | undefined;
+    const submitStarted = new Promise<void>((resolve) => {
+      resolveSubmit = resolve;
+    });
+
+    render(
+      <GuardedDialogHarness
+        onSubmit={async () => {
+          await submitStarted;
+        }}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("title-input"), {
+      target: { value: "Draft title" },
+    });
+    fireEvent.click(screen.getByTestId("form-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("form-submit")).toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.getByTestId("guarded-dialog")).toBeVisible();
+    expect(
+      screen.queryByTestId("form-dialog-discard-dialog"),
+    ).not.toBeInTheDocument();
+
+    resolveSubmit?.();
+    await waitFor(() => {
+      expect(screen.getByTestId("form-submit")).not.toBeDisabled();
+    });
+  });
+
+  it("shows discard confirm when a draft exists", () => {
+    function DiscardHarness() {
+      const [open, setOpen] = useState(true);
+      const [pending, setPending] = useState(false);
+      const guard = useFormDialogGuard({
+        open,
+        onOpenChange: setOpen,
+        pending,
+        setPending,
+      });
+
+      return (
+        <>
+          <FormDialogGuardContext.Provider value={guard.guardContextValue}>
+            <div {...guard.contentWrapperProps}>
+              <form>
+                <input name="title" defaultValue="Draft title" />
+              </form>
+            </div>
+          </FormDialogGuardContext.Provider>
+          <button type="button" onClick={() => guard.requestDismiss()}>
+            Request dismiss
+          </button>
+          {guard.DiscardConfirmDialog}
+        </>
+      );
+    }
+
+    render(<DiscardHarness />);
+    fireEvent.click(screen.getByRole("button", { name: "Request dismiss" }));
+    expect(screen.getByTestId("form-dialog-discard-dialog")).toBeVisible();
+  });
+});

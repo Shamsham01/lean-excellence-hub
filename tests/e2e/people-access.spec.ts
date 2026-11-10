@@ -1,6 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  dismissPeopleInviteDialog,
+  openPeopleInviteDialog,
+} from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -24,8 +28,15 @@ async function fitsViewport(page: Page, testId: string, width: number) {
   expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
 }
 
-async function controlFits(page: Page, selector: string, width: number) {
-  const box = await page.locator(selector).boundingBox();
+async function controlFits(
+  page: Page,
+  selector: string,
+  width: number,
+  root?: Locator,
+) {
+  const locator = (root ?? page).locator(selector);
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
   expect(box, selector).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(-1);
   expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
@@ -66,29 +77,28 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
   }) => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/settings/people");
-    const form = page.getByTestId("invite-colleague-form");
-    await expect(form).toBeVisible();
-    await page.getByLabel("Name").fill(longName);
-    await page.getByTestId("add-invitation-grant").click();
-    await expect(page.locator("#invite-role-1")).toBeVisible();
-
-    await page.locator("#invite-primary-unit").evaluate((select) => {
-      const option = document.createElement("option");
-      option.value = "long-hierarchy-path";
-      option.textContent =
-        "North Region / Manufacturing Campus / Final Assembly Site / Body Shop / Line 4 / Station With An Extremely Long Hierarchy Path";
-      select.append(option);
-      (select as HTMLSelectElement).value = option.value;
-    });
-
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
+      await dismissPeopleInviteDialog(page);
+      await openPeopleInviteDialog(page);
+      const form = page.getByTestId("invite-colleague-form");
       await expect(form).toBeVisible();
+      await form.getByLabel("Name").fill(longName);
+      await form.getByTestId("add-invitation-grant").click();
+      await expect(form.locator("#invite-role-1")).toBeVisible();
+      await form.locator("#invite-primary-unit").evaluate((select) => {
+        const option = document.createElement("option");
+        option.value = "long-hierarchy-path";
+        option.textContent =
+          "North Region / Manufacturing Campus / Final Assembly Site / Body Shop / Line 4 / Station With An Extremely Long Hierarchy Path";
+        select.append(option);
+        (select as HTMLSelectElement).value = option.value;
+      });
       await fitsViewport(page, "invite-colleague-form", viewport.width);
-      await controlFits(page, "#invite-job-function", viewport.width);
-      await controlFits(page, "#invite-primary-unit", viewport.width);
-      await controlFits(page, "#invite-role", viewport.width);
-      await controlFits(page, "#invite-scope", viewport.width);
+      await controlFits(page, "#invite-job-function", viewport.width, form);
+      await controlFits(page, "#invite-primary-unit", viewport.width, form);
+      await controlFits(page, "#invite-role", viewport.width, form);
+      await controlFits(page, "#invite-scope", viewport.width, form);
       await controlFits(
         page,
         "[data-testid='invitation-access-preview']",

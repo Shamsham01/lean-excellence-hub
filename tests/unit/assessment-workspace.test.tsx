@@ -34,8 +34,20 @@ vi.mock("@/app/(platform)/platform/maturity/actions", () => ({
   linkMaturityEvidence: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
+vi.mock("@/modules/billing/module-write-context", () => ({
+  usePlanModuleWriteAllowed: () => true,
+}));
+
 vi.mock("@/components/maturity/evidence-uploader", () => ({
   EvidenceUploader: () => <div data-testid="evidence-uploader" />,
+}));
+
+vi.mock("@/components/actions/action-create-form", () => ({
+  ActionCreateDialog: () => null,
 }));
 
 const pillars: AssessmentPillar[] = [
@@ -322,13 +334,12 @@ describe("AssessmentWorkspace", () => {
     );
   });
 
-  it("keeps N/A available and collapses the action form", () => {
+  it("keeps N/A available and opens the improvement action dialog control", () => {
     renderWorkspace();
     expect(screen.getByTestId("mark-not-applicable")).toBeVisible();
     expect(screen.getByTestId("create-improvement-action")).toBeVisible();
-    expect(screen.queryByLabelText("Create action")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("create-improvement-action"));
-    expect(screen.getByLabelText("Create action")).toBeVisible();
+    expect(screen.getByTestId("create-improvement-action")).toBeEnabled();
   });
 
   it("shows a read-only completed state", () => {

@@ -20,6 +20,7 @@ import {
   visitModule,
 } from "./helpers/clean-org-journey";
 import { platformMain } from "./helpers/platform-main";
+import { openPeoplePendingInvitationsTab } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -93,6 +94,8 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
           path: "/platform/settings/people",
           check: async (p) => {
             await expect(p.getByTestId("people-settings-page")).toBeVisible();
+            await expect(p.getByTestId("people-invite-open")).toBeVisible();
+            await p.getByTestId("people-invite-open").click();
             await expect(p.getByTestId("invite-colleague-form")).toBeVisible();
           },
         },
@@ -298,6 +301,7 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     await page.getByLabel("Password").fill(user.password);
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.goto("/platform/settings/people");
+    await openPeoplePendingInvitationsTab(page);
     await expect(page.getByText(colleagueEmail, { exact: false })).toBeVisible({
       timeout: 30_000,
     });

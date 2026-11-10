@@ -130,12 +130,8 @@ export async function setFiveSStandardApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "applicability",
-    ),
-  );
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function addFiveSSection(
@@ -260,12 +256,6 @@ export async function setFiveSStandardScoringScaleFromForm(formData: FormData) {
   }
   revalidatePath("/platform/5s");
   revalidatePath(`/platform/5s/standards/${standardId}`);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "scale",
-    ),
-  );
 }
 
 export async function saveFiveSAuditAnswer(
@@ -444,12 +434,8 @@ export async function addFiveSSectionFromForm(formData: FormData) {
     authoring.nextSectionPosition,
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "section",
-    ),
-  );
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function addFiveSQuestionFromForm(formData: FormData) {
@@ -484,12 +470,8 @@ export async function addFiveSQuestionFromForm(formData: FormData) {
     questionType,
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "question",
-    ),
-  );
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function publishFiveSStandardFromForm(formData: FormData) {
