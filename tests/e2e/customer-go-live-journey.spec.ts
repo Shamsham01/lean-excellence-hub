@@ -365,6 +365,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
         email: delegateManager.email,
         tokenSeed: `delegate-${Date.now()}`,
         displayName: delegateManager.displayName,
+        jobFunctionId: operatorJobId,
         organisationalUnitId: operationsUnitId,
         roleVersionId: managerRole,
         scopeType: "unit_subtree",
@@ -447,6 +448,11 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       timeout: 30_000,
     });
     const delegateSelect = page.getByTestId("review-delegate-select");
+    await expect(
+      delegateSelect.locator(`option`, {
+        hasText: delegateManager.displayName,
+      }),
+    ).toHaveCount(1, { timeout: 60_000 });
     await delegateSelect.selectOption({
       label: delegateManager.displayName,
     });
