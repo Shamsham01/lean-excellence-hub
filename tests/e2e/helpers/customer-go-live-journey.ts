@@ -88,14 +88,35 @@ export function queryMembershipIdForEmail(
   return row;
 }
 
+function runPsqlWithFoundingOrganisationSession(
+  organisationId: string,
+  foundingOwnerUserId: string,
+  foundingOwnerEmail: string,
+  statements: string,
+) {
+  const claims = JSON.stringify({
+    sub: foundingOwnerUserId,
+    role: "authenticated",
+    email: foundingOwnerEmail,
+  }).replace(/'/g, "''");
+  return runPsql(
+    `begin; select set_config('request.jwt.claims', '${claims}', true); set local role authenticated; select public.switch_organisation('${organisationId}'::uuid); ${statements} commit;`,
+  );
+}
+
 export function tightenSuggestionApproverToProductionManager(
   organisationId: string,
+  foundingOwnerUserId: string,
+  foundingOwnerEmail: string,
   operationsUnitId: string,
   operatorEmail: string,
 ) {
-  const childUnitId = runPsql(
+  const childUnitId = runPsqlWithFoundingOrganisationSession(
+    organisationId,
+    foundingOwnerUserId,
+    foundingOwnerEmail,
     `select public.create_organisation_unit('${organisationId}'::uuid, '${operationsUnitId}'::uuid, 'production-line', 'Production line', 'area');`,
-  );
+  ).trim();
   const operatorMembershipId = queryMembershipIdForEmail(
     organisationId,
     operatorEmail,
@@ -108,7 +129,10 @@ export function tightenSuggestionApproverToProductionManager(
     organisationId,
     "manager",
   );
-  runPsql(
+  runPsqlWithFoundingOrganisationSession(
+    organisationId,
+    foundingOwnerUserId,
+    foundingOwnerEmail,
     `select public.add_role_permission('${organisationId}'::uuid, '${managerRoleVersionId}'::uuid, 'suggestions.manage');`,
   );
 }

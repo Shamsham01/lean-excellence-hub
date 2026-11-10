@@ -358,6 +358,8 @@ test.describe("Customer go-live journey (clean organisation)", () => {
 
     tightenSuggestionApproverToProductionManager(
       organisationId,
+      user.userId,
+      user.email,
       operationsUnitId,
       operator.email,
     );
