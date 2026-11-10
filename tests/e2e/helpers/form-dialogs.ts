@@ -90,10 +90,7 @@ async function dismissOverlayDialog(page: Page, testId: string) {
     return;
   }
 
-  await page
-    .getByTestId(testId)
-    .getByRole("button", { name: "Close" })
-    .click();
+  await page.getByTestId(testId).getByRole("button", { name: "Close" }).click();
   await expect(dialog).toBeHidden({ timeout: 10_000 });
 }
 
