@@ -267,9 +267,7 @@ jobs:
               tests/e2e/schedule-nav-click.spec.ts
               tests/e2e/core-platform-nav-click.spec.ts
               tests/e2e/milestone6-closure.spec.ts
-              tests/e2e/five-s-gemba-authoring.spec.ts
               tests/e2e/five-s-scoring-scale.spec.ts
-              tests/e2e/five-s-standard-draft-removal.spec.ts
               tests/e2e/maturity-authoring-step-reload.spec.ts
               tests/e2e/mobile-shell-tabs.spec.ts
               tests/e2e/mobile-dialog-location-scroll.spec.ts
@@ -288,6 +286,10 @@ jobs:
               tests/e2e/maturity-assessment-workspace.spec.ts
               tests/e2e/in-app-notification-journey-341.spec.ts
               tests/e2e/platform-notification-bell.spec.ts
+          - label: five-s-authoring
+            specs: >-
+              tests/e2e/five-s-gemba-authoring.spec.ts
+              tests/e2e/five-s-standard-draft-removal.spec.ts
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts
