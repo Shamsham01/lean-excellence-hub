@@ -29,8 +29,9 @@ describe("module setup templates", () => {
     );
     const counts = fiveSTemplateCounts(LEH_WORKPLACE_5S_STANDARD);
     expect(counts.categories).toBe(5);
-    expect(counts.questions).toBeGreaterThanOrEqual(15);
-    expect(counts.questions).toBeLessThanOrEqual(25);
+    expect(counts.questions).toBe(20);
+    expect(counts.questions).toBeGreaterThanOrEqual(20);
+    expect(counts.questions).toBeLessThanOrEqual(30);
     const definition = buildFiveSQuickStartDefinition(
       LEH_WORKPLACE_5S_STANDARD,
       80,
@@ -181,6 +182,46 @@ describe("module setup proposal validation", () => {
     if (invalid.ok) {
       expect(invalid.envelope.proposalStatus).toBe("invalid");
       expect(invalid.envelope.proposal).toBeNull();
+    }
+  });
+
+  it("rejects LeanAI proposals that use text question types", () => {
+    const invalid = parseFiveSBuilderEnvelope({
+      message: "Review this draft.",
+      phase: "proposal",
+      understanding: {
+        environment: null,
+        purpose: null,
+        audit_style: null,
+        depth: null,
+        evidence: null,
+        scoring: null,
+        terminology: null,
+      },
+      questions: [],
+      change_summary: [],
+      proposal: {
+        name: "Packing 5S Standard",
+        description: "Includes a text question.",
+        threshold_percent: 80,
+        categories: [
+          {
+            name: "Sort",
+            description: null,
+            questions: [
+              {
+                prompt: "What is still out of place?",
+                question_type: "short_text",
+                guidance: null,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(invalid.ok).toBe(true);
+    if (invalid.ok) {
+      expect(invalid.envelope.proposalStatus).toBe("invalid");
     }
   });
 

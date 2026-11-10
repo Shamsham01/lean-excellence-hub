@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const FIVE_S_SETUP_BUILDER_PROMPT_KEY = "leanai-five-s-setup-builder";
-export const FIVE_S_SETUP_BUILDER_PROMPT_VERSION = "v2";
+export const FIVE_S_SETUP_BUILDER_PROMPT_VERSION = "v3";
 export const FIVE_S_SETUP_BUILDER_FORMAT_NAME = "five_s_setup_builder_envelope";
 
 const nullableString = { type: ["string", "null"] } as const;
@@ -42,7 +42,7 @@ const PROPOSAL_SCHEMA = {
                 prompt: { type: "string" },
                 question_type: {
                   type: "string",
-                  enum: ["yes_no", "score", "short_text", "long_text"],
+                  enum: ["yes_no", "score"],
                 },
                 guidance: nullableString,
               },
@@ -125,7 +125,7 @@ When you propose, stay inside the limits in the context block:
 - 1–8 categories
 - 1–6 questions per category
 - at most 30 questions
-- question_type is only yes_no, score, short_text, or long_text
+- question_type is only yes_no or score (no free-text questions)
 - threshold_percent is 0–100. It is the pass mark, not the scoring range.
 - When any question_type is score, scoring_scale is required: { min, max, step }.
 - Use a preset of 0–5, 1–5, 0–10 or 0–100, or a custom numeric range with a positive step that lands on exact increments.

@@ -336,7 +336,6 @@ export function FiveSDraftAuthoringPanels({
               >
                 <option value="yes_no">Yes / No</option>
                 <option value="score">Score</option>
-                <option value="short_text">Text</option>
               </select>
             </div>
             <Button type="submit" className="min-h-11">

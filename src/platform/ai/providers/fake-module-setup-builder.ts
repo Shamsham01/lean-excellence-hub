@@ -404,8 +404,9 @@ function fiveSEnvelope(
                 guidance: null,
               },
               {
-                prompt: "What is still here that the team does not need today?",
-                question_type: "short_text",
+                prompt:
+                  "How consistently is non-essential material cleared from the line-side area?",
+                question_type: "score",
                 guidance: null,
               },
             ],
@@ -421,8 +422,9 @@ function fiveSEnvelope(
                 guidance: null,
               },
               {
-                prompt: "What would help this standard stay in place?",
-                question_type: "short_text",
+                prompt:
+                  "How visibly are the agreed housekeeping routines followed each shift?",
+                question_type: "score",
                 guidance: null,
               },
             ],
@@ -447,7 +449,7 @@ function fiveSEnvelope(
       ...emptyFiveSUnderstanding(),
       environment: "Packing",
       purpose: "See whether the workplace matches the team's own standard.",
-      scoring: "Yes/no and a 1 to 5 score.",
+      scoring: "Yes/no checks and scored prompts on a 1 to 5 scale.",
     },
     questions: [],
     change_summary: changeSummary,

@@ -172,7 +172,9 @@ test.describe("5S and Gemba guided setup", () => {
       page.getByRole("heading", { name: "LEH Workplace 5S Standard" }),
     ).toBeVisible();
     await expect(
-      page.getByText("Are unused items removed from the work area?"),
+      page.getByText(
+        /How consistently are unused tools and materials removed from the line-side area\?/,
+      ),
     ).toBeVisible();
     await screenshot(page, "5s-quick-start-preview.png");
     await page.setViewportSize({ width: 390, height: 844 });

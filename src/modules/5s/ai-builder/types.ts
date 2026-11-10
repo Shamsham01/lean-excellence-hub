@@ -28,8 +28,6 @@ export const FIVE_S_BUILDER_LIMITS = {
 export const FIVE_S_QUESTION_TYPES = [
   "yes_no",
   "score",
-  "short_text",
-  "long_text",
 ] as const satisfies readonly FiveSTemplateQuestionType[];
 
 export type FiveSBuilderQuestion = {
