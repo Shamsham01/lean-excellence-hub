@@ -10,11 +10,13 @@ export function DialogServerActionForm({
   children,
   className,
   onSuccess,
+  onError,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   children: ReactNode;
   className?: string;
   onSuccess?: () => void;
+  onError?: (error: unknown) => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -35,6 +37,10 @@ export function DialogServerActionForm({
           });
         } catch (error) {
           guard?.setPending(false);
+          if (onError) {
+            onError(error);
+            return;
+          }
           throw error;
         }
       }}
