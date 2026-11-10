@@ -160,6 +160,12 @@ async function propose(
   await page.goto(path);
   await expect(page.getByTestId("module-setup-builder")).toBeVisible();
   await page.getByTestId("module-setup-input").fill(message);
+  if (path === "/platform/5s/setup/leanai") {
+    await page.getByTestId("module-setup-send").click();
+    await expect(page.getByTestId("module-setup-question")).toBeVisible({
+      timeout: 30_000,
+    });
+  }
   await page.getByTestId("module-setup-propose").click();
   await expect(page.getByTestId("module-setup-proposal-name")).toHaveText(
     proposalName,

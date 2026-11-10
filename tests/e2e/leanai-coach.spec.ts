@@ -251,7 +251,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     );
 
     await page.goto("/platform/suggestions");
-    await expect(page.getByTestId("suggestions-overview")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("suggestions-overview"),
+    ).toBeVisible();
     await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
