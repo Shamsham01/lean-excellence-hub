@@ -24,7 +24,10 @@ export function OperationalCatalogTable({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground" data-testid={`${testId}-empty`}>
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid={`${testId}-empty`}
+      >
         Nothing published yet.
       </p>
     );
@@ -36,7 +39,7 @@ export function OperationalCatalogTable({
         <thead className="border-b border-border bg-muted/30 text-left text-xs font-medium text-muted-foreground">
           <tr>
             <th className="px-3 py-2 font-medium">{nameColumnLabel}</th>
-            <th className="px-3 py-2 font-medium text-right">
+            <th className="px-3 py-2 text-right font-medium">
               {actionColumnLabel}
             </th>
           </tr>

@@ -51,9 +51,7 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     ).toBeVisible();
   });
 
-  test("keyboard Enter on sidebar People navigates", async ({
-    page,
-  }) => {
+  test("keyboard Enter on sidebar People navigates", async ({ page }) => {
     await signInAsDemoUser(page, "admin");
     await openPlatformHome(page);
 

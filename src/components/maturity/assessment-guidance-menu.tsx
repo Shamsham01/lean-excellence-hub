@@ -51,7 +51,7 @@ export function AssessmentGuidanceMenu({
         data-testid="assessment-guidance-menu"
       >
         <DropdownMenuLabel>{criterion.name}</DropdownMenuLabel>
-        <DropdownMenuItem asChild className="whitespace-normal text-sm">
+        <DropdownMenuItem asChild className="text-sm whitespace-normal">
           <p className="px-2 py-1.5 text-muted-foreground">{body}</p>
         </DropdownMenuItem>
         {levels.length > 0 ? (
@@ -64,7 +64,7 @@ export function AssessmentGuidanceMenu({
               <DropdownMenuItem
                 key={level.level_number}
                 asChild
-                className="whitespace-normal text-sm"
+                className="text-sm whitespace-normal"
               >
                 <p className="px-2 py-1 text-muted-foreground">
                   <span className="font-medium text-foreground">

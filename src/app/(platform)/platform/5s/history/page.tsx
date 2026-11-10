@@ -38,9 +38,7 @@ export default async function FiveSHistoryPage() {
 
   return (
     <div className="flex flex-col gap-8" data-testid="five-s-history-page">
-      <PageHeader
-        title="5S history"
-      />
+      <PageHeader title="5S history" />
       <Card>
         <CardContent className="flex flex-col gap-2 py-6">
           {audits?.length ? (

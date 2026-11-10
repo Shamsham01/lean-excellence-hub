@@ -56,7 +56,7 @@ async function scrollDeepIntoCriterion(page: Page) {
 async function makeAssessmentContentTall(page: Page) {
   await page.addStyleTag({
     content:
-      '[data-testid^="question-card-"] { min-height: 70vh; } [data-testid="contextual-guidance"] { min-height: 40vh; }',
+      '[data-testid^="question-card-"] { min-height: 70vh; } [data-testid="assessment-guidance-trigger"] { min-height: 2rem; }',
   });
 }
 

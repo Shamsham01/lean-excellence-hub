@@ -50,10 +50,10 @@ test.describe("organisation onboarding", () => {
     await expect(
       page.getByRole("heading", { name: "Before this site can run" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Choose what to configure next" }),
-    ).toBeVisible();
-    await expect(page.getByText("Core setup", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("setup-checklist")).toBeVisible();
+    await expect(page.getByTestId("setup-org-name")).toContainText(
+      onboardingE2eCredentials.organisationName,
+    );
   });
 
   test("organisation admin can create a root unit", async ({ page }) => {

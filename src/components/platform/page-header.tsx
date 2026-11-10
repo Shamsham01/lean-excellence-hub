@@ -35,7 +35,9 @@ export function PageHeader({
         <div className="flex min-w-0 items-start gap-2">
           <h1 className="typography-page-title min-w-0 flex-1">{title}</h1>
           {leanAiHelp ? (
-            <PageHeaderLeanAiButton {...(leanAiHelpLabel ? { label: leanAiHelpLabel } : {})} />
+            <PageHeaderLeanAiButton
+              {...(leanAiHelpLabel ? { label: leanAiHelpLabel } : {})}
+            />
           ) : null}
         </div>
         {description ? (

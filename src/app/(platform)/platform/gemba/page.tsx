@@ -94,9 +94,7 @@ export default async function GembaOverviewPage({
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="gemba-empty-state">
-        <PageHeader
-          title="Gemba walks"
-        />
+        <PageHeader title="Gemba walks" />
         <EmptyState
           title={
             canManage
@@ -161,7 +159,9 @@ export default async function GembaOverviewPage({
           <CardTitle>Definitions</CardTitle>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
-              <AppLink href="/platform/gemba/definitions">All definitions</AppLink>
+              <AppLink href="/platform/gemba/definitions">
+                All definitions
+              </AppLink>
             </Button>
             <Button variant="outline" size="sm" asChild>
               <AppLink href="/platform/gemba/history">History</AppLink>

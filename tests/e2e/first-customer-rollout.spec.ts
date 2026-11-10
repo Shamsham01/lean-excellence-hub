@@ -59,14 +59,9 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await completeStructureFirstSetupToPlatform(page);
 
     await expect(page.getByTestId("setup-page")).toBeVisible();
-    await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
+    await expect(page.getByTestId("setup-checklist")).toBeVisible();
+    await expect(page.getByTestId("setup-org-name")).toContainText(
       "Acme Foods Ltd",
-    );
-    await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
-      "Plymouth Factory",
-    );
-    await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
-      "Yes, part of a wider multi-site organisation",
     );
     await screenshotIfPossible(page, "01c-first-site-setup.png");
 

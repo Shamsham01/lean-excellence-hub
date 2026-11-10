@@ -52,9 +52,7 @@ export default async function GembaHistoryPage() {
 
   return (
     <div className="flex flex-col gap-8" data-testid="gemba-history-page">
-      <PageHeader
-        title="Gemba history"
-      />
+      <PageHeader title="Gemba history" />
       <Card>
         <CardHeader>
           <CardTitle>Walks in progress</CardTitle>

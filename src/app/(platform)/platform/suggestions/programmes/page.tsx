@@ -69,7 +69,6 @@ export default async function SuggestionProgrammesPage() {
       <PageHeader
         title="Suggestions configuration"
 
-
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink

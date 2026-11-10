@@ -34,9 +34,7 @@ export default async function BenefitCategoriesPage() {
 
   return (
     <div className="flex flex-col gap-6" data-testid="benefit-categories-page">
-      <PageHeader
-        title="Benefit categories"
-      />
+      <PageHeader title="Benefit categories" />
       <BenefitCategoryManagement
         categories={(categories as BenefitCategoryRow[]) ?? []}
         reportingSettings={reportingSettings}

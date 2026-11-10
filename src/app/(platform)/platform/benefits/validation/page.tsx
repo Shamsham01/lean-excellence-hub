@@ -47,9 +47,7 @@ export default async function BenefitValidationQueuePage() {
       className="flex flex-col gap-6"
       data-testid="benefit-validation-queue-page"
     >
-      <PageHeader
-        title="Benefit validation queue"
-      />
+      <PageHeader title="Benefit validation queue" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

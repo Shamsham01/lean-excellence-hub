@@ -236,7 +236,9 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
       await expect(page).toHaveURL(/\/platform\/maturity(?:\?|$)/);
       await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
     } else {
-      await expect(page.getByText("No official result yet")).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Recent assessments" }),
+      ).toBeVisible();
     }
   });
 

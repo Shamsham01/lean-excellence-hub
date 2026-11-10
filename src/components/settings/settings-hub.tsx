@@ -19,19 +19,21 @@ export function SettingsHub({ cards }: { cards: SettingsHubCard[] }) {
         <Card
           key={card.href}
           data-testid={`settings-hub-card${card.href.replaceAll("/", "-")}`}
-          className={card.available ? "transition hover:border-primary/40" : "opacity-80"}
+          className={
+            card.available ? "transition hover:border-primary/40" : "opacity-80"
+          }
         >
           {card.available ? (
             <AppLink
               href={card.href}
-              className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               data-testid={`settings-hub-open${card.href.replaceAll("/", "-")}`}
             >
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{card.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="line-clamp-2 text-sm text-muted-foreground">
                   {card.description}
                 </p>
               </CardContent>
@@ -42,7 +44,7 @@ export function SettingsHub({ cards }: { cards: SettingsHubCard[] }) {
                 <CardTitle className="text-base">{card.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="line-clamp-2 text-sm text-muted-foreground">
                   {card.description}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">

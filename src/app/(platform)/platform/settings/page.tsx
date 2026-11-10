@@ -30,9 +30,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-8" data-testid="settings-page">
-      <PageHeader
-        title="Settings"
-      />
+      <PageHeader title="Settings" />
 
       <SettingsHub
         cards={buildSettingsHubCards({

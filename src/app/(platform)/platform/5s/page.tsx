@@ -90,9 +90,7 @@ export default async function FiveSOverviewPage({
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="five-s-empty-state">
-        <PageHeader
-          title="5S Audits"
-        />
+        <PageHeader title="5S Audits" />
         <EmptyState
           title={
             canManage

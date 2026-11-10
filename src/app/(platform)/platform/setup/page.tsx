@@ -22,7 +22,10 @@ export default async function SetupPage() {
         }
       />
 
-      <SetupChecklist title="Before this site can run" items={snapshot.core.items} />
+      <SetupChecklist
+        title="Before this site can run"
+        items={snapshot.core.items}
+      />
     </div>
   );
 }

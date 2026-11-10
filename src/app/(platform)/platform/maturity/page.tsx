@@ -101,9 +101,7 @@ export default async function MaturityOverviewPage({
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
-        <PageHeader
-          title="Lean maturity"
-        />
+        <PageHeader title="Lean maturity" />
         <EmptyState
           title={
             canManage

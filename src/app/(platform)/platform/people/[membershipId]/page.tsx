@@ -35,9 +35,7 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
         className="flex flex-col gap-8"
         data-testid="capability-profile-page"
       >
-        <PageHeader
-          title="Your capability profile"
-        />
+        <PageHeader title="Your capability profile" />
         <p
           className="text-sm text-destructive"
           role="alert"
