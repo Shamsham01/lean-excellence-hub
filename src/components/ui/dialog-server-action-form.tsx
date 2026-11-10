@@ -28,10 +28,14 @@ export function DialogServerActionForm({
         try {
           await action(formData);
           formRef.current?.reset();
-          onSuccess?.();
-          router.refresh();
-        } finally {
           guard?.setPending(false);
+          onSuccess?.();
+          queueMicrotask(() => {
+            router.refresh();
+          });
+        } catch (error) {
+          guard?.setPending(false);
+          throw error;
         }
       }}
       className={className}

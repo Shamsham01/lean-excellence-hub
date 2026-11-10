@@ -33,7 +33,11 @@ export function ExecutionUnitStartDialog({
   ...formProps
 }: ExecutionUnitStartDialogProps) {
   const [open, setOpen] = useState(false);
-  const canOpen = formProps.units.length > 0;
+  const blockedBySiteContext = formProps.requiresSiteSelection;
+  const canOpen = formProps.units.length > 0 && !blockedBySiteContext;
+  const dialogFormProps = blockedBySiteContext
+    ? { ...formProps, units: [] as UnitSelectOption[] }
+    : formProps;
 
   return (
     <>
@@ -46,7 +50,7 @@ export function ExecutionUnitStartDialog({
       >
         {triggerLabel ?? formProps.submitLabel}
       </Button>
-      {!canOpen && formProps.requiresSiteSelection ? (
+      {blockedBySiteContext ? (
         <p
           className="text-sm text-muted-foreground"
           data-testid="site-context-required"
@@ -61,7 +65,7 @@ export function ExecutionUnitStartDialog({
         testId={`${formProps.formTestId}-dialog`}
         enableGuard
       >
-        <ExecutionUnitStartForm {...formProps} />
+        <ExecutionUnitStartForm {...dialogFormProps} />
       </ResponsiveFormDialog>
     </>
   );

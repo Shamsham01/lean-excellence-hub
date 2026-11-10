@@ -134,6 +134,31 @@ describe("UX PR2 form dialogs", () => {
     ).toBeInTheDocument();
   });
 
+  it("blocks start audit when a concrete site is required", () => {
+    const action = vi.fn();
+    render(
+      <ExecutionUnitStartDialog
+        dialogTitle="Start audit"
+        action={action}
+        hiddenFields={<input type="hidden" name="standardId" value="std-1" />}
+        units={[{ id: "u-1", name: "Packing" }]}
+        requiresSiteSelection
+        unitFieldId="unit"
+        label="Unit"
+        submitLabel="Start audit"
+        emptyMessage="Select an active site in the sidebar before starting an audit."
+        formTestId="five-s-start-audit-form"
+        unitSelectTestId="five-s-unit-select"
+        submitTestId="five-s-start-audit"
+      />,
+    );
+
+    expect(screen.getByTestId("five-s-start-audit-open")).toBeDisabled();
+    expect(screen.getByTestId("site-context-required")).toHaveTextContent(
+      "Select an active site in the sidebar before starting an audit.",
+    );
+  });
+
   it("renders mobile sheet when matchMedia reports a narrow viewport", async () => {
     render(
       <ResponsiveFormDialog
