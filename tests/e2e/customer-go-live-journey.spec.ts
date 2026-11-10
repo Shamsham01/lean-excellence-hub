@@ -641,7 +641,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await page.locator("textarea").nth(1).fill("Go-live charter objective");
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
-    await page.getByLabel(/Methodology/i).selectOption({ index: 0 });
+    await page.getByTestId("project-methodology-select").selectOption({
+      index: 0,
+    });
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByTestId("project-owner-select").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Continue" }).click();
