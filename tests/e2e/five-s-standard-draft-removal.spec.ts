@@ -64,12 +64,10 @@ test.describe("5S standard draft structural authoring", () => {
     await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
     const v1AuditUrl = page.url();
-    await expect(
-      page.getByRole("heading", { name: keepPrompt, exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: dropPrompt, exact: true }),
-    ).toBeVisible();
+    const workspace = page.getByTestId("five-s-audit-workspace");
+    await expect(workspace.getByText(keepPrompt)).toBeVisible();
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(workspace.getByText(dropPrompt)).toBeVisible();
 
     await page.goto(standardPath);
 
@@ -90,6 +88,9 @@ test.describe("5S standard draft structural authoring", () => {
       page.getByTestId("five-s-remove-structural-dialog"),
     ).toBeVisible();
     await page.getByTestId("five-s-remove-structural-confirm").click();
+    await expect(
+      page.getByTestId("five-s-remove-structural-dialog"),
+    ).toBeHidden({ timeout: 15_000 });
     await expect(page.getByText(dropPrompt)).toHaveCount(0);
 
     const setSection = page
@@ -106,12 +107,9 @@ test.describe("5S standard draft structural authoring", () => {
 
     await selectFirstExecutionUnit(page, "five-s-unit-select");
     await clickExecutionStartSubmit(page, "five-s-start-audit");
-    await expect(
-      page.getByRole("heading", { name: keepPrompt, exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: dropPrompt, exact: true }),
-    ).toHaveCount(0);
+    const v2Workspace = page.getByTestId("five-s-audit-workspace");
+    await expect(v2Workspace.getByText(keepPrompt)).toBeVisible();
+    await expect(v2Workspace.getByText(dropPrompt)).toHaveCount(0);
 
     await page.goto(standardPath);
     await expect(page.getByTestId("create-successor")).toBeVisible();
@@ -126,8 +124,12 @@ test.describe("5S standard draft structural authoring", () => {
     await expect(page.getByTestId("create-successor")).toBeVisible();
 
     await page.goto(v1AuditUrl);
-    await expect(
-      page.getByRole("heading", { name: dropPrompt, exact: true }),
-    ).toBeVisible();
+    await expect(page.getByTestId("five-s-audit-workspace")).toContainText(
+      keepPrompt,
+    );
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(page.getByTestId("five-s-audit-workspace")).toContainText(
+      dropPrompt,
+    );
   });
 });
