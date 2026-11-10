@@ -94,26 +94,11 @@ export function assertMembershipCanReviewSuggestionJurisdiction(
   membershipId: string,
 ) {
   const canReview = runPsql(
-    `select case
-       when private.membership_can_review_suggestion_jurisdiction(
-         '${organisationId}'::uuid,
-         '${membershipId}'::uuid,
-         suggestion_row.review_jurisdiction_unit_id
-       ) then 'true'
-       else 'false'
-     end
-     from public.improvement_suggestions suggestion_row
-     where suggestion_row.organisation_id = '${organisationId}'::uuid
-       and suggestion_row.id = '${suggestionId}'::uuid
-     limit 1;`,
+    `select case when private.membership_can_review_suggestion_jurisdiction('${organisationId}'::uuid, '${membershipId}'::uuid, suggestion_row.review_jurisdiction_unit_id) then 'true' else 'false' end from public.improvement_suggestions suggestion_row where suggestion_row.organisation_id = '${organisationId}'::uuid and suggestion_row.id = '${suggestionId}'::uuid limit 1;`,
   );
   if (canReview !== "true") {
     const jurisdiction = runPsql(
-      `select coalesce(suggestion_row.review_jurisdiction_unit_id::text, '')
-       from public.improvement_suggestions suggestion_row
-       where suggestion_row.organisation_id = '${organisationId}'::uuid
-         and suggestion_row.id = '${suggestionId}'::uuid
-       limit 1;`,
+      `select coalesce(suggestion_row.review_jurisdiction_unit_id::text, '') from public.improvement_suggestions suggestion_row where suggestion_row.organisation_id = '${organisationId}'::uuid and suggestion_row.id = '${suggestionId}'::uuid limit 1;`,
     );
     throw new Error(
       `Membership ${membershipId} cannot review suggestion ${suggestionId} at jurisdiction ${jurisdiction}`,
