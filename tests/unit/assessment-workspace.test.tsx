@@ -295,15 +295,21 @@ describe("AssessmentWorkspace", () => {
     renderWorkspace();
     fireEvent.click(screen.getByTestId("next-criterion"));
     await waitFor(() => {
-      expect(screen.getByText("Strategy & Priorities")).toBeVisible();
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Strategy & Priorities");
     });
     fireEvent.click(screen.getByTestId("previous-criterion"));
     await waitFor(() => {
-      expect(screen.getByText("Clear Roles & Responsibilities")).toBeVisible();
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Clear Roles & Responsibilities");
     });
     fireEvent.click(screen.getByTestId("next-incomplete"));
     await waitFor(() => {
-      expect(screen.getByText("Strategy & Priorities")).toBeVisible();
+      expect(
+        screen.getByTestId("assessment-mobile-criterion-name"),
+      ).toHaveTextContent("Strategy & Priorities");
     });
   });
 

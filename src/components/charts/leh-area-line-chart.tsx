@@ -18,7 +18,11 @@ import {
   LEH_CHART_COLORS,
 } from "./chart-theme";
 
-export type AreaLinePoint = { label: string; value: number };
+export type AreaLinePoint = {
+  label: string;
+  value: number;
+  tooltipLabel?: string;
+};
 
 export function LehAreaLineChart({
   data,
@@ -76,7 +80,13 @@ export function LehAreaLineChart({
             tickLine={false}
             width={36}
           />
-          <Tooltip {...chartLineTooltipProps} />
+          <Tooltip
+            {...chartLineTooltipProps}
+            labelFormatter={(_label, items) => {
+              const row = items?.[0]?.payload as AreaLinePoint | undefined;
+              return row?.tooltipLabel ?? row?.label ?? _label;
+            }}
+          />
           <Area
             type="monotone"
             dataKey="value"

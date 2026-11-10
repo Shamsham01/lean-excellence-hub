@@ -16,6 +16,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import {
   Sheet,
   SheetContent,
@@ -228,7 +229,7 @@ export function AssessmentWorkspace({
 
   return (
     <div
-      className="flex flex-col gap-6 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8"
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(220px,240px)_minmax(0,1fr)] lg:gap-8"
       data-testid="assessment-workspace"
     >
       <aside
@@ -544,6 +545,7 @@ export function AssessmentWorkspace({
             readiness={readiness}
             activeId={criterion.id}
             testIdPrefix="criteria-drawer-item"
+            navLayout="stack"
             onSelect={(id) => void selectCriterion(id)}
           />
         </SheetContent>
@@ -558,58 +560,68 @@ function CriterionNavigator({
   activeId,
   onSelect,
   testIdPrefix,
+  navLayout = "workspace",
 }: {
   pillars: AssessmentPillar[];
   readiness: ReturnType<typeof buildAssessmentReadiness>;
   activeId: string;
   onSelect: (criterionId: string) => void;
   testIdPrefix: string;
+  navLayout?: "workspace" | "stack";
 }) {
+  const items = pillars.flatMap((pillar) =>
+    pillar.criteria.map((criterion) => {
+      const completion = readiness.criterionCompletions[criterion.id];
+      const state = completion?.state ?? "not_started";
+      return {
+        id: criterion.id,
+        label: criterion.name,
+        completion: state,
+        ...(completion && completion.totalRequired > 0
+          ? {
+              detail: `${completion.answeredRequired}/${completion.totalRequired}`,
+            }
+          : {}),
+      };
+    }),
+  );
+
+  const groups = pillars.map((pillar) => {
+    const criterionStates = pillar.criteria.map(
+      (criterion) =>
+        readiness.criterionCompletions[criterion.id]?.state ?? "not_started",
+    );
+    const completeCount = criterionStates.filter(
+      (state) => state === "complete",
+    ).length;
+    const pillarCompletion =
+      pillar.criteria.length === 0
+        ? ("complete" as const)
+        : completeCount === 0
+          ? ("not_started" as const)
+          : completeCount === pillar.criteria.length
+            ? ("complete" as const)
+            : ("partial" as const);
+
+    return {
+      id: pillar.id,
+      label: pillar.name,
+      completion: pillarCompletion,
+      itemIds: pillar.criteria.map((criterion) => criterion.id),
+    };
+  });
+
   return (
-    <nav className="flex flex-col gap-3" data-testid={`${testIdPrefix}-list`}>
-      {pillars.map((pillar) => (
-        <div key={pillar.id}>
-          <p className="px-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            {pillar.name}
-          </p>
-          {pillar.criteria.map((criterion) => {
-            const completion = readiness.criterionCompletions[criterion.id];
-            const state = completion?.state ?? "not_started";
-            const marker =
-              state === "complete" ? "✓" : state === "partial" ? "●" : "○";
-            return (
-              <button
-                key={criterion.id}
-                type="button"
-                onClick={() => onSelect(criterion.id)}
-                data-testid={`${testIdPrefix}-${criterion.id}`}
-                data-completion-state={state}
-                data-active={criterion.id === activeId ? "true" : "false"}
-                aria-current={criterion.id === activeId ? "true" : undefined}
-                className={cn(
-                  "mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm",
-                  criterion.id === activeId
-                    ? "bg-accent font-medium text-accent-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                <span aria-hidden className="mt-0.5 text-xs">
-                  {marker}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block leading-snug">{criterion.name}</span>
-                  {completion && completion.totalRequired > 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      {completion.answeredRequired}/{completion.totalRequired}
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ))}
-    </nav>
+    <SectionProgressNav
+      ariaLabel="Assessment criteria"
+      items={items}
+      groups={groups}
+      activeId={activeId}
+      onSelect={onSelect}
+      layout={navLayout}
+      testId={`${testIdPrefix}-list`}
+      testIdPrefix={testIdPrefix}
+    />
   );
 }
 

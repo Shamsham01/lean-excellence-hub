@@ -18,7 +18,7 @@ const foundingSchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{2}$/),
   locale: z.string().trim().min(2).max(35).default("en-GB"),
-  timeZone: z.string().trim().min(1).max(100).default("UTC"),
+  timeZone: z.string().trim().min(1).max(100).default("Europe/London"),
   reportingCurrency: z
     .string()
     .trim()
@@ -49,7 +49,7 @@ export async function createFoundingOrganisation(formData: FormData) {
     organisationName: formData.get("organisationName"),
     countryCode: formData.get("countryCode") ?? "GB",
     locale: formData.get("locale") ?? "en-GB",
-    timeZone: formData.get("timeZone") ?? "UTC",
+    timeZone: formData.get("timeZone") ?? "Europe/London",
     reportingCurrency: formData.get("reportingCurrency") ?? "GBP",
     firstSiteName: formData.get("firstSiteName"),
     siteQuantity: formData.get("siteQuantity") ?? "1",

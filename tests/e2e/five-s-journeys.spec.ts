@@ -74,8 +74,9 @@ test.describe("Milestone 6 5S journeys", () => {
     await selectFirstExecutionUnit(page, "five-s-unit-select");
     await page.getByRole("button", { name: "Start audit" }).click();
 
-    const yes = page.getByRole("button", { name: "Yes", exact: true });
-    const no = page.getByRole("button", { name: "No", exact: true });
+    const workspace = page.getByTestId("five-s-audit-workspace");
+    const yes = workspace.getByRole("button", { name: "Yes", exact: true });
+    const no = workspace.getByRole("button", { name: "No", exact: true });
     await expect(yes).toBeVisible();
     await expect(yes).toHaveAttribute("aria-pressed", "false");
     await expect(no).toHaveAttribute("aria-pressed", "false");
@@ -88,7 +89,7 @@ test.describe("Milestone 6 5S journeys", () => {
 
     await page.reload();
     await expect(
-      page.getByRole("button", { name: "Yes", exact: true }),
+      workspace.getByRole("button", { name: "Yes", exact: true }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 

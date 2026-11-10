@@ -240,7 +240,9 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await screenshotIfPossible(page, "leanai-assistant-suggestions-config.png");
 
     await page.goto("/platform/maturity/models");
-    await expect(page.getByTestId("maturity-models-page")).toBeVisible();
+    await expect(
+      page.getByTestId("platform-main").getByTestId("maturity-models-page"),
+    ).toBeVisible();
     await page.getByLabel("Name").fill("Assistant Framework");
     await page.getByRole("button", { name: "Create draft framework" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/models\/[0-9a-f-]+/i, {
