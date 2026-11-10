@@ -356,10 +356,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       password: delegateManager.password,
     });
 
-    tightenSuggestionApproverToProductionManager(
+    await tightenSuggestionApproverToProductionManager(
+      ownerClient,
       organisationId,
-      user.userId,
-      user.email,
       operationsUnitId,
       operator.email,
     );

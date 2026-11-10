@@ -88,35 +88,31 @@ export function queryMembershipIdForEmail(
   return row;
 }
 
-function runPsqlWithFoundingOrganisationSession(
+export async function tightenSuggestionApproverToProductionManager(
+  ownerClient: SupabaseClient,
   organisationId: string,
-  foundingOwnerUserId: string,
-  foundingOwnerEmail: string,
-  statements: string,
-) {
-  const claims = JSON.stringify({
-    sub: foundingOwnerUserId,
-    role: "authenticated",
-    email: foundingOwnerEmail,
-  }).replace(/'/g, "''");
-  return runPsql(
-    `begin; select set_config('request.jwt.claims', '${claims}', true); set local role authenticated; select public.switch_organisation('${organisationId}'::uuid); ${statements} commit;`,
-  );
-}
-
-export function tightenSuggestionApproverToProductionManager(
-  organisationId: string,
-  foundingOwnerUserId: string,
-  foundingOwnerEmail: string,
   operationsUnitId: string,
   operatorEmail: string,
 ) {
-  const childUnitId = runPsqlWithFoundingOrganisationSession(
-    organisationId,
-    foundingOwnerUserId,
-    foundingOwnerEmail,
-    `select public.create_organisation_unit('${organisationId}'::uuid, '${operationsUnitId}'::uuid, 'production-line', 'Production line', 'area');`,
-  ).trim();
+  const switched = await ownerClient.rpc("switch_organisation", {
+    target_organisation_id: organisationId,
+  });
+  if (switched.error) {
+    throw switched.error;
+  }
+
+  const created = await ownerClient.rpc("create_organisation_unit", {
+    target_organisation_id: organisationId,
+    target_parent_unit_id: operationsUnitId,
+    unit_code: `production-line-${Date.now().toString(36)}`,
+    unit_name: "Production line",
+    unit_type: "area",
+  });
+  if (created.error || !created.data) {
+    throw created.error ?? new Error("Production line unit was not created");
+  }
+  const childUnitId = created.data as string;
+
   const operatorMembershipId = queryMembershipIdForEmail(
     organisationId,
     operatorEmail,
@@ -129,12 +125,14 @@ export function tightenSuggestionApproverToProductionManager(
     organisationId,
     "manager",
   );
-  runPsqlWithFoundingOrganisationSession(
-    organisationId,
-    foundingOwnerUserId,
-    foundingOwnerEmail,
-    `select public.add_role_permission('${organisationId}'::uuid, '${managerRoleVersionId}'::uuid, 'suggestions.manage');`,
-  );
+  const permissionAdded = await ownerClient.rpc("add_role_permission", {
+    target_organisation_id: organisationId,
+    target_role_version_id: managerRoleVersionId,
+    target_permission_key: "suggestions.manage",
+  });
+  if (permissionAdded.error) {
+    throw permissionAdded.error;
+  }
 }
 
 export function querySuggestionPrimaryApproverMembershipId(
