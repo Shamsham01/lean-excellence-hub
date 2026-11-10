@@ -16,7 +16,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useFormDialogGuard } from "@/components/ui/use-form-dialog-guard";
+import {
+  FormDialogGuardContext,
+  useFormDialogGuard,
+} from "@/components/ui/use-form-dialog-guard";
 import { cn } from "@/lib/utils";
 
 const MOBILE_SHEET_QUERY = "(max-width: 639px)";
@@ -95,7 +98,7 @@ export function ResponsiveFormDialog({
   });
 
   const useBuiltInGuard = enableGuard;
-  const { FormDialogGuardProvider, DiscardConfirmDialog } = builtInGuard;
+  const { guardContextValue, DiscardConfirmDialog } = builtInGuard;
   const resolvedOnOpenChange = useBuiltInGuard
     ? builtInGuard.guardedOnOpenChange
     : onOpenChange;
@@ -160,7 +163,9 @@ export function ResponsiveFormDialog({
   );
 
   const dialogBody = useBuiltInGuard ? (
-    <FormDialogGuardProvider>{inner}</FormDialogGuardProvider>
+    <FormDialogGuardContext.Provider value={guardContextValue}>
+      {inner}
+    </FormDialogGuardContext.Provider>
   ) : (
     inner
   );

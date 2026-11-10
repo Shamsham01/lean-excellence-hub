@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { NewSuggestionForm } from "@/components/suggestions/new-suggestion-form";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { useDialogDefaultOpen } from "@/components/ui/use-dialog-default-open";
+import { usePlanModuleWriteAllowed } from "@/modules/billing/module-write-context";
 import type { NewSuggestionFormConfiguration } from "@/lib/suggestions/load-new-suggestion-configuration";
 import { Card, CardContent } from "@/components/ui/card";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
@@ -88,7 +90,8 @@ export function NewSuggestionDialog({
   showTrigger = true,
 }: NewSuggestionDialogProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(defaultOpen);
+  const writeAllowed = usePlanModuleWriteAllowed();
+  const [open, setOpen] = useDialogDefaultOpen(defaultOpen);
   const [configuration, setConfiguration] =
     useState<LoadedConfiguration | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,12 +109,12 @@ export function NewSuggestionDialog({
   const defaultLoadStarted = useRef(false);
 
   useEffect(() => {
-    if (!defaultOpen || defaultLoadStarted.current) {
+    if (!defaultOpen || !writeAllowed || defaultLoadStarted.current) {
       return;
     }
     defaultLoadStarted.current = true;
     void loadConfig();
-  }, [defaultOpen, loadConfig]);
+  }, [defaultOpen, loadConfig, writeAllowed]);
 
   const handleOpenChange = useCallback(
     (next: boolean) => {

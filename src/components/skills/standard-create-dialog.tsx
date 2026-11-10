@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-
 import { StandardNameCreateForm } from "@/components/skills/standard-name-create-form";
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { useDialogDefaultOpen } from "@/components/ui/use-dialog-default-open";
 
 export function StandardCreateDialog({
   existingCodes,
@@ -13,7 +12,7 @@ export function StandardCreateDialog({
   existingCodes: readonly string[];
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useDialogDefaultOpen(defaultOpen);
 
   return (
     <>

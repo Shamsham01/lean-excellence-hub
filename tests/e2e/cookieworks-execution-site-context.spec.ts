@@ -70,6 +70,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
   async function expectFiveSPackingOnlyTarget(page: Page) {
     await ensureExecutionStartDialogOpen(page, "five-s-start-audit-form");
     const form = page.getByTestId("five-s-start-audit-form");
+    await expect(form.getByTestId("site-context-required")).toHaveCount(0);
     await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
       "Packing",
     );
@@ -80,6 +81,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
   async function expectGembaPackingOnlyTarget(page: Page) {
     await ensureExecutionStartDialogOpen(page, "gemba-start-walk-form");
     const form = page.getByTestId("gemba-start-walk-form");
+    await expect(form.getByTestId("site-context-required")).toHaveCount(0);
     await expect(page.getByTestId("gemba-unit-select-locked")).toContainText(
       "Packing",
     );
@@ -129,6 +131,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await expect(page.getByTestId("site-context-required")).toHaveText(
       "Select an active site in the sidebar before starting an audit.",
     );
+    await expect(page.getByTestId("five-s-start-audit-form-dialog")).toBeHidden();
     await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
     await expect(
       page.getByTestId(executionOpenTestId("five-s-start-audit")),
@@ -180,6 +183,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await expect(page.getByTestId("site-context-required")).toHaveText(
       "Select an active site in the sidebar before starting a walk.",
     );
+    await expect(page.getByTestId("gemba-start-walk-form-dialog")).toBeHidden();
     await expect(page.getByTestId("gemba-unit-select")).toHaveCount(0);
     await expect(
       page.getByTestId(executionOpenTestId("gemba-start-walk")),

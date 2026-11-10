@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useAuthoringSavedFlash } from "@/components/authoring/use-authoring-saved-flash";
 import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
 
 import {
@@ -37,6 +38,7 @@ export function GembaApplicabilityEditor({
   staleWarning: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const flashSaved = useAuthoringSavedFlash();
 
   return (
     <>
@@ -60,7 +62,10 @@ export function GembaApplicabilityEditor({
         <DialogServerActionForm
           action={setGembaDefinitionApplicableUnitsFromForm}
           className="flex flex-col gap-4"
-          onSuccess={() => setOpen(false)}
+          onSuccess={() => {
+            flashSaved("applicability");
+            setOpen(false);
+          }}
         >
           <input type="hidden" name="definitionId" value={definitionId} />
           <ApplicableUnitsField
@@ -104,6 +109,7 @@ export function GembaDraftAuthoringPanels({
 }) {
   const [sectionOpen, setSectionOpen] = useState(false);
   const [promptSectionId, setPromptSectionId] = useState<string | null>(null);
+  const flashSaved = useAuthoringSavedFlash();
 
   return (
     <>
@@ -128,7 +134,10 @@ export function GembaDraftAuthoringPanels({
         <DialogServerActionForm
           action={addGembaSectionFromForm}
           className="flex flex-col gap-4"
-          onSuccess={() => setSectionOpen(false)}
+          onSuccess={() => {
+            flashSaved("gemba_section");
+            setSectionOpen(false);
+          }}
         >
           <input type="hidden" name="versionId" value={versionId} />
           <input type="hidden" name="definitionId" value={definitionId} />
@@ -162,7 +171,10 @@ export function GembaDraftAuthoringPanels({
           <DialogServerActionForm
             action={addGembaQuestionFromForm}
             className="flex flex-col gap-4"
-            onSuccess={() => setPromptSectionId(null)}
+            onSuccess={() => {
+              flashSaved("question");
+              setPromptSectionId(null);
+            }}
           >
             <input type="hidden" name="versionId" value={versionId} />
             <input type="hidden" name="sectionId" value={promptSectionId} />

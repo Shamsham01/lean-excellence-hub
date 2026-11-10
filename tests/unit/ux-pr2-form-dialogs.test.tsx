@@ -17,10 +17,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
-vi.mock("@/modules/billing/module-write-context", () => ({
-  usePlanModuleWriteAllowed: () => true,
-}));
-
 vi.mock("@/lib/navigation/navigate", () => ({
   navigateTo: vi.fn(),
 }));
@@ -57,9 +53,9 @@ vi.mock("@/platform/supabase/browser", () => ({
 }));
 
 describe("UX PR2 form dialogs", () => {
-  afterEach(() => {
-    cleanup();
-  });
+afterEach(() => {
+  cleanup();
+});
 
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-
 import { StartAssessmentForm } from "@/components/maturity/start-assessment-form";
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { useDialogDefaultOpen } from "@/components/ui/use-dialog-default-open";
 import type { StartAssessmentDialogProps } from "@/lib/maturity/load-start-assessment-props";
 
 export function StartAssessmentDialog({
@@ -22,7 +21,7 @@ export function StartAssessmentDialog({
   defaultOpen?: boolean;
   showTrigger?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useDialogDefaultOpen(defaultOpen);
   const disabled = versions.length === 0;
 
   return (

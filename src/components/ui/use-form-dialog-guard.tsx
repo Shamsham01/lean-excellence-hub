@@ -4,9 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
-  type ReactNode,
   type RefObject,
 } from "react";
 
@@ -26,7 +26,7 @@ type FormDialogGuardContextValue = {
   registerForm: (form: HTMLFormElement | null) => void;
 };
 
-const FormDialogGuardContext =
+export const FormDialogGuardContext =
   createContext<FormDialogGuardContextValue | null>(null);
 
 export function useFormDialogGuardReporter() {
@@ -158,6 +158,16 @@ export function useFormDialogGuard({
     [setPending],
   );
 
+  const registerForm = useCallback(() => {}, []);
+
+  const guardContextValue = useMemo(
+    (): FormDialogGuardContextValue => ({
+      setPending: reportPending,
+      registerForm,
+    }),
+    [registerForm, reportPending],
+  );
+
   const confirmDiscard = useCallback(() => {
     setDiscardConfirmOpen(false);
     closeAndReset();
@@ -197,11 +207,6 @@ export function useFormDialogGuard({
     </Dialog>
   );
 
-  const guardContextValue: FormDialogGuardContextValue = {
-    setPending: reportPending,
-    registerForm: () => {},
-  };
-
   const contentWrapperProps = {
     ref: contentRef,
   };
@@ -218,11 +223,7 @@ export function useFormDialogGuard({
     onInteractOutside: guardDismiss,
     requestDismiss,
     DiscardConfirmDialog,
-    FormDialogGuardProvider: ({ children }: { children: ReactNode }) => (
-      <FormDialogGuardContext.Provider value={guardContextValue}>
-        {children}
-      </FormDialogGuardContext.Provider>
-    ),
+    guardContextValue,
     contentWrapperProps,
     closeButtonClassName,
   };

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-
 import { ScaleNameCreateForm } from "@/components/skills/scale-name-create-form";
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { useDialogDefaultOpen } from "@/components/ui/use-dialog-default-open";
 
 export function ScaleCreateDialog({
   triggerLabel = "New proficiency scale",
@@ -13,7 +12,7 @@ export function ScaleCreateDialog({
   triggerLabel?: string;
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useDialogDefaultOpen(defaultOpen);
 
   return (
     <>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useAuthoringSavedFlash } from "@/components/authoring/use-authoring-saved-flash";
 import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
 
 import {
@@ -44,6 +45,7 @@ export function FiveSApplicabilityEditor({
   staleWarning: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const flashSaved = useAuthoringSavedFlash();
 
   return (
     <>
@@ -67,7 +69,10 @@ export function FiveSApplicabilityEditor({
         <DialogServerActionForm
           action={setFiveSStandardApplicableUnitsFromForm}
           className="flex flex-col gap-4"
-          onSuccess={() => setOpen(false)}
+          onSuccess={() => {
+            flashSaved("applicability");
+            setOpen(false);
+          }}
         >
           <input type="hidden" name="standardId" value={standardId} />
           <ApplicableUnitsField
@@ -106,6 +111,7 @@ export function FiveSScoringScaleEditor({
   saved: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const flashSaved = useAuthoringSavedFlash();
 
   return (
     <>
@@ -130,7 +136,10 @@ export function FiveSScoringScaleEditor({
         <DialogServerActionForm
           action={setFiveSStandardScoringScaleFromForm}
           className="flex flex-col gap-4"
-          onSuccess={() => setOpen(false)}
+          onSuccess={() => {
+            flashSaved("scale");
+            setOpen(false);
+          }}
         >
           <input type="hidden" name="versionId" value={versionId} />
           <input type="hidden" name="standardId" value={standardId} />
@@ -165,6 +174,7 @@ export function FiveSDraftAuthoringPanels({
   const [questionSectionId, setQuestionSectionId] = useState<string | null>(
     null,
   );
+  const flashSaved = useAuthoringSavedFlash();
 
   return (
     <>
@@ -191,7 +201,10 @@ export function FiveSDraftAuthoringPanels({
         <DialogServerActionForm
           action={addFiveSSectionFromForm}
           className="flex flex-col gap-4"
-          onSuccess={() => setCategoryOpen(false)}
+          onSuccess={() => {
+            flashSaved("section");
+            setCategoryOpen(false);
+          }}
         >
           <input type="hidden" name="versionId" value={versionId} />
           <input type="hidden" name="standardId" value={standardId} />
@@ -224,7 +237,10 @@ export function FiveSDraftAuthoringPanels({
           <DialogServerActionForm
             action={addFiveSQuestionFromForm}
             className="flex flex-col gap-4"
-            onSuccess={() => setQuestionSectionId(null)}
+            onSuccess={() => {
+              flashSaved("question");
+              setQuestionSectionId(null);
+            }}
           >
             <input type="hidden" name="versionId" value={versionId} />
             <input type="hidden" name="sectionId" value={questionSectionId} />

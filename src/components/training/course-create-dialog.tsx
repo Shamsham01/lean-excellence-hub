@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { CourseCreateForm } from "@/components/training/course-create-form";
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { useDialogDefaultOpen } from "@/components/ui/use-dialog-default-open";
 
 export function CourseCreateDialog({
   existingCodes,
@@ -15,7 +15,7 @@ export function CourseCreateDialog({
   defaultOpen?: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useDialogDefaultOpen(defaultOpen);
 
   return (
     <>
