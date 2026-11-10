@@ -358,7 +358,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
         organisationalUnitId: productionLineUnitId,
         roleVersionId: managerRole,
         scopeType: "unit_subtree",
-        scopeUnitId: productionLineUnitId,
+        scopeUnitId: operationsUnitId,
       },
     );
     await acceptInvitationAsNewColleague(browser, {
