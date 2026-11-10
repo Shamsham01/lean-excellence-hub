@@ -154,10 +154,10 @@ select ok(
 );
 
 insert into site_scope_ids (key, id)
-select 'job_function', job_function.id
-from public.job_functions job_function
-where job_function.organisation_id = (select id from site_scope_ids where key = 'organisation')
-limit 1;
+select 'job_function', public.create_job_function(
+  'Site CI Manager',
+  'site-ci-manager'
+);
 
 select ok(
   public.assign_membership_job_function(
