@@ -480,7 +480,9 @@ test.describe("Milestone 5 maturity journeys", () => {
         label: "Leadership → Gemba walks",
       });
     const questionDialog = page.getByTestId("framework-add-question-dialog");
-    await questionDialog.locator("#questionPrompt").fill("Rate remaining Gemba");
+    await questionDialog
+      .locator("#questionPrompt")
+      .fill("Rate remaining Gemba");
     await questionDialog
       .getByRole("button", { name: "Add scored question" })
       .click();
