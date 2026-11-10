@@ -56,6 +56,24 @@ from public.organisation_memberships membership
 where membership.organisation_id = (select id from site_scope_ids where key = 'organisation')
   and membership.user_id = 'f1000000-0000-0000-0000-000000000002'::uuid;
 
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = 'f1000000-0000-0000-0000-000000000002';
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f2000000-0000-0000-0000-000000000001","email":"site-scope-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from site_scope_ids where key = 'organisation')),
+  'owner switches organisation before hierarchy setup'
+);
+
 insert into site_scope_ids (key, id)
 select 'site_a', public.create_organisation_unit(
   (select id from site_scope_ids where key = 'organisation'),
@@ -90,18 +108,6 @@ select 'area_b', public.create_organisation_unit(
   'area-b',
   'Area B',
   'department'
-);
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f2000000-0000-0000-0000-000000000001","email":"site-scope-owner@example.test"}',
-  true
-);
-set local role authenticated;
-
-select ok(
-  public.switch_organisation((select id from site_scope_ids where key = 'organisation')),
-  'owner switches organisation'
 );
 
 insert into site_scope_ids (key, id)

@@ -31,7 +31,9 @@ test.describe("5S and Gemba draft authoring persistence", () => {
 
     await page.getByLabel("Name").fill(name);
     await page.getByTestId("applicable-units-edit-locations").click();
-    await expect(page.getByTestId("applicable-units-picker-dialog")).toBeVisible();
+    await expect(
+      page.getByTestId("applicable-units-picker-dialog"),
+    ).toBeVisible();
     await page.getByTestId("applicable-unit-checkbox").first().check();
     await page.getByTestId("applicable-units-picker-save").click();
     await page.getByRole("button", { name: "Create draft standard" }).click();
@@ -99,7 +101,9 @@ test.describe("5S and Gemba draft authoring persistence", () => {
 
     await page.getByLabel("Name").fill(name);
     await page.getByTestId("applicable-units-edit-locations").click();
-    await expect(page.getByTestId("applicable-units-picker-dialog")).toBeVisible();
+    await expect(
+      page.getByTestId("applicable-units-picker-dialog"),
+    ).toBeVisible();
     await page.getByTestId("applicable-unit-checkbox").first().check();
     await page.getByTestId("applicable-units-picker-save").click();
     await page.getByRole("button", { name: "Create draft" }).click();

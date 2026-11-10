@@ -131,7 +131,9 @@ async function chooseFirstUnit(page: Page) {
   const editLocations = page.getByTestId("applicable-units-edit-locations");
   if (await editLocations.isVisible().catch(() => false)) {
     await editLocations.click();
-    await expect(page.getByTestId("applicable-units-picker-dialog")).toBeVisible();
+    await expect(
+      page.getByTestId("applicable-units-picker-dialog"),
+    ).toBeVisible();
     await page.getByTestId("applicable-unit-checkbox").first().check();
     await page.getByTestId("applicable-units-picker-save").click();
     return;

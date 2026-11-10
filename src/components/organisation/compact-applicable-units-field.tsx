@@ -84,9 +84,13 @@ export function CompactApplicableUnitsField({
     );
   }
 
-  const summary = formatApplicableUnitsCompactSummary(selectedIds, hierarchyUnits, {
-    emptyLabel: "No locations selected",
-  });
+  const summary = formatApplicableUnitsCompactSummary(
+    selectedIds,
+    hierarchyUnits,
+    {
+      emptyLabel: "No locations selected",
+    },
+  );
 
   return (
     <fieldset

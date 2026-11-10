@@ -23,7 +23,11 @@ type ApplicableUnitsPickerDialogProps = {
   title?: string;
 };
 
-function toggleId(ids: Set<string>, unitId: string, checked: boolean): Set<string> {
+function toggleId(
+  ids: Set<string>,
+  unitId: string,
+  checked: boolean,
+): Set<string> {
   const next = new Set(ids);
   if (checked) {
     next.add(unitId);
@@ -130,7 +134,10 @@ export function ApplicableUnitsPickerDialog({
 
   const footer = (
     <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground" data-testid="applicable-units-selected-count">
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="applicable-units-selected-count"
+      >
         {draft.size} selected
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -198,7 +205,10 @@ function SiteGroupList({
 }): ReactNode {
   if (siteGroups.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground" data-testid="applicable-units-empty">
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="applicable-units-empty"
+      >
         No organisational units are available.
       </p>
     );
@@ -213,8 +223,12 @@ function SiteGroupList({
         if (!visible) {
           return null;
         }
-        const allSelected = [...group.selectableIds].every((id) => draft.has(id));
-        const someSelected = [...group.selectableIds].some((id) => draft.has(id));
+        const allSelected = [...group.selectableIds].every((id) =>
+          draft.has(id),
+        );
+        const someSelected = [...group.selectableIds].some((id) =>
+          draft.has(id),
+        );
 
         return (
           <section key={group.siteId} className="flex min-w-0 flex-col gap-2">
@@ -240,7 +254,11 @@ function SiteGroupList({
                   setDraft(next);
                 }}
               >
-                {allSelected ? "Clear site" : someSelected ? "Select all in site" : "Select all in site"}
+                {allSelected
+                  ? "Clear site"
+                  : someSelected
+                    ? "Select all in site"
+                    : "Select all in site"}
               </Button>
             </div>
             <ul className="flex min-w-0 flex-col gap-1">
