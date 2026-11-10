@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { openPeopleInviteDialog } from "./helpers/form-dialogs";
@@ -25,8 +25,15 @@ async function fitsViewport(page: Page, testId: string, width: number) {
   expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
 }
 
-async function controlFits(page: Page, selector: string, width: number) {
-  const box = await page.locator(selector).boundingBox();
+async function controlFits(
+  page: Page,
+  selector: string,
+  width: number,
+  root?: Locator,
+) {
+  const locator = (root ?? page).locator(selector);
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
   expect(box, selector).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(-1);
   expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
@@ -87,10 +94,10 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
       await page.setViewportSize(viewport);
       await expect(form).toBeVisible();
       await fitsViewport(page, "invite-colleague-form", viewport.width);
-      await controlFits(page, "#invite-job-function", viewport.width);
-      await controlFits(page, "#invite-primary-unit", viewport.width);
-      await controlFits(page, "#invite-role", viewport.width);
-      await controlFits(page, "#invite-scope", viewport.width);
+      await controlFits(page, "#invite-job-function", viewport.width, form);
+      await controlFits(page, "#invite-primary-unit", viewport.width, form);
+      await controlFits(page, "#invite-role", viewport.width, form);
+      await controlFits(page, "#invite-scope", viewport.width, form);
       await controlFits(
         page,
         "[data-testid='invitation-access-preview']",

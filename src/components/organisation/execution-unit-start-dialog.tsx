@@ -46,6 +46,14 @@ export function ExecutionUnitStartDialog({
       >
         {triggerLabel ?? formProps.submitLabel}
       </Button>
+      {!canOpen && formProps.requiresSiteSelection ? (
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="site-context-required"
+        >
+          {formProps.emptyMessage}
+        </p>
+      ) : null}
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}

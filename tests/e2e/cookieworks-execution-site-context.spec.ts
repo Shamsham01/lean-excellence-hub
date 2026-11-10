@@ -125,13 +125,8 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
       ALL_SITES_COOKIE_VALUE,
     );
     await openFiveSStandard(page);
-    await ensureExecutionStartDialogOpen(page, "five-s-start-audit-form");
 
-    await expect(
-      page
-        .getByTestId("five-s-start-audit-form")
-        .getByTestId("site-context-required"),
-    ).toHaveText(
+    await expect(page.getByTestId("site-context-required")).toHaveText(
       "Select an active site in the sidebar before starting an audit.",
     );
     await expect(page.getByTestId("applicable-units-empty")).toHaveText(
