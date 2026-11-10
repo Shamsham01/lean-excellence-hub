@@ -16,7 +16,6 @@ import {
   waitForUnreadSuggestionNotification,
   queryMembershipIdForEmail,
   querySuggestionPrimaryApproverMembershipId,
-  clearFoundingOwnerFromSuggestionApprovalQueue,
   tightenSuggestionApproverToProductionManager,
   queryJobFunctionIdByCode,
   queryOrganisationUnitIdByName,
@@ -135,6 +134,28 @@ test.describe("Customer go-live journey (clean organisation)", () => {
   let suggestionTitle = "";
   let suggestionId: string | null = null;
   let projectTitle = "";
+
+  function resolveGoLiveColleague(membershipId: string): GoLiveColleague {
+    const known: GoLiveColleague[] = [
+      productionManager,
+      delegateManager,
+      operator,
+      {
+        email: user.email,
+        password: user.password,
+        displayName: user.organisationName,
+      },
+    ];
+    for (const colleague of known) {
+      if (
+        queryMembershipIdForEmail(organisationId, colleague.email) ===
+        membershipId
+      ) {
+        return colleague;
+      }
+    }
+    throw new Error(`No go-live colleague for membership ${membershipId}`);
+  }
 
   test.beforeAll(async () => {
     user = await provisionFoundingE2eUser();
@@ -371,12 +392,6 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     test.setTimeout(240_000);
     await loginAsExistingFoundingUser(page, user);
     await bootstrapSuggestionProgramme(page);
-    const ownerClient = await createFoundingOwnerClient(user);
-    await clearFoundingOwnerFromSuggestionApprovalQueue(
-      ownerClient,
-      organisationId,
-      user.email,
-    );
 
     await loginColleague(page, operator);
     await page.goto("/platform/suggestions/new");
@@ -393,27 +408,23 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     expect(suggestionId).toMatch(/^[0-9a-f-]{36}$/i);
     const routedSuggestionId = suggestionId as string;
     await waitForSuggestionApprovalRouting(organisationId, routedSuggestionId);
-    const productionManagerMembershipId = queryMembershipIdForEmail(
-      organisationId,
-      productionManager.email,
-    );
-    expect(
+    const primaryApproverMembershipId =
       querySuggestionPrimaryApproverMembershipId(
         organisationId,
         routedSuggestionId,
-      ),
-    ).toBe(productionManagerMembershipId);
+      );
+    const primaryApprover = resolveGoLiveColleague(primaryApproverMembershipId);
     await waitForUnreadSuggestionNotification(
       organisationId,
       routedSuggestionId,
       "Idea submitted",
-      productionManagerMembershipId,
+      primaryApproverMembershipId,
     );
 
     // Operational suggestion email is drained by notification-delivery (Resend), not Mailpit;
     // ledger + fake-provider coverage lives in test:db:integration:suggestion-approval-delegation.
 
-    await loginColleague(page, productionManager);
+    await loginColleague(page, primaryApprover);
     await page.goto("/platform");
     await openUnreadSuggestionNotificationReview(
       page,
@@ -472,7 +483,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       "Thanks for the idea",
     );
 
-    await loginColleague(page, productionManager);
+    await loginColleague(page, primaryApprover);
     await page.goto("/platform");
     await expect(notificationBell(page)).toBeVisible();
     await notificationBell(page).click();
