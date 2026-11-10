@@ -219,7 +219,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     test.setTimeout(120_000);
     await loginAndSelectOrganisation(page, user, user.organisationBName);
     await page.goto("/platform/maturity");
-    await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("maturity-overview-page"),
+    ).toBeVisible();
     await ensureLeanAiAssistantOpen(page);
     const maturityCoach = page.getByTestId("leanai-coach");
     await expect(maturityCoach).toBeVisible();
@@ -232,12 +234,16 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
     await waitForInterventionSnooze(page, "maturity_first_setup");
     await page.reload();
-    await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("maturity-overview-page"),
+    ).toBeVisible();
     await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
 
     await expireInterventionSnooze(page, "maturity_first_setup");
     await page.reload();
-    await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
+    await expect(
+      platformMain(page).getByTestId("maturity-overview-page"),
+    ).toBeVisible();
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
       "maturity_first_setup",
