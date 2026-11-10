@@ -11,11 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
 
-function GuardedDialogForm({
-  onSubmit,
-}: {
-  onSubmit: () => Promise<void>;
-}) {
+function GuardedDialogForm({ onSubmit }: { onSubmit: () => Promise<void> }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useReportFormDialogPending(submitting);
@@ -53,11 +49,7 @@ function GuardedDialogForm({
   );
 }
 
-function GuardedDialogHarness({
-  onSubmit,
-}: {
-  onSubmit: () => Promise<void>;
-}) {
+function GuardedDialogHarness({ onSubmit }: { onSubmit: () => Promise<void> }) {
   const [open, setOpen] = useState(true);
   return (
     <ResponsiveFormDialog

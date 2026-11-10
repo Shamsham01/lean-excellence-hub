@@ -53,9 +53,9 @@ vi.mock("@/platform/supabase/browser", () => ({
 }));
 
 describe("UX PR2 form dialogs", () => {
-afterEach(() => {
-  cleanup();
-});
+  afterEach(() => {
+    cleanup();
+  });
 
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
