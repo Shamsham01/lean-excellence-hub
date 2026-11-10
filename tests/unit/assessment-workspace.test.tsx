@@ -334,13 +334,12 @@ describe("AssessmentWorkspace", () => {
     );
   });
 
-  it("keeps N/A available and collapses the action form", () => {
+  it("keeps N/A available and opens the improvement action dialog control", () => {
     renderWorkspace();
     expect(screen.getByTestId("mark-not-applicable")).toBeVisible();
     expect(screen.getByTestId("create-improvement-action")).toBeVisible();
-    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("create-improvement-action"));
-    expect(screen.getByLabelText("Title")).toBeVisible();
+    expect(screen.getByTestId("create-improvement-action")).toBeEnabled();
   });
 
   it("shows a read-only completed state", () => {
