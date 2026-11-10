@@ -18,7 +18,7 @@ import { Trash2 } from "lucide-react";
 
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import type { FiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { fiveSQuestionTypeLabel } from "@/modules/5s/templates";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 
 type AuthoringSection = {
   id: string;
@@ -41,6 +42,7 @@ export function FiveSApplicabilityEditor({
 }: {
   standardId: string;
   configurationUnits: {
+    hierarchyUnits: FlatOrganisationUnit[];
     units: UnitSelectOption[];
     requiresSiteSelection: boolean;
   };
@@ -62,12 +64,12 @@ export function FiveSApplicabilityEditor({
         data-testid="five-s-edit-applicability-open"
         onClick={() => setOpen(true)}
       >
-        Edit applicable areas
+        Edit locations
       </Button>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
-        title="Applicable areas"
+        title="Edit locations"
         testId="five-s-applicability-dialog"
 
         enableGuard
@@ -81,7 +83,8 @@ export function FiveSApplicabilityEditor({
           }}
         >
           <input type="hidden" name="standardId" value={standardId} />
-          <ApplicableUnitsField
+          <CompactApplicableUnitsField
+            hierarchyUnits={configurationUnits.hierarchyUnits}
             options={configurationUnits.units}
             selectedIds={applicabilitySelection.selectedIds}
             preservedIds={applicabilitySelection.preservedIds}

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createFiveSStandard } from "@/app/(platform)/platform/5s/actions";
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -48,6 +51,9 @@ export default async function FiveSStandardsPage() {
   }
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const hierarchyUnits = filterUnitsForActiveSite(units, context, {
     requireConcreteSite: true,
   });
 
@@ -124,7 +130,8 @@ export default async function FiveSStandardsPage() {
                 </p>
               </div>
               <FiveSScoringScaleFields idPrefix="create-scoring-scale" saved />
-              <ApplicableUnitsField
+              <CompactApplicableUnitsField
+                hierarchyUnits={hierarchyUnits}
                 options={creationUnits.units}
                 requiresSiteSelection={creationUnits.requiresSiteSelection}
               />

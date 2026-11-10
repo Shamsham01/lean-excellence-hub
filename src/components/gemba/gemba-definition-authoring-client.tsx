@@ -10,12 +10,13 @@ import {
   addGembaSectionFromForm,
   setGembaDefinitionApplicableUnitsFromForm,
 } from "@/app/(platform)/platform/gemba/actions";
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 
 const APPLICABILITY_DESCRIPTION =
   "Choose which organisational units can run walks from this definition.";
@@ -28,6 +29,7 @@ export function GembaApplicabilityEditor({
 }: {
   definitionId: string;
   configurationUnits: {
+    hierarchyUnits: FlatOrganisationUnit[];
     units: UnitSelectOption[];
     requiresSiteSelection: boolean;
   };
@@ -49,12 +51,12 @@ export function GembaApplicabilityEditor({
         data-testid="gemba-edit-applicability-open"
         onClick={() => setOpen(true)}
       >
-        Edit applicable areas
+        Edit locations
       </Button>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
-        title="Applicable areas"
+        title="Edit locations"
         testId="gemba-applicability-dialog"
 
         enableGuard
@@ -68,7 +70,8 @@ export function GembaApplicabilityEditor({
           }}
         >
           <input type="hidden" name="definitionId" value={definitionId} />
-          <ApplicableUnitsField
+          <CompactApplicableUnitsField
+            hierarchyUnits={configurationUnits.hierarchyUnits}
             options={configurationUnits.units}
             selectedIds={applicabilitySelection.selectedIds}
             preservedIds={applicabilitySelection.preservedIds}

@@ -2,16 +2,18 @@
 
 import { useState, useTransition } from "react";
 
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MODULE_SETUP_COPY } from "@/modules/module-setup/copy";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 
 type DeployQuickStartFormProps = {
   action: (formData: FormData) => Promise<{ error: string } | void>;
   templateKey: string;
+  hierarchyUnits: FlatOrganisationUnit[];
   units: UnitSelectOption[];
   requiresSiteSelection: boolean;
   showThreshold: boolean;
@@ -21,6 +23,7 @@ type DeployQuickStartFormProps = {
 export function DeployQuickStartForm({
   action,
   templateKey,
+  hierarchyUnits,
   units,
   requiresSiteSelection,
   showThreshold,
@@ -63,7 +66,8 @@ export function DeployQuickStartForm({
           </p>
         </div>
       ) : null}
-      <ApplicableUnitsField
+      <CompactApplicableUnitsField
+        hierarchyUnits={hierarchyUnits}
         options={units}
         requiresSiteSelection={requiresSiteSelection}
         description="Choose the organisational units this draft applies to. The template does not guess this."

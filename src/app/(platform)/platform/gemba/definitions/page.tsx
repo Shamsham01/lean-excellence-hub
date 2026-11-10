@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createGembaDefinition } from "@/app/(platform)/platform/gemba/actions";
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
@@ -10,7 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -50,6 +53,9 @@ export default async function GembaDefinitionsPage() {
   }
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const hierarchyUnits = filterUnitsForActiveSite(units, context, {
     requireConcreteSite: true,
   });
 
@@ -105,7 +111,8 @@ export default async function GembaDefinitionsPage() {
                   className="mt-2"
                 />
               </div>
-              <ApplicableUnitsField
+              <CompactApplicableUnitsField
+                hierarchyUnits={hierarchyUnits}
                 options={creationUnits.units}
                 requiresSiteSelection={creationUnits.requiresSiteSelection}
                 description={APPLICABILITY_DESCRIPTION}

@@ -173,6 +173,22 @@ async function propose(
   );
 }
 
+async function chooseUnitInCreateDialog(page: Page) {
+  const dialog = page.getByTestId("module-setup-create-dialog");
+  const editLocations = dialog.getByTestId("applicable-units-edit-locations");
+  if (await editLocations.isVisible().catch(() => false)) {
+    await editLocations.click();
+    const picker = page.getByTestId("applicable-units-picker-dialog");
+    await expect(picker).toBeVisible();
+  }
+  const target = page.getByTestId("applicable-unit-checkbox").last();
+  await target.scrollIntoViewIfNeeded();
+  await target.check();
+  if (await page.getByTestId("applicable-units-picker-save").isVisible()) {
+    await page.getByTestId("applicable-units-picker-save").click();
+  }
+}
+
 async function openCreateDialog(page: Page) {
   const opener = page.getByTestId("module-setup-create-draft");
   await expect(opener).toBeVisible();

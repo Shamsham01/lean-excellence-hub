@@ -4,7 +4,10 @@ import { loadModuleSetupBuilderAccess } from "@/modules/module-setup/ai-builder/
 import { loadModuleSetupBuilderConversation } from "@/modules/module-setup/ai-builder/execute";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadCurrentOrganisationIdentity } from "@/modules/organisations/context";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { fiveSSetupBuilderModule } from "@/modules/5s/ai-builder/module";
 import { fiveSBuilderSnapshot } from "@/modules/5s/ai-builder/view";
@@ -33,6 +36,9 @@ export default async function FiveSLeanAiSetupPage() {
     loadActiveSiteContext(),
   ]);
   const creationUnits = buildSiteScopedUnitOptions(site.units, site.context, {
+    requireConcreteSite: true,
+  });
+  const hierarchyUnits = filterUnitsForActiveSite(site.units, site.context, {
     requireConcreteSite: true,
   });
   const supabase = await createServerSupabaseClient();
@@ -65,6 +71,7 @@ export default async function FiveSLeanAiSetupPage() {
         quickStartHref="/platform/5s/setup/quick-start"
         starters={STARTERS}
         existingNames={(existing ?? []).map((row) => row.display_name)}
+        hierarchyUnits={hierarchyUnits}
         units={creationUnits.units}
         requiresSiteSelection={creationUnits.requiresSiteSelection}
         showThreshold
