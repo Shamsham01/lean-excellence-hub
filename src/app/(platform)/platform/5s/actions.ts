@@ -575,3 +575,67 @@ export async function createFiveSStandardSuccessorFromForm(formData: FormData) {
   }
   redirect(`/platform/5s/standards/${standardId}`);
 }
+
+export async function removeFiveSQuestion(questionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("remove_five_s_question", {
+    target_question_id: questionId,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function removeFiveSSection(sectionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("remove_five_s_section", {
+    target_section_id: sectionId,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function discardFiveSStandardDraft(standardVersionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("discard_five_s_standard_draft", {
+    target_standard_version_id: standardVersionId,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function removeFiveSQuestionFromForm(formData: FormData) {
+  const questionId = String(formData.get("questionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  if (!questionId || !standardId) {
+    throw new Error("Question and standard are required");
+  }
+  throwIfActionError(await removeFiveSQuestion(questionId));
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
+}
+
+export async function removeFiveSSectionFromForm(formData: FormData) {
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  if (!sectionId || !standardId) {
+    throw new Error("Category and standard are required");
+  }
+  throwIfActionError(await removeFiveSSection(sectionId));
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
+}
+
+export async function discardFiveSStandardDraftFromForm(formData: FormData) {
+  const versionId = String(formData.get("versionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  if (!versionId || !standardId) {
+    throw new Error("Draft version and standard are required");
+  }
+  throwIfActionError(await discardFiveSStandardDraft(versionId));
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "discard",
+    ),
+  );
+}
