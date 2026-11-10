@@ -71,9 +71,13 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("five-s-remove-question-open-question-1"));
+    fireEvent.click(
+      screen.getByTestId("five-s-remove-question-open-question-1"),
+    );
     await waitFor(() => {
-      expect(screen.getByTestId("five-s-remove-structural-dialog")).toBeVisible();
+      expect(
+        screen.getByTestId("five-s-remove-structural-dialog"),
+      ).toBeVisible();
     });
     expect(screen.getByText(/Remove question\?/)).toBeInTheDocument();
 
@@ -103,6 +107,8 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
       expect(screen.getByTestId("five-s-discard-draft-dialog")).toBeVisible();
     });
     expect(screen.getByText(/Discard draft\?/)).toBeInTheDocument();
-    expect(screen.getByTestId("five-s-discard-draft-confirm")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("five-s-discard-draft-confirm"),
+    ).toBeInTheDocument();
   });
 });

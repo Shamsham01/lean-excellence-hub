@@ -82,9 +82,13 @@ test.describe("5S standard draft structural authoring", () => {
       .getByTestId("authoring-question")
       .filter({ hasText: dropPrompt });
     await dropQuestion
-      .getByRole("button", { name: new RegExp(`Remove question ${dropPrompt}`) })
+      .getByRole("button", {
+        name: new RegExp(`Remove question ${dropPrompt}`),
+      })
       .click();
-    await expect(page.getByTestId("five-s-remove-structural-dialog")).toBeVisible();
+    await expect(
+      page.getByTestId("five-s-remove-structural-dialog"),
+    ).toBeVisible();
     await page.getByTestId("five-s-remove-structural-confirm").click();
     await expect(page.getByText(dropPrompt)).toHaveCount(0);
 
