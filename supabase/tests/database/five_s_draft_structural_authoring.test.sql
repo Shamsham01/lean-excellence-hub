@@ -1,6 +1,6 @@
 begin;
 
-select plan(36);
+select plan(47);
 
 select ok(
   pg_catalog.has_function_privilege(
@@ -195,6 +195,47 @@ insert into remove_ids (key, id)
 select 'drop_question', question_row.id
 from public.template_questions question_row
 where question_row.prompt = 'Sort question drop';
+
+select throws_ok(
+  format(
+    'select public.add_five_s_question(%L::uuid, %L::uuid, ''score'', ''Needs scale'', 3, true, false, null, null, true, ''{"type":"direct"}''::jsonb, 1)',
+    (select id from remove_ids where key = 'v1'),
+    (select id from remove_ids where key = 'sort_section')
+  ),
+  '22023',
+  '5S scored questions require an explicit scoring scale on the draft',
+  'scored numeric question rejects missing draft scale'
+);
+
+select lives_ok(
+  format(
+    'select public.set_five_s_standard_scoring_scale(%L::uuid, 1, 5, 1)',
+    (select id from remove_ids where key = 'v1')
+  ),
+  'draft gains an explicit scoring scale for integrity checks'
+);
+
+select throws_ok(
+  format(
+    'select public.add_five_s_question(%L::uuid, %L::uuid, ''score'', ''Mismatched scale'', 3, true, false, null, null, true, ''{"type":"direct","min":0,"max":10,"step":1}''::jsonb, 1)',
+    (select id from remove_ids where key = 'v1'),
+    (select id from remove_ids where key = 'sort_section')
+  ),
+  '22023',
+  'question scoring scale does not match the standard version scale',
+  'per-question scale cannot diverge from the version scale'
+);
+
+select throws_ok(
+  format(
+    'select public.add_five_s_question(%L::uuid, %L::uuid, ''number'', ''Indirect scoring'', 3, true, false, null, null, true, ''{"type":"yes_no","yes_value":100,"no_value":0}''::jsonb, 1)',
+    (select id from remove_ids where key = 'v1'),
+    (select id from remove_ids where key = 'sort_section')
+  ),
+  '22023',
+  'scored numeric questions use the standard scoring scale',
+  'non-direct scoring metadata is rejected for numeric questions'
+);
 
 select public.add_five_s_question(
   (select id from remove_ids where key = 'v1'),
@@ -525,6 +566,28 @@ select lives_ok(
   'discarding the draft re-enables successor creation'
 );
 
+insert into remove_ids (key, id)
+select 'v4', version_row.id
+from public.five_s_standard_versions version_row
+where version_row.standard_id = (select id from remove_ids where key = 'standard')
+  and version_row.status = 'draft';
+
+insert into remove_ids (key, id)
+select 'v4_sort_section', section_row.id
+from public.template_sections section_row
+join public.five_s_standard_versions version_row
+  on version_row.template_version_id = section_row.template_version_id
+where version_row.id = (select id from remove_ids where key = 'v4')
+  and section_row.title = 'Sort';
+
+insert into remove_ids (key, id)
+select 'v4_keep_question', question_row.id
+from public.template_questions question_row
+join public.five_s_standard_versions version_row
+  on version_row.template_version_id = question_row.template_version_id
+where version_row.id = (select id from remove_ids where key = 'v4')
+  and question_row.prompt = 'Sort question keep';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"b5c10000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000011","email":"five-s-remove-owner@example.test"}',
@@ -540,10 +603,44 @@ select is(
   (
     select count(*)
     from public.template_questions question_row
-    where question_row.id = (select id from remove_ids where key = 'v2_keep_question')
+    join public.five_s_standard_versions version_row
+      on version_row.template_version_id = question_row.template_version_id
+    where version_row.id = (select id from remove_ids where key = 'v4')
   ),
   1::bigint,
-  'primary org question exists before cross-tenant probe'
+  'open draft question count before cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.template_sections section_row
+    join public.five_s_standard_versions version_row
+      on version_row.template_version_id = section_row.template_version_id
+    where version_row.id = (select id from remove_ids where key = 'v4')
+  ),
+  1::bigint,
+  'open draft section count before cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.five_s_question_scoring scoring_row
+    where scoring_row.standard_version_id = (select id from remove_ids where key = 'v4')
+  ),
+  1::bigint,
+  'open draft scoring row count before cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.five_s_section_weights weight_row
+    where weight_row.standard_version_id = (select id from remove_ids where key = 'v4')
+  ),
+  1::bigint,
+  'open draft section weight count before cross-tenant probe'
 );
 
 select set_config(
@@ -560,31 +657,31 @@ select ok(
 select throws_ok(
   format(
     'select public.remove_five_s_question(%L::uuid)',
-    (select id from remove_ids where key = 'v2_keep_question')
+    (select id from remove_ids where key = 'v4_keep_question')
   ),
   '55000',
   '5S question is not removable',
-  'other organisation cannot remove a foreign question'
+  'other organisation cannot remove a foreign draft question'
 );
 
 select throws_ok(
   format(
     'select public.remove_five_s_section(%L::uuid)',
-    (select id from remove_ids where key = 'v2_sort_section')
+    (select id from remove_ids where key = 'v4_sort_section')
   ),
   '55000',
   '5S section is not removable',
-  'other organisation cannot remove a foreign section'
+  'other organisation cannot remove a foreign draft section'
 );
 
 select throws_ok(
   format(
     'select public.discard_five_s_standard_draft(%L::uuid)',
-    (select id from remove_ids where key = 'v2')
+    (select id from remove_ids where key = 'v4')
   ),
   'P0002',
   '5S draft version was not found',
-  'other organisation cannot discard a foreign draft'
+  'other organisation cannot discard a foreign draft version'
 );
 
 select set_config(
@@ -602,10 +699,52 @@ select is(
   (
     select count(*)
     from public.template_questions question_row
-    where question_row.id = (select id from remove_ids where key = 'v2_keep_question')
+    join public.five_s_standard_versions version_row
+      on version_row.template_version_id = question_row.template_version_id
+    where version_row.id = (select id from remove_ids where key = 'v4')
   ),
   1::bigint,
-  'foreign structural RPC probes leave rows unchanged'
+  'open draft question count unchanged after cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.template_sections section_row
+    join public.five_s_standard_versions version_row
+      on version_row.template_version_id = section_row.template_version_id
+    where version_row.id = (select id from remove_ids where key = 'v4')
+  ),
+  1::bigint,
+  'open draft section count unchanged after cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.five_s_question_scoring scoring_row
+    where scoring_row.standard_version_id = (select id from remove_ids where key = 'v4')
+  ),
+  1::bigint,
+  'open draft scoring rows unchanged after cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.five_s_section_weights weight_row
+    where weight_row.standard_version_id = (select id from remove_ids where key = 'v4')
+  ),
+  1::bigint,
+  'open draft section weights unchanged after cross-tenant probe'
+);
+
+select lives_ok(
+  format(
+    'select public.remove_five_s_question(%L::uuid)',
+    (select id from remove_ids where key = 'v4_keep_question')
+  ),
+  'owning org can still remove the probed draft question'
 );
 
 select * from finish();

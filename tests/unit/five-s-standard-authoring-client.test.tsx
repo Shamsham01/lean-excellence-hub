@@ -29,17 +29,14 @@ const discardDraft = vi.fn();
 vi.mock("@/app/(platform)/platform/5s/actions", () => ({
   addFiveSQuestionFromForm: vi.fn(),
   addFiveSSectionFromForm: vi.fn(),
-  removeFiveSQuestionFromForm: (...args: unknown[]) => {
-    removeQuestion(...args);
-    return Promise.resolve();
+  removeFiveSQuestionFromForm: async (...args: unknown[]) => {
+    await removeQuestion(...args);
   },
-  removeFiveSSectionFromForm: (...args: unknown[]) => {
-    removeSection(...args);
-    return Promise.resolve();
+  removeFiveSSectionFromForm: async (...args: unknown[]) => {
+    await removeSection(...args);
   },
-  discardFiveSStandardDraftFromForm: (...args: unknown[]) => {
-    discardDraft(...args);
-    return Promise.resolve();
+  discardFiveSStandardDraftFromForm: async (...args: unknown[]) => {
+    await discardDraft(...args);
   },
   setFiveSStandardApplicableUnitsFromForm: vi.fn(),
   setFiveSStandardScoringScaleFromForm: vi.fn(),
@@ -146,7 +143,7 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
     });
   });
 
-  it("invokes the remove action even when the server action rejects", async () => {
+  it("shows remove errors and keeps the dialog open when the action rejects", async () => {
     removeQuestion.mockRejectedValueOnce(
       new Error("5S question is not removable"),
     );
@@ -179,6 +176,10 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
     await waitFor(() => {
       expect(removeQuestion).toHaveBeenCalledTimes(1);
     });
+    expect(
+      screen.getByTestId("five-s-remove-structural-error"),
+    ).toHaveTextContent("5S question is not removable");
+    expect(screen.getByTestId("five-s-remove-structural-dialog")).toBeVisible();
   });
 
   it("exposes discard draft with a destructive confirm and submit", async () => {

@@ -243,6 +243,9 @@ export function FiveSDraftAuthoringPanels({
     null,
   );
   const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
+  const [removeStructuralError, setRemoveStructuralError] = useState<
+    string | null
+  >(null);
   const flashSaved = useAuthoringSavedFlash();
 
   return (
@@ -346,7 +349,10 @@ export function FiveSDraftAuthoringPanels({
       <ResponsiveFormDialog
         open={removeTarget != null}
         onOpenChange={(next) => {
-          if (!next) setRemoveTarget(null);
+          if (!next) {
+            setRemoveTarget(null);
+            setRemoveStructuralError(null);
+          }
         }}
         title={
           removeTarget?.kind === "section"
@@ -371,15 +377,30 @@ export function FiveSDraftAuthoringPanels({
                 : removeFiveSQuestionFromForm
             }
             className="flex flex-col gap-4"
+            onError={(error) => {
+              setRemoveStructuralError(
+                error instanceof Error ? error.message : "Removal failed.",
+              );
+            }}
             onSuccess={() => {
               flashSaved(
                 removeTarget.kind === "section"
                   ? "remove_section"
                   : "remove_question",
               );
+              setRemoveStructuralError(null);
               setRemoveTarget(null);
             }}
           >
+            {removeStructuralError ? (
+              <p
+                role="alert"
+                className="text-sm text-destructive"
+                data-testid="five-s-remove-structural-error"
+              >
+                {removeStructuralError}
+              </p>
+            ) : null}
             <input type="hidden" name="standardId" value={standardId} />
             <input
               type="hidden"

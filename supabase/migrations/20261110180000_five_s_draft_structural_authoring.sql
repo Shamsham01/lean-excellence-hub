@@ -403,6 +403,7 @@ declare
   template_version_id uuid;
   version_status text;
   new_question_id uuid;
+  version_scale jsonb;
 begin
   if org_id is null
     or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
@@ -420,6 +421,51 @@ begin
   if template_version_id is null or version_status <> 'draft' then
     raise exception '5S standard version is not editable'
       using errcode = '55000';
+  end if;
+
+  if target_contributes_to_score
+    and target_question_type in ('score', 'number', 'percentage') then
+    select standard_version.scoring_scale
+    into version_scale
+    from public.five_s_standard_versions standard_version
+    where standard_version.organisation_id = org_id
+      and standard_version.id = target_standard_version_id
+      and standard_version.status = 'draft';
+
+    if not private.five_s_scoring_scale_is_valid(version_scale) then
+      raise exception '5S scored questions require an explicit scoring scale on the draft'
+        using errcode = '22023';
+    end if;
+
+    if target_scoring_metadata is not null
+      and (
+        target_scoring_metadata ? 'min'
+        or target_scoring_metadata ? 'max'
+        or target_scoring_metadata ? 'step'
+      )
+      and (
+        not private.five_s_scoring_scale_is_valid(pg_catalog.jsonb_build_object(
+          'min', target_scoring_metadata -> 'min',
+          'max', target_scoring_metadata -> 'max',
+          'step', target_scoring_metadata -> 'step'
+        ))
+        or (target_scoring_metadata ->> 'min')::numeric
+          is distinct from (version_scale ->> 'min')::numeric
+        or (target_scoring_metadata ->> 'max')::numeric
+          is distinct from (version_scale ->> 'max')::numeric
+        or (target_scoring_metadata ->> 'step')::numeric
+          is distinct from (version_scale ->> 'step')::numeric
+      ) then
+      raise exception 'question scoring scale does not match the standard version scale'
+        using errcode = '22023';
+    end if;
+
+    if coalesce(target_scoring_metadata ->> 'type', 'direct') is distinct from 'direct' then
+      raise exception 'scored numeric questions use the standard scoring scale'
+        using errcode = '22023';
+    end if;
+
+    target_scoring_metadata := '{"type":"direct"}'::jsonb;
   end if;
 
   new_question_id := private.add_template_question_internal(
