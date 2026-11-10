@@ -11,7 +11,9 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function ProficiencyScalesPage({ searchParams }: PageProps) {
+export default async function ProficiencyScalesPage({
+  searchParams,
+}: PageProps) {
   const query = await searchParams;
   const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
   const openCreateDialog = newRequested === "1";

@@ -415,7 +415,7 @@ export function GembaObservationPanel({
         title="Capture observation"
         description="Choosing a type does not save until you press Save."
         testId="gemba-observation-editor"
-      
+
         enableGuard
       >
         <fieldset className="flex flex-col gap-2">

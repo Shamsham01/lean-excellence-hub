@@ -82,7 +82,7 @@ export function FiveSApplicabilityEditor({
         onOpenChange={setOpen}
         title="Applicable areas"
         testId="five-s-applicability-dialog"
-      
+
         enableGuard
       >
         <ServerActionForm
@@ -145,7 +145,7 @@ export function FiveSScoringScaleEditor({
         title="Scoring scale"
         testId="five-s-scoring-scale-dialog"
         contentClassName="sm:max-w-xl"
-      
+
         enableGuard
       >
         <ServerActionForm
@@ -207,7 +207,7 @@ export function FiveSDraftAuthoringPanels({
         onOpenChange={setCategoryOpen}
         title="Add category"
         testId="five-s-add-category-dialog"
-      
+
         enableGuard
       >
         <ServerActionForm
@@ -239,7 +239,7 @@ export function FiveSDraftAuthoringPanels({
         }}
         title="Add question"
         testId="five-s-add-question-dialog"
-      
+
         enableGuard
       >
         {questionSectionId ? (

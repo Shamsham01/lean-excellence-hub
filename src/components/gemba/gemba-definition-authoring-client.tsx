@@ -76,7 +76,7 @@ export function GembaApplicabilityEditor({
         onOpenChange={setOpen}
         title="Applicable areas"
         testId="gemba-applicability-dialog"
-      
+
         enableGuard
       >
         <ServerActionForm
@@ -143,7 +143,7 @@ export function GembaDraftAuthoringPanels({
         onOpenChange={setSectionOpen}
         title="Add section"
         testId="gemba-add-section-dialog"
-      
+
         enableGuard
       >
         <ServerActionForm
@@ -176,7 +176,7 @@ export function GembaDraftAuthoringPanels({
         }}
         title="Add walk prompt"
         testId="gemba-add-prompt-dialog"
-      
+
         enableGuard
       >
         {promptSectionId ? (
