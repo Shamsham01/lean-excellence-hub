@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import type { FiveSScoringScale } from "@/modules/5s/scoring-scale";
+import { fiveSQuestionTypeLabel } from "@/modules/5s/templates";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
 
 type AuthoringSection = {
@@ -177,12 +178,10 @@ export function FiveSDraftAuthoringPanels({
   standardId,
   versionId,
   sections,
-  questionTypeLabel,
 }: {
   standardId: string;
   versionId: string;
   sections: AuthoringSection[];
-  questionTypeLabel: (value: string) => string;
 }) {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [questionSectionId, setQuestionSectionId] = useState<string | null>(
@@ -309,7 +308,7 @@ export function FiveSDraftAuthoringPanels({
                 >
                   <p className="font-medium">{question.prompt}</p>
                   <p className="text-sm text-muted-foreground">
-                    {questionTypeLabel(question.questionType)}
+                    {fiveSQuestionTypeLabel(question.questionType)}
                   </p>
                 </li>
               ))}

@@ -6,7 +6,19 @@ export async function openPeopleInviteDialog(page: Page) {
   await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
 }
 
+export async function dismissPeopleInviteDialog(page: Page) {
+  const dialog = page.getByTestId("people-invite-dialog");
+  if (await dialog.isVisible().catch(() => false)) {
+    await page
+      .getByTestId("people-invite-dialog")
+      .getByRole("button", { name: "Close" })
+      .click();
+    await expect(dialog).toBeHidden({ timeout: 10_000 });
+  }
+}
+
 export async function openPeoplePendingInvitationsTab(page: Page) {
+  await dismissPeopleInviteDialog(page);
   await page.getByTestId("people-settings-tab-pending").click();
   await expect(page.getByTestId("pending-invitations-list")).toBeVisible();
 }
@@ -56,11 +68,13 @@ export async function openFrameworkAddQuestion(page: Page) {
 }
 
 export async function openFiveSAddCategory(page: Page) {
+  await expect(page.getByTestId("five-s-add-question-dialog")).toBeHidden();
   await page.getByTestId("five-s-add-category-open").click();
   await expect(page.getByTestId("five-s-add-category-dialog")).toBeVisible();
 }
 
 export async function openFiveSAddQuestion(page: Page, sectionIndex = 0) {
+  await expect(page.getByTestId("five-s-add-category-dialog")).toBeHidden();
   await page
     .getByTestId(/^five-s-add-question-open-/)
     .nth(sectionIndex)
@@ -69,11 +83,14 @@ export async function openFiveSAddQuestion(page: Page, sectionIndex = 0) {
 }
 
 export async function openGembaAddSection(page: Page) {
+  await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden();
   await page.getByTestId("gemba-add-section-open").click();
   await expect(page.getByTestId("gemba-add-section-dialog")).toBeVisible();
 }
 
 export async function openGembaAddPrompt(page: Page, sectionIndex = 0) {
+  await expect(page.getByTestId("gemba-add-section-dialog")).toBeHidden();
+  await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden();
   await page
     .getByTestId(/^gemba-add-prompt-open-/)
     .nth(sectionIndex)

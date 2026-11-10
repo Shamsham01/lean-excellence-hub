@@ -362,7 +362,6 @@ export default async function FiveSStandardDetailPage({
                     questionType: question.questionType,
                   })),
                 }))}
-                questionTypeLabel={fiveSQuestionTypeLabel}
               />
             ) : (
               authoring.sections.map((section) => (
