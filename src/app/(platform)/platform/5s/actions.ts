@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { readApplicableUnitIds } from "@/modules/operational/five-s-applicability";
+import { fiveSAuthoringQuestionTypeError } from "@/modules/5s/question-types";
 import {
   readFiveSScoringScaleForm,
   resolveFiveSScoringScale,
@@ -156,6 +157,11 @@ export async function addFiveSQuestion(
   position: number,
   questionType: string,
 ) {
+  const typeError = fiveSAuthoringQuestionTypeError(questionType);
+  if (typeError) {
+    return { error: typeError };
+  }
+
   const supabase = await createServerSupabaseClient();
   const contributesToScore =
     questionType === "score" || questionType === "yes_no";
@@ -446,6 +452,10 @@ export async function addFiveSQuestionFromForm(formData: FormData) {
   const standardId = String(formData.get("standardId"));
   if (!prompt) {
     throw new Error("Question prompt is required");
+  }
+  const typeError = fiveSAuthoringQuestionTypeError(questionType);
+  if (typeError) {
+    throw new Error(typeError);
   }
 
   const supabase = await createServerSupabaseClient();

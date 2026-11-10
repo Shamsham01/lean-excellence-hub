@@ -1,18 +1,13 @@
 export const LEH_WORKPLACE_5S_STANDARD_KEY =
   "leh-workplace-5s-standard" as const;
 
-export const LEH_WORKPLACE_5S_STANDARD_VERSION = 1 as const;
+export const LEH_WORKPLACE_5S_STANDARD_VERSION = 2 as const;
 
 export const LEH_WORKPLACE_5S_STARTING_THRESHOLD = 80 as const;
 
 import type { FiveSScoringScale } from "@/modules/5s/scoring-scale";
 
-export const FIVE_S_TEMPLATE_QUESTION_TYPES = [
-  "yes_no",
-  "score",
-  "short_text",
-  "long_text",
-] as const;
+export const FIVE_S_TEMPLATE_QUESTION_TYPES = ["yes_no", "score"] as const;
 
 export type FiveSTemplateQuestionType =
   (typeof FIVE_S_TEMPLATE_QUESTION_TYPES)[number];

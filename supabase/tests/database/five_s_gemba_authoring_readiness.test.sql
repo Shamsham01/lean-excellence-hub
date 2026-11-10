@@ -156,7 +156,7 @@ select is(
 
 select lives_ok(
   format(
-    'select public.add_five_s_question(%L::uuid, %L::uuid, ''short_text'', ''What still needs attention?'', 2, true, false, null, null, false, null, 1)',
+    'select public.add_five_s_question(%L::uuid, %L::uuid, ''yes_no'', ''What still needs attention?'', 2, true, false, null, null, false, null, 1)',
     (select id from authoring_ids where key = 'five_s_version'),
     (select id from authoring_ids where key = 'five_s_section')
   ),

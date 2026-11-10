@@ -186,7 +186,7 @@ where question_row.prompt = 'Sort question keep';
 select public.add_five_s_question(
   (select id from remove_ids where key = 'v1'),
   (select id from remove_ids where key = 'sort_section'),
-  'short_text',
+  'yes_no',
   'Sort question drop',
   2
 );
@@ -240,7 +240,7 @@ select throws_ok(
 select public.add_five_s_question(
   (select id from remove_ids where key = 'v1'),
   (select id from remove_ids where key = 'set_section'),
-  'short_text',
+  'yes_no',
   'Set question',
   1
 );
