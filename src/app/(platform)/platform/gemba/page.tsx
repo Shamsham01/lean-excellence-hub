@@ -2,7 +2,6 @@ import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { GEMBA_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { buildGembaOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
@@ -178,7 +177,6 @@ export default async function GembaOverviewPage({
       <ModulePageInsightsDeferred
         module="gemba"
         analyticsRange={analyticsRange}
-        icons={GEMBA_ANALYTICS_ICONS}
         testId="gemba-analytics"
       />
       <WorkplaceSharedRecords module="gemba" />

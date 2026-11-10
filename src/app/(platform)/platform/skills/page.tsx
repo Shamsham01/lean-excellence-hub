@@ -1,6 +1,5 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { SKILLS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
@@ -185,7 +184,6 @@ export default async function SkillsOverviewPage({
       <ModulePageInsightsDeferred
         module="skills"
         analyticsRange={analyticsRange}
-        icons={SKILLS_ANALYTICS_ICONS}
         testId="skills-analytics"
         showDateRange={false}
       />

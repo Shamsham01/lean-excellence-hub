@@ -2,7 +2,6 @@ import { GraduationCap } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
@@ -201,7 +200,6 @@ export default async function TrainingOverviewPage({
       <ModulePageInsightsDeferred
         module="training"
         analyticsRange={analyticsRange}
-        icons={TRAINING_ANALYTICS_ICONS}
         testId="training-analytics"
       />
       <WorkplaceSharedRecords module="training" />

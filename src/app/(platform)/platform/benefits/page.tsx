@@ -1,6 +1,5 @@
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { BENEFITS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
@@ -112,7 +111,6 @@ export default async function BenefitsPortfolioPage({
       <ModulePageInsightsDeferred
         module="benefits"
         analyticsRange={analyticsRange}
-        icons={BENEFITS_ANALYTICS_ICONS}
         testId="benefits-analytics"
         donutCenterLabel="Benefits"
         showAgeingTable={false}

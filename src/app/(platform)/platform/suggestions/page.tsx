@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
@@ -147,7 +146,6 @@ export default async function SuggestionsOverviewPage({
       <ModulePageInsightsDeferred
         module="suggestions"
         analyticsRange={analyticsRange}
-        icons={SUGGESTION_ANALYTICS_ICONS}
         testId="suggestions-analytics"
       />
       {canViewWorkplace ? (

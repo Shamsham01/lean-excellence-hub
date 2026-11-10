@@ -1,5 +1,4 @@
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { PPS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
@@ -96,7 +95,6 @@ export default async function ProblemSolvingPortfolioPage({
       <ModulePageInsightsDeferred
         module="problem-solving"
         analyticsRange={analyticsRange}
-        icons={PPS_ANALYTICS_ICONS}
         testId="pps-analytics"
       />
       <WorkplaceSharedRecords module="problem_solving" />

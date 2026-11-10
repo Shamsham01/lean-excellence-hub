@@ -585,21 +585,19 @@ export function GembaWalkWorkspace({
           >
             <span>{current.question.prompt}</span>
             {current.question.is_required ? (
-              <>
-                <span
-                  className="text-destructive"
-                  aria-hidden="true"
-                  title="Required"
-                >
-                  {" "}
-                  *
-                </span>
-                <span className="sr-only"> (required)</span>
-              </>
-            ) : (
-              <span className="sr-only"> (optional)</span>
-            )}
+              <span
+                className="text-destructive"
+                aria-hidden="true"
+                title="Required"
+              >
+                {" "}
+                *
+              </span>
+            ) : null}
           </h2>
+          <span className="sr-only">
+            {current.question.is_required ? "(required)" : "(optional)"}
+          </span>
           <div className="mt-6">
             <Label htmlFor="walk-notes">Notes</Label>
             <Textarea

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState, type ComponentProps } from "react";
-import type { LucideIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 
+import { MODULE_INSIGHTS_ICON_MAP } from "@/components/platform/module-analytics-icons-client";
 import { AnalyticsInsightsCollapsible } from "@/components/platform/analytics-insights-collapsible";
 import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
 import type { AnalyticsDateRange } from "@/modules/platform-analytics/date-range";
@@ -15,17 +15,15 @@ import type { ModuleAnalyticsSnapshot } from "@/modules/platform-analytics/types
 type ModulePageInsightsDeferredProps = {
   module: ModuleInsightsKey;
   analyticsRange: AnalyticsDateRange;
-  icons: Record<string, LucideIcon>;
   testId: string;
   showDateRange?: boolean;
   showAgeingTable?: boolean;
   donutCenterLabel?: string;
-} & Pick<ComponentProps<typeof ModuleAnalyticsDashboard>, "showSectionHeading">;
+};
 
 export function ModulePageInsightsDeferred({
   module,
   analyticsRange,
-  icons,
   testId,
   showDateRange = true,
   showAgeingTable = true,
@@ -77,7 +75,7 @@ export function ModulePageInsightsDeferred({
       ) : snapshot ? (
         <ModuleAnalyticsDashboard
           snapshot={snapshot}
-          icons={icons}
+          icons={MODULE_INSIGHTS_ICON_MAP[module]}
           testId={testId}
           showSectionHeading={false}
           showDateRange={showDateRange}

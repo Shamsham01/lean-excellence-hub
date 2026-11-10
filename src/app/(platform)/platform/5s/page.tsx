@@ -1,7 +1,6 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { FIVE_S_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { buildFiveSOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
@@ -166,7 +165,6 @@ export default async function FiveSOverviewPage({
       <ModulePageInsightsDeferred
         module="five-s"
         analyticsRange={analyticsRange}
-        icons={FIVE_S_ANALYTICS_ICONS}
         testId="five-s-analytics"
       />
       <WorkplaceSharedRecords module="five_s" />

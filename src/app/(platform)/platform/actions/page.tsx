@@ -4,7 +4,6 @@ import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
@@ -145,7 +144,6 @@ export default async function ActionsPage({
       <ModulePageInsightsDeferred
         module="actions"
         analyticsRange={analyticsRange}
-        icons={ACTION_ANALYTICS_ICONS}
         testId="actions-analytics"
         showAgeingTable={false}
       />
