@@ -96,7 +96,9 @@ export function querySuggestionPrimaryApproverMembershipId(
     `select coalesce(routing_row.primary_approver_membership_id::text, '') from public.suggestion_approval_routing routing_row where routing_row.organisation_id = '${organisationId}'::uuid and routing_row.suggestion_id = '${suggestionId}'::uuid limit 1;`,
   );
   if (!row) {
-    throw new Error(`Suggestion approval routing was not found for ${suggestionId}`);
+    throw new Error(
+      `Suggestion approval routing was not found for ${suggestionId}`,
+    );
   }
   return row;
 }
