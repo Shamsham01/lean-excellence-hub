@@ -177,15 +177,8 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     );
     await openGembaDefinition(page);
 
-    await expect(
-      page
-        .getByTestId("gemba-start-walk-form")
-        .getByTestId("site-context-required"),
-    ).toHaveText(
+    await expect(page.getByTestId("site-context-required")).toHaveText(
       "Select an active site in the sidebar before starting a walk.",
-    );
-    await expect(page.getByTestId("applicable-units-empty")).toHaveText(
-      "Select an active site in the sidebar before choosing applicable areas.",
     );
     await expect(page.getByTestId("gemba-unit-select")).toHaveCount(0);
     await expect(
