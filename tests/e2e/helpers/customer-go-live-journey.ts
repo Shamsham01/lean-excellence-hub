@@ -88,6 +88,31 @@ export function queryMembershipIdForEmail(
   return row;
 }
 
+export function tightenSuggestionApproverToProductionManager(
+  organisationId: string,
+  operationsUnitId: string,
+  operatorEmail: string,
+) {
+  const childUnitId = runPsql(
+    `select public.create_organisation_unit('${organisationId}'::uuid, '${operationsUnitId}'::uuid, 'production-line', 'Production line', 'area');`,
+  );
+  const operatorMembershipId = queryMembershipIdForEmail(
+    organisationId,
+    operatorEmail,
+  );
+  const jobFunctionId = queryJobFunctionIdByCode(organisationId, "operator");
+  runPsql(
+    `update public.membership_job_function_assignments assignment_row set organisational_unit_id = '${childUnitId}'::uuid where assignment_row.organisation_id = '${organisationId}'::uuid and assignment_row.membership_id = '${operatorMembershipId}'::uuid and assignment_row.job_function_id = '${jobFunctionId}'::uuid and assignment_row.is_primary = true;`,
+  );
+  const managerRoleVersionId = queryPublishedRoleVersionId(
+    organisationId,
+    "manager",
+  );
+  runPsql(
+    `select public.add_role_permission('${organisationId}'::uuid, '${managerRoleVersionId}'::uuid, 'suggestions.manage');`,
+  );
+}
+
 export function querySuggestionPrimaryApproverMembershipId(
   organisationId: string,
   suggestionId: string,

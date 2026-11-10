@@ -16,6 +16,7 @@ import {
   waitForUnreadSuggestionNotification,
   queryMembershipIdForEmail,
   querySuggestionPrimaryApproverMembershipId,
+  tightenSuggestionApproverToProductionManager,
   queryJobFunctionIdByCode,
   queryOrganisationUnitIdByName,
   queryPublishedRoleVersionId,
@@ -354,6 +355,12 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       email: delegateManager.email,
       password: delegateManager.password,
     });
+
+    tightenSuggestionApproverToProductionManager(
+      organisationId,
+      operationsUnitId,
+      operator.email,
+    );
   });
 
   test("step 3 — suggestion submission, manager notification, delegation, approval", async ({
