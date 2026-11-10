@@ -1,7 +1,7 @@
 import { GraduationCap } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { ModulePageInsights } from "@/components/platform/module-page-insights";
 import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
@@ -80,7 +80,6 @@ export default async function TrainingOverviewPage({
     <div className="flex flex-col gap-8" data-testid="training-overview">
       <PageHeader
         title="Training"
-        description="Catalogue, curriculum, sessions, and compliance tracking."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog ? (
@@ -123,18 +122,12 @@ export default async function TrainingOverviewPage({
       outstanding === 0 ? (
         <EmptyState
           title="Training compliance starts with your catalogue"
-          description="Use Training setup to add courses and curriculum requirements. Compliance stays at 0% until people have assigned training."
+          description="Add courses and curriculum in training setup."
           actionLabel="Set up training"
           actionHref="/platform/training/setup"
           icon={<GraduationCap className="size-5 text-primary" aria-hidden />}
         />
       ) : null}
-
-      <ModuleAnalyticsDashboard
-        snapshot={trainingAnalytics}
-        icons={TRAINING_ANALYTICS_ICONS}
-        testId="training-analytics"
-      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -211,7 +204,12 @@ export default async function TrainingOverviewPage({
           </CardContent>
         </Card>
       </div>
-      <WorkplaceSharedRecords module="training" title="Training" />
+      <ModulePageInsights
+        snapshot={trainingAnalytics}
+        icons={TRAINING_ANALYTICS_ICONS}
+        testId="training-analytics"
+      />
+      <WorkplaceSharedRecords module="training" />
     </div>
   );
 }

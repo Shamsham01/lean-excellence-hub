@@ -22,11 +22,11 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
 
-  test("dashboard Open cards reach 5S, People, and Gemba", async ({ page }) => {
+  test("sidebar links reach 5S, People, and Gemba", async ({ page }) => {
     await signInAsDemoUser(page, "admin");
     await openPlatformHome(page);
 
-    const openFiveS = page.getByTestId("dashboard-open-5s");
+    const openFiveS = page.getByTestId("platform-nav-five-s");
     await expect(openFiveS).toHaveAttribute("href", "/platform/5s");
     await openFiveS.click();
     await expect(page).toHaveURL(/\/platform\/5s(?:\?|$)/);
@@ -35,14 +35,14 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     ).toBeVisible();
 
     await openPlatformHome(page);
-    const openPeople = page.getByTestId("dashboard-open-people");
+    const openPeople = page.getByTestId("platform-nav-people");
     await expect(openPeople).toHaveAttribute("href", "/platform/people");
     await openPeople.click();
     await expect(page).toHaveURL(/\/platform\/people(?:\?|$)/);
     await expect(page.getByTestId("people-directory-page")).toBeVisible();
 
     await openPlatformHome(page);
-    const openGemba = page.getByTestId("dashboard-open-gemba");
+    const openGemba = page.getByTestId("platform-nav-gemba");
     await expect(openGemba).toHaveAttribute("href", "/platform/gemba");
     await openGemba.click();
     await expect(page).toHaveURL(/\/platform\/gemba(?:\?|$)/);
@@ -51,13 +51,13 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     ).toBeVisible();
   });
 
-  test("keyboard Enter on dashboard Open People navigates", async ({
+  test("keyboard Enter on sidebar People navigates", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "admin");
     await openPlatformHome(page);
 
-    const openPeople = page.getByTestId("dashboard-open-people");
+    const openPeople = page.getByTestId("platform-nav-people");
     await openPeople.focus();
     await expect(openPeople).toBeFocused();
     await page.keyboard.press("Enter");
@@ -65,7 +65,7 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     await expect(page.getByTestId("people-directory-page")).toBeVisible();
   });
 
-  test("modified click on dashboard Open 5S keeps the current document", async ({
+  test("modified click on sidebar 5S opens a new tab", async ({
     page,
     context,
   }) => {
@@ -74,7 +74,7 @@ test.describe("NAV-CLICK-001 core platform navigation", () => {
     const currentUrl = page.url();
 
     const popupPromise = context.waitForEvent("page");
-    await page.getByTestId("dashboard-open-5s").click({
+    await page.getByTestId("platform-nav-five-s").click({
       modifiers: ["ControlOrMeta"],
     });
     const popup = await popupPromise;

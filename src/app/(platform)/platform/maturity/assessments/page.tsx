@@ -54,7 +54,6 @@ export default async function AssessmentsListPage() {
     >
       <PageHeader
         title="Assessments"
-        description="Formal and self assessments across organisational units."
         actions={
           startAssessmentProps ? (
             <StartAssessmentDialog

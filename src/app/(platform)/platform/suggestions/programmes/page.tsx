@@ -69,7 +69,6 @@ export default async function SuggestionProgrammesPage() {
       <PageHeader
         title="Suggestions configuration"
 
-        description="Manage improvement programmes and the categories used for suggestion submission."
 
         actions={
           <Button variant="outline" size="sm" asChild>

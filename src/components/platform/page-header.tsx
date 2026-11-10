@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { PageHeaderLeanAiButton } from "@/components/platform/page-header-lean-ai-button";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -8,13 +9,18 @@ export function PageHeader({
   descriptionTestId,
   breadcrumb,
   actions,
+  leanAiHelp = true,
+  leanAiHelpLabel,
   className,
 }: {
   title: ReactNode;
+  /** Opt-in: pass only when the line carries contextual data (org name, record title, etc.). */
   description?: string;
   descriptionTestId?: string;
   breadcrumb?: ReactNode;
   actions?: ReactNode;
+  leanAiHelp?: boolean;
+  leanAiHelpLabel?: string;
   className?: string;
 }) {
   return (
@@ -26,7 +32,12 @@ export function PageHeader({
     >
       <div className="flex min-w-0 flex-col gap-1.5">
         {breadcrumb}
-        <h1 className="typography-page-title">{title}</h1>
+        <div className="flex min-w-0 items-start gap-2">
+          <h1 className="typography-page-title min-w-0 flex-1">{title}</h1>
+          {leanAiHelp ? (
+            <PageHeaderLeanAiButton {...(leanAiHelpLabel ? { label: leanAiHelpLabel } : {})} />
+          ) : null}
+        </div>
         {description ? (
           <p
             className="typography-page-description max-w-2xl"

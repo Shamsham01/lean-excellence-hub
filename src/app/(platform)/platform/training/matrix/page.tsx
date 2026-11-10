@@ -75,7 +75,6 @@ export default async function TrainingMatrixPage() {
     <div className="flex flex-col gap-8" data-testid="training-matrix-page">
       <PageHeader
         title="Training matrix"
-        description="Who needs what training, and where are the gaps?"
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink

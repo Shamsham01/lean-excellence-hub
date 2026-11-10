@@ -70,7 +70,6 @@ export default async function ProfileSettingsPage() {
     >
       <PageHeader
         title="Your profile"
-        description="Manage personal details you control yourself. Organisation-managed assignments are shown for reference."
         breadcrumb={
           <Breadcrumb
             items={[
@@ -89,13 +88,6 @@ export default async function ProfileSettingsPage() {
         }
       />
 
-      <div className="rounded-xl border border-border/60 bg-card p-4 shadow-[var(--shadow-theme-xs)] sm:p-6">
-        <h2 className="text-lg font-semibold text-foreground">Profile</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Personal information and organisation context in one place.
-        </p>
-      </div>
-
       <ProfileSettingsSection
         title="Personal information"
         editTargetId="profile-display-name-form"
@@ -107,10 +99,6 @@ export default async function ProfileSettingsPage() {
             }
             initialAvatarUrl={profile?.avatar_url ?? null}
           />
-          <p className="text-sm text-muted-foreground">
-            Your personal name is saved on your account. The name shown inside
-            an organisation comes from your membership there.
-          </p>
           <ProfileDisplayNameForm
             initialDisplayName={
               personalDisplayName || organisationDisplayName || ""

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { ModulePageInsights } from "@/components/platform/module-page-insights";
 import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -107,7 +107,6 @@ export default async function ActionsPage({
     <div className="flex flex-col gap-8" data-testid="actions-page">
       <PageHeader
         title="Actions"
-        description="Improvement actions linked to assessments and operational work."
         breadcrumb={
           <Breadcrumb
             items={[
@@ -116,13 +115,6 @@ export default async function ActionsPage({
             ]}
           />
         }
-      />
-
-      <ModuleAnalyticsDashboard
-        snapshot={analytics}
-        icons={ACTION_ANALYTICS_ICONS}
-        testId="actions-analytics"
-        showAgeingTable={false}
       />
 
       <ActionFilters
@@ -153,7 +145,13 @@ export default async function ActionsPage({
           canCreate={canCreate}
         />
       </Suspense>
-      <WorkplaceSharedRecords module="actions" title="Actions" />
+      <ModulePageInsights
+        snapshot={analytics}
+        icons={ACTION_ANALYTICS_ICONS}
+        testId="actions-analytics"
+        showAgeingTable={false}
+      />
+      <WorkplaceSharedRecords module="actions" />
     </div>
   );
 }

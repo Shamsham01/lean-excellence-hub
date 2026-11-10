@@ -3,7 +3,7 @@ import {
   type PlatformNavItem,
 } from "@/modules/platform-shell/navigation";
 
-import { PlatformNavGroup } from "./platform-nav-group";
+import { PlatformNavGroupCollapsible } from "./platform-nav-group-collapsible";
 
 type PlatformNavigationProps = {
   items: PlatformNavItem[];
@@ -19,7 +19,7 @@ export function PlatformNavigation({
   return (
     <div className="flex flex-col gap-2 px-2 py-2">
       {groups.map((group) => (
-        <PlatformNavGroup
+        <PlatformNavGroupCollapsible
           key={group.section}
           section={group.section}
           label={group.label}

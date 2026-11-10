@@ -40,7 +40,6 @@ export default async function FiveSHistoryPage() {
     <div className="flex flex-col gap-8" data-testid="five-s-history-page">
       <PageHeader
         title="5S history"
-        description="Completed audits with immutable scores."
       />
       <Card>
         <CardContent className="flex flex-col gap-2 py-6">

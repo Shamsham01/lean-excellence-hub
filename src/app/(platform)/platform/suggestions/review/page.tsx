@@ -66,7 +66,6 @@ export default async function SuggestionReviewQueuePage({
     <div className="flex flex-col gap-6" data-testid="suggestion-review-queue">
       <PageHeader
         title="Suggestion review"
-        description="Claim, assess, and decide improvement ideas in your jurisdiction."
       />
 
       <ReviewQueueTabs

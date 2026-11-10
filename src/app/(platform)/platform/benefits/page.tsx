@@ -1,5 +1,5 @@
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { ModulePageInsights } from "@/components/platform/module-page-insights";
 import { BENEFITS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
@@ -77,7 +77,6 @@ export default async function BenefitsPortfolioPage({
     <div className="flex flex-col gap-8" data-testid="benefits-portfolio-page">
       <PageHeader
         title="Benefits"
-        description="Forecast, validate, and track improvement benefits across the portfolio."
         actions={
           <div className="flex gap-2">
             {canCreate ? (
@@ -107,13 +106,6 @@ export default async function BenefitsPortfolioPage({
           </div>
         }
       />
-      <ModuleAnalyticsDashboard
-        snapshot={benefitsAnalytics}
-        icons={BENEFITS_ANALYTICS_ICONS}
-        testId="benefits-analytics"
-        donutCenterLabel="Benefits"
-        showAgeingTable={false}
-      />
       <BenefitPortfolio
         items={portfolio.items}
         totalCount={portfolio.total_count}
@@ -123,7 +115,14 @@ export default async function BenefitsPortfolioPage({
         benefitClassFilter={params.benefit_class ?? null}
         canCreate={canCreate}
       />
-      <WorkplaceSharedRecords module="benefits" title="Benefits" />
+      <ModulePageInsights
+        snapshot={benefitsAnalytics}
+        icons={BENEFITS_ANALYTICS_ICONS}
+        testId="benefits-analytics"
+        donutCenterLabel="Benefits"
+        showAgeingTable={false}
+      />
+      <WorkplaceSharedRecords module="benefits" />
     </div>
   );
 }

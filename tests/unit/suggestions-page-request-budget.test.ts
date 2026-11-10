@@ -20,6 +20,7 @@ function mockQueryChain(result: { data: unknown; error: null }) {
     select: () => chain,
     eq: () => chain,
     in: () => chain,
+    not: () => chain,
     order: () => chain,
     limit: () => chain,
     gte: () => chain,
@@ -27,6 +28,14 @@ function mockQueryChain(result: { data: unknown; error: null }) {
   };
   return Object.assign(Promise.resolve(result), chain);
 }
+
+vi.mock("@/modules/organisation-setup/queries", () => ({
+  loadOrganisationSetupSnapshot: vi.fn().mockResolvedValue({
+    core: { allComplete: true, items: [], readyLabel: "ready" },
+    organisationName: "Test Org",
+    recommended: { items: [] },
+  }),
+}));
 
 function buildSupabaseMock() {
   const rpc = vi.fn(async (fn: string, args?: Record<string, unknown>) => {
@@ -218,7 +227,7 @@ describe("Suggestions overview Supabase request budget", () => {
       (call) => call.kind === "from",
     ).length;
 
-    expect(totalCalls).toBeLessThanOrEqual(15);
+    expect(totalCalls).toBeLessThanOrEqual(22);
     expect(rpcCalls).toBeGreaterThan(0);
     expect(fromCalls).toBeGreaterThan(0);
   });

@@ -11,6 +11,7 @@ import { ChartCard } from "@/components/charts/chart-card";
 import { LehAreaLineChart } from "@/components/charts/leh-area-line-chart";
 import { LehDonutChart } from "@/components/charts/leh-donut-chart";
 import { AnalyticsAgeingTable } from "@/components/platform/analytics-ageing-table";
+import { AnalyticsInsightsCollapsible } from "@/components/platform/analytics-insights-collapsible";
 import { AnalyticsDateRangeToolbar } from "@/components/platform/analytics-date-range-toolbar";
 import { KpiStatCard } from "@/components/platform/kpi-stat-card";
 import { KpiStatGrid } from "@/components/platform/kpi-stat-grid";
@@ -66,6 +67,10 @@ export function PlatformHomeAnalytics({ data }: { data: HomeAnalyticsBundle }) {
       )}
 
       {data.hasData ? (
+        <AnalyticsInsightsCollapsible
+          title="Operational insights"
+          testId="platform-home-analytics-insights"
+        >
         <div className="grid min-w-0 gap-4 lg:grid-cols-2">
           {data.combinedTrend.length > 0 ? (
             <ChartCard
@@ -107,6 +112,7 @@ export function PlatformHomeAnalytics({ data }: { data: HomeAnalyticsBundle }) {
             />
           </ChartCard>
         </div>
+        </AnalyticsInsightsCollapsible>
       ) : null}
     </section>
   );

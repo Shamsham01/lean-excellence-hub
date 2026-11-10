@@ -221,7 +221,6 @@ export default async function PeopleSettingsPage({
     >
       <PageHeader
         title="People and invitations"
-        description="Bring colleagues into your organisation with the right access and work assignments."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">

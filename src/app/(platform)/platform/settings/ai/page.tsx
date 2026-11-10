@@ -61,7 +61,6 @@ export default async function AiSettingsPage() {
     <div className="flex flex-col gap-6" data-testid="ai-settings-page">
       <PageHeader
         title="LeanAI"
-        description="Included access, month-to-date use, and optional governance for this organisation."
       />
       <AiCreditPeriodPanel
         summary={creditSummary}

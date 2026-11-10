@@ -32,7 +32,6 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-8" data-testid="settings-page">
       <PageHeader
         title="Settings"
-        description="Manage your organisation configuration and preferences."
       />
 
       <SettingsHub

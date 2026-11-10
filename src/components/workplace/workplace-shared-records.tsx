@@ -3,16 +3,22 @@ import {
   WORKPLACE_VIEW_PERMISSION,
   type WorkplaceModuleKey,
 } from "@/modules/workplace/access";
+import { loadWorkplaceFeedPage } from "@/modules/workplace/feed";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 
 export async function WorkplaceSharedRecords({
   module,
-  title,
 }: {
   module: WorkplaceModuleKey;
-  title: string;
+  /** @deprecated Title copy removed; kept for call-site compatibility. */
+  title?: string;
 }) {
   if (!(await currentMemberHasPermission(WORKPLACE_VIEW_PERMISSION))) {
+    return null;
+  }
+
+  const feed = await loadWorkplaceFeedPage(module);
+  if (feed.status !== "ready" || feed.records.length === 0) {
     return null;
   }
 
@@ -28,11 +34,6 @@ export async function WorkplaceSharedRecords({
       >
         Shared workplace records
       </h2>
-      <p className="text-sm text-muted-foreground">
-        {title} you can view at another site or through Workplace Viewer stay in
-        this list. Opening one shows the shared summary. It does not add create,
-        edit, approval, or administration rights.
-      </p>
       <WorkplaceRecordList
         module={module}
         emptyLabel="No shared records are in your viewing scope yet."

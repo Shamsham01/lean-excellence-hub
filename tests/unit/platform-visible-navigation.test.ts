@@ -28,6 +28,14 @@ vi.mock("@/modules/billing/load-current-entitlements", () => ({
     loadCurrentOrganisationEntitlements(...args),
 }));
 
+vi.mock("@/modules/organisation-setup/queries", () => ({
+  loadOrganisationSetupSnapshot: vi.fn().mockResolvedValue({
+    core: { allComplete: false, items: [], readyLabel: "in_progress" },
+    organisationName: "Test Org",
+    recommended: { items: [] },
+  }),
+}));
+
 import { resolveOrganisationEntitlements } from "@/modules/billing/entitlements";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import { platformNavigation } from "@/modules/platform-shell/navigation";

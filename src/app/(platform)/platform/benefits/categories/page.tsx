@@ -36,7 +36,6 @@ export default async function BenefitCategoriesPage() {
     <div className="flex flex-col gap-6" data-testid="benefit-categories-page">
       <PageHeader
         title="Benefit categories"
-        description="Organise benefits and configure fiscal reporting settings."
       />
       <BenefitCategoryManagement
         categories={(categories as BenefitCategoryRow[]) ?? []}

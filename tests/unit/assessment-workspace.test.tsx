@@ -275,9 +275,7 @@ describe("AssessmentWorkspace", () => {
 
   it("keeps framework guidance inside the workspace instead of a third column", () => {
     renderWorkspace();
-    expect(screen.getByText("Scoring guidance")).toBeVisible();
-    expect(screen.getByText("Criterion guidance")).toBeVisible();
-    expect(screen.getByText("Level descriptors")).toBeVisible();
+    expect(screen.getByTestId("assessment-guidance-trigger")).toBeVisible();
     expect(
       screen.queryByTestId("assessment-guidance-column"),
     ).not.toBeInTheDocument();

@@ -137,7 +137,6 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
     >
       <PageHeader
         title={displayName}
-        description="Manage organisation membership, assignments, and access."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>

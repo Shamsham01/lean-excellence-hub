@@ -55,7 +55,6 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
     >
       <PageHeader
         title="Skills catalogue"
-        description="The capabilities people in this organisation need."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog && !isEmpty ? (

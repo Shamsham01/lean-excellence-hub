@@ -1,4 +1,4 @@
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
+import { ModulePageInsights } from "@/components/platform/module-page-insights";
 import { PPS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
@@ -75,7 +75,6 @@ export default async function ProblemSolvingPortfolioPage({
     >
       <PageHeader
         title="Problem solving"
-        description="Structured root cause analysis and countermeasure tracking across the portfolio."
         actions={
           canCreate ? (
             <ModulePortfolioNewLink
@@ -87,11 +86,6 @@ export default async function ProblemSolvingPortfolioPage({
           ) : null
         }
       />
-      <ModuleAnalyticsDashboard
-        snapshot={analytics}
-        icons={PPS_ANALYTICS_ICONS}
-        testId="pps-analytics"
-      />
       <CasePortfolio
         items={portfolio.items}
         totalCount={portfolio.total_count}
@@ -101,10 +95,12 @@ export default async function ProblemSolvingPortfolioPage({
         severityFilter={params.severity ?? null}
         canCreate={canCreate}
       />
-      <WorkplaceSharedRecords
-        module="problem_solving"
-        title="Problem solving"
+      <ModulePageInsights
+        snapshot={analytics}
+        icons={PPS_ANALYTICS_ICONS}
+        testId="pps-analytics"
       />
+      <WorkplaceSharedRecords module="problem_solving" />
     </div>
   );
 }

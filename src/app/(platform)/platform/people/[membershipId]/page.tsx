@@ -37,7 +37,6 @@ export default async function PersonCapabilityPage({ params }: PageProps) {
       >
         <PageHeader
           title="Your capability profile"
-          description="Your profile could not be loaded."
         />
         <p
           className="text-sm text-destructive"

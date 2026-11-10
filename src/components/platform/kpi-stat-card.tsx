@@ -37,39 +37,41 @@ export function KpiStatCard({
       )}
       data-testid={testId}
     >
-      <CardContent className="flex items-start gap-3 p-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="size-5" aria-hidden />
+      <CardContent className="flex items-center gap-3 p-3 sm:p-4">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="size-4" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p
-            className="mt-1 font-mono text-2xl font-semibold text-foreground tabular-nums"
-            data-testid={
-              valueTestId ?? (testId ? `${testId}-value` : undefined)
-            }
-          >
-            {value}
-          </p>
-          {trend ? (
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <p
-              className={cn(
-                "mt-1 inline-flex items-center gap-1 text-xs font-medium",
-                trendTone,
-              )}
+              className="font-mono text-xl font-semibold text-foreground tabular-nums"
+              data-testid={
+                valueTestId ?? (testId ? `${testId}-value` : undefined)
+              }
             >
-              {trend.direction === "up" ? (
-                <ArrowUp className="size-3.5" aria-hidden />
-              ) : trend.direction === "down" ? (
-                <ArrowDown className="size-3.5" aria-hidden />
-              ) : (
-                <Minus className="size-3.5" aria-hidden />
-              )}
-              {trend.percent == null
-                ? "New vs prior period"
-                : `${trend.percent > 0 ? "+" : ""}${trend.percent}% vs prior period`}
+              {value}
             </p>
-          ) : null}
+            {trend ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 text-xs font-medium",
+                  trendTone,
+                )}
+              >
+                {trend.direction === "up" ? (
+                  <ArrowUp className="size-3" aria-hidden />
+                ) : trend.direction === "down" ? (
+                  <ArrowDown className="size-3" aria-hidden />
+                ) : (
+                  <Minus className="size-3" aria-hidden />
+                )}
+                {trend.percent == null
+                  ? "New"
+                  : `${trend.percent > 0 ? "+" : ""}${trend.percent}%`}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
         </div>
       </CardContent>
     </Card>

@@ -583,13 +583,18 @@ export function GembaWalkWorkspace({
             className="typography-section-title mt-2"
             data-testid="gemba-walk-prompt-heading"
           >
-            {current.question.prompt}
+            <span>{current.question.prompt}</span>
+            {current.question.is_required ? (
+              <span
+                className="text-destructive"
+                aria-hidden="true"
+                title="Required"
+              >
+                {" "}
+                *
+              </span>
+            ) : null}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {current.question.is_required
-              ? "Required prompt"
-              : "Optional prompt"}
-          </p>
           <div className="mt-6">
             <Label htmlFor="walk-notes">Notes</Label>
             <Textarea

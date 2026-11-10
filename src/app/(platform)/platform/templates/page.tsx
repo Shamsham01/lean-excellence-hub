@@ -15,7 +15,6 @@ export default async function TemplatesPage() {
     <div className="flex flex-col gap-8" data-testid="templates-page">
       <PageHeader
         title="Templates"
-        description="Configurable forms and checklists for operational audits."
         actions={<CreateTemplateDialog />}
       />
 

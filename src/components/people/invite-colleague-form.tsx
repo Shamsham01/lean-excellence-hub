@@ -353,8 +353,11 @@ export function InviteColleagueForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground">
-            Job function does not grant permissions.
+          <p
+            className="text-xs text-muted-foreground"
+            title="Job functions describe work; application permissions come from roles."
+          >
+            Job functions do not grant permissions.
           </p>
         </div>
         <div className="flex flex-col gap-2">

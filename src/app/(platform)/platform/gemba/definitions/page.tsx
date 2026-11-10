@@ -65,7 +65,6 @@ export default async function GembaDefinitionsPage() {
     <div className="flex flex-col gap-8" data-testid="gemba-definitions-page">
       <PageHeader
         title="Gemba definitions"
-        description="Templates for structured walks. Setup mode → Draft → Review → Publish."
         actions={
           canManage ? (
             <Button variant="outline" asChild>

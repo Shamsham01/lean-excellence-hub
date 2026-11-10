@@ -54,7 +54,6 @@ export default async function GembaHistoryPage() {
     <div className="flex flex-col gap-8" data-testid="gemba-history-page">
       <PageHeader
         title="Gemba history"
-        description="Resume in-progress walks and review completed walks."
       />
       <Card>
         <CardHeader>

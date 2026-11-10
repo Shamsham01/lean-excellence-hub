@@ -68,7 +68,7 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
     );
 
     await page.goto("/platform");
-    await expect(page.getByTestId("home-your-profile")).toBeVisible();
+    await expect(page.getByTestId("platform-home-page")).toBeVisible();
     await expect(page.getByText("Start Lean maturity")).toHaveCount(0);
   });
 

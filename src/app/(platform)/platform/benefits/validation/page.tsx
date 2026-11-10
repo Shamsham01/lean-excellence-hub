@@ -49,7 +49,6 @@ export default async function BenefitValidationQueuePage() {
     >
       <PageHeader
         title="Benefit validation queue"
-        description="Benefits and realisation entries awaiting your validation decision."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
