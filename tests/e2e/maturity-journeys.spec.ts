@@ -233,14 +233,12 @@ test.describe("Milestone 5 maturity journeys", () => {
     });
 
     await page.getByTestId("create-improvement-action").click();
-    await expect(
-      page.getByTestId("maturity-assessment-action-dialog"),
-    ).toBeVisible();
+    await expect(page.getByTestId("actions-create-dialog")).toBeVisible();
     await page.getByLabel("Title").fill("Improve Gemba cadence");
     await page.getByTestId("assessment-action-submit").click();
-    await expect(
-      page.getByTestId("maturity-assessment-action-dialog"),
-    ).not.toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("actions-create-dialog")).not.toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByText("Improve Gemba cadence")).toBeVisible({
       timeout: 15_000,
     });

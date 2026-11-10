@@ -45,17 +45,33 @@ export async function openExecutionStartDialog(
   await expect(page.getByTestId(formTestId)).toBeVisible();
 }
 
+const FRAMEWORK_DIALOG_IDS = [
+  "framework-add-level-dialog",
+  "framework-add-pillar-dialog",
+  "framework-add-criterion-dialog",
+  "framework-add-question-dialog",
+] as const;
+
+async function dismissFrameworkDialogs(page: Page) {
+  for (const dialogId of FRAMEWORK_DIALOG_IDS) {
+    await dismissOverlayDialog(page, dialogId);
+  }
+}
+
 export async function openFrameworkAddLevel(page: Page) {
+  await dismissFrameworkDialogs(page);
   await page.getByTestId("framework-add-level-open").click();
   await expect(page.getByTestId("framework-add-level-dialog")).toBeVisible();
 }
 
 export async function openFrameworkAddPillar(page: Page) {
+  await dismissFrameworkDialogs(page);
   await page.getByTestId("framework-add-pillar-open").click();
   await expect(page.getByTestId("framework-add-pillar-dialog")).toBeVisible();
 }
 
 export async function openFrameworkAddCriterion(page: Page) {
+  await dismissFrameworkDialogs(page);
   await page.getByTestId("framework-add-criterion-open").click();
   await expect(
     page.getByTestId("framework-add-criterion-dialog"),
@@ -63,18 +79,34 @@ export async function openFrameworkAddCriterion(page: Page) {
 }
 
 export async function openFrameworkAddQuestion(page: Page) {
+  await dismissFrameworkDialogs(page);
   await page.getByTestId("framework-add-question-open").click();
   await expect(page.getByTestId("framework-add-question-dialog")).toBeVisible();
 }
 
+async function dismissOverlayDialog(page: Page, testId: string) {
+  const dialog = page.getByTestId(testId);
+  if (!(await dialog.isVisible().catch(() => false))) {
+    return;
+  }
+
+  await page
+    .getByTestId(testId)
+    .getByRole("button", { name: "Close" })
+    .click();
+  await expect(dialog).toBeHidden({ timeout: 10_000 });
+}
+
 export async function openFiveSAddCategory(page: Page) {
-  await expect(page.getByTestId("five-s-add-question-dialog")).toBeHidden();
+  await dismissOverlayDialog(page, "five-s-add-question-dialog");
+  await dismissOverlayDialog(page, "five-s-add-category-dialog");
   await page.getByTestId("five-s-add-category-open").click();
   await expect(page.getByTestId("five-s-add-category-dialog")).toBeVisible();
 }
 
 export async function openFiveSAddQuestion(page: Page, sectionIndex = 0) {
-  await expect(page.getByTestId("five-s-add-category-dialog")).toBeHidden();
+  await dismissOverlayDialog(page, "five-s-add-category-dialog");
+  await dismissOverlayDialog(page, "five-s-add-question-dialog");
   await page
     .getByTestId(/^five-s-add-question-open-/)
     .nth(sectionIndex)
@@ -83,14 +115,15 @@ export async function openFiveSAddQuestion(page: Page, sectionIndex = 0) {
 }
 
 export async function openGembaAddSection(page: Page) {
-  await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden();
+  await dismissOverlayDialog(page, "gemba-add-prompt-dialog");
+  await dismissOverlayDialog(page, "gemba-add-section-dialog");
   await page.getByTestId("gemba-add-section-open").click();
   await expect(page.getByTestId("gemba-add-section-dialog")).toBeVisible();
 }
 
 export async function openGembaAddPrompt(page: Page, sectionIndex = 0) {
-  await expect(page.getByTestId("gemba-add-section-dialog")).toBeHidden();
-  await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden();
+  await dismissOverlayDialog(page, "gemba-add-section-dialog");
+  await dismissOverlayDialog(page, "gemba-add-prompt-dialog");
   await page
     .getByTestId(/^gemba-add-prompt-open-/)
     .nth(sectionIndex)
