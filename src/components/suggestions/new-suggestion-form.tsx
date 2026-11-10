@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 
+import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
+
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -142,7 +144,9 @@ export function NewSuggestionForm({
     categoryId: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  useReportFormDialogPending(submitting || loading);
 
   const hasProgrammeConfiguration =
     programmeVersions.length > 0 && categories.length > 0;
@@ -241,6 +245,7 @@ export function NewSuggestionForm({
     }
 
     submittingRef.current = true;
+    setSubmitting(true);
     setLoading(true);
     setError(null);
     setValidationMessages([]);
@@ -306,6 +311,7 @@ export function NewSuggestionForm({
       );
     } finally {
       submittingRef.current = false;
+      setSubmitting(false);
       setLoading(false);
     }
   }
@@ -317,192 +323,192 @@ export function NewSuggestionForm({
 
   const formBody = (
     <>
-        {configurationMessage ? (
-          <div
-            className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
-            data-testid="suggestion-configuration-block"
-          >
-            <p className="text-foreground">{configurationMessage}</p>
-            {canManageProgrammes ? (
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <AppLink
-                  href="/platform/suggestions/programmes"
-                  data-testid="suggestion-configure-programmes-link"
-                >
-                  Configure suggestion programmes
-                </AppLink>
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {!canSubmit && hasProgrammeConfiguration ? (
-          <div
-            className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
-            data-testid="suggestion-prerequisite-block"
-          >
-            <p className="text-foreground">{blockedMessage}</p>
-            {primaryUnit.canManageAssignment && primaryUnit.membershipId ? (
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <AppLink
-                  href={`/platform/people/${primaryUnit.membershipId}/admin`}
-                  data-testid="suggestion-assign-work-area-link"
-                >
-                  Assign my primary work area
-                </AppLink>
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            <span>What have you noticed?</span>
-            <textarea
-              required
-              rows={3}
-              className="border-input min-h-[88px] rounded-md border bg-background px-3 py-2"
-              value={noticed}
-              onChange={(e) => setNoticed(e.target.value)}
-              disabled={!canSubmit || loading}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span>What would you change?</span>
-            <textarea
-              required
-              rows={3}
-              className="border-input min-h-[88px] rounded-md border bg-background px-3 py-2"
-              value={proposed}
-              onChange={(e) => setProposed(e.target.value)}
-              disabled={!canSubmit || loading}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Short title (optional)</span>
-            <input
-              className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={!canSubmit || loading}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Programme</span>
-            <select
-              required
-              className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              value={lockedCatalogue?.programmeVersionId ?? programmeVersionId}
-              onChange={(e) => setProgrammeVersionId(e.target.value)}
-              disabled={
-                programmeVersions.length === 0 ||
-                !canSubmit ||
-                loading ||
-                lockedCatalogue != null
-              }
-            >
-              {programmeVersions.length === 0 ? (
-                <option value="">No programmes available</option>
-              ) : (
-                programmeVersions.map((pv) => (
-                  <option key={pv.id} value={pv.id}>
-                    {pv.programme_name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Category</span>
-            <select
-              required
-              className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              value={lockedCatalogue?.categoryId ?? categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              disabled={
-                categories.length === 0 ||
-                !canSubmit ||
-                loading ||
-                lockedCatalogue != null
-              }
-            >
-              {categories.length === 0 ? (
-                <option value="">No categories available</option>
-              ) : (
-                categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Expected benefit (optional)</span>
-            <textarea
-              rows={2}
-              className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-              value={benefit}
-              onChange={(e) => setBenefit(e.target.value)}
-              disabled={!canSubmit || loading}
-            />
-          </label>
-
-          {lockedCatalogue ? (
-            <p
-              className="text-sm text-muted-foreground"
-              data-testid="suggestion-catalogue-locked"
-            >
-              Programme and category stay as first saved so a retry cannot
-              submit a different selection from the one shown.
-            </p>
+      {configurationMessage ? (
+        <div
+          className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
+          data-testid="suggestion-configuration-block"
+        >
+          <p className="text-foreground">{configurationMessage}</p>
+          {canManageProgrammes ? (
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <AppLink
+                href="/platform/suggestions/programmes"
+                data-testid="suggestion-configure-programmes-link"
+              >
+                Configure suggestion programmes
+              </AppLink>
+            </Button>
           ) : null}
+        </div>
+      ) : null}
 
-          <SuggestionEvidencePicker
-            files={files}
+      {!canSubmit && hasProgrammeConfiguration ? (
+        <div
+          className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
+          data-testid="suggestion-prerequisite-block"
+        >
+          <p className="text-foreground">{blockedMessage}</p>
+          {primaryUnit.canManageAssignment && primaryUnit.membershipId ? (
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <AppLink
+                href={`/platform/people/${primaryUnit.membershipId}/admin`}
+                data-testid="suggestion-assign-work-area-link"
+              >
+                Assign my primary work area
+              </AppLink>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1 text-sm">
+          <span>What have you noticed?</span>
+          <textarea
+            required
+            rows={3}
+            className="border-input min-h-[88px] rounded-md border bg-background px-3 py-2"
+            value={noticed}
+            onChange={(e) => setNoticed(e.target.value)}
             disabled={!canSubmit || loading}
-            onAddFiles={addSelectedFiles}
-            onRemove={(clientId) => {
-              void removeFile(clientId);
-            }}
-            onRetry={() => {
-              void submitIdea();
-            }}
           />
+        </label>
 
-          <SuggestionEvidenceValidationAlert messages={validationMessages} />
+        <label className="flex flex-col gap-1 text-sm">
+          <span>What would you change?</span>
+          <textarea
+            required
+            rows={3}
+            className="border-input min-h-[88px] rounded-md border bg-background px-3 py-2"
+            value={proposed}
+            onChange={(e) => setProposed(e.target.value)}
+            disabled={!canSubmit || loading}
+          />
+        </label>
 
-          {error ? (
-            <p
-              className="text-sm text-destructive"
-              role="alert"
-              data-testid="suggestion-submit-error"
-            >
-              {error}
-            </p>
-          ) : null}
+        <label className="flex flex-col gap-1 text-sm">
+          <span>Short title (optional)</span>
+          <input
+            className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            disabled={!canSubmit || loading}
+          />
+        </label>
 
-          {hasFailedEvidence ? (
-            <p className="text-sm text-muted-foreground">
-              Remove a failed file to continue without it, or retry the upload.
-              The idea will not be submitted while a selected file has failed.
-            </p>
-          ) : null}
-
-          <Button
-            type="submit"
-            disabled={loading || !canSubmit || hasFailedEvidence}
-            className="min-h-11"
-            data-testid="suggestion-submit-button"
+        <label className="flex flex-col gap-1 text-sm">
+          <span>Programme</span>
+          <select
+            required
+            className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+            value={lockedCatalogue?.programmeVersionId ?? programmeVersionId}
+            onChange={(e) => setProgrammeVersionId(e.target.value)}
+            disabled={
+              programmeVersions.length === 0 ||
+              !canSubmit ||
+              loading ||
+              lockedCatalogue != null
+            }
           >
-            {loading ? "Submitting…" : "Submit idea"}
-          </Button>
-        </form>
+            {programmeVersions.length === 0 ? (
+              <option value="">No programmes available</option>
+            ) : (
+              programmeVersions.map((pv) => (
+                <option key={pv.id} value={pv.id}>
+                  {pv.programme_name}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span>Category</span>
+          <select
+            required
+            className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+            value={lockedCatalogue?.categoryId ?? categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            disabled={
+              categories.length === 0 ||
+              !canSubmit ||
+              loading ||
+              lockedCatalogue != null
+            }
+          >
+            {categories.length === 0 ? (
+              <option value="">No categories available</option>
+            ) : (
+              categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span>Expected benefit (optional)</span>
+          <textarea
+            rows={2}
+            className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
+            value={benefit}
+            onChange={(e) => setBenefit(e.target.value)}
+            disabled={!canSubmit || loading}
+          />
+        </label>
+
+        {lockedCatalogue ? (
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid="suggestion-catalogue-locked"
+          >
+            Programme and category stay as first saved so a retry cannot submit
+            a different selection from the one shown.
+          </p>
+        ) : null}
+
+        <SuggestionEvidencePicker
+          files={files}
+          disabled={!canSubmit || loading}
+          onAddFiles={addSelectedFiles}
+          onRemove={(clientId) => {
+            void removeFile(clientId);
+          }}
+          onRetry={() => {
+            void submitIdea();
+          }}
+        />
+
+        <SuggestionEvidenceValidationAlert messages={validationMessages} />
+
+        {error ? (
+          <p
+            className="text-sm text-destructive"
+            role="alert"
+            data-testid="suggestion-submit-error"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        {hasFailedEvidence ? (
+          <p className="text-sm text-muted-foreground">
+            Remove a failed file to continue without it, or retry the upload.
+            The idea will not be submitted while a selected file has failed.
+          </p>
+        ) : null}
+
+        <Button
+          type="submit"
+          disabled={loading || !canSubmit || hasFailedEvidence}
+          className="min-h-11"
+          data-testid="suggestion-submit-button"
+        >
+          {loading ? "Submitting…" : "Submit idea"}
+        </Button>
+      </form>
 
       <RelatedRecordsPanel
         recordType="improvement_suggestion"

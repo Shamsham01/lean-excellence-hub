@@ -869,6 +869,8 @@ test.describe("Invitation lifecycle", () => {
     await loginAsOrgAdmin(page);
     const targetEmail = `invitation-revoked-${Date.now()}@example.test`;
     await page.goto("/platform/settings/people");
+    await page.getByTestId("people-invite-open").click();
+    await expect(page.getByTestId("people-invite-dialog")).toBeVisible();
     await page.getByLabel("Colleague email").fill(targetEmail);
     await page.locator("#invite-role").selectOption({ index: 2 });
     await page.locator("#invite-scope").selectOption({ index: 1 });
@@ -902,6 +904,8 @@ test.describe("Invitation lifecycle", () => {
     await loginAsOrgAdmin(page);
     const targetEmail = `invitation-reissue-${Date.now()}@example.test`;
     await page.goto("/platform/settings/people");
+    await page.getByTestId("people-invite-open").click();
+    await expect(page.getByTestId("people-invite-dialog")).toBeVisible();
     await page.getByLabel("Colleague email").fill(targetEmail);
     await page.locator("#invite-role").selectOption({ index: 2 });
     await page.locator("#invite-scope").selectOption({ index: 1 });

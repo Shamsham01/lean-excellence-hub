@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CourseCreateForm } from "@/components/training/course-create-form";
-import { Button } from "@/components/ui/button";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 
 export function CourseCreateDialog({
@@ -19,7 +19,7 @@ export function CourseCreateDialog({
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         size="sm"
         className="min-h-11"
@@ -27,12 +27,13 @@ export function CourseCreateDialog({
         onClick={() => setOpen(true)}
       >
         New course
-      </Button>
+      </ModuleWriteButton>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
         title="New course"
         testId="training-course-create-dialog"
+        enableGuard
       >
         <CourseCreateForm
           variant="embedded"

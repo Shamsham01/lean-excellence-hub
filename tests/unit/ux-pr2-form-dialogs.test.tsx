@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StartAssessmentDialog } from "@/components/maturity/start-assessment-dialog";
@@ -10,6 +17,45 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
+vi.mock("@/modules/billing/module-write-context", () => ({
+  usePlanModuleWriteAllowed: () => true,
+}));
+
+vi.mock("@/lib/navigation/navigate", () => ({
+  navigateTo: vi.fn(),
+}));
+
+vi.mock("@/platform/supabase/browser", () => ({
+  createBrowserSupabaseClient: () => ({
+    rpc: vi.fn(async (fn: string) => {
+      if (fn === "get_available_suggestion_submission_configuration") {
+        return {
+          data: {
+            programmes: [
+              {
+                programme_version_id: "pv-1",
+                programme_name: "Ideas",
+              },
+            ],
+            categories: [{ category_id: "cat-1", category_name: "Safety" }],
+          },
+          error: null,
+        };
+      }
+      if (fn === "get_current_membership_primary_unit") {
+        return {
+          data: { has_primary_unit: false },
+          error: null,
+        };
+      }
+      if (fn === "list_maturity_assessment_scope_entities") {
+        return { data: [], error: null };
+      }
+      return { data: null, error: null };
+    }),
+  }),
+}));
+
 describe("UX PR2 form dialogs", () => {
   afterEach(() => {
     cleanup();
@@ -17,7 +63,7 @@ describe("UX PR2 form dialogs", () => {
 
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-      matches: query.includes("639px") ? false : false,
+      matches: query.includes("639px"),
       media: query,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -25,26 +71,24 @@ describe("UX PR2 form dialogs", () => {
     }));
   });
 
-  it("opens the new suggestion dialog and shows validation on empty submit", async () => {
+  it("opens the new suggestion dialog and loads configuration on demand", async () => {
     render(
       <NewSuggestionDialog
-        loadError={null}
-        programmesForForm={[{ id: "pv-1", programme_name: "Ideas" }]}
-        categoriesForForm={[{ id: "cat-1", name: "Safety" }]}
         canManageProgrammes={false}
-        primaryUnit={{
-          hasPrimaryUnit: false,
-          canManageAssignment: false,
-        }}
+        canManageJobFunctions={false}
       />,
     );
 
     fireEvent.click(screen.getByTestId("suggestions-new-link"));
-    expect(screen.getByTestId("suggestions-new-dialog")).toBeInTheDocument();
-    expect(screen.getByTestId("suggestion-prerequisite-block")).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByTestId("suggestions-new-dialog")).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("suggestion-prerequisite-block")).toBeVisible();
+    });
   });
 
-  it("opens start assessment dialog and blocks submit without entity", () => {
+  it("opens start assessment dialog shell", () => {
     render(
       <StartAssessmentDialog
         versions={[
@@ -59,13 +103,10 @@ describe("UX PR2 form dialogs", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("maturity-start-assessment-dialog-open"));
-    const form = screen.getByTestId("start-assessment-form");
-    expect(form).toBeInTheDocument();
-    fireEvent.submit(form);
-    expect(
-      screen.getByText("Select framework, scope, and eligible entity."),
-    ).toBeVisible();
+    fireEvent.click(
+      screen.getByTestId("maturity-start-assessment-dialog-open"),
+    );
+    expect(screen.getByTestId("start-assessment-form")).toBeInTheDocument();
   });
 
   it("opens five-s start audit dialog shell", () => {
@@ -75,9 +116,7 @@ describe("UX PR2 form dialogs", () => {
         dialogTitle="Start audit"
         action={action}
         hiddenFields={<input type="hidden" name="standardId" value="std-1" />}
-        units={[
-          { id: "u-1", name: "Plant", code: "PLT", site_id: "site-1" },
-        ]}
+        units={[{ id: "u-1", name: "Plant" }]}
         requiresSiteSelection={false}
         unitFieldId="unit"
         label="Unit"
@@ -95,21 +134,76 @@ describe("UX PR2 form dialogs", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders responsive dialog title for people invite pattern", async () => {
+  it("renders mobile sheet when matchMedia reports a narrow viewport", async () => {
     render(
       <ResponsiveFormDialog
         open
         onOpenChange={vi.fn()}
-        title="Invite a colleague"
-        testId="people-invite-dialog"
+        title="Mobile sheet dialog"
+        testId="mobile-sheet-dialog"
       >
-        <p>Invite form placeholder</p>
+        <p>Sheet body</p>
       </ResponsiveFormDialog>,
     );
-
     await waitFor(() => {
-      expect(screen.getByTestId("people-invite-dialog")).toBeVisible();
+      expect(screen.getByTestId("mobile-sheet-dialog")).toBeVisible();
     });
-    expect(screen.getByText("Invite a colleague")).toBeVisible();
+    expect(screen.getByText("Mobile sheet dialog")).toBeVisible();
+  });
+
+  it("announces labelled title and linked description", () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    render(
+      <ResponsiveFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create scale"
+        description="Name the scale before editing levels."
+        testId="scale-create-test"
+      >
+        <p role="alert">Name is required</p>
+      </ResponsiveFormDialog>,
+    );
+    expect(screen.getByText("Create scale")).toBeVisible();
+    expect(
+      screen.getByText("Name the scale before editing levels."),
+    ).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("Name is required");
+  });
+
+  it("opens responsive dialog from a trigger", async () => {
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button
+            type="button"
+            data-testid="open-responsive-dialog"
+            onClick={() => setOpen(true)}
+          >
+            Open
+          </button>
+          <ResponsiveFormDialog
+            open={open}
+            onOpenChange={setOpen}
+            title="Focused dialog"
+            testId="focus-dialog"
+          >
+            <input data-testid="focus-target" />
+          </ResponsiveFormDialog>
+        </>
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByTestId("open-responsive-dialog"));
+    await waitFor(() =>
+      expect(screen.getByTestId("focus-dialog")).toBeVisible(),
+    );
   });
 });

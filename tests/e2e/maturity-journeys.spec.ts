@@ -6,6 +6,12 @@ import {
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  openFrameworkAddCriterion,
+  openFrameworkAddLevel,
+  openFrameworkAddPillar,
+  openFrameworkAddQuestion,
+} from "./helpers/form-dialogs";
 import { expect, test, type Locator } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -54,6 +60,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByRole("button", { name: "Save framework details" }).click();
 
     await page.getByTestId("framework-step-levels").click();
+    await openFrameworkAddLevel(page);
     await page.getByLabel("Level name").fill("Initial");
     await page.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByTestId("edit-level-1")).toBeVisible({
@@ -69,6 +76,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     ).toHaveValue("Initial revised");
 
     await page.getByTestId("framework-step-pillars").click();
+    await openFrameworkAddPillar(page);
     await page.getByLabel("Pillar name").fill("Leadership");
     await page.getByRole("button", { name: "Add pillar" }).click();
     await expect(
@@ -78,6 +86,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     });
 
     await page.getByTestId("framework-step-criteria").click();
+    await openFrameworkAddCriterion(page);
     await page.getByLabel("Criterion name").fill("Gemba walks");
     await page.getByRole("button", { name: "Add criterion" }).click();
     await expect(
@@ -85,6 +94,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     ).toBeVisible({ timeout: 15_000 });
 
     await page.getByTestId("framework-step-questions").click();
+    await openFrameworkAddQuestion(page);
     await page.getByLabel("Question prompt").fill("Rate Gemba walks");
     await page.getByRole("button", { name: "Add scored question" }).click();
     await expect(
@@ -119,6 +129,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-pillars").click();
     await expect(page.getByLabel("Position")).toHaveCount(0);
 
+    await openFrameworkAddPillar(page);
     const addPillarForm = page.getByTestId("add-pillar-form");
     await addPillarForm.getByLabel("Pillar name").fill("Leadership");
     await addPillarForm.getByRole("button", { name: "Add pillar" }).click();
@@ -126,6 +137,7 @@ test.describe("Milestone 5 maturity journeys", () => {
       timeout: 15_000,
     });
 
+    await openFrameworkAddPillar(page);
     await addPillarForm.getByLabel("Pillar name").fill("Daily Management");
     await addPillarForm.getByRole("button", { name: "Add pillar" }).click();
     await expect(page.getByTestId("edit-pillar-2")).toBeVisible({
@@ -221,9 +233,15 @@ test.describe("Milestone 5 maturity journeys", () => {
     });
 
     await page.getByTestId("create-improvement-action").click();
-    await page.getByLabel("Create action").fill("Improve Gemba cadence");
-    await page.getByRole("button", { name: "Create action" }).click();
-    await expect(page.getByTestId("action-created")).toBeVisible({
+    await expect(
+      page.getByTestId("maturity-assessment-action-dialog"),
+    ).toBeVisible();
+    await page.getByLabel("Title").fill("Improve Gemba cadence");
+    await page.getByTestId("assessment-action-submit").click();
+    await expect(
+      page.getByTestId("maturity-assessment-action-dialog"),
+    ).not.toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Improve Gemba cadence")).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByTestId("view-assessment-actions")).toBeVisible();
@@ -401,9 +419,8 @@ test.describe("Milestone 5 maturity journeys", () => {
     });
 
     await page.getByTestId("framework-step-pillars").click();
-    const addPillarForm = page.locator("form").filter({
-      has: page.getByRole("button", { name: "Add pillar" }),
-    });
+    await openFrameworkAddPillar(page);
+    const addPillarForm = page.getByTestId("add-pillar-form");
     await addPillarForm.getByLabel("Pillar name").fill("Safety");
     await addPillarForm.getByRole("button", { name: "Add pillar" }).click();
     await expect(page.getByRole("button", { name: "Save pillar" })).toHaveCount(
@@ -411,9 +428,8 @@ test.describe("Milestone 5 maturity journeys", () => {
     );
 
     await page.getByTestId("framework-step-criteria").click();
-    const addCriterionForm = page.locator("form").filter({
-      has: page.getByRole("button", { name: "Add criterion" }),
-    });
+    await openFrameworkAddCriterion(page);
+    const addCriterionForm = page.getByTestId("add-criterion-form");
     await addCriterionForm
       .getByLabel("Pillar")
       .selectOption({ label: "Safety" });
@@ -461,6 +477,7 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.locator("#criterionId").selectOption({
       label: "Leadership → Gemba walks",
     });
+    await openFrameworkAddQuestion(page);
     await page.locator("#questionPrompt").fill("Rate remaining Gemba");
     await page.getByRole("button", { name: "Add scored question" }).click();
     await expect(leadershipQuestions.getByLabel("Question prompt")).toHaveValue(

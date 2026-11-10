@@ -9,6 +9,7 @@ import {
   expectNoFiveSCompleteAudit,
 } from "./helpers/responsive-complete-control";
 import {
+  clickExecutionStartSubmit,
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
@@ -50,7 +51,7 @@ test.describe("Milestone 6 5S journeys", () => {
       submitTestId: "five-s-start-audit",
     });
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
     await expect(page.getByLabel("Audit progress")).toBeVisible();
   });
@@ -72,7 +73,7 @@ test.describe("Milestone 6 5S journeys", () => {
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
 
     const workspace = page.getByTestId("five-s-audit-workspace");
     const yes = workspace.getByRole("button", { name: "Yes", exact: true });
@@ -101,7 +102,7 @@ test.describe("Milestone 6 5S journeys", () => {
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page.getByLabel("Audit progress")).toBeVisible();
 
     const imagePath = join(

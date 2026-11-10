@@ -647,6 +647,7 @@ test.describe("Workplace Viewer permission routing", () => {
     );
 
     await page.getByTestId("suggestions-new-link").click();
+    await expect(page).toHaveURL(/\/platform\/suggestions\/new(?:\?|$)/);
     await expect(page.getByTestId("new-suggestion-form")).toBeVisible();
     await page.getByLabel("Short title (optional)").fill(ownSuggestionTitle);
     await page.getByLabel("What have you noticed?").fill("Stops are unmarked");

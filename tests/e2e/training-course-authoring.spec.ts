@@ -71,7 +71,8 @@ test.describe("Training course catalogue bootstrap", () => {
 
     if ((await page.getByTestId("training-course-create-form").count()) === 0) {
       await page.getByTestId("training-course-new-button").click();
-    } else {
+    }
+    if (await page.getByTestId("training-courses-empty").isVisible()) {
       await expect(page.getByTestId("training-courses-empty")).toBeVisible();
     }
     await expect(page.getByTestId("training-course-create-form")).toBeVisible();
@@ -208,6 +209,9 @@ test.describe("Training course catalogue bootstrap", () => {
     const courseName = `Confined Space ${Date.now()}`;
 
     await page.goto("/platform/training/courses?new=1");
+    await expect(
+      page.getByTestId("training-course-create-dialog"),
+    ).toBeVisible();
     await page.getByTestId("training-course-name-input").fill(courseName);
     await page.getByTestId("training-course-create-submit").click();
     await expect(

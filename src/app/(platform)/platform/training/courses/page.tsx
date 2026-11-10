@@ -64,8 +64,7 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
   }
 
   const isEmpty = courses.length === 0;
-  const openCreateDialog =
-    canManageCatalog && (isEmpty || newRequested === "1");
+  const openCreateDialog = canManageCatalog && newRequested === "1";
   const activeSiteName =
     context.mode === "site"
       ? (context.sites.find((site) => site.id === context.activeSiteId)?.name ??
@@ -82,7 +81,7 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
             {canManageCatalog ? (
               <CourseCreateDialog
                 existingCodes={courses.map((course) => course.code)}
-                defaultOpen={openCreateDialog && isEmpty}
+                defaultOpen={openCreateDialog}
               />
             ) : null}
             <Button variant="outline" size="sm" asChild>

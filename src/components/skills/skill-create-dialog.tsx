@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { SkillCreateForm } from "@/components/skills/skill-create-form";
-import { Button } from "@/components/ui/button";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 
 export function SkillCreateDialog({
@@ -23,7 +23,7 @@ export function SkillCreateDialog({
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         size="sm"
         className="min-h-11"
@@ -31,12 +31,13 @@ export function SkillCreateDialog({
         onClick={() => setOpen(true)}
       >
         New skill
-      </Button>
+      </ModuleWriteButton>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
         title="New skill"
         testId="skills-catalog-create-dialog"
+        enableGuard
       >
         <SkillCreateForm
           existingCodes={existingCodes}

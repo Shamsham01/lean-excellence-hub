@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  openFiveSAddCategory,
+  openFiveSAddQuestion,
+  openGembaAddPrompt,
+  openGembaAddSection,
+} from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -31,11 +37,13 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     await expect(page.getByTestId("publish-five-s-standard")).toBeDisabled();
     await expect(page.getByTestId("publish-blocked-reason")).toBeVisible();
 
+    await openFiveSAddCategory(page);
     await page.getByLabel("Category name").fill("Sort");
     await page.getByRole("button", { name: "Add category" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText("Sort");
     await expect(page.getByTestId("publish-five-s-standard")).toBeDisabled();
 
+    await openFiveSAddQuestion(page);
     await page.getByTestId("five-s-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByTestId("authoring-question")).toHaveCount(1);
@@ -50,6 +58,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
       firstPrompt,
     );
 
+    await openFiveSAddQuestion(page);
     await page.getByTestId("five-s-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);
@@ -93,6 +102,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     await expect(page.getByTestId("publish-gemba-definition")).toBeDisabled();
     await expect(page.getByTestId("publish-blocked-reason")).toBeVisible();
 
+    await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Safety");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
@@ -103,6 +113,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
     await expect(page.getByTestId("authoring-section")).toHaveCount(1);
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByTestId("authoring-question")).toHaveCount(1);
@@ -116,6 +127,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
       firstPrompt,
     );
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);

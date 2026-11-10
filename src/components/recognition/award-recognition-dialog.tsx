@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AwardRecognitionForm } from "@/components/recognition/award-recognition-form";
-import { Button } from "@/components/ui/button";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import type {
   PersonSelectOption,
@@ -37,7 +37,7 @@ export function AwardRecognitionDialog({
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         size="sm"
         className="min-h-11"
@@ -45,12 +45,13 @@ export function AwardRecognitionDialog({
         onClick={() => setOpen(true)}
       >
         Award recognition
-      </Button>
+      </ModuleWriteButton>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
         title="Award recognition"
         testId="recognition-award-dialog"
+        enableGuard
       >
         <AwardRecognitionForm
           types={types}

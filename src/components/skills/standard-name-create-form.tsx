@@ -66,7 +66,9 @@ export function StandardNameCreateForm({
               navigateTo(`/platform/skills/standards/${result.standardId}`);
               return;
             }
-            setError("error" in result ? result.error : "Unable to create standard.");
+            setError(
+              "error" in result ? result.error : "Unable to create standard.",
+            );
             setSubmitting(false);
           })
           .catch(() => {

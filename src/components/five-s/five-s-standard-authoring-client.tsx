@@ -82,6 +82,8 @@ export function FiveSApplicabilityEditor({
         onOpenChange={setOpen}
         title="Applicable areas"
         testId="five-s-applicability-dialog"
+      
+        enableGuard
       >
         <ServerActionForm
           action={setFiveSStandardApplicableUnitsFromForm}
@@ -143,6 +145,8 @@ export function FiveSScoringScaleEditor({
         title="Scoring scale"
         testId="five-s-scoring-scale-dialog"
         contentClassName="sm:max-w-xl"
+      
+        enableGuard
       >
         <ServerActionForm
           action={setFiveSStandardScoringScaleFromForm}
@@ -203,6 +207,8 @@ export function FiveSDraftAuthoringPanels({
         onOpenChange={setCategoryOpen}
         title="Add category"
         testId="five-s-add-category-dialog"
+      
+        enableGuard
       >
         <ServerActionForm
           action={addFiveSSectionFromForm}
@@ -213,7 +219,12 @@ export function FiveSDraftAuthoringPanels({
           <input type="hidden" name="standardId" value={standardId} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="sectionTitle">Category name</Label>
-            <Input id="sectionTitle" name="sectionTitle" required className="min-h-11" />
+            <Input
+              id="sectionTitle"
+              name="sectionTitle"
+              required
+              className="min-h-11"
+            />
           </div>
           <Button type="submit" className="min-h-11">
             Add category
@@ -228,6 +239,8 @@ export function FiveSDraftAuthoringPanels({
         }}
         title="Add question"
         testId="five-s-add-question-dialog"
+      
+        enableGuard
       >
         {questionSectionId ? (
           <ServerActionForm

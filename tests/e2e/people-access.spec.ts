@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { openPeopleInviteDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -66,6 +67,7 @@ test.describe("PEOPLE-ACCESS employee profile and invitations", () => {
   }) => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/settings/people");
+    await openPeopleInviteDialog(page);
     const form = page.getByTestId("invite-colleague-form");
     await expect(form).toBeVisible();
     await page.getByLabel("Name").fill(longName);

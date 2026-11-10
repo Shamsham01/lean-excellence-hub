@@ -7,7 +7,14 @@ import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function ProficiencyScalesPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function ProficiencyScalesPage({ searchParams }: PageProps) {
+  const query = await searchParams;
+  const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
+  const openCreateDialog = newRequested === "1";
   const supabase = await createServerSupabaseClient();
   const canManageCatalog = await currentMemberHasPermission(
     SKILLS_PERMISSIONS.catalogManage,
@@ -42,7 +49,7 @@ export default async function ProficiencyScalesPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog && (scales?.length ?? 0) > 0 ? (
-              <ScaleCreateDialog />
+              <ScaleCreateDialog defaultOpen={openCreateDialog} />
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink href="/platform/skills">Back to skills</AppLink>
@@ -61,7 +68,7 @@ export default async function ProficiencyScalesPage() {
             assessments use to describe level.
           </p>
           {canManageCatalog ? (
-            <ScaleCreateDialog defaultOpen />
+            <ScaleCreateDialog defaultOpen={openCreateDialog} />
           ) : null}
         </section>
       ) : (

@@ -51,14 +51,14 @@ export default async function MaturityOverviewPage({
     currentMemberHasPermission(MATURITY_PERMISSIONS.assessSelf),
   ]);
   const canStartAssessment = canAssessFormal || canAssessSelf;
-  const startAssessmentProps = canStartAssessment
-    ? await loadStartAssessmentDialogProps()
-    : null;
 
-  const { data: models, error: modelsError } = await supabase
-    .from("maturity_models")
-    .select("id, display_name")
-    .limit(1);
+  const [{ data: models, error: modelsError }, startAssessmentProps] =
+    await Promise.all([
+      supabase.from("maturity_models").select("id, display_name").limit(1),
+      canStartAssessment
+        ? loadStartAssessmentDialogProps()
+        : Promise.resolve(null),
+    ]);
   const catalog = presentCatalogRead({
     failed: Boolean(modelsError),
     visibleCount: models?.length ?? 0,

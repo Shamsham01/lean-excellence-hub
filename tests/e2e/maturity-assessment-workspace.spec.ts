@@ -11,6 +11,12 @@ import {
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
+import {
+  openFrameworkAddCriterion,
+  openFrameworkAddLevel,
+  openFrameworkAddPillar,
+  openFrameworkAddQuestion,
+} from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const FRAMEWORK_NAME = "E2E Readiness Framework";
@@ -89,6 +95,7 @@ async function createReadinessFramework(page: Page) {
     "Developing",
     "Established",
   ].entries()) {
+    await openFrameworkAddLevel(page);
     await page.locator("#levelName").fill(name);
     await page.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByTestId(`edit-level-${index + 1}`)).toBeVisible({
@@ -97,6 +104,7 @@ async function createReadinessFramework(page: Page) {
   }
 
   await page.getByTestId("framework-step-pillars").click();
+  await openFrameworkAddPillar(page);
   await page.getByLabel("Pillar name").fill("Leadership & Governance");
   await page.getByRole("button", { name: "Add pillar" }).click();
   await expect(page.getByTestId("edit-pillar-1")).toBeVisible({
@@ -112,6 +120,7 @@ async function createReadinessFramework(page: Page) {
     const before = await page
       .locator('[data-testid^="edit-criterion-"]')
       .count();
+    await openFrameworkAddCriterion(page);
     await page.locator("#criterionName").fill(name);
     await page.getByRole("button", { name: "Add criterion" }).click();
     await expect(page.locator('[data-testid^="edit-criterion-"]')).toHaveCount(
@@ -134,6 +143,7 @@ async function createReadinessFramework(page: Page) {
     await page.locator("#criterionId").selectOption({
       label: `Leadership & Governance → ${name}`,
     });
+    await openFrameworkAddQuestion(page);
     await page.locator("#questionPrompt").fill(`Rate: ${name}`);
     const before = await page
       .locator('[data-testid^="edit-question-"]')

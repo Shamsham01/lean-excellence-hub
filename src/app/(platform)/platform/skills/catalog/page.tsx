@@ -93,7 +93,7 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
               existingCodes={[]}
               hasPublishedScale={(publishedScales ?? []).length > 0}
               scaleHref={scaleHref}
-              defaultOpen
+              defaultOpen={openCreateDialog}
             />
           ) : null}
         </section>

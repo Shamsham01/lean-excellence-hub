@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { StandardNameCreateForm } from "@/components/skills/standard-name-create-form";
-import { Button } from "@/components/ui/button";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 
 export function StandardCreateDialog({
@@ -17,7 +17,7 @@ export function StandardCreateDialog({
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         size="sm"
         className="min-h-11"
@@ -25,12 +25,13 @@ export function StandardCreateDialog({
         onClick={() => setOpen(true)}
       >
         New skills standard
-      </Button>
+      </ModuleWriteButton>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
         title="New skills standard"
         testId="skills-standard-create-dialog"
+        enableGuard
       >
         <StandardNameCreateForm
           existingCodes={existingCodes}

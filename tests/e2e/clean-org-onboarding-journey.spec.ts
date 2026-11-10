@@ -93,6 +93,8 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
           path: "/platform/settings/people",
           check: async (p) => {
             await expect(p.getByTestId("people-settings-page")).toBeVisible();
+            await expect(p.getByTestId("people-invite-open")).toBeVisible();
+            await p.getByTestId("people-invite-open").click();
             await expect(p.getByTestId("invite-colleague-form")).toBeVisible();
           },
         },

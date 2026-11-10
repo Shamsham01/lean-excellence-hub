@@ -104,7 +104,10 @@ export function PeopleSettingsShell({
         ) : null}
         {canImportWorkforce ? (
           <Button variant="outline" className="min-h-11" asChild>
-            <AppLink href="/platform/settings/people/import" data-testid="import-workforce-link">
+            <AppLink
+              href="/platform/settings/people/import"
+              data-testid="import-workforce-link"
+            >
               Import workforce
             </AppLink>
           </Button>
@@ -166,6 +169,7 @@ export function PeopleSettingsShell({
         description="Lean Excellence Hub emails a branded invitation with a Create account button."
         testId="people-invite-dialog"
         contentClassName="sm:max-w-2xl"
+        enableGuard
       >
         <InviteColleagueForm
           offers={offers}
@@ -185,6 +189,7 @@ export function PeopleSettingsShell({
         description="Create a workforce user with a temporary password."
         testId="people-add-employee-dialog"
         contentClassName="sm:max-w-2xl"
+        enableGuard
       >
         <CreateWorkforceUserForm
           offers={offers}

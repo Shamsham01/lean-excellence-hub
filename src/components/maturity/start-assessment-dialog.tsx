@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { StartAssessmentForm } from "@/components/maturity/start-assessment-form";
-import { Button } from "@/components/ui/button";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import type { StartAssessmentDialogProps } from "@/lib/maturity/load-start-assessment-props";
 
@@ -28,7 +28,7 @@ export function StartAssessmentDialog({
   return (
     <>
       {showTrigger ? (
-        <Button
+        <ModuleWriteButton
           type="button"
           size="sm"
           className="min-h-11"
@@ -37,7 +37,7 @@ export function StartAssessmentDialog({
           onClick={() => setOpen(true)}
         >
           {triggerLabel}
-        </Button>
+        </ModuleWriteButton>
       ) : null}
       <ResponsiveFormDialog
         open={open}
@@ -46,6 +46,7 @@ export function StartAssessmentDialog({
         description="Choose a Self snapshot or a Formal review with assessor control."
         testId="maturity-start-assessment-dialog"
         contentClassName="sm:max-w-lg"
+        enableGuard
       >
         {disabled ? (
           <p className="text-sm text-muted-foreground">

@@ -12,8 +12,6 @@ import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-
 import { NewSuggestionDialog } from "@/components/suggestions/new-suggestion-dialog";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { loadNewSuggestionFormConfiguration } from "@/lib/suggestions/load-new-suggestion-configuration";
-import { listEligibleOrganisations } from "@/modules/organisations/context";
 import {
   fetchSuggestionPortfolio,
   fetchSuggestionsOverview,
@@ -93,11 +91,11 @@ export default async function SuggestionsOverviewPage({
 
   const pipeline = overview.pipeline;
   const analytics = await loadSuggestionsAnalytics(supabase, analyticsRange);
-  const organisations = await listEligibleOrganisations();
-  const currentMembershipId = organisations.find((o) => o.selected)?.membership_id;
-  const newSuggestionConfiguration = canSubmit
-    ? await loadNewSuggestionFormConfiguration(supabase, currentMembershipId)
-    : null;
+  const canManageJobFunctions = await currentMemberHasPermission(
+    "job_functions.manage",
+  );
+  const newDialogRequested =
+    (Array.isArray(params.new) ? params.new[0] : params.new) === "1";
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
@@ -106,8 +104,12 @@ export default async function SuggestionsOverviewPage({
         description="Improvement ideas from your people — capture, review, and implement."
         actions={
           <div className="flex gap-2">
-            {canSubmit && newSuggestionConfiguration ? (
-              <NewSuggestionDialog {...newSuggestionConfiguration} />
+            {canSubmit ? (
+              <NewSuggestionDialog
+                canManageProgrammes={canManageProgrammes}
+                canManageJobFunctions={canManageJobFunctions}
+                defaultOpen={newDialogRequested}
+              />
             ) : null}
             {canManageProgrammes ? (
               <Button size="sm" variant="outline" asChild>

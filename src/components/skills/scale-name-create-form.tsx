@@ -9,11 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { navigateTo } from "@/lib/navigation/navigate";
-export function ScaleNameCreateForm({
-  onCreated,
-}: {
-  onCreated?: () => void;
-}) {
+export function ScaleNameCreateForm({ onCreated }: { onCreated?: () => void }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);

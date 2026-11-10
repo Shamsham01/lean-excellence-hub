@@ -3,9 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
-import { Button } from "@/components/ui/button";
-import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import { ActionCreateDialog } from "@/components/actions/action-create-form";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 
 type MaturityAssessmentActionDialogProps = {
   assessmentId: string;
@@ -22,37 +21,44 @@ export function MaturityAssessmentActionDialog({
 }: MaturityAssessmentActionDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         variant="outline"
         className="min-h-11"
         data-testid="create-improvement-action"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setCreatedActionId(null);
+          setOpen(true);
+        }}
       >
         + Create improvement action
-      </Button>
-      <ResponsiveFormDialog
+      </ModuleWriteButton>
+      {createdActionId ? (
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="action-created"
+        >
+          Action created.
+        </p>
+      ) : null}
+      <ActionCreateDialog
         open={open}
         onOpenChange={setOpen}
-        title="Create improvement action"
-        description="Link an action to this criterion and optional question."
-        testId="maturity-assessment-action-dialog"
-      >
-        <AssessmentActionForm
-          layout="dialog"
-          assessmentId={assessmentId}
-          pillarId={pillarId}
-          criterionId={criterionId}
-          questions={questions}
-          onCreated={() => {
-            setOpen(false);
-            router.refresh();
-          }}
-        />
-      </ResponsiveFormDialog>
+        maturityContext={{
+          assessmentId,
+          pillarId,
+          criterionId,
+          questions,
+        }}
+        onCreated={(actionId) => {
+          setCreatedActionId(actionId);
+          router.refresh();
+        }}
+      />
     </>
   );
 }

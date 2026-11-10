@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
+
 import { awardRecognition } from "@/app/(platform)/platform/recognition/actions";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
@@ -50,14 +52,18 @@ export function AwardRecognitionForm({
     resolveSelectorValue(people, defaultRecipientId),
   );
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  useReportFormDialogPending(submitting);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (submitting) return;
     setError(null);
     if (!unitId || !recipientId) {
       setError("Choose an organisational unit and recipient.");
       return;
     }
+    setSubmitting(true);
     try {
       const result = await awardRecognition({
         recognitionTypeId: typeId,
@@ -79,70 +85,72 @@ export function AwardRecognitionForm({
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Award failed");
+    } finally {
+      setSubmitting(false);
     }
   }
 
   const body = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Recognition type</span>
-            <select
-              className="border-input rounded-md border px-3 py-2"
-              value={typeId}
-              onChange={(e) => setTypeId(e.target.value)}
-            >
-              {types.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Title</span>
-            <input
-              required
-              className="border-input rounded-md border px-3 py-2"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Message</span>
-            <textarea
-              required
-              rows={3}
-              className="border-input rounded-md border px-3 py-2"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-          </label>
-          <OrganisationalUnitSelect
-            label="Organisation unit"
-            options={units}
-            value={unitId}
-            onChange={setUnitId}
-            required
-            requiresSiteSelection={requiresSiteSelection}
-            testId="recognition-unit-select"
-          />
-          <PersonSelect
-            label="Recipient"
-            options={people}
-            value={recipientId}
-            onChange={setRecipientId}
-            required
-            requiresSiteSelection={requiresSiteSelection}
-            testId="recognition-recipient-select"
-          />
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Recognition type</span>
+        <select
+          className="border-input rounded-md border px-3 py-2"
+          value={typeId}
+          onChange={(e) => setTypeId(e.target.value)}
+        >
+          {types.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Title</span>
+        <input
+          required
+          className="border-input rounded-md border px-3 py-2"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Message</span>
+        <textarea
+          required
+          rows={3}
+          className="border-input rounded-md border px-3 py-2"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+      </label>
+      <OrganisationalUnitSelect
+        label="Organisation unit"
+        options={units}
+        value={unitId}
+        onChange={setUnitId}
+        required
+        requiresSiteSelection={requiresSiteSelection}
+        testId="recognition-unit-select"
+      />
+      <PersonSelect
+        label="Recipient"
+        options={people}
+        value={recipientId}
+        onChange={setRecipientId}
+        required
+        requiresSiteSelection={requiresSiteSelection}
+        testId="recognition-recipient-select"
+      />
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <ModuleWriteButton
         type="submit"
         className="min-h-11"
-        disabled={!unitId || !recipientId}
+        disabled={!unitId || !recipientId || submitting}
         data-testid="award-recognition-submit"
       >
-        Award
+        {submitting ? "Awarding…" : "Award"}
       </ModuleWriteButton>
     </form>
   );

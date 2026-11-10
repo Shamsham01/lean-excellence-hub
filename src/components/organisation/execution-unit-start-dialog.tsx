@@ -51,6 +51,7 @@ export function ExecutionUnitStartDialog({
         onOpenChange={setOpen}
         title={dialogTitle}
         testId={`${formProps.formTestId}-dialog`}
+        enableGuard
       >
         <ExecutionUnitStartForm {...formProps} />
       </ResponsiveFormDialog>

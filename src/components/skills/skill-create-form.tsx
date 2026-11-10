@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
+
 import { createSkill } from "@/app/(platform)/platform/skills/actions";
 import { CatalogCodeControls } from "@/components/skills/catalog-code-controls";
 import { SkillsFieldError } from "@/components/skills/skills-field";
@@ -36,6 +38,7 @@ export function SkillCreateForm({
   const [customCode, setCustomCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  useReportFormDialogPending(submitting);
 
   const autoCode = useMemo(
     () =>

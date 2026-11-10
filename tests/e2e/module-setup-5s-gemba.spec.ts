@@ -7,6 +7,10 @@ import {
   resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import {
+  openFiveSAddQuestion,
+  openGembaAddPrompt,
+} from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -183,11 +187,11 @@ test.describe("5S and Gemba guided setup", () => {
     await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible();
     await expect(page.getByTestId("authoring-section")).toHaveCount(5);
     await expect(page.getByText(/v1 · published/i)).toHaveCount(0);
+    await openFiveSAddQuestion(page);
     await page
       .getByTestId("five-s-question-prompt")
-      .first()
       .fill("Extra packing check");
-    await page.getByRole("button", { name: "Add question" }).first().click();
+    await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByText("Extra packing check")).toBeVisible();
     await page.reload();
     await expect(page.getByText("Extra packing check")).toBeVisible();
@@ -323,11 +327,11 @@ test.describe("5S and Gemba guided setup", () => {
     await expect(page.getByTestId("gemba-draft-boundary")).toBeVisible();
     await expect(page.getByTestId("authoring-section")).toHaveCount(6);
     await expect(page.getByText(/v1 · published/i)).toHaveCount(0);
+    await openGembaAddPrompt(page);
     await page
       .getByTestId("gemba-question-prompt")
-      .first()
       .fill("What else is visible?");
-    await page.getByRole("button", { name: "Add prompt" }).first().click();
+    await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByText("What else is visible?")).toBeVisible();
     await screenshot(page, "gemba-created-draft.png");
     await page.getByTestId("publish-gemba-definition").click();

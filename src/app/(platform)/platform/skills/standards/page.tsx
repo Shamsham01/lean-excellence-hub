@@ -7,7 +7,14 @@ import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function SkillsStandardsPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SkillsStandardsPage({ searchParams }: PageProps) {
+  const query = await searchParams;
+  const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
+  const openCreateDialog = newRequested === "1";
   const supabase = await createServerSupabaseClient();
   const canManageRequirements = await currentMemberHasPermission(
     SKILLS_PERMISSIONS.requirementsManage,
@@ -42,7 +49,10 @@ export default async function SkillsStandardsPage() {
           <div className="flex flex-wrap gap-2">
             {canManageRequirements && (standards?.length ?? 0) > 0 ? (
               <StandardCreateDialog
-                existingCodes={(standards ?? []).map((standard) => standard.code)}
+                existingCodes={(standards ?? []).map(
+                  (standard) => standard.code,
+                )}
+                defaultOpen={openCreateDialog}
               />
             ) : null}
             <Button variant="outline" size="sm" asChild>
@@ -65,7 +75,7 @@ export default async function SkillsStandardsPage() {
           {canManageRequirements ? (
             <StandardCreateDialog
               existingCodes={[]}
-              defaultOpen
+              defaultOpen={openCreateDialog}
             />
           ) : null}
         </section>

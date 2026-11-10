@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { ScaleNameCreateForm } from "@/components/skills/scale-name-create-form";
-import { Button } from "@/components/ui/button";
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 
 export function ScaleCreateDialog({
@@ -17,7 +17,7 @@ export function ScaleCreateDialog({
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         size="sm"
         className="min-h-11"
@@ -25,13 +25,14 @@ export function ScaleCreateDialog({
         onClick={() => setOpen(true)}
       >
         {triggerLabel}
-      </Button>
+      </ModuleWriteButton>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
         title="New proficiency scale"
         description="Name the scale, then edit levels on the detail page."
         testId="skills-scale-create-dialog"
+        enableGuard
       >
         <ScaleNameCreateForm onCreated={() => setOpen(false)} />
       </ResponsiveFormDialog>

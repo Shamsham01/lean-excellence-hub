@@ -2,9 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  clickExecutionStartSubmit,
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
+import {
+  openGembaAddPrompt,
+  openGembaAddSection,
+} from "./helpers/form-dialogs";
 import { navigateGembaPrompt } from "./helpers/gemba-walk-navigation";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -90,16 +95,19 @@ test.describe("platform reliability after shared RSC refresh", () => {
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
+    await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Reliability");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText(
       "Reliability",
     );
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByTestId("authoring-question")).toHaveCount(1);
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);
@@ -114,7 +122,7 @@ test.describe("platform reliability after shared RSC refresh", () => {
       unitSelectTestId: "gemba-unit-select",
       submitTestId: "gemba-start-walk",
     });
-    await page.getByRole("button", { name: "Start walk" }).click();
+    await clickExecutionStartSubmit(page, "gemba-start-walk");
     await expect(page).toHaveURL(/\/platform\/gemba\/walks\//);
     await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
     await expectWorkspaceHealthy(page);

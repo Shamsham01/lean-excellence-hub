@@ -7,7 +7,14 @@ import {
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
-import { selectFirstExecutionUnit } from "./helpers/execution-unit-select";
+import {
+  clickExecutionStartSubmit,
+  selectFirstExecutionUnit,
+} from "./helpers/execution-unit-select";
+import {
+  openFiveSAddCategory,
+  openFiveSAddQuestion,
+} from "./helpers/form-dialogs";
 import { clickFiveSCompleteAudit } from "./helpers/responsive-complete-control";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -63,10 +70,12 @@ test.describe("5S scoring scale", () => {
     );
     discreteStandardPath = new URL(page.url()).pathname;
 
+    await openFiveSAddCategory(page);
     await page.getByLabel("Category name").fill("Sort");
     await page.getByRole("button", { name: "Add category" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText("Sort");
 
+    await openFiveSAddQuestion(page);
     await page.getByTestId("five-s-question-prompt").fill(scorePrompt);
     await page.locator('select[name="questionType"]').selectOption("score");
     await page.getByRole("button", { name: "Add question" }).click();
@@ -109,7 +118,7 @@ test.describe("5S scoring scale", () => {
     );
 
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByTestId("five-s-start-audit").click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
     const auditId = page.url().split("/").pop() ?? "";
 
@@ -234,8 +243,10 @@ test.describe("5S scoring scale", () => {
       "0 to 100",
     );
 
+    await openFiveSAddCategory(page);
     await page.getByLabel("Category name").fill("Sort");
     await page.getByRole("button", { name: "Add category" }).click();
+    await openFiveSAddQuestion(page);
     await page.getByTestId("five-s-question-prompt").fill("Wide score");
     await page.locator('select[name="questionType"]').selectOption("score");
     await page.getByRole("button", { name: "Add question" }).click();
@@ -243,7 +254,7 @@ test.describe("5S scoring scale", () => {
     await expect(page.getByText(/v1 · published/i)).toBeVisible();
 
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByTestId("five-s-start-audit").click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
 
     const input = page.getByLabel("Score");
@@ -299,7 +310,7 @@ test.describe("5S scoring scale", () => {
     expect(discreteStandardPath).not.toEqual("");
     await page.goto(discreteStandardPath);
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByTestId("five-s-start-audit").click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     const narrowGroup = scoreGroup(page);
     await expect(narrowGroup).toBeVisible();
     const narrowOptions = narrowGroup.getByRole("radio");
