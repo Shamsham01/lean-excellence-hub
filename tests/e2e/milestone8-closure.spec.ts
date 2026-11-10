@@ -45,7 +45,9 @@ test.describe("Milestone 8 closure", () => {
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await page.getByLabel(/Methodology/i).selectOption({ index: 0 });
+    await page
+      .getByTestId("project-methodology-select")
+      .selectOption({ index: 0 });
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByTestId("project-owner-select").selectOption({ index: 1 });

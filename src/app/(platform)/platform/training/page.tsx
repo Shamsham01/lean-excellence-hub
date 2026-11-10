@@ -5,10 +5,8 @@ import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics
 import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRange,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
@@ -28,9 +26,6 @@ export default async function TrainingOverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const analyticsRange = buildAnalyticsDateRange(
-    parseAnalyticsRangeDays(params.range),
-  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: TRAINING_PERMISSIONS.read,
     module: "training",
@@ -40,6 +35,9 @@ export default async function TrainingOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
   const [canManageCatalog, { context }] = await Promise.all([
     currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),
     loadActiveSiteContext(),

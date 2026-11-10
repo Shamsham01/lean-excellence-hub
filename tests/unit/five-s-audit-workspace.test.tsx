@@ -1487,4 +1487,22 @@ describe("FiveSAuditWorkspace scoring scale", () => {
     expect(screen.getByRole("button", { name: "N/A" })).toBeInTheDocument();
     expect(screen.getByTestId("mobile-frame")).toHaveStyle({ width: "390px" });
   });
+
+  it("bases the progress label on answered questions, not position", () => {
+    renderWorkspace({
+      questions: [
+        question(YES_NO_ID, "First", "yes_no"),
+        question(SECOND_ID, "Second", "yes_no"),
+      ],
+      answers: { [YES_NO_ID]: { text_value: "yes" } },
+    });
+
+    expect(
+      screen.getByTestId("five-s-answer-progress-label"),
+    ).toHaveTextContent("1/2 answered");
+    expect(screen.getByTestId("five-s-category-sort")).toHaveAttribute(
+      "data-completion-state",
+      "partial",
+    );
+  });
 });

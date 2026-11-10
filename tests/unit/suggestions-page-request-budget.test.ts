@@ -197,6 +197,7 @@ async function renderSuggestionsOverviewLikePage() {
     end: "2026-01-31T00:00:00.000Z",
     previousStart: "2025-12-01T00:00:00.000Z",
     previousEnd: "2025-12-31T00:00:00.000Z",
+    timeZone: "Europe/London",
   });
 }
 

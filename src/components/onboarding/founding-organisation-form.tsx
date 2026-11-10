@@ -183,7 +183,12 @@ export function FoundingOrganisationForm({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="timeZone">Time zone</Label>
-            <Input id="timeZone" name="timeZone" defaultValue="UTC" required />
+            <Input
+              id="timeZone"
+              name="timeZone"
+              defaultValue="Europe/London"
+              required
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="reportingCurrency">Reporting currency</Label>

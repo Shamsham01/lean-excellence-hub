@@ -171,7 +171,7 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits/new");
     await expect(page.getByTestId("create-benefit-wizard")).toBeVisible();
-    await page.getByRole("button", { name: "5. Source" }).click();
+    await page.getByTestId("wizard-step-mobile-4").click();
     await expect(page.getByTestId("project-select")).toBeVisible();
     await expect(page.getByTestId("project-select-input")).toBeVisible();
     await expect(

@@ -3,10 +3,8 @@ import { PPS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icon
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRange,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadProblemSolvingAnalytics } from "@/modules/platform-analytics/problem-solving";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { Button } from "@/components/ui/button";
@@ -39,7 +37,7 @@ export default async function ProblemSolvingPortfolioPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const analyticsRange = buildAnalyticsDateRange(
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
     parseAnalyticsRangeDays(params.range),
   );
   const canCreate = await currentMemberHasPermission("problem_solving.create");

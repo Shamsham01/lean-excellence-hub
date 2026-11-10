@@ -3,10 +3,8 @@ import { notFound } from "next/navigation";
 import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
 import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
-import {
-  buildAnalyticsDateRange,
-  parseAnalyticsRangeDays,
-} from "@/modules/platform-analytics/date-range";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestions";
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
@@ -69,10 +67,10 @@ export default async function SuggestionsOverviewPage({
 
   const params = await searchParams;
   const filters = parseSuggestionPortfolioSearchParams(params);
-  const analyticsRange = buildAnalyticsDateRange(
+  const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
     parseAnalyticsRangeDays(params.range),
   );
-  const supabase = await createServerSupabaseClient();
   const canReview = await currentMemberHasPermission("suggestions.review");
   const canManageProgrammes = await currentMemberHasPermission(
     "suggestions.programmes.manage",

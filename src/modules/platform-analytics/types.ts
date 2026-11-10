@@ -9,7 +9,11 @@ export type KpiStat = {
   valueTestId?: string;
 };
 
-export type AnalyticsSeriesPoint = { label: string; value: number };
+export type AnalyticsSeriesPoint = {
+  label: string;
+  value: number;
+  tooltipLabel?: string;
+};
 
 export type AnalyticsDonutSegment = { name: string; value: number };
 
