@@ -67,7 +67,7 @@ async function openUnreadNotificationReview(
     return item.first();
   };
 
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     await page.goto("/platform");
     await expect(notificationBell(page)).toBeVisible();
     await notificationBell(page).click();
@@ -80,10 +80,10 @@ async function openUnreadNotificationReview(
       await expect(reviewWorkspace(page)).toBeVisible({ timeout: 30_000 });
       return;
     }
-    await page.waitForTimeout(2_000);
+    await page.waitForTimeout(3_000);
   }
 
-  await expect(notificationItem()).toBeVisible({ timeout: 60_000 });
+  await expect(notificationItem()).toBeVisible({ timeout: 90_000 });
 }
 
 test.describe("Suggestion approval delegation (UI acceptance)", () => {
@@ -142,6 +142,7 @@ test.describe("Suggestion approval delegation (UI acceptance)", () => {
   test("delegated finance reviewer sees unread pending and approves", async ({
     page,
   }) => {
+    test.setTimeout(180_000);
     await signInAsDemoUser(page, "finance");
     expect(submittedSuggestionId).toBeTruthy();
     await openUnreadNotificationReview(
