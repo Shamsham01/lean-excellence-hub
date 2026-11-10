@@ -18,6 +18,10 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+vi.mock("@/modules/billing/module-write-context", () => ({
+  usePlanModuleWriteAllowed: () => true,
+}));
+
 const removeQuestion = vi.fn();
 const removeSection = vi.fn();
 const discardDraft = vi.fn();
@@ -25,10 +29,18 @@ const discardDraft = vi.fn();
 vi.mock("@/app/(platform)/platform/5s/actions", () => ({
   addFiveSQuestionFromForm: vi.fn(),
   addFiveSSectionFromForm: vi.fn(),
-  removeFiveSQuestionFromForm: (...args: unknown[]) => removeQuestion(...args),
-  removeFiveSSectionFromForm: (...args: unknown[]) => removeSection(...args),
-  discardFiveSStandardDraftFromForm: (...args: unknown[]) =>
-    discardDraft(...args),
+  removeFiveSQuestionFromForm: (...args: unknown[]) => {
+    removeQuestion(...args);
+    return Promise.resolve();
+  },
+  removeFiveSSectionFromForm: (...args: unknown[]) => {
+    removeSection(...args);
+    return Promise.resolve();
+  },
+  discardFiveSStandardDraftFromForm: (...args: unknown[]) => {
+    discardDraft(...args);
+    return Promise.resolve();
+  },
   setFiveSStandardApplicableUnitsFromForm: vi.fn(),
   setFiveSStandardScoringScaleFromForm: vi.fn(),
 }));
@@ -38,6 +50,7 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
     cleanup();
     removeQuestion.mockReset();
     removeSection.mockReset();
+    discardDraft.mockReset();
   });
 
   beforeEach(() => {
@@ -97,7 +110,78 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
     ).toBeInTheDocument();
   });
 
-  it("exposes discard draft with a destructive confirm", async () => {
+  it("submits question removal from the confirm dialog", async () => {
+    render(
+      <FiveSDraftAuthoringPanels
+        standardId="standard-1"
+        versionId="version-1"
+        sections={[
+          {
+            id: "section-a",
+            title: "Sort",
+            questions: [
+              {
+                id: "question-1",
+                prompt: "Is it tidy?",
+                questionType: "yes_no",
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByTestId("five-s-remove-question-open-question-1"),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("five-s-remove-structural-confirm"),
+      ).toBeVisible();
+    });
+    fireEvent.click(screen.getByTestId("five-s-remove-structural-confirm"));
+
+    await waitFor(() => {
+      expect(removeQuestion).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("invokes the remove action even when the server action rejects", async () => {
+    removeQuestion.mockRejectedValueOnce(
+      new Error("5S question is not removable"),
+    );
+
+    render(
+      <FiveSDraftAuthoringPanels
+        standardId="standard-1"
+        versionId="version-1"
+        sections={[
+          {
+            id: "section-a",
+            title: "Sort",
+            questions: [
+              {
+                id: "question-1",
+                prompt: "Is it tidy?",
+                questionType: "yes_no",
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByTestId("five-s-remove-question-open-question-1"),
+    );
+    fireEvent.click(screen.getByTestId("five-s-remove-structural-confirm"));
+
+    await waitFor(() => {
+      expect(removeQuestion).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("exposes discard draft with a destructive confirm and submit", async () => {
     render(
       <FiveSDiscardDraftControl standardId="standard-1" versionId="draft-1" />,
     );
@@ -107,8 +191,10 @@ describe("FiveSDraftAuthoringPanels structural controls", () => {
       expect(screen.getByTestId("five-s-discard-draft-dialog")).toBeVisible();
     });
     expect(screen.getByText(/Discard draft\?/)).toBeInTheDocument();
-    expect(
-      screen.getByTestId("five-s-discard-draft-confirm"),
-    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("five-s-discard-draft-confirm"));
+    await waitFor(() => {
+      expect(discardDraft).toHaveBeenCalledTimes(1);
+    });
   });
 });

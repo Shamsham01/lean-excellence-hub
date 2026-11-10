@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(36);
 
 select ok(
   pg_catalog.has_function_privilege(
@@ -20,6 +20,24 @@ select ok(
   'anon cannot remove a 5S draft question'
 );
 
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.remove_five_s_section(uuid)',
+    'execute'
+  ),
+  'anon cannot remove a 5S draft section'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.discard_five_s_standard_draft(uuid)',
+    'execute'
+  ),
+  'anon cannot discard a 5S draft'
+);
+
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
   raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous
@@ -32,6 +50,9 @@ values
    statement_timestamp(), statement_timestamp(), statement_timestamp(),
    '{"provider":"email","providers":["email"]}', '{}', false, false),
   ('b5c10000-0000-0000-0000-000000000003', 'five-s-remove-viewer@example.test',
+   statement_timestamp(), statement_timestamp(), statement_timestamp(),
+   '{"provider":"email","providers":["email"]}', '{}', false, false),
+  ('b5c10000-0000-0000-0000-000000000004', 'five-s-remove-other-owner@example.test',
    statement_timestamp(), statement_timestamp(), statement_timestamp(),
    '{"provider":"email","providers":["email"]}', '{}', false, false);
 
@@ -52,11 +73,22 @@ values (
   )
 );
 
+insert into remove_ids (key, id)
+values (
+  'other_organisation',
+  private.provision_organisation(
+    'b5c10000-0000-0000-0000-000000000004',
+    'five-s-remove-other-org',
+    'Five S Remove Other Organisation'
+  )
+);
+
 insert into auth.sessions (id, user_id, created_at, updated_at)
 values
   ('b5c10000-0000-0000-0000-000000000011', 'b5c10000-0000-0000-0000-000000000001', statement_timestamp(), statement_timestamp()),
   ('b5c10000-0000-0000-0000-000000000012', 'b5c10000-0000-0000-0000-000000000002', statement_timestamp(), statement_timestamp()),
-  ('b5c10000-0000-0000-0000-000000000013', 'b5c10000-0000-0000-0000-000000000003', statement_timestamp(), statement_timestamp());
+  ('b5c10000-0000-0000-0000-000000000013', 'b5c10000-0000-0000-0000-000000000003', statement_timestamp(), statement_timestamp()),
+  ('b5c10000-0000-0000-0000-000000000014', 'b5c10000-0000-0000-0000-000000000004', statement_timestamp(), statement_timestamp());
 
 insert into public.organisation_memberships (
   organisation_id, user_id, status, activated_at
@@ -192,14 +224,6 @@ select is(
   'removing one question leaves the rest'
 );
 
-select lives_ok(
-  format(
-    'select public.remove_five_s_section(%L::uuid)',
-    (select id from remove_ids where key = 'set_section')
-  ),
-  'draft section removal deletes its questions'
-);
-
 select public.publish_five_s_standard_version(
   (select id from remove_ids where key = 'v1')
 );
@@ -229,6 +253,24 @@ select throws_ok(
   'published questions cannot be removed'
 );
 
+insert into remove_ids (key, id)
+select 'published_set_section', section_row.id
+from public.template_sections section_row
+join public.five_s_standard_versions version_row
+  on version_row.template_version_id = section_row.template_version_id
+where version_row.id = (select id from remove_ids where key = 'v1')
+  and section_row.title = 'Set';
+
+select throws_ok(
+  format(
+    'select public.remove_five_s_section(%L::uuid)',
+    (select id from remove_ids where key = 'published_set_section')
+  ),
+  '55000',
+  '5S section is not removable',
+  'published sections cannot be removed'
+);
+
 select lives_ok(
   format(
     'select public.create_five_s_standard_successor_version(%L::uuid)',
@@ -251,26 +293,57 @@ join public.five_s_standard_versions version_row
 where version_row.id = (select id from remove_ids where key = 'v2')
   and section_row.title = 'Sort';
 
-select public.add_five_s_section(
-  (select id from remove_ids where key = 'v2'),
-  'Set in v2',
-  2
-);
-
 insert into remove_ids (key, id)
 select 'v2_set_section', section_row.id
 from public.template_sections section_row
 join public.five_s_standard_versions version_row
   on version_row.template_version_id = section_row.template_version_id
 where version_row.id = (select id from remove_ids where key = 'v2')
-  and section_row.title = 'Set in v2';
+  and section_row.title = 'Set';
 
-select public.add_five_s_question(
-  (select id from remove_ids where key = 'v2'),
-  (select id from remove_ids where key = 'v2_set_section'),
-  'short_text',
-  'Set question',
-  1
+insert into remove_ids (key, id)
+select 'v2_keep_question', question_row.id
+from public.template_questions question_row
+join public.five_s_standard_versions version_row
+  on version_row.template_version_id = question_row.template_version_id
+where version_row.id = (select id from remove_ids where key = 'v2')
+  and question_row.prompt = 'Sort question keep';
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000003","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000013","email":"five-s-remove-viewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from remove_ids where key = 'organisation')),
+  'viewer selects the organisation'
+);
+
+select throws_ok(
+  format(
+    'select public.remove_five_s_question(%L::uuid)',
+    (select id from remove_ids where key = 'v2_keep_question')
+  ),
+  '42501',
+  '5S question removal is not authorised',
+  'non-managers cannot remove draft questions'
+);
+
+select throws_ok(
+  format(
+    'select public.remove_five_s_section(%L::uuid)',
+    (select id from remove_ids where key = 'v2_set_section')
+  ),
+  '42501',
+  '5S section removal is not authorised',
+  'non-managers cannot remove draft sections'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000011","email":"five-s-remove-owner@example.test"}',
+  true
 );
 
 select throws_ok(
@@ -289,6 +362,28 @@ select lives_ok(
     (select id from remove_ids where key = 'v2_set_section')
   ),
   'a cloned category can be removed from successor draft'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000003","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000013","email":"five-s-remove-viewer@example.test"}',
+  true
+);
+
+select throws_ok(
+  format(
+    'select public.discard_five_s_standard_draft(%L::uuid)',
+    (select id from remove_ids where key = 'v2')
+  ),
+  '42501',
+  '5S draft discard is not authorised',
+  'non-managers cannot discard a successor draft'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000011","email":"five-s-remove-owner@example.test"}',
+  true
 );
 
 select lives_ok(
@@ -332,33 +427,6 @@ select is(
   'a new audit uses v2 with the removed clone absent'
 );
 
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"b5c10000-0000-0000-0000-000000000003","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000013","email":"five-s-remove-viewer@example.test"}',
-  true
-);
-
-select ok(
-  public.switch_organisation((select id from remove_ids where key = 'organisation')),
-  'viewer selects the organisation'
-);
-
-select throws_ok(
-  format(
-    'select public.discard_five_s_standard_draft(%L::uuid)',
-    (select id from remove_ids where key = 'v2')
-  ),
-  '42501',
-  '5S draft discard is not authorised',
-  'non-managers cannot discard a draft'
-);
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"b5c10000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000011","email":"five-s-remove-owner@example.test"}',
-  true
-);
-
 insert into remove_ids (key, id)
 select 'discard_standard', public.create_five_s_standard_draft(
   'Discard only',
@@ -396,6 +464,11 @@ from public.five_s_standard_versions version_row
 where version_row.standard_id = (select id from remove_ids where key = 'standard')
   and version_row.status = 'draft';
 
+insert into remove_ids (key, id)
+select 'v3_template', version_row.template_version_id
+from public.five_s_standard_versions version_row
+where version_row.id = (select id from remove_ids where key = 'v3');
+
 select lives_ok(
   format(
     'select public.discard_five_s_standard_draft(%L::uuid)',
@@ -404,12 +477,135 @@ select lives_ok(
   'successor draft can be discarded when a published version remains'
 );
 
+select is(
+  (
+    select count(*)
+    from public.five_s_standard_versions version_row
+    where version_row.id = (select id from remove_ids where key = 'v3')
+  ),
+  0::bigint,
+  'discard removes the standard version row'
+);
+
+select is(
+  (
+    select count(*)
+    from public.template_versions template_row
+    where template_row.id = (select id from remove_ids where key = 'v3_template')
+  ),
+  0::bigint,
+  'discard removes the template version row'
+);
+
+select is(
+  (
+    select count(*)
+    from public.five_s_question_scoring scoring_row
+    where scoring_row.standard_version_id = (select id from remove_ids where key = 'v3')
+  ),
+  0::bigint,
+  'discard removes question scoring rows'
+);
+
+select is(
+  (
+    select count(*)
+    from public.five_s_section_weights weight_row
+    where weight_row.standard_version_id = (select id from remove_ids where key = 'v3')
+  ),
+  0::bigint,
+  'discard removes section weight rows'
+);
+
 select lives_ok(
   format(
     'select public.create_five_s_standard_successor_version(%L::uuid)',
     (select id from remove_ids where key = 'standard')
   ),
   'discarding the draft re-enables successor creation'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000011","email":"five-s-remove-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from remove_ids where key = 'organisation')),
+  'owner re-selects primary org before cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.template_questions question_row
+    where question_row.id = (select id from remove_ids where key = 'v2_keep_question')
+  ),
+  1::bigint,
+  'primary org question exists before cross-tenant probe'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000004","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000014","email":"five-s-remove-other-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from remove_ids where key = 'other_organisation')),
+  'other organisation owner selects their org'
+);
+
+select throws_ok(
+  format(
+    'select public.remove_five_s_question(%L::uuid)',
+    (select id from remove_ids where key = 'v2_keep_question')
+  ),
+  '55000',
+  '5S question is not removable',
+  'other organisation cannot remove a foreign question'
+);
+
+select throws_ok(
+  format(
+    'select public.remove_five_s_section(%L::uuid)',
+    (select id from remove_ids where key = 'v2_sort_section')
+  ),
+  '55000',
+  '5S section is not removable',
+  'other organisation cannot remove a foreign section'
+);
+
+select throws_ok(
+  format(
+    'select public.discard_five_s_standard_draft(%L::uuid)',
+    (select id from remove_ids where key = 'v2')
+  ),
+  'P0002',
+  '5S draft version was not found',
+  'other organisation cannot discard a foreign draft'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b5c10000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b5c10000-0000-0000-0000-000000000011","email":"five-s-remove-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from remove_ids where key = 'organisation')),
+  'owner re-selects primary org after cross-tenant probe'
+);
+
+select is(
+  (
+    select count(*)
+    from public.template_questions question_row
+    where question_row.id = (select id from remove_ids where key = 'v2_keep_question')
+  ),
+  1::bigint,
+  'foreign structural RPC probes leave rows unchanged'
 );
 
 select * from finish();

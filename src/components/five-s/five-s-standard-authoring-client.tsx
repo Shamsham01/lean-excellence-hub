@@ -15,6 +15,8 @@ import {
   setFiveSStandardScoringScaleFromForm,
 } from "@/app/(platform)/platform/5s/actions";
 import { Trash2 } from "lucide-react";
+
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { Button } from "@/components/ui/button";
@@ -180,7 +182,7 @@ export function FiveSDiscardDraftControl({
 
   return (
     <>
-      <Button
+      <ModuleWriteButton
         type="button"
         variant="outline"
         className="min-h-11 w-fit"
@@ -188,7 +190,7 @@ export function FiveSDiscardDraftControl({
         onClick={() => setOpen(true)}
       >
         Discard draft
-      </Button>
+      </ModuleWriteButton>
       <ResponsiveFormDialog
         open={open}
         onOpenChange={setOpen}
@@ -212,14 +214,14 @@ export function FiveSDiscardDraftControl({
             >
               Keep draft
             </Button>
-            <Button
+            <ModuleWriteButton
               type="submit"
               variant="destructive"
               className="min-h-11"
               data-testid="five-s-discard-draft-confirm"
             >
               Discard draft
-            </Button>
+            </ModuleWriteButton>
           </div>
         </DialogServerActionForm>
       </ResponsiveFormDialog>
@@ -371,7 +373,9 @@ export function FiveSDraftAuthoringPanels({
             className="flex flex-col gap-4"
             onSuccess={() => {
               flashSaved(
-                removeTarget.kind === "section" ? "section" : "question",
+                removeTarget.kind === "section"
+                  ? "remove_section"
+                  : "remove_question",
               );
               setRemoveTarget(null);
             }}
@@ -393,7 +397,7 @@ export function FiveSDraftAuthoringPanels({
               >
                 Cancel
               </Button>
-              <Button
+              <ModuleWriteButton
                 type="submit"
                 variant="destructive"
                 className="min-h-11"
@@ -402,7 +406,7 @@ export function FiveSDraftAuthoringPanels({
                 {removeTarget.kind === "section"
                   ? "Remove category"
                   : "Remove question"}
-              </Button>
+              </ModuleWriteButton>
             </div>
           </DialogServerActionForm>
         ) : null}
@@ -428,7 +432,7 @@ export function FiveSDraftAuthoringPanels({
               >
                 Add question
               </Button>
-              <Button
+              <ModuleWriteButton
                 type="button"
                 size="icon"
                 variant="ghost"
@@ -444,7 +448,7 @@ export function FiveSDraftAuthoringPanels({
                 }
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
-              </Button>
+              </ModuleWriteButton>
             </div>
           </div>
           {section.questions.length > 0 ? (
@@ -461,7 +465,7 @@ export function FiveSDraftAuthoringPanels({
                       {fiveSQuestionTypeLabel(question.questionType)}
                     </p>
                   </div>
-                  <Button
+                  <ModuleWriteButton
                     type="button"
                     size="icon"
                     variant="ghost"
@@ -477,7 +481,7 @@ export function FiveSDraftAuthoringPanels({
                     }
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
-                  </Button>
+                  </ModuleWriteButton>
                 </li>
               ))}
             </ul>

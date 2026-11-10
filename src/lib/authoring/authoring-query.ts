@@ -13,6 +13,8 @@ export type AuthoringSavedKey =
   | "course"
   | "successor"
   | "discard"
+  | "remove_question"
+  | "remove_section"
   | "curriculum"
   | "requirement";
 
@@ -27,6 +29,8 @@ const AUTHORING_SAVED_KEYS = new Set<AuthoringSavedKey>([
   "course",
   "successor",
   "discard",
+  "remove_question",
+  "remove_section",
   "curriculum",
   "requirement",
 ]);
@@ -92,6 +96,10 @@ export function authoringSaveMessage(key: AuthoringSavedKey): string {
       return "Successor draft created.";
     case "discard":
       return "Draft discarded.";
+    case "remove_question":
+      return "Question removed.";
+    case "remove_section":
+      return "Category removed.";
     case "curriculum":
       return "Curriculum draft saved.";
     case "requirement":

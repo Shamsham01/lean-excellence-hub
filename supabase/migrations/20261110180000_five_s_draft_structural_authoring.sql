@@ -33,12 +33,22 @@ begin
   join public.five_s_standard_versions standard_version
     on standard_version.organisation_id = question_row.organisation_id
    and standard_version.template_version_id = question_row.template_version_id
-   and standard_version.status = 'draft'
   where question_row.organisation_id = org_id
     and question_row.id = target_question_id
-  for update of question_row;
+  for update of question_row, standard_version;
 
   if linked_standard_version_id is null then
+    raise exception '5S question is not removable'
+      using errcode = '55000';
+  end if;
+
+  if not exists (
+    select 1
+    from public.five_s_standard_versions version_row
+    where version_row.organisation_id = org_id
+      and version_row.id = linked_standard_version_id
+      and version_row.status = 'draft'
+  ) then
     raise exception '5S question is not removable'
       using errcode = '55000';
   end if;
@@ -101,12 +111,22 @@ begin
   join public.five_s_standard_versions standard_version
     on standard_version.organisation_id = section_row.organisation_id
    and standard_version.template_version_id = section_row.template_version_id
-   and standard_version.status = 'draft'
   where section_row.organisation_id = org_id
     and section_row.id = target_section_id
-  for update of section_row;
+  for update of section_row, standard_version;
 
   if linked_standard_version_id is null then
+    raise exception '5S section is not removable'
+      using errcode = '55000';
+  end if;
+
+  if not exists (
+    select 1
+    from public.five_s_standard_versions version_row
+    where version_row.organisation_id = org_id
+      and version_row.id = linked_standard_version_id
+      and version_row.status = 'draft'
+  ) then
     raise exception '5S section is not removable'
       using errcode = '55000';
   end if;
@@ -295,3 +315,142 @@ alter function private.remove_five_s_section(uuid)
   owner to lean_hub_private_owner;
 alter function private.discard_five_s_standard_draft(uuid)
   owner to lean_hub_private_owner;
+
+revoke all on function private.remove_five_s_question(uuid) from public, anon;
+revoke all on function private.remove_five_s_section(uuid) from public, anon;
+revoke all on function private.discard_five_s_standard_draft(uuid) from public, anon;
+
+grant execute on function private.remove_five_s_question(uuid) to authenticated, lean_hub_private_owner;
+grant execute on function private.remove_five_s_section(uuid) to authenticated, lean_hub_private_owner;
+grant execute on function private.discard_five_s_standard_draft(uuid) to authenticated, lean_hub_private_owner;
+
+-- Serialize draft structural edits with publish by locking the standard version row.
+create or replace function private.add_five_s_section(
+  target_standard_version_id uuid,
+  target_title text,
+  target_position integer
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  template_version_id uuid;
+  version_status text;
+  new_section_id uuid;
+begin
+  if org_id is null
+    or actor_membership_id is null
+    or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
+    raise exception '5S section creation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select standard_version.template_version_id, standard_version.status
+  into template_version_id, version_status
+  from public.five_s_standard_versions standard_version
+  where standard_version.organisation_id = org_id
+    and standard_version.id = target_standard_version_id
+  for update of standard_version;
+
+  if template_version_id is null or version_status <> 'draft' then
+    raise exception '5S standard version is not editable'
+      using errcode = '55000';
+  end if;
+
+  new_section_id := private.add_template_section_internal(
+    template_version_id,
+    target_title,
+    target_position
+  );
+
+  insert into public.five_s_section_weights (
+    organisation_id, standard_version_id, section_id, weight
+  )
+  values (org_id, target_standard_version_id, new_section_id, 1)
+  on conflict (organisation_id, standard_version_id, section_id) do nothing;
+
+  return new_section_id;
+end;
+$$;
+
+create or replace function private.add_five_s_question(
+  target_standard_version_id uuid,
+  target_section_id uuid,
+  target_question_type text,
+  target_prompt text,
+  target_position integer,
+  target_is_required boolean default true,
+  target_allows_not_applicable boolean default false,
+  target_help_text text default null,
+  target_options jsonb default null,
+  target_contributes_to_score boolean default false,
+  target_scoring_metadata jsonb default null,
+  target_weight numeric default 1
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  template_version_id uuid;
+  version_status text;
+  new_question_id uuid;
+begin
+  if org_id is null
+    or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
+    raise exception '5S question creation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select standard_version.template_version_id, standard_version.status
+  into template_version_id, version_status
+  from public.five_s_standard_versions standard_version
+  where standard_version.organisation_id = org_id
+    and standard_version.id = target_standard_version_id
+  for update of standard_version;
+
+  if template_version_id is null or version_status <> 'draft' then
+    raise exception '5S standard version is not editable'
+      using errcode = '55000';
+  end if;
+
+  new_question_id := private.add_template_question_internal(
+    template_version_id,
+    target_section_id,
+    target_question_type,
+    target_prompt,
+    target_position,
+    target_is_required,
+    target_allows_not_applicable,
+    target_help_text,
+    target_options
+  );
+
+  insert into public.five_s_question_scoring (
+    organisation_id,
+    standard_version_id,
+    question_id,
+    contributes_to_score,
+    scoring_metadata,
+    weight
+  )
+  values (
+    org_id,
+    target_standard_version_id,
+    new_question_id,
+    target_contributes_to_score,
+    target_scoring_metadata,
+    target_weight
+  );
+
+  return new_question_id;
+end;
+$$;
