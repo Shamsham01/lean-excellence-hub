@@ -5,7 +5,6 @@ import type { OperationalCatalogStartActionConfig } from "@/components/operation
 import {
   collectUnitStatuses,
   requireApplicableUnitIds,
-  requireQuerySuccess,
   splitApplicabilitySelection,
 } from "@/modules/operational/five-s-applicability";
 import {
@@ -15,64 +14,37 @@ import {
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-async function buildFiveSStartConfig(
-  supabase: SupabaseClient,
-  standardId: string,
-): Promise<OperationalCatalogStartActionConfig | null> {
-  const { data: versions, error: versionsError } = await supabase
-    .from("five_s_standard_versions")
-    .select("id, status")
-    .eq("standard_id", standardId)
-    .eq("status", "published")
-    .limit(1);
+function logCatalogRowSkip(module: "5s" | "gemba", id: string, error: unknown) {
+  console.error(`[overview-catalog] skipped ${module} row ${id}`, error);
+}
 
-  if (
-    versionsError ||
-    !versions?.length ||
-    versions[0]?.status !== "published"
-  ) {
+async function buildFiveSStartConfigFromContext(
+  standardId: string,
+  publishedVersionIds: Set<string>,
+  applicabilityByStandard: Map<string, string[]>,
+  unitStatusById: Map<string, string>,
+  configurationUnits: ReturnType<typeof buildSiteScopedUnitOptions>,
+  executionUnitsFactory: (
+    confirmedActiveIds: ReadonlySet<string>,
+  ) => ReturnType<typeof buildApplicableSiteScopedUnitOptions>,
+): Promise<OperationalCatalogStartActionConfig | null> {
+  if (!publishedVersionIds.has(standardId)) {
     return null;
   }
 
-  const { data: applicabilityRows, error: applicabilityError } = await supabase
-    .from("five_s_standard_applicable_units")
-    .select("unit_id")
-    .eq("standard_id", standardId);
-
   const applicableIds = requireApplicableUnitIds(
-    applicabilityError,
-    applicabilityRows,
+    null,
+    (applicabilityByStandard.get(standardId) ?? []).map((unitId) => ({
+      unit_id: unitId,
+    })),
   );
-  const mappedUnitIds = [...applicableIds];
-  const { data: mappedUnits, error: mappedUnitsError } =
-    mappedUnitIds.length > 0
-      ? await supabase
-          .from("organisation_units")
-          .select("id, status")
-          .in("id", mappedUnitIds)
-      : { data: [], error: null };
-
-  const unitStatusById = collectUnitStatuses(
-    requireQuerySuccess(
-      mappedUnitsError,
-      mappedUnits ?? [],
-      "Failed to load applicable organisational units",
-    ),
-  );
-  const { units, context } = await loadActiveSiteContext();
-  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
-    requireConcreteSite: true,
-  });
   const applicabilitySelection = splitApplicabilitySelection(
     applicableIds,
     configurationUnits.units,
     unitStatusById,
   );
-  const executionUnits = buildApplicableSiteScopedUnitOptions(
-    units,
-    context,
+  const executionUnits = executionUnitsFactory(
     applicabilitySelection.confirmedActiveIds,
-    { requireConcreteSite: true },
   );
 
   return {
@@ -97,64 +69,33 @@ async function buildFiveSStartConfig(
   };
 }
 
-async function buildGembaStartConfig(
-  supabase: SupabaseClient,
+async function buildGembaStartConfigFromContext(
   definitionId: string,
+  publishedVersionIds: Set<string>,
+  applicabilityByDefinition: Map<string, string[]>,
+  unitStatusById: Map<string, string>,
+  configurationUnits: ReturnType<typeof buildSiteScopedUnitOptions>,
+  executionUnitsFactory: (
+    confirmedActiveIds: ReadonlySet<string>,
+  ) => ReturnType<typeof buildApplicableSiteScopedUnitOptions>,
 ): Promise<OperationalCatalogStartActionConfig | null> {
-  const { data: versions, error: versionsError } = await supabase
-    .from("gemba_definition_versions")
-    .select("id, status")
-    .eq("definition_id", definitionId)
-    .eq("status", "published")
-    .limit(1);
-
-  if (
-    versionsError ||
-    !versions?.length ||
-    versions[0]?.status !== "published"
-  ) {
+  if (!publishedVersionIds.has(definitionId)) {
     return null;
   }
 
-  const { data: applicabilityRows, error: applicabilityError } = await supabase
-    .from("gemba_definition_applicable_units")
-    .select("unit_id")
-    .eq("definition_id", definitionId);
-
   const applicableIds = requireApplicableUnitIds(
-    applicabilityError,
-    applicabilityRows,
+    null,
+    (applicabilityByDefinition.get(definitionId) ?? []).map((unitId) => ({
+      unit_id: unitId,
+    })),
   );
-  const mappedUnitIds = [...applicableIds];
-  const { data: mappedUnits, error: mappedUnitsError } =
-    mappedUnitIds.length > 0
-      ? await supabase
-          .from("organisation_units")
-          .select("id, status")
-          .in("id", mappedUnitIds)
-      : { data: [], error: null };
-
-  const unitStatusById = collectUnitStatuses(
-    requireQuerySuccess(
-      mappedUnitsError,
-      mappedUnits ?? [],
-      "Failed to load applicable organisational units",
-    ),
-  );
-  const { units, context } = await loadActiveSiteContext();
-  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
-    requireConcreteSite: true,
-  });
   const applicabilitySelection = splitApplicabilitySelection(
     applicableIds,
     configurationUnits.units,
     unitStatusById,
   );
-  const executionUnits = buildApplicableSiteScopedUnitOptions(
-    units,
-    context,
+  const executionUnits = executionUnitsFactory(
     applicabilitySelection.confirmedActiveIds,
-    { requireConcreteSite: true },
   );
 
   return {
@@ -184,26 +125,166 @@ export async function buildFiveSOverviewCatalogRows(
   supabase: SupabaseClient,
   standards: Array<{ id: string; display_name: string }>,
 ): Promise<OperationalCatalogRow[]> {
-  return Promise.all(
-    standards.map(async (standard) => ({
-      id: standard.id,
-      name: standard.display_name,
-      href: `/platform/5s/standards/${standard.id}`,
-      start: await buildFiveSStartConfig(supabase, standard.id),
-    })),
+  if (standards.length === 0) {
+    return [];
+  }
+
+  const standardIds = standards.map((standard) => standard.id);
+  const { units, context } = await loadActiveSiteContext();
+
+  const [{ data: versions }, { data: applicabilityRows }] = await Promise.all([
+    supabase
+      .from("five_s_standard_versions")
+      .select("standard_id, status")
+      .in("standard_id", standardIds)
+      .eq("status", "published"),
+    supabase
+      .from("five_s_standard_applicable_units")
+      .select("standard_id, unit_id")
+      .in("standard_id", standardIds),
+  ]);
+
+  const publishedVersionIds = new Set(
+    (versions ?? []).map((row) => row.standard_id as string),
   );
+  const applicabilityByStandard = new Map<string, string[]>();
+  for (const row of applicabilityRows ?? []) {
+    const list = applicabilityByStandard.get(row.standard_id) ?? [];
+    list.push(row.unit_id);
+    applicabilityByStandard.set(row.standard_id, list);
+  }
+
+  const applicableUnitIds = [
+    ...new Set((applicabilityRows ?? []).map((row) => row.unit_id as string)),
+  ];
+  const { data: mappedUnits } =
+    applicableUnitIds.length > 0
+      ? await supabase
+          .from("organisation_units")
+          .select("id, status")
+          .in("id", applicableUnitIds)
+      : { data: [] };
+
+  const unitStatusById = collectUnitStatuses(mappedUnits ?? []);
+  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const executionUnitsFactory = (confirmedActiveIds: ReadonlySet<string>) =>
+    buildApplicableSiteScopedUnitOptions(units, context, confirmedActiveIds, {
+      requireConcreteSite: true,
+    });
+
+  const rows: OperationalCatalogRow[] = [];
+  for (const standard of standards) {
+    try {
+      const start = await buildFiveSStartConfigFromContext(
+        standard.id,
+        publishedVersionIds,
+        applicabilityByStandard,
+        unitStatusById,
+        configurationUnits,
+        executionUnitsFactory,
+      );
+      rows.push({
+        id: standard.id,
+        name: standard.display_name,
+        href: `/platform/5s/standards/${standard.id}`,
+        start,
+      });
+    } catch (error) {
+      logCatalogRowSkip("5s", standard.id, error);
+      rows.push({
+        id: standard.id,
+        name: standard.display_name,
+        href: `/platform/5s/standards/${standard.id}`,
+        start: null,
+      });
+    }
+  }
+
+  return rows;
 }
 
 export async function buildGembaOverviewCatalogRows(
   supabase: SupabaseClient,
   definitions: Array<{ id: string; display_name: string }>,
 ): Promise<OperationalCatalogRow[]> {
-  return Promise.all(
-    definitions.map(async (definition) => ({
-      id: definition.id,
-      name: definition.display_name,
-      href: `/platform/gemba/definitions/${definition.id}`,
-      start: await buildGembaStartConfig(supabase, definition.id),
-    })),
+  if (definitions.length === 0) {
+    return [];
+  }
+
+  const definitionIds = definitions.map((definition) => definition.id);
+  const { units, context } = await loadActiveSiteContext();
+
+  const [{ data: versions }, { data: applicabilityRows }] = await Promise.all([
+    supabase
+      .from("gemba_definition_versions")
+      .select("definition_id, status")
+      .in("definition_id", definitionIds)
+      .eq("status", "published"),
+    supabase
+      .from("gemba_definition_applicable_units")
+      .select("definition_id, unit_id")
+      .in("definition_id", definitionIds),
+  ]);
+
+  const publishedVersionIds = new Set(
+    (versions ?? []).map((row) => row.definition_id as string),
   );
+  const applicabilityByDefinition = new Map<string, string[]>();
+  for (const row of applicabilityRows ?? []) {
+    const list = applicabilityByDefinition.get(row.definition_id) ?? [];
+    list.push(row.unit_id);
+    applicabilityByDefinition.set(row.definition_id, list);
+  }
+
+  const applicableUnitIds = [
+    ...new Set((applicabilityRows ?? []).map((row) => row.unit_id as string)),
+  ];
+  const { data: mappedUnits } =
+    applicableUnitIds.length > 0
+      ? await supabase
+          .from("organisation_units")
+          .select("id, status")
+          .in("id", applicableUnitIds)
+      : { data: [] };
+
+  const unitStatusById = collectUnitStatuses(mappedUnits ?? []);
+  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const executionUnitsFactory = (confirmedActiveIds: ReadonlySet<string>) =>
+    buildApplicableSiteScopedUnitOptions(units, context, confirmedActiveIds, {
+      requireConcreteSite: true,
+    });
+
+  const rows: OperationalCatalogRow[] = [];
+  for (const definition of definitions) {
+    try {
+      const start = await buildGembaStartConfigFromContext(
+        definition.id,
+        publishedVersionIds,
+        applicabilityByDefinition,
+        unitStatusById,
+        configurationUnits,
+        executionUnitsFactory,
+      );
+      rows.push({
+        id: definition.id,
+        name: definition.display_name,
+        href: `/platform/gemba/definitions/${definition.id}`,
+        start,
+      });
+    } catch (error) {
+      logCatalogRowSkip("gemba", definition.id, error);
+      rows.push({
+        id: definition.id,
+        name: definition.display_name,
+        href: `/platform/gemba/definitions/${definition.id}`,
+        start: null,
+      });
+    }
+  }
+
+  return rows;
 }

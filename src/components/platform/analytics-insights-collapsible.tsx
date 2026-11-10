@@ -10,14 +10,21 @@ export function AnalyticsInsightsCollapsible({
   children,
   defaultOpen = false,
   testId = "analytics-insights-collapsible",
+  onOpenChange,
 }: {
   title?: string;
-  children: ReactNode;
+  children: ReactNode | null;
   defaultOpen?: boolean;
   testId?: string;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
+
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
 
   return (
     <section className="flex flex-col gap-3" data-testid={testId}>
@@ -27,7 +34,7 @@ export function AnalyticsInsightsCollapsible({
         aria-expanded={open}
         aria-controls={panelId}
         data-testid={`${testId}-toggle`}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => toggle(!open)}
       >
         <span>{title}</span>
         <ChevronDown
@@ -38,11 +45,13 @@ export function AnalyticsInsightsCollapsible({
           aria-hidden
         />
       </button>
-      {open ? (
-        <div id={panelId} className="flex flex-col gap-4">
-          {children}
-        </div>
-      ) : null}
+      <div
+        id={panelId}
+        hidden={!open}
+        className={cn("flex flex-col gap-4", !open && "hidden")}
+      >
+        {open ? children : null}
+      </div>
     </section>
   );
 }

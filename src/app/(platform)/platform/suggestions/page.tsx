@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestions";
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPipelineStatusChips } from "@/components/suggestions/suggestion-pipeline-status-chips";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
@@ -87,7 +86,6 @@ export default async function SuggestionsOverviewPage({
 
   const pipeline = overview.pipeline;
   const reviewQueueCount = overview.awaiting_review ?? 0;
-  const analytics = await loadSuggestionsAnalytics(supabase, analyticsRange);
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
@@ -146,8 +144,9 @@ export default async function SuggestionsOverviewPage({
         showReviewerWorkflow={canReview || canManageReview}
       />
 
-      <ModulePageInsights
-        snapshot={analytics}
+      <ModulePageInsightsDeferred
+        module="suggestions"
+        analyticsRange={analyticsRange}
         icons={SUGGESTION_ANALYTICS_ICONS}
         testId="suggestions-analytics"
       />

@@ -1,12 +1,13 @@
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { SKILLS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
-import { loadSkillsAnalytics } from "@/modules/platform-analytics/skills";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
@@ -30,7 +31,15 @@ function latestDraftParentId(
   );
 }
 
-export default async function SkillsOverviewPage() {
+export default async function SkillsOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
   const workplaceView = await loadWorkplaceModuleView({
     readPermission: SKILLS_PERMISSIONS.read,
     module: "skills",
@@ -51,7 +60,6 @@ export default async function SkillsOverviewPage() {
     skill_coverage_percent?: number | null;
   } | null;
   const coverage = dashboard?.skill_coverage_percent ?? null;
-  const skillsAnalytics = await loadSkillsAnalytics(supabase);
 
   const [
     { count: skillCount },
@@ -174,8 +182,9 @@ export default async function SkillsOverviewPage() {
         canManageCatalog={canManageCatalog}
         canManageRequirements={canManageRequirements}
       />
-      <ModulePageInsights
-        snapshot={skillsAnalytics}
+      <ModulePageInsightsDeferred
+        module="skills"
+        analyticsRange={analyticsRange}
         icons={SKILLS_ANALYTICS_ICONS}
         testId="skills-analytics"
         showDateRange={false}

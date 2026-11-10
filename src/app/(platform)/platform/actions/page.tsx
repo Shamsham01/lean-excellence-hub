@@ -3,13 +3,12 @@ import { Suspense } from "react";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadActionsAnalytics } from "@/modules/platform-analytics/actions";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
@@ -92,8 +91,6 @@ export default async function ActionsPage({
     .select("id, name")
     .order("name");
 
-  const analytics = await loadActionsAnalytics(supabase, analyticsRange);
-
   const plannerActions = await loadActionPlannerSummaries(actions);
   const openActionParam =
     typeof rawParams.action === "string"
@@ -145,8 +142,9 @@ export default async function ActionsPage({
           canCreate={canCreate}
         />
       </Suspense>
-      <ModulePageInsights
-        snapshot={analytics}
+      <ModulePageInsightsDeferred
+        module="actions"
+        analyticsRange={analyticsRange}
         icons={ACTION_ANALYTICS_ICONS}
         testId="actions-analytics"
         showAgeingTable={false}

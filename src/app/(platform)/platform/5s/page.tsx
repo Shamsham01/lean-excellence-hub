@@ -1,12 +1,11 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { FIVE_S_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { buildFiveSOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadFiveSAnalytics } from "@/modules/platform-analytics/five-s";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
@@ -81,7 +80,6 @@ export default async function FiveSOverviewPage({
     .from("schedule_occurrences")
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
-  const analytics = await loadFiveSAnalytics(supabase, analyticsRange);
   const catalogRows = await buildFiveSOverviewCatalogRows(
     supabase,
     standards ?? [],
@@ -165,8 +163,9 @@ export default async function FiveSOverviewPage({
         </CardContent>
       </Card>
 
-      <ModulePageInsights
-        snapshot={analytics}
+      <ModulePageInsightsDeferred
+        module="five-s"
+        analyticsRange={analyticsRange}
         icons={FIVE_S_ANALYTICS_ICONS}
         testId="five-s-analytics"
       />

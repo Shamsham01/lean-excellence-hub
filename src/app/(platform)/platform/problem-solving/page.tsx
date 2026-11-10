@@ -1,11 +1,10 @@
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PPS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadProblemSolvingAnalytics } from "@/modules/platform-analytics/problem-solving";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { Button } from "@/components/ui/button";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
@@ -41,7 +40,6 @@ export default async function ProblemSolvingPortfolioPage({
     parseAnalyticsRangeDays(params.range),
   );
   const canCreate = await currentMemberHasPermission("problem_solving.create");
-  const analytics = await loadProblemSolvingAnalytics(supabase, analyticsRange);
   const { data: overviewData } =
     await callProblemSolvingRpc<ProblemSolvingOverview>(
       supabase,
@@ -95,8 +93,9 @@ export default async function ProblemSolvingPortfolioPage({
         severityFilter={params.severity ?? null}
         canCreate={canCreate}
       />
-      <ModulePageInsights
-        snapshot={analytics}
+      <ModulePageInsightsDeferred
+        module="problem-solving"
+        analyticsRange={analyticsRange}
         icons={PPS_ANALYTICS_ICONS}
         testId="pps-analytics"
       />

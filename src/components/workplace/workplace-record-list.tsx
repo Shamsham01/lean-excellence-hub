@@ -2,6 +2,7 @@ import { AppLink } from "@/components/ui/app-link";
 import type { WorkplaceModuleKey } from "@/modules/workplace/access";
 import {
   loadWorkplaceFeedPage,
+  type WorkplaceFeedResult,
   type WorkplaceFeedRecord,
 } from "@/modules/workplace/feed";
 import { workplacePageHref } from "@/modules/workplace/page-query";
@@ -9,11 +10,13 @@ import { workplacePageHref } from "@/modules/workplace/page-query";
 export async function WorkplaceRecordList({
   module,
   emptyLabel,
+  feed: feedOverride,
 }: {
   module: WorkplaceModuleKey;
   emptyLabel: string;
+  feed?: WorkplaceFeedResult;
 }) {
-  const feed = await loadWorkplaceFeedPage(module);
+  const feed = feedOverride ?? (await loadWorkplaceFeedPage(module));
   const previousHref =
     feed.status === "ready" && feed.page > 1
       ? await workplacePageHref(feed.page - 1)

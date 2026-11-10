@@ -33,7 +33,7 @@ function adminHelper(canPerform: boolean, isAdmin = false) {
   return "Ask an Organisation Administrator to complete this step.";
 }
 
-function buildCoreItems(
+export function buildCoreItems(
   data: SetupQueryResult,
   permissions: SetupPermissionSnapshot,
 ): SetupItem[] {
@@ -361,7 +361,9 @@ export function computeOperationalSetupIncomplete(
   return gaps.length > 0 && gaps.some(Boolean);
 }
 
-export function evaluateCoreSetup(items: SetupItem[]): CoreSetupState {
+export function evaluateCoreSetup(
+  items: SetupItem[],
+): CoreSetupState {
   const assessable = items.filter((item) => item.canAssess);
   const canAssessAll = assessable.length === items.length;
   const allComplete =

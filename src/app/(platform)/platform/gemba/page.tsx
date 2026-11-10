@@ -1,13 +1,12 @@
 import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { GEMBA_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { buildGembaOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadGembaAnalytics } from "@/modules/platform-analytics/gemba";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
@@ -85,7 +84,6 @@ export default async function GembaOverviewPage({
   const { count: observationCount } = await supabase
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
-  const gembaAnalytics = await loadGembaAnalytics(supabase, analyticsRange);
   const catalogRows = await buildGembaOverviewCatalogRows(
     supabase,
     definitions ?? [],
@@ -177,8 +175,9 @@ export default async function GembaOverviewPage({
           />
         </CardContent>
       </Card>
-      <ModulePageInsights
-        snapshot={gembaAnalytics}
+      <ModulePageInsightsDeferred
+        module="gemba"
+        analyticsRange={analyticsRange}
         icons={GEMBA_ANALYTICS_ICONS}
         testId="gemba-analytics"
       />

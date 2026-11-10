@@ -58,6 +58,7 @@ export function KpiStatCard({
                   trendTone,
                 )}
               >
+                <span className="sr-only">vs prior period </span>
                 {trend.direction === "up" ? (
                   <ArrowUp className="size-3" aria-hidden />
                 ) : trend.direction === "down" ? (

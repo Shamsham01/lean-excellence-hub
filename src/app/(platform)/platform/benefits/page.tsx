@@ -1,10 +1,9 @@
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { BENEFITS_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadBenefitsAnalytics } from "@/modules/platform-analytics/benefits";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
@@ -44,11 +43,6 @@ export default async function BenefitsPortfolioPage({
     parseAnalyticsRangeDays(params.range),
   );
   const canCreate = await currentMemberHasPermission("benefits.create");
-  const benefitsAnalytics = await loadBenefitsAnalytics(
-    supabase,
-    analyticsRange,
-  );
-
   const { data: overviewData } = await callBenefitRpc<BenefitsOverview>(
     supabase,
     "get_benefits_overview",
@@ -115,8 +109,9 @@ export default async function BenefitsPortfolioPage({
         benefitClassFilter={params.benefit_class ?? null}
         canCreate={canCreate}
       />
-      <ModulePageInsights
-        snapshot={benefitsAnalytics}
+      <ModulePageInsightsDeferred
+        module="benefits"
+        analyticsRange={analyticsRange}
         icons={BENEFITS_ANALYTICS_ICONS}
         testId="benefits-analytics"
         donutCenterLabel="Benefits"

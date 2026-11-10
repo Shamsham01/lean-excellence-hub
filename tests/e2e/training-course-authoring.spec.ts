@@ -60,9 +60,13 @@ test.describe("Training course catalogue bootstrap", () => {
     const courseName = `Forklift Safety ${stamp}`;
     const expectedCode = `forklift-safety-${stamp}`;
 
-    await page.goto("/platform/training/setup");
+    await page.goto("/platform/setup");
+    await expect(page.getByTestId("setup-page")).toBeVisible();
+    const trainingSetup = page.getByTestId("setup-item-training_configuration");
+    await expect(trainingSetup).toBeVisible();
+    await trainingSetup.getByRole("link", { name: "Set up" }).click();
+    await expect(page).toHaveURL(/\/platform\/training\/setup/);
     await expect(page.getByTestId("training-setup-page")).toBeVisible();
-    await expect(page.getByTestId("module-setup-chooser")).toBeVisible();
     await page.goto("/platform/training/courses");
     await expect(page.getByTestId("training-courses-page")).toBeVisible();
 
@@ -140,11 +144,10 @@ test.describe("Training course catalogue bootstrap", () => {
     await expect(page.getByRole("link", { name: courseName })).toBeVisible();
     await expect(page.getByText("Published").first()).toBeVisible();
 
-    await page.goto("/platform/training/setup");
-    await expect(page.getByTestId("training-setup-page")).toBeVisible();
-    await expect(page.getByTestId("module-setup-chooser")).toContainText(
-      "You already have 1 catalogue",
-    );
+    await page.goto("/platform/setup");
+    await expect(
+      page.getByTestId("setup-item-training_configuration"),
+    ).toContainText("Setup started");
 
     assertNoProductionRuntimeErrors();
   });

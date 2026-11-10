@@ -63,6 +63,12 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await expect(page.getByTestId("setup-org-name")).toContainText(
       "Acme Foods Ltd",
     );
+    await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
+      "Plymouth Factory",
+    );
+    await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
+      /multi-site|wider organisation/i,
+    );
     await screenshotIfPossible(page, "01c-first-site-setup.png");
 
     await page.goto("/platform/settings/organisation");

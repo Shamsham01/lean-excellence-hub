@@ -1,3 +1,7 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 import {
   groupPlatformNavigation,
   type PlatformNavItem,
@@ -14,6 +18,7 @@ export function PlatformNavigation({
   items,
   onNavigate,
 }: PlatformNavigationProps) {
+  const pathname = usePathname();
   const groups = groupPlatformNavigation(items);
 
   return (
@@ -24,6 +29,7 @@ export function PlatformNavigation({
           section={group.section}
           label={group.label}
           items={group.items}
+          activePathname={pathname}
           {...(onNavigate ? { onNavigate } : {})}
         />
       ))}

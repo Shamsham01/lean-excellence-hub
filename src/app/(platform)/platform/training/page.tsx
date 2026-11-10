@@ -1,13 +1,12 @@
 import { GraduationCap } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModulePageInsights } from "@/components/platform/module-page-insights";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -55,11 +54,6 @@ export default async function TrainingOverviewPage({
 
   const compliance = summaryObj?.compliance_percent ?? null;
   const outstanding = summaryObj?.outstanding_required ?? 0;
-  const trainingAnalytics = await loadTrainingAnalytics(
-    supabase,
-    analyticsRange,
-  );
-
   const courses = await resolveTrainingCatalogListResult(
     await supabase
       .from("training_courses")
@@ -204,8 +198,9 @@ export default async function TrainingOverviewPage({
           </CardContent>
         </Card>
       </div>
-      <ModulePageInsights
-        snapshot={trainingAnalytics}
+      <ModulePageInsightsDeferred
+        module="training"
+        analyticsRange={analyticsRange}
         icons={TRAINING_ANALYTICS_ICONS}
         testId="training-analytics"
       />

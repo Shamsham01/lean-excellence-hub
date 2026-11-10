@@ -33,10 +33,19 @@ function writeCollapsed(section: PlatformNavSection, collapsed: boolean) {
   }
 }
 
+function groupContainsPath(items: PlatformNavItem[], pathname: string) {
+  return items.some(
+    (item) =>
+      pathname === item.href ||
+      (item.href !== "/platform" && pathname.startsWith(`${item.href}/`)),
+  );
+}
+
 type PlatformNavGroupCollapsibleProps = {
   section: PlatformNavSection;
   label: string | null;
   items: PlatformNavItem[];
+  activePathname?: string;
   onNavigate?: () => void;
 };
 
@@ -44,6 +53,7 @@ export function PlatformNavGroupCollapsible({
   section,
   label,
   items,
+  activePathname,
   onNavigate,
 }: PlatformNavGroupCollapsibleProps) {
   const panelId = useId();
@@ -52,11 +62,15 @@ export function PlatformNavGroupCollapsible({
 
   useEffect(() => {
     const stored = readCollapsed(section);
-    if (stored !== null) {
+    const containsActive =
+      activePathname != null && groupContainsPath(items, activePathname);
+    if (containsActive) {
+      startTransition(() => setCollapsed(false));
+    } else if (stored !== null) {
       startTransition(() => setCollapsed(stored));
     }
     startTransition(() => setHydrated(true));
-  }, [section]);
+  }, [activePathname, items, section]);
 
   if (items.length === 0) {
     return null;
@@ -108,21 +122,22 @@ export function PlatformNavGroupCollapsible({
           aria-hidden
         />
       </button>
-      {expanded ? (
-        <div
-          id={panelId}
-          className="flex flex-col gap-0.5"
-          aria-labelledby={`platform-nav-section-${section}`}
-        >
-          {items.map((item) => (
-            <PlatformNavItemLink
-              key={item.href}
-              item={item}
-              {...(onNavigate ? { onNavigate } : {})}
-            />
-          ))}
-        </div>
-      ) : null}
+      <div
+        id={panelId}
+        hidden={!expanded}
+        className={cn("flex flex-col gap-0.5", !expanded && "hidden")}
+        aria-labelledby={`platform-nav-section-${section}`}
+      >
+        {expanded
+          ? items.map((item) => (
+              <PlatformNavItemLink
+                key={item.href}
+                item={item}
+                {...(onNavigate ? { onNavigate } : {})}
+              />
+            ))
+          : null}
+      </div>
     </div>
   );
 }

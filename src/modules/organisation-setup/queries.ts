@@ -9,11 +9,11 @@ import type { SetupQueryResult } from "./types";
 
 export { loadSetupPermissions } from "./permissions";
 
-function isPermissionDenied(error: { code?: string } | null) {
+export function isPermissionDenied(error: { code?: string } | null) {
   return error?.code === "42501";
 }
 
-async function countActiveUnits(
+export async function countActiveUnits(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
   const { data, error } = await supabase
@@ -44,7 +44,7 @@ async function hasChildUnits(
   return { hasChild: (data?.length ?? 0) > 0, unavailable: false as const };
 }
 
-async function checkOrganisationOwner(
+export async function checkOrganisationOwner(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
   const { data: grants, error } = await supabase
@@ -257,7 +257,7 @@ async function countLeanConfigSignals(
   return { signalCount, unavailable: false as const };
 }
 
-async function checkCurrentAdminPrimaryAssignment(
+export async function checkCurrentAdminPrimaryAssignment(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
   const { data, error } = await supabase.rpc(

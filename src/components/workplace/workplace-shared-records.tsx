@@ -18,6 +18,25 @@ export async function WorkplaceSharedRecords({
   }
 
   const feed = await loadWorkplaceFeedPage(module);
+
+  if (feed.status === "error") {
+    return (
+      <section
+        className="flex min-w-0 flex-col gap-3 border-t border-border pt-6"
+        data-testid="workplace-shared-records"
+      >
+        <h2 className="text-base font-medium text-foreground">
+          Shared workplace records
+        </h2>
+        <WorkplaceRecordList
+          module={module}
+          feed={feed}
+          emptyLabel="No shared records are in your viewing scope yet."
+        />
+      </section>
+    );
+  }
+
   if (feed.status !== "ready" || feed.records.length === 0) {
     return null;
   }
@@ -36,6 +55,7 @@ export async function WorkplaceSharedRecords({
       </h2>
       <WorkplaceRecordList
         module={module}
+        feed={feed}
         emptyLabel="No shared records are in your viewing scope yet."
       />
     </section>

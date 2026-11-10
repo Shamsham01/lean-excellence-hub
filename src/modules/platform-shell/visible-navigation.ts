@@ -12,7 +12,7 @@ import {
   currentMemberHasScopedPermission,
   prefetchPlatformShellPermissionProbes,
 } from "@/modules/platform-shell/permissions";
-import { loadOrganisationSetupSnapshot } from "@/modules/organisation-setup/queries";
+import { shouldShowSetupInNavigation } from "@/modules/organisation-setup/nav-setup-visibility";
 import { setupNavigationPermissions } from "@/modules/platform-shell/shell-permission-keys";
 
 const setupPermissions = setupNavigationPermissions;
@@ -87,8 +87,7 @@ export async function buildVisibleNavigation() {
   );
 
   if (await canAccessSetupNavigation()) {
-    const setupSnapshot = await loadOrganisationSetupSnapshot();
-    if (!setupSnapshot.core.allComplete) {
+    if (await shouldShowSetupInNavigation()) {
       navWithSetup.unshift(setupNavigationItem);
     }
   }

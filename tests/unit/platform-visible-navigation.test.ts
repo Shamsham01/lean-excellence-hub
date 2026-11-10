@@ -28,12 +28,8 @@ vi.mock("@/modules/billing/load-current-entitlements", () => ({
     loadCurrentOrganisationEntitlements(...args),
 }));
 
-vi.mock("@/modules/organisation-setup/queries", () => ({
-  loadOrganisationSetupSnapshot: vi.fn().mockResolvedValue({
-    core: { allComplete: false, items: [], readyLabel: "in_progress" },
-    organisationName: "Test Org",
-    recommended: { items: [] },
-  }),
+vi.mock("@/modules/organisation-setup/nav-setup-visibility", () => ({
+  shouldShowSetupInNavigation: vi.fn().mockResolvedValue(true),
 }));
 
 import { resolveOrganisationEntitlements } from "@/modules/billing/entitlements";
