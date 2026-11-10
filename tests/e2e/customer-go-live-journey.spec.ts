@@ -571,16 +571,9 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     if (aiSettings.error) {
       throw aiSettings.error;
     }
-    enableLeanAiCreditEnforcement(organisationId);
     await loginAsExistingFoundingUser(page, user);
     await page.goto("/platform/settings/ai");
     await expect(page.getByTestId("ai-settings-page")).toBeVisible();
-    await expect(page.getByTestId("ai-credit-period-panel")).toBeVisible({
-      timeout: 30_000,
-    });
-    await expect(page.getByTestId("ai-credit-period-panel")).toContainText(
-      /120[,.]?000/,
-    );
 
     await page.goto("/platform");
     await ensureLeanAiAssistantOpen(page);
@@ -601,6 +594,15 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await expect(assistantMessage).toContainText("Next step", {
       timeout: 30_000,
     });
+
+    enableLeanAiCreditEnforcement(organisationId);
+    await page.goto("/platform/settings/ai");
+    await expect(page.getByTestId("ai-credit-period-panel")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId("ai-credit-period-panel")).toContainText(
+      /120[,.]?000/,
+    );
 
     exhaustLeanAiCreditAllowance(organisationId);
     await page.goto("/platform/settings/ai");
