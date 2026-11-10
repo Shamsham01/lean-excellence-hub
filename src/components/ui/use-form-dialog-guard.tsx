@@ -97,9 +97,7 @@ export function useFormDialogGuard({
 
   const resolveForm = useCallback(() => {
     return (
-      formRef?.current ??
-      contentRef.current?.querySelector("form") ??
-      null
+      formRef?.current ?? contentRef.current?.querySelector("form") ?? null
     );
   }, [formRef]);
 
