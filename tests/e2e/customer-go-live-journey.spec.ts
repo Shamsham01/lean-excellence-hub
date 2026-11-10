@@ -371,7 +371,12 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     test.setTimeout(240_000);
     await loginAsExistingFoundingUser(page, user);
     await bootstrapSuggestionProgramme(page);
-    clearFoundingOwnerFromSuggestionApprovalQueue(organisationId, user.email);
+    const ownerClient = await createFoundingOwnerClient(user);
+    await clearFoundingOwnerFromSuggestionApprovalQueue(
+      ownerClient,
+      organisationId,
+      user.email,
+    );
 
     await loginColleague(page, operator);
     await page.goto("/platform/suggestions/new");

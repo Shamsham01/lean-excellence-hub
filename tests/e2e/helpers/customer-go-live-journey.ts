@@ -88,7 +88,8 @@ export function queryMembershipIdForEmail(
   return row;
 }
 
-export function clearFoundingOwnerFromSuggestionApprovalQueue(
+export async function clearFoundingOwnerFromSuggestionApprovalQueue(
+  ownerClient: SupabaseClient,
   organisationId: string,
   founderEmail: string,
 ) {
@@ -96,9 +97,28 @@ export function clearFoundingOwnerFromSuggestionApprovalQueue(
     organisationId,
     founderEmail,
   );
-  runPsql(
-    `update public.access_grants grant_row set status = 'revoked', revoked_at = statement_timestamp() where grant_row.organisation_id = '${organisationId}'::uuid and grant_row.grantee_membership_id = '${founderMembershipId}'::uuid and grant_row.status = 'active';`,
-  );
+  const grantIds = runPsql(
+    `select grant_row.id::text from public.access_grants grant_row where grant_row.organisation_id = '${organisationId}'::uuid and grant_row.grantee_membership_id = '${founderMembershipId}'::uuid and grant_row.status = 'active';`,
+  )
+    .split("\n")
+    .map((row) => row.trim())
+    .filter(Boolean);
+  const switched = await ownerClient.rpc("switch_organisation", {
+    target_organisation_id: organisationId,
+  });
+  if (switched.error) {
+    throw switched.error;
+  }
+  for (const grantId of grantIds) {
+    const revoked = await ownerClient.rpc("revoke_access_grant", {
+      target_organisation_id: organisationId,
+      target_grant_id: grantId,
+      change_reason: "E2E go-live suggestion approver routing",
+    });
+    if (revoked.error) {
+      throw revoked.error;
+    }
+  }
 }
 
 export async function tightenSuggestionApproverToProductionManager(
