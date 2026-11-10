@@ -394,12 +394,7 @@ declare
 begin
   if org_id is null
     or actor_membership_id is null
-    or not private.has_scoped_permission(
-      org_id,
-      'five_s.standards.manage',
-      null,
-      null
-    ) then
+    or not public.member_has_permission('five_s.standards.manage') then
     raise exception '5S standard applicability update is not authorised'
       using errcode = '42501';
   end if;
@@ -513,12 +508,7 @@ declare
 begin
   if org_id is null
     or actor_membership_id is null
-    or not private.has_scoped_permission(
-      org_id,
-      'gemba.definitions.manage',
-      null,
-      null
-    ) then
+    or not public.member_has_permission('gemba.definitions.manage') then
     raise exception 'gemba definition applicability update is not authorised'
       using errcode = '42501';
   end if;
@@ -711,7 +701,7 @@ declare
   version_scale jsonb;
 begin
   if org_id is null
-    or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
+    or not public.member_has_permission('five_s.standards.manage') then
     raise exception '5S question creation is not authorised'
       using errcode = '42501';
   end if;
@@ -838,7 +828,7 @@ declare
 begin
   if org_id is null
     or actor_membership_id is null
-    or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
+    or not public.member_has_permission('five_s.standards.manage') then
     raise exception '5S question removal is not authorised'
       using errcode = '42501';
   end if;
@@ -920,7 +910,7 @@ declare
 begin
   if org_id is null
     or actor_membership_id is null
-    or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
+    or not public.member_has_permission('five_s.standards.manage') then
     raise exception '5S section removal is not authorised'
       using errcode = '42501';
   end if;
@@ -1021,7 +1011,7 @@ declare
 begin
   if org_id is null
     or actor_membership_id is null
-    or not private.has_scoped_permission(org_id, 'five_s.standards.manage', null, null) then
+    or not public.member_has_permission('five_s.standards.manage') then
     raise exception '5S draft discard is not authorised'
       using errcode = '42501';
   end if;
