@@ -241,7 +241,7 @@ function SiteGroupList({
                 className="min-h-9"
                 data-testid={`applicable-units-select-all-site-${group.siteId}`}
                 onClick={() => {
-                  let next = new Set(draft);
+                  const next = new Set(draft);
                   if (allSelected) {
                     for (const id of group.selectableIds) {
                       next.delete(id);
