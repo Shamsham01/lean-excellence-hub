@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
@@ -29,18 +29,14 @@ describe("useDialogDefaultOpen", () => {
     cleanup();
   });
 
-  it("opens when defaultOpen and plan writes are allowed", async () => {
+  it("opens when defaultOpen and plan writes are allowed", () => {
     render(<DialogWithDefaultOpen defaultOpen />);
-    await waitFor(() => {
-      expect(screen.getByTestId("default-open-body")).toBeVisible();
-    });
+    expect(screen.getByTestId("default-open-body")).toBeVisible();
   });
 
-  it("stays closed when defaultOpen but plan writes are blocked", async () => {
+  it("stays closed when defaultOpen but plan writes are blocked", () => {
     moduleWriteAllowed.value = false;
     render(<DialogWithDefaultOpen defaultOpen />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("default-open-body")).not.toBeInTheDocument();
-    });
+    expect(screen.queryByTestId("default-open-body")).not.toBeInTheDocument();
   });
 });
