@@ -98,6 +98,9 @@ test.describe("platform reliability after shared RSC refresh", () => {
     await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Reliability");
     await page.getByRole("button", { name: "Add section" }).click();
+    await expect(page.getByTestId("gemba-add-section-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-section")).toContainText(
       "Reliability",
     );
@@ -105,11 +108,17 @@ test.describe("platform reliability after shared RSC refresh", () => {
     await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toHaveCount(1);
 
     await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);
 
     await page.getByTestId("publish-gemba-definition").click();
