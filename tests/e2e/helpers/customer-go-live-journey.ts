@@ -97,7 +97,7 @@ export function clearFoundingOwnerFromSuggestionApprovalQueue(
     founderEmail,
   );
   runPsql(
-    `update public.access_grants grant_row set status = 'revoked', updated_at = statement_timestamp() where grant_row.organisation_id = '${organisationId}'::uuid and grant_row.grantee_membership_id = '${founderMembershipId}'::uuid and grant_row.status = 'active';`,
+    `update public.access_grants grant_row set status = 'revoked', revoked_at = statement_timestamp() where grant_row.organisation_id = '${organisationId}'::uuid and grant_row.grantee_membership_id = '${founderMembershipId}'::uuid and grant_row.status = 'active';`,
   );
 }
 
