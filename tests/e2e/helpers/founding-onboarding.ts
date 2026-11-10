@@ -114,6 +114,20 @@ export async function loginAsFoundingUser(page: Page, user: FoundingE2eUser) {
   });
 }
 
+export async function loginAsExistingFoundingUser(
+  page: Page,
+  user: FoundingE2eUser,
+) {
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Password").fill(user.password);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  await expect(page).toHaveURL(/\/platform(?:\?|$)|\/select-organisation/, {
+    timeout: 30_000,
+  });
+}
+
 export async function completeFoundingCheckout(
   page: Page,
   user: FoundingE2eUser,
@@ -203,8 +217,10 @@ function loadLatestSubscriptionForOrganisationName(
   }
 }
 
-export async function setOrganisationSubscriptionTrialing(
+export async function setOrganisationSubscriptionPlan(
   user: FoundingE2eUser,
+  planCode: "essentials" | "professional",
+  billingState: "active" | "trialing" = "active",
 ) {
   const { url, serviceRoleKey } = resolveSupabaseEnv();
   if (!url || !serviceRoleKey) {
@@ -232,13 +248,13 @@ export async function setOrganisationSubscriptionTrialing(
     target_provider: subscription.provider,
     target_customer_id: subscription.provider_customer_id ?? "",
     target_subscription_id: subscription.provider_subscription_id ?? "",
-    target_plan_code: subscription.plan_code ?? "essentials",
+    target_plan_code: planCode,
     target_billing_interval: subscription.billing_interval ?? "monthly",
     target_site_quantity: subscription.site_quantity ?? 1,
     target_price_id:
-      subscription.provider_price_id ?? "price_fake_essentials_monthly",
-    target_provider_status: "trialing",
-    target_billing_state: "trialing",
+      subscription.provider_price_id ?? `price_fake_${planCode}_monthly`,
+    target_provider_status: billingState === "trialing" ? "trialing" : "active",
+    target_billing_state: billingState,
     target_current_period_start: new Date().toISOString(),
     target_current_period_end: periodEnd,
     target_cancel_at_period_end: false,
@@ -248,4 +264,20 @@ export async function setOrganisationSubscriptionTrialing(
   if (applied.error) {
     throw applied.error;
   }
+}
+
+export async function setOrganisationSubscriptionTrialing(
+  user: FoundingE2eUser,
+) {
+  await setOrganisationSubscriptionPlan(user, "essentials", "trialing");
+}
+
+export function loadFoundingOrganisationId(user: FoundingE2eUser): string {
+  const subscription = loadLatestSubscriptionForOrganisationName(
+    user.organisationName,
+  );
+  if (!subscription?.organisation_id) {
+    throw new Error("Organisation id was not found for the founding user");
+  }
+  return subscription.organisation_id;
 }
