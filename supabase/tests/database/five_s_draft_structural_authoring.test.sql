@@ -228,7 +228,7 @@ select throws_ok(
 
 select throws_ok(
   format(
-    'select public.add_five_s_question(%L::uuid, %L::uuid, ''number'', ''Indirect scoring'', 3, true, false, null, null, true, ''{"type":"yes_no","yes_value":100,"no_value":0}''::jsonb, 1)',
+    'select public.add_five_s_question(%L::uuid, %L::uuid, ''score'', ''Indirect scoring'', 3, true, false, null, null, true, ''{"type":"yes_no","yes_value":100,"no_value":0}''::jsonb, 1)',
     (select id from remove_ids where key = 'v1'),
     (select id from remove_ids where key = 'sort_section')
   ),
