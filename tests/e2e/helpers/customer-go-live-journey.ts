@@ -88,6 +88,19 @@ export function queryMembershipIdForEmail(
   return row;
 }
 
+export function revokeFoundingOwnerSuggestionApprovalGrants(
+  organisationId: string,
+  founderEmail: string,
+) {
+  const founderMembershipId = queryMembershipIdForEmail(
+    organisationId,
+    founderEmail,
+  );
+  runPsql(
+    `update public.access_grants grant_row set status = 'revoked', updated_at = statement_timestamp() from public.role_permissions permission_row where grant_row.organisation_id = '${organisationId}'::uuid and grant_row.grantee_membership_id = '${founderMembershipId}'::uuid and grant_row.status = 'active' and permission_row.organisation_id = grant_row.organisation_id and permission_row.role_version_id = grant_row.role_version_id and permission_row.permission_key in ('suggestions.review', 'suggestions.manage');`,
+  );
+}
+
 export async function tightenSuggestionApproverToProductionManager(
   ownerClient: SupabaseClient,
   organisationId: string,

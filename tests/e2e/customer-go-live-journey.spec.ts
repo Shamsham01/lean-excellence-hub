@@ -16,6 +16,7 @@ import {
   waitForUnreadSuggestionNotification,
   queryMembershipIdForEmail,
   querySuggestionPrimaryApproverMembershipId,
+  revokeFoundingOwnerSuggestionApprovalGrants,
   tightenSuggestionApproverToProductionManager,
   queryJobFunctionIdByCode,
   queryOrganisationUnitIdByName,
@@ -370,6 +371,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     test.setTimeout(240_000);
     await loginAsExistingFoundingUser(page, user);
     await bootstrapSuggestionProgramme(page);
+    revokeFoundingOwnerSuggestionApprovalGrants(organisationId, user.email);
 
     await loginColleague(page, operator);
     await page.goto("/platform/suggestions/new");
