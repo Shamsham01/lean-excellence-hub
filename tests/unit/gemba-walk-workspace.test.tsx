@@ -377,8 +377,8 @@ describe("GembaWalkWorkspace answer state", () => {
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
     expect(
       screen.getByRole("heading", {
-          name: /^What help does the team need\?/,
-        }),
+        name: /^What help does the team need\?/,
+      }),
     ).toBeVisible();
 
     resolveSave({ ok: true });
