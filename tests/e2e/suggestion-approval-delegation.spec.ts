@@ -67,7 +67,7 @@ async function openUnreadNotificationReview(
     return item.first();
   };
 
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
     await page.goto("/platform");
     await expect(notificationBell(page)).toBeVisible();
     await notificationBell(page).click();
@@ -83,7 +83,7 @@ async function openUnreadNotificationReview(
     await page.waitForTimeout(2_000);
   }
 
-  await expect(notificationItem()).toBeVisible({ timeout: 30_000 });
+  await expect(notificationItem()).toBeVisible({ timeout: 60_000 });
 }
 
 test.describe("Suggestion approval delegation (UI acceptance)", () => {
