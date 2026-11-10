@@ -220,7 +220,9 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
     await page.reload();
     await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
-    await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
+    await expect(page.getByTestId("leanai-coach")).toHaveCount(0, {
+      timeout: 15_000,
+    });
 
     await expireInterventionSnooze(page, "maturity_first_setup");
     await page.reload();

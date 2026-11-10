@@ -96,8 +96,9 @@ async function createReadinessFramework(page: Page) {
     "Established",
   ].entries()) {
     await openFrameworkAddLevel(page);
-    await page.locator("#levelName").fill(name);
-    await page.getByRole("button", { name: "Add level" }).click();
+    const levelDialog = page.getByTestId("framework-add-level-dialog");
+    await levelDialog.locator("#levelName").fill(name);
+    await levelDialog.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByTestId(`edit-level-${index + 1}`)).toBeVisible({
       timeout: 15_000,
     });

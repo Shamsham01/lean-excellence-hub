@@ -1,6 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { openExecutionStartDialog } from "./form-dialogs";
+import {
+  dismissExecutionStartDialog,
+  openExecutionStartDialog,
+} from "./form-dialogs";
 
 type Box = { x: number; y: number; width: number; height: number };
 
@@ -80,6 +83,16 @@ export async function expectExecutionHeaderLayout(
     submitTestId: string;
   },
 ) {
+  const formTestId =
+    input.submitTestId === "five-s-start-audit"
+      ? "five-s-start-audit-form"
+      : input.submitTestId === "gemba-start-walk"
+        ? "gemba-start-walk-form"
+        : null;
+  if (formTestId) {
+    await dismissExecutionStartDialog(page, formTestId);
+  }
+
   const title = page.getByRole("heading", { level: 1 });
   const execution = page.getByTestId(input.executionTestId);
   const openTrigger = page.getByTestId(executionOpenTestId(input.submitTestId));

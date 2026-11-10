@@ -168,6 +168,7 @@ export function FiveSDraftAuthoringPanels({
 
   return (
     <>
+      <input type="hidden" name="versionId" value={versionId} readOnly />
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
@@ -263,6 +264,7 @@ export function FiveSDraftAuthoringPanels({
           className="rounded-lg border border-border p-4"
           data-testid="authoring-section"
         >
+          <input type="hidden" name="sectionId" value={section.id} readOnly />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-medium">{section.title}</p>
             <Button

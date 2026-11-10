@@ -61,8 +61,9 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("framework-step-levels").click();
     await openFrameworkAddLevel(page);
-    await page.getByLabel("Level name").fill("Initial");
-    await page.getByRole("button", { name: "Add level" }).click();
+    const levelDialog = page.getByTestId("framework-add-level-dialog");
+    await levelDialog.getByLabel("Level name").fill("Initial");
+    await levelDialog.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByTestId("edit-level-1")).toBeVisible({
       timeout: 15_000,
     });
@@ -95,8 +96,11 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("framework-step-questions").click();
     await openFrameworkAddQuestion(page);
-    await page.getByLabel("Question prompt").fill("Rate Gemba walks");
-    await page.getByRole("button", { name: "Add scored question" }).click();
+    const addQuestionDialog = page.getByTestId("framework-add-question-dialog");
+    await addQuestionDialog.getByLabel("Question prompt").fill("Rate Gemba walks");
+    await addQuestionDialog
+      .getByRole("button", { name: "Add scored question" })
+      .click();
     await expect(
       page.locator('[data-testid^="edit-question-"]').first(),
     ).toBeVisible({ timeout: 15_000 });

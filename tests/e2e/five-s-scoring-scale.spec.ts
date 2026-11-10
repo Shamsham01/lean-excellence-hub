@@ -73,12 +73,18 @@ test.describe("5S scoring scale", () => {
     await openFiveSAddCategory(page);
     await page.getByLabel("Category name").fill("Sort");
     await page.getByRole("button", { name: "Add category" }).click();
+    await expect(page.getByTestId("five-s-add-category-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-section")).toContainText("Sort");
 
     await openFiveSAddQuestion(page);
     await page.getByTestId("five-s-question-prompt").fill(scorePrompt);
     await page.locator('select[name="questionType"]').selectOption("score");
     await page.getByRole("button", { name: "Add question" }).click();
+    await expect(page.getByTestId("five-s-add-question-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toContainText(
       scorePrompt,
     );

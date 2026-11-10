@@ -107,6 +107,7 @@ export function GembaDraftAuthoringPanels({
 
   return (
     <>
+      <input type="hidden" name="versionId" value={versionId} readOnly />
       <Button
         type="button"
         className="min-h-11"
@@ -189,6 +190,7 @@ export function GembaDraftAuthoringPanels({
           className="rounded-lg border border-border p-4"
           data-testid="authoring-section"
         >
+          <input type="hidden" name="sectionId" value={section.id} readOnly />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-medium">{section.title}</p>
             <Button

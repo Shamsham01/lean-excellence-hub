@@ -235,9 +235,15 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await page.getByTestId("publish-gemba-definition").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible();
 
@@ -469,9 +475,15 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await page.getByTestId("publish-gemba-definition").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible();
 

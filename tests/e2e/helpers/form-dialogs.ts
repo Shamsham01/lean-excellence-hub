@@ -45,6 +45,18 @@ export async function openExecutionStartDialog(
   await expect(page.getByTestId(formTestId)).toBeVisible();
 }
 
+export async function dismissExecutionStartDialog(
+  page: Page,
+  formTestId: "five-s-start-audit-form" | "gemba-start-walk-form",
+) {
+  const dialog = page.getByTestId(`${formTestId}-dialog`);
+  if (!(await dialog.isVisible().catch(() => false))) {
+    return;
+  }
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toBeHidden({ timeout: 10_000 });
+}
+
 const FRAMEWORK_DIALOG_IDS = [
   "framework-add-level-dialog",
   "framework-add-pillar-dialog",
