@@ -97,7 +97,9 @@ test.describe("Milestone 5 maturity journeys", () => {
     await page.getByTestId("framework-step-questions").click();
     await openFrameworkAddQuestion(page);
     const addQuestionDialog = page.getByTestId("framework-add-question-dialog");
-    await addQuestionDialog.getByLabel("Question prompt").fill("Rate Gemba walks");
+    await addQuestionDialog
+      .getByLabel("Question prompt")
+      .fill("Rate Gemba walks");
     await addQuestionDialog
       .getByRole("button", { name: "Add scored question" })
       .click();
