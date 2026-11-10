@@ -130,12 +130,40 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+  playwright-browsers:
+    name: Full Regression / Playwright browsers
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: ./scripts/ci/timed.sh "npm ci" npm ci
+      - uses: ./.github/actions/playwright-chromium
+        with:
+          browsers: chromium webkit
+
   end-to-end-smoke:
     name: Full Regression / E2E smoke
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - playwright-browsers
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Require Playwright browser warmup
+        shell: bash
+        run: |
+          if [ "${{ needs.playwright-browsers.result }}" != "success" ]; then
+            echo "Full Regression / Playwright browsers must succeed (got: ${{ needs.playwright-browsers.result }})."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -213,7 +241,11 @@ jobs:
 
   e2e-shards:
     name: Full Regression / E2E ${{ matrix.label }}
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - playwright-browsers
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 32
     strategy:
@@ -244,6 +276,7 @@ jobs:
               tests/e2e/cookieworks-execution-site-context.spec.ts
               tests/e2e/billing-founding-onboarding.spec.ts
               tests/e2e/clean-org-onboarding-journey.spec.ts
+              tests/e2e/customer-go-live-journey.spec.ts
               tests/e2e/site-capacity.spec.ts
               tests/e2e/organisation-ownership-transfer.spec.ts
               tests/e2e/leanai-context-readiness.spec.ts
@@ -301,6 +334,13 @@ jobs:
           - label: ai-closure
             specs: tests/e2e/milestone12-closure.spec.ts
     steps:
+      - name: Require Playwright browser warmup
+        shell: bash
+        run: |
+          if [ "${{ needs.playwright-browsers.result }}" != "success" ]; then
+            echo "Full Regression / Playwright browsers must succeed (got: ${{ needs.playwright-browsers.result }})."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -313,6 +353,8 @@ jobs:
           startup-timeout-minutes: "8"
           max-attempts: "2"
       - uses: ./.github/actions/playwright-chromium
+        with:
+          browsers: ${{ matrix.label == 'platform' && 'chromium webkit' || 'chromium' }}
       - uses: ./.github/actions/supabase-playwright-e2e
         with:
           shard-label: ${{ matrix.label }}

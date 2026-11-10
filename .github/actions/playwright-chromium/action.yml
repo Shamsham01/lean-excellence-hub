@@ -1,5 +1,11 @@
 name: Install Playwright Chromium (cached)
-description: Cache browser binaries keyed by package-lock and install Chromium with system dependencies.
+description: Cache browser binaries keyed by package-lock and install requested browsers with system dependencies.
+
+inputs:
+  browsers:
+    description: Space-separated Playwright browser names to install (e.g. "chromium" or "chromium webkit").
+    required: false
+    default: chromium
 
 runs:
   using: composite
@@ -10,18 +16,29 @@ runs:
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
 
     - name: Install Playwright Chromium
       shell: bash
       run: |
         set -euo pipefail
+        browsers="${{ inputs.browsers }}"
         start_epoch="$(date +%s)"
-        npx playwright install-deps chromium webkit
-        npx playwright install chromium webkit
+        # System libraries are required even when browser binaries are cached (WebKit).
+        # shellcheck disable=SC2086
+        npx playwright install-deps ${browsers}
+        if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+          # shellcheck disable=SC2086
+          npx playwright install --no-shell ${browsers}
+        else
+          # shellcheck disable=SC2086
+          npx playwright install ${browsers}
+        fi
         end_epoch="$(date +%s)"
         duration="$((end_epoch - start_epoch))"
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
           cache_state="${{ steps.playwright-cache.outputs.cache-hit == 'true' && 'hit' || 'miss' }}"
-          echo "- Playwright Chromium install (cache ${cache_state}): ${duration}s" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Playwright install [${browsers}] (cache ${cache_state}): ${duration}s" >> "${GITHUB_STEP_SUMMARY}"
         fi
-        echo "Playwright Chromium install completed in ${duration}s"
+        echo "Playwright install [${browsers}] completed in ${duration}s"

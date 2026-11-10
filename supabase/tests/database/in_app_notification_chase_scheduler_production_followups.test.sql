@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(15);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -189,6 +189,16 @@ select is(
   private.sweep_expired_pre_watermark_chase_notifications(interval '180 days'),
   0,
   'recent pre-watermark chase rows are not expired by TTL sweep'
+);
+
+update private.in_app_chase_worker_cursor
+set chase_eligibility_watermark = null
+where singleton_id = true;
+
+select is(
+  private.sweep_expired_pre_watermark_chase_notifications(interval '180 days'),
+  0,
+  'pre-watermark chase TTL sweep is a no-op when eligibility watermark is null'
 );
 
 -- Module plan gate: gemba stale chases suppressed when billing is non-operational
