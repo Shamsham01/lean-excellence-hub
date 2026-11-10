@@ -233,14 +233,16 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
 
     await openGembaAddPrompt(page);
-    await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
-    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+    const promptDialog = page.getByTestId("gemba-add-prompt-dialog");
+    await promptDialog.getByTestId("gemba-question-prompt").fill(firstPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
+    await expect(promptDialog).toBeHidden({
       timeout: 15_000,
     });
+    await expect(page.getByTestId("authoring-question")).toHaveCount(1);
     await openGembaAddPrompt(page);
-    await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
+    await promptDialog.getByTestId("gemba-question-prompt").fill(secondPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
       timeout: 15_000,
     });
@@ -473,14 +475,16 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
 
     await openGembaAddPrompt(page);
-    await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
-    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+    const promptDialog = page.getByTestId("gemba-add-prompt-dialog");
+    await promptDialog.getByTestId("gemba-question-prompt").fill(firstPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
+    await expect(promptDialog).toBeHidden({
       timeout: 15_000,
     });
+    await expect(page.getByTestId("authoring-question")).toHaveCount(1);
     await openGembaAddPrompt(page);
-    await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
+    await promptDialog.getByTestId("gemba-question-prompt").fill(secondPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
       timeout: 15_000,
     });

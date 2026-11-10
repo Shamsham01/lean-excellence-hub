@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useRef, type ReactNode } from "react";
 
+import { useFormDialogGuardReporter } from "@/components/ui/use-form-dialog-guard";
+
 export function DialogServerActionForm({
   action,
   children,
@@ -16,15 +18,21 @@ export function DialogServerActionForm({
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const guard = useFormDialogGuardReporter();
 
   return (
     <form
       ref={formRef}
       action={async (formData) => {
-        await action(formData);
-        formRef.current?.reset();
-        router.refresh();
-        onSuccess?.();
+        guard?.setPending(true);
+        try {
+          await action(formData);
+          formRef.current?.reset();
+          onSuccess?.();
+          router.refresh();
+        } finally {
+          guard?.setPending(false);
+        }
       }}
       className={className}
     >

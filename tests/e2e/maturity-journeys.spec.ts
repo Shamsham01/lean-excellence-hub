@@ -78,8 +78,9 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("framework-step-pillars").click();
     await openFrameworkAddPillar(page);
-    await page.getByLabel("Pillar name").fill("Leadership");
-    await page.getByRole("button", { name: "Add pillar" }).click();
+    const pillarDialog = page.getByTestId("framework-add-pillar-dialog");
+    await pillarDialog.getByLabel("Pillar name").fill("Leadership");
+    await pillarDialog.getByRole("button", { name: "Add pillar" }).click();
     await expect(
       page.locator('[data-testid^="edit-pillar-"]').first(),
     ).toBeVisible({
@@ -88,8 +89,11 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("framework-step-criteria").click();
     await openFrameworkAddCriterion(page);
-    await page.getByLabel("Criterion name").fill("Gemba walks");
-    await page.getByRole("button", { name: "Add criterion" }).click();
+    const criterionDialog = page.getByTestId("framework-add-criterion-dialog");
+    await criterionDialog.getByLabel("Criterion name").fill("Gemba walks");
+    await criterionDialog
+      .getByRole("button", { name: "Add criterion" })
+      .click();
     await expect(
       page.locator('[data-testid^="edit-criterion-"]').first(),
     ).toBeVisible({ timeout: 15_000 });
