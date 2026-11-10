@@ -734,13 +734,26 @@ export function FrameworkEditor({
                     new FormData(form).get("pillarName") ?? "",
                   ).trim();
                   if (!pillarName) return;
-                  const ok = await run(() =>
-                    addMaturityPillar(versionId, pillarName, modelId),
+                  setBusy(true);
+                  setError(null);
+                  const result = await addMaturityPillar(
+                    versionId,
+                    pillarName,
+                    modelId,
                   );
-                  if (ok) {
-                    form.reset();
-                    setAddPillarOpen(false);
+                  setBusy(false);
+                  if (
+                    result &&
+                    typeof result === "object" &&
+                    "error" in result &&
+                    result.error
+                  ) {
+                    setError(result.error);
+                    return;
                   }
+                  form.reset();
+                  setAddPillarOpen(false);
+                  router.refresh();
                 }}
               >
                 <div className="flex flex-col gap-2">
@@ -858,13 +871,26 @@ export function FrameworkEditor({
                     payload.get("criterionName") ?? "",
                   ).trim();
                   if (!criterionName || !pillarId) return;
-                  const ok = await run(() =>
-                    addMaturityCriterion(pillarId, criterionName, modelId),
+                  setBusy(true);
+                  setError(null);
+                  const result = await addMaturityCriterion(
+                    pillarId,
+                    criterionName,
+                    modelId,
                   );
-                  if (ok) {
-                    form.reset();
-                    setAddCriterionOpen(false);
+                  setBusy(false);
+                  if (
+                    result &&
+                    typeof result === "object" &&
+                    "error" in result &&
+                    result.error
+                  ) {
+                    setError(result.error);
+                    return;
                   }
+                  form.reset();
+                  setAddCriterionOpen(false);
+                  router.refresh();
                 }}
               >
                 <div className="flex flex-col gap-2">
@@ -1089,24 +1115,37 @@ export function FrameworkEditor({
                   );
                   const criterion = criteria.find((c) => c.id === criterionId);
                   if (!prompt || !criterion || !pillar) return;
-                  const ok = await run(async () => {
-                    const q = await addMaturityQuestion(
-                      versionId,
-                      pillar.section_id,
-                      prompt,
-                      modelId,
-                    );
-                    if (q.error || !q.questionId) return q;
-                    return linkCriterionQuestion(
-                      criterionId,
-                      q.questionId,
-                      modelId,
-                    );
-                  });
-                  if (ok) {
-                    form.reset();
-                    setAddQuestionOpen(false);
+                  setBusy(true);
+                  setError(null);
+                  const q = await addMaturityQuestion(
+                    versionId,
+                    pillar.section_id,
+                    prompt,
+                    modelId,
+                  );
+                  if (q.error || !q.questionId) {
+                    setBusy(false);
+                    if (q.error) setError(q.error);
+                    return;
                   }
+                  const link = await linkCriterionQuestion(
+                    criterionId,
+                    q.questionId,
+                    modelId,
+                  );
+                  setBusy(false);
+                  if (
+                    link &&
+                    typeof link === "object" &&
+                    "error" in link &&
+                    link.error
+                  ) {
+                    setError(link.error);
+                    return;
+                  }
+                  form.reset();
+                  setAddQuestionOpen(false);
+                  router.refresh();
                 }}
               >
                 <div className="flex flex-col gap-2">

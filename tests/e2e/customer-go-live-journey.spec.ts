@@ -1,7 +1,10 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { createActionViaPlannerDialog } from "./helpers/actions-create";
-import { openPeopleInviteDialog } from "./helpers/form-dialogs";
+import {
+  openPeopleInviteDialog,
+  openPeoplePendingInvitationsTab,
+} from "./helpers/form-dialogs";
 import {
   acceptInvitationAsNewColleague,
   bootstrapSuggestionProgramme,
@@ -681,11 +684,12 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     const inviteForm = page.getByTestId("invite-colleague-form");
     const unlimitedProbe = `go-live-unlimited-${Date.now()}@example.test`;
     await inviteForm.locator("#invite-email").fill(unlimitedProbe);
-    await inviteForm.locator("#invite-role").selectOption({ label: "Team Member" });
-    await inviteForm.locator("#invite-scope").selectOption({ index: 1 });
     await inviteForm
-      .getByRole("button", { name: "Create invitation" })
-      .click();
+      .locator("#invite-role")
+      .selectOption({ label: "Team Member" });
+    await inviteForm.locator("#invite-scope").selectOption({ index: 1 });
+    await inviteForm.getByRole("button", { name: "Create invitation" }).click();
+    await openPeoplePendingInvitationsTab(page);
     await expect(page.getByText(unlimitedProbe)).toBeVisible({
       timeout: 30_000,
     });
