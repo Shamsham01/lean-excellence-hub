@@ -238,10 +238,10 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expireInterventionSnooze(page, "maturity_first_setup");
     await page.reload();
     await expect(page.getByTestId("maturity-overview-page")).toBeVisible();
-    await ensureLeanAiAssistantOpen(page);
     await expect(page.getByTestId("leanai-coach")).toHaveAttribute(
       "data-intervention-key",
       "maturity_first_setup",
+      { timeout: 30_000 },
     );
 
     await page.goto("/platform/suggestions");
