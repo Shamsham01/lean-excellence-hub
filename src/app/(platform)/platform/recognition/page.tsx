@@ -29,12 +29,17 @@ export default async function RecognitionPage() {
 
   const [{ count: typeCount }, selectorOptions, { data: types }] =
     await Promise.all([
-      supabase.from("recognition_types").select("id", { count: "exact", head: true }),
+      supabase
+        .from("recognition_types")
+        .select("id", { count: "exact", head: true }),
       canAward
         ? loadSiteScopedSelectorOptions({ requireConcreteSite: true })
         : Promise.resolve(null),
       canAward
-        ? supabase.from("recognition_types").select("id, name").eq("status", "active")
+        ? supabase
+            .from("recognition_types")
+            .select("id, name")
+            .eq("status", "active")
         : Promise.resolve({ data: [] }),
     ]);
 
