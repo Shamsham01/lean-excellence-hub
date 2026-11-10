@@ -18,6 +18,7 @@ import { ApplicableUnitsField } from "@/components/organisation/applicable-units
 import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
 import {
   FiveSApplicabilityEditor,
+  FiveSDiscardDraftControl,
   FiveSDraftAuthoringPanels,
   FiveSScoringScaleEditor,
 } from "@/components/five-s/five-s-standard-authoring-client";
@@ -333,8 +334,14 @@ export default async function FiveSStandardDetailPage({
 
       {draftVersion ? (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Draft v{draftVersion.version_number}</CardTitle>
+            {publishedVersion && canManage ? (
+              <FiveSDiscardDraftControl
+                standardId={id}
+                versionId={draftVersion.id}
+              />
+            ) : null}
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <FiveSScoringScaleSummary

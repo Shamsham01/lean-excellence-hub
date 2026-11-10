@@ -14217,6 +14217,10 @@ export type Database = {
         Args: { change_reason: string; target_user_id: string }
         Returns: number
       }
+      discard_five_s_standard_draft: {
+        Args: { target_standard_version_id: string }
+        Returns: boolean
+      }
       discard_skill_setup_bundle: {
         Args: { target_bundle_id: string }
         Returns: Json
@@ -15560,6 +15564,14 @@ export type Database = {
       }
       remove_benefit_source_link: {
         Args: { target_benefit_id: string; target_source_resource_id: string }
+        Returns: boolean
+      }
+      remove_five_s_question: {
+        Args: { target_question_id: string }
+        Returns: boolean
+      }
+      remove_five_s_section: {
+        Args: { target_section_id: string }
         Returns: boolean
       }
       remove_problem_solving_source_link: {

@@ -8,9 +8,13 @@ import { DialogServerActionForm } from "@/components/ui/dialog-server-action-for
 import {
   addFiveSQuestionFromForm,
   addFiveSSectionFromForm,
+  discardFiveSStandardDraftFromForm,
+  removeFiveSQuestionFromForm,
+  removeFiveSSectionFromForm,
   setFiveSStandardApplicableUnitsFromForm,
   setFiveSStandardScoringScaleFromForm,
 } from "@/app/(platform)/platform/5s/actions";
+import { Trash2 } from "lucide-react";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { Button } from "@/components/ui/button";
@@ -161,6 +165,68 @@ export function FiveSScoringScaleEditor({
   );
 }
 
+type RemoveTarget =
+  | { kind: "question"; id: string; label: string }
+  | { kind: "section"; id: string; label: string };
+
+export function FiveSDiscardDraftControl({
+  standardId,
+  versionId,
+}: {
+  standardId: string;
+  versionId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11 w-fit"
+        data-testid="five-s-discard-draft-open"
+        onClick={() => setOpen(true)}
+      >
+        Discard draft
+      </Button>
+      <ResponsiveFormDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Discard draft?"
+        description="This removes the draft version and its categories and questions. The published version stays active. This cannot be undone."
+        testId="five-s-discard-draft-dialog"
+      >
+        <DialogServerActionForm
+          action={discardFiveSStandardDraftFromForm}
+          className="flex flex-col gap-4"
+          onSuccess={() => setOpen(false)}
+        >
+          <input type="hidden" name="versionId" value={versionId} />
+          <input type="hidden" name="standardId" value={standardId} />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => setOpen(false)}
+            >
+              Keep draft
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              className="min-h-11"
+              data-testid="five-s-discard-draft-confirm"
+            >
+              Discard draft
+            </Button>
+          </div>
+        </DialogServerActionForm>
+      </ResponsiveFormDialog>
+    </>
+  );
+}
+
 export function FiveSDraftAuthoringPanels({
   standardId,
   versionId,
@@ -174,6 +240,7 @@ export function FiveSDraftAuthoringPanels({
   const [questionSectionId, setQuestionSectionId] = useState<string | null>(
     null,
   );
+  const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
   const flashSaved = useAuthoringSavedFlash();
 
   return (
@@ -274,6 +341,73 @@ export function FiveSDraftAuthoringPanels({
         ) : null}
       </ResponsiveFormDialog>
 
+      <ResponsiveFormDialog
+        open={removeTarget != null}
+        onOpenChange={(next) => {
+          if (!next) setRemoveTarget(null);
+        }}
+        title={
+          removeTarget?.kind === "section"
+            ? "Remove category?"
+            : "Remove question?"
+        }
+        {...(removeTarget
+          ? {
+              description:
+                removeTarget.kind === "section"
+                  ? `“${removeTarget.label}” and its questions will be removed from this draft. This cannot be undone.`
+                  : `“${removeTarget.label}” will be removed from this draft. This cannot be undone.`,
+            }
+          : {})}
+        testId="five-s-remove-structural-dialog"
+      >
+        {removeTarget ? (
+          <DialogServerActionForm
+            action={
+              removeTarget.kind === "section"
+                ? removeFiveSSectionFromForm
+                : removeFiveSQuestionFromForm
+            }
+            className="flex flex-col gap-4"
+            onSuccess={() => {
+              flashSaved(
+                removeTarget.kind === "section" ? "section" : "question",
+              );
+              setRemoveTarget(null);
+            }}
+          >
+            <input type="hidden" name="standardId" value={standardId} />
+            <input
+              type="hidden"
+              name={
+                removeTarget.kind === "section" ? "sectionId" : "questionId"
+              }
+              value={removeTarget.id}
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setRemoveTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                className="min-h-11"
+                data-testid="five-s-remove-structural-confirm"
+              >
+                {removeTarget.kind === "section"
+                  ? "Remove category"
+                  : "Remove question"}
+              </Button>
+            </div>
+          </DialogServerActionForm>
+        ) : null}
+      </ResponsiveFormDialog>
+
       {sections.map((section) => (
         <div
           key={section.id}
@@ -283,29 +417,67 @@ export function FiveSDraftAuthoringPanels({
           <input type="hidden" name="sectionId" value={section.id} readOnly />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-medium">{section.title}</p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="min-h-11"
-              data-testid={`five-s-add-question-open-${section.id}`}
-              onClick={() => setQuestionSectionId(section.id)}
-            >
-              Add question
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="min-h-11"
+                data-testid={`five-s-add-question-open-${section.id}`}
+                onClick={() => setQuestionSectionId(section.id)}
+              >
+                Add question
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="min-h-11 min-w-11 text-destructive"
+                aria-label={`Remove category ${section.title}`}
+                data-testid={`five-s-remove-section-open-${section.id}`}
+                onClick={() =>
+                  setRemoveTarget({
+                    kind: "section",
+                    id: section.id,
+                    label: section.title,
+                  })
+                }
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
           </div>
           {section.questions.length > 0 ? (
             <ul className="mt-3 flex flex-col gap-2">
               {section.questions.map((question) => (
                 <li
                   key={question.id}
-                  className="rounded-md border border-border bg-surface px-3 py-2"
+                  className="flex items-start justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2"
                   data-testid="authoring-question"
                 >
-                  <p className="font-medium">{question.prompt}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {fiveSQuestionTypeLabel(question.questionType)}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{question.prompt}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {fiveSQuestionTypeLabel(question.questionType)}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="min-h-11 min-w-11 shrink-0 text-destructive"
+                    aria-label={`Remove question ${question.prompt}`}
+                    data-testid={`five-s-remove-question-open-${question.id}`}
+                    onClick={() =>
+                      setRemoveTarget({
+                        kind: "question",
+                        id: question.id,
+                        label: question.prompt,
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </Button>
                 </li>
               ))}
             </ul>
