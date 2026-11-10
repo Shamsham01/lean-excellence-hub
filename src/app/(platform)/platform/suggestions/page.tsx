@@ -9,8 +9,11 @@ import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestio
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
+import { NewSuggestionDialog } from "@/components/suggestions/new-suggestion-dialog";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { loadNewSuggestionFormConfiguration } from "@/lib/suggestions/load-new-suggestion-configuration";
+import { listEligibleOrganisations } from "@/modules/organisations/context";
 import {
   fetchSuggestionPortfolio,
   fetchSuggestionsOverview,
@@ -90,6 +93,11 @@ export default async function SuggestionsOverviewPage({
 
   const pipeline = overview.pipeline;
   const analytics = await loadSuggestionsAnalytics(supabase, analyticsRange);
+  const organisations = await listEligibleOrganisations();
+  const currentMembershipId = organisations.find((o) => o.selected)?.membership_id;
+  const newSuggestionConfiguration = canSubmit
+    ? await loadNewSuggestionFormConfiguration(supabase, currentMembershipId)
+    : null;
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
@@ -98,15 +106,8 @@ export default async function SuggestionsOverviewPage({
         description="Improvement ideas from your people — capture, review, and implement."
         actions={
           <div className="flex gap-2">
-            {canSubmit ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/suggestions/new"
-                  data-testid="suggestions-new-link"
-                >
-                  New suggestion
-                </AppLink>
-              </Button>
+            {canSubmit && newSuggestionConfiguration ? (
+              <NewSuggestionDialog {...newSuggestionConfiguration} />
             ) : null}
             {canManageProgrammes ? (
               <Button size="sm" variant="outline" asChild>

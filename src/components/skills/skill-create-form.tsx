@@ -21,10 +21,12 @@ export function SkillCreateForm({
   existingCodes,
   scaleHref,
   hasPublishedScale,
+  onCreated,
 }: {
   existingCodes: readonly string[];
   scaleHref: string;
   hasPublishedScale: boolean;
+  onCreated?: () => void;
 }) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -77,6 +79,7 @@ export function SkillCreateForm({
         })
           .then((result) => {
             if ("skillId" in result) {
+              onCreated?.();
               navigateTo(`/platform/skills/${result.skillId}`);
               return;
             }

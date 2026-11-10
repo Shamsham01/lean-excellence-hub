@@ -37,12 +37,14 @@ type StartAssessmentFormProps = {
   versions: FrameworkVersion[];
   people: LeadAssessorOption[];
   defaultVersionId?: string;
+  onStarted?: () => void;
 };
 
 export function StartAssessmentForm({
   versions,
   people,
   defaultVersionId,
+  onStarted,
 }: StartAssessmentFormProps) {
   const [versionId, setVersionId] = useState(defaultVersionId ?? "");
   const [scopeType, setScopeType] = useState<MaturityAssessmentScopeType | "">(
@@ -125,6 +127,7 @@ export function StartAssessmentForm({
         return;
       }
       if (result.assessmentId) {
+        onStarted?.();
         navigateTo(`/platform/maturity/assessments/${result.assessmentId}`);
       }
     });

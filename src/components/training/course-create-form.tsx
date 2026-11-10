@@ -19,11 +19,15 @@ import {
 type CourseCreateFormProps = {
   existingCodes: readonly string[];
   cancelHref?: string;
+  variant?: "page" | "embedded";
+  onCreated?: () => void;
 };
 
 export function CourseCreateForm({
   existingCodes,
   cancelHref,
+  variant = "page",
+  onCreated,
 }: CourseCreateFormProps) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -42,18 +46,8 @@ export function CourseCreateForm({
     [existingCodes, name],
   );
 
-  return (
-    <Card data-testid="training-course-create-card">
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <CardTitle>New course</CardTitle>
-        {cancelHref ? (
-          <Button variant="ghost" size="sm" asChild>
-            <AppLink href={cancelHref}>Cancel</AppLink>
-          </Button>
-        ) : null}
-      </CardHeader>
-      <CardContent>
-        <form
+  const form = (
+    <form
           className="flex flex-col gap-4"
           data-testid="training-course-create-form"
           onSubmit={(event) => {
@@ -95,6 +89,7 @@ export function CourseCreateForm({
                   return;
                 }
 
+                onCreated?.();
                 navigateTo(`/platform/training/courses/${result.courseId}`);
               })
               .catch(() => {
@@ -200,16 +195,36 @@ export function CourseCreateForm({
               {error}
             </p>
           ) : null}
-          <Button
-            type="submit"
-            className="min-h-11 self-start"
-            disabled={submitting}
-            data-testid="training-course-create-submit"
-          >
-            {submitting ? "Creating course…" : "Create draft course"}
+      <Button
+        type="submit"
+        className="min-h-11 self-start"
+        disabled={submitting}
+        data-testid="training-course-create-submit"
+      >
+        {submitting ? "Creating course…" : "Create draft course"}
+      </Button>
+    </form>
+  );
+
+  if (variant === "embedded") {
+    return (
+      <div data-testid="training-course-create-form" className="min-w-0">
+        {form}
+      </div>
+    );
+  }
+
+  return (
+    <Card data-testid="training-course-create-card">
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <CardTitle>New course</CardTitle>
+        {cancelHref ? (
+          <Button variant="ghost" size="sm" asChild>
+            <AppLink href={cancelHref}>Cancel</AppLink>
           </Button>
-        </form>
-      </CardContent>
+        ) : null}
+      </CardHeader>
+      <CardContent>{form}</CardContent>
     </Card>
   );
 }

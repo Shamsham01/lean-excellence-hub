@@ -55,7 +55,8 @@ export function CreateWorkforceUserForm({
   units,
   jobFunctions,
   onCreate,
-}: CreateWorkforceUserFormProps) {
+  onProvisioned,
+}: CreateWorkforceUserFormProps & { onProvisioned?: () => void }) {
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -129,6 +130,7 @@ export function CreateWorkforceUserForm({
       displayName: result.displayName,
       temporaryPassword: result.temporaryPassword,
     });
+    onProvisioned?.();
   }
 
   if (credentials) {

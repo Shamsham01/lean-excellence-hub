@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import {
   assessFrameworkPublishReadiness,
   buildFrameworkHierarchy,
@@ -306,6 +307,10 @@ export function FrameworkEditor({
   const [selectedScopes, setSelectedScopes] = useState<
     MaturityAssessmentScopeType[]
   >(assessmentScopes.length > 0 ? assessmentScopes : ["site"]);
+  const [addLevelOpen, setAddLevelOpen] = useState(false);
+  const [addPillarOpen, setAddPillarOpen] = useState(false);
+  const [addCriterionOpen, setAddCriterionOpen] = useState(false);
+  const [addQuestionOpen, setAddQuestionOpen] = useState(false);
   const [selectedCriterionId, setSelectedCriterionId] = useState(
     criteria[0]?.id ?? "",
   );
@@ -560,59 +565,77 @@ export function FrameworkEditor({
 
         {step === "levels" ? (
           <div className="flex flex-col gap-6">
-            <form
-              className="flex max-w-md flex-col gap-3"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const levelNumber = Number(form.levelNumber.value);
-                const levelName = form.levelName.value.trim();
-                const color = form.levelColor.value.trim() || "maturity-1";
-                if (!levelName) return;
-                await run(() =>
-                  addMaturityLevel(
-                    versionId,
-                    levelNumber,
-                    levelName,
-                    color,
-                    modelId,
-                  ),
-                );
-                form.reset();
-              }}
+            <Button
+              type="button"
+              className="min-h-11 w-fit"
+              data-testid="framework-add-level-open"
+              onClick={() => setAddLevelOpen(true)}
             >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="levelNumber">Level number</Label>
-                <Input
-                  id="levelNumber"
-                  name="levelNumber"
-                  type="number"
-                  min={1}
-                  required
-                  defaultValue={levels.length + 1}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="levelName">Level name</Label>
-                <Input
-                  id="levelName"
-                  name="levelName"
-                  required
-                  placeholder="Initial"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="levelColor">Color token</Label>
-                <Input
-                  id="levelColor"
-                  name="levelColor"
-                  placeholder="maturity-1"
-                />
-              </div>
-              <Button type="submit" disabled={busy}>
-                Add level
-              </Button>
-            </form>
+              Add level
+            </Button>
+            <ResponsiveFormDialog
+              open={addLevelOpen}
+              onOpenChange={setAddLevelOpen}
+              title="Add maturity level"
+              testId="framework-add-level-dialog"
+            >
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const levelNumber = Number(form.levelNumber.value);
+                  const levelName = form.levelName.value.trim();
+                  const color = form.levelColor.value.trim() || "maturity-1";
+                  if (!levelName) return;
+                  const ok = await run(() =>
+                    addMaturityLevel(
+                      versionId,
+                      levelNumber,
+                      levelName,
+                      color,
+                      modelId,
+                    ),
+                  );
+                  if (ok) {
+                    form.reset();
+                    setAddLevelOpen(false);
+                  }
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="levelNumber">Level number</Label>
+                  <Input
+                    id="levelNumber"
+                    name="levelNumber"
+                    type="number"
+                    min={1}
+                    required
+                    defaultValue={levels.length + 1}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="levelName">Level name</Label>
+                  <Input
+                    id="levelName"
+                    name="levelName"
+                    required
+                    placeholder="Initial"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="levelColor">Color token</Label>
+                  <Input
+                    id="levelColor"
+                    name="levelColor"
+                    placeholder="maturity-1"
+                  />
+                </div>
+                <Button type="submit" className="min-h-11" disabled={busy}>
+                  Add level
+                </Button>
+              </form>
+            </ResponsiveFormDialog>
             <div className="flex flex-col gap-3">
               {levels.map((level) => (
                 <form
@@ -676,35 +699,53 @@ export function FrameworkEditor({
 
         {step === "pillars" ? (
           <div className="flex flex-col gap-6">
-            <form
-              className="flex max-w-md flex-col gap-3"
-              data-testid="add-pillar-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const pillarName = String(
-                  new FormData(form).get("pillarName") ?? "",
-                ).trim();
-                if (!pillarName) return;
-                await run(() =>
-                  addMaturityPillar(versionId, pillarName, modelId),
-                );
-                form.reset();
-              }}
+            <Button
+              type="button"
+              className="min-h-11 w-fit"
+              data-testid="framework-add-pillar-open"
+              onClick={() => setAddPillarOpen(true)}
             >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="pillarName">Pillar name</Label>
-                <Input
-                  id="pillarName"
-                  name="pillarName"
-                  required
-                  placeholder="Leadership"
-                />
-              </div>
-              <Button type="submit" disabled={busy}>
-                Add pillar
-              </Button>
-            </form>
+              Add pillar
+            </Button>
+            <ResponsiveFormDialog
+              open={addPillarOpen}
+              onOpenChange={setAddPillarOpen}
+              title="Add pillar"
+              testId="framework-add-pillar-dialog"
+            >
+              <form
+                className="flex flex-col gap-3"
+                data-testid="add-pillar-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const pillarName = String(
+                    new FormData(form).get("pillarName") ?? "",
+                  ).trim();
+                  if (!pillarName) return;
+                  const ok = await run(() =>
+                    addMaturityPillar(versionId, pillarName, modelId),
+                  );
+                  if (ok) {
+                    form.reset();
+                    setAddPillarOpen(false);
+                  }
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="pillarName">Pillar name</Label>
+                  <Input
+                    id="pillarName"
+                    name="pillarName"
+                    required
+                    placeholder="Leadership"
+                  />
+                </div>
+                <Button type="submit" className="min-h-11" disabled={busy}>
+                  Add pillar
+                </Button>
+              </form>
+            </ResponsiveFormDialog>
             <div className="leh-authoring-tree flex flex-col gap-3">
               {orderedPillars.map((pillar, pillarIndex) => (
                 <form
@@ -778,51 +819,74 @@ export function FrameworkEditor({
 
         {step === "criteria" ? (
           <div className="flex flex-col gap-6">
-            <form
-              className="flex max-w-md flex-col gap-3"
-              data-testid="add-criterion-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const payload = new FormData(form);
-                const pillarId = String(payload.get("pillarId") ?? "");
-                const criterionName = String(
-                  payload.get("criterionName") ?? "",
-                ).trim();
-                if (!criterionName || !pillarId) return;
-                await run(() =>
-                  addMaturityCriterion(pillarId, criterionName, modelId),
-                );
-                form.reset();
-              }}
+            <Button
+              type="button"
+              className="min-h-11 w-fit"
+              data-testid="framework-add-criterion-open"
+              disabled={pillars.length === 0}
+              onClick={() => setAddCriterionOpen(true)}
             >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="pillarId">Pillar</Label>
-                <select
-                  id="pillarId"
-                  name="pillarId"
-                  required
-                  value={selectedCriterionPillarId}
-                  onChange={(event) =>
-                    setSelectedCriterionPillarId(event.target.value)
+              Add criterion
+            </Button>
+            <ResponsiveFormDialog
+              open={addCriterionOpen}
+              onOpenChange={setAddCriterionOpen}
+              title="Add criterion"
+              testId="framework-add-criterion-dialog"
+            >
+              <form
+                className="flex flex-col gap-3"
+                data-testid="add-criterion-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const payload = new FormData(form);
+                  const pillarId = String(payload.get("pillarId") ?? "");
+                  const criterionName = String(
+                    payload.get("criterionName") ?? "",
+                  ).trim();
+                  if (!criterionName || !pillarId) return;
+                  const ok = await run(() =>
+                    addMaturityCriterion(pillarId, criterionName, modelId),
+                  );
+                  if (ok) {
+                    form.reset();
+                    setAddCriterionOpen(false);
                   }
-                  className="h-11 rounded-md border border-border bg-background px-3 text-sm"
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="pillarId">Pillar</Label>
+                  <select
+                    id="pillarId"
+                    name="pillarId"
+                    required
+                    value={selectedCriterionPillarId}
+                    onChange={(event) =>
+                      setSelectedCriterionPillarId(event.target.value)
+                    }
+                    className="h-11 rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    {orderedPillars.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="criterionName">Criterion name</Label>
+                  <Input id="criterionName" name="criterionName" required />
+                </div>
+                <Button
+                  type="submit"
+                  className="min-h-11"
+                  disabled={busy || pillars.length === 0}
                 >
-                  {orderedPillars.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="criterionName">Criterion name</Label>
-                <Input id="criterionName" name="criterionName" required />
-              </div>
-              <Button type="submit" disabled={busy || pillars.length === 0}>
-                Add criterion
-              </Button>
-            </form>
+                  Add criterion
+                </Button>
+              </form>
+            </ResponsiveFormDialog>
             <div className="leh-authoring-tree flex flex-col gap-4">
               {questionHierarchy.pillars.map((pillar, pillarIndex) => (
                 <section
@@ -979,75 +1043,98 @@ export function FrameworkEditor({
 
         {step === "questions" ? (
           <div className="flex flex-col gap-6">
-            <form
-              className="flex max-w-md flex-col gap-3"
-              data-testid="add-question-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const payload = new FormData(form);
-                const criterionId = String(payload.get("criterionId") ?? "");
-                const prompt = String(
-                  payload.get("questionPrompt") ?? "",
-                ).trim();
-                const pillar = pillars.find((p) =>
-                  criteria.some(
-                    (c) => c.id === criterionId && c.pillar_id === p.id,
-                  ),
-                );
-                const criterion = criteria.find((c) => c.id === criterionId);
-                if (!prompt || !criterion || !pillar) return;
-                const ok = await run(async () => {
-                  const q = await addMaturityQuestion(
-                    versionId,
-                    pillar.section_id,
-                    prompt,
-                    modelId,
-                  );
-                  if (q.error || !q.questionId) return q;
-                  return linkCriterionQuestion(
-                    criterionId,
-                    q.questionId,
-                    modelId,
-                  );
-                });
-                if (ok) form.reset();
-              }}
+            <Button
+              type="button"
+              className="min-h-11 w-fit"
+              data-testid="framework-add-question-open"
+              disabled={criteria.length === 0}
+              onClick={() => setAddQuestionOpen(true)}
             >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="criterionId">Criterion</Label>
-                <select
-                  id="criterionId"
-                  name="criterionId"
-                  required
-                  value={selectedCriterionId}
-                  onChange={(event) =>
-                    setSelectedCriterionId(event.target.value)
+              Add scored question
+            </Button>
+            <ResponsiveFormDialog
+              open={addQuestionOpen}
+              onOpenChange={setAddQuestionOpen}
+              title="Add scored question"
+              testId="framework-add-question-dialog"
+            >
+              <form
+                className="flex flex-col gap-3"
+                data-testid="add-question-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const payload = new FormData(form);
+                  const criterionId = String(payload.get("criterionId") ?? "");
+                  const prompt = String(
+                    payload.get("questionPrompt") ?? "",
+                  ).trim();
+                  const pillar = pillars.find((p) =>
+                    criteria.some(
+                      (c) => c.id === criterionId && c.pillar_id === p.id,
+                    ),
+                  );
+                  const criterion = criteria.find((c) => c.id === criterionId);
+                  if (!prompt || !criterion || !pillar) return;
+                  const ok = await run(async () => {
+                    const q = await addMaturityQuestion(
+                      versionId,
+                      pillar.section_id,
+                      prompt,
+                      modelId,
+                    );
+                    if (q.error || !q.questionId) return q;
+                    return linkCriterionQuestion(
+                      criterionId,
+                      q.questionId,
+                      modelId,
+                    );
+                  });
+                  if (ok) {
+                    form.reset();
+                    setAddQuestionOpen(false);
                   }
-                  className="h-11 rounded-md border border-border bg-background px-3 text-sm"
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="criterionId">Criterion</Label>
+                  <select
+                    id="criterionId"
+                    name="criterionId"
+                    required
+                    value={selectedCriterionId}
+                    onChange={(event) =>
+                      setSelectedCriterionId(event.target.value)
+                    }
+                    className="h-11 rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    {questionHierarchy.pillars.flatMap((pillar) =>
+                      pillar.criteria.map((criterion) => (
+                        <option key={criterion.id} value={criterion.id}>
+                          {pillar.name} → {criterion.name}
+                        </option>
+                      )),
+                    )}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="questionPrompt">Question prompt</Label>
+                  <Input
+                    id="questionPrompt"
+                    name="questionPrompt"
+                    required
+                    placeholder="Rate this criterion"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="min-h-11"
+                  disabled={busy || criteria.length === 0}
                 >
-                  {questionHierarchy.pillars.flatMap((pillar) =>
-                    pillar.criteria.map((criterion) => (
-                      <option key={criterion.id} value={criterion.id}>
-                        {pillar.name} → {criterion.name}
-                      </option>
-                    )),
-                  )}
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="questionPrompt">Question prompt</Label>
-                <Input
-                  id="questionPrompt"
-                  name="questionPrompt"
-                  required
-                  placeholder="Rate this criterion"
-                />
-              </div>
-              <Button type="submit" disabled={busy || criteria.length === 0}>
-                Add scored question
-              </Button>
-            </form>
+                  Add scored question
+                </Button>
+              </form>
+            </ResponsiveFormDialog>
             <div
               className="leh-authoring-tree flex flex-col gap-4"
               data-testid="question-authoring-hierarchy"

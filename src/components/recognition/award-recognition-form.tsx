@@ -25,6 +25,8 @@ type AwardRecognitionFormProps = {
   defaultUnitId?: string;
   defaultRecipientId?: string;
   defaultSourceId?: string;
+  variant?: "page" | "embedded";
+  onAwarded?: () => void;
 };
 
 export function AwardRecognitionForm({
@@ -35,6 +37,8 @@ export function AwardRecognitionForm({
   defaultUnitId,
   defaultRecipientId,
   defaultSourceId,
+  variant = "page",
+  onAwarded,
 }: AwardRecognitionFormProps) {
   const [typeId, setTypeId] = useState(types[0]?.id ?? "");
   const [title, setTitle] = useState("");
@@ -65,6 +69,7 @@ export function AwardRecognitionForm({
         ...(defaultSourceId ? { sourceResourceId: defaultSourceId } : {}),
       });
       if (result.error) throw new Error(result.error);
+      onAwarded?.();
       // NAV-CLICK-001: do not pair router.push with router.refresh — the
       // refresh cancels the in-flight destination on compiled/hosted servers.
       navigateTo(
@@ -77,13 +82,8 @@ export function AwardRecognitionForm({
     }
   }
 
-  return (
-    <Card data-testid="award-recognition-form">
-      <CardHeader>
-        <CardTitle>Award recognition</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+  const body = (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm">
             <span>Recognition type</span>
             <select
@@ -136,16 +136,31 @@ export function AwardRecognitionForm({
             testId="recognition-recipient-select"
           />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <ModuleWriteButton
-            type="submit"
-            className="min-h-11"
-            disabled={!unitId || !recipientId}
-            data-testid="award-recognition-submit"
-          >
-            Award
-          </ModuleWriteButton>
-        </form>
-      </CardContent>
+      <ModuleWriteButton
+        type="submit"
+        className="min-h-11"
+        disabled={!unitId || !recipientId}
+        data-testid="award-recognition-submit"
+      >
+        Award
+      </ModuleWriteButton>
+    </form>
+  );
+
+  if (variant === "embedded") {
+    return (
+      <div data-testid="award-recognition-form" className="min-w-0">
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <Card data-testid="award-recognition-form">
+      <CardHeader>
+        <CardTitle>Award recognition</CardTitle>
+      </CardHeader>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 }

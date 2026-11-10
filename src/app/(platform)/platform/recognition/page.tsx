@@ -1,7 +1,8 @@
 import { Sparkles } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModuleWriteAppLink } from "@/components/billing/module-write-app-link";
+import { AwardRecognitionDialog } from "@/components/recognition/award-recognition-dialog";
+import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
@@ -26,9 +27,16 @@ export default async function RecognitionPage() {
   const canAward = await currentMemberHasPermission("recognition.award");
   const canManage = await currentMemberHasPermission("recognition.manage");
 
-  const { count: typeCount } = await supabase
-    .from("recognition_types")
-    .select("id", { count: "exact", head: true });
+  const [{ count: typeCount }, selectorOptions, { data: types }] =
+    await Promise.all([
+      supabase.from("recognition_types").select("id", { count: "exact", head: true }),
+      canAward
+        ? loadSiteScopedSelectorOptions({ requireConcreteSite: true })
+        : Promise.resolve(null),
+      canAward
+        ? supabase.from("recognition_types").select("id, name").eq("status", "active")
+        : Promise.resolve({ data: [] }),
+    ]);
 
   const { data: awards, error: awardsError } = await supabase
     .from("recognition_awards")
@@ -68,13 +76,13 @@ export default async function RecognitionPage() {
         description="Meaningful contribution, recognised by people — not points."
         actions={
           <div className="flex gap-2">
-            {canAward ? (
-              <ModuleWriteAppLink
-                href="/platform/recognition/new"
-                testId="recognition-award-link"
-              >
-                Award recognition
-              </ModuleWriteAppLink>
+            {canAward && selectorOptions ? (
+              <AwardRecognitionDialog
+                types={types ?? []}
+                units={selectorOptions.units}
+                people={selectorOptions.people}
+                requiresSiteSelection={selectorOptions.requiresSiteSelection}
+              />
             ) : null}
             {canManage ? (
               <Button size="sm" variant="outline" asChild>

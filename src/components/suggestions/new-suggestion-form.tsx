@@ -37,6 +37,8 @@ type NewSuggestionFormProps = {
   categories: Category[];
   primaryUnit: PrimaryUnitState;
   canManageProgrammes: boolean;
+  variant?: "page" | "embedded";
+  onSubmitted?: () => void;
 };
 
 function buildConfigurationMessage(
@@ -120,6 +122,8 @@ export function NewSuggestionForm({
   categories,
   primaryUnit,
   canManageProgrammes,
+  variant = "page",
+  onSubmitted,
 }: NewSuggestionFormProps) {
   const [programmeVersionId, setProgrammeVersionId] = useState(
     programmeVersions[0]?.id ?? "",
@@ -289,6 +293,7 @@ export function NewSuggestionForm({
         return;
       }
 
+      onSubmitted?.();
       // NAV-CLICK-001: do not pair router.push with router.refresh — the
       // refresh cancels the in-flight destination on compiled/hosted servers.
       navigateTo(`/platform/suggestions/${result.suggestionId}`);
@@ -310,13 +315,8 @@ export function NewSuggestionForm({
     await submitIdea();
   }
 
-  return (
-    <Card data-testid="new-suggestion-form">
-      <CardHeader>
-        <CardTitle>Share an improvement idea</CardTitle>
-      </CardHeader>
-
-      <CardContent>
+  const formBody = (
+    <>
         {configurationMessage ? (
           <div
             className="mb-4 rounded-md border border-border bg-muted/40 p-4 text-sm"
@@ -504,29 +504,45 @@ export function NewSuggestionForm({
           </Button>
         </form>
 
-        <RelatedRecordsPanel
-          recordType="improvement_suggestion"
-          queryText={`${title} ${noticed} ${proposed}`.trim()}
-          resolveQuery={() => {
-            if (typeof document !== "undefined") {
-              const draftForm = document.querySelector(
-                '[data-testid="new-suggestion-form"] form',
-              );
-              if (draftForm) {
-                const fields = draftForm.querySelectorAll("textarea");
-                const titleInput = draftForm.querySelector(
-                  "input:not([type='file'])",
-                ) as HTMLInputElement | null;
-                const fromDom =
-                  `${titleInput?.value ?? ""} ${fields[0]?.value ?? ""} ${fields[1]?.value ?? ""}`.trim();
-                if (fromDom) return fromDom;
-              }
+      <RelatedRecordsPanel
+        recordType="improvement_suggestion"
+        queryText={`${title} ${noticed} ${proposed}`.trim()}
+        resolveQuery={() => {
+          if (typeof document !== "undefined") {
+            const draftForm = document.querySelector(
+              '[data-testid="new-suggestion-form"] form',
+            );
+            if (draftForm) {
+              const fields = draftForm.querySelectorAll("textarea");
+              const titleInput = draftForm.querySelector(
+                "input:not([type='file'])",
+              ) as HTMLInputElement | null;
+              const fromDom =
+                `${titleInput?.value ?? ""} ${fields[0]?.value ?? ""} ${fields[1]?.value ?? ""}`.trim();
+              if (fromDom) return fromDom;
             }
-            return `${title} ${noticed} ${proposed}`.trim();
-          }}
-          disabled={!canSubmit || loading}
-        />
-      </CardContent>
+          }
+          return `${title} ${noticed} ${proposed}`.trim();
+        }}
+        disabled={!canSubmit || loading}
+      />
+    </>
+  );
+
+  if (variant === "embedded") {
+    return (
+      <div data-testid="new-suggestion-form" className="flex flex-col gap-4">
+        {formBody}
+      </div>
+    );
+  }
+
+  return (
+    <Card data-testid="new-suggestion-form">
+      <CardHeader>
+        <CardTitle>Share an improvement idea</CardTitle>
+      </CardHeader>
+      <CardContent>{formBody}</CardContent>
     </Card>
   );
 }

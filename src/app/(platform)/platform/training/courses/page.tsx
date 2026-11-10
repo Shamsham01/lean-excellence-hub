@@ -1,4 +1,4 @@
-import { CourseCreateForm } from "@/components/training/course-create-form";
+import { CourseCreateDialog } from "@/components/training/course-create-dialog";
 import { TrainingCatalogueScopeNote } from "@/components/training/training-catalogue-scope-note";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -64,7 +64,8 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
   }
 
   const isEmpty = courses.length === 0;
-  const showCreateForm = canManageCatalog && (isEmpty || newRequested === "1");
+  const openCreateDialog =
+    canManageCatalog && (isEmpty || newRequested === "1");
   const activeSiteName =
     context.mode === "site"
       ? (context.sites.find((site) => site.id === context.activeSiteId)?.name ??
@@ -78,15 +79,11 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
         description="Organisation-wide courses available for curriculum, sessions, and compliance."
         actions={
           <div className="flex flex-wrap gap-2">
-            {canManageCatalog && !showCreateForm ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/training/courses?new=1"
-                  data-testid="training-course-new-button"
-                >
-                  New course
-                </AppLink>
-              </Button>
+            {canManageCatalog ? (
+              <CourseCreateDialog
+                existingCodes={courses.map((course) => course.code)}
+                defaultOpen={openCreateDialog && isEmpty}
+              />
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink
@@ -108,14 +105,7 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
         </p>
       )}
 
-      {canManageCatalog && showCreateForm ? (
-        <CourseCreateForm
-          existingCodes={courses.map((course) => course.code)}
-          cancelHref="/platform/training/courses"
-        />
-      ) : null}
-
-      {isEmpty && !showCreateForm ? (
+      {isEmpty ? (
         <Card
           className="border-dashed bg-surface"
           data-testid="training-courses-empty"
@@ -131,14 +121,6 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
             </div>
           </CardContent>
         </Card>
-      ) : isEmpty && showCreateForm ? (
-        <p
-          className="text-sm text-muted-foreground"
-          data-testid="training-courses-empty"
-        >
-          Create the first course to start the organisation training catalogue.
-          You can save a draft, then publish it when it is ready.
-        </p>
       ) : (
         <Card>
           <CardContent className="divide-y divide-border p-0">

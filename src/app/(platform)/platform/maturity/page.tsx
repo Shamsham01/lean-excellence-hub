@@ -12,6 +12,8 @@ import {
   MaturityRadarChart,
   PillarScoreList,
 } from "@/components/maturity/maturity-charts";
+import { StartAssessmentDialog } from "@/components/maturity/start-assessment-dialog";
+import { loadStartAssessmentDialogProps } from "@/lib/maturity/load-start-assessment-props";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,9 +45,15 @@ export default async function MaturityOverviewPage({
   const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
     parseAnalyticsRangeDays(params.range),
   );
-  const canManage = await currentMemberHasPermission(
-    MATURITY_PERMISSIONS.modelsManage,
-  );
+  const [canManage, canAssessFormal, canAssessSelf] = await Promise.all([
+    currentMemberHasPermission(MATURITY_PERMISSIONS.modelsManage),
+    currentMemberHasPermission(MATURITY_PERMISSIONS.assessFormal),
+    currentMemberHasPermission(MATURITY_PERMISSIONS.assessSelf),
+  ]);
+  const canStartAssessment = canAssessFormal || canAssessSelf;
+  const startAssessmentProps = canStartAssessment
+    ? await loadStartAssessmentDialogProps()
+    : null;
 
   const { data: models, error: modelsError } = await supabase
     .from("maturity_models")
@@ -136,6 +144,12 @@ export default async function MaturityOverviewPage({
                 Assessments
               </AppLink>
             </Button>
+            {startAssessmentProps ? (
+              <StartAssessmentDialog
+                {...startAssessmentProps}
+                triggerTestId="maturity-overview-start-assessment"
+              />
+            ) : null}
             {latestResult ? (
               <Button variant="outline" asChild>
                 <AppLink
