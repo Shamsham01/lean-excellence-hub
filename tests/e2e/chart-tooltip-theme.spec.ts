@@ -51,6 +51,7 @@ test.describe("Analytics chart tooltip theme", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/problem-solving");
+    await page.getByTestId("pps-analytics-insights-toggle").click();
     await expect(page.getByTestId("pps-analytics")).toBeVisible({
       timeout: 30_000,
     });
