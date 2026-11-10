@@ -18,6 +18,7 @@ export async function ModuleAnalyticsDashboard({
   showDateRange = true,
   showAgeingTable = true,
   donutCenterLabel = "Total",
+  showSectionHeading = true,
 }: {
   snapshot: ModuleAnalyticsSnapshot;
   icons: Record<string, LucideIcon>;
@@ -25,6 +26,7 @@ export async function ModuleAnalyticsDashboard({
   showDateRange?: boolean;
   showAgeingTable?: boolean;
   donutCenterLabel?: string;
+  showSectionHeading?: boolean;
 }) {
   const donutTotal = snapshot.statusBreakdown.reduce(
     (sum, row) => sum + row.value,
@@ -33,14 +35,22 @@ export async function ModuleAnalyticsDashboard({
 
   return (
     <section className="flex flex-col gap-4" data-testid={testId}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-base font-semibold text-foreground">Performance</h2>
-        {showDateRange ? (
-          <Suspense fallback={null}>
-            <AnalyticsDateRangeToolbar />
-          </Suspense>
-        ) : null}
-      </div>
+      {showSectionHeading || showDateRange ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {showSectionHeading ? (
+            <h2 className="text-base font-semibold text-foreground">
+              Performance
+            </h2>
+          ) : (
+            <span className="sr-only">Performance</span>
+          )}
+          {showDateRange ? (
+            <Suspense fallback={null}>
+              <AnalyticsDateRangeToolbar />
+            </Suspense>
+          ) : null}
+        </div>
+      ) : null}
 
       {!snapshot.hasData ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">

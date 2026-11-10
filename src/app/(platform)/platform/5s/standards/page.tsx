@@ -66,7 +66,6 @@ export default async function FiveSStandardsPage() {
     <div className="flex flex-col gap-8" data-testid="five-s-standards-page">
       <PageHeader
         title="5S standards"
-        description="Configurable audit templates per area. Setup mode → Draft → Review → Publish."
         actions={
           canManage ? (
             <Button variant="outline" asChild>

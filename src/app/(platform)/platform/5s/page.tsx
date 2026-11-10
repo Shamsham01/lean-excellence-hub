@@ -1,10 +1,10 @@
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import { FIVE_S_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
+import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
+import { buildFiveSOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadFiveSAnalytics } from "@/modules/platform-analytics/five-s";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
@@ -79,15 +79,15 @@ export default async function FiveSOverviewPage({
     .from("schedule_occurrences")
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
-  const analytics = await loadFiveSAnalytics(supabase, analyticsRange);
+  const catalogRows = await buildFiveSOverviewCatalogRows(
+    supabase,
+    standards ?? [],
+  );
 
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="five-s-empty-state">
-        <PageHeader
-          title="5S Audits"
-          description="Digital 5S auditing with scoring, evidence, and accountability."
-        />
+        <PageHeader title="5S Audits" />
         <EmptyState
           title={
             canManage
@@ -96,8 +96,8 @@ export default async function FiveSOverviewPage({
           }
           description={
             canManage
-              ? "Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
-              : "Standards you are allowed to open will appear here. Creating a standard needs a separate role."
+              ? "Set up your first 5S standard to start auditing."
+              : "Standards you can open will appear here."
           }
           icon={<Sparkles className="size-5" />}
           {...(canManage
@@ -107,7 +107,7 @@ export default async function FiveSOverviewPage({
               }
             : {})}
         />
-        <WorkplaceSharedRecords module="five_s" title="5S" />
+        <WorkplaceSharedRecords module="five_s" />
       </div>
     );
   }
@@ -116,7 +116,6 @@ export default async function FiveSOverviewPage({
     <div className="flex flex-col gap-8" data-testid="five-s-overview-page">
       <PageHeader
         title="5S Audits"
-        description="Score, evidence, and trend your 5S programme."
         actions={
           <>
             {canManage ? (
@@ -141,54 +140,34 @@ export default async function FiveSOverviewPage({
         }
       />
 
-      <ModuleAnalyticsDashboard
-        snapshot={analytics}
-        icons={FIVE_S_ANALYTICS_ICONS}
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+          <CardTitle>Standards</CardTitle>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <AppLink href="/platform/5s/standards">All standards</AppLink>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <AppLink href="/platform/5s/history">History</AppLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <OperationalCatalogTable
+            rows={catalogRows}
+            nameColumnLabel="Standard"
+            actionColumnLabel="Action"
+            testId="five-s-standard-list"
+          />
+        </CardContent>
+      </Card>
+
+      <ModulePageInsightsDeferred
+        module="five-s"
+        rangeDays={analyticsRange.days}
         testId="five-s-analytics"
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Standards</CardTitle>
-        </CardHeader>
-        <CardContent
-          className="flex flex-col gap-2"
-          data-testid="five-s-standard-list"
-        >
-          {standards?.map((standard) => (
-            <AppLink
-              key={standard.id}
-              href={`/platform/5s/standards/${standard.id}`}
-              className="text-sm font-medium underline-offset-4 hover:underline"
-            >
-              {standard.display_name}
-            </AppLink>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Quick links</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button variant="outline" asChild>
-            <AppLink href="/platform/5s/standards">Standards</AppLink>
-          </Button>
-          <Button variant="outline" asChild>
-            <AppLink href="/platform/5s/history">History</AppLink>
-          </Button>
-          <Button variant="outline" asChild>
-            <AppLink
-              href="/platform/schedule"
-              data-testid="five-s-schedule-link"
-            >
-              Schedule
-            </AppLink>
-          </Button>
-        </CardContent>
-      </Card>
-      <WorkplaceSharedRecords module="five_s" title="5S" />
+      <WorkplaceSharedRecords module="five_s" />
     </div>
   );
 }

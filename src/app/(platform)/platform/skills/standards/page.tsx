@@ -44,7 +44,6 @@ export default async function SkillsStandardsPage({ searchParams }: PageProps) {
     >
       <PageHeader
         title="Skills standards"
-        description="Capability requirements that connect a job function, a skill, and the level that job function needs."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageRequirements && (standards?.length ?? 0) > 0 ? (

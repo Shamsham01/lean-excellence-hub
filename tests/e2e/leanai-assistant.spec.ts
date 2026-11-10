@@ -277,7 +277,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.keyboard.press("Enter");
     const pane = page.getByTestId("leanai-assistant-pane");
     await expect(pane).toBeVisible();
-    await expect(page.getByLabel("Ask LeanAI")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-input")).toBeVisible();
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
     ).not.toHaveText(/Loading context/i, { timeout: 15_000 });
@@ -427,15 +427,17 @@ test.describe("LeanAI persistent workspace assistant", () => {
       "data-web-search-enabled",
       "false",
     );
-    await expect(page.getByLabel("Ask LeanAI")).toBeEnabled();
-    await page.getByLabel("Ask LeanAI").fill("What is our organisation name?");
+    await expect(page.getByTestId("leanai-assistant-input")).toBeEnabled();
+    await page
+      .getByTestId("leanai-assistant-input")
+      .fill("What is our organisation name?");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(
       page.getByTestId("leanai-assistant-assistant-message"),
     ).toContainText(user.organisationAName, { timeout: 30_000 });
 
     await page
-      .getByLabel("Ask LeanAI")
+      .getByTestId("leanai-assistant-input")
       .fill("Research HODL Token Club on the web.");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(
@@ -463,7 +465,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(page.getByText("Settings saved.")).toBeVisible();
 
     await page
-      .getByLabel("Ask LeanAI")
+      .getByTestId("leanai-assistant-input")
       .fill("Research HODL Token Club on the web.");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(page.getByTestId("leanai-assistant-sources")).toBeVisible({
@@ -493,7 +495,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
 
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await waitForAssistantContext(page);
-    const input = page.getByLabel("Ask LeanAI");
+    const input = page.getByTestId("leanai-assistant-input");
     await expect(input).toBeEnabled();
     await expect(page.getByTestId("leanai-assistant-send")).toBeVisible();
     await input.fill("First line");
@@ -536,7 +538,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.reload();
     await page.getByTestId("leanai-assistant-open").click();
     await expect(page.getByTestId("leanai-assistant-pane")).toBeVisible();
-    await expect(page.getByLabel("Ask LeanAI")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-input")).toBeVisible();
     await expect(page.getByTestId("leanai-assistant-send")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Next step" })).toBeVisible({
       timeout: 15_000,

@@ -55,7 +55,7 @@ export default async function RecognitionPage() {
     return (
       <ModuleReadError
         title="Recognition"
-        description="Meaningful contribution, recognised by people — not points."
+        description="Recognition"
         message="Recognition could not be loaded. Refresh the page and try again."
         module="recognition"
       />
@@ -78,7 +78,6 @@ export default async function RecognitionPage() {
     <div className="flex flex-col gap-8" data-testid="recognition-feed">
       <PageHeader
         title="Recognition"
-        description="Meaningful contribution, recognised by people — not points."
         actions={
           <div className="flex gap-2">
             {canAward && selectorOptions ? (
@@ -109,7 +108,7 @@ export default async function RecognitionPage() {
             typeCount === 0 ? (
               <EmptyState
                 title="Create a recognition type first"
-                description="Recognition types define what people can award — for example “Safety hero” or “Kaizen contribution”. Then you can publish awards to the feed."
+                description="Create a recognition type, then publish awards to the feed."
                 actionLabel="Set up recognition types"
                 actionHref="/platform/recognition/types"
                 icon={<Sparkles className="size-5 text-primary" aria-hidden />}
@@ -117,7 +116,7 @@ export default async function RecognitionPage() {
             ) : (
               <EmptyState
                 title="No awards yet"
-                description="When someone receives recognition, it appears here for people who can see that site or organisation."
+                description="Published awards for your viewing scope appear here."
                 actionLabel={
                   canAward ? "Award recognition" : "View recognition types"
                 }

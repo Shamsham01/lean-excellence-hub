@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import { SUGGESTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadSuggestionsAnalytics } from "@/modules/platform-analytics/suggestions";
 import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
+import { SuggestionPipelineStatusChips } from "@/components/suggestions/suggestion-pipeline-status-chips";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { NewSuggestionDialog } from "@/components/suggestions/new-suggestion-dialog";
@@ -21,10 +20,6 @@ import { parseSuggestionPortfolioSearchParams } from "@/lib/suggestions/suggesti
 import { suggestionAccessMode } from "@/lib/suggestions/suggestion-access-mode";
 import { suggestionsOverviewPermissionKeys } from "@/lib/suggestions/suggestion-page-permission-keys";
 import {
-  pipelineStatuses,
-  suggestionStatusLabel,
-} from "@/lib/suggestions/status";
-import {
   currentMemberHasGrantPermission,
   currentMemberHasPermission,
   prefetchMemberGrantPermissions,
@@ -32,7 +27,6 @@ import {
 } from "@/modules/platform-shell/permissions";
 import { WORKPLACE_VIEW_PERMISSION } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SuggestionsOverviewPage({
   searchParams,
@@ -90,7 +84,7 @@ export default async function SuggestionsOverviewPage({
   ]);
 
   const pipeline = overview.pipeline;
-  const analytics = await loadSuggestionsAnalytics(supabase, analyticsRange);
+  const reviewQueueCount = overview.awaiting_review ?? 0;
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
@@ -101,9 +95,18 @@ export default async function SuggestionsOverviewPage({
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
       <PageHeader
         title="Suggestions"
-        description="Improvement ideas from your people — capture, review, and implement."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {canReview || canManageReview ? (
+              <Button size="sm" variant="outline" asChild>
+                <AppLink
+                  href="/platform/suggestions/review?queue=mine"
+                  data-testid="suggestions-open-queue-link"
+                >
+                  Review queue ({reviewQueueCount})
+                </AppLink>
+              </Button>
+            ) : null}
             {canSubmit ? (
               <NewSuggestionDialog
                 canManageProgrammes={canManageProgrammes}
@@ -125,48 +128,10 @@ export default async function SuggestionsOverviewPage({
         }
       />
 
-      <ModuleAnalyticsDashboard
-        snapshot={analytics}
-        icons={SUGGESTION_ANALYTICS_ICONS}
-        testId="suggestions-analytics"
+      <SuggestionPipelineStatusChips
+        pipeline={pipeline}
+        activeStatus={filters.status}
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Idea pipeline</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {pipelineStatuses().map((status) => (
-            <div
-              key={status}
-              className="rounded-lg border border-border bg-surface p-3"
-            >
-              <p className="text-xs text-muted-foreground">
-                {suggestionStatusLabel(status)}
-              </p>
-              <p className="text-2xl font-semibold tabular-nums">
-                {pipeline[status] ?? 0}
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {canReview || canManageReview ? (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Review queue</CardTitle>
-            <Button variant="outline" size="sm" asChild>
-              <AppLink
-                href="/platform/suggestions/review?queue=mine"
-                data-testid="suggestions-open-queue-link"
-              >
-                Open queue
-              </AppLink>
-            </Button>
-          </CardHeader>
-        </Card>
-      ) : null}
 
       <SuggestionPortfolio
         items={portfolio.items}
@@ -177,8 +142,14 @@ export default async function SuggestionsOverviewPage({
         filterOptions={filterOptions}
         showReviewerWorkflow={canReview || canManageReview}
       />
+
+      <ModulePageInsightsDeferred
+        module="suggestions"
+        rangeDays={analyticsRange.days}
+        testId="suggestions-analytics"
+      />
       {canViewWorkplace ? (
-        <WorkplaceSharedRecords module="suggestions" title="Suggestions" />
+        <WorkplaceSharedRecords module="suggestions" />
       ) : null}
     </div>
   );

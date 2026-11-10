@@ -12,6 +12,7 @@ import {
   currentMemberHasScopedPermission,
   prefetchPlatformShellPermissionProbes,
 } from "@/modules/platform-shell/permissions";
+import { shouldShowSetupInNavigation } from "@/modules/organisation-setup/nav-setup-visibility";
 import { setupNavigationPermissions } from "@/modules/platform-shell/shell-permission-keys";
 
 const setupPermissions = setupNavigationPermissions;
@@ -86,7 +87,9 @@ export async function buildVisibleNavigation() {
   );
 
   if (await canAccessSetupNavigation()) {
-    navWithSetup.unshift(setupNavigationItem);
+    if (await shouldShowSetupInNavigation()) {
+      navWithSetup.unshift(setupNavigationItem);
+    }
   }
 
   return navWithSetup;

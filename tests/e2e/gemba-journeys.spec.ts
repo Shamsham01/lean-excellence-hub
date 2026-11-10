@@ -48,6 +48,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(
       page.getByRole("heading", { name: "Walks in progress" }),
     ).toBeVisible();
+    await page.getByTestId("gemba-analytics-insights-toggle").click();
     await expect(page.getByText("Completed walks")).toBeVisible();
 
     await page.getByRole("link", { name: "Definitions" }).click();

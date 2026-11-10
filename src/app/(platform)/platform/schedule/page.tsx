@@ -55,7 +55,6 @@ export default async function ScheduleOverviewPage() {
     <div className="flex flex-col gap-8" data-testid="schedule-list-page">
       <PageHeader
         title="Schedule"
-        description="Recurring 5S audits and Gemba walks across your organisation."
         actions={
           canManage ? (
             <Button variant="outline" size="sm" asChild className="min-h-11">
@@ -93,7 +92,7 @@ export default async function ScheduleOverviewPage() {
           ) : canManage ? (
             <EmptyState
               title="No upcoming occurrences"
-              description="Create a recurring schedule for 5S audits or Gemba walks. Occurrences will show here once the first run is planned."
+              description="Create a schedule to plan your first occurrence."
               actionLabel="New schedule"
               actionHref="/platform/schedule/new"
               icon={<CalendarClock className="size-5 text-primary" />}
@@ -141,7 +140,7 @@ export default async function ScheduleOverviewPage() {
           ) : canManage ? (
             <EmptyState
               title="No schedules yet"
-              description="Operational cadence starts with a schedule definition. Add audits or walks, then tune recurrence per site."
+              description="Add a schedule definition to start operational cadence."
               actionLabel="Create first schedule"
               actionHref="/platform/schedule/new"
               icon={<CalendarClock className="size-5 text-primary" />}

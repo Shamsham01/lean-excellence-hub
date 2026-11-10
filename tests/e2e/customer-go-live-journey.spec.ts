@@ -587,7 +587,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
       page.getByTestId("leanai-assistant-context-label"),
     ).not.toHaveText(/Loading context/i, { timeout: 15_000 });
     await page
-      .getByLabel("Ask LeanAI")
+      .getByTestId("leanai-assistant-input")
       .fill("First line\nSecond line\nformat sample");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(page.getByTestId("leanai-assistant-sending")).toBeHidden({
@@ -618,7 +618,7 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     await page.goto("/platform");
     await ensureLeanAiAssistantOpen(page);
     await page
-      .getByLabel("Ask LeanAI")
+      .getByTestId("leanai-assistant-input")
       .fill("This should be blocked by credits.");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(page.locator("p[role=alert].text-destructive")).toContainText(

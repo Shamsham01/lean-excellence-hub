@@ -4,7 +4,6 @@ import { HomeAttentionStrip } from "@/components/platform/home-attention-strip";
 import { PlatformHomeAnalytics } from "@/components/platform/platform-home-analytics";
 import { PageHeader } from "@/components/platform/page-header";
 import { TimeGreeting } from "@/components/platform/time-greeting";
-import { formatBenefitCurrencyAmount } from "@/lib/benefits/forecast";
 import type { BenefitsOverview } from "@/lib/benefits/types";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
@@ -188,13 +187,6 @@ export default async function PlatformHomePage({
   const benefitsAwaitingValidation =
     (benefitsOverview?.awaiting_validation?.benefits ?? 0) +
     (benefitsOverview?.awaiting_validation?.realisation_entries ?? 0);
-  const benefitsValidatedYtd =
-    benefitsOverview?.financial_by_type?.reduce(
-      (sum, row) => sum + Number(row.validated_realised_ytd ?? 0),
-      0,
-    ) ?? 0;
-  const benefitsRealising = benefitsOverview?.status_pipeline?.realising ?? 0;
-
   const homeAnalytics = await loadPlatformHomeAnalytics(
     supabase,
     analyticsRange,
@@ -238,214 +230,47 @@ export default async function PlatformHomePage({
 
       <PlatformHomeAnalytics data={homeAnalytics} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card data-testid="home-your-profile">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Your profile</CardTitle>
+      {home.workplaceActivity ? <WorkplaceHomeActivity /> : null}
+
+      {home.recentAssessments ? (
+        <Card data-testid="home-recent-assessments">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-base">Recent assessments</CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <AppLink href="/platform/people/me">Open</AppLink>
+              <AppLink href="/platform/maturity/assessments">View all</AppLink>
             </Button>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Job function, primary work area, and your access. A job function
-              does not grant permissions.
-            </p>
+          <CardContent className="flex flex-col gap-2">
+            {recentAssessments?.length ? (
+              recentAssessments.map((a) => (
+                <AppLink
+                  key={a.id}
+                  href={`/platform/maturity/assessments/${a.id}`}
+                  className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                  data-testid={`dashboard-assessment-link-${a.id}`}
+                >
+                  <span className="capitalize">
+                    {a.assessment_type.replace("_", " ")}
+                  </span>
+                  <AssessmentStatusBadge status={a.status} />
+                </AppLink>
+              ))
+            ) : (
+              <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+                <p>No assessments yet.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 w-fit"
+                  asChild
+                >
+                  <AppLink href="/platform/maturity">Open maturity</AppLink>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
-        {home.submitSuggestion ? (
-          <Card data-testid="home-submit-suggestion">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Suggestions</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink href="/platform/suggestions/new">
-                  Submit a suggestion
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Submission uses Suggestions Contributor or another role that
-                includes it. Review and programme administration stay separate.
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-        {home.workplaceActivity ? <WorkplaceHomeActivity /> : null}
-        {home.fiveSCard ? (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>5S audits</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink href="/platform/5s" data-testid="dashboard-open-5s">
-                  Open
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {home.fiveSViewingCopy
-                  ? "Completed audits in your viewing scope. Running an audit needs a separate role."
-                  : "Run scored 5S audits with evidence, findings, and schedule compliance."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {home.gembaCard ? (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Gemba walks</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink
-                  href="/platform/gemba"
-                  data-testid="dashboard-open-gemba"
-                >
-                  Open
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {home.gembaViewingCopy
-                  ? "Completed walks in your viewing scope. Walk notes and drafts stay unavailable."
-                  : "Capture observations and improvement opportunities on the floor."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {home.maturityCard ? (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Lean maturity</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink
-                  href="/platform/maturity"
-                  data-testid="dashboard-open-maturity"
-                >
-                  Open
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {home.maturityViewingCopy
-                  ? "Published frameworks and official results in your viewing scope. Assessments and answers need a separate role."
-                  : "Track framework maturity, run assessments, and publish official results."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {home.peopleCard ? (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>People & capability</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink
-                  href="/platform/people"
-                  data-testid="dashboard-open-people"
-                >
-                  Open
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Training compliance, skills coverage, and workforce capability
-                profiles.
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {home.suggestions ? (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Suggestions</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink
-                  href="/platform/suggestions"
-                  data-testid="dashboard-open-suggestions"
-                >
-                  Open
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-1 text-sm text-muted-foreground">
-              <p>
-                {(suggestionsOverview?.implementing as number) ?? 0}{" "}
-                implementing
-              </p>
-              <p>
-                {(suggestionsOverview?.implemented as number) ?? 0} implemented
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {home.benefits ? (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Benefits</CardTitle>
-              <Button variant="outline" size="sm" asChild>
-                <AppLink
-                  href="/platform/benefits"
-                  data-testid="dashboard-open-benefits"
-                >
-                  Open
-                </AppLink>
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-1 text-sm text-muted-foreground">
-              <p>{benefitsRealising} realising</p>
-              <p>{benefitsAwaitingValidation} awaiting validation</p>
-              <p>
-                Validated YTD{" "}
-                {formatBenefitCurrencyAmount(benefitsValidatedYtd, null)}
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {home.recentAssessments ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent assessments</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {recentAssessments?.length ? (
-                recentAssessments.map((a) => (
-                  <AppLink
-                    key={a.id}
-                    href={`/platform/maturity/assessments/${a.id}`}
-                    className="flex items-center justify-between text-sm"
-                    data-testid={`dashboard-assessment-link-${a.id}`}
-                  >
-                    <span className="capitalize">
-                      {a.assessment_type.replace("_", " ")}
-                    </span>
-                    <AssessmentStatusBadge status={a.status} />
-                  </AppLink>
-                ))
-              ) : (
-                <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-                  <p>No assessments yet. Start from a published framework.</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11 w-fit"
-                    asChild
-                  >
-                    <AppLink href="/platform/maturity">Open maturity</AppLink>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ) : null}
-      </div>
+      ) : null}
     </div>
   );
 }

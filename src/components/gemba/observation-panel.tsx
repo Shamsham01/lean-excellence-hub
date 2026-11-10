@@ -372,13 +372,7 @@ export function GembaObservationPanel({
       className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 sm:p-6"
       data-testid="gemba-observation-panel"
     >
-      <div className="flex flex-col gap-1">
-        <h2 className="typography-section-title">Observations</h2>
-        <p className="text-sm text-muted-foreground">
-          Capture what you see on the floor. Choosing a type does not save until
-          you press Save.
-        </p>
-      </div>
+      <h2 className="typography-section-title">Observations</h2>
 
       {notice ? (
         <p
@@ -413,7 +407,6 @@ export function GembaObservationPanel({
           else setCaptureOpen(true);
         }}
         title="Capture observation"
-        description="Choosing a type does not save until you press Save."
         testId="gemba-observation-editor"
 
         enableGuard

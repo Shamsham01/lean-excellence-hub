@@ -1,5 +1,4 @@
 import { SetupChecklist } from "@/components/onboarding/setup-checklist";
-import { CoreSetupBanner } from "@/components/onboarding/core-setup-banner";
 import { FirstCustomerSetupIntro } from "@/components/onboarding/first-customer-setup-intro";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
@@ -17,7 +16,8 @@ export default async function SetupPage() {
     <div className="flex flex-col gap-8" data-testid="setup-page">
       <PageHeader
         title="Get the first site ready"
-        description={`What ${snapshot.organisationName} needs before this site can run.`}
+        description={snapshot.organisationName}
+        descriptionTestId="setup-org-name"
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform" data-testid="setup-return-link">
@@ -34,23 +34,13 @@ export default async function SetupPage() {
         canOpenRollout={canReadHierarchy}
       />
 
-      <CoreSetupBanner
-        core={snapshot.core}
-        nextActionHref={snapshot.nextActionHref}
-        nextActionLabel={snapshot.nextActionLabel}
-        operationalSetupIncomplete={snapshot.operationalSetupIncomplete}
-      />
-
       <SetupChecklist
         title="Before this site can run"
         description="Authoritative setup status. Visiting a page does not mark a step complete."
         items={snapshot.core.items}
-      />
-
-      <SetupChecklist
-        title="Choose what to configure next"
-        description="Recommended, not mandatory. Use the modules that form your operating system."
-        items={snapshot.recommended.items}
+        supplementalTitle="Choose what to configure next"
+        supplementalDescription="Recommended, not mandatory. Use the modules that form your operating system."
+        supplementalItems={snapshot.recommended.items}
       />
     </div>
   );

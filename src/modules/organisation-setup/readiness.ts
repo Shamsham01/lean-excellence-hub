@@ -33,7 +33,7 @@ function adminHelper(canPerform: boolean, isAdmin = false) {
   return "Ask an Organisation Administrator to complete this step.";
 }
 
-function buildCoreItems(
+export function buildCoreItems(
   data: SetupQueryResult,
   permissions: SetupPermissionSnapshot,
 ): SetupItem[] {

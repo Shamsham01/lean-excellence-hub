@@ -73,7 +73,6 @@ export default async function SkillsMatrixPage() {
     <div className="flex flex-col gap-8" data-testid="skills-matrix-page">
       <PageHeader
         title="Skills matrix"
-        description="Validated capability against the latest published skills standard, for each person's primary job function."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink
