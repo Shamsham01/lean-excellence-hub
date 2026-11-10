@@ -59,7 +59,6 @@ export default async function ProjectMethodologiesPage() {
     <div className="flex flex-col gap-8" data-testid="methodology-manager-page">
       <PageHeader
         title="Project methodologies"
-        description="Define phased improvement approaches for your CI projects."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink

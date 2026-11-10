@@ -47,7 +47,6 @@ export default async function ProficiencyScalesPage({
     >
       <PageHeader
         title="Proficiency scales"
-        description="How this organisation measures capability. You define the labels."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog && (scales?.length ?? 0) > 0 ? (

@@ -1,13 +1,11 @@
 import { GraduationCap } from "lucide-react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import { TRAINING_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadTrainingAnalytics } from "@/modules/platform-analytics/training";
 import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -55,11 +53,6 @@ export default async function TrainingOverviewPage({
 
   const compliance = summaryObj?.compliance_percent ?? null;
   const outstanding = summaryObj?.outstanding_required ?? 0;
-  const trainingAnalytics = await loadTrainingAnalytics(
-    supabase,
-    analyticsRange,
-  );
-
   const courses = await resolveTrainingCatalogListResult(
     await supabase
       .from("training_courses")
@@ -80,7 +73,6 @@ export default async function TrainingOverviewPage({
     <div className="flex flex-col gap-8" data-testid="training-overview">
       <PageHeader
         title="Training"
-        description="Catalogue, curriculum, sessions, and compliance tracking."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog ? (
@@ -123,18 +115,12 @@ export default async function TrainingOverviewPage({
       outstanding === 0 ? (
         <EmptyState
           title="Training compliance starts with your catalogue"
-          description="Use Training setup to add courses and curriculum requirements. Compliance stays at 0% until people have assigned training."
+          description="Add courses and curriculum in training setup."
           actionLabel="Set up training"
           actionHref="/platform/training/setup"
           icon={<GraduationCap className="size-5 text-primary" aria-hidden />}
         />
       ) : null}
-
-      <ModuleAnalyticsDashboard
-        snapshot={trainingAnalytics}
-        icons={TRAINING_ANALYTICS_ICONS}
-        testId="training-analytics"
-      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -211,7 +197,12 @@ export default async function TrainingOverviewPage({
           </CardContent>
         </Card>
       </div>
-      <WorkplaceSharedRecords module="training" title="Training" />
+      <ModulePageInsightsDeferred
+        module="training"
+        rangeDays={analyticsRange.days}
+        testId="training-analytics"
+      />
+      <WorkplaceSharedRecords module="training" />
     </div>
   );
 }

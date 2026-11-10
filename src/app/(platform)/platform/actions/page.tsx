@@ -3,13 +3,11 @@ import { Suspense } from "react";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import { ACTION_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PageHeader } from "@/components/platform/page-header";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadActionsAnalytics } from "@/modules/platform-analytics/actions";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
@@ -92,8 +90,6 @@ export default async function ActionsPage({
     .select("id, name")
     .order("name");
 
-  const analytics = await loadActionsAnalytics(supabase, analyticsRange);
-
   const plannerActions = await loadActionPlannerSummaries(actions);
   const openActionParam =
     typeof rawParams.action === "string"
@@ -107,7 +103,6 @@ export default async function ActionsPage({
     <div className="flex flex-col gap-8" data-testid="actions-page">
       <PageHeader
         title="Actions"
-        description="Improvement actions linked to assessments and operational work."
         breadcrumb={
           <Breadcrumb
             items={[
@@ -116,13 +111,6 @@ export default async function ActionsPage({
             ]}
           />
         }
-      />
-
-      <ModuleAnalyticsDashboard
-        snapshot={analytics}
-        icons={ACTION_ANALYTICS_ICONS}
-        testId="actions-analytics"
-        showAgeingTable={false}
       />
 
       <ActionFilters
@@ -153,7 +141,13 @@ export default async function ActionsPage({
           canCreate={canCreate}
         />
       </Suspense>
-      <WorkplaceSharedRecords module="actions" title="Actions" />
+      <ModulePageInsightsDeferred
+        module="actions"
+        rangeDays={analyticsRange.days}
+        testId="actions-analytics"
+        showAgeingTable={false}
+      />
+      <WorkplaceSharedRecords module="actions" />
     </div>
   );
 }

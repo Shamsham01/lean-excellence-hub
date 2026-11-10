@@ -59,7 +59,8 @@ test.describe("first-customer onboarding and rollout governance", () => {
     await completeStructureFirstSetupToPlatform(page);
 
     await expect(page.getByTestId("setup-page")).toBeVisible();
-    await expect(page.getByTestId("first-customer-setup-intro")).toContainText(
+    await expect(page.getByTestId("setup-checklist")).toBeVisible();
+    await expect(page.getByTestId("setup-org-name")).toContainText(
       "Acme Foods Ltd",
     );
     await expect(page.getByTestId("first-customer-setup-intro")).toContainText(

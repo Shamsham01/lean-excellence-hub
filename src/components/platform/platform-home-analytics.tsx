@@ -11,6 +11,7 @@ import { ChartCard } from "@/components/charts/chart-card";
 import { LehAreaLineChart } from "@/components/charts/leh-area-line-chart";
 import { LehDonutChart } from "@/components/charts/leh-donut-chart";
 import { AnalyticsAgeingTable } from "@/components/platform/analytics-ageing-table";
+import { AnalyticsInsightsCollapsible } from "@/components/platform/analytics-insights-collapsible";
 import { AnalyticsDateRangeToolbar } from "@/components/platform/analytics-date-range-toolbar";
 import { KpiStatCard } from "@/components/platform/kpi-stat-card";
 import { KpiStatGrid } from "@/components/platform/kpi-stat-grid";
@@ -66,47 +67,52 @@ export function PlatformHomeAnalytics({ data }: { data: HomeAnalyticsBundle }) {
       )}
 
       {data.hasData ? (
-        <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-          {data.combinedTrend.length > 0 ? (
+        <AnalyticsInsightsCollapsible
+          title="Operational insights"
+          testId="platform-home-analytics-insights"
+        >
+          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+            {data.combinedTrend.length > 0 ? (
+              <ChartCard
+                title="Activity trend"
+                description="Combined opens and submissions"
+                testId="home-chart-area-line"
+              >
+                <LehAreaLineChart
+                  data={data.combinedTrend}
+                  ariaLabel="Home activity trend"
+                  height={220}
+                />
+              </ChartCard>
+            ) : null}
+            {data.workloadDonut.length > 0 ? (
+              <ChartCard
+                title="Work queue"
+                description="What needs attention now"
+                testId="home-chart-donut"
+              >
+                <LehDonutChart
+                  segments={data.workloadDonut}
+                  centreLabel="Items"
+                  centreValue={donutTotal}
+                  ariaLabel="Work queue breakdown"
+                  height={220}
+                />
+              </ChartCard>
+            ) : null}
             <ChartCard
-              title="Activity trend"
-              description="Combined opens and submissions"
-              testId="home-chart-area-line"
+              title="Overdue & ageing"
+              description="Across actions, cases, and ideas"
+              className="lg:col-span-2"
             >
-              <LehAreaLineChart
-                data={data.combinedTrend}
-                ariaLabel="Home activity trend"
-                height={220}
+              <AnalyticsAgeingTable
+                title="Overdue items"
+                rows={data.ageingRows}
+                emptyLabel="Nothing overdue in this period."
               />
             </ChartCard>
-          ) : null}
-          {data.workloadDonut.length > 0 ? (
-            <ChartCard
-              title="Work queue"
-              description="What needs attention now"
-              testId="home-chart-donut"
-            >
-              <LehDonutChart
-                segments={data.workloadDonut}
-                centreLabel="Items"
-                centreValue={donutTotal}
-                ariaLabel="Work queue breakdown"
-                height={220}
-              />
-            </ChartCard>
-          ) : null}
-          <ChartCard
-            title="Overdue & ageing"
-            description="Across actions, cases, and ideas"
-            className="lg:col-span-2"
-          >
-            <AnalyticsAgeingTable
-              title="Overdue items"
-              rows={data.ageingRows}
-              emptyLabel="Nothing overdue in this period."
-            />
-          </ChartCard>
-        </div>
+          </div>
+        </AnalyticsInsightsCollapsible>
       ) : null}
     </section>
   );

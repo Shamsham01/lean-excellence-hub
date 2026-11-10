@@ -13,11 +13,7 @@ export default async function TemplatesPage() {
 
   return (
     <div className="flex flex-col gap-8" data-testid="templates-page">
-      <PageHeader
-        title="Templates"
-        description="Configurable forms and checklists for operational audits."
-        actions={<CreateTemplateDialog />}
-      />
+      <PageHeader title="Templates" actions={<CreateTemplateDialog />} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {(templates ?? []).map((template) => (

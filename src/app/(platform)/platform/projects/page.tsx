@@ -32,7 +32,6 @@ export default async function ProjectsPortfolioPage({
     <div className="flex flex-col gap-8" data-testid="projects-portfolio">
       <PageHeader
         title="Projects"
-        description="Continuous improvement portfolio — charter, execute, and sustain change."
         actions={
           <div className="flex gap-2">
             {canManage ? (

@@ -28,7 +28,8 @@ test.describe("Milestone 7 training journeys", () => {
     await page.goto("/platform/training");
 
     await expectModulePageHeading(page, "Training");
-    await expect(page.getByText("Training compliance")).toBeVisible();
+    await page.getByTestId("training-analytics-insights-toggle").click();
+    await expect(page.getByTestId("training-compliance-percent")).toBeVisible();
     await expect(
       page
         .getByTestId(/^training-hub-course-link-/)

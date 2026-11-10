@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { saveCriterionNote } from "@/app/(platform)/platform/maturity/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
+import { AssessmentGuidanceMenu } from "@/components/maturity/assessment-guidance-menu";
 import { MaturityAssessmentActionDialog } from "@/components/maturity/maturity-assessment-action-dialog";
 import { AssessmentLifecycleActions } from "@/components/maturity/assessment-lifecycle-actions";
 import { QuestionCard } from "@/components/maturity/assessment-question-card";
@@ -376,7 +377,7 @@ export function AssessmentWorkspace({
           ) : null}
         </div>
 
-        <ContextualGuidance criterion={criterion} levels={levels} />
+        <AssessmentGuidanceMenu criterion={criterion} levels={levels} />
 
         <div className="flex flex-col gap-4">
           {criterion.questions.map((question) => (
@@ -512,9 +513,8 @@ export function AssessmentWorkspace({
         >
           <SheetHeader>
             <SheetTitle>Criteria</SheetTitle>
-            <SheetDescription>
-              Choose a criterion. Completion is required responses, not
-              navigation position.
+            <SheetDescription className="sr-only">
+              Choose a criterion.
             </SheetDescription>
           </SheetHeader>
           <CriterionNavigator
@@ -599,63 +599,6 @@ function CriterionNavigator({
       testId={`${testIdPrefix}-list`}
       testIdPrefix={testIdPrefix}
     />
-  );
-}
-
-function ContextualGuidance({
-  criterion,
-  levels,
-}: {
-  criterion: AssessmentPillar["criteria"][number];
-  levels: AssessmentLevel[];
-}) {
-  return (
-    <div className="flex flex-col gap-2" data-testid="contextual-guidance">
-      <details className="rounded-md border border-border bg-surface px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Scoring guidance
-        </summary>
-        <ul className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
-          {levels.length === 0 ? (
-            <li>No maturity levels are configured on this framework.</li>
-          ) : (
-            levels.map((level) => (
-              <li key={level.level_number}>
-                <span className="font-medium text-foreground">
-                  {level.level_number} {level.name}
-                </span>
-                {level.guidance ? ` — ${level.guidance}` : ""}
-              </li>
-            ))
-          )}
-        </ul>
-      </details>
-      <details className="rounded-md border border-border bg-surface px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Criterion guidance
-        </summary>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {criterion.guidance ??
-            criterion.description ??
-            "Review the criterion and capture evidence against each question."}
-        </p>
-      </details>
-      <details className="rounded-md border border-border bg-surface px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Level descriptors
-        </summary>
-        <ul className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
-          {levels.map((level) => (
-            <li key={level.level_number}>
-              <span className="font-medium text-foreground">{level.name}</span>
-              {level.guidance
-                ? ` — ${level.guidance}`
-                : " — No descriptor configured."}
-            </li>
-          ))}
-        </ul>
-      </details>
-    </div>
   );
 }
 
@@ -759,10 +702,6 @@ function CriterionSummaryField({
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <Label htmlFor={`criterion-note-${criterionId}`}>Criterion summary</Label>
-      <p className="typography-helper mt-1">
-        Overall observation for this criterion. Use question comments for
-        detailed evidence narrative.
-      </p>
       <Textarea
         id={`criterion-note-${criterionId}`}
         className="mt-2"

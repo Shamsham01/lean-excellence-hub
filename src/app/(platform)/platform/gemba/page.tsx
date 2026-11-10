@@ -1,11 +1,11 @@
 import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
-import { ModuleAnalyticsDashboard } from "@/components/platform/module-analytics-dashboard";
-import { GEMBA_ANALYTICS_ICONS } from "@/components/platform/module-analytics-icons";
+import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
+import { buildGembaOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
-import { loadGembaAnalytics } from "@/modules/platform-analytics/gemba";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
@@ -83,15 +83,15 @@ export default async function GembaOverviewPage({
   const { count: observationCount } = await supabase
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
-  const gembaAnalytics = await loadGembaAnalytics(supabase, analyticsRange);
+  const catalogRows = await buildGembaOverviewCatalogRows(
+    supabase,
+    definitions ?? [],
+  );
 
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="gemba-empty-state">
-        <PageHeader
-          title="Gemba walks"
-          description="Structured walks with observations and follow-up."
-        />
+        <PageHeader title="Gemba walks" />
         <EmptyState
           title={
             canManage
@@ -100,8 +100,8 @@ export default async function GembaOverviewPage({
           }
           description={
             canManage
-              ? "Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
-              : "Definitions you are allowed to open will appear here. Creating a definition needs a separate role."
+              ? "Set up your first Gemba definition to start walks."
+              : "Definitions you can open will appear here."
           }
           icon={<Footprints className="size-5" />}
           {...(canManage
@@ -111,7 +111,7 @@ export default async function GembaOverviewPage({
               }
             : {})}
         />
-        <WorkplaceSharedRecords module="gemba" title="Gemba" />
+        <WorkplaceSharedRecords module="gemba" />
       </div>
     );
   }
@@ -120,7 +120,6 @@ export default async function GembaOverviewPage({
     <div className="flex flex-col gap-8" data-testid="gemba-overview-page">
       <PageHeader
         title="Gemba walks"
-        description="Capture observations and improvement opportunities on the floor."
         actions={
           <>
             {canManage ? (
@@ -144,11 +143,6 @@ export default async function GembaOverviewPage({
           </>
         }
       />
-      <ModuleAnalyticsDashboard
-        snapshot={gembaAnalytics}
-        icons={GEMBA_ANALYTICS_ICONS}
-        testId="gemba-analytics"
-      />
       <Card>
         <CardHeader>
           <CardTitle>Walks in progress</CardTitle>
@@ -158,38 +152,34 @@ export default async function GembaOverviewPage({
         </CardContent>
       </Card>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle>Definitions</CardTitle>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <AppLink href="/platform/gemba/definitions">
+                All definitions
+              </AppLink>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <AppLink href="/platform/gemba/history">History</AppLink>
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent
-          className="flex flex-col gap-2"
-          data-testid="gemba-definition-list"
-        >
-          {definitions?.map((definition) => (
-            <AppLink
-              key={definition.id}
-              href={`/platform/gemba/definitions/${definition.id}`}
-              className="text-sm font-medium underline-offset-4 hover:underline"
-            >
-              {definition.display_name}
-            </AppLink>
-          ))}
+        <CardContent>
+          <OperationalCatalogTable
+            rows={catalogRows}
+            nameColumnLabel="Definition"
+            actionColumnLabel="Action"
+            testId="gemba-definition-list"
+          />
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick links</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-3">
-          <Button variant="outline" asChild>
-            <AppLink href="/platform/gemba/definitions">Definitions</AppLink>
-          </Button>
-          <Button variant="outline" asChild>
-            <AppLink href="/platform/gemba/history">History</AppLink>
-          </Button>
-        </CardContent>
-      </Card>
-      <WorkplaceSharedRecords module="gemba" title="Gemba" />
+      <ModulePageInsightsDeferred
+        module="gemba"
+        rangeDays={analyticsRange.days}
+        testId="gemba-analytics"
+      />
+      <WorkplaceSharedRecords module="gemba" />
     </div>
   );
 }

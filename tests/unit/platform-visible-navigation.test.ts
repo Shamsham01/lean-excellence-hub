@@ -28,6 +28,10 @@ vi.mock("@/modules/billing/load-current-entitlements", () => ({
     loadCurrentOrganisationEntitlements(...args),
 }));
 
+vi.mock("@/modules/organisation-setup/nav-setup-visibility", () => ({
+  shouldShowSetupInNavigation: vi.fn().mockResolvedValue(true),
+}));
+
 import { resolveOrganisationEntitlements } from "@/modules/billing/entitlements";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
 import { platformNavigation } from "@/modules/platform-shell/navigation";

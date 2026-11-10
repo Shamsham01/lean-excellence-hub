@@ -75,7 +75,6 @@ export default async function TrainingCoursesPage({ searchParams }: PageProps) {
     <div className="flex flex-col gap-8" data-testid="training-courses-page">
       <PageHeader
         title="Training catalogue"
-        description="Organisation-wide courses available for curriculum, sessions, and compliance."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog ? (

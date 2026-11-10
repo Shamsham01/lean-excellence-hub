@@ -101,10 +101,7 @@ export default async function MaturityOverviewPage({
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
-        <PageHeader
-          title="Lean maturity"
-          description="Measure and improve operational excellence across your organisation."
-        />
+        <PageHeader title="Lean maturity" />
         <EmptyState
           title={
             canManage
@@ -124,7 +121,7 @@ export default async function MaturityOverviewPage({
             : {})}
           icon={<Layers className="size-5" />}
         />
-        <WorkplaceSharedRecords module="maturity" title="Maturity" />
+        <WorkplaceSharedRecords module="maturity" />
       </div>
     );
   }
@@ -133,7 +130,6 @@ export default async function MaturityOverviewPage({
     <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
       <PageHeader
         title="Lean maturity"
-        description="Current maturity position, trends, and improvement focus."
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
@@ -174,10 +170,6 @@ export default async function MaturityOverviewPage({
           </div>
         }
       />
-
-      {!latestResult ? (
-        <p className="text-sm text-muted-foreground">No official result yet</p>
-      ) : null}
 
       <Suspense fallback={null}>
         <MaturityOverviewAnalytics range={analyticsRange} />

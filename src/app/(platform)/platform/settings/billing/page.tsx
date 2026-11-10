@@ -72,7 +72,6 @@ export default async function OrganisationBillingSettingsPage({
     <div className="flex flex-col gap-8" data-testid="billing-settings-page">
       <PageHeader
         title="Billing"
-        description="Subscription state for this organisation. Increase subscribed site capacity here. Stripe Customer Portal manages payment methods and cancellation."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">
@@ -187,9 +186,11 @@ export default async function OrganisationBillingSettingsPage({
           <Button type="submit" data-testid="manage-billing">
             Manage billing
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Opens Stripe Customer Portal for payment methods and cancellation.
-            It does not change Lean Excellence Hub subscribed site quantity.
+          <p
+            className="text-xs text-muted-foreground"
+            title="Stripe Customer Portal manages payment methods and cancellation, not subscribed site quantity."
+          >
+            Opens Stripe Customer Portal (payment methods and cancellation).
           </p>
         </form>
       ) : null}

@@ -20,6 +20,7 @@ function mockQueryChain(result: { data: unknown; error: null }) {
     select: () => chain,
     eq: () => chain,
     in: () => chain,
+    not: () => chain,
     order: () => chain,
     limit: () => chain,
     gte: () => chain,

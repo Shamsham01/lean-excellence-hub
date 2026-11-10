@@ -330,6 +330,7 @@ test.describe("Training curriculum authoring", () => {
 
     await page.goto("/platform/training");
     await expect(page.getByTestId("training-overview")).toBeVisible();
+    await page.getByTestId("training-analytics-insights-toggle").click();
     await expect(
       page.getByTestId("training-outstanding-required"),
     ).not.toHaveText("0");
