@@ -53,26 +53,37 @@ async function openUnreadNotificationReview(
   pattern: RegExp,
   suggestionId?: string,
 ) {
-  await page.goto("/platform");
-  await expect(notificationBell(page)).toBeVisible();
-  await notificationBell(page).click();
-  await expect(page.getByTestId("platform-notification-list")).toBeVisible({
-    timeout: 30_000,
-  });
-  let item = page.locator('[data-notification-unread="true"]');
-  if (suggestionId) {
-    item = page
-      .locator(
-        `[data-notification-unread="true"][data-notification-href*="suggestionId=${suggestionId}"]`,
-      )
-      .filter({ hasText: pattern });
-  } else {
-    item = item.filter({ hasText: pattern });
+  const notificationItem = () => {
+    let item = page.locator('[data-notification-unread="true"]');
+    if (suggestionId) {
+      item = page
+        .locator(
+          `[data-notification-unread="true"][data-notification-href*="suggestionId=${suggestionId}"]`,
+        )
+        .filter({ hasText: pattern });
+    } else {
+      item = item.filter({ hasText: pattern });
+    }
+    return item.first();
+  };
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    await page.goto("/platform");
+    await expect(notificationBell(page)).toBeVisible();
+    await notificationBell(page).click();
+    await expect(page.getByTestId("platform-notification-list")).toBeVisible({
+      timeout: 30_000,
+    });
+    const target = notificationItem();
+    if (await target.isVisible().catch(() => false)) {
+      await target.click();
+      await expect(reviewWorkspace(page)).toBeVisible({ timeout: 30_000 });
+      return;
+    }
+    await page.waitForTimeout(2_000);
   }
-  const target = item.first();
-  await expect(target).toBeVisible({ timeout: 30_000 });
-  await target.click();
-  await expect(reviewWorkspace(page)).toBeVisible({ timeout: 30_000 });
+
+  await expect(notificationItem()).toBeVisible({ timeout: 5_000 });
 }
 
 test.describe("Suggestion approval delegation (UI acceptance)", () => {

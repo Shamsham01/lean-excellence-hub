@@ -33,10 +33,11 @@ test.describe("UX PR2 form dialog deep links", () => {
   }) => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/training/courses?new=1");
+    const trainingDialog = page.getByTestId("training-course-create-dialog");
+    await expect(trainingDialog).toBeVisible();
     await expect(
-      page.getByTestId("training-course-create-dialog"),
+      trainingDialog.getByTestId("training-course-create-form"),
     ).toBeVisible();
-    await expect(page.getByTestId("training-course-create-form")).toBeVisible();
   });
 
   test("skills catalog ?new=1 opens the new skill dialog", async ({ page }) => {

@@ -6,6 +6,11 @@ export async function openPeopleInviteDialog(page: Page) {
   await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
 }
 
+export async function openPeoplePendingInvitationsTab(page: Page) {
+  await page.getByTestId("people-settings-tab-pending").click();
+  await expect(page.getByTestId("pending-invitations-list")).toBeVisible();
+}
+
 export async function openPeopleAddEmployeeDialog(page: Page) {
   await page.getByTestId("people-settings-create-link").click();
   await expect(page.getByTestId("people-add-employee-dialog")).toBeVisible();
@@ -77,13 +82,14 @@ export async function openGembaAddPrompt(page: Page, sectionIndex = 0) {
 }
 
 export async function openTrainingCourseCreateDialog(page: Page) {
-  if ((await page.getByTestId("training-course-create-form").count()) === 0) {
+  const dialog = page.getByTestId("training-course-create-dialog");
+  if ((await dialog.count()) === 0) {
     await page.getByTestId("training-course-new-button").click();
   }
-  await expect(page.getByTestId("training-course-create-dialog")).toBeVisible({
+  await expect(dialog).toBeVisible({
     timeout: 15_000,
   });
-  await expect(page.getByTestId("training-course-create-form")).toBeVisible();
+  await expect(dialog.getByTestId("training-course-create-form")).toBeVisible();
 }
 
 export async function openSkillsCatalogNewSkillDialog(page: Page) {

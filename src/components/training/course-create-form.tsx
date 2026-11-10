@@ -208,11 +208,7 @@ export function CourseCreateForm({
   );
 
   if (variant === "embedded") {
-    return (
-      <div data-testid="training-course-create-form" className="min-w-0">
-        {form}
-      </div>
-    );
+    return <div className="min-w-0">{form}</div>;
   }
 
   return (
