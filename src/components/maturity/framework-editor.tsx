@@ -1092,7 +1092,6 @@ export function FrameworkEditor({
               onOpenChange={setAddQuestionOpen}
               title="Add scored question"
               testId="framework-add-question-dialog"
-              enableGuard
             >
               <form
                 className="flex flex-col gap-3"
