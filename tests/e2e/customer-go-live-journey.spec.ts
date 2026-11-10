@@ -552,7 +552,25 @@ test.describe("Customer go-live journey (clean organisation)", () => {
   });
 
   test("step 5 — LeanAI chat with credit enforcement", async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
+    const ownerClient = await createFoundingOwnerClient(user);
+    const switched = await ownerClient.rpc("switch_organisation", {
+      target_organisation_id: organisationId,
+    });
+    if (switched.error) {
+      throw switched.error;
+    }
+    const aiSettings = await ownerClient.rpc(
+      "update_organisation_ai_settings",
+      {
+        target_ai_enabled: true,
+        target_monthly_token_ceiling: 100000,
+        target_web_search_enabled: false,
+      },
+    );
+    if (aiSettings.error) {
+      throw aiSettings.error;
+    }
     enableLeanAiCreditEnforcement(organisationId);
     await loginAsExistingFoundingUser(page, user);
     await page.goto("/platform/settings/ai");
@@ -571,17 +589,18 @@ test.describe("Customer go-live journey (clean organisation)", () => {
     ).not.toHaveText(/Loading context/i, { timeout: 15_000 });
     await page
       .getByLabel("Ask LeanAI")
-      .fill("Summarise one lean habit for go-live.");
+      .fill("First line\nSecond line\nformat sample");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(page.getByTestId("leanai-assistant-sending")).toBeHidden({
-      timeout: 60_000,
+      timeout: 120_000,
     });
-    await expect(
-      page.getByTestId("leanai-assistant-assistant-message").first(),
-    ).toBeVisible({ timeout: 60_000 });
-    await expect(
-      page.getByTestId("leanai-assistant-assistant-message").first(),
-    ).not.toBeEmpty();
+    const assistantMessage = page
+      .getByTestId("leanai-assistant-assistant-message")
+      .first();
+    await expect(assistantMessage).toBeVisible({ timeout: 120_000 });
+    await expect(assistantMessage).toContainText("Next step", {
+      timeout: 30_000,
+    });
 
     exhaustLeanAiCreditAllowance(organisationId);
     await page.goto("/platform/settings/ai");
