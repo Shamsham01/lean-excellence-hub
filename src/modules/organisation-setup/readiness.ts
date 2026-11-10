@@ -361,9 +361,7 @@ export function computeOperationalSetupIncomplete(
   return gaps.length > 0 && gaps.some(Boolean);
 }
 
-export function evaluateCoreSetup(
-  items: SetupItem[],
-): CoreSetupState {
+export function evaluateCoreSetup(items: SetupItem[]): CoreSetupState {
   const assessable = items.filter((item) => item.canAssess);
   const canAssessAll = assessable.length === items.length;
   const allComplete =
