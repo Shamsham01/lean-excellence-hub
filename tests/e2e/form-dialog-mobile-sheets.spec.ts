@@ -25,7 +25,13 @@ test.describe("Responsive form dialogs at mobile viewport", () => {
     await page.goto("/platform/settings/people");
     await openPeopleInviteDialog(page);
     await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
-    const box = await page.getByTestId("people-invite-dialog").boundingBox();
+    const dialog = page.getByTestId("people-invite-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(async () => {
+      const box = await dialog.boundingBox();
+      expect(box).not.toBeNull();
+    }).toPass({ timeout: 10_000 });
+    const box = await dialog.boundingBox();
     const viewport = page.viewportSize();
     expect(box).not.toBeNull();
     expect(viewport).not.toBeNull();
