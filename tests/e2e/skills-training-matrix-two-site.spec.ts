@@ -57,8 +57,18 @@ function resetCookieWorksFoundation() {
   execSync("npm run qa:cookie:reset", {
     cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
     env: { ...process.env, LEANHUB_ALLOW_QA_TENANT: "1" },
-    stdio: "pipe",
+    stdio: "inherit",
   });
+  const orgRows = queryDatabase<{ id: string }>(`
+    select id from public.organisations
+    where code = ${sqlString(QA_ORGANISATION_CODE)}
+    limit 1;
+  `);
+  if (orgRows.length !== 1) {
+    throw new Error(
+      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (found ${orgRows.length} org rows)`,
+    );
+  }
 }
 
 async function signIn(persona: keyof typeof QA_USERS): Promise<SupabaseClient> {
