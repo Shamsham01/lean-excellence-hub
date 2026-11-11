@@ -270,6 +270,10 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     await expect(page.getByTestId("create-problem-solving-page")).toBeVisible();
     const wizard = page.getByTestId("create-problem-solving-wizard");
     await wizard.getByTestId("create-case-title").fill(caseTitle);
+    await wizard
+      .getByTestId("case-unit-select")
+      .selectOption({ label: "Operations" });
+    await wizard.getByTestId("create-case-owner").selectOption({ index: 1 });
     await expect(wizard.getByRole("button", { name: "Next" })).toBeEnabled({
       timeout: 30_000,
     });
