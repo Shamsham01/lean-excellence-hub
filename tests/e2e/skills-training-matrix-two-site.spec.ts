@@ -89,7 +89,9 @@ function sqlString(value: string) {
 
 /** Inserts active, enrolled members directly (local DB only). */
 function seedMembers(names: string[]): string[] {
-  const values = names.map((name) => `(gen_random_uuid(), ${sqlString(name)})`).join(",");
+  const values = names
+    .map((name) => `(gen_random_uuid(), ${sqlString(name)})`)
+    .join(",");
   const rows = queryDatabase<{ membership_id: string }>(`
     with people(user_id, display_name) as (values ${values}),
     users as (
@@ -135,7 +137,9 @@ async function seed() {
   const bodminPacking = ids.units["packing"];
   const exeterSite = ids.units["exeter-cookie-factory"];
   const exeterPacking = ids.units["exeter-packing"];
-  expect([bodminSite, bodminPacking, exeterSite, exeterPacking]).not.toContain(undefined);
+  expect([bodminSite, bodminPacking, exeterSite, exeterPacking]).not.toContain(
+    undefined,
+  );
 
   const admin = await signIn("admin");
   ids.operatorJf = await rpc<string>(admin, "create_job_function", {
@@ -148,15 +152,23 @@ async function seed() {
   });
 
   // Skills: scale 1..3, 14 org-wide + Bodmin-only + Exeter-only.
-  const scaleId = await rpc<string>(admin, "create_skill_proficiency_scale_draft", {
-    target_name: `Matrix scale ${run}`,
-  });
+  const scaleId = await rpc<string>(
+    admin,
+    "create_skill_proficiency_scale_draft",
+    {
+      target_name: `Matrix scale ${run}`,
+    },
+  );
   const [{ id: scale }] = queryDatabase<{ id: string }>(`
     select id from public.skill_proficiency_scale_versions
     where scale_id = ${sqlString(scaleId)}::uuid and version_number = 1;
   `);
   const levels: string[] = [];
-  for (const [order, label] of [[1, "Aware"], [2, "Capable"], [3, "Expert"]] as const) {
+  for (const [order, label] of [
+    [1, "Aware"],
+    [2, "Capable"],
+    [3, "Expert"],
+  ] as const) {
     levels.push(
       await rpc<string>(admin, "add_skill_proficiency_level", {
         target_scale_version_id: scale,
@@ -216,10 +228,14 @@ async function seed() {
       target_code: `matrix-${key}-${run}`,
     });
   }
-  const curriculumId = await rpc<string>(admin, "create_training_curriculum_draft", {
-    target_name: `Matrix curriculum ${run}`,
-    target_code: `matrix-curriculum-${run}`,
-  });
+  const curriculumId = await rpc<string>(
+    admin,
+    "create_training_curriculum_draft",
+    {
+      target_name: `Matrix curriculum ${run}`,
+      target_code: `matrix-curriculum-${run}`,
+    },
+  );
   const [{ id: curriculum }] = queryDatabase<{ id: string }>(`
     select id from public.training_curriculum_versions
     where curriculum_id = ${sqlString(curriculumId)}::uuid and version_number = 1;
@@ -238,20 +254,29 @@ async function seed() {
       target_mandatory: true,
     });
   await addTraining(curriculum, "all", { all: true });
-  await addTraining(curriculum, "bodmin", { jf: ids.operatorJf, unit: bodminSite });
+  await addTraining(curriculum, "bodmin", {
+    jf: ids.operatorJf,
+    unit: bodminSite,
+  });
   await addTraining(curriculum, "wrongJob", { jf: ids.supervisorJf });
   await addTraining(curriculum, "old", { all: true });
   await rpc(admin, "publish_training_curriculum_version", {
     target_curriculum_version_id: curriculum,
   });
-  const successor = await rpc<string>(admin, "create_training_curriculum_successor_version", {
-    target_curriculum_id: curriculumId,
-  });
+  const successor = await rpc<string>(
+    admin,
+    "create_training_curriculum_successor_version",
+    {
+      target_curriculum_id: curriculumId,
+    },
+  );
   const [{ id: oldRow }] = queryDatabase<{ id: string }>(`
     select id from public.training_requirements
     where curriculum_version_id = ${sqlString(successor)}::uuid and course_id = ${sqlString(courses.old)}::uuid;
   `);
-  await rpc(admin, "remove_training_requirement", { target_requirement_id: oldRow });
+  await rpc(admin, "remove_training_requirement", {
+    target_requirement_id: oldRow,
+  });
   await addTraining(successor, "latest", { all: true });
   await rpc(admin, "publish_training_curriculum_version", {
     target_curriculum_version_id: successor,
@@ -259,9 +284,16 @@ async function seed() {
 
   // People: 30 Bodmin operators, 25 Exeter operators (=> >50 in org).
   // RISK: seat / site-capacity enforcement may reject 55 extra members.
-  const bodmin = seedMembers(Array.from({ length: BODMIN_PEOPLE }, (_, i) => bodminPerson(i + 1)));
-  const exeter = seedMembers(Array.from({ length: EXETER_PEOPLE }, (_, i) => exeterPerson(i + 1)));
-  for (const [list, unit] of [[bodmin, bodminPacking], [exeter, exeterPacking]] as const) {
+  const bodmin = seedMembers(
+    Array.from({ length: BODMIN_PEOPLE }, (_, i) => bodminPerson(i + 1)),
+  );
+  const exeter = seedMembers(
+    Array.from({ length: EXETER_PEOPLE }, (_, i) => exeterPerson(i + 1)),
+  );
+  for (const [list, unit] of [
+    [bodmin, bodminPacking],
+    [exeter, exeterPacking],
+  ] as const) {
     for (const membershipId of list) {
       await rpc(admin, "assign_membership_job_function", {
         target_membership_id: membershipId,
@@ -275,14 +307,19 @@ async function seed() {
 }
 
 async function namesOnPage(page: Page, prefix: string): Promise<string[]> {
-  const texts = await page.getByText(new RegExp(`^${prefix}`)).allTextContents();
+  const texts = await page
+    .getByText(new RegExp(`^${prefix}`))
+    .allTextContents();
   return [...new Set(texts.map((text) => text.trim()))];
 }
 
 test.describe("Spec B: two-site skills/training matrix", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(300_000);
-  test.skip(!hasSupabaseE2e, "Requires E2E_WITH_SUPABASE=1 and CookieWorks QA tenant");
+  test.skip(
+    !hasSupabaseE2e,
+    "Requires E2E_WITH_SUPABASE=1 and CookieWorks QA tenant",
+  );
 
   test.beforeAll(async () => {
     test.setTimeout(300_000);
@@ -290,7 +327,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     await seed();
   });
 
-  test("admin skills matrix: >12 skill columns and people pagination", async ({ page }) => {
+  test("admin skills matrix: >12 skill columns and people pagination", async ({
+    page,
+  }) => {
     const admin = await signIn("admin");
     const first = await rpc<{ total_people: number; skills: unknown[] }>(
       admin,
@@ -305,7 +344,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
       `Showing 50 of ${first.total_people}`,
     );
     for (let n = 1; n <= SKILL_COUNT; n += 1) {
-      await expect(page.getByRole("link", { name: skillName(n) }).first()).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: skillName(n) }).first(),
+      ).toBeVisible();
     }
     const pagination = page.getByTestId("skills-matrix-pagination");
     await expect(pagination).toContainText(
@@ -335,7 +376,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
         }[];
       }>(admin, "get_skills_matrix", { target_page: p, target_page_size: 50 });
       for (const gap of data.gaps.filter((g) => g.skill_id === target)) {
-        const person = data.people.find((x) => x.membership_id === gap.membership_id);
+        const person = data.people.find(
+          (x) => x.membership_id === gap.membership_id,
+        );
         if (person) seen[person.display_name] = gap.gap?.target_order;
       }
     }
@@ -344,7 +387,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     await admin.auth.signOut();
   });
 
-  test("Bodmin production manager never sees Exeter people or Exeter-only skill", async ({ page }) => {
+  test("Bodmin production manager never sees Exeter people or Exeter-only skill", async ({
+    page,
+  }) => {
     await loginAsCookieWorksPersona(page, "productionManager");
     await page.goto("/platform/skills/matrix");
     await expect(page.getByTestId("skills-matrix-summary")).toBeVisible();
@@ -352,7 +397,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     await expect(page.getByText(/^Matrix Exeter/)).toHaveCount(0);
     await expect(page.getByRole("link", { name: bodminSkill })).toBeVisible();
     await expect(page.getByRole("link", { name: exeterSkill })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: skillName(SKILL_COUNT) })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: skillName(SKILL_COUNT) }),
+    ).toBeVisible();
 
     const manager = await signIn("productionManager");
     const { error } = await manager.rpc("get_skills_matrix", {
@@ -370,7 +417,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     await manager.auth.signOut();
   });
 
-  test("training matrix: latest curriculum, site scope, wrong job function", async ({ page }) => {
+  test("training matrix: latest curriculum, site scope, wrong job function", async ({
+    page,
+  }) => {
     await loginAsCookieWorksPersona(page, "productionManager");
     await page.goto("/platform/training/matrix");
     await expect(page.getByTestId("training-matrix-summary")).toBeVisible();
@@ -391,7 +440,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     let found = false;
     for (let p = 1; p <= 3 && !found; p += 1) {
       await page.goto(`/platform/training/matrix?page=${p}`);
-      const cell = page.getByLabel(`${exeterPerson(1)} — ${course.bodmin}: Not Required`);
+      const cell = page.getByLabel(
+        `${exeterPerson(1)} — ${course.bodmin}: Not Required`,
+      );
       found = (await cell.count()) > 0;
     }
     expect(found).toBe(true);

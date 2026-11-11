@@ -11,7 +11,9 @@ function migration(): string {
   const file = readdirSync(dir)
     .sort()
     .reverse()
-    .find((name) => name.endsWith("_skills_training_unit_scoped_requirements.sql"));
+    .find((name) =>
+      name.endsWith("_skills_training_unit_scoped_requirements.sql"),
+    );
   if (!file) throw new Error("Spec B migration not found");
   return readFileSync(join(dir, file), "utf8");
 }
@@ -31,8 +33,12 @@ describe("Spec B migration guards", () => {
   });
 
   it("the pre-check fails with 23505 and never deletes rows", () => {
-    expect(sql).toMatch(/duplicate scoped requirement keys exist[\s\S]{0,120}errcode = '23505'/);
-    expect(sql).not.toMatch(/delete\s+from\s+public\.(skill|training)_requirements/i);
+    expect(sql).toMatch(
+      /duplicate scoped requirement keys exist[\s\S]{0,120}errcode = '23505'/,
+    );
+    expect(sql).not.toMatch(
+      /delete\s+from\s+public\.(skill|training)_requirements/i,
+    );
   });
 
   it("both indexes are NULLS NOT DISTINCT and tenant-leading", () => {
@@ -60,20 +66,33 @@ describe("Spec B migration guards", () => {
   });
 
   it("uses the published-curriculum helper for the training matrix and compliance", () => {
-    const matches = sql.match(/private\.get_published_training_curriculum_version_id\(/g) ?? [];
+    const matches =
+      sql.match(/private\.get_published_training_curriculum_version_id\(/g) ??
+      [];
     expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 
   it("clamps page size to the documented hard cap of 100", () => {
-    const clamps = sql.match(/least\(greatest\(coalesce\(target_page_size, 50\), 1\), 100\)/g) ?? [];
+    const clamps =
+      sql.match(
+        /least\(greatest\(coalesce\(target_page_size, 50\), 1\), 100\)/g,
+      ) ?? [];
     expect(clamps.length).toBe(2);
   });
 });
 
 describe("matrix pages", () => {
   for (const [label, path, prefix] of [
-    ["skills", "src/app/(platform)/platform/skills/matrix/page.tsx", "/platform/skills/matrix?page="],
-    ["training", "src/app/(platform)/platform/training/matrix/page.tsx", "/platform/training/matrix?page="],
+    [
+      "skills",
+      "src/app/(platform)/platform/skills/matrix/page.tsx",
+      "/platform/skills/matrix?page=",
+    ],
+    [
+      "training",
+      "src/app/(platform)/platform/training/matrix/page.tsx",
+      "/platform/training/matrix?page=",
+    ],
   ] as const) {
     it(`${label} matrix page paginates people and has no column cap`, () => {
       const source = readFileSync(path, "utf8");
@@ -86,7 +105,10 @@ describe("matrix pages", () => {
   }
 
   it("training matrix component no longer references a global required set", () => {
-    const source = readFileSync("src/components/training/training-matrix.tsx", "utf8");
+    const source = readFileSync(
+      "src/components/training/training-matrix.tsx",
+      "utf8",
+    );
     expect(source).not.toContain("requiredCourseIds");
   });
 });

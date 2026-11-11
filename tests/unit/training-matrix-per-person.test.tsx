@@ -53,7 +53,9 @@ describe("TrainingMatrix per-person applicability", () => {
   it("a site course is required for the Bodmin person only", () => {
     renderMatrix();
     expect(
-      screen.getByLabelText("Bodmin Operator — Bodmin allergen awareness: Required"),
+      screen.getByLabelText(
+        "Bodmin Operator — Bodmin allergen awareness: Required",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText(
@@ -65,7 +67,9 @@ describe("TrainingMatrix per-person applicability", () => {
   it("non-mandatory applicability renders as Not Required", () => {
     renderMatrix();
     expect(
-      screen.getByLabelText("Exeter Operator — Optional refresher: Not Required"),
+      screen.getByLabelText(
+        "Exeter Operator — Optional refresher: Not Required",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -84,7 +88,9 @@ describe("TrainingMatrix per-person applicability", () => {
     const exeterCard = screen
       .getByTestId("training-matrix-person-card-m-exeter")
       .closest("div") as HTMLElement;
-    expect(within(exeterCard).queryByText("Bodmin allergen awareness")).toBeNull();
+    expect(
+      within(exeterCard).queryByText("Bodmin allergen awareness"),
+    ).toBeNull();
     expect(within(exeterCard).getByText("Site induction")).toBeInTheDocument();
     const bodminCard = screen
       .getByTestId("training-matrix-person-card-m-bodmin")
