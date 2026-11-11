@@ -332,18 +332,21 @@ test.describe("Actions planner workspace", () => {
       "e2e-cover.png",
       { timeout: 30_000 },
     );
-    const setCover = page
-      .getByTestId("action-planner-attachments")
-      .getByRole("button", { name: /Set as cover/i })
-      .first();
+    const setCover = page.locator('[data-testid^="action-set-cover-"]').first();
+    await expect(setCover).toBeVisible({ timeout: 30_000 });
+    await setCover.scrollIntoViewIfNeeded();
     await setCover.click();
     await expect(
-      page.getByTestId("action-planner-attachments").getByRole("button", {
-        name: "Cover",
-      }),
+      page
+        .getByTestId("action-planner-attachments")
+        .getByRole("button", { name: "Cover" }),
     ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.locator('[data-testid^="evidence-preview-"]').first(),
+    ).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("tab", { name: "Overview" }).click();
     await expect(page.getByTestId("action-card-cover-thumb")).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
   });
 });
