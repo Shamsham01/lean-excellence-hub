@@ -36,7 +36,7 @@ export default async function GembaDefinitionsPage() {
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
   );
-  const { data: definitions, error: definitionsError } = await supabase
+  const { data: loadedDefinitions, error: definitionsError } = await supabase
     .from("gemba_definitions")
     .select("id, display_name, description")
     .order("created_at", { ascending: false });
@@ -51,6 +51,27 @@ export default async function GembaDefinitionsPage() {
       />
     );
   }
+
+  const definitions = canManage
+    ? (
+        await Promise.all(
+          (loadedDefinitions ?? []).map(async (definition) => {
+            const { data: authorable, error } = await supabase.rpc(
+              "member_can_author_gemba_definition",
+              { target_definition_id: definition.id },
+            );
+            if (error || !authorable) {
+              return null;
+            }
+            return definition;
+          }),
+        )
+      ).filter(
+        (definition): definition is NonNullable<typeof definition> =>
+          definition !== null,
+      )
+    : (loadedDefinitions ?? []);
+
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,

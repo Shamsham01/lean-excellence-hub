@@ -34,7 +34,7 @@ export default async function FiveSStandardsPage() {
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
   );
-  const { data: standards, error: standardsError } = await supabase
+  const { data: loadedStandards, error: standardsError } = await supabase
     .from("five_s_standards")
     .select("id, display_name, description, created_at")
     .order("created_at", { ascending: false });
@@ -49,6 +49,27 @@ export default async function FiveSStandardsPage() {
       />
     );
   }
+
+  const standards = canManage
+    ? (
+        await Promise.all(
+          (loadedStandards ?? []).map(async (standard) => {
+            const { data: authorable, error } = await supabase.rpc(
+              "member_can_author_five_s_standard",
+              { target_standard_id: standard.id },
+            );
+            if (error || !authorable) {
+              return null;
+            }
+            return standard;
+          }),
+        )
+      ).filter(
+        (standard): standard is NonNullable<typeof standard> =>
+          standard !== null,
+      )
+    : (loadedStandards ?? []);
+
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
     requireConcreteSite: true,

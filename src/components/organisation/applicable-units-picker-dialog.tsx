@@ -128,6 +128,9 @@ export function ApplicableUnitsPickerDialog({
     if (next) {
       setDraft(new Set(selectedIds));
       setSearch("");
+    } else {
+      setDraft(new Set(selectedIds));
+      setSearch("");
     }
     onOpenChange(next);
   };
@@ -178,6 +181,7 @@ export function ApplicableUnitsPickerDialog({
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search sites and areas"
           className="min-h-11"
+          aria-label="Search sites and areas"
           data-testid="applicable-units-picker-search"
         />
         <SiteGroupList
@@ -185,6 +189,7 @@ export function ApplicableUnitsPickerDialog({
           matchingIds={matchingIds}
           draft={draft}
           setDraft={setDraft}
+          search={search}
         />
         {footer}
       </div>
@@ -197,11 +202,13 @@ function SiteGroupList({
   matchingIds,
   draft,
   setDraft,
+  search,
 }: {
   siteGroups: ReturnType<typeof buildApplicabilitySiteGroups>;
   matchingIds: ReadonlySet<string>;
   draft: Set<string>;
   setDraft: (value: Set<string>) => void;
+  search: string;
 }): ReactNode {
   if (siteGroups.length === 0) {
     return (
@@ -210,6 +217,22 @@ function SiteGroupList({
         data-testid="applicable-units-empty"
       >
         No organisational units are available.
+      </p>
+    );
+  }
+
+  const trimmedSearch = search.trim();
+  const visibleGroups = siteGroups.filter((group) =>
+    group.tree.some((node) => nodeMatchesSearch(node, matchingIds)),
+  );
+
+  if (trimmedSearch.length > 0 && visibleGroups.length === 0) {
+    return (
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="applicable-units-search-empty"
+      >
+        No locations match your search.
       </p>
     );
   }
@@ -239,6 +262,7 @@ function SiteGroupList({
                 variant="outline"
                 size="sm"
                 className="min-h-9"
+                aria-label={`Select all in ${group.siteName}`}
                 data-testid={`applicable-units-select-all-site-${group.siteId}`}
                 onClick={() => {
                   const next = new Set(draft);
