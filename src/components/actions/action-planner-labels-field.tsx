@@ -10,13 +10,6 @@ import {
 import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
 import { labelChipTextClass } from "@/lib/actions/label-contrast";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionLabel } from "@/lib/actions/types";
@@ -169,20 +162,38 @@ export function ActionPlannerLabelsField({
           })}
         </div>
       ) : null}
+      {canManageCatalog ? (
+        <div className="flex flex-wrap gap-2">
+          {catalog.map((label) => (
+            <Button
+              key={`edit-${label.id}`}
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => openManage(label)}
+            >
+              Edit {label.name}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       {sectionError ? (
         <p className="text-sm text-destructive" role="alert">
           {sectionError}
         </p>
       ) : null}
 
-      <Dialog open={manageOpen} onOpenChange={setManageOpen} modal={false}>
-        <DialogContent
-          className="max-w-sm"
+      {manageOpen ? (
+        <div
+          className="flex flex-col gap-3 rounded-md border border-border bg-card p-3"
           data-testid="action-label-manage-dialog"
+          role="dialog"
+          aria-labelledby="label-manage-title"
         >
-          <DialogHeader>
-            <DialogTitle>{editId ? "Edit label" : "Create label"}</DialogTitle>
-          </DialogHeader>
+          <h4 id="label-manage-title" className="text-sm font-medium">
+            {editId ? "Edit label" : "Create label"}
+          </h4>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               <Label htmlFor="label-manage-name">Name</Label>
@@ -211,7 +222,7 @@ export function ActionPlannerLabelsField({
               {manageError}
             </p>
           ) : null}
-          <DialogFooter>
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -227,9 +238,9 @@ export function ActionPlannerLabelsField({
             >
               Save
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
