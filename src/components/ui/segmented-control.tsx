@@ -15,6 +15,8 @@ type SegmentedControlProps = {
   onChange: (value: string) => void;
   className?: string;
   "aria-label"?: string;
+  "data-testid"?: string;
+  optionTestIdPrefix?: string;
 };
 
 export function SegmentedControl({
@@ -23,16 +25,18 @@ export function SegmentedControl({
   onChange,
   className,
   "aria-label": ariaLabel,
+  "data-testid": dataTestId = "segmented-control",
+  optionTestIdPrefix,
 }: SegmentedControlProps) {
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex rounded-lg border border-border/50 bg-muted/30 p-1",
+        "inline-flex w-full min-w-[min(100%,15.5rem)] rounded-lg border border-border/50 bg-muted/30 p-1 sm:w-auto",
         className,
       )}
-      data-testid="segmented-control"
+      data-testid={dataTestId}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -43,11 +47,16 @@ export function SegmentedControl({
             role="radio"
             aria-checked={selected}
             className={cn(
-              "min-w-[2.5rem] rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150",
+              "inline-flex min-h-11 flex-1 basis-0 items-center justify-center rounded-md px-2 text-center text-sm leading-none font-medium transition-all duration-150",
               selected
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
             )}
+            data-testid={
+              optionTestIdPrefix
+                ? `${optionTestIdPrefix}-${option.value}`
+                : undefined
+            }
             onClick={() => onChange(option.value)}
           >
             {option.label}
