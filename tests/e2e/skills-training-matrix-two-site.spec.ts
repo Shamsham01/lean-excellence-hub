@@ -121,16 +121,19 @@ function seedMembers(names: string[]): string[] {
 }
 
 async function seed() {
-  const [org] = queryDatabase<{ id: string }>(`
+  const orgRow = queryDatabase<{ id: string }>(`
     select organisation.id from public.organisations organisation
     join public.organisation_memberships membership on membership.organisation_id = organisation.id
     join auth.users users on users.id = membership.user_id
     where users.email = ${sqlString(QA_USERS.admin.email)} limit 1;
-  `);
-  ids.organisationId = org.id;
+  `)[0];
+  if (!orgRow) {
+    throw new Error("CookieWorks organisation not found for admin user");
+  }
+  ids.organisationId = orgRow.id;
   const units = queryDatabase<{ id: string; code: string }>(`
     select id, code from public.organisation_units
-    where organisation_id = ${sqlString(org.id)}::uuid;
+    where organisation_id = ${sqlString(orgRow.id)}::uuid;
   `);
   ids.units = Object.fromEntries(units.map((unit) => [unit.code, unit.id]));
   const bodminSite = ids.units["bodmin-cookie-factory"];
@@ -159,10 +162,14 @@ async function seed() {
       target_name: `Matrix scale ${run}`,
     },
   );
-  const [{ id: scale }] = queryDatabase<{ id: string }>(`
+  const scaleRow = queryDatabase<{ id: string }>(`
     select id from public.skill_proficiency_scale_versions
     where scale_id = ${sqlString(scaleId)}::uuid and version_number = 1;
-  `);
+  `)[0];
+  if (!scaleRow) {
+    throw new Error("Expected draft scale version");
+  }
+  const scale = scaleRow.id;
   const levels: string[] = [];
   for (const [order, label] of [
     [1, "Aware"],
@@ -196,10 +203,14 @@ async function seed() {
     target_name: `Matrix capability set ${run}`,
     target_code: `matrix-set-${run}`,
   });
-  const [{ id: set }] = queryDatabase<{ id: string }>(`
+  const setRow = queryDatabase<{ id: string }>(`
     select id from public.skill_capability_set_versions
     where capability_set_id = ${sqlString(setId)}::uuid and version_number = 1;
-  `);
+  `)[0];
+  if (!setRow) {
+    throw new Error("Expected draft capability set version");
+  }
+  const set = setRow.id;
   const addSkill = (name: string, level: number, unit?: string) =>
     rpc(admin, "add_skill_requirement", {
       target_capability_set_version_id: set,
@@ -236,10 +247,14 @@ async function seed() {
       target_code: `matrix-curriculum-${run}`,
     },
   );
-  const [{ id: curriculum }] = queryDatabase<{ id: string }>(`
+  const curriculumRow = queryDatabase<{ id: string }>(`
     select id from public.training_curriculum_versions
     where curriculum_id = ${sqlString(curriculumId)}::uuid and version_number = 1;
-  `);
+  `)[0];
+  if (!curriculumRow) {
+    throw new Error("Expected draft curriculum version");
+  }
+  const curriculum = curriculumRow.id;
   const addTraining = (
     version: string,
     key: keyof typeof course,
@@ -256,7 +271,7 @@ async function seed() {
   await addTraining(curriculum, "all", { all: true });
   await addTraining(curriculum, "bodmin", {
     jf: ids.operatorJf,
-    unit: bodminSite,
+    unit: bodminSite!,
   });
   await addTraining(curriculum, "wrongJob", { jf: ids.supervisorJf });
   await addTraining(curriculum, "old", { all: true });
@@ -270,12 +285,15 @@ async function seed() {
       target_curriculum_id: curriculumId,
     },
   );
-  const [{ id: oldRow }] = queryDatabase<{ id: string }>(`
+  const oldRequirementRow = queryDatabase<{ id: string }>(`
     select id from public.training_requirements
-    where curriculum_version_id = ${sqlString(successor)}::uuid and course_id = ${sqlString(courses.old)}::uuid;
-  `);
+    where curriculum_version_id = ${sqlString(successor)}::uuid and course_id = ${sqlString(courses.old!)}::uuid;
+  `)[0];
+  if (!oldRequirementRow) {
+    throw new Error("Expected training requirement row for superseded course");
+  }
   await rpc(admin, "remove_training_requirement", {
-    target_requirement_id: oldRow,
+    target_requirement_id: oldRequirementRow.id,
   });
   await addTraining(successor, "latest", { all: true });
   await rpc(admin, "publish_training_curriculum_version", {
