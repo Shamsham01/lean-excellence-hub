@@ -39,6 +39,37 @@ DEPRIORITISE = frozenset(
     }
 )
 
+MODULE_ENTITLEMENT_ASSERT = re.compile(
+    r"perform private\.assert_current_organisation_module_entitled\([^)]+\);",
+    re.I,
+)
+
+
+def module_entitlement_asserts(body: str) -> list[str]:
+    return MODULE_ENTITLEMENT_ASSERT.findall(body)
+
+
+def verify_forward_entitlement_asserts(gated: dict[str, str]) -> list[str]:
+    """Later migrations that replace gated RPCs must keep module entitlement asserts."""
+    failures: list[str] = []
+    gate_name = GATE_FILE.name
+    for path in sorted(MIGRATIONS.glob("*.sql")):
+        if path.name <= gate_name:
+            continue
+        for key, body in extract_all(path).items():
+            if not key.startswith("private."):
+                continue
+            gate_body = gated.get(key)
+            if not gate_body:
+                continue
+            for snippet in module_entitlement_asserts(gate_body):
+                if snippet not in body:
+                    failures.append(
+                        f"{path.name}: {key.split('.', 1)[1]} missing forward assert `{snippet}`"
+                    )
+    return failures
+
+
 ASSERT_PATTERNS = [
     re.compile(
         r"if coalesce\(target_module_key, ''\) not in \('onboarding'\) then\s*"
@@ -129,6 +160,7 @@ def main() -> int:
             continue
         if name not in STRUCTURAL_REWRITES and normalize(body) != normalize(base):
             failures.append(f"{name}: body drift vs {canonical_private.__name__}")
+    failures.extend(verify_forward_entitlement_asserts(gated))
     print(f"Checked {len([k for k in gated if k.startswith('private.')])} private functions")
     if failures:
         print(f"FAIL {len(failures)} drift(s):")
