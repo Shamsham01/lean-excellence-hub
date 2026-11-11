@@ -131,7 +131,8 @@ function seedMembers(names: string[]): string[] {
       ) values (
         ${sqlString(userId)}::uuid, ${sqlString(email)}, now(), now(), now(),
         '{}'::jsonb, '{}'::jsonb, false, false
-      );
+      )
+      returning id;
     `);
     const rows = queryDatabase<{ membership_id: string }>(`
       insert into public.organisation_memberships
