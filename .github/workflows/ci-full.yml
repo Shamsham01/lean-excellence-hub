@@ -306,6 +306,7 @@ jobs:
               tests/e2e/training-setup.spec.ts
               tests/e2e/training-course-authoring.spec.ts
               tests/e2e/training-curriculum-authoring.spec.ts
+              tests/e2e/skills-assessment-method-persistence.spec.ts
               tests/e2e/people-mobile-organisation-assignment.spec.ts
               tests/e2e/people-access.spec.ts
               tests/e2e/people-colleague-import.spec.ts

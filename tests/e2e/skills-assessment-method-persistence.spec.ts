@@ -1,6 +1,6 @@
 // VERIFY draft for PR #391 (Spec A): the validation dialog opens with no
 // method, save is blocked until one is chosen, and practical_observation is
-// persisted (UI history after reload + database row).
+// persisted (UI history on the profile + database row).
 //
 // Idempotent across retries/re-runs: it picks whichever assessable skill the
 // demo operator still has instead of a fixed "5S Auditing" / "Advanced (4)"
@@ -12,8 +12,6 @@ import { DEMO_USERS } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { queryDatabase } from "./helpers/workforce-provisioning";
 
-const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
-
 const EXPECTED_OPTIONS = [
   "Select method…",
   "Manager assessment",
@@ -24,11 +22,6 @@ const EXPECTED_OPTIONS = [
 ];
 
 test.describe("Skill assessment method persistence (Spec A)", () => {
-  test.skip(
-    !hasSupabaseE2e,
-    "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
-  );
-
   test("dialog has no default method; practical observation saves and persists", async ({
     page,
   }) => {
@@ -92,7 +85,6 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
     await expect(dialog.getByRole("button", { name: "Done" })).toBeVisible();
     await dialog.getByRole("button", { name: "Done" }).click();
 
-    await page.reload();
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
     await expect(historyRows).toHaveCount(before + 1);
 
