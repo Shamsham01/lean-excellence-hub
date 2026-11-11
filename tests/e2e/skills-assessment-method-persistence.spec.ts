@@ -22,6 +22,18 @@ const EXPECTED_OPTIONS = [
 ];
 
 test.describe("Skill assessment method persistence (Spec A)", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test.beforeAll(() => {
+    // Earlier workforce specs may satisfy every operator gap; reopen one.
+    queryDatabase(`
+      delete from public.membership_skill_assessments assessment_row
+      using public.organisation_memberships membership_row
+      where assessment_row.membership_id = membership_row.id
+        and membership_row.user_id = '${DEMO_USERS.operator.id}'
+    `);
+  });
+
   test("dialog has no default method; practical observation saves and persists", async ({
     page,
   }) => {
