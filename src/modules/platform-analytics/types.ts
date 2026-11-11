@@ -1,9 +1,6 @@
 import type { TrendDelta } from "./trend";
 
-export type KpiPolarity =
-  | "higher-is-better"
-  | "lower-is-better"
-  | "neutral";
+export type KpiPolarity = "higher-is-better" | "lower-is-better" | "neutral";
 
 export type KpiStat = {
   id: string;

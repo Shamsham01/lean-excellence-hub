@@ -47,41 +47,41 @@ export async function PlatformShell({
         className="flex h-dvh max-h-dvh min-w-0 flex-col overflow-hidden bg-background lg:flex-row"
       >
         <PlatformSidebar
-        items={navWithSetup}
-        organisationName={organisationName}
-        organisations={organisations}
-        siteContext={siteContext}
-        member={member}
-        showSettings={showSettings}
-      />
-      <LeanAiAssistantShell organisationId={organisationId}>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background lg:ml-[290px]">
-          <MobilePlatformNavigation
-            items={navWithSetup}
-            organisationName={organisationName}
-            organisations={organisations}
-            siteContext={siteContext}
-            member={member}
-            showSettings={showSettings}
-            notifications={notifications}
-          />
-          <PlatformTopbar
-            member={member}
-            organisationName={organisationName}
-            showSettings={showSettings}
-            notifications={notifications}
-          />
-          <main
-            data-testid="platform-main"
-            className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden"
-          >
-            <div className="platform-main-viewport flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain">
-              <div className="platform-main-inner mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8">
-                {children}
+          items={navWithSetup}
+          organisationName={organisationName}
+          organisations={organisations}
+          siteContext={siteContext}
+          member={member}
+          showSettings={showSettings}
+        />
+        <LeanAiAssistantShell organisationId={organisationId}>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background lg:ml-[290px]">
+            <MobilePlatformNavigation
+              items={navWithSetup}
+              organisationName={organisationName}
+              organisations={organisations}
+              siteContext={siteContext}
+              member={member}
+              showSettings={showSettings}
+              notifications={notifications}
+            />
+            <PlatformTopbar
+              member={member}
+              organisationName={organisationName}
+              showSettings={showSettings}
+              notifications={notifications}
+            />
+            <main
+              data-testid="platform-main"
+              className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden"
+            >
+              <div className="platform-main-viewport flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain">
+                <div className="platform-main-inner mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8">
+                  {children}
+                </div>
               </div>
-            </div>
-          </main>
-        </div>
+            </main>
+          </div>
         </LeanAiAssistantShell>
       </div>
     </PlatformTooltipProvider>

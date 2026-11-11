@@ -26,7 +26,9 @@ export function Breadcrumb({
       <ol
         className={cn(
           "flex flex-wrap items-center gap-1.5",
-          pageHeading ? "text-sm text-muted-foreground" : "text-sm text-muted-foreground",
+          pageHeading
+            ? "text-sm text-muted-foreground"
+            : "text-sm text-muted-foreground",
         )}
       >
         {items.map((item, index) => {

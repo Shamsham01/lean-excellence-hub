@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PageHeaderLeanAiButton } from "@/components/platform/page-header-lean-ai-button";
-import {
-  Breadcrumb,
-  type BreadcrumbItem,
-} from "@/components/ui/breadcrumb";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 
 function breadcrumbLastLabel(node: ReactNode): string | null {
@@ -16,10 +13,7 @@ function breadcrumbLastLabel(node: ReactNode): string | null {
 }
 
 function defaultModuleBreadcrumb(label: string): BreadcrumbItem[] {
-  return [
-    { label: "Platform", href: "/platform" },
-    { label },
-  ];
+  return [{ label: "Platform", href: "/platform" }, { label }];
 }
 
 export function PageHeader({
@@ -57,8 +51,7 @@ export function PageHeader({
     ) : null);
 
   const lastCrumbLabel =
-    resolvedBreadcrumbItems?.at(-1)?.label ??
-    breadcrumbLastLabel(breadcrumb);
+    resolvedBreadcrumbItems?.at(-1)?.label ?? breadcrumbLastLabel(breadcrumb);
 
   const autoBreadcrumbFromTitle =
     typeof title === "string" && !breadcrumb && !breadcrumbItems;
