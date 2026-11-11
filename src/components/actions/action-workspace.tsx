@@ -485,7 +485,7 @@ export function ActionWorkspace({
             canUpload={canUploadEvidence && editable}
             canSetCover={permissions.can_update && editable}
             coverAttachmentId={detail.card_cover_attachment?.id ?? null}
-            onMutated={onMutated}
+            {...(onMutated ? { onMutated } : {})}
           />
         </TabsContent>
 

@@ -24,7 +24,7 @@ export function ActionEvidenceBlock({
     <EvidenceUploader
       existingEvidence={evidence}
       canEdit={canEdit}
-      onUploadSuccess={onUploadSuccess}
+      {...(onUploadSuccess ? { onUploadSuccess } : {})}
       onInitiate={(filename, mimeType, byteSize) =>
         initiateActionEvidenceUpload(actionId, filename, mimeType, byteSize)
       }
