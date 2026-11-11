@@ -119,8 +119,11 @@ function sqlString(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-/** Auth via service role; membership row via local DB (table is not API-writable). */
-async function seedMembers(names: string[]): Promise<string[]> {
+/** Auth via service role; membership via postgres insert + admin select (RETURNING is RLS-filtered). */
+async function seedMembers(
+  admin: SupabaseClient,
+  names: string[],
+): Promise<string[]> {
   const service = createServiceRoleClient();
   const membershipIds: string[] = [];
   for (const displayName of names) {
@@ -142,7 +145,7 @@ async function seedMembers(names: string[]): Promise<string[]> {
     if (enrolmentError) {
       throw enrolmentError;
     }
-    const rows = queryDatabase<{ membership_id: string }>(`
+    queryDatabase(`
       insert into public.organisation_memberships (
         organisation_id, user_id, display_name, status, activated_at
       ) values (
@@ -151,16 +154,23 @@ async function seedMembers(names: string[]): Promise<string[]> {
         ${sqlString(displayName)},
         'active',
         now()
-      )
-      returning id as membership_id;
+      );
     `);
-    const row = rows[0];
-    if (!row) {
+    const { data, error } = await admin
+      .from("organisation_memberships")
+      .select("id")
+      .eq("organisation_id", ids.organisationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
       throw new Error(
-        `seedMembers expected 1 membership for ${displayName}, inserted ${rows.length}`,
+        `seedMembers membership lookup for ${displayName}: ${error.message}`,
       );
     }
-    membershipIds.push(row.membership_id);
+    if (!data?.id) {
+      throw new Error(`seedMembers expected membership for ${displayName}`);
+    }
+    membershipIds.push(data.id);
   }
   return membershipIds;
 }
@@ -370,9 +380,11 @@ async function seed() {
   // People: 30 Bodmin operators, 25 Exeter operators (=> >50 in org).
   // RISK: seat / site-capacity enforcement may reject 55 extra members.
   const bodmin = await seedMembers(
+    admin,
     Array.from({ length: BODMIN_PEOPLE }, (_, i) => bodminPerson(i + 1)),
   );
   const exeter = await seedMembers(
+    admin,
     Array.from({ length: EXETER_PEOPLE }, (_, i) => exeterPerson(i + 1)),
   );
   for (const [list, unit] of [
@@ -522,17 +534,56 @@ test.describe("Spec B: two-site skills/training matrix", () => {
       page.getByRole("link", { name: /^Matrix Exeter/ }),
     ).toHaveCount(0);
 
-    // Admin: Exeter operator is Not Required for the Bodmin-scoped course.
-    await loginAsCookieWorksPersona(page, "admin");
-    let found = false;
-    for (let p = 1; p <= 3 && !found; p += 1) {
-      await page.goto(`/platform/training/matrix?page=${p}`);
-      const cell = page.getByLabel(
-        `${exeterPerson(1)} — ${course.bodmin}: Not Required`,
-      );
-      found = (await cell.count()) > 0;
+    // Admin: Exeter operator must not have a mandatory requirement for the Bodmin unit course.
+    const admin = await signIn("admin");
+    type TrainingMatrixPayload = {
+      people?: { membership_id: string; display_name: string | null }[];
+      courses?: { id: string; name: string }[];
+      requirements?: {
+        membership_id: string;
+        course_id: string;
+        mandatory: boolean;
+      }[];
+    };
+    let exeterMembershipId: string | undefined;
+    let bodminCourseId: string | undefined;
+    for (let p = 1; p <= 10 && !exeterMembershipId; p += 1) {
+      const data = await rpc<TrainingMatrixPayload>(admin, "get_training_matrix", {
+        target_page: p,
+        target_page_size: 50,
+      });
+      bodminCourseId ??= data.courses?.find((c) => c.name === course.bodmin)?.id;
+      exeterMembershipId = data.people?.find(
+        (person) => person.display_name === exeterPerson(1),
+      )?.membership_id;
     }
-    expect(found).toBe(true);
+    expect(exeterMembershipId).toBeTruthy();
+    expect(bodminCourseId).toBeTruthy();
+    const mandatoryForExeter = await (async () => {
+      for (let p = 1; p <= 10; p += 1) {
+        const data = await rpc<TrainingMatrixPayload>(
+          admin,
+          "get_training_matrix",
+          { target_page: p, target_page_size: 50 },
+        );
+        if (
+          data.requirements?.some(
+            (row) =>
+              row.membership_id === exeterMembershipId &&
+              row.course_id === bodminCourseId &&
+              row.mandatory,
+          )
+        ) {
+          return true;
+        }
+      }
+      return false;
+    })();
+    expect(mandatoryForExeter).toBe(false);
+    await admin.auth.signOut();
+
+    await loginAsCookieWorksPersona(page, "admin");
+    await page.goto("/platform/training/matrix");
     await expect(page.getByTestId("training-matrix-pagination")).toBeVisible();
   });
 });
