@@ -56,7 +56,11 @@ const ids = {} as Ids;
 function resetCookieWorksFoundation() {
   execSync("npm run qa:cookie:reset", {
     cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
-    env: { ...process.env, LEANHUB_ALLOW_QA_TENANT: "1" },
+    env: {
+      ...process.env,
+      LEANHUB_ALLOW_QA_TENANT: "1",
+      E2E_WITH_SUPABASE: process.env.E2E_WITH_SUPABASE ?? "1",
+    },
     stdio: "inherit",
   });
   const orgRows = queryDatabase<{ id: string }>(`
