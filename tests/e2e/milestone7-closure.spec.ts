@@ -66,6 +66,9 @@ test.describe("Milestone 7 closure", () => {
     await page
       .getByTestId("skill-assessment-level")
       .selectOption({ label: "Advanced (4)" });
+    await page
+      .getByTestId("skill-assessment-method")
+      .selectOption({ label: "Manager assessment" });
     await page.getByTestId("skill-assessment-save").click();
 
     await page.goto("/platform/skills/matrix");

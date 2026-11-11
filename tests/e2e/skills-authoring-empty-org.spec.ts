@@ -181,6 +181,9 @@ async function runEmptyOrganisationJourney(
   await page.getByTestId("skill-assessment-level").selectOption({
     label: "Competent (3)",
   });
+  await page
+    .getByTestId("skill-assessment-method")
+    .selectOption({ label: "Manager assessment" });
   await capture(page, `skills-assessment-${viewport.label}`);
   await page.getByTestId("skill-assessment-save").click();
   await expect(page.getByRole("button", { name: "Done" })).toBeVisible();

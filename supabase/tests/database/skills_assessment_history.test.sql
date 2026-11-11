@@ -224,7 +224,10 @@ select 'validation_b', public.record_skill_validation(
   (select id from skills_history_ids where key = 'membership'),
   (select id from skills_history_ids where key = 'skill'),
   (select id from skills_history_ids where key = 'scale_b_version'),
-  (select id from skills_history_ids where key = 'level_b')
+  (select id from skills_history_ids where key = 'level_b'),
+  statement_timestamp(),
+  null,
+  'manager_assessment'
 );
 
 select is(

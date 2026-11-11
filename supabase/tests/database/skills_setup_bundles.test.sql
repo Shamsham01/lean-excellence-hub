@@ -463,7 +463,10 @@ select throws_ok(
           select scale_version_id from public.skill_setup_bundles where id = %L::uuid
         )
           and level_row.label = 'Competent'
-      )
+      ),
+      statement_timestamp(),
+      null,
+      'manager_assessment'
     )$$,
     (select id from public.organisation_memberships where user_id = 'c7100000-0000-0000-0000-000000000001'),
     (select id from skills_setup_ids where key = 'publish_bundle'),
@@ -571,7 +574,10 @@ select 'validation', public.record_skill_validation(
         from public.skill_setup_bundles
         where id = (select id from skills_setup_ids where key = 'publish_bundle')
       )
-  )
+  ),
+  statement_timestamp(),
+  null,
+  'manager_assessment'
 );
 
 select throws_ok(

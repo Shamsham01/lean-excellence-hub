@@ -22,6 +22,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import {
+  isSkillValidationMethod,
+  SKILL_VALIDATION_METHODS,
+  SKILL_VALIDATION_METHOD_LABELS,
+} from "@/modules/skills/assessment-methods";
 
 type GapRow = {
   skill_id: string;
@@ -53,14 +58,6 @@ type SkillAssessmentDialogProps = {
   initialSkillId?: string;
 };
 
-const validationMethods = [
-  "manager_assessment",
-  "observation",
-  "portfolio_review",
-  "certification",
-  "practical_test",
-] as const;
-
 export function SkillAssessmentDialog({
   open,
   onOpenChange,
@@ -85,7 +82,7 @@ export function SkillAssessmentDialog({
 
   const [skillId, setSkillId] = useState(initialSkillId ?? "");
   const [levelId, setLevelId] = useState("");
-  const [method, setMethod] = useState<string>("manager_assessment");
+  const [method, setMethod] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [pending, setPending] = useState(false);
@@ -107,7 +104,7 @@ export function SkillAssessmentDialog({
   function reset() {
     setSkillId(initialSkillId ?? "");
     setLevelId("");
-    setMethod("manager_assessment");
+    setMethod("");
     setNotes("");
     setValidUntil("");
     setPending(false);
@@ -118,6 +115,11 @@ export function SkillAssessmentDialog({
   async function handleSave() {
     if (!skillId || !levelId || !scaleVersionId) {
       setError("Select a skill and proficiency level.");
+      return;
+    }
+
+    if (mode === "validation" && !isSkillValidationMethod(method)) {
+      setError("Choose an assessment method before saving.");
       return;
     }
 
@@ -256,9 +258,10 @@ export function SkillAssessmentDialog({
                   onChange={(e) => setMethod(e.target.value)}
                   data-testid="skill-assessment-method"
                 >
-                  {validationMethods.map((m) => (
+                  <option value="">Select method…</option>
+                  {SKILL_VALIDATION_METHODS.map((m) => (
                     <option key={m} value={m}>
-                      {m.replace(/_/g, " ")}
+                      {SKILL_VALIDATION_METHOD_LABELS[m]}
                     </option>
                   ))}
                 </select>
@@ -328,7 +331,10 @@ export function SkillAssessmentDialog({
           {!assessmentId ? (
             <Button
               onClick={handleSave}
-              disabled={pending}
+              disabled={
+                pending ||
+                (mode === "validation" && !isSkillValidationMethod(method))
+              }
               data-testid="skill-assessment-save"
             >
               {pending ? "Saving…" : "Save assessment"}
