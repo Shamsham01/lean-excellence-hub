@@ -47,12 +47,11 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
       .click();
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
 
-    const historySection = page.locator("section").filter({
-      has: page.getByRole("heading", { name: "Assessment history" }),
-    });
-    const historyRows = historySection.locator("li", {
-      hasText: "· Practical observation",
-    });
+    const historyRows = page
+      .getByTestId("capability-skills-assessment-history")
+      .locator("li", {
+        hasText: "· Practical observation",
+      });
     const before = await historyRows.count();
 
     await page.getByTestId("open-skill-assessment").click();
@@ -115,6 +114,13 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
       .poll(async () => historyRows.count(), { timeout: 30_000 })
       .toBe(before + 1);
 
+    const latestHistory = page
+      .getByTestId("capability-skills-assessment-history")
+      .locator("li")
+      .first();
+    await expect(latestHistory).toContainText("validated");
+    await expect(latestHistory).toContainText("Practical observation");
+
     await expect
       .poll(
         () => {
@@ -129,7 +135,7 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
           );
           return rows[0] ?? null;
         },
-        { timeout: 30_000 },
+        { timeout: 15_000 },
       )
       .toEqual({
         assessment_method: "practical_observation",

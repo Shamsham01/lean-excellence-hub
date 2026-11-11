@@ -157,11 +157,14 @@ export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
   const normalized = sql.replace(/\s+/g, " ").trim();
   const dbUrl = resolveLocalDatabaseUrl();
   const output = execSync(
-    `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`,
+    dbUrl
+      ? `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`
+      : `bash -lc 'set -euo pipefail; eval "$(npx supabase status -o env)"; npx supabase db query --db-url "$DB_URL" --output-format json ${JSON.stringify(normalized)}'`,
     {
       cwd: repoRoot,
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "ignore"],
+      env: { ...process.env, ...(dbUrl ? { SUPABASE_DB_URL: dbUrl } : {}) },
     },
   );
   return parseQueryRows<T>(output);

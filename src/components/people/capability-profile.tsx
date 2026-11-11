@@ -334,7 +334,10 @@ export function CapabilityProfile({
                     : "No assessments recorded."}
                 </p>
               ) : (
-                <ul className="mt-2 space-y-2">
+                <ul
+                  className="mt-2 space-y-2"
+                  data-testid="capability-skills-assessment-history"
+                >
                   {assessments.map((item) => {
                     const assessmentMethodLabel =
                       formatSkillAssessmentMethodLabel(item.assessment_method);
