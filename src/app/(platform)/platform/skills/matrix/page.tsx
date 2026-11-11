@@ -7,67 +7,48 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-type DirectoryPerson = {
-  membership_id: string;
-  display_name: string | null;
+type MatrixPayload = {
+  people?: Array<{ membership_id: string; display_name: string | null }>;
+  skills?: Array<{ id: string; name: string }>;
+  gaps?: Array<{
+    membership_id: string;
+    skill_id: string;
+    gap: SkillsMatrixGapRow["gap"];
+  }>;
+  total_people?: number;
+  page?: number;
+  page_size?: number;
 };
 
-async function listMatrixMemberships(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-) {
-  const { data: directory, error } = await supabase.rpc(
-    "get_people_directory",
-    {
-      target_page: 1,
-      target_page_size: 100,
-    },
-  );
-
-  const directoryObj = directory as { people?: DirectoryPerson[] } | null;
-  if (!error && directoryObj?.people?.length) {
-    return directoryObj.people.map((person) => ({
-      id: person.membership_id,
-      display_name: person.display_name,
-    }));
-  }
-
-  const { data: memberships } = await supabase
-    .from("organisation_memberships")
-    .select("id, display_name")
-    .eq("status", "active")
-    .order("display_name")
-    .limit(25);
-
-  return memberships ?? [];
-}
-
-export default async function SkillsMatrixPage() {
+export default async function SkillsMatrixPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const supabase = await createServerSupabaseClient();
 
-  const memberships = await listMatrixMemberships(supabase);
+  const { data, error } = await supabase.rpc("get_skills_matrix", {
+    target_page: page,
+    target_page_size: 50,
+  });
 
-  const { data: skills } = await supabase
-    .from("skills")
-    .select("id, name")
-    .eq("status", "active")
-    .order("name")
-    .limit(12);
+  const matrix = (error ? null : (data as MatrixPayload | null)) ?? null;
+  const memberships = (matrix?.people ?? []).map((person) => ({
+    id: person.membership_id,
+    display_name: person.display_name,
+  }));
+  const skills = matrix?.skills ?? [];
+  const gapRows: SkillsMatrixGapRow[] = (matrix?.gaps ?? []).map((row) => ({
+    membershipId: row.membership_id,
+    skillId: row.skill_id,
+    gap: row.gap,
+  }));
 
-  const gapRows: SkillsMatrixGapRow[] = await Promise.all(
-    (memberships ?? []).flatMap((membership) =>
-      (skills ?? []).map(async (skill) => {
-        const { data } = await supabase.rpc("derive_skill_gap", {
-          target_membership_id: membership.id,
-          target_skill_id: skill.id,
-        });
-        return {
-          membershipId: membership.id,
-          skillId: skill.id,
-          gap: data as SkillsMatrixGapRow["gap"],
-        };
-      }),
-    ),
-  );
+  const totalPeople = matrix?.total_people ?? memberships.length;
+  const pageSize = matrix?.page_size ?? 50;
+  const totalPages = Math.max(1, Math.ceil(totalPeople / pageSize));
 
   return (
     <div className="flex flex-col gap-8" data-testid="skills-matrix-page">
@@ -84,17 +65,44 @@ export default async function SkillsMatrixPage() {
           </Button>
         }
       />
-      {!skills?.length ? (
+      <p className="text-sm text-muted-foreground" data-testid="skills-matrix-summary">
+        Showing {memberships.length} of {totalPeople} people
+        {skills.length > 0
+          ? ` · ${skills.length} skill${skills.length === 1 ? "" : "s"} required on this page`
+          : ""}
+      </p>
+      {!skills.length ? (
         <p className="max-w-xl text-sm text-muted-foreground">
           The matrix fills in after you publish a skills standard. Start from
           Skills if this organisation has not configured capability yet.
         </p>
       ) : null}
       <SkillsMatrix
-        memberships={memberships ?? []}
-        skills={skills ?? []}
+        memberships={memberships}
+        skills={skills}
         gaps={gapRows}
       />
+      {totalPages > 1 ? (
+        <nav
+          className="flex flex-wrap items-center gap-3 text-sm"
+          aria-label="Skills matrix pagination"
+          data-testid="skills-matrix-pagination"
+        >
+          {page > 1 ? (
+            <AppLink href={`/platform/skills/matrix?page=${page - 1}`}>
+              Previous
+            </AppLink>
+          ) : null}
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          {page < totalPages ? (
+            <AppLink href={`/platform/skills/matrix?page=${page + 1}`}>
+              Next
+            </AppLink>
+          ) : null}
+        </nav>
+      ) : null}
     </div>
   );
 }

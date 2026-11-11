@@ -7,7 +7,11 @@ import {
 type TrainingMatrixProps = {
   memberships: Array<{ id: string; display_name: string | null }>;
   courses: Array<{ id: string; name: string }>;
-  requirements: Array<{ id: string; course_id: string; mandatory: boolean }>;
+  requirements: Array<{
+    membership_id: string;
+    course_id: string;
+    mandatory: boolean;
+  }>;
   completions: Array<{
     membership_id: string;
     course_id: string;
@@ -22,12 +26,13 @@ export function TrainingMatrix({
   requirements,
   completions,
 }: TrainingMatrixProps) {
-  const requiredCourseIds = new Set(
-    requirements.filter((r) => r.mandatory).map((r) => r.course_id),
-  );
-
   function cellFor(membershipId: string, courseId: string) {
-    const isRequired = requiredCourseIds.has(courseId);
+    const isRequired = requirements.some(
+      (requirement) =>
+        requirement.membership_id === membershipId &&
+        requirement.course_id === courseId &&
+        requirement.mandatory,
+    );
     const completion = completions.find(
       (c) => c.membership_id === membershipId && c.course_id === courseId,
     );

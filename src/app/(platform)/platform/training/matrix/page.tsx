@@ -4,72 +4,52 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-type DirectoryPerson = {
-  membership_id: string;
-  display_name: string | null;
+type TrainingMatrixPayload = {
+  people?: Array<{ membership_id: string; display_name: string | null }>;
+  courses?: Array<{ id: string; name: string }>;
+  requirements?: Array<{
+    membership_id: string;
+    course_id: string;
+    mandatory: boolean;
+  }>;
+  completions?: Array<{
+    membership_id: string;
+    course_id: string;
+    status: string;
+    expires_at: string | null;
+  }>;
+  total_people?: number;
+  page?: number;
+  page_size?: number;
 };
 
-async function listMatrixMemberships(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-) {
-  const { data: directory, error } = await supabase.rpc(
-    "get_people_directory",
-    {
-      target_page: 1,
-      target_page_size: 100,
-    },
-  );
-
-  const directoryObj = directory as { people?: DirectoryPerson[] } | null;
-  if (!error && directoryObj?.people?.length) {
-    return directoryObj.people.map((person) => ({
-      id: person.membership_id,
-      display_name: person.display_name,
-    }));
-  }
-
-  const { data: memberships } = await supabase
-    .from("organisation_memberships")
-    .select("id, display_name")
-    .eq("status", "active")
-    .order("display_name")
-    .limit(25);
-
-  return memberships ?? [];
-}
-
-export default async function TrainingMatrixPage() {
+export default async function TrainingMatrixPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const supabase = await createServerSupabaseClient();
 
-  const memberships = await listMatrixMemberships(supabase);
+  const { data, error } = await supabase.rpc("get_training_matrix", {
+    target_page: page,
+    target_page_size: 50,
+  });
 
-  const { data: courses } = await supabase
-    .from("training_courses")
-    .select("id, name")
-    .eq("status", "active")
-    .order("name")
-    .limit(12);
+  const matrix =
+    (error ? null : (data as TrainingMatrixPayload | null)) ?? null;
+  const memberships = (matrix?.people ?? []).map((person) => ({
+    id: person.membership_id,
+    display_name: person.display_name,
+  }));
+  const courses = matrix?.courses ?? [];
+  const requirements = matrix?.requirements ?? [];
+  const completions = matrix?.completions ?? [];
 
-  const { data: curriculumVersion } = await supabase
-    .from("training_curriculum_versions")
-    .select("id")
-    .eq("status", "published")
-    .limit(1)
-    .maybeSingle();
-
-  const requirements = curriculumVersion?.id
-    ? ((
-        await supabase
-          .from("training_requirements")
-          .select("id, course_id, mandatory")
-          .eq("curriculum_version_id", curriculumVersion.id)
-      ).data ?? [])
-    : [];
-
-  const completionRows = await supabase
-    .from("training_completions")
-    .select("membership_id, course_id, status, expires_at")
-    .eq("status", "completed");
+  const totalPeople = matrix?.total_people ?? memberships.length;
+  const pageSize = matrix?.page_size ?? 50;
+  const totalPages = Math.max(1, Math.ceil(totalPeople / pageSize));
 
   return (
     <div className="flex flex-col gap-8" data-testid="training-matrix-page">
@@ -86,12 +66,42 @@ export default async function TrainingMatrixPage() {
           </Button>
         }
       />
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="training-matrix-summary"
+      >
+        Showing {memberships.length} of {totalPeople} people
+        {courses.length > 0
+          ? ` · ${courses.length} course${courses.length === 1 ? "" : "s"} required on this page`
+          : ""}
+      </p>
       <TrainingMatrix
-        memberships={memberships ?? []}
-        courses={courses ?? []}
+        memberships={memberships}
+        courses={courses}
         requirements={requirements}
-        completions={completionRows.data ?? []}
+        completions={completions}
       />
+      {totalPages > 1 ? (
+        <nav
+          className="flex flex-wrap items-center gap-3 text-sm"
+          aria-label="Training matrix pagination"
+          data-testid="training-matrix-pagination"
+        >
+          {page > 1 ? (
+            <AppLink href={`/platform/training/matrix?page=${page - 1}`}>
+              Previous
+            </AppLink>
+          ) : null}
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          {page < totalPages ? (
+            <AppLink href={`/platform/training/matrix?page=${page + 1}`}>
+              Next
+            </AppLink>
+          ) : null}
+        </nav>
+      ) : null}
     </div>
   );
 }
