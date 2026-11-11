@@ -86,7 +86,9 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
     await dialog.getByRole("button", { name: "Done" }).click();
 
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
-    await expect(historyRows).toHaveCount(before + 1);
+    await expect
+      .poll(async () => historyRows.count(), { timeout: 30_000 })
+      .toBe(before + 1);
 
     const rows = queryDatabase<{
       assessment_method: string;
