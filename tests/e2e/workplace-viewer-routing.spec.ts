@@ -685,7 +685,9 @@ test.describe("Workplace Viewer permission routing", () => {
         exact: true,
       }),
     ).toHaveCount(0);
-    await expect(page.getByText("No 5S standards yet")).toBeVisible();
+    await expect(
+      page.getByText("No 5S standards are available with your access"),
+    ).toBeVisible();
     await expect(page.getByTestId("workplace-shared-records")).toBeVisible();
     await expect(
       page.getByRole("link", { name: siblingAuditArea }),
