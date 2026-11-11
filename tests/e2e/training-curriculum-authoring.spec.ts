@@ -300,7 +300,11 @@ test.describe("Training curriculum authoring", () => {
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
       "Requirement saved.",
     );
-    await page.getByRole("button", { name: "Remove" }).last().click();
+    await page
+      .locator('[data-testid^="training-curriculum-draft-requirement-"]')
+      .filter({ hasText: secondCourseName })
+      .getByRole("button", { name: "Remove" })
+      .click();
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
       "Requirement saved.",
     );
