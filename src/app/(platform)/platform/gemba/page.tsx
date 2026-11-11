@@ -64,8 +64,9 @@ export default async function GembaOverviewPage({
     supabase,
     definitions ?? [],
   );
-  const executionVisibleCount = catalogRows.filter((row) => row.start !== null)
-    .length;
+  const executionVisibleCount = catalogRows.filter(
+    (row) => row.start !== null,
+  ).length;
   const catalog = presentCatalogRead({
     failed: false,
     visibleCount: canManage

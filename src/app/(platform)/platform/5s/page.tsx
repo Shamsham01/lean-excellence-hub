@@ -60,8 +60,9 @@ export default async function FiveSOverviewPage({
     supabase,
     standards ?? [],
   );
-  const executionVisibleCount = catalogRows.filter((row) => row.start !== null)
-    .length;
+  const executionVisibleCount = catalogRows.filter(
+    (row) => row.start !== null,
+  ).length;
   const catalog = presentCatalogRead({
     failed: false,
     visibleCount: canManage ? (standards?.length ?? 0) : executionVisibleCount,
