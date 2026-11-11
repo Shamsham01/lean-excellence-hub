@@ -153,18 +153,42 @@ function resolveLocalDatabaseUrl(): string {
   return status.DB_URL;
 }
 
+function resolveE2eDatabaseUrl(): string {
+  if (process.env.SUPABASE_DB_URL) {
+    return process.env.SUPABASE_DB_URL;
+  }
+
+  if (process.env.E2E_WITH_SUPABASE === "1") {
+    const output = execSync("npx supabase status -o json", {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "ignore"],
+    });
+    const objectStart = output.indexOf("{");
+    if (objectStart < 0) {
+      throw new Error("Local database URL is unavailable for E2E.");
+    }
+    const status = JSON.parse(
+      extractJsonSegment(output, objectStart, "{", "}"),
+    ) as { DB_URL?: string };
+    if (status.DB_URL) {
+      return status.DB_URL;
+    }
+  }
+
+  return resolveLocalDatabaseUrl();
+}
+
 export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
   const normalized = sql.replace(/\s+/g, " ").trim();
-  const dbUrl = resolveLocalDatabaseUrl();
+  const dbUrl = resolveE2eDatabaseUrl();
   const output = execSync(
-    dbUrl
-      ? `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`
-      : `bash -lc 'set -euo pipefail; eval "$(npx supabase status -o env)"; npx supabase db query --db-url "$DB_URL" --output-format json ${JSON.stringify(normalized)}'`,
+    `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`,
     {
       cwd: repoRoot,
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "ignore"],
-      env: { ...process.env, ...(dbUrl ? { SUPABASE_DB_URL: dbUrl } : {}) },
+      env: { ...process.env, SUPABASE_DB_URL: dbUrl },
     },
   );
   return parseQueryRows<T>(output);
