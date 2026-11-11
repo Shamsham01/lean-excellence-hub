@@ -276,7 +276,9 @@ test.describe("Actions planner workspace", () => {
 
     const newLabelName = `E2E label ${Date.now()}`;
     await sheet.getByTestId("action-planner-labels").scrollIntoViewIfNeeded();
-    await sheet.getByTestId("action-label-create").click();
+    const newLabelBtn = page.getByTestId("action-label-create");
+    await expect(newLabelBtn).toBeVisible();
+    await newLabelBtn.click();
     await expect(page.getByTestId("action-label-manage-dialog")).toBeVisible({
       timeout: 15_000,
     });

@@ -175,7 +175,7 @@ export function ActionPlannerLabelsField({
         </p>
       ) : null}
 
-      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+      <Dialog open={manageOpen} onOpenChange={setManageOpen} modal={false}>
         <DialogContent
           className="max-w-sm"
           data-testid="action-label-manage-dialog"

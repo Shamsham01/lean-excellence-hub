@@ -69,18 +69,23 @@ export function ActionCreateDialog({
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
-  const [labelsLoading, setLabelsLoading] = useState(false);
+  const [createContextLoaded, setCreateContextLoaded] = useState(false);
 
   const plannerMode = !maturityContext;
+  const labelsLoading = plannerMode && open && !createContextLoaded;
 
   useEffect(() => {
     if (!open || !plannerMode) return;
-    setLabelsLoading(true);
+    let cancelled = false;
     void loadActionCreateContext().then((ctx) => {
+      if (cancelled) return;
       setCatalogLabels(ctx.labels);
       setAssignablePeople(ctx.assignablePeople);
-      setLabelsLoading(false);
+      setCreateContextLoaded(true);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [open, plannerMode]);
 
   function syncQueryFromForm() {
@@ -104,6 +109,7 @@ export function ActionCreateDialog({
     setPending(false);
     setDiscardConfirmOpen(false);
     resetPlannerFields();
+    setCreateContextLoaded(false);
   }
 
   function closeAndReset() {
@@ -228,6 +234,7 @@ export function ActionCreateDialog({
         open={open}
         onOpenChange={(next) => {
           if (next) {
+            setCreateContextLoaded(false);
             onOpenChange(true);
             return;
           }
