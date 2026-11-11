@@ -408,6 +408,17 @@ export async function deployFiveSQuickStartDraft(page: Page) {
   await page.getByRole("link", { name: "Set up 5S" }).click();
   await expect(page.getByTestId("module-setup-chooser")).toBeVisible();
   await page.getByTestId("module-setup-mode-quick-start").click();
+  const siteSwitcher = page.getByTestId("site-context-switcher");
+  if ((await siteSwitcher.count()) > 0) {
+    const firstSite = siteSwitcher
+      .locator("option")
+      .filter({ hasNotText: /All sites/i })
+      .first();
+    const value = await firstSite.getAttribute("value");
+    if (value) {
+      await siteSwitcher.selectOption(value);
+    }
+  }
   await chooseFirstApplicableUnit(page);
   await page.getByTestId("module-setup-deploy").click();
   await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible({

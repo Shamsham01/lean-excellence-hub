@@ -227,7 +227,7 @@ async function provisionWorkplaceRoutingFixture(): Promise<WorkplaceRoutingFixtu
   });
   await rpc(owner, "set_five_s_standard_applicable_units", {
     target_standard_id: standardId,
-    target_unit_ids: [auditArea, hiddenArea],
+    target_unit_ids: [auditArea, hiddenArea, siblingArea, closedArea],
   });
   await rpc(owner, "publish_five_s_standard_version", {
     target_standard_version_id: versionId,
@@ -684,8 +684,8 @@ test.describe("Workplace Viewer permission routing", () => {
         name: publishedStandardName,
         exact: true,
       }),
-    ).toBeVisible();
-    await expect(page.getByText("No 5S standards yet")).toHaveCount(0);
+    ).toHaveCount(0);
+    await expect(page.getByText("No 5S standards yet")).toBeVisible();
     await expect(page.getByTestId("workplace-shared-records")).toBeVisible();
     await expect(
       page.getByRole("link", { name: siblingAuditArea }),

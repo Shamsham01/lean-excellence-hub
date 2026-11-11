@@ -253,14 +253,14 @@ test.describe("mobile location dialog scrolling", () => {
         await openApplicabilityPickerFromCreateDialog(page);
       await expectNoHorizontalOverflow(page);
 
-      const frame = await picker.evaluate((element) => {
-        const scrollNode = element.querySelector(
-          "[data-dialog-scroll]",
-        ) as HTMLElement;
-        const scrollerStyle = getComputedStyle(scrollNode);
+      const frame = await scroller.evaluate((scrollElement) => {
+        const dialogRoot = scrollElement.closest("[role='dialog']") as HTMLElement;
+        const scrollerStyle = getComputedStyle(scrollElement);
         return {
-          maxHeight: Number.parseFloat(element.style.maxHeight),
-          top: Number.parseFloat(element.style.top),
+          maxHeight: dialogRoot
+            ? Number.parseFloat(dialogRoot.style.maxHeight)
+            : 0,
+          top: dialogRoot ? Number.parseFloat(dialogRoot.style.top) : 0,
           overflowY: scrollerStyle.overflowY,
           touchAction: scrollerStyle.touchAction,
         };
