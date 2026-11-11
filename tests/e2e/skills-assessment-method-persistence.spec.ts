@@ -61,11 +61,12 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
           .map((option) => (option as HTMLOptionElement).value)
           .filter(Boolean),
       );
+    const firstSkill = skillValues[0];
     expect(
-      skillValues.length,
+      firstSkill,
       "demo operator needs at least one assessable skill (reseed if all met)",
-    ).toBeGreaterThan(0);
-    await skill.selectOption(skillValues[0]);
+    ).toBeTruthy();
+    await skill.selectOption(firstSkill!);
 
     const level = page.getByTestId("skill-assessment-level");
     const levelValues = await level
@@ -75,9 +76,10 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
           .map((option) => (option as HTMLOptionElement).value)
           .filter(Boolean),
       );
-    expect(levelValues.length).toBeGreaterThan(0);
+    const firstLevel = levelValues[0];
+    expect(firstLevel).toBeTruthy();
     // Lowest level keeps the gap open so the test stays re-runnable.
-    await level.selectOption(levelValues[0]);
+    await level.selectOption(firstLevel!);
 
     // Skill + level chosen but still no method: save stays blocked.
     await expect(page.getByTestId("skill-assessment-save")).toBeDisabled();

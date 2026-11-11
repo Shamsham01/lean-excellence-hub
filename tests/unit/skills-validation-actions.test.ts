@@ -44,9 +44,11 @@ describe("recordSkillValidation", () => {
     ["legacy certification", "certification"],
     ["self_assessment", "self_assessment"],
   ])("rejects %s method without calling the RPC", async (_name, method) => {
-    await expect(
-      recordSkillValidation({ ...base, assessmentMethod: method }),
-    ).resolves.toEqual({ error: REJECTION });
+    const payload =
+      method === undefined ? base : { ...base, assessmentMethod: method };
+    await expect(recordSkillValidation(payload)).resolves.toEqual({
+      error: REJECTION,
+    });
     expect(rpc).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });

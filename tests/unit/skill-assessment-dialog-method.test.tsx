@@ -144,9 +144,9 @@ describe("SkillAssessmentDialog method selection", () => {
     await waitFor(() =>
       expect(recordSkillSelfAssessment).toHaveBeenCalledTimes(1),
     );
-    expect(recordSkillSelfAssessment.mock.calls[0][0]).not.toHaveProperty(
-      "assessmentMethod",
-    );
+    const selfCall = recordSkillSelfAssessment.mock.calls[0]?.[0];
+    expect(selfCall).toBeDefined();
+    expect(selfCall).not.toHaveProperty("assessmentMethod");
     expect(recordSkillValidation).not.toHaveBeenCalled();
   });
 });
