@@ -548,11 +548,17 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     let exeterMembershipId: string | undefined;
     let bodminCourseId: string | undefined;
     for (let p = 1; p <= 10 && !exeterMembershipId; p += 1) {
-      const data = await rpc<TrainingMatrixPayload>(admin, "get_training_matrix", {
-        target_page: p,
-        target_page_size: 50,
-      });
-      bodminCourseId ??= data.courses?.find((c) => c.name === course.bodmin)?.id;
+      const data = await rpc<TrainingMatrixPayload>(
+        admin,
+        "get_training_matrix",
+        {
+          target_page: p,
+          target_page_size: 50,
+        },
+      );
+      bodminCourseId ??= data.courses?.find(
+        (c) => c.name === course.bodmin,
+      )?.id;
       exeterMembershipId = data.people?.find(
         (person) => person.display_name === exeterPerson(1),
       )?.membership_id;
