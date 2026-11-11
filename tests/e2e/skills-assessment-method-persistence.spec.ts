@@ -49,11 +49,9 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
     await expect(page).toHaveURL(/\/platform\/people\/[^/]+$/);
     const membershipId = page.url().split("/").pop()!;
 
-    const historySection = page
-      .locator("section")
-      .filter({
-        has: page.getByRole("heading", { name: "Assessment history" }),
-      });
+    const historySection = page.locator("section").filter({
+      has: page.getByRole("heading", { name: "Assessment history" }),
+    });
     const historyRows = historySection.locator("li", {
       hasText: "· Practical observation",
     });
