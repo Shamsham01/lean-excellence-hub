@@ -677,7 +677,7 @@ test.describe("Workplace Viewer permission routing", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await signInMember(page, fixture.reader, fixture.organisationName);
     await page.goto("/platform/5s");
-    await expect(page.getByTestId("five-s-overview-page")).toBeVisible();
+    await expect(page.getByTestId("five-s-empty-state")).toBeVisible();
     await expect(page.getByTestId("workplace-read-only-module")).toHaveCount(0);
     await expect(
       page.getByTestId("five-s-standard-list").getByRole("link", {

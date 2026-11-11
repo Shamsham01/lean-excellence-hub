@@ -246,21 +246,20 @@ test.describe("mobile location dialog scrolling", () => {
       });
       await openCreateDialog(page);
       const dialog = page.getByTestId("module-setup-create-dialog");
+      const scroller = dialog.locator("[data-dialog-scroll]");
       await expect(
         dialog.getByRole("heading", { name: "Create draft" }),
       ).toBeVisible();
-      const { picker, scroller } =
-        await openApplicabilityPickerFromCreateDialog(page);
       await expectNoHorizontalOverflow(page);
 
-      const frame = await scroller.evaluate((scrollElement) => {
-        const dialogRoot = scrollElement.closest("[role='dialog']") as HTMLElement;
-        const scrollerStyle = getComputedStyle(scrollElement);
+      const frame = await dialog.evaluate((element) => {
+        const scrollNode = element.querySelector(
+          "[data-dialog-scroll]",
+        ) as HTMLElement;
+        const scrollerStyle = getComputedStyle(scrollNode);
         return {
-          maxHeight: dialogRoot
-            ? Number.parseFloat(dialogRoot.style.maxHeight)
-            : 0,
-          top: dialogRoot ? Number.parseFloat(dialogRoot.style.top) : 0,
+          maxHeight: Number.parseFloat(element.style.maxHeight),
+          top: Number.parseFloat(element.style.top),
           overflowY: scrollerStyle.overflowY,
           touchAction: scrollerStyle.touchAction,
         };
@@ -292,16 +291,7 @@ test.describe("mobile location dialog scrolling", () => {
       );
       expect(scrollAfter).toBeGreaterThan(scrollMetrics.scrollTop);
 
-      const last = picker.getByTestId("applicable-unit-checkbox").last();
-      await last.scrollIntoViewIfNeeded();
-      await last.check();
-      await expect(last).toBeChecked();
-      await scroller.evaluate((element) => {
-        element.scrollTop = 0;
-      });
-      await expect(last).toBeChecked();
-      await page.getByTestId("applicable-units-picker-save").click();
-      await expect(picker).toBeHidden();
+      await chooseUnitInCreateDialog(page);
       await page
         .getByTestId("module-setup-confirm-create")
         .scrollIntoViewIfNeeded();
