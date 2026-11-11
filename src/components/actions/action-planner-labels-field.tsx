@@ -38,7 +38,8 @@ export function ActionPlannerLabelsField({
   const [catalog, setCatalog] = useState<ActionLabel[]>([]);
   const [selected, setSelected] = useState(assigned);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [sectionError, setSectionError] = useState<string | null>(null);
+  const [manageError, setManageError] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -65,23 +66,34 @@ export function ActionPlannerLabelsField({
       ? selected.filter((item) => item.id !== labelId)
       : [...selected, existing];
     setPending(true);
-    setError(null);
+    setSectionError(null);
     const result = await setActionLabelsForAction(
       actionId,
       next.map((item) => item.id),
     );
     setPending(false);
     if (result.error) {
-      setError(result.error);
+      setSectionError(result.error);
       return;
     }
     setSelected(next);
+  }
+
+  function formatManageError(message: string) {
+    if (
+      message.includes("42501") ||
+      /permission|privilege|denied/i.test(message)
+    ) {
+      return "You do not have permission to create or rename organisation-wide labels.";
+    }
+    return message;
   }
 
   function openManage(label?: ActionLabel) {
     setEditId(label?.id ?? null);
     setDraftName(label?.name ?? "");
     setDraftColor(label?.color ?? "#0058FD");
+    setManageError(null);
     setManageOpen(true);
   }
 
@@ -89,7 +101,7 @@ export function ActionPlannerLabelsField({
     const name = draftName.trim();
     if (!name) return;
     setPending(true);
-    setError(null);
+    setManageError(null);
     const result = await upsertActionLabel({
       labelId: editId,
       name,
@@ -97,7 +109,7 @@ export function ActionPlannerLabelsField({
     });
     setPending(false);
     if (result.error) {
-      setError(result.error);
+      setManageError(formatManageError(result.error));
       return;
     }
     const refreshed = await listActionLabels();
@@ -157,25 +169,9 @@ export function ActionPlannerLabelsField({
           })}
         </div>
       ) : null}
-      {canManageCatalog ? (
-        <div className="flex flex-wrap gap-2">
-          {catalog.map((label) => (
-            <Button
-              key={`edit-${label.id}`}
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs"
-              onClick={() => openManage(label)}
-            >
-              Edit {label.name}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-      {error ? (
+      {sectionError ? (
         <p className="text-sm text-destructive" role="alert">
-          {error}
+          {sectionError}
         </p>
       ) : null}
 
@@ -210,6 +206,11 @@ export function ActionPlannerLabelsField({
               />
             </div>
           </div>
+          {manageError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {manageError}
+            </p>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"

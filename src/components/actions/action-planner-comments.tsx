@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
 
@@ -25,11 +26,17 @@ export function ActionPlannerComments({
   actionId,
   comments,
   canPost,
+  postAsAuthor,
   onPosted,
 }: {
   actionId: string;
   comments: ActionPlannerComment[];
   canPost: boolean;
+  postAsAuthor?: {
+    membership_id: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
   onPosted?: () => void;
 }) {
   const router = useRouter();
@@ -53,15 +60,16 @@ export function ActionPlannerComments({
         },
       );
       if (rpcError) throw rpcError;
+      const author = postAsAuthor;
       setLocalComments((prev) => [
         ...prev,
         {
           id: commentId as string,
           body,
           created_at: new Date().toISOString(),
-          author_membership_id: "",
-          author_display_name: "You",
-          author_avatar_url: null,
+          author_membership_id: author?.membership_id ?? "",
+          author_display_name: author?.display_name ?? "You",
+          author_avatar_url: author?.avatar_url ?? null,
         },
       ]);
       setDraft("");
@@ -111,12 +119,17 @@ export function ActionPlannerComments({
       </ul>
       {canPost ? (
         <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <Label htmlFor="action-planner-comment-input" className="sr-only">
+            Comment
+          </Label>
           <Textarea
+            id="action-planner-comment-input"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Write a comment…"
             rows={2}
             disabled={pending}
+            aria-label="Comment"
             data-testid="action-planner-comment-input"
           />
           {error ? (

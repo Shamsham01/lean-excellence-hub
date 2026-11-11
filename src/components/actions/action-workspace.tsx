@@ -54,6 +54,9 @@ export function ActionWorkspace({
   evidence,
   assignablePeople,
   canUploadEvidence,
+  canPostComments = false,
+  currentCommentAuthor = null,
+  assigneeAvatarUrl = null,
   showBackLink = true,
 }: {
   detail: ActionDetail;
@@ -61,6 +64,13 @@ export function ActionWorkspace({
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
+  canPostComments?: boolean;
+  currentCommentAuthor?: {
+    membership_id: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
+  assigneeAvatarUrl?: string | null;
   showBackLink?: boolean;
 }) {
   const router = useRouter();
@@ -82,10 +92,6 @@ export function ActionWorkspace({
   const reference = formatActionReference(detail.action_number, detail.title);
   const source = detail.source;
   const currentAssignee = detail.assignees[0];
-  const assigneeAvatarUrl =
-    assignablePeople.find(
-      (person) => person.membership_id === currentAssignee?.membership_id,
-    )?.avatar_url ?? null;
   const coverEvidence = detail.card_cover_attachment
     ? evidence.find((item) => item.id === detail.card_cover_attachment?.id)
     : null;
@@ -294,20 +300,6 @@ export function ActionWorkspace({
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <ActionPlannerComments
-                key={`planner-comments-overview-${detail.id}-${detail.version}-${comments.length}`}
-                actionId={detail.id}
-                comments={comments}
-                canPost={permissions.can_update && editable}
-                onPosted={() => setCommentPostDelta((count) => count + 1)}
-              />
-              <ActionPlannerAttachments
-                actionId={detail.id}
-                evidence={evidence}
-                canUpload={canUploadEvidence && editable}
-                canSetCover={permissions.can_update && editable}
-                coverAttachmentId={detail.card_cover_attachment?.id ?? null}
-              />
               <ActionPlannerLabelsField
                 key={`planner-labels-${detail.id}-${detail.version}`}
                 actionId={detail.id}
@@ -477,7 +469,8 @@ export function ActionWorkspace({
             key={`planner-comments-discussion-${detail.id}-${detail.version}-${comments.length}`}
             actionId={detail.id}
             comments={comments}
-            canPost={permissions.can_update && editable}
+            canPost={canPostComments}
+            postAsAuthor={currentCommentAuthor}
             onPosted={() => setCommentPostDelta((count) => count + 1)}
           />
         </TabsContent>

@@ -35,8 +35,16 @@ export default async function ActionDetailPage({
     notFound();
   }
 
-  const { detail, comments, evidence, assignablePeople, canUploadEvidence } =
-    loaded.payload;
+  const {
+    detail,
+    comments,
+    evidence,
+    assignablePeople,
+    canUploadEvidence,
+    canPostComments,
+    currentCommentAuthor,
+    assigneeAvatarUrl,
+  } = loaded.payload;
 
   return (
     <ActionWorkspace
@@ -45,6 +53,9 @@ export default async function ActionDetailPage({
       evidence={evidence}
       assignablePeople={assignablePeople}
       canUploadEvidence={canUploadEvidence}
+      canPostComments={canPostComments}
+      currentCommentAuthor={currentCommentAuthor}
+      assigneeAvatarUrl={assigneeAvatarUrl}
     />
   );
 }

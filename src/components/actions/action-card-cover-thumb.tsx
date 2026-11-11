@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 import { createEvidenceObjectUrl } from "@/lib/attachments/download-evidence";
@@ -18,12 +18,27 @@ export function ActionCardCoverThumb({
   alt: string;
   className?: string;
 }) {
+  const hostRef = useRef<HTMLSpanElement>(null);
+  const [inView, setInView] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
   const showImage =
     Boolean(storagePath?.trim()) && isEvidenceImageMimeType(mimeType);
 
   useEffect(() => {
-    if (!showImage || !storagePath) return;
+    const node = hostRef.current;
+    if (!node || !showImage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setInView(true);
+      },
+      { rootMargin: "64px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [showImage]);
+
+  useEffect(() => {
+    if (!inView || !showImage || !storagePath) return;
     let cancelled = false;
     let objectUrl: string | null = null;
     void createEvidenceObjectUrl(storagePath)
@@ -40,32 +55,35 @@ export function ActionCardCoverThumb({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [showImage, storagePath]);
+  }, [inView, showImage, storagePath]);
 
   if (!showImage) return null;
 
-  return url ? (
-    // eslint-disable-next-line @next/next/no-img-element -- storage-backed cover preview
-    <img
-      src={url}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      className={cn(
-        "size-10 shrink-0 rounded-md object-cover ring-1 ring-border",
-        className,
+  return (
+    <span ref={hostRef} className="inline-flex">
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- storage-backed cover preview
+        <img
+          src={url}
+          alt={alt}
+          decoding="async"
+          className={cn(
+            "size-10 shrink-0 rounded-md object-cover ring-1 ring-border",
+            className,
+          )}
+          data-testid="action-card-cover-thumb"
+        />
+      ) : (
+        <span
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground ring-1 ring-border",
+            className,
+          )}
+          data-testid="action-card-cover-thumb"
+        >
+          <ImageIcon className="size-4" aria-hidden />
+        </span>
       )}
-      data-testid="action-card-cover-thumb"
-    />
-  ) : (
-    <span
-      className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground ring-1 ring-border",
-        className,
-      )}
-      data-testid="action-card-cover-thumb"
-    >
-      <ImageIcon className="size-4" aria-hidden />
     </span>
   );
 }

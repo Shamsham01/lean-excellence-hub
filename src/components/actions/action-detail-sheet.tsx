@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 
-import { loadActionSheetPayload } from "@/app/(platform)/platform/actions/actions";
+import {
+  loadActionSheetPayload,
+  type ActionCommentAuthor,
+} from "@/app/(platform)/platform/actions/actions";
 import { ActionWorkspace } from "@/components/actions/action-workspace";
 import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
@@ -22,6 +25,9 @@ type LoadedSheetState = {
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
+  canPostComments: boolean;
+  currentCommentAuthor: ActionCommentAuthor | null;
+  assigneeAvatarUrl: string | null;
 };
 
 export function ActionDetailSheet({
@@ -103,6 +109,9 @@ export function ActionDetailSheet({
                 evidence={state.evidence}
                 assignablePeople={state.assignablePeople}
                 canUploadEvidence={state.canUploadEvidence}
+                canPostComments={state.canPostComments}
+                currentCommentAuthor={state.currentCommentAuthor}
+                assigneeAvatarUrl={state.assigneeAvatarUrl}
                 showBackLink={false}
               />
             </div>

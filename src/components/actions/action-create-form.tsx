@@ -208,7 +208,7 @@ export function ActionCreateDialog({
       checklistTitles: allChecklist,
     });
     setPending(false);
-    if (result.error) {
+    if (!result.ok && result.error) {
       setError(result.error);
       return;
     }
@@ -333,10 +333,12 @@ export function ActionCreateDialog({
                 </div>
                 {catalogLabels.length > 0 ? (
                   <div
+                    role="group"
+                    aria-labelledby="action-create-labels-heading"
                     className="flex flex-col gap-2"
                     data-testid="action-create-labels"
                   >
-                    <Label>Labels</Label>
+                    <Label id="action-create-labels-heading">Labels</Label>
                     <div className="flex flex-wrap gap-1.5">
                       {catalogLabels.map((label) => {
                         const active = selectedLabelIds.includes(label.id);
@@ -423,6 +425,7 @@ export function ActionCreateDialog({
                       variant="secondary"
                       disabled={pending || !checklistDraft.trim()}
                       onClick={addChecklistLine}
+                      aria-label="Add checklist item"
                     >
                       <Plus className="size-4" />
                     </Button>

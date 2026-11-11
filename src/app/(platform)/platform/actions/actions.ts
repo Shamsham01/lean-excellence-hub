@@ -16,7 +16,12 @@ import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-type ActionResult = { error?: string; ok?: true; id?: string };
+type ActionResult = {
+  error?: string;
+  ok?: true;
+  id?: string;
+  warning?: string;
+};
 
 function revalidateActionPaths(actionId?: string, suggestionId?: string) {
   revalidatePath("/platform/actions");
@@ -369,12 +374,23 @@ export async function createPlannerAction(input: {
   if (error) return { error: mapActionMutationError(error) };
   const actionId = data as string;
 
+  function partialSuccess(failedStep: string, message: string): ActionResult {
+    revalidateActionPaths(actionId);
+    return {
+      ok: true,
+      id: actionId,
+      warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
+    };
+  }
+
   if (input.assigneeMembershipId) {
     const assignResult = await setActionAssignee({
       actionId,
       membershipId: input.assigneeMembershipId,
     });
-    if (assignResult.error) return assignResult;
+    if (assignResult.error) {
+      return partialSuccess("Assignee", assignResult.error);
+    }
   }
 
   if (input.labelIds.length > 0) {
@@ -382,14 +398,18 @@ export async function createPlannerAction(input: {
       actionId,
       input.labelIds,
     );
-    if (labelResult.error) return labelResult;
+    if (labelResult.error) {
+      return partialSuccess("Labels", labelResult.error);
+    }
   }
 
   for (const checklistTitle of input.checklistTitles) {
     const trimmed = checklistTitle.trim();
     if (!trimmed) continue;
     const itemResult = await addActionChecklistItem(actionId, trimmed);
-    if (itemResult.error) return itemResult;
+    if (itemResult.error) {
+      return partialSuccess("Checklist", itemResult.error);
+    }
   }
 
   revalidateActionPaths(actionId);
@@ -439,6 +459,12 @@ export async function confirmActionEvidenceUpload(
   return {};
 }
 
+export type ActionCommentAuthor = {
+  membership_id: string;
+  display_name: string;
+  avatar_url: string | null;
+};
+
 type ActionSheetPayload = {
   detail: ActionDetail;
   comments: ActionPlannerComment[];
@@ -446,6 +472,9 @@ type ActionSheetPayload = {
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
+  canPostComments: boolean;
+  currentCommentAuthor: ActionCommentAuthor | null;
+  assigneeAvatarUrl: string | null;
 };
 
 export async function loadActionSheetPayload(
@@ -468,6 +497,7 @@ export async function loadActionSheetPayload(
 
   const canUploadEvidence =
     await currentMemberHasPermission("attachments.upload");
+  const canPostComments = await currentMemberHasPermission("comments.create");
   const canAssign = await currentMemberHasPermission(
     ACTIONS_PERMISSIONS.assign,
   );
@@ -549,6 +579,32 @@ export async function loadActionSheetPayload(
     },
   );
 
+  const { data: ownProfile } = await supabase.rpc("get_own_membership_profile");
+  type OwnMembership = {
+    membership_id?: string;
+    display_name?: string | null;
+  };
+  const own = ownProfile as OwnMembership | null;
+  const ownMembershipId = own?.membership_id ?? null;
+  const ownFromDirectory = ownMembershipId
+    ? peopleById.get(ownMembershipId)
+    : undefined;
+  const currentCommentAuthor: ActionCommentAuthor | null = ownMembershipId
+    ? {
+        membership_id: ownMembershipId,
+        display_name:
+          ownFromDirectory?.display_name?.trim() ||
+          own?.display_name?.trim() ||
+          "Team member",
+        avatar_url: ownFromDirectory?.avatar_url ?? null,
+      }
+    : null;
+
+  const assigneeMembershipId = detail.assignees[0]?.membership_id ?? null;
+  const assigneeAvatarUrl = assigneeMembershipId
+    ? (peopleById.get(assigneeMembershipId)?.avatar_url ?? null)
+    : null;
+
   return {
     payload: {
       detail,
@@ -565,6 +621,9 @@ export async function loadActionSheetPayload(
         })),
       assignablePeople,
       canUploadEvidence,
+      canPostComments,
+      currentCommentAuthor,
+      assigneeAvatarUrl,
     },
   };
 }

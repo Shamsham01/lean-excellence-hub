@@ -4,6 +4,11 @@ import { signInAsDemoUser } from "./helpers/demo-auth";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
+const TINY_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 async function attachDialogScreenshot(
   page: import("@playwright/test").Page,
   testInfo: TestInfo,
@@ -184,7 +189,7 @@ test.describe("Actions planner workspace", () => {
   test("planner sheet: checklist, labels, comment, attachment, and full create", async ({
     page,
   }, testInfo) => {
-    testInfo.setTimeout(120_000);
+    testInfo.setTimeout(180_000);
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/actions");
 
@@ -192,10 +197,26 @@ test.describe("Actions planner workspace", () => {
     await page.getByTestId("actions-add-new").click();
     await expect(page.getByTestId("action-create-checklist")).toBeVisible();
     await page.locator("#action-create-title").fill(createTitle);
+
+    const assigneeSelect = page.getByTestId("action-create-assignee");
+    const assigneeOptions = assigneeSelect.locator("option");
+    if ((await assigneeOptions.count()) > 1) {
+      await assigneeSelect.selectOption({
+        index: 1,
+      });
+    }
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 2);
     const dueValue = tomorrow.toISOString().slice(0, 10);
     await page.getByTestId("action-create-due").fill(dueValue);
+
+    const createLabelToggle = page
+      .getByTestId("action-create-labels")
+      .getByRole("button", { pressed: false })
+      .first();
+    await createLabelToggle.click();
+
     await page
       .getByTestId("action-create-checklist-add")
       .fill("Ship checklist item");
@@ -213,40 +234,64 @@ test.describe("Actions planner workspace", () => {
       "Ship checklist item",
     );
 
-    await page.getByTestId("action-planner-checklist-add").fill("Second item");
-    await page
-      .getByTestId("action-planner-checklist")
-      .getByRole("button", { name: "Add" })
-      .click();
-    const firstCheckbox = page
-      .getByTestId("action-planner-checklist")
-      .getByRole("checkbox")
-      .first();
+    const checklist = page.getByTestId("action-planner-checklist");
+    await checklist
+      .getByTestId("action-planner-checklist-add")
+      .fill("Second item");
+    await checklist.getByRole("button", { name: "Add" }).click();
+
+    const firstCheckbox = checklist.getByRole("checkbox").first();
     await firstCheckbox.click();
+    await expect(firstCheckbox).toBeChecked();
+
+    const deleteSecond = checklist
+      .getByRole("listitem")
+      .filter({ hasText: "Second item" })
+      .getByRole("button", { name: /Delete/i });
+    await deleteSecond.click();
+    await expect(checklist).not.toContainText("Second item");
+
+    const moveDown = checklist
+      .getByRole("listitem")
+      .filter({ hasText: "Ship checklist item" })
+      .getByRole("button", { name: /Move.*down/i });
+    if (await moveDown.isEnabled()) {
+      await moveDown.click();
+    }
 
     const labelToggle = page
       .getByTestId("action-planner-labels")
       .getByRole("button", { pressed: false })
       .first();
-    if (await labelToggle.isVisible()) {
-      await labelToggle.click();
-    }
+    await labelToggle.click();
 
     const newLabelName = `E2E label ${Date.now()}`;
     await sheet.getByTestId("action-planner-labels").scrollIntoViewIfNeeded();
-    const newLabelButton = sheet.getByTestId("action-label-create");
-    await newLabelButton.focus();
-    await page.keyboard.press("Enter");
+    await sheet.getByTestId("action-label-create").click();
     await expect(page.getByTestId("action-label-manage-dialog")).toBeVisible({
       timeout: 15_000,
     });
     await page.getByTestId("action-label-manage-name").fill(newLabelName);
+    await page.getByTestId("action-label-manage-color").fill("#10B981");
     await page.getByTestId("action-label-manage-save").click();
     await expect(page.getByTestId("action-planner-labels")).toContainText(
       newLabelName,
       { timeout: 15_000 },
     );
 
+    const renamed = `${newLabelName} renamed`;
+    await page
+      .getByTestId("action-planner-labels")
+      .getByRole("button", { name: `Edit ${newLabelName}` })
+      .click();
+    await page.getByTestId("action-label-manage-name").fill(renamed);
+    await page.getByTestId("action-label-manage-save").click();
+    await expect(page.getByTestId("action-planner-labels")).toContainText(
+      renamed,
+      { timeout: 15_000 },
+    );
+
+    await page.getByRole("tab", { name: /Discussion/ }).click();
     await page.getByTestId("action-planner-comment-input").fill("E2E comment");
     await page.getByTestId("action-planner-comment-post").click();
     await expect(page.getByTestId("action-planner-comments")).toContainText(
@@ -255,6 +300,7 @@ test.describe("Actions planner workspace", () => {
     );
     await expect(page.getByTestId("action-tab-discussion")).toContainText("(");
 
+    await page.getByRole("tab", { name: "Evidence" }).click();
     const fileInput = page.getByTestId("evidence-file-input");
     await fileInput.setInputFiles({
       name: "e2e-planner-note.txt",
@@ -265,5 +311,28 @@ test.describe("Actions planner workspace", () => {
       "e2e-planner-note.txt",
       { timeout: 30_000 },
     );
+
+    await fileInput.setInputFiles({
+      name: "e2e-cover.png",
+      mimeType: "image/png",
+      buffer: TINY_PNG,
+    });
+    await expect(page.getByTestId("evidence-uploader")).toContainText(
+      "e2e-cover.png",
+      { timeout: 30_000 },
+    );
+    const setCover = page
+      .getByTestId("action-planner-attachments")
+      .getByRole("button", { name: /Set as cover/i })
+      .first();
+    await setCover.click();
+    await expect(
+      page.getByTestId("action-planner-attachments").getByRole("button", {
+        name: "Cover",
+      }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("action-card-cover-thumb")).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });
