@@ -123,6 +123,10 @@ function workspaceTree({
       evidence={evidence}
       canEdit={canEdit}
       canComplete={canComplete}
+      standardName="Test standard"
+      unitName="Test unit"
+      canRaiseAction={false}
+      linkedActions={[]}
       {...(scoringScale ? { scoringScale } : {})}
       {...(onComplete ? { onComplete } : {})}
     />
@@ -354,6 +358,10 @@ describe("FiveSAuditWorkspace answer state", () => {
         answers={{ [YES_NO_ID]: { text_value: "no" } }}
         evidence={[]}
         canEdit
+        standardName="Test standard"
+        unitName="Test unit"
+        canRaiseAction={false}
+        linkedActions={[]}
       />,
     );
 
@@ -722,6 +730,10 @@ describe("FiveSAuditWorkspace answer state", () => {
         answers={{ [TEXT_ID]: { text_value: "server value" } }}
         evidence={[]}
         canEdit
+        standardName="Test standard"
+        unitName="Test unit"
+        canRaiseAction={false}
+        linkedActions={[]}
       />,
     );
 
@@ -760,6 +772,10 @@ describe("FiveSAuditWorkspace answer state", () => {
         answers={{ [NUMBER_ID]: { number_value: 1 } }}
         evidence={[]}
         canEdit
+        standardName="Test standard"
+        unitName="Test unit"
+        canRaiseAction={false}
+        linkedActions={[]}
       />,
     );
 

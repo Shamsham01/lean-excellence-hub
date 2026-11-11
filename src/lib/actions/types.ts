@@ -8,6 +8,20 @@ export type ActionSourceSummary = {
   href: string | null;
 };
 
+export type FiveSActionLineage = {
+  audit_id: string;
+  section_id: string | null;
+  question_id: string | null;
+  finding_id: string | null;
+  standard_name: string | null;
+  unit_name: string | null;
+  completed_at: string | null;
+  question_prompt: string | null;
+  section_title: string | null;
+  chip_label: string;
+  audit_href: string;
+};
+
 export type ActionAssignee = {
   membership_id: string;
   display_name: string;
@@ -69,6 +83,7 @@ export type ActionDetail = {
   site_unit_id: string | null;
   source_resource_id: string | null;
   source: ActionSourceSummary | null;
+  five_s_lineage?: FiveSActionLineage | null;
   created_by_membership_id: string;
   created_by_display_name: string;
   created_at: string;

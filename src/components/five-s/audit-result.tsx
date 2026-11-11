@@ -1,6 +1,17 @@
 import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
+import { FiveSRaiseActionButton } from "@/components/five-s/five-s-raise-action-button";
+import {
+  FiveSQuestionLinkedActions,
+  type FiveSLinkedAction,
+} from "@/components/five-s/five-s-question-linked-actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  formatFiveSAuditAnswer,
+  type FiveSAuditAnswerSnapshot,
+} from "@/modules/5s/format-audit-answer";
+
+export { formatFiveSAuditAnswer };
 
 type Section = {
   id: string;
@@ -13,41 +24,26 @@ type Section = {
   }>;
 };
 
-type AuditAnswer = {
-  text_value?: string | null;
-  number_value?: number | null;
-  is_not_applicable?: boolean;
-};
-
-export function formatFiveSAuditAnswer(
-  questionType: string,
-  answer?: AuditAnswer,
-) {
-  if (!answer) {
-    return "No response recorded.";
-  }
-  if (answer.is_not_applicable) {
-    return "Not applicable.";
-  }
-  if (questionType === "yes_no") {
-    if (answer.text_value === "yes") return "Yes";
-    if (answer.text_value === "no") return "No";
-  }
-  if (answer.number_value != null) {
-    return String(answer.number_value);
-  }
-  const text = answer.text_value?.trim();
-  return text || "No response recorded.";
-}
+type AuditAnswer = FiveSAuditAnswerSnapshot;
 
 export function FiveSAuditResult({
   sections,
   answers,
   evidence,
+  auditId,
+  standardName,
+  unitName,
+  canRaiseAction,
+  linkedActions = [],
 }: {
   sections: Section[];
   answers: Record<string, AuditAnswer>;
   evidence: EvidenceItem[];
+  auditId: string;
+  standardName: string;
+  unitName: string;
+  canRaiseAction: boolean;
+  linkedActions?: FiveSLinkedAction[];
 }) {
   const evidenceByQuestion = new Map<string, EvidenceItem[]>();
   for (const item of evidence) {
@@ -83,6 +79,27 @@ export function FiveSAuditResult({
                   <EvidenceGallery
                     items={linkedEvidence}
                     contextLabel={question.prompt}
+                  />
+                  {canRaiseAction ? (
+                    <FiveSRaiseActionButton
+                      context={{
+                        auditId,
+                        sectionId: section.id,
+                        questionId: question.id,
+                        questionPrompt: question.prompt,
+                        questionType: question.question_type,
+                        standardName,
+                        unitName,
+                        ...(answers[question.id]
+                          ? { answer: answers[question.id] }
+                          : {}),
+                      }}
+                      testId={`five-s-raise-action-${question.id}`}
+                    />
+                  ) : null}
+                  <FiveSQuestionLinkedActions
+                    questionId={question.id}
+                    actions={linkedActions}
                   />
                 </div>
               );

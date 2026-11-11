@@ -4,7 +4,7 @@ export const ACTION_SOURCE_FILTERS = [
   { value: "problem_solving_case", label: "Problem Solving" },
   { value: "ci_project", label: "Projects" },
   { value: "improvement_suggestion", label: "Suggestions" },
-  { value: "five_s_audit", label: "5S" },
+  { value: "five_s_audit", label: "5S audit" },
   { value: "gemba_walk", label: "Gemba" },
   { value: "standalone", label: "Standalone" },
 ] as const;
@@ -20,6 +20,7 @@ export type ActionListFilters = {
   assessment: string | null;
   pillar: string | null;
   criterion: string | null;
+  fiveSAudit: string | null;
 };
 
 const SOURCE_VALUES = new Set<string>(
@@ -42,6 +43,7 @@ export function parseActionListFilters(
     assessment: emptyToNull(firstParam(searchParams.assessment)),
     pillar: emptyToNull(firstParam(searchParams.pillar)),
     criterion: emptyToNull(firstParam(searchParams.criterion)),
+    fiveSAudit: emptyToNull(firstParam(searchParams.audit)),
   };
 }
 
@@ -54,6 +56,7 @@ export function buildActionListQuery(filters: ActionListFilters): string {
   if (filters.assessment) params.set("assessment", filters.assessment);
   if (filters.pillar) params.set("pillar", filters.pillar);
   if (filters.criterion) params.set("criterion", filters.criterion);
+  if (filters.fiveSAudit) params.set("audit", filters.fiveSAudit);
   return params.toString();
 }
 
@@ -66,6 +69,7 @@ export function assessmentActionsHref(assessmentId: string): string {
     assessment: assessmentId,
     pillar: null,
     criterion: null,
+    fiveSAudit: null,
   })}`;
 }
 

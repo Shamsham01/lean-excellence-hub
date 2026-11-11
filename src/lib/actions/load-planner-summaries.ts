@@ -2,6 +2,7 @@ import "server-only";
 
 import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
+import { loadFiveSActionLineage } from "@/app/(platform)/platform/actions/actions";
 import type { ActionDetail } from "@/lib/actions/types";
 import { loadMembershipAvatarUrls } from "@/lib/people/membership-avatar-urls";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -46,9 +47,26 @@ export async function loadActionPlannerSummaries(
 
   const avatarUrls = await loadMembershipAvatarUrls(assigneeIds);
 
+  const lineageByActionId = new Map(
+    (
+      await Promise.all(
+        entries
+          .filter(
+            ({ detail }) => detail.source?.resource_type === "five_s_audit",
+          )
+          .map(async ({ row }) => {
+            const lineage = await loadFiveSActionLineage(row.id);
+            return [row.id, lineage] as const;
+          }),
+      )
+    ).filter(([, lineage]) => lineage != null),
+  );
+
   return entries.map(({ row, detail }) => {
     const assignee = detail.assignees[0];
     const membershipId = assignee?.membership_id ?? null;
+    const fiveSLineage = lineageByActionId.get(row.id) as
+      ActionDetail["five_s_lineage"] | undefined;
     return {
       id: row.id,
       action_number: row.action_number,
@@ -64,6 +82,7 @@ export async function loadActionPlannerSummaries(
         ? (avatarUrls.get(membershipId) ?? null)
         : null,
       source: detail.source,
+      five_s_lineage: fiveSLineage ?? null,
       permissions: detail.permissions,
       labels: detail.labels ?? [],
       checklist_done: (detail.checklist_items ?? []).filter(

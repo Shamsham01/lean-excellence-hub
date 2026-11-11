@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 import {
+  createFiveSPlannerAction,
   createPlannerAction,
   loadActionCreateContext,
 } from "@/app/(platform)/platform/actions/actions";
@@ -23,6 +24,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadFilesToFiveSAction } from "@/lib/five-s/upload-action-create-files";
+import {
+  ACTION_PRIORITIES,
+  actionPriorityLabel,
+} from "@/lib/actions/status";
+import { buildFiveSActionPrefill } from "@/modules/5s/build-action-prefill";
+import type { FiveSRaiseActionContext } from "@/components/five-s/five-s-raise-action-button";
 import { cn } from "@/lib/utils";
 
 type MaturityActionContext = {
@@ -37,6 +45,7 @@ type ActionCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
   onCreated?: (actionId: string) => void;
   maturityContext?: MaturityActionContext;
+  fiveSContext?: FiveSRaiseActionContext;
 };
 
 function readDraftFromForm(form: HTMLFormElement | null) {
@@ -53,6 +62,7 @@ export function ActionCreateDialog({
   onOpenChange,
   onCreated,
   maturityContext,
+  fiveSContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [queryText, setQueryText] = useState("");
@@ -70,12 +80,16 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [priority, setPriority] = useState("normal");
+  const [createFiles, setCreateFiles] = useState<File[]>([]);
+  const [prefillApplied, setPrefillApplied] = useState(false);
 
   const plannerMode = !maturityContext;
-  const labelsLoading = plannerMode && open && !createContextLoaded;
+  const showPlannerFields = plannerMode;
+  const labelsLoading = showPlannerFields && open && !createContextLoaded;
 
   useEffect(() => {
-    if (!open || !plannerMode) return;
+    if (!open || !showPlannerFields) return;
     let cancelled = false;
     void loadActionCreateContext().then((ctx) => {
       if (cancelled) return;
@@ -86,7 +100,28 @@ export function ActionCreateDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, plannerMode]);
+  }, [open, showPlannerFields]);
+
+  useEffect(() => {
+    if (!open || !fiveSContext || prefillApplied || !formRef.current) return;
+    const { title, description } = buildFiveSActionPrefill({
+      questionPrompt: fiveSContext.questionPrompt,
+      questionType: fiveSContext.questionType,
+      standardName: fiveSContext.standardName,
+      unitName: fiveSContext.unitName,
+      ...(fiveSContext.answer ? { answer: fiveSContext.answer } : {}),
+    });
+    const titleInput = formRef.current.elements.namedItem(
+      "title",
+    ) as HTMLInputElement | null;
+    const descriptionInput = formRef.current.elements.namedItem(
+      "description",
+    ) as HTMLTextAreaElement | null;
+    if (titleInput) titleInput.value = title;
+    if (descriptionInput) descriptionInput.value = description;
+    setQueryText(`${title} ${description}`.trim());
+    setPrefillApplied(true);
+  }, [open, fiveSContext, prefillApplied]);
 
   function syncQueryFromForm() {
     if (!formRef.current) return;
@@ -110,6 +145,9 @@ export function ActionCreateDialog({
     setDiscardConfirmOpen(false);
     resetPlannerFields();
     setCreateContextLoaded(false);
+    setPriority("normal");
+    setCreateFiles([]);
+    setPrefillApplied(false);
   }
 
   function closeAndReset() {
@@ -120,7 +158,7 @@ export function ActionCreateDialog({
   function hasDraft() {
     const { title, description } = readDraftFromForm(formRef.current);
     if (title || description) return true;
-    if (!plannerMode) return false;
+    if (!showPlannerFields) return false;
     return Boolean(
       assigneeId ||
       dueAt ||
@@ -202,6 +240,64 @@ export function ActionCreateDialog({
       return;
     }
 
+    if (fiveSContext) {
+      const { title, description } = readDraftFromForm(formRef.current);
+      const extraChecklist = checklistDraft.trim();
+      const allChecklist = extraChecklist
+        ? [...checklistTitles, extraChecklist]
+        : checklistTitles;
+      const result = await createFiveSPlannerAction({
+        auditId: fiveSContext.auditId,
+        sectionId: fiveSContext.sectionId,
+        questionId: fiveSContext.questionId,
+        title,
+        description,
+        priority,
+        dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+        assigneeMembershipId: assigneeId || null,
+        labelIds: selectedLabelIds,
+        checklistTitles: allChecklist,
+      });
+      if (!result.ok && result.error) {
+        setPending(false);
+        setError(result.error);
+        return;
+      }
+      if (result.id && createFiles.length > 0) {
+        const upload = await uploadFilesToFiveSAction(
+          {
+            actionId: result.id,
+            auditId: fiveSContext.auditId,
+            sectionId: fiveSContext.sectionId,
+            questionId: fiveSContext.questionId,
+          },
+          createFiles,
+        );
+        if (upload.error) {
+          setPending(false);
+          setError(
+            result.warning
+              ? `${result.warning} ${upload.error}`
+              : `Action created but attachment failed: ${upload.error}`,
+          );
+          onOpenChange(false);
+          resetForm();
+          onCreated?.(result.id);
+          return;
+        }
+      }
+      setPending(false);
+      if (result.warning) {
+        setError(result.warning);
+      }
+      if (result.id) {
+        onOpenChange(false);
+        resetForm();
+        onCreated?.(result.id);
+      }
+      return;
+    }
+
     const { title, description } = readDraftFromForm(formRef.current);
     const extraChecklist = checklistDraft.trim();
     const allChecklist = extraChecklist
@@ -254,9 +350,11 @@ export function ActionCreateDialog({
           <DialogHeader>
             <DialogTitle>Create action</DialogTitle>
             <DialogDescription>
-              {plannerMode
-                ? "Add title, assignee, due date, labels, and checklist items."
-                : "Add a title and description. Save when you are ready."}
+              {fiveSContext
+                ? "Create a planner action linked to this audit question. Attach a photo before saving if needed."
+                : showPlannerFields
+                  ? "Add title, assignee, due date, labels, and checklist items."
+                  : "Add a title and description. Save when you are ready."}
             </DialogDescription>
           </DialogHeader>
 
@@ -307,8 +405,25 @@ export function ActionCreateDialog({
               />
             </div>
 
-            {plannerMode ? (
+            {showPlannerFields ? (
               <>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="action-create-priority">Priority</Label>
+                  <select
+                    id="action-create-priority"
+                    className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
+                    value={priority}
+                    disabled={pending}
+                    data-testid="action-create-priority"
+                    onChange={(event) => setPriority(event.target.value)}
+                  >
+                    {ACTION_PRIORITIES.map((option) => (
+                      <option key={option} value={option}>
+                        {actionPriorityLabel(option)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="action-create-assignee">Assignee</Label>
                   <select
@@ -453,6 +568,37 @@ export function ActionCreateDialog({
                     </Button>
                   </div>
                 </div>
+                {fiveSContext ? (
+                  <div
+                    className="flex flex-col gap-2"
+                    data-testid="action-create-attachments"
+                  >
+                    <Label htmlFor="action-create-file-input">
+                      Photo or document
+                    </Label>
+                    <input
+                      id="action-create-file-input"
+                      type="file"
+                      accept="image/*,application/pdf,text/plain"
+                      capture="environment"
+                      multiple
+                      disabled={pending}
+                      data-testid="action-create-file-input"
+                      className="text-sm"
+                      onChange={(event) => {
+                        const files = event.target.files;
+                        if (!files) return;
+                        setCreateFiles(Array.from(files));
+                      }}
+                    />
+                    {createFiles.length > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        {createFiles.length} file
+                        {createFiles.length === 1 ? "" : "s"} selected
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             ) : null}
 
@@ -485,7 +631,7 @@ export function ActionCreateDialog({
               </p>
             ) : null}
 
-            {maturityContext ? null : (
+            {maturityContext || fiveSContext ? null : (
               <RelatedRecordsPanel
                 recordType="action"
                 compactHelp
@@ -518,7 +664,9 @@ export function ActionCreateDialog({
                 data-testid={
                   maturityContext
                     ? "assessment-action-submit"
-                    : "actions-create-submit"
+                    : fiveSContext
+                      ? "five-s-action-create-submit"
+                      : "actions-create-submit"
                 }
               >
                 {pending ? "Creating…" : "Create action"}

@@ -17,6 +17,14 @@ import {
   type SaveStatus,
 } from "@/components/five-s/audit-answer-state";
 import { FiveSEvidenceBlock } from "@/components/five-s/five-s-evidence-block";
+import {
+  FiveSRaiseActionButton,
+  type FiveSRaiseActionContext,
+} from "@/components/five-s/five-s-raise-action-button";
+import {
+  FiveSQuestionLinkedActions,
+  type FiveSLinkedAction,
+} from "@/components/five-s/five-s-question-linked-actions";
 import { FiveSScoreControl } from "@/components/five-s/score-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +71,10 @@ type AuditWorkspaceProps = {
   canComplete?: boolean;
   scoringScale?: FiveSScoringScale;
   onComplete?: typeof completeFiveSAudit;
+  standardName: string;
+  unitName: string;
+  canRaiseAction: boolean;
+  linkedActions?: FiveSLinkedAction[];
 };
 
 function AnswerSaveFeedback({
@@ -129,6 +141,10 @@ export function FiveSAuditWorkspace({
   canComplete = false,
   scoringScale = LEGACY_FIVE_S_SCORING_SCALE,
   onComplete = completeFiveSAudit,
+  standardName,
+  unitName,
+  canRaiseAction,
+  linkedActions = [],
 }: AuditWorkspaceProps) {
   const router = useRouter();
   const flatQuestions = sections.flatMap((s) =>
@@ -453,6 +469,28 @@ export function FiveSAuditWorkspace({
             questionId={current.question.id}
             evidence={evidence}
             canEdit={canEdit}
+          />
+
+          {canRaiseAction ? (
+            <FiveSRaiseActionButton
+              context={
+                {
+                  auditId,
+                  sectionId: current.section.id,
+                  questionId: current.question.id,
+                  questionPrompt: current.question.prompt,
+                  questionType: current.question.question_type,
+                  answer: getAnswer(current.question.id),
+                  standardName,
+                  unitName,
+                } satisfies FiveSRaiseActionContext
+              }
+              testId={`five-s-raise-action-${current.question.id}`}
+            />
+          ) : null}
+          <FiveSQuestionLinkedActions
+            questionId={current.question.id}
+            actions={linkedActions}
           />
         </div>
 

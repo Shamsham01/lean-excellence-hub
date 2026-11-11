@@ -66,6 +66,7 @@ type ActionPlannerShellProps = {
     assessments: FilterOption[];
     pillars: FilterOption[];
     criteria: FilterOption[];
+    fiveSAudits: FilterOption[];
   };
 };
 
@@ -168,6 +169,7 @@ export function ActionPlannerShell({
                 assessments={listFilters.assessments}
                 pillars={listFilters.pillars}
                 criteria={listFilters.criteria}
+                fiveSAudits={listFilters.fiveSAudits}
               />
             ) : null}
             {view === "list" ? (

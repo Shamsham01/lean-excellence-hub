@@ -6,6 +6,7 @@ import { ModulePageInsightsDeferred } from "@/components/platform/module-page-in
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
 import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
@@ -87,6 +88,10 @@ export default async function ActionsPage({
     .from("maturity_criteria")
     .select("id, name")
     .order("name");
+  const fiveSAuditFilterResult = await callActionRpc<
+    Array<{ audit_id: string; label: string }>
+  >(supabase, "list_five_s_audits_for_action_filter");
+  const fiveSAuditRows = fiveSAuditFilterResult.data;
 
   const plannerActions = await loadActionPlannerSummaries(actions);
   const openActionParam =
@@ -124,6 +129,15 @@ export default async function ActionsPage({
             criteria: (criterionRows ?? []).map((criterion) => ({
               id: criterion.id,
               label: criterion.name,
+            })),
+            fiveSAudits: (
+              (fiveSAuditRows ?? []) as Array<{
+                audit_id: string;
+                label: string;
+              }>
+            ).map((row) => ({
+              id: row.audit_id,
+              label: row.label,
             })),
           }}
         />
@@ -184,10 +198,14 @@ async function loadSourceActionIds(
       .from("suggestion_action_context")
       .select("action_id");
     sets.push((data ?? []).map((row) => row.action_id));
-  } else if (filters.source === "five_s_audit") {
-    const { data } = await supabase
+  } else if (filters.source === "five_s_audit" || filters.fiveSAudit) {
+    let contextQuery = supabase
       .from("five_s_action_context")
-      .select("action_id");
+      .select("action_id, audit_id");
+    if (filters.fiveSAudit) {
+      contextQuery = contextQuery.eq("audit_id", filters.fiveSAudit);
+    }
+    const { data } = await contextQuery;
     sets.push((data ?? []).map((row) => row.action_id));
   } else if (filters.source === "gemba_walk") {
     const { data } = await supabase

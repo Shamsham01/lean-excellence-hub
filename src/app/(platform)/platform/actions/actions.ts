@@ -416,6 +416,98 @@ export async function createPlannerAction(input: {
   return { ok: true, id: actionId };
 }
 
+export async function createFiveSPlannerAction(input: {
+  auditId: string;
+  sectionId: string;
+  questionId: string;
+  title: string;
+  description: string;
+  priority: string;
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+  labelIds: string[];
+  checklistTitles: string[];
+}): Promise<ActionResult> {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return { error: "You do not have permission to create actions." };
+  }
+
+  const title = input.title.trim();
+  if (!title) return { error: "Title is required." };
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("create_five_s_action", {
+    target_title: title,
+    target_audit_id: input.auditId,
+    target_section_id: input.sectionId,
+    target_question_id: input.questionId,
+    ...(input.description.trim()
+      ? { target_description: input.description.trim() }
+      : {}),
+    target_priority: input.priority || "normal",
+    ...(input.dueAt ? { target_due_at: input.dueAt } : {}),
+  });
+  if (error) return { error: mapActionMutationError(error) };
+  const actionId = data as string;
+
+  function partialSuccess(failedStep: string, message: string): ActionResult {
+    revalidateActionPaths(actionId);
+    revalidatePath(`/platform/5s/audits/${input.auditId}`);
+    return {
+      ok: true,
+      id: actionId,
+      warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
+    };
+  }
+
+  if (input.assigneeMembershipId) {
+    const assignResult = await setActionAssignee({
+      actionId,
+      membershipId: input.assigneeMembershipId,
+    });
+    if (assignResult.error) {
+      return partialSuccess("Assignee", assignResult.error);
+    }
+  }
+
+  if (input.labelIds.length > 0) {
+    const labelResult = await setActionLabelsForAction(
+      actionId,
+      input.labelIds,
+    );
+    if (labelResult.error) {
+      return partialSuccess("Labels", labelResult.error);
+    }
+  }
+
+  for (const checklistTitle of input.checklistTitles) {
+    const trimmed = checklistTitle.trim();
+    if (!trimmed) continue;
+    const itemResult = await addActionChecklistItem(actionId, trimmed);
+    if (itemResult.error) {
+      return partialSuccess("Checklist", itemResult.error);
+    }
+  }
+
+  revalidateActionPaths(actionId);
+  revalidatePath(`/platform/5s/audits/${input.auditId}`);
+  return { ok: true, id: actionId };
+}
+
+export async function loadFiveSActionLineage(actionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<Record<string, unknown>>(
+    supabase,
+    "get_five_s_action_lineage",
+    { target_action_id: actionId },
+  );
+  if (error) return null;
+  return data;
+}
+
 export async function initiateActionEvidenceUpload(
   actionId: string,
   filename: string,
@@ -493,6 +585,15 @@ export async function loadActionSheetPayload(
         ? mapActionMutationError(error)
         : "This action could not be loaded.",
     };
+  }
+
+  if (detail.source?.resource_type === "five_s_audit") {
+    const lineage = await loadFiveSActionLineage(actionId);
+    if (lineage && typeof lineage === "object") {
+      detail.five_s_lineage = lineage as NonNullable<
+        ActionDetail["five_s_lineage"]
+      >;
+    }
   }
 
   const canUploadEvidence =

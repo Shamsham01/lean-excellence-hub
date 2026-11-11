@@ -26,6 +26,9 @@ type ActionPlannerCardProps = {
 };
 
 function sourceHint(action: ActionPlannerListItem): string | null {
+  if (action.five_s_lineage?.chip_label) {
+    return action.five_s_lineage.chip_label;
+  }
   const source = action.source;
   if (!source) return null;
   const reference = source.reference?.trim();

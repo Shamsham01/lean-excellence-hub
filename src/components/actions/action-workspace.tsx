@@ -11,6 +11,7 @@ import {
   updateActionFields,
 } from "@/app/(platform)/platform/actions/actions";
 import { ActionCardCoverThumb } from "@/components/actions/action-card-cover-thumb";
+import { ActionFiveSSourceChip } from "@/components/actions/action-five-s-source-chip";
 import { ActionPlannerAttachments } from "@/components/actions/action-planner-attachments";
 import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import { ActionPlannerComments } from "@/components/actions/action-planner-comments";
@@ -195,11 +196,15 @@ export function ActionWorkspace({
         ) : null}
       </div>
 
-      {source ? (
+      {source || detail.five_s_lineage ? (
         <Card data-testid="action-source-card">
           <CardContent className="pt-6 text-sm">
             <p className="font-medium">Source</p>
-            {source.href ? (
+            {detail.five_s_lineage ? (
+              <div className="mt-2">
+                <ActionFiveSSourceChip lineage={detail.five_s_lineage} />
+              </div>
+            ) : source?.href ? (
               <AppLink
                 href={source.href}
                 className="mt-1 inline-flex text-sm text-primary hover:underline"
@@ -209,7 +214,7 @@ export function ActionWorkspace({
               </AppLink>
             ) : (
               <p className="mt-1 text-muted-foreground">
-                {sourceLabel(source)}
+                {source ? sourceLabel(source) : null}
               </p>
             )}
           </CardContent>

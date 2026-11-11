@@ -13,7 +13,10 @@ import {
   loadWorkplaceRecordView,
 } from "@/modules/workplace/access";
 import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
+import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import type { FiveSLinkedAction } from "@/components/five-s/five-s-question-linked-actions";
+import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function FiveSAuditPage({
@@ -35,6 +38,9 @@ export default async function FiveSAuditPage({
   const canEdit = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.auditPerform,
   );
+  const canRaiseAction = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
 
   const { data: audit } = await supabase
     .from("five_s_audits")
@@ -53,6 +59,15 @@ export default async function FiveSAuditPage({
     if (workplaceRecord) return workplaceRecord;
     notFound();
   }
+
+  const standardName = audit.standard_name_snapshot ?? "5S audit";
+  const unitName = audit.unit_name_snapshot ?? "Site";
+  const linkedActionsResult = await callActionRpc<FiveSLinkedAction[]>(
+    supabase,
+    "list_five_s_audit_linked_actions",
+    { target_audit_id: id },
+  );
+  const linkedActions = linkedActionsResult.data ?? [];
 
   const { data: version } = await supabase
     .from("five_s_standard_versions")
@@ -186,6 +201,11 @@ export default async function FiveSAuditPage({
           sections={sections}
           answers={answers}
           evidence={evidence}
+          auditId={id}
+          standardName={standardName}
+          unitName={unitName}
+          canRaiseAction={canRaiseAction}
+          linkedActions={linkedActions}
         />
       </div>
     );
@@ -207,6 +227,10 @@ export default async function FiveSAuditPage({
         canComplete={canEdit && audit.status === "in_progress"}
         scoringScale={resolveFiveSScoringScale(version?.scoring_scale)}
         onComplete={completeFiveSAudit}
+        standardName={standardName}
+        unitName={unitName}
+        canRaiseAction={canRaiseAction}
+        linkedActions={linkedActions}
       />
     </div>
   );

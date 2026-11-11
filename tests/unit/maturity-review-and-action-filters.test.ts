@@ -28,6 +28,7 @@ describe("action list filters", () => {
       assessment: "assess-1",
       pillar: "pillar-1",
       criterion: "crit-1",
+      fiveSAudit: null,
     });
   });
 
@@ -47,6 +48,7 @@ describe("action list filters", () => {
         assessment: "assess-1",
         pillar: null,
         criterion: null,
+        fiveSAudit: null,
       }),
     ).toBe("source=maturity_assessment&assessment=assess-1");
     expect(assessmentActionsHref("assess-1")).toBe(

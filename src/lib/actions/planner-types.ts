@@ -2,6 +2,7 @@ import type {
   ActionLabel,
   ActionPermissions,
   ActionSourceSummary,
+  FiveSActionLineage,
 } from "@/lib/actions/types";
 
 export type ActionPlannerListItem = {
@@ -17,6 +18,7 @@ export type ActionPlannerListItem = {
   assignee_membership_id: string | null;
   assignee_avatar_url: string | null;
   source: ActionSourceSummary | null;
+  five_s_lineage?: FiveSActionLineage | null;
   permissions: ActionPermissions;
   labels: ActionLabel[];
   checklist_done: number;
