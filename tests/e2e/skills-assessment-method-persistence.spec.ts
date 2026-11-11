@@ -28,9 +28,11 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
     // Earlier workforce specs may satisfy every operator gap; reopen one.
     queryDatabase(`
       delete from public.membership_skill_assessments assessment_row
-      using public.organisation_memberships membership_row
-      where assessment_row.membership_id = membership_row.id
-        and membership_row.user_id = '${DEMO_USERS.operator.id}'
+      where assessment_row.membership_id in (
+        select membership_row.id
+        from public.organisation_memberships membership_row
+        where membership_row.user_id = '${DEMO_USERS.operator.id}'
+      )
       returning assessment_row.id
     `);
   });
@@ -44,8 +46,15 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
       .getByRole("link", { name: DEMO_USERS.operator.displayName })
       .click();
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
+    await expect(page).toHaveURL(/\/platform\/people\/[^/]+$/);
+    const membershipId = page.url().split("/").pop()!;
 
-    const historyRows = page.locator("li", {
+    const historySection = page
+      .locator("section")
+      .filter({
+        has: page.getByRole("heading", { name: "Assessment history" }),
+      });
+    const historyRows = historySection.locator("li", {
       hasText: "· Practical observation",
     });
     const before = await historyRows.count();
@@ -103,23 +112,27 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
       .poll(async () => historyRows.count(), { timeout: 30_000 })
       .toBe(before + 1);
 
-    const rows = queryDatabase<{
-      assessment_method: string;
-      assertion_type: string;
-    }>(
-      `select assessment_row.assessment_method, assessment_row.assertion_type
-       from public.membership_skill_assessments assessment_row
-       join public.organisation_memberships membership_row
-         on membership_row.organisation_id = assessment_row.organisation_id
-        and membership_row.id = assessment_row.membership_id
-       where membership_row.user_id = '${DEMO_USERS.operator.id}'
-       order by assessment_row.created_at desc
-       limit 1`,
-    );
-    expect(rows[0]).toEqual({
-      assessment_method: "practical_observation",
-      assertion_type: "validated",
-    });
+    await expect
+      .poll(
+        () => {
+          const rows = queryDatabase<{
+            assessment_method: string;
+            assertion_type: string;
+          }>(
+            `select assessment_row.assessment_method, assessment_row.assertion_type
+             from public.membership_skill_assessments assessment_row
+             where assessment_row.membership_id = '${membershipId}'
+             order by assessment_row.created_at desc
+             limit 1`,
+          );
+          return rows[0] ?? null;
+        },
+        { timeout: 30_000 },
+      )
+      .toEqual({
+        assessment_method: "practical_observation",
+        assertion_type: "validated",
+      });
   });
 
   test("reopening the dialog resets the method to the placeholder", async ({
