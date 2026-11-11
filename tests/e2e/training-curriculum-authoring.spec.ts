@@ -304,6 +304,7 @@ test.describe("Training curriculum authoring", () => {
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
       "Requirement saved.",
     );
+    await page.reload();
     await expect(
       page.getByTestId("training-curriculum-review"),
     ).not.toContainText(secondCourseName);
