@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -28,12 +28,17 @@ export function SegmentedControl({
   "data-testid": dataTestId = "segmented-control",
   optionTestIdPrefix,
 }: SegmentedControlProps) {
+  const columnStyle = {
+    gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+  } satisfies CSSProperties;
+
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
+      style={columnStyle}
       className={cn(
-        "inline-flex w-full min-w-[min(100%,15.5rem)] rounded-lg border border-border/50 bg-muted/30 p-1 sm:w-auto",
+        "grid w-full min-w-[min(100%,15.75rem)] gap-1 rounded-lg border border-border/50 bg-muted/30 p-1 sm:w-auto",
         className,
       )}
       data-testid={dataTestId}
@@ -47,7 +52,7 @@ export function SegmentedControl({
             role="radio"
             aria-checked={selected}
             className={cn(
-              "inline-flex min-h-11 flex-1 basis-0 items-center justify-center rounded-md px-2 text-center text-sm leading-none font-medium transition-all duration-150",
+              "flex h-11 w-full touch-manipulation items-center justify-center rounded-md px-2 text-center text-sm font-medium leading-none transition-colors duration-150",
               selected
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -59,7 +64,7 @@ export function SegmentedControl({
             }
             onClick={() => onChange(option.value)}
           >
-            {option.label}
+            <span className="block w-full text-center">{option.label}</span>
           </button>
         );
       })}

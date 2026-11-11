@@ -22,11 +22,14 @@ describe("SegmentedControl", () => {
       />,
     );
 
+    const track = screen.getByTestId("segmented-control");
+    expect(track.className).toContain("grid");
+
     const segment = screen.getByRole("radio", { name: "30 days" });
     expect(segment.className).toContain("items-center");
     expect(segment.className).toContain("justify-center");
-    expect(segment.className).toContain("min-h-11");
-    expect(segment.className).toContain("flex-1");
+    expect(segment.className).toContain("h-11");
+    expect(segment.className).toContain("w-full");
   });
 
   it("fires onChange when a segment is selected", () => {
