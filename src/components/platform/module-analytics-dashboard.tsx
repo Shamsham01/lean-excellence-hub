@@ -9,7 +9,10 @@ import { AnalyticsAgeingTable } from "@/components/platform/analytics-ageing-tab
 import { AnalyticsDateRangeToolbar } from "@/components/platform/analytics-date-range-toolbar";
 import { KpiStatCard } from "@/components/platform/kpi-stat-card";
 import { KpiStatGrid } from "@/components/platform/kpi-stat-grid";
-import type { ModuleAnalyticsSnapshot } from "@/modules/platform-analytics/types";
+import {
+  DEFAULT_KPI_POLARITY,
+  type ModuleAnalyticsSnapshot,
+} from "@/modules/platform-analytics/types";
 
 export async function ModuleAnalyticsDashboard({
   snapshot,
@@ -59,16 +62,19 @@ export async function ModuleAnalyticsDashboard({
         </p>
       ) : null}
 
-      <KpiStatGrid>
+      <KpiStatGrid tileCount={snapshot.stats.length}>
         {snapshot.stats.map((stat) => {
           const Icon = icons[stat.id] ?? icons.default;
           if (!Icon) return null;
+          const polarity =
+            stat.polarity ?? DEFAULT_KPI_POLARITY[stat.id] ?? "neutral";
           return (
             <KpiStatCard
               key={stat.id}
               label={stat.label}
               value={stat.value}
               icon={Icon}
+              polarity={polarity}
               {...(stat.trend ? { trend: stat.trend } : {})}
               {...(stat.valueTestId ? { valueTestId: stat.valueTestId } : {})}
               testId={`${testId}-stat-${stat.id}`}

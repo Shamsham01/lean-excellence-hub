@@ -13,6 +13,8 @@ export type ActionPlannerListItem = {
   due_at: string | null;
   version: number;
   assignee_display_name: string | null;
+  assignee_membership_id: string | null;
+  assignee_avatar_url: string | null;
   source: ActionSourceSummary | null;
   permissions: ActionPermissions;
 };

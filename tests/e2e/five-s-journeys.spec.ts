@@ -34,7 +34,9 @@ test.describe("Milestone 6 5S journeys", () => {
       page.getByRole("heading", { name: "5S Audits" }),
     ).toBeVisible();
     await page.getByTestId("five-s-analytics-insights-toggle").click();
-    await expect(page.getByText("Completed audits")).toBeVisible();
+    await expect(
+      page.getByTestId("five-s-analytics-stat-completed"),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Standards" }).click();
     await expect(page).toHaveURL(/\/platform\/5s\/standards/);

@@ -76,9 +76,9 @@
 }
 
 .leh-brand--platform-sidebar {
-  --leh-brand-lockup: 13.75rem;
-  --leh-brand-lockup-height: 2.5rem;
-  --leh-brand-lockup-max-width: 13.75rem;
+  --leh-brand-lockup: 100%;
+  --leh-brand-lockup-height: 3.25rem;
+  --leh-brand-lockup-max-width: 100%;
 }
 
 /* Official horizontal PNG lockups in a fixed slot: object-fit contain, no crop math. */

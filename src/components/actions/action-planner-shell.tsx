@@ -3,7 +3,6 @@
 import {
   ArrowDownAZ,
   Columns3,
-  Filter,
   LayoutGrid,
   List,
   ListTodo,
@@ -20,6 +19,7 @@ import {
 } from "react";
 
 import { ActionCreateDialog } from "@/components/actions/action-create-form";
+import { ActionFiltersPopover } from "@/components/actions/action-filters-popover";
 import { ActionDetailSheet } from "@/components/actions/action-detail-sheet";
 import { ActionPlannerBoard } from "@/components/actions/action-planner-board";
 import { ActionPlannerListView } from "@/components/actions/action-planner-list-view";
@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { ActionListFilters } from "@/lib/actions/action-filters";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
 import {
   type ActionPlannerView,
@@ -52,16 +53,27 @@ const VIEW_OPTIONS: Array<{
 
 type ListSort = "due" | "created" | "title";
 
+type FilterOption = { id: string; label: string };
+
 type ActionPlannerShellProps = {
   actions: ActionPlannerListItem[];
   initialOpenActionId?: string | null;
   canCreate?: boolean;
+  listFilters?: {
+    filters: ActionListFilters;
+    people: FilterOption[];
+    units: FilterOption[];
+    assessments: FilterOption[];
+    pillars: FilterOption[];
+    criteria: FilterOption[];
+  };
 };
 
 export function ActionPlannerShell({
   actions,
   initialOpenActionId = null,
   canCreate = false,
+  listFilters,
 }: ActionPlannerShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -118,12 +130,6 @@ export function ActionPlannerShell({
     writeStoredActionPlannerView(next);
   }
 
-  function scrollToFilters() {
-    document
-      .getElementById("actions-filters")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   function openCreateDialog() {
     setCreateOpen(true);
   }
@@ -154,17 +160,16 @@ export function ActionPlannerShell({
             {actions.length} action{actions.length === 1 ? "" : "s"} in scope
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-              onClick={scrollToFilters}
-              data-testid="actions-filter-button"
-            >
-              <Filter className="size-3.5" aria-hidden />
-              Filter &amp; sort
-            </Button>
+            {listFilters ? (
+              <ActionFiltersPopover
+                filters={listFilters.filters}
+                people={listFilters.people}
+                units={listFilters.units}
+                assessments={listFilters.assessments}
+                pillars={listFilters.pillars}
+                criteria={listFilters.criteria}
+              />
+            ) : null}
             {view === "list" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
