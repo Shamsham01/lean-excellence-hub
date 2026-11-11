@@ -38,9 +38,8 @@ describe("loadMembershipAvatarUrls", () => {
       error: null,
     });
 
-    const { loadMembershipAvatarUrls } = await import(
-      "@/lib/people/membership-avatar-urls"
-    );
+    const { loadMembershipAvatarUrls } =
+      await import("@/lib/people/membership-avatar-urls");
     const map = await loadMembershipAvatarUrls(["m-1", "m-2"]);
 
     expect(rpcMock).toHaveBeenCalledWith("get_people_directory", {
@@ -60,9 +59,8 @@ describe("loadMembershipAvatarUrls", () => {
       error: { message: "people directory is not authorised" },
     });
 
-    const { loadMembershipAvatarUrls } = await import(
-      "@/lib/people/membership-avatar-urls"
-    );
+    const { loadMembershipAvatarUrls } =
+      await import("@/lib/people/membership-avatar-urls");
     const map = await loadMembershipAvatarUrls(["m-9"]);
 
     expect(map.get("m-9")).toBeNull();

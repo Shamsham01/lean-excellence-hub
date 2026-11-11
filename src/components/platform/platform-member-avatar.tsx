@@ -44,8 +44,7 @@ export function PlatformMemberAvatar({
       displayName.trim().toLowerCase() === "unassigned");
 
   const accessibleName = isUnassigned ? "Unassigned" : displayName.trim();
-  const showImage =
-    !isUnassigned && Boolean(avatarUrl?.trim()) && !imageFailed;
+  const showImage = !isUnassigned && Boolean(avatarUrl?.trim()) && !imageFailed;
 
   const avatarBody = isUnassigned ? (
     <span
@@ -57,10 +56,7 @@ export function PlatformMemberAvatar({
         className,
       )}
     >
-      <UserRound
-        className={size === "sm" ? "size-4" : "size-5"}
-        aria-hidden
-      />
+      <UserRound className={size === "sm" ? "size-4" : "size-5"} aria-hidden />
     </span>
   ) : showImage ? (
     // eslint-disable-next-line @next/next/no-img-element -- profile URLs are user-supplied storage paths
