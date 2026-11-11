@@ -21,7 +21,7 @@ import {
 import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
   createPublishableClient,
-  queryDatabase,
+  createServiceRoleClient,
 } from "./helpers/workforce-provisioning";
 
 const run = Date.now().toString(36);
@@ -114,51 +114,46 @@ async function rpc<T>(
   return data as T;
 }
 
-function sqlString(value: string) {
-  return `'${value.replace(/'/g, "''")}'`;
-}
-
-/** Inserts active, enrolled members directly (local DB only). */
-function seedMembers(names: string[]): string[] {
+/** Inserts active, enrolled members via service role (RLS-safe). */
+async function seedMembers(names: string[]): Promise<string[]> {
+  const service = createServiceRoleClient();
   const membershipIds: string[] = [];
   for (const displayName of names) {
     const userId = crypto.randomUUID();
     const email = `matrix-${userId}@example.test`;
-    queryDatabase(`
-      insert into auth.users (
-        id, email, email_confirmed_at, created_at, updated_at,
-        raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous
-      ) values (
-        ${sqlString(userId)}::uuid, ${sqlString(email)}, now(), now(), now(),
-        '{}'::jsonb, '{}'::jsonb, false, false
-      )
-      returning id;
-    `);
-    const rows = queryDatabase<{ membership_id: string }>(`
-      insert into public.organisation_memberships
-        (organisation_id, user_id, display_name, status, activated_at)
-      values (
-        ${sqlString(ids.organisationId)}::uuid,
-        ${sqlString(userId)}::uuid,
-        ${sqlString(displayName)},
-        'active',
-        now()
-      )
-      returning id as membership_id;
-    `);
-    const row = rows[0];
-    if (!row) {
+    const created = await service.auth.admin.createUser({
+      id: userId,
+      email,
+      email_confirm: true,
+      password: "MatrixSeedE2ePassword123!",
+    });
+    if (created.error) {
+      throw created.error;
+    }
+    const { error: enrolmentError } = await service.rpc(
+      "finalise_identity_enrolment",
+      { target_user_id: userId },
+    );
+    if (enrolmentError) {
+      throw enrolmentError;
+    }
+    const { data, error } = await service
+      .from("organisation_memberships")
+      .insert({
+        organisation_id: ids.organisationId,
+        user_id: userId,
+        display_name: displayName,
+        status: "active",
+        activated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error) {
       throw new Error(
-        `seedMembers expected 1 membership for ${displayName}, inserted ${rows.length}`,
+        `seedMembers membership insert for ${displayName}: ${error.message}`,
       );
     }
-    queryDatabase(`
-      update private.identity_controls
-      set status = 'active', enrolment_status = 'complete', enrolment_completed_at = now()
-      where user_id = ${sqlString(userId)}::uuid
-      returning user_id;
-    `);
-    membershipIds.push(row.membership_id);
+    membershipIds.push(data.id);
   }
   return membershipIds;
 }
@@ -367,10 +362,10 @@ async function seed() {
 
   // People: 30 Bodmin operators, 25 Exeter operators (=> >50 in org).
   // RISK: seat / site-capacity enforcement may reject 55 extra members.
-  const bodmin = seedMembers(
+  const bodmin = await seedMembers(
     Array.from({ length: BODMIN_PEOPLE }, (_, i) => bodminPerson(i + 1)),
   );
-  const exeter = seedMembers(
+  const exeter = await seedMembers(
     Array.from({ length: EXETER_PEOPLE }, (_, i) => exeterPerson(i + 1)),
   );
   for (const [list, unit] of [
