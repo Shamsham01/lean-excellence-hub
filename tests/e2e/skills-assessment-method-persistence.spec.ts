@@ -31,6 +31,7 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
       using public.organisation_memberships membership_row
       where assessment_row.membership_id = membership_row.id
         and membership_row.user_id = '${DEMO_USERS.operator.id}'
+      returning assessment_row.id
     `);
   });
 
