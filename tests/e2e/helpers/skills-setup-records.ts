@@ -284,6 +284,7 @@ export async function recordPublishedSkillsAssessment(input: {
       target_skill_id: requirement.skill_id,
       target_proficiency_scale_version_id: bundle.scale_version_id,
       target_proficiency_level_id: requirement.target_proficiency_level_id,
+      target_assessment_method: "manager_assessment",
       target_organisational_unit_id:
         requirement.organisational_unit_id ?? undefined,
       target_notes: input.notes,

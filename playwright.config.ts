@@ -19,10 +19,16 @@ function loadLocalSupabaseEnv(): Record<string, string> {
       API_URL?: string;
       ANON_KEY?: string;
       SERVICE_ROLE_KEY?: string;
+      DB_URL?: string;
     };
+
+    if (status.DB_URL && !process.env.SUPABASE_DB_URL) {
+      process.env.SUPABASE_DB_URL = status.DB_URL;
+    }
 
     return {
       ...(status.API_URL ? { NEXT_PUBLIC_SUPABASE_URL: status.API_URL } : {}),
+      ...(status.DB_URL ? { SUPABASE_DB_URL: status.DB_URL } : {}),
       ...(status.ANON_KEY
         ? { NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: status.ANON_KEY }
         : {}),
@@ -59,6 +65,8 @@ const webServerEnvOverrides: Record<string, string> = {
     process.env.SUPABASE_SECRET_KEY ??
     localSupabaseEnv.SUPABASE_SECRET_KEY ??
     "sb_secret_playwright_placeholder",
+  SUPABASE_DB_URL:
+    process.env.SUPABASE_DB_URL ?? localSupabaseEnv.SUPABASE_DB_URL ?? "",
   AI_ENABLED:
     process.env.AI_ENABLED ??
     (process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0"),

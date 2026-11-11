@@ -519,8 +519,8 @@ export const SKILLS_KNOWLEDGE_ARTICLES: readonly SkillsKnowledgeArticle[] = [
         purpose: "Records how a validation was made.",
         required: "required",
         constraints:
-          "One of manager assessment, observation, portfolio review, certification, or practical test. Shown only for a validation, not a self-assessment.",
-        example: "observation",
+          "One of manager assessment, practical observation, qualification, trainer sign-off, or external certification. The assessor must choose a method; there is no default. Shown only for a validation, not a self-assessment.",
+        example: "practical_observation",
         mistakes:
           "Treating a certification method as proof that training completion equals competence.",
         dependencies:

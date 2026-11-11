@@ -134,7 +134,7 @@ jobs:
     name: Full Regression / Playwright browsers
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -292,6 +292,7 @@ jobs:
               tests/e2e/five-s-standard-draft-removal.spec.ts
           - label: workforce
             specs: >-
+              tests/e2e/skills-assessment-method-persistence.spec.ts
               tests/e2e/training-journeys.spec.ts
               tests/e2e/milestone7-closure.spec.ts
               tests/e2e/invitation-lifecycle.spec.ts

@@ -166,7 +166,7 @@ def extract_function(sql: str, name: str, *, public: bool = False) -> str | None
 def collect_versions(name: str) -> list[tuple[str, str, int]]:
     versions: list[tuple[str, str, int]] = []
     for path in migration_order():
-        if path.name == OUT_NAME:
+        if path.name >= OUT_NAME:
             continue
         body = extract_function(
             path.read_text(),
@@ -191,12 +191,12 @@ def pick_canonical(name: str) -> str | None:
         return None
     if name in FOUNDATION_RPC_EXCLUDE:
         for path_name, body, _ in sorted(versions, key=lambda v: v[0], reverse=True):
-            if path_name == OUT_NAME:
+            if path_name >= OUT_NAME:
                 continue
             if "assert_current_organisation_module_entitled" not in body:
                 return body
-    good = [v for v in versions if v[0] not in DEPRIORITISE and v[0] != OUT_NAME]
-    pool = good if good else [v for v in versions if v[0] != OUT_NAME]
+    good = [v for v in versions if v[0] not in DEPRIORITISE and v[0] < OUT_NAME]
+    pool = good if good else [v for v in versions if v[0] < OUT_NAME]
     pool.sort(key=lambda v: v[0])
     return pool[-1][1] if pool else versions[-1][1]
 

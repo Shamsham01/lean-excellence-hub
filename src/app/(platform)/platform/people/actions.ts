@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isSkillValidationMethod } from "@/modules/skills/assessment-methods";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export async function recordSkillValidation(input: {
@@ -14,13 +15,20 @@ export async function recordSkillValidation(input: {
   validUntil?: string;
   organisationalUnitId?: string;
 }) {
+  if (!isSkillValidationMethod(input.assessmentMethod)) {
+    return {
+      error:
+        "Choose a recognised assessment method before saving this validation.",
+    };
+  }
+
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc("record_skill_validation", {
     target_membership_id: input.membershipId,
     target_skill_id: input.skillId,
     target_proficiency_scale_version_id: input.proficiencyScaleVersionId,
     target_proficiency_level_id: input.proficiencyLevelId,
-    target_assessment_method: input.assessmentMethod ?? "manager_assessment",
+    target_assessment_method: input.assessmentMethod,
     ...(input.notes ? { target_notes: input.notes } : {}),
     ...(input.validUntil ? { target_valid_until: input.validUntil } : {}),
     ...(input.organisationalUnitId
