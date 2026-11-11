@@ -409,9 +409,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     await expect(
       page.getByRole("link", { name: bodminPerson(1) }).first(),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /^Matrix Exeter/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("link", { name: /^Matrix Exeter/ }),
+    ).toHaveCount(0);
     await expect(page.getByRole("link", { name: bodminSkill })).toBeVisible();
     await expect(page.getByRole("link", { name: exeterSkill })).toHaveCount(0);
     await expect(
@@ -450,9 +450,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     ).toBeVisible();
     // wrongJob applies to supervisors only; nobody on this page qualifies.
     await expect(page.getByText(course.wrongJob)).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /^Matrix Exeter/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("link", { name: /^Matrix Exeter/ }),
+    ).toHaveCount(0);
 
     // Admin: Exeter operator is Not Required for the Bodmin-scoped course.
     await loginAsCookieWorksPersona(page, "admin");
