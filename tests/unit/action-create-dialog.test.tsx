@@ -6,16 +6,29 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionCreateDialog } from "@/components/actions/action-create-form";
-import { createAction } from "@/app/(platform)/platform/actions/actions";
+import {
+  createPlannerAction,
+  loadActionCreateContext,
+} from "@/app/(platform)/platform/actions/actions";
 
 vi.mock("@/app/(platform)/platform/actions/actions", () => ({
-  createAction: vi.fn(),
+  createPlannerAction: vi.fn(),
+  loadActionCreateContext: vi.fn(),
 }));
 
-const createActionMock = vi.mocked(createAction);
+const createPlannerActionMock = vi.mocked(createPlannerAction);
+const loadActionCreateContextMock = vi.mocked(loadActionCreateContext);
+
+beforeEach(() => {
+  loadActionCreateContextMock.mockResolvedValue({
+    labels: [],
+    assignablePeople: [],
+    canManageLabels: false,
+  });
+});
 
 describe("ActionCreateDialog", () => {
   afterEach(() => {
@@ -93,7 +106,7 @@ describe("ActionCreateDialog", () => {
   });
 
   it("shows a server error without closing the dialog", async () => {
-    createActionMock.mockResolvedValue({ error: "Could not save" });
+    createPlannerActionMock.mockResolvedValue({ error: "Could not save" });
     render(
       <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />,
     );
@@ -113,7 +126,7 @@ describe("ActionCreateDialog", () => {
     const deferred = new Promise<{ id: string }>((resolve) => {
       release = () => resolve({ id: "action-1" });
     });
-    createActionMock.mockImplementation(() => deferred);
+    createPlannerActionMock.mockImplementation(() => deferred);
 
     render(
       <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />,
@@ -126,9 +139,11 @@ describe("ActionCreateDialog", () => {
     fireEvent.click(submit);
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
-    expect(createActionMock).toHaveBeenCalledTimes(1);
+    expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
 
     release();
-    await waitFor(() => expect(createActionMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(createPlannerActionMock).toHaveBeenCalledTimes(1),
+    );
   });
 });
